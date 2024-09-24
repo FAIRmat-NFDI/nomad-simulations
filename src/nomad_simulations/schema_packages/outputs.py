@@ -49,8 +49,6 @@ class Outputs(Time):
     information if the output `is_derived` from another output section or directly parsed from the simulation output files.
     """
 
-    # TODO add time quantities
-
     normalizer_level = 2
 
     model_system_ref = Quantity(
