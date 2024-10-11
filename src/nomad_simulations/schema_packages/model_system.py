@@ -557,7 +557,7 @@ class AtomicCell(Cell):
 
 class ParticleCell(Cell):
     """
-    A base section used to specify the atomic cell information of a system.
+    A base section used to specify the particle cell information of a system.
     """
 
     particles_state = SubSection(sub_section=ParticlesState.m_def, repeats=True)
@@ -565,65 +565,66 @@ class ParticleCell(Cell):
     n_particles = Quantity(
         type=np.int32,
         description="""
-        Number of atoms in the atomic cell.
+        Number of particles in the particle cell.
         """,
     )
 
     equivalent_particles = Quantity(
         type=np.int32,
-        shape=['n_atoms'],
+        shape=['n_particle'],
         description="""
-        List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
-        then the list is simply the index of each element, e.g.:
-            - [0, 1, 2, 3] all four atoms are non-equivalent.
-            - [0, 0, 0, 3] three equivalent atoms and one non-equivalent.
+        List of equivalent particles as defined in `particles`. If no equivalent particles
+        are found, then the list is simply the index of each element, e.g.:
+            - [0, 1, 2, 3] all four particles are non-equivalent.
+            - [0, 0, 0, 3] three equivalent particles and one non-equivalent.
         """,
     )
 
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
         super().__init__(m_def, m_context, **kwargs)
         # Set the name of the section
-        self.name = self.m_def.name  #! self.name here is 'ParticleCell'
+        self.name = self.m_def.name
 
-    def is_equal_cell(self, other) -> bool:
-        """
-        Check if the atomic cell is equal to an`other` atomic cell by comparing the `positions` and
-        the `AtomsState[*].chemical_symbol`.
-        Args:
-            other: The other atomic cell to compare with.
-        Returns:
-            bool: True if the atomic cells are equal, False otherwise.
-        """
-        if not isinstance(other, ParticleCell):
-            return False
+    # def is_equal_cell(self, other) -> bool:
+    #     """
+    #     Check if the atomic cell is equal to an`other` atomic cell by comparing the `positions` and
+    #     the `AtomsState[*].chemical_symbol`.
+    #     Args:
+    #         other: The other atomic cell to compare with.
+    #     Returns:
+    #         bool: True if the atomic cells are equal, False otherwise.
+    #     """
+    #     if not isinstance(other, ParticleCell):
+    #         return False
 
-        # Compare positions using the parent sections's `__eq__` method
-        if not super().is_equal_cell(other=other):
-            return False
+    #     # Compare positions using the parent sections's `__eq__` method
+    #     if not super().is_equal_cell(other=other):
+    #         return False
 
-        # Check that the `chemical_symbol` of the atoms in `cell_1` match with the ones in `cell_2`
-        check_positions = self._check_positions(
-            positions_1=self.positions, positions_2=other.positions
-        )
-        try:
-            for particle in check_positions:
-                type_1 = self.particles_state[particle[0]].particle_type
-                type_2 = other.particles_state[particle[1]].particle_type
-                if type_1 != type_2:
-                    return False
-        except Exception:
-            return False
-        return True
+    #     # Check that the `chemical_symbol` of the atoms in `cell_1` match with the ones in `cell_2`
+    #     check_positions = self._check_positions(
+    #         positions_1=self.positions, positions_2=other.positions
+    #     )
+    #     try:
+    #         for particle in check_positions:
+    #             type_1 = self.particles_state[particle[0]].particle_type
+    #             type_2 = other.particles_state[particle[1]].particle_type
+    #             if type_1 != type_2:
+    #                 return False
+    #     except Exception:
+    #         return False
+    #     return True
 
     def get_particle_types(self, logger: 'BoundLogger') -> list[str]:
         """
-        Get the chemical symbols of the atoms in the atomic cell. These are defined on `atoms_state[*].chemical_symbol`.
+        Get the chemical symbols of the particle in the particle cell.
+        These are defined on `particles_state[*].chemical_symbol`.
 
         Args:
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            list: The list of chemical symbols of the atoms in the atomic cell.
+            list: The list of chemical symbols of the particles in the particle cell.
         """
         if not self.particles_state:
             return []
@@ -1346,7 +1347,6 @@ class ModelSystem(System):
             )
             return
 
-        #! self.cell[0].name is ParticleCell
         if self.cell[0].name == 'AtomicCell':
             self.cell[0].type = 'original'
             ase_atoms = self.cell[0].to_ase_atoms(logger=logger)
@@ -1369,12 +1369,7 @@ class ModelSystem(System):
                     sec_symmetry = self.m_create(Symmetry)
                     sec_symmetry.normalize(archive, logger)
 
-        print(self.model_system)
-        print(self.cell[0])
-        print(self.cell[0].particles_state[0].particle_type)
-        # sys.exit()
-        # Creating and normalizing ChemicalFormula section
-        if self.cell[0].name == 'AtomicCell':
+            # Creating and normalizing ChemicalFormula section
             # TODO add support for fractional formulas (possibly add `AtomicCell.concentrations` for each species)
             sec_chemical_formula = self.m_create(ChemicalFormula)
             sec_chemical_formula.normalize(archive, logger)
