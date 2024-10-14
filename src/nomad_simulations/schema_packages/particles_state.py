@@ -144,79 +144,79 @@ class Particles:
 
         particles = None
 
-    #     if hasattr(symbols, 'get_positions'):
-    #         atoms = symbols
-    #         symbols = None
-    #     elif (
-    #         isinstance(symbols, (list, tuple))
-    #         and len(symbols) > 0
-    #         and isinstance(symbols[0], Atom)
-    #     ):
-    #         # Get data from a list or tuple of Atom objects:
-    #         data = [
-    #             [atom.get_raw(name) for atom in symbols]
-    #             for name in [
-    #                 'position',
-    #                 'number',
-    #                 'tag',
-    #                 'momentum',
-    #                 'mass',
-    #                 'magmom',
-    #                 'charge',
-    #             ]
-    #         ]
-    #         atoms = self.__class__(None, *data)
-    #         symbols = None
+        #     if hasattr(types, 'get_positions'):
+        #         atoms = types
+        #         types = None
+        #     elif (
+        #         isinstance(types, (list, tuple))
+        #         and len(types) > 0
+        #         and isinstance(types[0], Atom)
+        #     ):
+        #         # Get data from a list or tuple of Atom objects:
+        #         data = [
+        #             [atom.get_raw(name) for atom in types]
+        #             for name in [
+        #                 'position',
+        #                 'number',
+        #                 'tag',
+        #                 'momentum',
+        #                 'mass',
+        #                 'magmom',
+        #                 'charge',
+        #             ]
+        #         ]
+        #         atoms = self.__class__(None, *data)
+        #         types = None
 
-    #     if atoms is not None:
-    #         # Get data from another Atoms object:
-    #         if scaled_positions is not None:
-    #             raise NotImplementedError
-    #         if symbols is None and numbers is None:
-    #             numbers = atoms.get_atomic_numbers()
-    #         if positions is None:
-    #             positions = atoms.get_positions()
-    #         if tags is None and atoms.has('tags'):
-    #             tags = atoms.get_tags()
-    #         if momenta is None and atoms.has('momenta'):
-    #             momenta = atoms.get_momenta()
-    #         if magmoms is None and atoms.has('initial_magmoms'):
-    #             magmoms = atoms.get_initial_magnetic_moments()
-    #         if masses is None and atoms.has('masses'):
-    #             masses = atoms.get_masses()
-    #         if charges is None and atoms.has('initial_charges'):
-    #             charges = atoms.get_initial_charges()
-    #         if cell is None:
-    #             cell = atoms.get_cell()
-    #         if celldisp is None:
-    #             celldisp = atoms.get_celldisp()
-    #         if pbc is None:
-    #             pbc = atoms.get_pbc()
+        #     if atoms is not None:
+        #         # Get data from another Atoms object:
+        #         if scaled_positions is not None:
+        #             raise NotImplementedError
+        #         if types is None and numbers is None:
+        #             numbers = atoms.get_atomic_numbers()
+        #         if positions is None:
+        #             positions = atoms.get_positions()
+        #         if tags is None and atoms.has('tags'):
+        #             tags = atoms.get_tags()
+        #         if momenta is None and atoms.has('momenta'):
+        #             momenta = atoms.get_momenta()
+        #         if magmoms is None and atoms.has('initial_magmoms'):
+        #             magmoms = atoms.get_initial_magnetic_moments()
+        #         if masses is None and atoms.has('masses'):
+        #             masses = atoms.get_masses()
+        #         if charges is None and atoms.has('initial_charges'):
+        #             charges = atoms.get_initial_charges()
+        #         if cell is None:
+        #             cell = atoms.get_cell()
+        #         if celldisp is None:
+        #             celldisp = atoms.get_celldisp()
+        #         if pbc is None:
+        #             pbc = atoms.get_pbc()
 
-    #     self.arrays = {}
+        #     self.arrays = {}
 
-    #     if symbols is None:
-    #         if numbers is None:
-    #             if positions is not None:
-    #                 natoms = len(positions)
-    #             elif scaled_positions is not None:
-    #                 natoms = len(scaled_positions)
-    #             else:
-    #                 natoms = 0
-    #             numbers = np.zeros(natoms, int)
-    #         self.new_array('numbers', numbers, int)
-    #     else:
-    #         if numbers is not None:
-    #             raise TypeError('Use only one of "symbols" and "numbers".')
-    #         else:
-    #             self.new_array('numbers', symbols2numbers(symbols), int)
+        #     if types is None:
+        #         if numbers is None:
+        #             if positions is not None:
+        #                 natoms = len(positions)
+        #             elif scaled_positions is not None:
+        #                 natoms = len(scaled_positions)
+        #             else:
+        #                 natoms = 0
+        #             numbers = np.zeros(natoms, int)
+        #         self.new_array('numbers', numbers, int)
+        #     else:
+        #         if numbers is not None:
+        #             raise TypeError('Use only one of "types" and "numbers".')
+        #         else:
+        #             self.new_array('numbers', types2numbers(types), int)
 
-    #     if self.numbers.ndim != 1:
-    #         raise ValueError('"numbers" must be 1-dimensional.')
+        #     if self.numbers.ndim != 1:
+        #         raise ValueError('"numbers" must be 1-dimensional.')
 
-    #     if cell is None:
-    #         cell = np.zeros((3, 3))
-    #     self.set_cell(cell)
+        if cell is None:
+            cell = np.zeros((3, 3))
+        self.set_cell(cell)
 
     #     if celldisp is None:
     #         celldisp = np.zeros(shape=(3, 1))
@@ -230,7 +230,7 @@ class Particles:
     #             positions = np.dot(scaled_positions, self.cell)
     #     else:
     #         if scaled_positions is not None:
-    #             raise TypeError('Use only one of "symbols" and "numbers".')
+    #             raise TypeError('Use only one of "types" and "numbers".')
     #     self.new_array('positions', positions, float, (3,))
     #     self.set_tags(default(tags, 0))
     #     self.set_masses(default(masses, None))
@@ -336,152 +336,6 @@ class Particles:
         """Get periodic boundary condition flags."""
         return self.pbc.copy()
 
-    def new_array(self, name, a, dtype=None, shape=None):
-        """Add new array.
-
-        If *shape* is not *None*, the shape of *a* will be checked."""
-
-        if dtype is not None:
-            a = np.array(a, dtype, order='C')
-            if len(a) == 0 and shape is not None:
-                a.shape = (-1,) + shape
-        else:
-            if not a.flags['C_CONTIGUOUS']:
-                a = np.ascontiguousarray(a)
-            else:
-                a = a.copy()
-
-        if name in self.arrays:
-            raise RuntimeError(f'Array {name} already present')
-
-        for b in self.arrays.values():
-            if len(a) != len(b):
-                raise ValueError(
-                    'Array "%s" has wrong length: %d != %d.' % (name, len(a), len(b))
-                )
-            break
-
-        if shape is not None and a.shape[1:] != shape:
-            raise ValueError(
-                'Array "%s" has wrong shape %s != %s.'
-                % (name, a.shape, (a.shape[0:1] + shape))
-            )
-
-        self.arrays[name] = a
-
-    def get_array(self, name, copy=True):
-        """Get an array.
-
-        Returns a copy unless the optional argument copy is false.
-        """
-        if copy:
-            return self.arrays[name].copy()
-        else:
-            return self.arrays[name]
-
-    def set_array(self, name, a, dtype=None, shape=None):
-        """Update array.
-
-        If *shape* is not *None*, the shape of *a* will be checked.
-        If *a* is *None*, then the array is deleted."""
-
-        b = self.arrays.get(name)
-        if b is None:
-            if a is not None:
-                self.new_array(name, a, dtype, shape)
-        else:
-            if a is None:
-                del self.arrays[name]
-            else:
-                a = np.asarray(a)
-                if a.shape != b.shape:
-                    raise ValueError(
-                        'Array "%s" has wrong shape %s != %s.'
-                        % (name, a.shape, b.shape)
-                    )
-                b[:] = a
-
-    def has(self, name):
-        """Check for existence of array.
-
-        name must be one of: 'tags', 'momenta', 'masses', 'initial_magmoms',
-        'initial_charges'."""
-        # XXX extend has to calculator properties
-        return name in self.arrays
-
-    def set_tags(self, tags):
-        """Set tags for all atoms. If only one tag is supplied, it is
-        applied to all atoms."""
-        if isinstance(tags, int):
-            tags = [tags] * len(self)
-        self.set_array('tags', tags, int, ())
-
-    def get_tags(self):
-        """Get integer array of tags."""
-        if 'tags' in self.arrays:
-            return self.arrays['tags'].copy()
-        else:
-            return np.zeros(len(self), int)
-
-    def set_momenta(self, momenta, apply_constraint=True):
-        """Set momenta."""
-        if apply_constraint and len(self.constraints) > 0 and momenta is not None:
-            momenta = np.array(momenta)  # modify a copy
-            for constraint in self.constraints:
-                if hasattr(constraint, 'adjust_momenta'):
-                    constraint.adjust_momenta(self, momenta)
-        self.set_array('momenta', momenta, float, (3,))
-
-    def set_velocities(self, velocities):
-        """Set the momenta by specifying the velocities."""
-        self.set_momenta(self.get_masses()[:, np.newaxis] * velocities)
-
-    def get_momenta(self):
-        """Get array of momenta."""
-        if 'momenta' in self.arrays:
-            return self.arrays['momenta'].copy()
-        else:
-            return np.zeros((len(self), 3))
-
-    # def set_masses(self, masses='defaults'):
-    #     """Set atomic masses in atomic mass units.
-
-    #     The array masses should contain a list of masses.  In case
-    #     the masses argument is not given or for those elements of the
-    #     masses list that are None, standard values are set."""
-
-    #     if isinstance(masses, str):
-    #         if masses == 'defaults':
-    #             masses = atomic_masses[self.arrays['numbers']]
-    #         elif masses == 'most_common':
-    #             masses = atomic_masses_common[self.arrays['numbers']]
-    #     elif masses is None:
-    #         pass
-    #     elif not isinstance(masses, np.ndarray):
-    #         masses = list(masses)
-    #         for i, mass in enumerate(masses):
-    #             if mass is None:
-    #                 masses[i] = atomic_masses[self.numbers[i]]
-    #     self.set_array('masses', masses, float, ())
-
-    # def get_masses(self):
-    #     """Get array of masses in atomic mass units."""
-    #     if 'masses' in self.arrays:
-    #         return self.arrays['masses'].copy()
-    #     else:
-    #         return atomic_masses[self.arrays['numbers']]
-
-    def get_charges(self):
-        """Get calculated charges."""
-        if self._calc is None:
-            raise RuntimeError('Atoms object has no calculator.')
-        try:
-            return self._calc.get_charges(self)
-        except AttributeError:
-            from ase.calculators.calculator import PropertyNotImplementedError
-
-            raise PropertyNotImplementedError
-
     def set_positions(self, newpositions, apply_constraint=True):
         """Set positions, honoring any constraints. To ignore constraints,
         use *apply_constraint=False*."""
@@ -553,17 +407,6 @@ class Particles:
             wrap_kw['pbc'] = self.pbc
 
         self.positions[:] = self.get_positions(wrap=True, **wrap_kw)
-
-    # @deprecated('Please use atoms.cell.volume')
-    # We kind of want to deprecate this, but the ValueError behaviour
-    # might be desirable.  Should we do this?
-    def get_volume(self):
-        """Get volume of unit cell."""
-        if self.cell.rank != 3:
-            raise ValueError(
-                f'You have {self.cell.rank} lattice vectors: volume not defined'
-            )
-        return self.cell.volume
 
     def _get_positions(self):
         """Return reference to positions-array for in-place manipulations."""
