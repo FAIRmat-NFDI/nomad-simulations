@@ -17,7 +17,8 @@
 #
 
 import re
-import sys
+from functools import lru_cache
+from hashlib import sha1
 from typing import TYPE_CHECKING, Optional
 
 import ase
@@ -1371,7 +1372,7 @@ class ModelSystem(System):
         print(self.model_system)
         print(self.cell[0])
         print(self.cell[0].particles_state[0].particle_type)
-        sys.exit()
+        # sys.exit()
         # Creating and normalizing ChemicalFormula section
         if self.cell[0].name == 'AtomicCell':
             # TODO add support for fractional formulas (possibly add `AtomicCell.concentrations` for each species)
