@@ -29,7 +29,7 @@ from nomad_simulations.schema_packages.variables import Variables
 logger = utils.get_logger(__name__)
 
 
-def validate_quantity_wrt_value(name: str = ''):
+def validate_quantity_wrt_value(name: str):
     """
     Decorator to validate the existence of a quantity and its shape with respect to the `PhysicalProperty.value`
     before calling a method. An example can be found in the module `properties/band_structure.py` for the method
@@ -46,17 +46,6 @@ def validate_quantity_wrt_value(name: str = ''):
             quantity = getattr(self, name, None)
             if quantity is None or len(quantity) == 0:
                 logger.warning(f'The quantity `{name}` is not defined.')
-                return False
-
-            # Checks if `value` exists and has the same shape as `quantity`
-            value = getattr(self, 'value', None)
-            if value is None:
-                logger.warning('The quantity `value` is not defined.')
-                return False
-            if value is not None and value.shape != quantity.shape:
-                logger.warning(
-                    f'The shape of the quantity `{name}` does not match the shape of the `value`.'
-                )
                 return False
 
             return func(self, *args, **kwargs)
@@ -175,7 +164,7 @@ class PhysicalProperty(ArchiveSection):
         Flag indicating whether the physical property is converged or not after a SCF process. This quantity is connected
         with `SelfConsistency` defined in the `numerical_settings.py` module.
         """,
-    )
+    )  # ? typically, a calculation is converged as a whole, at least at the level of SCF
 
     self_consistency_ref = Quantity(
         type=SelfConsistency,
@@ -204,14 +193,8 @@ class PhysicalProperty(ArchiveSection):
     @property
     def full_shape(self) -> list:  # TODO: add support for N-dim variables
         """
-        Full shape of the physical property. This quantity is calculated as a concatenation of the `variables_shape`
-        and `rank`:
-
-            `full_shape = variables_shape + rank`
-
-        where `rank` is passed as an attribute of the `PhysicalProperty` and is related with the order of
-        the tensor of `value`, and `variables_shape` is obtained from the property-decorated function `variables_shape()`
-        and is related with the shapes of the `variables` over which the physical property varies.
+        Full shape of the physical property, defined as the concatenation of the `variables_shape`
+        and `rank`.
 
         Example: a physical property which is a 3D vector and varies with `variables=[Temperature, ElectricField]`
         will have `rank=[3]`, `variables_shape=[n_temperatures, n_electric_fields]`, and thus
@@ -233,11 +216,10 @@ class PhysicalProperty(ArchiveSection):
             (Quantity): The new `Quantity` object for setting the `value` quantity.
         """
         value_quantity = self.m_def.all_quantities.get('value')
-        if value_quantity is None:
-            return None
         return Quantity(
             type=value_quantity.type,
-            unit=value_quantity.unit,  # ? this can be moved to __setattr__
+            shape=self.full_shape,
+            unit=value_quantity.unit,
             description=value_quantity.description,
         )
 
@@ -252,37 +234,24 @@ class PhysicalProperty(ArchiveSection):
                 'The used property is not defined in the FAIRmat taxonomy (https://fairmat-nfdi.github.io/fairmat-taxonomy/). You can contribute there if you want to extend the list of available materials properties.'
             )
 
-    def __setattr__(self, name: str, val: Any) -> None:
-        # For the special case of `value`, its `shape` needs to be defined from `_full_shape`
-        if name == 'value':
-            if val is None:
-                raise ValueError(
-                    f'The value of the physical property {self.name} is None. Please provide a finite valid value.'
-                )
-            _new_value = self._new_value
+    @property
+    def _check_value_shape(self) -> int:
+        """Provide a code of how the `value` conforms tol `full_shape`."""
 
-            # patch for when `val` does not have units and it is passed as a list (instead of np.array)
-            if isinstance(val, list):
-                val = np.array(val)
+        if self.value is None:
+            return 0
 
-            # non-scalar or scalar `val`
-            try:
-                value_shape = list(val.shape)
-            except AttributeError:
-                value_shape = []
+        if hasattr(self.value, 'shape'):
+            normalized_shape = list(self.value.shape)
+            if normalized_shape == [0]:
+                normalized_shape = []
+        else:
+            normalized_shape = []
 
-            if value_shape != self.full_shape:
-                raise ValueError(
-                    f'The shape of the stored `value` {value_shape} does not match the full shape {self.full_shape} '
-                    f'extracted from the variables `n_points` and the `shape` defined in `PhysicalProperty`.'
-                )
-            _new_value.shape = self.full_shape
-            if hasattr(val, 'magnitude'):
-                _new_value = val.magnitude * val.u
-            else:
-                _new_value = val
-            return super().__setattr__(name, _new_value)
-        return super().__setattr__(name, val)
+        if normalized_shape != self.full_shape:
+            return -1
+
+        return 1
 
     def _is_derived(self) -> bool:
         """
@@ -301,6 +270,15 @@ class PhysicalProperty(ArchiveSection):
         # Resolve if the physical property `is_derived` or not from another physical property.
         self.is_derived = self._is_derived()
 
+        if (check_value_shape := self._check_value_shape()) == 0:
+           raise ValueError('`PhysicalProperty.value` is unset.')
+        elif check_value_shape == -1:
+            raise ValueError(
+                f'The shape of the stored `value` does not match the full shape {self.full_shape} '
+                f'extracted from the variables `n_points` and the `shape` defined in `PhysicalProperty`.'
+            )
+
+        self.m_def.value = self._new_value
 
 class PropertyContribution(PhysicalProperty):
     """
