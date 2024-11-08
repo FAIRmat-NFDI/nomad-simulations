@@ -25,7 +25,7 @@ class BaseForce(PhysicalProperty):
     force class.
     """
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.dtype(np.float64),
         unit='newton',
         description="""

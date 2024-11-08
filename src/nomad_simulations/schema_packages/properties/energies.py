@@ -25,7 +25,7 @@ class BaseEnergy(PhysicalProperty):
     energy class.
     """
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
         unit='joule',
         description="""
@@ -67,15 +67,12 @@ class FermiLevel(BaseEnergy):
     Energy required to add or extract a charge from a material at zero temperature. It can be also defined as the chemical potential at zero temperature.
     """
 
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
-
     iri = 'http://fairmat-nfdi.eu/taxonomy/FermiLevel'
 
     def __init__(
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        self.rank = []
         self.name = self.m_def.name
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:

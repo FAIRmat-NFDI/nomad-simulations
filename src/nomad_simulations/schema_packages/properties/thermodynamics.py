@@ -24,7 +24,7 @@ class Pressure(PhysicalProperty):
 
     # iri = 'http://fairmat-nfdi.eu/taxonomy/Pressure' # ! Does not yet exist in taxonomy
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
         unit='pascal',
         description="""
@@ -45,7 +45,7 @@ class Volume(PhysicalProperty):
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/Volume'
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
         unit='m ** 3',
         description="""
@@ -61,7 +61,7 @@ class Temperature(PhysicalProperty):
     a measure of the average kinetic energy of the particles in a system.
     """
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
         unit='kelvin',
         description="""
@@ -126,7 +126,7 @@ class Entropy(PhysicalProperty):
     state, as given by the Boltzmann equation for entropy.
     """
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
         unit='joule / kelvin',
         description="""
@@ -162,15 +162,12 @@ class ChemicalPotential(BaseEnergy):
     Free energy cost of adding or extracting a particle from a thermodynamic system.
     """
 
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
-
     iri = 'http://fairmat-nfdi.eu/taxonomy/ChemicalPotential'
 
     def __init__(
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        self.rank = []
         self.name = self.m_def.name
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
@@ -182,7 +179,7 @@ class HeatCapacity(PhysicalProperty):
     Amount of heat to be supplied to a material to produce a unit change in its temperature.
     """
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
         unit='joule / kelvin',
         description="""
@@ -198,20 +195,27 @@ class HeatCapacity(PhysicalProperty):
 ################################
 
 
-class VirialTensor(BaseEnergy):
+class VirialTensor(BaseEnergy):  # ? retain `BaseEnergy` for a semantic reasons
     """
     A measure of the distribution of internal forces and the overall stress within
     a system of particles. Mathematically, the virial tensor is defined as minus the sum
     of the dot product between the position and force vectors for each particle.
     The `VirialTensor` can be related to the non-ideal pressure of the system through
     the virial theorem.
-    """
+    """  # ! TODO use math notation
+
+    _base_value = Quantity(
+        type=np.float64,
+        shape=[3, 3],  # ! TODO set shape to dim
+        unit='joule',
+        description="""
+        """,
+    )
 
     def __init__(
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        self.rank = [3, 3]
         self.name = self.m_def.name
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
@@ -223,7 +227,7 @@ class MassDensity(PhysicalProperty):
     Mass per unit volume of a material.
     """
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
         unit='kg / m ** 3',
         description="""
@@ -241,8 +245,9 @@ class Hessian(PhysicalProperty):
     describing the local curvature of the energy surface.
     """
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
+        shape=[3, 3],  # ! TODO set shape to dim
         unit='joule / m ** 2',
         description="""
         """,
@@ -252,7 +257,6 @@ class Hessian(PhysicalProperty):
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        self.rank = [3, 3]
         self.name = self.m_def.name
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:

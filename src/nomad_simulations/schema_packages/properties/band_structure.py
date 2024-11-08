@@ -39,8 +39,9 @@ class BaseElectronicEigenvalues(PhysicalProperty):
         """,
     )
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
+        shape=['n_bands'],
         unit='joule',
         description="""
         Value of the electronic eigenvalues.
@@ -51,8 +52,6 @@ class BaseElectronicEigenvalues(PhysicalProperty):
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        # ! `n_bands` need to be set up during initialization of the class
-        self.rank = [int(kwargs.get('n_bands'))]
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -356,7 +355,7 @@ class Occupancy(PhysicalProperty):
         """,
     )
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
         description="""
         Value of the electronic occupancy in the atom defined by `atoms_state_ref` and the orbital

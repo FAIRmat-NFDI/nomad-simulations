@@ -26,7 +26,7 @@ class SpectralProfile(PhysicalProperty):
     A base section used to define the spectral profile.
     """
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
         description="""
         The value of the intensities of a spectral profile in arbitrary units.
@@ -37,7 +37,6 @@ class SpectralProfile(PhysicalProperty):
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        self.rank = []
 
     def is_valid_spectral_profile(self) -> bool:
         """
@@ -66,7 +65,7 @@ class DOSProfile(SpectralProfile):
     contributions for `projected_dos` with the correct unit.
     """
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
         unit='1/joule',
         description="""
@@ -505,8 +504,6 @@ class ElectronicDensityOfStates(DOSProfile):
 class AbsorptionSpectrum(SpectralProfile):
     """ """
 
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
-
     axis = Quantity(
         type=MEnum('xx', 'yy', 'zz'),
         description="""
@@ -530,8 +527,6 @@ class XASSpectrum(AbsorptionSpectrum):
     """
     X-ray Absorption Spectrum (XAS).
     """
-
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
 
     xanes_spectrum = SubSection(
         sub_section=AbsorptionSpectrum.m_def,

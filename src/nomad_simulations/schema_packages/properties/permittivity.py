@@ -34,8 +34,9 @@ class Permittivity(PhysicalProperty):
         """,
     )
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.complex128,
+        shape=[3, 3],
         # unit='joule',  # TODO check units (they have to match `SpectralProfile.value`)
         description="""
         Value of the permittivity tensor. If the value does not depend on the scattering vector `q`, then we
@@ -51,7 +52,6 @@ class Permittivity(PhysicalProperty):
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        self.rank = [3, 3]
         self.name = self.m_def.name
         self._axes_map = ['xx', 'yy', 'zz']
 
