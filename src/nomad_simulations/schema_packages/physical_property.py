@@ -277,7 +277,8 @@ class PhysicalProperty(ArchiveSection):
         value_def = self.m_def.all_quantities.get('_base_value')
         value_def.label = 'value'
         value_def.shape = self.full_shape
-        self.m_add_sub_section(value_def, value)
+        self.m_add_sub_section(Quantity(name=value_def.label, type=value_def.type, unit=value_def.unit, shape=value_def.shape, description=value_def.description), value_def)
+        self.value = value  #.to(value_def.unit).magnitude if value is not None else None
 
 
 class PropertyContribution(PhysicalProperty):
