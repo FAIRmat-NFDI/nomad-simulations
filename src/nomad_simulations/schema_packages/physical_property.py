@@ -199,9 +199,9 @@ class PhysicalProperty(ArchiveSection):
         Returns:
             (list): The rank of the physical property.
         """
-        if self._base_value:
-            if isinstance(shape := self._base_value.shape, list):
-                return shape
+        if (base_value := self.m_def.all_quantities.get('_base_value')):
+            if isinstance(base_value.shape, list):
+                return base_value.shape
             else:
                 return []
         raise ValueError('The `_base_value` quantity is not defined.')
@@ -227,20 +227,6 @@ class PhysicalProperty(ArchiveSection):
         """
         return self.variables_shape + self.rank
 
-    @property
-    def _new_value(self) -> Optional[Quantity]:
-        """
-        Generate a new `Quantity` object for the `value` quantity based on `base_value` and with `shape=full_shape`.
-        """
-        value_quantity = self.m_def.all_quantities.get('_base_value')
-        if value_quantity is None:
-            return None
-        return Quantity(
-            type=value_quantity.type,
-            unit=value_quantity.unit,
-            description=value_quantity.description,
-        )
-
     def __init__(
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
@@ -251,6 +237,16 @@ class PhysicalProperty(ArchiveSection):
             logger.warning(
                 'The used property is not defined in the FAIRmat taxonomy (https://fairmat-nfdi.github.io/fairmat-taxonomy/).'
             )  # ?
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        # redirect from `_base_value` to `value`
+        if name == '_base_value':
+            if not isinstance(value, str):
+                self.value = value
+            elif not value.startswith('m_'):
+                self.value = value
+        else:
+            super().__setattr__(name, value)
 
     def _is_derived(self) -> bool:  # ?
         """
@@ -266,12 +262,22 @@ class PhysicalProperty(ArchiveSection):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        self.is_derived = self._is_derived()
-        if (new_value := self._new_value):
-            value_data = self.get('value')
-            # ? is it necessary to store the value data or can I set it right away?
-            self.m_def.value = new_value
-            self.value = value_data
+        self.is_derived = self._is_derived()  # ?
+
+        try:
+            if self.value is not None:
+                value = self.value
+            elif self._base_value is not None:
+                value = self._base_value
+            else:
+                value = None
+        except AttributeError:
+            raise AttributeError('The `value` or `_base_value` is not defined at the _quantity_ level.')
+
+        value_def = self.m_def.all_quantities.get('_base_value')
+        value_def.label = 'value'
+        value_def.shape = self.full_shape
+        self.m_add_sub_section(value_def, value)
 
 
 class PropertyContribution(PhysicalProperty):
