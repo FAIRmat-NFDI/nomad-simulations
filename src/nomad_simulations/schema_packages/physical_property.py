@@ -16,7 +16,7 @@ from nomad.metainfo import (
     SectionProxy,
     SubSection,
 )
-from nomad.metainfo.metainfo import Dimension, DirectQuantity, _placeholder_quantity
+from nomad.metainfo.metainfo import _placeholder_quantity
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
