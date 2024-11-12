@@ -1,8 +1,10 @@
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
+from types import NoneType
 
 import numpy as np
 from nomad import utils
+from nomad.units import ureg
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.datamodel.metainfo.basesections import Entity
@@ -227,7 +229,10 @@ class PhysicalProperty(ArchiveSection):
         Returns:
             (list): The full shape of the physical property.
         """
-        return self.variables_shape + self.rank
+        if (full_rank := self.variables_shape + self.rank):
+            return full_rank
+        else:
+            return ['*']
 
     def __init__(
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
@@ -287,8 +292,15 @@ class PhysicalProperty(ArchiveSection):
                 description=self.m_def.all_quantities['_base_value'].description,
             )
         )
-        if value is not None:  # ! pin down type
-            self.value = value.to(self.m_def.all_quantities['value'].unit).magnitude
+
+        if isinstance(value, NoneType):
+            self.value = None
+        elif isinstance(value, ureg.Quantity):
+            self.value = np.asarray(value.to(self.m_def.all_quantities['value'].unit).magnitude)
+        elif isinstance(value, np.ndarray) or isinstance(value, list):
+            self.value = value
+        else:
+            self.value = [value]
 
 
 class PropertyContribution(PhysicalProperty):
