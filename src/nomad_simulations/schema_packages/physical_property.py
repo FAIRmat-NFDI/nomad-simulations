@@ -262,7 +262,7 @@ class PhysicalProperty(ArchiveSection):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        self.is_derived = self._is_derived()  # ?
+        # self.is_derived = self._is_derived()  # ?
 
         try:
             if self.value is not None:
@@ -274,11 +274,17 @@ class PhysicalProperty(ArchiveSection):
         except AttributeError:
             raise AttributeError('The `value` or `_base_value` is not defined at the _quantity_ level.')
 
-        value_def = self.m_def.all_quantities.get('_base_value')
-        value_def.label = 'value'
-        value_def.shape = self.full_shape
-        self.m_add_sub_section(Quantity(name=value_def.label, type=value_def.type, unit=value_def.unit, shape=value_def.shape, description=value_def.description), value_def)
-        self.value = value  #.to(value_def.unit).magnitude if value is not None else None
+        self.m_def.quantities.append(
+            Quantity(
+                name='value',
+                shape=self.full_shape,
+                type=self.m_def.all_quantities['_base_value'].type,
+                unit=self.m_def.all_quantities['_base_value'].unit,
+                description=self.m_def.all_quantities['_base_value'].description,
+            )
+        )
+        if value is not None:  # ! pin down type
+            self.value = value.to(self.m_def.all_quantities['value'].unit).magnitude
 
 
 class PropertyContribution(PhysicalProperty):
