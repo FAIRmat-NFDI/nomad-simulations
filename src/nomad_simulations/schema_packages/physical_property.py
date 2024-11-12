@@ -186,9 +186,11 @@ class PhysicalProperty(ArchiveSection):
             (list): The shape of the variables over which the physical property varies.
         """
         if self.variables:
-            return [v.get_n_points(logger) for v in self.variables]  # ! TODO: support any variable shape, not just vectors
+            return [
+                v.get_n_points(logger) for v in self.variables
+            ]  # ! TODO: support any variable shape, not just vectors
         return []
-    
+
     @property
     def rank(self) -> list[int]:
         """
@@ -199,7 +201,7 @@ class PhysicalProperty(ArchiveSection):
         Returns:
             (list): The rank of the physical property.
         """
-        if (base_value := self.m_def.all_quantities.get('_base_value')):
+        if base_value := self.m_def.all_quantities.get('_base_value'):
             if isinstance(base_value.shape, list):
                 return base_value.shape
             else:
@@ -272,7 +274,9 @@ class PhysicalProperty(ArchiveSection):
             else:
                 value = None
         except AttributeError:
-            raise AttributeError('The `value` or `_base_value` is not defined at the _quantity_ level.')
+            raise AttributeError(
+                'The `value` or `_base_value` is not defined at the _quantity_ level.'
+            )
 
         self.m_def.quantities.append(
             Quantity(
