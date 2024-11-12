@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from nomad.metainfo import MEnum, Quantity
@@ -129,16 +129,6 @@ class BaseGreensFunction(PhysicalProperty):
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        # ! n_orbitals need to be set up during initialization of the class
-        self.rank = [
-            int(kwargs.get('n_atoms')),
-            int(kwargs.get('n_correlated_orbitals')),
-        ]
-
     def resolve_space_id(self) -> str:
         """
         Resolves the `space_id` based on the stored `variables` in the class.
@@ -196,9 +186,10 @@ class ElectronicGreensFunction(BaseGreensFunction):
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicGreensFunction'
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.complex128,
         unit='1/joule',
+        shape=['n_atoms', 'n_correlated_orbitals'],
         description="""
         Value of the electronic Green's function matrix.
         """,
@@ -221,9 +212,10 @@ class ElectronicSelfEnergy(BaseGreensFunction):
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicSelfEnergy'
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.complex128,
         unit='joule',
+        shape=['n_atoms', 'n_correlated_orbitals'],
         description="""
         Value of the electronic self-energy matrix.
         """,
@@ -246,9 +238,10 @@ class HybridizationFunction(BaseGreensFunction):
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/HybridizationFunction'
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.complex128,
         unit='joule',
+        shape=['n_atoms', 'n_correlated_orbitals'],
         description="""
         Value of the electronic hybridization function.
         """,
@@ -336,8 +329,9 @@ class QuasiparticleWeight(PhysicalProperty):
         """,
     )
 
-    value = Quantity(
+    _base_value = Quantity(
         type=np.float64,
+        shape=['n_atoms', 'n_correlated_orbitals'],
         description="""
         Value of the quasiparticle weight matrices.
         """,
@@ -347,11 +341,6 @@ class QuasiparticleWeight(PhysicalProperty):
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        # ! n_orbitals need to be set up during initialization of the class
-        self.rank = [
-            int(kwargs.get('n_atoms')),
-            int(kwargs.get('n_correlated_orbitals')),
-        ]
         self.name = self.m_def.name
 
     def is_valid_quasiparticle_weight(self) -> bool:
@@ -362,18 +351,23 @@ class QuasiparticleWeight(PhysicalProperty):
         Returns:
             (bool): True if the quasiparticle weight is valid, False otherwise.
         """
-        if (self.value < 0.0).any() or (self.value > 1.0).any():
+        if self.value is None:
             return False
-        return True
+        elif (self.value < 0.0).any() or (self.value > 1.0).any():
+            return False
+        else:
+            return True
 
-    def resolve_system_correlation_strengths(self) -> str:
+    def resolve_system_correlation_strengths(self) -> Optional[str]:
         """
         Resolves the `system_correlation_strengths` of the quasiparticle weight based on the stored `value` values.
 
         Returns:
             str: The resolved `system_correlation_strengths` of the quasiparticle weight.
         """
-        if np.all(self.value > 0.7):
+        if self.value is None:
+            return None
+        elif np.all(self.value > 0.7):
             return 'non-correlated metal'
         elif np.all((self.value < 0.4) & (self.value > 0)):
             return 'strongly-correlated metal'
@@ -381,7 +375,8 @@ class QuasiparticleWeight(PhysicalProperty):
             return 'OSMI'
         elif np.all(self.value < 1e-2):
             return 'Mott insulator'
-        return None
+        else:
+            return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)

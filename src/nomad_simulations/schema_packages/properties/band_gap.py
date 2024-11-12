@@ -67,7 +67,6 @@ class ElectronicBandGap(PhysicalProperty):
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
-        self.rank = []
 
     def validate_values(self, logger: 'BoundLogger') -> Optional[pint.Quantity]:
         """
