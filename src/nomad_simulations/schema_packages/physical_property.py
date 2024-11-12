@@ -31,7 +31,7 @@ from nomad_simulations.schema_packages.variables import Variables
 logger = utils.get_logger(__name__)
 
 
-def validate_quantity_wrt_value(name: str = ''):
+def validate_quantity_wrt_value(name: str = ''):  # ! tone down to `quantity_present`
     """
     Decorator to validate the existence of a quantity and its shape with respect to the `PhysicalProperty.value`
     before calling a method. An example can be found in the module `properties/band_structure.py` for the method
@@ -238,6 +238,7 @@ class PhysicalProperty(ArchiveSection):
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
+        self.name = self.m_def.name
 
         # Checking if IRI is defined
         if not self.iri:

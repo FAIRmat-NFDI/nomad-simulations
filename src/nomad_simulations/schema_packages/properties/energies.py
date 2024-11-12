@@ -32,9 +32,6 @@ class BaseEnergy(PhysicalProperty):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class EnergyContribution(BaseEnergy, PropertyContribution):
     """
@@ -52,10 +49,6 @@ class EnergyContribution(BaseEnergy, PropertyContribution):
     relevant atoms or electrons or as a function of them.
     """
 
-    # TODO address the dual parent normalization explicity
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 ####################################
 # List of specific energy properties
@@ -69,15 +62,6 @@ class FermiLevel(BaseEnergy):
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/FermiLevel'
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 #! The only issue with this structure is that total energy will never be a sum of its contributions,
 #! since kinetic energy lives separately, but I think maybe this is ok?
@@ -90,15 +74,6 @@ class TotalEnergy(BaseEnergy):
     # ? add a generic contributions quantity to PhysicalProperty
     contributions = SubSection(sub_section=EnergyContribution.m_def, repeats=True)
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 # ? Separate quantities for nuclear and electronic KEs?
 class KineticEnergy(BaseEnergy):
@@ -106,26 +81,8 @@ class KineticEnergy(BaseEnergy):
     Physical property section describing the kinetic energy of a (sub)system.
     """
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class PotentialEnergy(BaseEnergy):
     """
     Physical property section describing the potential energy of a (sub)system.
     """
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

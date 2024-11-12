@@ -31,9 +31,6 @@ class Pressure(PhysicalProperty):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class Volume(PhysicalProperty):
     """
@@ -52,9 +49,6 @@ class Volume(PhysicalProperty):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class Temperature(PhysicalProperty):
     """
@@ -68,26 +62,17 @@ class Temperature(PhysicalProperty):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class Heat(BaseEnergy):
     """
     The transfer of thermal energy **into** a system.
     """
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class Work(BaseEnergy):
     """
     The energy transferred to a system by means of force applied over a distance.
     """
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class InternalEnergy(BaseEnergy):
@@ -97,17 +82,11 @@ class InternalEnergy(BaseEnergy):
     process may be expressed as the `Heat` minus the `Work`.
     """
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class Enthalpy(BaseEnergy):
     """
     The total heat content of a system, defined as 'InternalEnergy' + 'Pressure' * 'Volume'.
     """
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class Entropy(PhysicalProperty):
@@ -133,18 +112,12 @@ class Entropy(PhysicalProperty):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class GibbsFreeEnergy(BaseEnergy):
     """
     The energy available to do work in a system at constant temperature and pressure,
     given by `Enthalpy` - `Temperature` * `Entropy`.
     """
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class HelmholtzFreeEnergy(BaseEnergy):
@@ -153,9 +126,6 @@ class HelmholtzFreeEnergy(BaseEnergy):
     given by `InternalEnergy` - `Temperature` * `Entropy`.
     """
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class ChemicalPotential(BaseEnergy):
     """
@@ -163,15 +133,6 @@ class ChemicalPotential(BaseEnergy):
     """
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/ChemicalPotential'
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class HeatCapacity(PhysicalProperty):
@@ -185,9 +146,6 @@ class HeatCapacity(PhysicalProperty):
         description="""
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 ################################
@@ -212,15 +170,6 @@ class VirialTensor(BaseEnergy):  # ? retain `BaseEnergy` for a semantic reasons
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class MassDensity(PhysicalProperty):
     """
@@ -233,9 +182,6 @@ class MassDensity(PhysicalProperty):
         description="""
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 # ? fit better elsewhere
@@ -252,12 +198,3 @@ class Hessian(PhysicalProperty):
         description="""
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

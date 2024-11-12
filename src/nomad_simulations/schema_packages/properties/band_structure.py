@@ -48,14 +48,6 @@ class BaseElectronicEigenvalues(PhysicalProperty):
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class ElectronicEigenvalues(BaseElectronicEigenvalues):
     """ """
@@ -123,12 +115,6 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         Reference to the reciprocal lattice vectors stored under `KSpace`.
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
 
     @validate_quantity_wrt_value(name='occupation')
     def order_eigenvalues(self) -> Union[bool, tuple[pint.Quantity, np.ndarray]]:
@@ -314,15 +300,6 @@ class ElectronicBandStructure(ElectronicEigenvalues):
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandStructure'
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class Occupancy(PhysicalProperty):
     """
@@ -365,13 +342,4 @@ class Occupancy(PhysicalProperty):
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
     # TODO add extraction from `ElectronicEigenvalues.occupation`
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

@@ -28,14 +28,4 @@ class FermiSurface(PhysicalProperty):
         """,
     )
 
-    # ! TODO _base_value
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        # ! `n_bands` need to be set up during initialization of the class
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
+    # ! TODO add `_base_value`

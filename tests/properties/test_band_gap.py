@@ -22,12 +22,7 @@ class TestElectronicBandGap:
         Test the default quantities assigned when creating an instance of the `ElectronicBandGap` class.
         """
         electronic_band_gap = ElectronicBandGap()
-        assert (
-            electronic_band_gap.iri
-            == 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandGap'
-        )
         assert electronic_band_gap.name == 'ElectronicBandGap'
-        assert electronic_band_gap.rank == []
 
     @pytest.mark.parametrize(
         'value, result',

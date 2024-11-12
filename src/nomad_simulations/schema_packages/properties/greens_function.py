@@ -195,15 +195,6 @@ class ElectronicGreensFunction(BaseGreensFunction):
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class ElectronicSelfEnergy(BaseGreensFunction):
     """
@@ -221,15 +212,6 @@ class ElectronicSelfEnergy(BaseGreensFunction):
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class HybridizationFunction(BaseGreensFunction):
     """
@@ -246,15 +228,6 @@ class HybridizationFunction(BaseGreensFunction):
         Value of the electronic hybridization function.
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class QuasiparticleWeight(PhysicalProperty):
@@ -336,12 +309,6 @@ class QuasiparticleWeight(PhysicalProperty):
         Value of the quasiparticle weight matrices.
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
 
     def is_valid_quasiparticle_weight(self) -> bool:
         """

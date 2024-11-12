@@ -45,16 +45,7 @@ class HoppingMatrix(PhysicalProperty):
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
     # TODO add normalization to extract DOS, band structure, etc, properties from `HoppingMatrix`
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class CrystalFieldSplitting(PhysicalProperty):
@@ -81,12 +72,3 @@ class CrystalFieldSplitting(PhysicalProperty):
         at the same Wigner-Seitz point (0, 0, 0).
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

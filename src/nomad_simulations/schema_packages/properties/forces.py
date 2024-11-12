@@ -50,9 +50,6 @@ class ForceContribution(BaseForce, PropertyContribution):
     relevant atoms or electrons or as a function of them.
     """
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 ###################################
 # List of specific force properties
@@ -66,9 +63,3 @@ class TotalForce(BaseForce):
     """
 
     contributions = SubSection(sub_section=ForceContribution.m_def, repeats=True)
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
