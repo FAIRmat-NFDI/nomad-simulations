@@ -2,7 +2,9 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import Quantity
+from nomad.metainfo import MEnum, Quantity
+from nomad.metainfo.dataset import MDataset, Dataset
+from nomad.datamodel.metainfo.physical_properties import PhysicalProperty
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -15,6 +17,28 @@ from nomad_simulations.schema_packages.numerical_settings import (
 from nomad_simulations.schema_packages.numerical_settings import (
     KMesh as KMeshSettings,
 )
+
+
+class SpinChannel(MDataset):
+    m_def = Dataset(
+        type=MEnum('up', 'down', 'all'),  # ? alpha, beta
+    )
+
+
+class MomentumTransfer(MDataset):
+    m_def = Dataset(
+        type=np.float64,
+        shape=[2, 3],
+        unit='1/meter',
+        description="""
+        The change in momentum for any (quasi-)particle, e.g. electron, hole,
+        traversing the band gap.
+
+        For example, the momentum transfer in bulk Si happens
+        between the Γ and X points in the Brillouin zone; thus:
+            `momentum_transfer = [[0, 0, 0], [0.5, 0.5, 0]]`.
+        """,
+    )
 
 
 class Variables(ArchiveSection):

@@ -5,12 +5,11 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.properties.band_gap import (
-    ElectronicBandGap,
+from nomad_simulations.schema_packages.variables import (
     SpinChannel,
     MomentumTransfer,
 )
-# from nomad_simulations.schema_packages.variables import Temperature
+from nomad_simulations.schema_packages.properties import ElectronicBandGap
 
 from . import logger
 
