@@ -5,104 +5,59 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.properties import ElectronicBandGap
-from nomad_simulations.schema_packages.variables import Temperature
+from nomad_simulations.schema_packages.properties.band_gap import (
+    ElectronicBandGap,
+    SpinChannel,
+    MomentumTransfer,
+)
+# from nomad_simulations.schema_packages.variables import Temperature
 
 from . import logger
 
 
-class TestElectronicBandGap:
-    """
-    Test the `ElectronicBandGap` class defined in `properties/band_gap.py`.
-    """
-
-    # ! Include this initial `test_default_quantities` method when testing your PhysicalProperty classes
-    def test_default_quantities(self):
-        """
-        Test the default quantities assigned when creating an instance of the `ElectronicBandGap` class.
-        """
-        electronic_band_gap = ElectronicBandGap()
-        assert (
-            electronic_band_gap.iri
-            == 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandGap'
-        )
-        assert electronic_band_gap.name == 'ElectronicBandGap'
-        assert electronic_band_gap.rank == []
-
-    @pytest.mark.parametrize(
-        'value, result',
-        [
-            (0.0, 0.0),
-            (1.0, 1.0),
-            (-1.0, None),
-            ([1.0, 2.0, -1.0], None),
-        ],
+@pytest.mark.parametrize(
+    'bg_data, bg_type, spins, mom_trans',
+    [
+        ([1.0], None, None, None),
+        ([1.0], 'direct', ['up'], [2 * [3 * [0]]]),
+        ([1.0, 1.0], 'direct', ['up', 'down'], 2 * [2 * [3 * [0]]]),
+        ([1.0], 'direct', ['up', 'down'], [2 * [3 * [0]]]),
+    ],
+)
+def test_instantiation(bg_data, bg_type, spins, mom_trans):
+    assert ElectronicBandGap(
+        data=np.array(bg_data) * ureg.eV,
+        type=bg_type,
+        variables=[SpinChannel(data=spins), MomentumTransfer(data=mom_trans)],
     )
-    def test_validate_values(self, value: Union[list[float], float], result: float):
-        """
-        Test the `validate_values` method.
-        """
-        if isinstance(value, list):
-            electronic_band_gap = ElectronicBandGap(
-                variables=[Temperature(points=[1, 2, 3] * ureg.kelvin)]
-            )
-        else:
-            electronic_band_gap = ElectronicBandGap()
-        electronic_band_gap.value = value * ureg.joule
-        validated_value = electronic_band_gap.validate_values(logger)
-        if validated_value is not None:
-            assert np.isclose(validated_value.magnitude, result)
-        else:
-            assert validated_value == result
+    # ! TODO add shape tests
 
-    @pytest.mark.parametrize(
-        'momentum_transfer, type, result',
-        [
-            (None, None, None),
-            (None, 'direct', 'direct'),
-            (None, 'indirect', 'indirect'),
-            ([[0, 0, 0]], None, None),
-            ([[0, 0, 0]], 'direct', None),
-            ([[0, 0, 0]], 'indirect', None),
-            ([[0, 0, 0], [0, 0, 0]], None, 'direct'),
-            ([[0, 0, 0], [0, 0, 0]], 'direct', 'direct'),
-            ([[0, 0, 0], [0, 0, 0]], 'indirect', 'direct'),
-            ([[0, 0, 0], [0.5, 0.5, 0.5]], None, 'indirect'),
-            ([[0, 0, 0], [0.5, 0.5, 0.5]], 'direct', 'indirect'),
-            ([[0, 0, 0], [0.5, 0.5, 0.5]], 'indirect', 'indirect'),
-        ],
+
+@pytest.mark.parametrize(
+    'bg_data, bg_type, moms, ref_moms',
+    [
+        ([1.0], None, [], []),
+        ([1.0], None, [2 * [3 * [0.0]]], [2 * [3 * [0.0]]]),
+        ([1.0], 'direct', [], [2 * [3 * [0.0]]]),
+        ([1.0], 'indirect', [], []),
+    ],
+)
+def test_direct_bandgap_normalization(
+    bg_data: list[float],
+    bg_type: Optional[str],
+    moms: list[list[float]],
+    ref_moms: list[list[float]],
+):
+    band_gap = ElectronicBandGap(
+        data=np.array(bg_data) * ureg.eV,
+        type=bg_type,
+        variables=[MomentumTransfer(data=moms)] if moms else [],
     )
-    def test_resolve_type(
-        self, momentum_transfer: Optional[list[float]], type: str, result: Optional[str]
-    ):
-        """
-        Test the `resolve_type` method.
-        """
-        electronic_band_gap = ElectronicBandGap(
-            variables=[],
-            momentum_transfer=momentum_transfer,
-            type=type,
-        )
-        assert electronic_band_gap.resolve_type(logger) == result
+    band_gap.normalize(EntryArchive(), logger)
 
-    def test_normalize(self):
-        """
-        Test the `normalize` method for two different ElectronicBandGap instantiations, one with a scalar
-        `value` and another with a temperature-dependent `value`
-        """
-        scalar_band_gap = ElectronicBandGap(variables=[], type='direct')
-        scalar_band_gap.value = 1.0 * ureg.joule
-        scalar_band_gap.normalize(EntryArchive(), logger)
-        assert scalar_band_gap.type == 'direct'
-        assert np.isclose(scalar_band_gap.value.magnitude, 1.0)
-
-        t_dependent_band_gap = ElectronicBandGap(
-            variables=[Temperature(points=[0, 10, 20, 30] * ureg.kelvin)],
-            type='direct',
-        )
-        t_dependent_band_gap.value = [1.0, 2.0, 3.0, 4.0] * ureg.joule
-        t_dependent_band_gap.normalize(EntryArchive(), logger)
-        assert t_dependent_band_gap.type == 'direct'
-        assert (
-            np.isclose(t_dependent_band_gap.value.magnitude, [1.0, 2.0, 3.0, 4.0])
-        ).all()
+    var_moms = [
+        var.m_to_dict()['data'][0]
+        for var in band_gap.variables
+        if isinstance(var, MomentumTransfer)
+    ]
+    assert var_moms == ref_moms
