@@ -5,6 +5,7 @@ from nomad.units import ureg
 from nomad.metainfo import MEnum, Quantity
 from nomad.metainfo.dataset import MDataset
 from nomad.datamodel.metainfo.physical_properties import PhysicalProperty
+from nomad.datamodel.data import ArchiveSection
 from ..variables import SpinChannel, MomentumTransfer
 
 if TYPE_CHECKING:
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 
-class ElectronicBandGap(MDataset):  # ? add optical band gap
+class ElectronicBandGap(MDataset, ArchiveSection):  # ? add optical band gap
     m_def = PhysicalProperty(
         type=np.float64,
         unit='joule',
