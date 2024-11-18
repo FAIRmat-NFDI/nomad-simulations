@@ -25,7 +25,7 @@ class ElectronicEigenvalues(MDataset):
         type=np.float64,
         unit='joule',
         iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicEigenvalues',
-        description="""A base section used to define basic quantities for the `ElectronicEigenvalues`  and `ElectronicBandStructure` properties.""",
+        description="""A base section used to define basic quantities for the `ElectronicEigenvalues`  and `ElectronicEigenstates` properties.""",
         default_variables=[SpinChannel, KMesh],
     )
 
