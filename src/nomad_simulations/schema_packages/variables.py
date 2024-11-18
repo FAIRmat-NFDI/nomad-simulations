@@ -25,6 +25,18 @@ class SpinChannel(MDataset):
     )
 
 
+class KMesh(MDataset):
+    m_def = Dataset(
+        type=np.float64,  # ? KMeshSettings.points,
+        unit='1/meter',
+        shape=[3],
+        description="""
+            K-point mesh over which the physical property is calculated. This is used to define `ElectronicEigenvalues(PhysicalProperty)` and
+            other k-space properties. The `points` are obtained from a reference to the `NumericalSettings` section, `KMesh(NumericalSettings)`.
+            """,
+    )
+
+
 class MomentumTransfer(MDataset):
     m_def = Dataset(
         type=np.float64,
@@ -244,29 +256,6 @@ class ImaginaryTime(Variables):
         shape=['n_points'],
         description="""
         Points in which the imaginary time is discretized, in seconds.
-        """,
-    )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-
-class KMesh(Variables):
-    """
-    K-point mesh over which the physical property is calculated. This is used to define `ElectronicEigenvalues(PhysicalProperty)` and
-    other k-space properties. The `points` are obtained from a reference to the `NumericalSettings` section, `KMesh(NumericalSettings)`.
-    """
-
-    points = Quantity(
-        type=KMeshSettings.points,
-        description="""
-        Reference to the `KMesh.points` over which the physical property is calculated. These are 3D arrays stored in fractional coordinates.
         """,
     )
 
