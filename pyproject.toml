@@ -45,12 +45,13 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "mypy==1.0.1",
-    "ruff",
-    "pytest",
-    "pytest-timeout",
-    "pytest-cov",
-    "structlog",
+    'mypy==1.0.1',
+    'pytest>= 5.3.0, <8',
+    'pytest-timeout>=1.4.2',
+    'pytest-cov>=2.7.1',
+    'ruff>=0.6',
+    'structlog>=1.0',
+    'typing-extensions>=4.12',
 ]
 
 [tool.uv]
