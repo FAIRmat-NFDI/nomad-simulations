@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from nomad.metainfo import Quantity
@@ -9,7 +9,61 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
+from nomad_simulations.schema_packages.utils import get_sibling_section
 
+
+from nomad.config import config
+configuration = config.get_plugin_entry_point(
+    'nomad_simulations.schema_packages:nomad_simulations_plugin'
+)
+
+
+# TODO fix this method once `FermiSurface` property is implemented
+def extract_fermi_surface(self, logger: 'BoundLogger') -> Optional['FermiSurface']:
+    """
+    Extract the Fermi surface for metal systems and using the `FermiLevel.value`.
+
+    Args:
+        logger (BoundLogger): The logger to log messages.
+
+    Returns:
+        (Optional[FermiSurface]): The extracted Fermi surface section to be stored in `Outputs`.
+    """
+    # Check if the system has a finite band gap
+    homo, lumo = self.resolve_homo_lumo_eigenvalues()
+    if (homo and lumo) and (lumo - homo).magnitude > 0:
+        return None
+
+    # Get the `fermi_level.value`
+    fermi_level = get_sibling_section(
+        section=self, sibling_section_name='fermi_level', logger=logger
+    )
+    if fermi_level is None:
+        logger.warning(
+            'Could not extract the `FermiSurface`, because `FermiLevel` is not stored.'
+        )
+        return None
+    fermi_level_value = fermi_level.value.magnitude
+
+    # Extract values close to the `fermi_level.value`
+    fermi_indices = np.logical_and(
+        self.value.magnitude
+        >= (fermi_level_value - configuration.fermi_surface_tolerance),
+        self.value.magnitude
+        <= (fermi_level_value + configuration.fermi_surface_tolerance),
+    )
+    fermi_values = self.value[fermi_indices]
+
+    # Store `FermiSurface` values
+    # ! This is wrong (!) the `value` should be the `KMesh.points`, not the `ElectronicEigenvalues.value`
+    fermi_surface = FermiSurface(
+        n_bands=self.n_bands,
+        is_derived=True,
+        physical_property_ref=self,
+    )
+    fermi_surface.variables = self.variables
+    fermi_surface.value = fermi_values
+    return fermi_surface
 
 # TODO This class is not implemented yet. @JosePizarro3 will work in another PR to implement it.
 class FermiSurface(PhysicalProperty):
