@@ -1224,7 +1224,7 @@ class DMFT(ModelMethodElectronic):
 
 
 class MolecularHamiltonianSubTerms(BaseModelMethod):
-    type=Quantity(
+    type = Quantity(
         type=MEnum('coulomb', 'exchange'),
         description="""
         Typical sub-terms of the molecular hamiltonian.

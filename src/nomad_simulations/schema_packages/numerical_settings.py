@@ -92,6 +92,12 @@ class Mesh(ArchiveSection):
         """,
     )
 
+    spacing = Quantity(
+        type=np.float64,
+        shape=['dimensionality'],
+        description='Grid spacing for equidistant meshes. Ignored for other kinds.',
+    )
+
     points = Quantity(
         type=np.complex128,
         shape=['n_points', 'dimensionality'],
@@ -117,14 +123,16 @@ class Mesh(ArchiveSection):
         In the fixed grid methods, the number of angular grid points is predetermined for
         ranges of radial grid points, while in the adaptive methods, the angular grid is adjusted
         on-the-fly for each radial point according to some accuracy criterion.
-        """
+        """,
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
         if self.dimensionality not in [1, 2, 3]:
-            logger.error('`dimensionality` meshes different than 1, 2, or 3 are not supported.')
+            logger.error(
+                '`dimensionality` meshes different than 1, 2, or 3 are not supported.'
+            )
 
 
 class NumericalIntegration(NumericalSettings):
@@ -145,10 +153,10 @@ class NumericalIntegration(NumericalSettings):
     """
 
     coordinate = Quantity(
-        type=MEnum('all', 'radial', 'angular'),
+        type=MEnum('full', 'radial', 'angular'),
         description="""
-        Coordinate over which the integration is performed. `all` means the integration is performed in
-        all the space. `radial` and `angular` describe cases where the integration is performed for
+        Coordinate over which the integration is performed. `full` means the integration is performed in
+        entire space. `radial` and `angular` describe cases where the integration is performed for
         functions which can be splitted into radial and angular distributions (e.g., orbital wavefunctions).
         """,
     )
@@ -158,16 +166,16 @@ class NumericalIntegration(NumericalSettings):
         description="""
         Integration rule used. This can be any 1D Gaussian quadrature rule or multi-dimensional `angular` rules,
         e.g., Lebedev quadrature rule (see e.g., Becke, Chem. Phys. 88, 2547 (1988)).
-        """
+        """,
     )
 
-    weight_partitioning = Quantity(
+    weight_approximtion = Quantity(
         type=str,
         description="""
         Approximation applied to the weight when doing the numerical integration.
         See e.g., C. W. Murray, N. C. Handy
         and G. J. Laming, Mol. Phys. 78, 997 (1993).
-        """
+        """,
     )
 
     mesh = SubSection(sub_section=Mesh.m_def)
