@@ -1221,3 +1221,16 @@ class DMFT(ModelMethodElectronic):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+
+class MolecularHamiltonianSubTerms(BaseModelMethod):
+    type=Quantity(
+        type=MEnum('coulomb', 'exchange'),
+        description="""
+        Typical sub-terms of the molecular hamiltonian.
+        Relativistic effects, SOC, .....
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
