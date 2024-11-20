@@ -242,7 +242,19 @@ class AtomCenteredFunction(ArchiveSection):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-        # self.name = self.m_def.name
+
+        # Validation: Check that n_primitive matches the lengths of exponents and contraction coefficients
+        if self.n_primitive is not None:
+            if len(self.exponents or []) != self.n_primitive:
+                logger.error(
+                    f"Mismatch in number of exponents: expected {self.n_primitive}, "
+                    f"found {len(self.exponents or [])}."
+                )
+            if len(self.contraction_coefficients or []) != self.n_primitive:
+                logger.error(
+                    f"Mismatch in number of contraction coefficients: expected {self.n_primitive}, "
+                    f"found {len(self.contraction_coefficients or [])}."
+                )
 
 
 class AtomCenteredBasisSet(BasisSetComponent):
