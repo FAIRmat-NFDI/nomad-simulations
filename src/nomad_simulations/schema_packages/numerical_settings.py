@@ -63,7 +63,7 @@ class Mesh(ArchiveSection):
         """,
     )
 
-    kind = Quantity(
+    mesh_type = Quantity(
         type=MEnum('equidistant', 'logarithmic', 'tan'),
         shape=['dimensionality'],
         description="""
@@ -81,21 +81,22 @@ class Mesh(ArchiveSection):
         type=np.int32,
         shape=['dimensionality'],
         description="""
-        Amount of mesh point sampling along each axis.
+        Number of points sampled along each axis of the mesh.
         """,
     )
 
     n_points = Quantity(
         type=np.int32,
         description="""
-        Number of points in the mesh.
+        Total number of points in the mesh.
         """,
     )
 
     spacing = Quantity(
         type=np.float64,
         shape=['dimensionality'],
-        description='Grid spacing for equidistant meshes. Ignored for other kinds.',
+        description="""Grid spacing for equidistant meshes. Ignored for other kinds.
+        """,
     )
 
     points = Quantity(
@@ -152,6 +153,8 @@ class NumericalIntegration(NumericalSettings):
     $\vec{r}_n$ points.
     """
 
+    mesh = SubSection(sub_section=Mesh.m_def)
+
     coordinate = Quantity(
         type=MEnum('full', 'radial', 'angular'),
         description="""
@@ -190,15 +193,12 @@ class NumericalIntegration(NumericalSettings):
     weight_cutoff = Quantity(
         type=np.float64,
         description="""
+        Threshold for discarding small weights during integration.
         Grid points very close to the nucleus can have very small grid weights.
-        These can be discarded with the option WEIGHT_CUT=thr, i.e., grid points with weights
-        smaller than thr will then not be used in the numerical integration anymore.
         WEIGHT_CUT in Molpro.
         Wcut in ORCA.
         """,
     )
-
-    mesh = SubSection(sub_section=Mesh.m_def)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
