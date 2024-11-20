@@ -9,6 +9,8 @@ from nomad_simulations.schema_packages.numerical_settings import (
     KLinePath,
     KMesh,
     KSpaceFunctionalities,
+    Mesh,
+    NumericalIntegration,
 )
 
 from . import logger
@@ -377,3 +379,82 @@ class TestKLinePath:
             ]
         )
         assert np.allclose(k_line_path.points, points)
+
+
+@pytest.mark.parametrize(
+    'dimensionality, expected_warning',
+    [
+        (3, None),  # Valid case
+        (2, None),  # Valid case
+        (
+            5,
+            '`dimensionality` meshes different than 1, 2, or 3 are not supported.',
+        ),  # Invalid
+        (
+            0,
+            '`dimensionality` meshes different than 1, 2, or 3 are not supported.',
+        ),  # Invalid
+    ],
+)
+def test_mesh_dimensionality_validation(dimensionality, expected_warning, caplog):
+    mesh = Mesh(dimensionality=dimensionality)
+    mesh.normalize(None, logger)
+    if expected_warning:
+        assert expected_warning in caplog.text
+    else:
+        assert caplog.text == ''
+
+
+@pytest.mark.parametrize(
+    'dimensionality, grid, points',
+    [
+        (3, [10, 10, 10], None),  # Valid grid, no points defined yet
+        (3, None, None),  # Missing grid and points
+        (
+            3,
+            [10, 10, 10],
+            [[0, 0, 0], [1, 1, 1]],
+        ),  # Valid points (though fewer than grid suggests)
+    ],
+)
+def test_mesh_grid_and_points(dimensionality, grid, points):
+    mesh = Mesh(dimensionality=dimensionality, grid=grid, points=points)
+    assert mesh.dimensionality == dimensionality
+    if grid is not None:
+        assert np.allclose(mesh.grid, grid)
+    else:
+        assert mesh.grid == grid
+    if points is not None:
+        assert np.allclose(mesh.points, points)
+    else:
+        assert mesh.points == points
+
+
+def test_mesh_spacing_normalization():
+    mesh = Mesh(dimensionality=3, grid=[10, 10, 10], spacing=[0.1, 0.1, 0.1])
+    mesh.normalize(None, logger)
+    assert np.allclose(mesh.spacing, [0.1, 0.1, 0.1])
+
+
+def test_numerical_integration_mesh():
+    mesh = Mesh(dimensionality=3, grid=[10, 10, 10])
+    integration = NumericalIntegration(mesh=mesh)
+    assert integration.mesh.dimensionality == 3
+    assert np.allclose(integration.mesh.grid, [10, 10, 10])
+
+
+@pytest.mark.parametrize(
+    'integration_thresh, weight_cutoff',
+    [
+        (1e-6, 1e-3),  # Valid thresholds
+        (None, 1e-3),  # Missing integration threshold
+        (1e-6, None),  # Missing weight cutoff
+        (None, None),  # Both thresholds missing
+    ],
+)
+def test_numerical_integration_thresholds(integration_thresh, weight_cutoff):
+    integration = NumericalIntegration(
+        integration_thresh=integration_thresh, weight_cutoff=weight_cutoff
+    )
+    assert integration.integration_thresh == integration_thresh
+    assert integration.weight_cutoff == weight_cutoff

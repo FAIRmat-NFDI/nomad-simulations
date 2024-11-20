@@ -500,6 +500,7 @@ def test_atom_centered_basis_set_normalize() -> None:
     # Add checks for normalized behavior, if any
     assert bs.basis_set == 'cc-pVTZ'
 
+
 def test_atom_centered_basis_set_invalid_data() -> None:
     """Test behavior with missing or invalid data."""
     bs = AtomCenteredBasisSet(
@@ -522,8 +523,5 @@ def test_atom_centered_basis_set_invalid_data() -> None:
     bs.functional_composition = [invalid_function]
 
     # Call normalize to trigger validation
-    with pytest.raises(ValueError, match="Mismatch in number of exponents"):
+    with pytest.raises(ValueError, match='Mismatch in number of exponents'):
         invalid_function.normalize(None, logger)
-
-
-

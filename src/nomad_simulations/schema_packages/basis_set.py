@@ -247,11 +247,14 @@ class AtomCenteredFunction(ArchiveSection):
         if self.n_primitive is not None:
             if self.exponents is not None and len(self.exponents) != self.n_primitive:
                 raise ValueError(
-                f"Mismatch in number of exponents: expected {self.n_primitive}, found {len(self.exponents)}."
+                    f'Mismatch in number of exponents: expected {self.n_primitive}, found {len(self.exponents)}.'
                 )
-            if self.contraction_coefficients is not None and len(self.contraction_coefficients) != self.n_primitive:
+            if (
+                self.contraction_coefficients is not None
+                and len(self.contraction_coefficients) != self.n_primitive
+            ):
                 raise ValueError(
-                f"Mismatch in number of contraction coefficients: expected {self.n_primitive}, found {len(self.contraction_coefficients)}."
+                    f'Mismatch in number of contraction coefficients: expected {self.n_primitive}, found {len(self.contraction_coefficients)}.'
                 )
 
 
