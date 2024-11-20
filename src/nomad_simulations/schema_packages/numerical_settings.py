@@ -169,12 +169,32 @@ class NumericalIntegration(NumericalSettings):
         """,
     )
 
-    weight_approximtion = Quantity(
+    integration_thresh = Quantity(
+        type=np.float64,
+        description="""
+        Accuracy threshold for integration grid.
+        GRIDTHR in Molpro.
+        BFCut in ORCA.
+        """,
+    )
+
+    weight_approximation = Quantity(
         type=str,
         description="""
         Approximation applied to the weight when doing the numerical integration.
         See e.g., C. W. Murray, N. C. Handy
         and G. J. Laming, Mol. Phys. 78, 997 (1993).
+        """,
+    )
+
+    weight_cutoff = Quantity(
+        type=np.float64,
+        description="""
+        Grid points very close to the nucleus can have very small grid weights.
+        These can be discarded with the option WEIGHT_CUT=thr, i.e., grid points with weights
+        smaller than thr will then not be used in the numerical integration anymore.
+        WEIGHT_CUT in Molpro.
+        Wcut in ORCA.
         """,
     )
 
