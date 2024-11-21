@@ -1221,26 +1221,3 @@ class DMFT(ModelMethodElectronic):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-
-
-class MolecularHamiltonianContributions(BaseModelMethod):
-    type = Quantity(
-            type=MEnum(
-            'coulomb',
-            'exchange',
-            'spin_orbit_coupling',
-            'scalar_relativistic',
-            'ri_approximation',
-            'cosx_approximation',
-            'density_fitting',
-            'local_correlation',
-            'explicit_correlation',
-        ), # TODO: expand this
-        description="""
-        TODO: Name is only a placeholder.
-        Typical sub-terms of the molecular hamiltonian.
-        """,
-    )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
