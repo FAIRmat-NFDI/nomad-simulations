@@ -1223,12 +1223,22 @@ class DMFT(ModelMethodElectronic):
         super().normalize(archive, logger)
 
 
-class MolecularHamiltonianSubTerms(BaseModelMethod):
+class MolecularHamiltonianContributions(BaseModelMethod):
     type = Quantity(
-        type=MEnum('coulomb', 'exchange'),
+            type=MEnum(
+            'coulomb',
+            'exchange',
+            'spin_orbit_coupling',
+            'scalar_relativistic',
+            'ri_approximation',
+            'cosx_approximation',
+            'density_fitting',
+            'local_correlation',
+            'explicit_correlation',
+        ), # TODO: expand this
         description="""
+        TODO: Name is only a placeholder.
         Typical sub-terms of the molecular hamiltonian.
-        Relativistic effects, SOC, .....
         """,
     )
 
