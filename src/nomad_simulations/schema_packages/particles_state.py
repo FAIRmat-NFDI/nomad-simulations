@@ -94,30 +94,6 @@ class Particles:
         Periodic boundary conditions flags.  Examples: True,
         False, 0, 1, (1, 1, 0), (True, False, False).  Default
         value: False.
-
-    Examples:
-
-    These three are equivalent:
-
-    >>> d = 1.104  # N2 bondlength
-    >>> a = Atoms('N2', [(0, 0, 0), (0, 0, d)])
-    >>> a = Atoms(numbers=[7, 7], positions=[(0, 0, 0), (0, 0, d)])
-    >>> a = Atoms([Atom('N', (0, 0, 0)), Atom('N', (0, 0, d))])
-
-    FCC gold:
-
-    >>> a = 4.05  # Gold lattice constant
-    >>> b = a / 2
-    >>> fcc = Atoms('Au',
-    ...             cell=[(0, b, b), (b, 0, b), (b, b, 0)],
-    ...             pbc=True)
-
-    Hydrogen wire:
-
-    >>> d = 0.9  # H-H distance
-    >>> h = Atoms('H', positions=[(0, 0, 0)],
-    ...           cell=(d, 0, 0),
-    ...           pbc=(1, 0, 0))
     """
 
     def __init__(
