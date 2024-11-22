@@ -521,7 +521,7 @@ class ParticleCell(Cell):
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
         super().__init__(m_def, m_context, **kwargs)
         # Set the name of the section
-        self.name = self.m_def.name
+        self.name = self.m_def.name  #! self.name here is 'ParticleCell'
 
     def is_equal_cell(self, other) -> bool:
         """
@@ -1146,6 +1146,7 @@ class ModelSystem(System):
     )
 
     cell = SubSection(sub_section=Cell.m_def, repeats=True)
+    print(f'cell: {Cell.m_def}')
 
     symmetry = SubSection(sub_section=Symmetry.m_def, repeats=True)
 
@@ -1279,6 +1280,8 @@ class ModelSystem(System):
                 'Could not find the originally parsed atomic system. `Symmetry` and `ChemicalFormula` extraction is thus not run.'
             )
             return
+
+        #! self.cell[0].name is ParticleCell
         if self.cell[0].name == 'AtomicCell':
             self.cell[0].type = 'original'
             ase_atoms = self.cell[0].to_ase_atoms(logger=logger)
