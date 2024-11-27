@@ -17,9 +17,8 @@
 #
 
 import re
-from functools import lru_cache
-from hashlib import sha1
-from typing import TYPE_CHECKING
+import sys
+from typing import TYPE_CHECKING, Optional
 
 import ase
 import numpy as np
@@ -1369,11 +1368,16 @@ class ModelSystem(System):
                     sec_symmetry = self.m_create(Symmetry)
                     sec_symmetry.normalize(archive, logger)
 
+        print(self.model_system)
+        print(self.cell[0])
+        print(self.cell[0].particles_state[0].particle_type)
+        sys.exit()
         # Creating and normalizing ChemicalFormula section
-        # TODO add support for fractional formulas (possibly add `AtomicCell.concentrations` for each species)
-        sec_chemical_formula = self.m_create(ChemicalFormula)
-        sec_chemical_formula.normalize(archive, logger)
-        if sec_chemical_formula.m_cache:
-            self.elemental_composition = sec_chemical_formula.m_cache.get(
-                'elemental_composition', []
-            )
+        if self.cell[0].name == 'AtomicCell':
+            # TODO add support for fractional formulas (possibly add `AtomicCell.concentrations` for each species)
+            sec_chemical_formula = self.m_create(ChemicalFormula)
+            sec_chemical_formula.normalize(archive, logger)
+            if sec_chemical_formula.m_cache:
+                self.elemental_composition = sec_chemical_formula.m_cache.get(
+                    'elemental_composition', []
+                )
