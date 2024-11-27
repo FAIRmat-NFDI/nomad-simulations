@@ -15,8 +15,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 import re
+import sys
 from functools import lru_cache
 from hashlib import sha1
 from typing import TYPE_CHECKING, Optional
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
-from nomad_simulations.schema_packages.particles_state import Particles, Particles, ParticlesState
+from nomad_simulations.schema_packages.particles_state import Particles, ParticlesState
 from nomad_simulations.schema_packages.utils import (
     catch_not_implemented,
     get_sibling_section,
@@ -660,11 +660,11 @@ class ParticleCell(Cell):
             self.periodic_boundary_conditions = [False, False, False]
         particles.set_pbc(pbc=self.periodic_boundary_conditions)
 
-    #     # Lattice vectors
-    #     if self.lattice_vectors is not None:
-    #         ase_atoms.set_cell(cell=self.lattice_vectors.to('angstrom').magnitude)
-    #     else:
-    #         logger.info('Could not find `AtomicCell.lattice_vectors`.')
+        #     # Lattice vectors
+        #     if self.lattice_vectors is not None:
+        #         ase_atoms.set_cell(cell=self.lattice_vectors.to('angstrom').magnitude)
+        #     else:
+        #         logger.info('Could not find `AtomicCell.lattice_vectors`.')
 
         # Positions
         if self.positions is not None:
@@ -1211,7 +1211,6 @@ class ModelSystem(System):
     )
 
     cell = SubSection(sub_section=Cell.m_def, repeats=True)
-    print(f'cell: {Cell.m_def}')
 
     symmetry = SubSection(sub_section=Symmetry.m_def, repeats=True)
 
