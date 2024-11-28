@@ -190,7 +190,7 @@ class AtomCenteredFunction(ArchiveSection):
     Specifies a single function (term) in an atom-centered basis set.
     """
 
-    basis_type = Quantity(
+    harmonic_type = Quantity(
         type=MEnum(
             'spherical',
             'cartesian',
@@ -202,7 +202,9 @@ class AtomCenteredFunction(ArchiveSection):
     )
 
     function_type = Quantity(
-        type=MEnum('s', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l'),
+        type=MEnum('s', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+                   'sp', 'spd', 'spdf',
+                   ),
         description="""
         L=a+b+c
         The angular momentum of GTO to be added.
@@ -227,7 +229,7 @@ class AtomCenteredFunction(ArchiveSection):
 
     contraction_coefficients = Quantity(
         type=np.float32,
-        shape=['n_primitive'],
+        shape=['*'], # Flexible shape to handle combined types (e.g. SP, SPD..)
         description="""
         List of contraction coefficients corresponding to the exponents.
         """,
@@ -241,20 +243,51 @@ class AtomCenteredFunction(ArchiveSection):
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        Validates the input data
+        and resolves combined types like SP, SPD, SPDF, etc.
+
+        Raises ValueError: If the data is inconsistent (e.g., mismatch in exponents and coefficients).
+        """
         super().normalize(archive, logger)
 
-        # Validation: Check that n_primitive matches the lengths of exponents and contraction coefficients
+        # Validate number of primitives
         if self.n_primitive is not None:
             if self.exponents is not None and len(self.exponents) != self.n_primitive:
                 raise ValueError(
-                    f'Mismatch in number of exponents: expected {self.n_primitive}, found {len(self.exponents)}.'
+                    f"Mismatch in number of exponents: expected {self.n_primitive}, "
+                    f"found {len(self.exponents)}."
                 )
-            if (
-                self.contraction_coefficients is not None
-                and len(self.contraction_coefficients) != self.n_primitive
-            ):
+
+        # Resolve combined types
+        if self.function_type and len(self.function_type) > 1:
+            num_types = len(self.function_type)  # For SP: 2, SPD: 3, etc.
+            if self.contraction_coefficients is not None:
+                expected_coeffs = num_types * self.n_primitive
+                if len(self.contraction_coefficients) != expected_coeffs:
+                    raise ValueError(
+                        f"Mismatch in contraction coefficients for {self.function_type} type: "
+                        f"expected {expected_coeffs}, found {len(self.contraction_coefficients)}."
+                    )
+
+                # Split coefficients into separate lists for each type
+                self.coefficient_sets = {
+                    t: self.contraction_coefficients[i::num_types]
+                    for i, t in enumerate(self.function_type)
+                }
+
+                # Debug: Log split coefficients
+                for t, coeffs in self.coefficient_sets.items():
+                    logger.info(f"{t}-type coefficients: {coeffs}")
+            else:
+                logger.warning(f"No contraction coefficients provided for {self.function_type} type.")
+
+        # For single types, ensure coefficients match primitives
+        elif self.contraction_coefficients is not None:
+            if len(self.contraction_coefficients) != self.n_primitive:
                 raise ValueError(
-                    f'Mismatch in number of contraction coefficients: expected {self.n_primitive}, found {len(self.contraction_coefficients)}.'
+                    f"Mismatch in contraction coefficients: expected {self.n_primitive}, "
+                    f"found {len(self.contraction_coefficients)}."
                 )
 
 
@@ -293,6 +326,11 @@ class AtomCenteredBasisSet(BasisSetComponent):
         description="""
         The role of the basis set.
         """,
+    )
+
+    total_number_of_basis_functions = Quantity(
+        type=np.int32,
+        description="",
     )
 
     functional_composition = SubSection(
