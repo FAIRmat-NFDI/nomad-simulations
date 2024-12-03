@@ -305,6 +305,7 @@ class Cell(GeometricSpace):
         """,
     )
 
+    # TODO: default "unavailable"?
     type = Quantity(
         type=MEnum('original', 'primitive', 'conventional'),
         description="""
@@ -660,11 +661,11 @@ class ParticleCell(Cell):
             self.periodic_boundary_conditions = [False, False, False]
         particles.set_pbc(pbc=self.periodic_boundary_conditions)
 
-        #     # Lattice vectors
-        #     if self.lattice_vectors is not None:
-        #         ase_atoms.set_cell(cell=self.lattice_vectors.to('angstrom').magnitude)
-        #     else:
-        #         logger.info('Could not find `AtomicCell.lattice_vectors`.')
+        # Lattice vectors
+        if self.lattice_vectors is not None:
+            particles.set_cell(cell=self.lattice_vectors.to('angstrom').magnitude)
+        else:
+            logger.info('Could not find `ParticleCell.lattice_vectors`.')
 
         # Positions
         if self.positions is not None:
@@ -1088,6 +1089,7 @@ class ChemicalFormula(ArchiveSection):
             self.m_cache['elemental_composition'] = formula.elemental_composition()
 
 
+# TODO: generalize! indices instead of atom_indices, state instead of atoms_state...
 class ModelSystem(System):
     """
     Model system used as an input for simulating the material.
@@ -1252,6 +1254,7 @@ class ModelSystem(System):
         """,
     )
 
+    # TODO: make this work with non_atomic systems: global_composition_formula of entire system with respect to lower layers
     composition_formula = Quantity(
         type=str,
         description="""
@@ -1367,11 +1370,12 @@ class ModelSystem(System):
                     sec_symmetry = self.m_create(Symmetry)
                     sec_symmetry.normalize(archive, logger)
 
-            # Creating and normalizing ChemicalFormula section
-            # TODO add support for fractional formulas (possibly add `AtomicCell.concentrations` for each species)
-            sec_chemical_formula = self.m_create(ChemicalFormula)
-            sec_chemical_formula.normalize(archive, logger)
-            if sec_chemical_formula.m_cache:
-                self.elemental_composition = sec_chemical_formula.m_cache.get(
-                    'elemental_composition', []
-                )
+        #! ChemicalFormula calls `ase_atoms = atomic_cell.to_ase_atoms(logger=logger)` and `ase_atoms.get_chemical_formula()`
+        # Creating and normalizing ChemicalFormula section
+        # TODO add support for fractional formulas (possibly add `AtomicCell.concentrations` for each species)
+        sec_chemical_formula = self.m_create(ChemicalFormula)
+        sec_chemical_formula.normalize(archive, logger)
+        if sec_chemical_formula.m_cache:
+            self.elemental_composition = sec_chemical_formula.m_cache.get(
+                'elemental_composition', []
+            )
