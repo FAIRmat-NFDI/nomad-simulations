@@ -217,6 +217,7 @@ class Simulation(BaseSimulation, Schema):
                 system_parent=system_child, branch_depth=branch_depth + 1
             )
 
+    #! Generalize from checks for atomic systems, error with CG input
     def resolve_composition_formula(self, system_parent: ModelSystem) -> None:
         """Determine and set the composition formula for `system_parent` and all of its
         descendants.
@@ -275,6 +276,7 @@ class Simulation(BaseSimulation, Schema):
                 for subsystem in subsystems:
                     get_composition_recurs(system=subsystem, atom_labels=atom_labels)
 
+        # ! CG: system_parent.cell[0].particles_state instead of atoms_state!
         atoms_state = (
             system_parent.cell[0].atoms_state if system_parent.cell is not None else []
         )
