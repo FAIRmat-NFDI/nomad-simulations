@@ -422,65 +422,73 @@ def test_quick_step() -> None:
 
 
 @pytest.mark.parametrize(
-    'basis_set_name, basis_type, role',
+    'basis_set_name, basis_type, role, expected_name, expected_type, expected_role',
     [
-        ('cc-pVTZ', 'GTO', 'orbital'),
-        ('def2-TZVP', 'GTO', 'auxiliary_scf'),
-        ('aug-cc-pVDZ', 'STO', 'auxiliary_post_hf'),
-        ('custom_basis', None, None),  # Undefined type and role
+        ('cc-pVTZ', 'GTO', 'orbital', 'cc-pVTZ', 'GTO', 'orbital'),
+        ('def2-TZVP', 'GTO', 'auxiliary_scf', 'def2-TZVP', 'GTO', 'auxiliary_scf'),
+        ('aug-cc-pVDZ', 'STO', 'auxiliary_post_hf', 'aug-cc-pVDZ', 'STO', 'auxiliary_post_hf'),
+        ('custom_basis', None, None, 'custom_basis', None, None),  # Undefined type and role
     ],
 )
-def test_atom_centered_basis_set_init(basis_set_name, basis_type, role) -> None:
+def test_atom_centered_basis_set_init(
+    basis_set_name, basis_type, role, expected_name, expected_type, expected_role
+):
     """Test initialization of AtomCenteredBasisSet."""
     bs = AtomCenteredBasisSet(basis_set=basis_set_name, type=basis_type, role=role)
-    assert bs.basis_set == basis_set_name
-    assert bs.type == basis_type
-    assert bs.role == role
+    assert bs.basis_set == expected_name
+    assert bs.type == expected_type
+    assert bs.role == expected_role
 
 
 @pytest.mark.parametrize(
-    'functions',
+    'functions, expected_count',
     [
-        [
-            AtomCenteredFunction(
-                basis_type='spherical',
-                function_type='s',
-                n_primitive=3,
-                exponents=[1.0, 2.0, 3.0],
-                contraction_coefficients=[0.5, 0.3, 0.2],
-            ),
-        ],
-        [
-            AtomCenteredFunction(
-                basis_type='cartesian',
-                function_type='p',
-                n_primitive=1,
-                exponents=[0.5],
-                contraction_coefficients=[1.0],
-            ),
-            AtomCenteredFunction(
-                basis_type='spherical',
-                function_type='d',
-                n_primitive=2,
-                exponents=[1.0, 2.0],
-                contraction_coefficients=[0.4, 0.6],
-            ),
-        ],
+        (
+            [
+                AtomCenteredFunction(
+                    harmonic_type='spherical',
+                    function_type='s',
+                    n_primitive=3,
+                    exponents=[1.0, 2.0, 3.0],
+                    contraction_coefficients=[0.5, 0.3, 0.2],
+                ),
+            ],
+            1,
+        ),
+        (
+            [
+                AtomCenteredFunction(
+                    harmonic_type='cartesian',
+                    function_type='p',
+                    n_primitive=1,
+                    exponents=[0.5],
+                    contraction_coefficients=[1.0],
+                ),
+                AtomCenteredFunction(
+                    harmonic_type='spherical',
+                    function_type='d',
+                    n_primitive=2,
+                    exponents=[1.0, 2.0],
+                    contraction_coefficients=[0.4, 0.6],
+                ),
+            ],
+            2,
+        ),
     ],
 )
-def test_atom_centered_basis_set_functional_composition(functions) -> None:
+def test_atom_centered_basis_set_functional_composition(functions, expected_count):
     """Test functional composition within AtomCenteredBasisSet."""
     bs = AtomCenteredBasisSet(functional_composition=functions)
-    assert len(bs.functional_composition) == len(functions)
+    assert len(bs.functional_composition) == expected_count
     for f, ref_f in zip(bs.functional_composition, functions):
-        assert f.basis_type == ref_f.basis_type
+        assert f.harmonic_type == ref_f.harmonic_type
         assert f.function_type == ref_f.function_type
         assert f.n_primitive == ref_f.n_primitive
         assert np.allclose(f.exponents, ref_f.exponents)
         assert np.allclose(f.contraction_coefficients, ref_f.contraction_coefficients)
 
 
-def test_atom_centered_basis_set_normalize() -> None:
+def test_atom_centered_basis_set_normalize():
     """Test normalization of AtomCenteredBasisSet."""
     bs = AtomCenteredBasisSet(
         basis_set='cc-pVTZ',
@@ -488,7 +496,7 @@ def test_atom_centered_basis_set_normalize() -> None:
         role='orbital',
         functional_composition=[
             AtomCenteredFunction(
-                basis_type='spherical',
+                harmonic_type='spherical',
                 function_type='s',
                 n_primitive=2,
                 exponents=[1.0, 2.0],
@@ -496,12 +504,15 @@ def test_atom_centered_basis_set_normalize() -> None:
             )
         ],
     )
-    bs.normalize(None, logger)
-    # Add checks for normalized behavior, if any
+    bs.normalize(None, None)
+    # Add assertions for normalized attributes if needed
     assert bs.basis_set == 'cc-pVTZ'
+    assert bs.type == 'GTO'
+    assert bs.role == 'orbital'
+    assert len(bs.functional_composition) == 1
 
 
-def test_atom_centered_basis_set_invalid_data() -> None:
+def test_atom_centered_basis_set_invalid_data():
     """Test behavior with missing or invalid data."""
     bs = AtomCenteredBasisSet(
         basis_set='invalid_basis',
@@ -514,7 +525,7 @@ def test_atom_centered_basis_set_invalid_data() -> None:
 
     # Test functional composition with invalid data
     invalid_function = AtomCenteredFunction(
-        basis_type='spherical',
+        harmonic_type='spherical',
         function_type='s',
         n_primitive=2,
         exponents=[1.0],  # Mismatched length
@@ -524,4 +535,5 @@ def test_atom_centered_basis_set_invalid_data() -> None:
 
     # Call normalize to trigger validation
     with pytest.raises(ValueError, match='Mismatch in number of exponents'):
-        invalid_function.normalize(None, logger)
+        invalid_function.normalize(None, None)
+
