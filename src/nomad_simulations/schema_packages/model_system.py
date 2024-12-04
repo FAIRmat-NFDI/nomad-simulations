@@ -1372,10 +1372,12 @@ class ModelSystem(System):
 
         #! ChemicalFormula calls `ase_atoms = atomic_cell.to_ase_atoms(logger=logger)` and `ase_atoms.get_chemical_formula()`
         # Creating and normalizing ChemicalFormula section
-        # TODO add support for fractional formulas (possibly add `AtomicCell.concentrations` for each species)
-        sec_chemical_formula = self.m_create(ChemicalFormula)
-        sec_chemical_formula.normalize(archive, logger)
-        if sec_chemical_formula.m_cache:
-            self.elemental_composition = sec_chemical_formula.m_cache.get(
-                'elemental_composition', []
-            )
+        if any(cell.name == 'AtomicCell' for cell in self.cell):
+            # TODO: get_sibling_section() may need to be updated to more specifically search for AtomicCell in ChemicalFormula and Symmetry, in cases where multiple different cells are present
+            # TODO add support for fractional formulas (possibly add `AtomicCell.concentrations` for each species)
+            sec_chemical_formula = self.m_create(ChemicalFormula)
+            sec_chemical_formula.normalize(archive, logger)
+            if sec_chemical_formula.m_cache:
+                self.elemental_composition = sec_chemical_formula.m_cache.get(
+                    'elemental_composition', []
+                )

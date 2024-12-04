@@ -5,7 +5,8 @@ import ase
 import ase.geometry
 import numpy as np
 import pint
-from deprecated import deprecated
+
+# from deprecated import deprecated
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.datamodel.metainfo.basesections import Entity
@@ -16,6 +17,8 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
+
+from nomad_simulations.schema_packages.atoms_state import State
 
 
 class Particles:
@@ -424,7 +427,7 @@ class Particles:
 
 
 # ? How generic (usable for any CG model) vs. Martini-specific do we want to be?
-class ParticlesState(Entity):
+class ParticlesState(State):
     """
     A base section to define individual coarse-grained (CG) particle information.
     """
@@ -491,3 +494,6 @@ class ParticlesState(Entity):
         # Get particle_type as string, if possible.
         if not isinstance(self.particle_type, str):
             self.particle_type = self.resolve_particle_type(logger=logger)
+
+        if self.particle_type is not None:
+            self.labels = self.particle_type

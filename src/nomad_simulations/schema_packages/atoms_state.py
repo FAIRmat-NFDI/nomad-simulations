@@ -552,7 +552,17 @@ class HubbardInteractions(ArchiveSection):
                 )
 
 
-class AtomsState(Entity):
+class State(Entity):
+    """
+    A base section to define the state information of the system.
+    """
+
+    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
+        super().__init__(m_def, m_context, **kwargs)
+        self.labels = None
+
+
+class AtomsState(State):
     """
     A base section to define each atom state information.
     """
@@ -641,3 +651,7 @@ class AtomsState(Entity):
             self.chemical_symbol = self.resolve_chemical_symbol(logger=logger)
         if self.atomic_number is None:
             self.atomic_number = self.resolve_atomic_number(logger=logger)
+
+        # Set the labels
+        if self.chemical_symbol is not None:
+            self.labels = self.chemical_symbol

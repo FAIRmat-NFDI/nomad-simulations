@@ -1,10 +1,17 @@
-from typing import TYPE_CHECKING
+#! TODO: Why is TYPE_CHECKING False?
+from typing import TYPE_CHECKING, List, Iterable, Union
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from nomad.datamodel.datamodel import EntryArchive
-    from structlog.stdlib import BoundLogger
+if not TYPE_CHECKING:
+    from nomad.datamodel.datamodel import (
+        EntryArchive,
+    )
+    from nomad.metainfo import (
+        Context,
+        Section,
+    )
+    from structlog.stdlib import (
+        BoundLogger,
+    )
 
 import numpy as np
 from nomad.config import config
@@ -227,7 +234,7 @@ class Simulation(BaseSimulation, Schema):
         """
 
         def set_composition_formula(
-            system: ModelSystem, subsystems: list[ModelSystem], atom_labels: list[str]
+            system: ModelSystem, subsystems: list[ModelSystem], labels: list[str]
         ) -> None:
             """Determine the composition formula for `system` based on its `subsystems`.
             If `system` has no children, the atom_labels are used to determine the formula.
@@ -243,8 +250,8 @@ class Simulation(BaseSimulation, Schema):
                     system.atom_indices if system.atom_indices is not None else []
                 )
                 subsystem_labels = (
-                    [np.array(atom_labels)[atom_indices]]
-                    if atom_labels
+                    [np.array(labels)[atom_indices]]
+                    if labels
                     else ['Unknown' for atom in range(len(atom_indices))]
                 )
             else:
@@ -259,7 +266,7 @@ class Simulation(BaseSimulation, Schema):
                     children_names=subsystem_labels
                 )
 
-        def get_composition_recurs(system: ModelSystem, atom_labels: list[str]) -> None:
+        def get_composition_recurs(system: ModelSystem, labels: list[str]) -> None:
             """Traverse the system hierarchy downward and set the branch composition for
             all (sub)systems at each level.
 
@@ -269,23 +276,28 @@ class Simulation(BaseSimulation, Schema):
                 to the atom indices stored in system.
             """
             subsystems = system.model_system
-            set_composition_formula(
-                system=system, subsystems=subsystems, atom_labels=atom_labels
-            )
+            set_composition_formula(system=system, subsystems=subsystems, labels=labels)
             if subsystems:
                 for subsystem in subsystems:
-                    get_composition_recurs(system=subsystem, atom_labels=atom_labels)
+                    get_composition_recurs(system=subsystem, labels=labels)
 
         # ! CG: system_parent.cell[0].particles_state instead of atoms_state!
-        atoms_state = (
-            system_parent.cell[0].atoms_state if system_parent.cell is not None else []
-        )
-        atom_labels = (
-            [atom.chemical_symbol for atom in atoms_state]
-            if atoms_state is not None
-            else []
-        )
-        get_composition_recurs(system=system_parent, atom_labels=atom_labels)
+        labels = []
+        if system_parent.cell is not None:
+            if system_parent.cell[0].name == 'AtomicCell':
+                labels = (
+                    [atom.labels for atom in system_parent.cell[0].atoms_state]
+                    if system_parent.cell[0].atoms_state is not None
+                    else []
+                )
+            elif system_parent.cell[0].name == 'ParticleCell':
+                labels = (
+                    [atom.labels for atom in system_parent.cell[0].particles_state]
+                    if system_parent.cell[0].particles_state is not None
+                    else []
+                )
+
+        get_composition_recurs(system=system_parent, labels=labels)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super(Schema, self).normalize(archive, logger)
