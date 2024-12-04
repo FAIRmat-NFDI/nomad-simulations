@@ -426,8 +426,22 @@ def test_quick_step() -> None:
     [
         ('cc-pVTZ', 'GTO', 'orbital', 'cc-pVTZ', 'GTO', 'orbital'),
         ('def2-TZVP', 'GTO', 'auxiliary_scf', 'def2-TZVP', 'GTO', 'auxiliary_scf'),
-        ('aug-cc-pVDZ', 'STO', 'auxiliary_post_hf', 'aug-cc-pVDZ', 'STO', 'auxiliary_post_hf'),
-        ('custom_basis', None, None, 'custom_basis', None, None),  # Undefined type and role
+        (
+            'aug-cc-pVDZ',
+            'STO',
+            'auxiliary_post_hf',
+            'aug-cc-pVDZ',
+            'STO',
+            'auxiliary_post_hf',
+        ),
+        (
+            'custom_basis',
+            None,
+            None,
+            'custom_basis',
+            None,
+            None,
+        ),  # Undefined type and role
     ],
 )
 def test_atom_centered_basis_set_init(
@@ -536,4 +550,3 @@ def test_atom_centered_basis_set_invalid_data():
     # Call normalize to trigger validation
     with pytest.raises(ValueError, match='Mismatch in number of exponents'):
         invalid_function.normalize(None, None)
-

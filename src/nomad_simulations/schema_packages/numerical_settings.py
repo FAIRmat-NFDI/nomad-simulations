@@ -952,6 +952,42 @@ class SelfConsistency(NumericalSettings):
         super().normalize(archive, logger)
 
 
+class OrbitalLocalization(SelfConsistency):
+    """
+    Numerical settings that control orbital localization.
+    """
+
+    localization_method = (
+        Quantity(
+            type=MEnum('FB', 'PM', 'IBO', 'IAOIBO', 'IAOBOYS' 'NEWBOYS' 'AHFB'),
+            description="""
+        Name of the localization method.
+        """,
+        ),
+    )
+
+    orbital_window = (
+        Quantity(
+            shape=['*'],
+            description="""
+        the Molecular orbital range to be localized.
+        """,
+        ),
+    )
+
+    core_threshold = (
+        Quantity(
+            type=np.float64,
+            description="""
+        the energy window for the first occupied MO to be localized (in a.u.).
+        """,
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+
 class GTOIntegralDecomposition(NumericalSettings):
     """
     A general class for integral decomposition techniques for Coulomb and exchange integrals.

@@ -202,9 +202,21 @@ class AtomCenteredFunction(ArchiveSection):
     )
 
     function_type = Quantity(
-        type=MEnum('s', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
-                   'sp', 'spd', 'spdf',
-                   ),
+        type=MEnum(
+            's',
+            'p',
+            'd',
+            'f',
+            'g',
+            'h',
+            'i',
+            'j',
+            'k',
+            'l',
+            'sp',
+            'spd',
+            'spdf',
+        ),
         description="""
         L=a+b+c
         The angular momentum of GTO to be added.
@@ -229,7 +241,7 @@ class AtomCenteredFunction(ArchiveSection):
 
     contraction_coefficients = Quantity(
         type=np.float32,
-        shape=['*'], # Flexible shape to handle combined types (e.g. SP, SPD..)
+        shape=['*'],  # Flexible shape to handle combined types (e.g. SP, SPD..)
         description="""
         List of contraction coefficients corresponding to the exponents.
         """,
@@ -255,8 +267,8 @@ class AtomCenteredFunction(ArchiveSection):
         if self.n_primitive is not None:
             if self.exponents is not None and len(self.exponents) != self.n_primitive:
                 raise ValueError(
-                    f"Mismatch in number of exponents: expected {self.n_primitive}, "
-                    f"found {len(self.exponents)}."
+                    f'Mismatch in number of exponents: expected {self.n_primitive}, '
+                    f'found {len(self.exponents)}.'
                 )
 
         # Resolve combined types
@@ -266,8 +278,8 @@ class AtomCenteredFunction(ArchiveSection):
                 expected_coeffs = num_types * self.n_primitive
                 if len(self.contraction_coefficients) != expected_coeffs:
                     raise ValueError(
-                        f"Mismatch in contraction coefficients for {self.function_type} type: "
-                        f"expected {expected_coeffs}, found {len(self.contraction_coefficients)}."
+                        f'Mismatch in contraction coefficients for {self.function_type} type: '
+                        f'expected {expected_coeffs}, found {len(self.contraction_coefficients)}.'
                     )
 
                 # Split coefficients into separate lists for each type
@@ -278,16 +290,18 @@ class AtomCenteredFunction(ArchiveSection):
 
                 # Debug: Log split coefficients
                 for t, coeffs in self.coefficient_sets.items():
-                    logger.info(f"{t}-type coefficients: {coeffs}")
+                    logger.info(f'{t}-type coefficients: {coeffs}')
             else:
-                logger.warning(f"No contraction coefficients provided for {self.function_type} type.")
+                logger.warning(
+                    f'No contraction coefficients provided for {self.function_type} type.'
+                )
 
         # For single types, ensure coefficients match primitives
         elif self.contraction_coefficients is not None:
             if len(self.contraction_coefficients) != self.n_primitive:
                 raise ValueError(
-                    f"Mismatch in contraction coefficients: expected {self.n_primitive}, "
-                    f"found {len(self.contraction_coefficients)}."
+                    f'Mismatch in contraction coefficients: expected {self.n_primitive}, '
+                    f'found {len(self.contraction_coefficients)}.'
                 )
 
 
@@ -330,7 +344,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
 
     total_number_of_basis_functions = Quantity(
         type=np.int32,
-        description="",
+        description='',
     )
 
     functional_composition = SubSection(
