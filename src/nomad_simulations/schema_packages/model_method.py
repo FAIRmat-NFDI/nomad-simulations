@@ -1221,3 +1221,58 @@ class DMFT(ModelMethodElectronic):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+
+class PerturbationMethod(ModelMethodElectronic):
+    type = Quantity(
+        type=MEnum('MP', 'RS', 'BW'),
+        description="""
+        Perturbation approach. The abbreviations stand for:
+        | Abbreviation | Description |
+        | ------------ | ----------- |
+        | `'MP'`       | Moller-Plesset |
+        | `'RS'`       | Rayleigh-Schrödigner |
+        | `'BW'`       | Brillouin-Wigner |
+        """,
+        a_eln=ELNAnnotation(component='EnumEditQuantity'),
+    )  # TODO: check if the special symbols are supported
+
+    order = Quantity(
+        type=np.int32,
+        description="""
+        Order up to which the perturbation is expanded.
+        """,
+        a_eln=ELNAnnotation(component='NumberEditQuantity'),
+    )
+
+    density = Quantity(
+        type=MEnum('relaxed', 'unrelaxed'),
+        description="""
+        unrelaxed density: MP2 expectation value density
+        relaxed density  : incorporates orbital relaxation
+        """,
+    )
+
+
+class LocalCorrelation(ArchiveSection):
+    """
+    A base section used to define the parameters of a local correlation for the post-HF methods.
+
+    It has a corresponding localization method.
+    """
+
+    method = Quantity(
+        type=MEnum('LMP2', 'LCCD', 'LCCSD', 'LCCSD(T)', 'DLPNO-CCSD(T)', 'LocalDFT'),
+        description="""
+        The local correlation method applied. For example:
+            - LMP2: Local Møller-Plesset perturbation theory
+            - LCCD: Local Coupled-Cluster with Doubles
+            - LCCSD: Local Coupled-Cluster with Singles and Doubles
+            - LCCSD(T): Local Coupled-Cluster with Singles, Doubles, and Perturbative Triples
+            - DLPNO-CCSD(T): Domain-Based Local Pair Natural Orbital CCSD(T)
+            - LocalDFT: Local Density Functional Theory.
+
+            # TODO: improve list!
+        """,
+        a_eln=ELNAnnotation(component='EnumEditQuantity'),
+    )
