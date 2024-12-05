@@ -225,7 +225,9 @@ class Simulation(BaseSimulation, Schema):
             )
 
     #! Generalize from checks for atomic systems, error with CG input
-    def resolve_composition_formula(self, system_parent: ModelSystem) -> None:
+    def resolve_composition_formula(
+        self, system_parent: ModelSystem, logger: 'BoundLogger'
+    ) -> None:
         """Determine and set the composition formula for `system_parent` and all of its
         descendants.
 
@@ -246,13 +248,15 @@ class Simulation(BaseSimulation, Schema):
                 to the atom indices stored in system.
             """
             if not subsystems:
-                atom_indices = (
-                    system.atom_indices if system.atom_indices is not None else []
+                particle_indices = (
+                    system.particle_indices
+                    if system.particle_indices is not None
+                    else []
                 )
                 subsystem_labels = (
-                    [np.array(labels)[atom_indices]]
+                    [np.array(labels)[particle_indices]]
                     if labels
-                    else ['Unknown' for atom in range(len(atom_indices))]
+                    else ['Unknown' for atom in range(len(particle_indices))]
                 )
             else:
                 subsystem_labels = [
@@ -284,18 +288,7 @@ class Simulation(BaseSimulation, Schema):
         # ! CG: system_parent.cell[0].particles_state instead of atoms_state!
         labels = []
         if system_parent.cell is not None:
-            if system_parent.cell[0].name == 'AtomicCell':
-                labels = (
-                    [atom.labels for atom in system_parent.cell[0].atoms_state]
-                    if system_parent.cell[0].atoms_state is not None
-                    else []
-                )
-            elif system_parent.cell[0].name == 'ParticleCell':
-                labels = (
-                    [atom.labels for atom in system_parent.cell[0].particles_state]
-                    if system_parent.cell[0].particles_state is not None
-                    else []
-                )
+            labels = system_parent.cell[0].get('labels', logger=logger)
 
         get_composition_recurs(system=system_parent, labels=labels)
 
@@ -322,7 +315,7 @@ class Simulation(BaseSimulation, Schema):
 
             if is_not_representative(model_system=system_parent, logger=logger):
                 continue
-            self.resolve_composition_formula(system_parent=system_parent)
+            self.resolve_composition_formula(system_parent=system_parent, logger=logger)
 
 
 m_package.__init_metainfo__()

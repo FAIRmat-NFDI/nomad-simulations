@@ -544,7 +544,7 @@ class TB(ModelMethodElectronic):
             # If the child is not an "active_atom", the normalization will not run
             if active_atom.type != 'active_atom':
                 continue
-            indices = active_atom.atom_indices
+            indices = active_atom.particle_indices
             for index in indices:
                 try:
                     active_atoms_state = atoms_state[index]

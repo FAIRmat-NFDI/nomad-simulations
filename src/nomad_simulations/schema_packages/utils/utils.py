@@ -48,6 +48,7 @@ def get_sibling_section(
     if not sibling_section_name:
         logger.warning('The sibling_section_name is empty.')
         return None
+
     sibling_section = section.m_xpath(f'm_parent.{sibling_section_name}', dict=False)
     # If the sibling_section is a list, return the element `index_sibling` of that list
     if isinstance(sibling_section, list):

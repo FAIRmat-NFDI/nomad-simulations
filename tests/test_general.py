@@ -87,7 +87,7 @@ class TestSimulation:
         assert value == result
 
     @pytest.mark.parametrize(
-        'is_representative, has_atom_indices, mol_label_list, n_mol_list, atom_labels_list, composition_formula_list, custom_formulas',
+        'is_representative, has_particle_indices, mol_label_list, n_mol_list, atom_labels_list, composition_formula_list, custom_formulas',
         [
             (
                 True,
@@ -168,7 +168,7 @@ class TestSimulation:
     def test_system_hierarchy_for_molecules(
         self,
         is_representative: bool,
-        has_atom_indices: bool,
+        has_particle_indices: bool,
         mol_label_list: list[str],
         n_mol_list: list[int],
         atom_labels_list: list[str],
@@ -181,8 +181,8 @@ class TestSimulation:
         Args:
             is_representative (bool): Specifies if branch_depth = 0 is representative or not.
             If not representative, the composition formulas should not be generated.
-            has_atom_indices (bool): Specifies if the atom_indices should be populated during parsing.
-            Without atom_indices, the composition formulas for the deepest level of the hierarchy
+            has_particle_indices (bool): Specifies if the particle_indices should be populated during parsing.
+            Without particle_indices, the composition formulas for the deepest level of the hierarchy
             should not be populated.
             mol_label_list (list[str]): Molecule types for generating the hierarchy.
             n_mol_list (list[int]): Number of molecules for each molecule type. Should be same
@@ -212,15 +212,15 @@ class TestSimulation:
         ctr_comp = 1
         atomic_cell = AtomicCell()
         model_system.cell.append(atomic_cell)
-        if has_atom_indices:
-            model_system.atom_indices = []
+        if has_particle_indices:
+            model_system.particle_indices = []
         for mol_label, n_mol, atom_labels in zip(
             mol_label_list, n_mol_list, atom_labels_list
         ):
             # Create a branch in the hierarchy for this molecule type
             model_system_mol_group = ModelSystem()
-            if has_atom_indices:
-                model_system_mol_group.atom_indices = []
+            if has_particle_indices:
+                model_system_mol_group.particle_indices = []
             model_system_mol_group.branch_label = (
                 f'group_{mol_label}' if mol_label is not None else None
             )
@@ -241,14 +241,14 @@ class TestSimulation:
                             AtomsState(chemical_symbol=atom_label)
                         )
                 n_atoms = len(atomic_cell.atoms_state)
-                atom_indices = np.arange(n_atoms - len(atom_labels), n_atoms)
-                if has_atom_indices:
-                    model_system_mol.atom_indices = atom_indices
-                    model_system_mol_group.atom_indices = np.append(
-                        model_system_mol_group.atom_indices, atom_indices
+                particle_indices = np.arange(n_atoms - len(atom_labels), n_atoms)
+                if has_particle_indices:
+                    model_system_mol.particle_indices = particle_indices
+                    model_system_mol_group.particle_indices = np.append(
+                        model_system_mol_group.particle_indices, particle_indices
                     )
-                    model_system.atom_indices = np.append(
-                        model_system.atom_indices, atom_indices
+                    model_system.particle_indices = np.append(
+                        model_system.particle_indices, particle_indices
                     )
 
         simulation.normalize(EntryArchive(), logger)

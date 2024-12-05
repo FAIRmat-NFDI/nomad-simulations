@@ -79,7 +79,7 @@ class TestTB:
                         is_representative=True,
                         cell=[AtomicCell(atoms_state=[AtomsState()])],
                         model_system=[
-                            ModelSystem(type='active_atom', atom_indices=[2])
+                            ModelSystem(type='active_atom', particle_indices=[2])
                         ],
                     )
                 ],
@@ -93,7 +93,7 @@ class TestTB:
                         is_representative=True,
                         cell=[AtomicCell(atoms_state=[AtomsState(orbitals_state=[])])],
                         model_system=[
-                            ModelSystem(type='active_atom', atom_indices=[0])
+                            ModelSystem(type='active_atom', particle_indices=[0])
                         ],
                     )
                 ],
@@ -117,7 +117,7 @@ class TestTB:
                             )
                         ],
                         model_system=[
-                            ModelSystem(type='active_atom', atom_indices=[0])
+                            ModelSystem(type='active_atom', particle_indices=[0])
                         ],
                     )
                 ],
@@ -207,7 +207,7 @@ class TestTB:
                         is_representative=True,
                         cell=[AtomicCell(atoms_state=[AtomsState()])],
                         model_system=[
-                            ModelSystem(type='active_atom', atom_indices=[2])
+                            ModelSystem(type='active_atom', particle_indices=[2])
                         ],
                     )
                 ],
@@ -222,7 +222,7 @@ class TestTB:
                         is_representative=True,
                         cell=[AtomicCell(atoms_state=[AtomsState(orbitals_state=[])])],
                         model_system=[
-                            ModelSystem(type='active_atom', atom_indices=[0])
+                            ModelSystem(type='active_atom', particle_indices=[0])
                         ],
                     )
                 ],
@@ -247,7 +247,7 @@ class TestTB:
                             )
                         ],
                         model_system=[
-                            ModelSystem(type='active_atom', atom_indices=[0])
+                            ModelSystem(type='active_atom', particle_indices=[0])
                         ],
                     )
                 ],
@@ -272,7 +272,7 @@ class TestTB:
                             )
                         ],
                         model_system=[
-                            ModelSystem(type='active_atom', atom_indices=[0])
+                            ModelSystem(type='active_atom', particle_indices=[0])
                         ],
                     )
                 ],

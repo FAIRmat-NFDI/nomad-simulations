@@ -559,7 +559,6 @@ class State(Entity):
 
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
         super().__init__(m_def, m_context, **kwargs)
-        self.labels = None
 
 
 class AtomsState(State):
@@ -651,7 +650,3 @@ class AtomsState(State):
             self.chemical_symbol = self.resolve_chemical_symbol(logger=logger)
         if self.atomic_number is None:
             self.atomic_number = self.resolve_atomic_number(logger=logger)
-
-        # Set the labels
-        if self.chemical_symbol is not None:
-            self.labels = self.chemical_symbol
