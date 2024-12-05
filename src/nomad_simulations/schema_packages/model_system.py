@@ -1113,6 +1113,21 @@ class ModelSystem(System):
         """,
     )
 
+    total_charge = Quantity(
+        type=np.int32,
+        description="""
+        Total charge of the system.
+        """,
+    )
+
+    total_spin = Quantity(
+        type=np.int32,
+        description="""
+        Total spin state of the system.
+        Not to be confused with the spin multiplicity 2S + 1.
+        """,
+    )
+
     model_system = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
 
     def resolve_system_type_and_dimensionality(
