@@ -1223,6 +1223,36 @@ class DMFT(ModelMethodElectronic):
         super().normalize(archive, logger)
 
 
+class GTOIntegralDecomposition(BaseModelMethod):
+    """
+    A general class for integral decomposition techniques for Coulomb and exchange integrals.
+    Examples:
+    Resolution of identity (RI-approximation):
+    RI
+    RIJK
+    ....
+    Chain-of-spheres (COSX) algorithm for exchange: doi:10.1016/j.chemphys.2008.10.036
+    """
+
+    approximation_type = Quantity(
+        type=str,
+        description="""
+        RIJ, RIK, RIJK,
+        """,
+    )
+
+    approximated_term = Quantity(
+        type=str,
+        description="""
+        such as coulomb, exchange, explicit-correlation
+        to be converted to an MEnum later.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+
 class PerturbationMethod(ModelMethodElectronic):
     type = Quantity(
         type=MEnum('MP', 'RS', 'BW'),

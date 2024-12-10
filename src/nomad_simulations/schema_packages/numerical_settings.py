@@ -958,7 +958,7 @@ class OrbitalLocalization(SelfConsistency):
     """
 
     localization_method = Quantity(
-        type=MEnum('FB', 'PM', 'IBO', 'IAOIBO', 'IAOBOYS' 'NEWBOYS' 'AHFB'),
+        type=MEnum('FB', 'PM', 'IBO', 'IAOIBO', 'IAOBOYS', 'NEWBOYS', 'AHFB'),
         description="""
         Name of the localization method.
         """,
