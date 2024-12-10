@@ -450,16 +450,26 @@ class Cell(GeometricSpace):
 
         labels = self.get('labels', logger)
         if labels is None:
-            logger.error('Could not find `Cell.state.labels`.')
+            # ! Check the scope of this message
+            logger.error(
+                'Could not find `Cell.state.labels`.'
+                'Using ase functionalities with `X` as labels.'
+                'This is normal for non-atomic particles,'
+                'but no particle labels will be stored.'
+            )
             labels = ['X'] * len(self.positions) if self.positions is not None else None
         # Initialize ase.Atoms object with labels
         # ! We need to make sure that the labels from ase.Atoms are not being used downstream!
-
-        try:
-            symbols2numbers(labels)
-        except KeyError:
-            logger.error('Non chemical symbols in `Cell.state.labels`.')
-            labels = ['X'] * len(labels)
+        else:
+            try:
+                symbols2numbers(labels)
+            except KeyError:
+                logger.warning(
+                    'Non chemical symbols in `Cell.state.labels`.'
+                    'Using ase functionalities with `X` as labels.'
+                    'This is normal for non-atomic particles.'
+                )
+                labels = ['X'] * len(labels)
         ase_atoms = ase.Atoms(symbols=labels)
 
         # PBC
