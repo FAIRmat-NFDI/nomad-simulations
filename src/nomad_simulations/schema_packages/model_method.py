@@ -1223,6 +1223,164 @@ class DMFT(ModelMethodElectronic):
         super().normalize(archive, logger)
 
 
+class MolecularOrbital(ArchiveSection):
+    """
+    A section representing a single molecular orbital.
+    """
+
+    energy = Quantity(
+        type=np.float64,
+        # unit='electron_volt',
+        description='Energy of the molecular orbital.',
+    )
+
+    occupation = Quantity(
+        type=np.float64, description='Occupation number of the molecular orbital.'
+    )
+
+    symmetry_label = Quantity(
+        type=str, description='Symmetry label of the molecular orbital.'
+    )
+
+    reference_orbital = SubSection(
+        sub_section=OrbitalsState.m_def,
+        description='Reference to the underlying atomic orbital state.',
+    )
+
+
+class LCAO(ArchiveSection):
+    """
+    A base class for molecular orbital schemes used in quantum chemistry calculations.
+    Supports unrestricted (UHF, UKS), restricted (RHF, RKS), and restricted open-shell (ROHF, ROKS) schemes.
+    """
+
+    reference_type = Quantity(
+        type=MEnum('RHF', 'ROHF', 'UHF', 'RKS', 'ROKS', 'UKS'),
+        description="""
+        Specifies the type of reference wavefunction:
+        - RHF: Restricted Hartree-Fock
+        - ROHF: Restricted Open-Shell Hartree-Fock
+        - UHF: Unrestricted Hartree-Fock
+        - RKS: Restricted Kohn-Sham
+        - ROKS: Restricted Open-Shell Kohn-Sham
+        - UKS: Unrestricted Kohn-Sham
+        """,
+        a_eln=ELNAnnotation(component='EnumEditQuantity'),
+    )
+
+    orbital_set = Quantity(
+        type=MEnum('canonical', 'natural', 'localized'),
+        description="""
+        Specifies the type of orbitals used in the molecular orbital scheme:
+        - canonical: Default canonical molecular orbitals.
+        - natural: Natural orbitals obtained from the density matrix.
+        - localized: Localized orbitals such as Boys or Foster-Boys localization.
+        TODO: this will be later connected to many other things.
+        """,
+        a_eln=ELNAnnotation(component='EnumEditQuantity'),
+    )
+
+    n_alpha_electrons = Quantity(
+        type=np.int32,
+        description="""
+        Number of alpha electrons (spin up) in the molecular system.
+        """,
+    )
+
+    n_beta_electrons = Quantity(
+        type=np.int32,
+        description="""
+        Number of beta electrons (spin down) in the molecular system.
+        """,
+    )
+
+    n_molecular_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Total number of molecular orbitals in the system.
+        """,
+    )
+
+    molecular_orbitals = SubSection(
+        sub_section=MolecularOrbital.m_def,
+        repeats=True,
+        description="""
+        Detailed information about each molecular orbital,
+        including energy, occupation, and symmetry label.
+        """,
+    )
+
+    total_spin = Quantity(
+        type=np.float64,
+        description="""
+        Total spin of the system defined as S = (n_alpha_electrons - n_beta_electrons) / 2.
+        Connect to the model system.
+        """,
+    )
+
+    spin_multiplicity = Quantity(
+        type=np.int32,
+        description="""
+        Spin multiplicity of the system defined as 2S + 1.
+        """,
+    )
+
+    def resolve_spin_properties(self, logger: 'BoundLogger') -> None:
+        """
+        Resolves the total spin and spin multiplicity of the system based on alpha and beta electrons.
+        """
+        if self.n_alpha_electrons is not None and self.n_beta_electrons is not None:
+            self.total_spin = (self.n_alpha_electrons - self.n_beta_electrons) / 2
+            self.spin_multiplicity = int(2 * self.total_spin + 1)
+
+    def validate_scheme(self, logger: 'BoundLogger') -> bool:
+        """
+        Validates the consistency of the molecular orbital scheme.
+
+        Returns:
+            (bool): True if the scheme is consistent, False otherwise.
+        """
+        if self.reference_type in ['RHF', 'RKS']:
+            if self.n_alpha_electrons != self.n_beta_electrons:
+                logger.error(
+                    f'For {self.reference_type}, the number of alpha and beta electrons must be equal.'
+                )
+                return False
+        if self.reference_type in ['ROHF', 'ROKS']:
+            if abs(self.n_alpha_electrons - self.n_beta_electrons) != 1:
+                logger.error(
+                    f'For {self.reference_type}, there must be exactly one unpaired electron.'
+                )
+                return False
+        return True
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Resolve spin properties
+        self.resolve_spin_properties(logger)
+
+        # Validate the molecular orbital scheme
+        if not self.validate_scheme(logger):
+            logger.error('Invalid molecular orbital scheme.')
+
+        # Resolve the number of molecular orbitals
+        if self.n_molecular_orbitals is None and self.molecular_orbitals:
+            self.n_molecular_orbitals = len(self.molecular_orbitals)
+
+        # Validate molecular orbital occupation
+        total_occupation = sum(
+            orbital.occupation
+            for orbital in self.molecular_orbitals
+            if orbital.occupation is not None
+        )
+        expected_occupation = self.n_alpha_electrons + self.n_beta_electrons
+        if total_occupation != expected_occupation:
+            logger.warning(
+                f'The total occupation ({total_occupation}) does not match the expected value ({expected_occupation}).'
+            )
+
+
 class GTOIntegralDecomposition(BaseModelMethod):
     """
     A general class for integral decomposition techniques for Coulomb and exchange integrals.
@@ -1251,6 +1409,19 @@ class GTOIntegralDecomposition(BaseModelMethod):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+
+class HartreeFock(ModelMethodElectronic):
+    """
+    A base section for Hartree Fock ansatz.
+    """
+
+    reference_determinant = Quantity(
+        type=MEnum('UHF', 'RHF', 'ROHF', 'UKS', 'RKS', 'ROKS'),
+        description="""
+        the type of reference determinant.
+        """,
+    )
 
 
 class PerturbationMethod(ModelMethodElectronic):
