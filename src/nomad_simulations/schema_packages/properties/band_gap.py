@@ -2,24 +2,28 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from nomad.units import ureg
-from nomad.metainfo import MEnum, Quantity
-from nomad.metainfo.dataset import MDataset
-from nomad.datamodel.metainfo.physical_properties import PhysicalProperty
 from nomad.datamodel.data import ArchiveSection
-from ..variables import SpinChannel, MomentumTransfer
+from nomad.metainfo import MEnum, Quantity
+from nomad.metainfo.physical_properties import MaterialProperty, Energy
+from ..variables import (
+    MaterialPropertyAttributes,
+    fetch_instance,
+    SpinChannel,
+    MomentumTransfer,
+)
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
 
-class ElectronicBandGap(MDataset, ArchiveSection):  # ? add optical band gap
-    m_def = PhysicalProperty(
-        type=np.float64,
-        unit='joule',
+class ElectronicBandGap(ArchiveSection):  # ! TODO: add optical band gap
+    values = MaterialProperty(
+        name='BandGap',
+        fields=[Energy],
+        variables=[SpinChannel, MomentumTransfer],  # target index
         iri='http://fairmat-nfdi.eu/taxonomy/ElectronicBandGap',
-        description="""Energy difference between the highest occupied electronic state and the lowest unoccupied electronic state.""",
-        default_variables=['SpinChannel', 'MomentumTransfer'],
+        description="""Energy difference between the highest occupied electronic state and the lowest unoccupied electronic state.""",  # ? necessity
     )
 
     type = Quantity(
@@ -34,17 +38,23 @@ class ElectronicBandGap(MDataset, ArchiveSection):  # ? add optical band gap
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        # super().normalize(archive, logger)
+        if np.any(self.values.fields < 0):  # ? check for Energy
+            logger.warning(f'Negative band gap detected: {self.values.fields} J')
 
-        if np.any(self.data < 0):
-            logger.warning(f'Negative band gap detected: {self.data} J')
-
-        if [True for var in self.variables if isinstance(var, SpinChannel)]:
+        if np.any(
+            fetch_instance(
+                self, SpinChannel, attribute=MaterialPropertyAttributes.variables
+            )
+        ):
             logger.warning(
-                f'Band gap without specifying any spin channel: {self.variables}'
+                f'Band gap without specifying any spin channel: {self.values.variables}'
             )
 
-        if not [True for var in self.variables if isinstance(var, MomentumTransfer)]:
+        if not np.any(
+            fetch_instance(
+                self, MomentumTransfer, attribute=MaterialPropertyAttributes.variables
+            )
+        ):
             if self.type == 'direct':
                 self.variables.append(
                     MomentumTransfer(data=[2 * [3 * [0.0]]] * ureg.angstrom**-1)

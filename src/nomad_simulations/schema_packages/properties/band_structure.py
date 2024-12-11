@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 import pint
-from nomad.metainfo import MEnum, Quantity, SubSection
-from nomad.metainfo.dataset import MDataset, Dataset
-from nomad.datamodel.metainfo.physical_properties import PhysicalProperty
+from nomad.datamodel.data import ArchiveSection
+from nomad.metainfo import MEnum, Quantity
+from nomad.metainfo.physical_properties import MaterialProperty, Count
 from ..variables import SpinChannel, KMesh
 
 if TYPE_CHECKING:
@@ -16,69 +16,29 @@ from nomad_simulations.schema_packages.numerical_settings import KSpace
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
 
 from nomad.config import config
+
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
 )
 
-class ElectronicEigenvalues(MDataset):
-    m_def = PhysicalProperty(
-        type=np.float64,
-        unit='joule',
-        iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicEigenvalues',
+
+Occupancy = Count.m_copy()  # ? establish semantic connection # values between 0 - 1 or 0 - 2
+Occupancy.iri='http://fairmat-nfdi.eu/taxonomy/Occupancy',
+Occupancy.description="""
+Electrons occupancy of an atom per orbital and spin. This is a number defined between 0 and 1 for
+spin-polarized systems, and between 0 and 2 for non-spin-polarized systems. This property is
+important when studying if an orbital or spin channel are fully occupied, at half-filling, or
+fully emptied, which have an effect on the electron-electron interaction effects.
+"""
+
+
+class ElectronicEigenstates(ArchiveSection):
+    values = MaterialProperty(
+        name='ElectronicEigenstates',
+        fields=[Energy, Occupancy],  # shape defined by variables
+        variables=[SpinChannel, KMesh],  # ? enforce spanned dimension at metainfo level
+        iri='http://fairmat-nfdi.eu/taxonomy/ElectronicEigenvalues',
         description="""A base section used to define basic quantities for the `ElectronicEigenvalues`  and `ElectronicEigenstates` properties.""",
-        default_variables=[SpinChannel, KMesh],
-    )
-
-    # ? Should we add functionalities to handle min/max of the `value` in some specific cases, .e.g, bands around the Fermi level,
-    # ? core bands separated by gaps, and equivalently, higher-energy valence bands separated by gaps?
-
-    reciprocal_cell = Quantity(
-        type=KSpace.reciprocal_lattice_vectors,
-        description="""
-        Reference to the reciprocal lattice vectors stored under `KSpace`.
-        """,
-    )  # !
-
-
-class Occupancy(MDataset):
-    m_def = PhysicalProperty(
-        type=np.float64,  # actually values between 0 - 2
-        iri = 'http://fairmat-nfdi.eu/taxonomy/Occupancy',
-        description="""
-            Electrons occupancy of an atom per orbital and spin. This is a number defined between 0 and 1 for
-            spin-polarized systems, and between 0 and 2 for non-spin-polarized systems. This property is
-            important when studying if an orbital or spin channel are fully occupied, at half-filling, or
-            fully emptied, which have an effect on the electron-electron interaction effects.
-            """,
-        default_variables=[SpinChannel, KMesh],
-    )
-
-    atoms_state_ref = Quantity(
-        type=AtomsState,
-        description="""
-        Reference to the `AtomsState` section in which the occupancy is calculated.
-        """,
-    )
-
-    orbitals_state_ref = Quantity(
-        type=OrbitalsState,
-        description="""
-        Reference to the `OrbitalsState` section in which the occupancy is calculated.
-        """,
-    )
-
-
-class ElectronicEigenstates(MDataset):  # ? rename
-    m_def = Dataset(
-        type=bool,
-        default_variables=[ElectronicEigenvalues, Occupancy],
-    )
-
-    n_bands = Quantity(
-        type=np.int32,
-        description="""
-        Number of bands / eigenvalues.
-        """,
     )
 
     kind = Quantity(
@@ -93,6 +53,39 @@ class ElectronicEigenstates(MDataset):  # ? rename
             - `'Zk'`: Quasiparticle renormalization factors contribution. This is also stored in the GW entry under `QuasiparticleWeights.value`.
         """,
     )
+
+    # ? Should we add functionalities to handle min/max of the `value` in some specific cases, e.g. bands around the Fermi level,
+    # ? core bands separated by gaps, and equivalently, higher-energy valence bands separated by gaps?
+
+    # references
+    reciprocal_cell = Quantity(
+        type=KSpace.reciprocal_lattice_vectors,
+        description="""
+        Reference to the reciprocal lattice vectors stored under `KSpace`.
+        """,
+    )  # !
+
+    atoms_state_ref = Quantity(
+        type=AtomsState,
+        description="""
+        Reference to the matching `AtomsState` section.
+        """,
+    )
+
+    orbitals_state_ref = Quantity(
+        type=OrbitalsState,
+        description="""
+        Reference to the matching `OrbitalsState` section.
+        """,
+    )  # ! TODO: unify with `atoms_state_ref`
+
+    # derived properties
+    n_bands = Quantity(
+        type=np.int32,
+        description="""
+        Number of bands / eigenvalues.
+        """,
+    )  # ? remove
 
     highest_occupied = Quantity(
         type=np.float64,
@@ -219,3 +212,11 @@ class ElectronicEigenstates(MDataset):  # ? rename
 
         # Resolve `reciprocal_cell` from the `KSpace` numerical settings section
         self.reciprocal_cell = self.resolve_reciprocal_cell()
+
+
+# TODO: consider matching different k-channels for indirect bandgaps
+def bandstructure_to_dos(bs: ElectronicEigenstates) -> ElectronicDOS:
+    pass
+
+def dos_to_bandgap(dos: ElectronicDOS) -> ElectronicBandGap:
+    pass

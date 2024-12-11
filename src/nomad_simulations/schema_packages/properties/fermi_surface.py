@@ -13,6 +13,7 @@ from nomad_simulations.schema_packages.utils import get_sibling_section
 
 
 from nomad.config import config
+
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
 )
@@ -64,6 +65,7 @@ def extract_fermi_surface(self, logger: 'BoundLogger') -> Optional['FermiSurface
     fermi_surface.variables = self.variables
     fermi_surface.value = fermi_values
     return fermi_surface
+
 
 # TODO This class is not implemented yet. @JosePizarro3 will work in another PR to implement it.
 class FermiSurface(PhysicalProperty):

@@ -1,10 +1,13 @@
 from typing import TYPE_CHECKING, Optional
 
+from enum import Enum
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import MEnum, Quantity
-from nomad.metainfo.dataset import MDataset, Dataset
-from nomad.datamodel.metainfo.physical_properties import PhysicalProperty
+from nomadmetainfo.physical_properties import (
+    PhysicalProperty,
+    MaterialProperty,
+)
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -19,38 +22,70 @@ from nomad_simulations.schema_packages.numerical_settings import (
 )
 
 
-class SpinChannel(MDataset):
-    m_def = Dataset(
-        type=MEnum('up', 'down', 'all'),  # ? alpha, beta
-    )
+class MaterialPropertyAttributes(Enum):
+    fields = 'fields'
+    variables = 'variables'
 
 
-class KMesh(MDataset):
-    m_def = Dataset(
-        type=np.float64,  # ? KMeshSettings.points,
-        unit='1/meter',
-        shape=[3],
-        description="""
-            K-point mesh over which the physical property is calculated. This is used to define `ElectronicEigenvalues(PhysicalProperty)` and
-            other k-space properties. The `points` are obtained from a reference to the `NumericalSettings` section, `KMesh(NumericalSettings)`.
-            """,
-    )
+def fetch_instance(
+    prop: MaterialProperty,
+    target: PhysicalProperty,
+    attribute: MaterialPropertyAttributes = MaterialPropertyAttributes.fields,
+) -> np.ndarray[PhysicalProperty]:
+    """
+    Fetches instances of a specified physical property from a material property based on a given attribute.
+
+    Args:
+        prop (MaterialProperty): The material property from which to fetch instances.
+        target (PhysicalProperty): The type of physical property to fetch.
+        attribute (MaterialPropertyAttributes): The attribute of the material property to check.
+
+    Returns:
+        np.ndarray[PhysicalProperty]: An array of instances of the specified physical property.
+
+    Raises:
+        ValueError: If the provided attribute is not a valid MaterialProperty attribute.
+    """
+    if not isinstance(attribute, MaterialPropertyAttributes):
+        raise ValueError(
+            f'Attribute {attribute} is not a valid MaterialProperty attribute.'
+        )
+    return np.where(lambda x: isinstance(x, target), getattr(prop, attribute), [])
 
 
-class MomentumTransfer(MDataset):
-    m_def = Dataset(
-        type=np.float64,
-        shape=[2, 3],
-        unit='1/meter',
-        description="""
-        The change in momentum for any (quasi-)particle, e.g. electron, hole,
-        traversing the band gap.
+SpinChannel = PhysicalProperty(
+    name='SpinChannel',
+    type=MEnum('alpha', 'beta', 'both'),
+    # ! iri
+)
 
-        For example, the momentum transfer in bulk Si happens
-        between the Γ and X points in the Brillouin zone; thus:
-            `momentum_transfer = [[0, 0, 0], [0.5, 0.5, 0]]`.
+
+KMesh = PhysicalProperty(
+    type=np.float64,  # ? KMeshSettings.points,
+    shape=[3],
+    unit='1/m',
+    description="""
+        K-point mesh over which the physical property is calculated. This is used to define `ElectronicEigenvalues(PhysicalProperty)` and
+        other k-space properties. The `points` are obtained from a reference to the `NumericalSettings` section, `KMesh(NumericalSettings)`.
         """,
-    )
+    # ! iri
+)
+
+
+MomentumTransfer = PhysicalProperty(
+    type=np.float64,
+    shape=[2, 3],
+    unit='1/meter',
+    description="""
+            The change in momentum for any (quasi-)particle, e.g. electron, hole,
+            traversing the band gap.
+
+            For example, the momentum transfer in bulk Si happens
+            between the Γ and X points in the Brillouin zone; thus:
+                `momentum_transfer = [[0, 0, 0], [0.5, 0.5, 0]]`.
+            """,
+    # ! iri
+)
 
 
 class Variables(ArchiveSection):
