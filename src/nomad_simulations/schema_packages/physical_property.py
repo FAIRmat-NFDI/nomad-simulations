@@ -14,7 +14,7 @@ from nomad.metainfo import (
     SectionProxy,
     SubSection,
 )
-from nomad.metainfo.metainfo import Dimension, DirectQuantity, _placeholder_quantity
+from nomad.metainfo.metainfo import Dimension
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -120,7 +120,7 @@ class PhysicalProperty(ArchiveSection):
         # ! add more examples in the description to improve the understanding of this quantity
     )
 
-    rank = DirectQuantity(
+    rank = Quantity(
         type=Dimension,
         shape=['0..*'],
         default=[],
@@ -137,7 +137,7 @@ class PhysicalProperty(ArchiveSection):
     variables = SubSection(sub_section=Variables.m_def, repeats=True)
 
     # * `value` must be overwritten in the derived classes defining its type, unit, and description
-    value: Quantity = _placeholder_quantity
+    value: Quantity = None
 
     entity_ref = Quantity(
         type=Entity,
