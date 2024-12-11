@@ -6,8 +6,6 @@ from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import MEnum, Quantity
 from nomad.metainfo.physical_properties import MaterialProperty, Energy
 from ..variables import (
-    MaterialPropertyAttributes,
-    fetch_instance,
     SpinChannel,
     MomentumTransfer,
 )
@@ -21,7 +19,7 @@ class ElectronicBandGap(ArchiveSection):  # ! TODO: add optical band gap
     values = MaterialProperty(
         name='BandGap',
         fields=[Energy],
-        variables=[SpinChannel, MomentumTransfer],  # target index
+        variables=[SpinChannel, MomentumTransfer],  # presence checked via annotations
         iri='http://fairmat-nfdi.eu/taxonomy/ElectronicBandGap',
         description="""Energy difference between the highest occupied electronic state and the lowest unoccupied electronic state.""",  # ? necessity
     )
@@ -41,20 +39,7 @@ class ElectronicBandGap(ArchiveSection):  # ! TODO: add optical band gap
         if np.any(self.values.fields < 0):  # ? check for Energy
             logger.warning(f'Negative band gap detected: {self.values.fields} J')
 
-        if np.any(
-            fetch_instance(
-                self, SpinChannel, attribute=MaterialPropertyAttributes.variables
-            )
-        ):
-            logger.warning(
-                f'Band gap without specifying any spin channel: {self.values.variables}'
-            )
-
-        if not np.any(
-            fetch_instance(
-                self, MomentumTransfer, attribute=MaterialPropertyAttributes.variables
-            )
-        ):
+        if not self.variables[1]:  # ! replace with native getter
             if self.type == 'direct':
                 self.variables.append(
                     MomentumTransfer(data=[2 * [3 * [0.0]]] * ureg.angstrom**-1)
@@ -63,5 +48,3 @@ class ElectronicBandGap(ArchiveSection):  # ! TODO: add optical band gap
                 logger.warning(
                     f'Indirect band gap without specifying any momentum transfer: {self.variables}'
                 )
-
-        # ? how to enforce a fixed ordering

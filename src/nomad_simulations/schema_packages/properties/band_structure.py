@@ -88,7 +88,7 @@ class ElectronicEigenstates(ArchiveSection):
     )  # ? remove
 
     highest_occupied = Quantity(
-        type=np.float64,
+        type=np.float64,  # ! energy, k-point
         unit='joule',
         description="""
         Highest occupied electronic eigenvalue. Together with `lowest_unoccupied`, it defines the
@@ -97,7 +97,7 @@ class ElectronicEigenstates(ArchiveSection):
     )
 
     lowest_unoccupied = Quantity(
-        type=np.float64,
+        type=np.float64,  # ! energy, k-point
         unit='joule',
         description="""
         Lowest unoccupied electronic eigenvalue. Together with `highest_occupied`, it defines the

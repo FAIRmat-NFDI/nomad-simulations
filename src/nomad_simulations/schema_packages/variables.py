@@ -22,37 +22,6 @@ from nomad_simulations.schema_packages.numerical_settings import (
 )
 
 
-class MaterialPropertyAttributes(Enum):
-    fields = 'fields'
-    variables = 'variables'
-
-
-def fetch_instance(
-    prop: MaterialProperty,
-    target: PhysicalProperty,
-    attribute: MaterialPropertyAttributes = MaterialPropertyAttributes.fields,
-) -> np.ndarray[PhysicalProperty]:
-    """
-    Fetches instances of a specified physical property from a material property based on a given attribute.
-
-    Args:
-        prop (MaterialProperty): The material property from which to fetch instances.
-        target (PhysicalProperty): The type of physical property to fetch.
-        attribute (MaterialPropertyAttributes): The attribute of the material property to check.
-
-    Returns:
-        np.ndarray[PhysicalProperty]: An array of instances of the specified physical property.
-
-    Raises:
-        ValueError: If the provided attribute is not a valid MaterialProperty attribute.
-    """
-    if not isinstance(attribute, MaterialPropertyAttributes):
-        raise ValueError(
-            f'Attribute {attribute} is not a valid MaterialProperty attribute.'
-        )
-    return np.where(lambda x: isinstance(x, target), getattr(prop, attribute), [])
-
-
 SpinChannel = PhysicalProperty(
     name='SpinChannel',
     type=MEnum('alpha', 'beta', 'both'),
