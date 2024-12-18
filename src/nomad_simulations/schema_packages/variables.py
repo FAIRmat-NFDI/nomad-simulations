@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING, Optional
 
-from enum import Enum
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import MEnum, Quantity
 from nomad.metainfo.datasets import (
     ValuesTemplate,
     DatasetTemplate,
+    Energy,
 )
 
 if TYPE_CHECKING:
@@ -14,11 +14,31 @@ if TYPE_CHECKING:
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.numerical_settings import (
-    KLinePath as KLinePathSettings,
+
+KPoint = ValuesTemplate(
+    type=np.float64,  # ? KMeshSettings.points,
+    shape=['*'],
+    unit='1/m',
+    description="""
+        K-point mesh over which the physical property is calculated.
+        """,
+    # ! iri
 )
-from nomad_simulations.schema_packages.numerical_settings import (
-    KMesh as KMeshSettings,
+
+
+KMomentumTransfer = ValuesTemplate(
+    type=np.float64,
+    shape=[2, 3],
+    unit='1/meter',
+    description="""
+        The change in momentum for any (quasi-)particle, e.g. electron, hole,
+        traversing the band gap.
+
+        For example, the momentum transfer in bulk Si happens
+        between the Γ and X points in the Brillouin zone; thus:
+            `momentum_transfer = [[0, 0, 0], [0.5, 0.5, 0]]`.
+        """,
+    # ! iri
 )
 
 
@@ -29,31 +49,127 @@ SpinChannel = ValuesTemplate(
 )
 
 
-KMesh = ValuesTemplate(
-    type=np.float64,  # ? KMeshSettings.points,
-    shape=[3],
-    unit='1/m',
+# ? SpinState
+
+
+FermiLevel = DatasetTemplate(
+    name='FermiLevel',
+    mandatory_fields=[Energy],
+    # iri
+)
+
+
+FermiSurface = DatasetTemplate(
+    name='FermiSurface',
+    mandatory_fields=[Energy],
+    mandatory_variables=[KPoint],  # ? band indices
     description="""
-        K-point mesh over which the physical property is calculated. This is used to define `ElectronicEigenvalues(PhysicalProperty)` and
-        other k-space properties. The `points` are obtained from a reference to the `NumericalSettings` section, `KMesh(NumericalSettings)`.
-        """,
+    The Fermi surface is the surface in the reciprocal space that separates the occupied states from the unoccupied states at absolute zero temperature.
+    """,
     # ! iri
 )
 
 
-MomentumTransfer = ValuesTemplate(
-    type=np.float64,
-    shape=[2, 3],
-    unit='1/meter',
+ElectronicStateOccupation = ValuesTemplate(
+    name='ElectronicStateOccupation',
+    type=np.float64,  # [0,1] or [0,2]
+    shape=['*'],
     description="""
-            The change in momentum for any (quasi-)particle, e.g. electron, hole,
-            traversing the band gap.
-
-            For example, the momentum transfer in bulk Si happens
-            between the Γ and X points in the Brillouin zone; thus:
-                `momentum_transfer = [[0, 0, 0], [0.5, 0.5, 0]]`.
-            """,
+    Occupation of an orbital or spin channel. This is a number defined between 0 and 1 for
+    spin-polarized systems, and between 0 and 2 for non-spin-polarized systems. This property is
+    important when studying if an orbital or spin channel are fully occupied, at half-filling, or
+    fully emptied, which have an effect on the electron-electron interaction effects.
+    """,
     # ! iri
+)
+
+
+ElectronicStateDensity = ValuesTemplate(
+    name='ElectronicStateDensity',
+    type=np.float64,
+    shape=['*'],
+    description="""
+    Density of electronic states. This property is important when studying the electronic structure
+    of a material, and it is used to calculate the density of states (DOS).
+    """,
+    # ! iri
+)
+
+
+HomoLumoGap = DatasetTemplate(
+    name='HomoLumoGap',
+    mandatory_fields=[Energy],
+    mandatory_variables=[SpinChannel],  # ?
+    iri='http://fairmat-nfdi.eu/taxonomy/HomoLumoGap',
+    description="""
+    The energy difference between the highest occupied spin state
+    and the lowest unoccupied spin state.
+    """,
+)
+
+
+ElectronicBandGap = DatasetTemplate(
+    name='ElectronicBandGap',
+    mandatory_fields=[Energy],
+    mandatory_variables=[SpinChannel],  # ?
+)
+
+
+BandGapType = ValuesTemplate(
+    mandatory_fields=MEnum('direct', 'indirect', 'unknown'),
+    description="""
+    Type categorization of the electronic band gap. This quantity is directly related with `momentum_transfer` as by
+    definition, the electronic band gap is `'direct'` for zero momentum transfer (or if `momentum_transfer` is `None`) and `'indirect'`
+    for finite momentum transfer.
+    """,
+)
+
+
+ElectronicEigenEnergies = DatasetTemplate(
+    name='ElectronicEigenEnergies',  # ? HamiltonianEigenvalues
+    mandatory_fields=[Energy, ElectronicStateOccupation],
+    mandatory_variables=[SpinChannel],  # ?
+    iri='http://fairmat-nfdi.eu/taxonomy/ElectronicEigenvalues',
+    description="""
+    A base section used to define basic quantities for
+    the `ElectronicEigenvalues` and `ElectronicEigenstates` properties.
+    """,
+)
+
+
+ElectronicDensityOfStates = DatasetTemplate(
+    name='DensityOfStates',
+    mandatory_fields=[Energy, ElectronicStateDensity],
+    mandatory_variables=[SpinChannel],  # ?
+    iri='http://fairmat-nfdi.eu/taxonomy/ElectronicDensityOfStates',
+)
+
+
+ProjectedElectronicDensityOfStates = DatasetTemplate(
+    name='ProjectedDensityOfStates',
+    mandatory_fields=[Energy, ElectronicStateDensity],
+    mandatory_variables=[SpinChannel, ElectronicState],  # ?
+    description="""
+    The density of states projected on a specific electronic state.
+    """,
+)
+
+
+SpectralEnergy = ValuesTemplate(
+    name='SpectralEnergy',
+    type=np.float64,
+    unit='spectral_energy',  # ! TODO: define ureg
+    shape=['*'],
+    description="""
+    Energy values at which the spectral function is calculated.
+    """,
+)
+
+
+Spectrum = DatasetTemplate(
+    name='Spectrum',
+    mandatory_fields=[Count],
+    mandatory_variables=[SpectralEnergy],
 )
 
 

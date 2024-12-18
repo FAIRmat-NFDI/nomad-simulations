@@ -2,18 +2,15 @@ from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 import pint
-import plotly.express as px
 
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import MEnum, Quantity
-from nomad.metainfo.physical_properties import DatasetTemplate, Count, Energy
-from ..variables import SpinChannel, KMesh
+from ..variables import SpinChannel, KPoint, ElectronicEigenEnergies
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
 from nomad_simulations.schema_packages.numerical_settings import KSpace
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
 
@@ -24,52 +21,15 @@ configuration = config.get_plugin_entry_point(
 )
 
 
-Occupancy = Count.m_copy()  # ? establish semantic connection # values between 0 - 1 or 0 - 2
-Occupancy.iri='http://fairmat-nfdi.eu/taxonomy/Occupancy',
-Occupancy.description="""
-Electrons occupancy of an atom per orbital and spin. This is a number defined between 0 and 1 for
-spin-polarized systems, and between 0 and 2 for non-spin-polarized systems. This property is
-important when studying if an orbital or spin channel are fully occupied, at half-filling, or
-fully emptied, which have an effect on the electron-electron interaction effects.
-"""
+class ElectronicEigenEnergiesSection(ArchiveSection):
+    electronic_eigen_energies = ElectronicEigenEnergies()
 
+    highest_occupied = Energy()  # ? C4: remove
 
-class ElectronicEigenstates(ArchiveSection):
-    values = DatasetTemplate(
-        name='ElectronicEigenstates',
-        mandatory_fields=[Energy, Occupancy],
-        mandatory_variables=[SpinChannel],
-        iri='http://fairmat-nfdi.eu/taxonomy/ElectronicEigenvalues',
-        description="""
-        A base section used to define basic quantities for
-        the `ElectronicEigenvalues` and `ElectronicEigenstates` properties.
-        """,
-    )
+    lowest_unoccupied = Energy()  # ? C4: remove
 
     # ? Should we add functionalities to handle min/max of the `value` in some specific cases, e.g. bands around the Fermi level,
     # ? core bands separated by gaps, and equivalently, higher-energy valence bands separated by gaps?
-
-    # references
-    atoms_state_ref = Quantity(
-        type=AtomsState,
-        description="""
-        Reference to the matching `AtomsState` section.
-        """,
-    )
-
-    orbitals_state_ref = Quantity(
-        type=OrbitalsState,
-        description="""
-        Reference to the matching `OrbitalsState` section.
-        """,
-    )  # ! TODO: unify with `atoms_state_ref`
-
-    # derived properties
-    n_eigenvalues = Count  # ? remove
-
-    highest_occupied = Energy  # ? property
-
-    lowest_unoccupied = Energy  # ? property
 
     def order_eigenvalues(self) -> Union[bool, tuple['pint.Quantity', np.ndarray]]:
         """
@@ -180,26 +140,6 @@ class ElectronicEigenstates(ArchiveSection):
         self.reciprocal_cell = self.resolve_reciprocal_cell()
 
 
-class DensityOfStates(ElectronicEigenstates):
-    # fermi_level
-
-    # band_gap
-
-    partial_dos = DatasetTemplate(
-        mandatory_fields=[Energy, Count],  # ! relax 
-        mandatory_variables=[SpinChannel, AtomsState],  # to be interpreted as the symbol, i.e. p_x
-    )  # ? instead of subsection
-
-    def plot(self):
-        self.m_all_validate()
-        energy_axes = self.values.get_values(Energy).by(SpinChannel)
-        figure_main = px.line(
-            x=np.sort(np.array(set(*energy_axes))), # overlay along spin dim
-            y=self.values.get_values(Count).by(SpinChannel),
-            color=self.values.get_variable(SpinChannel),
-        )
-
-
 class BandStructure(ArchiveSection):
     values = DatasetTemplate(
         name='BandStructure',
@@ -230,11 +170,11 @@ class BandStructure(ArchiveSection):
     highest_occupied = DatasetTemplate(
         name='HighestOccupied',
         mandatory_fields=[Energy, KMesh],
-    ) # ? property
+    )  # ? property
 
     lowest_unoccupied = ighest_occupied = DatasetTemplate(
         name='LowestUnoccupied',
         mandatory_fields=[Energy, KMesh],
-    ) # ? property
+    )  # ? property
 
     # ! plot

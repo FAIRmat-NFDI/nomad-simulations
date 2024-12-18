@@ -1,131 +1,32 @@
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
-import pint
+import plotly.express as px
+
 from nomad.config import config
-from nomad.metainfo import MEnum, Quantity, SubSection
+from nomad.metainfo import MEnum, Quantity
+from ..variables import (
+    Energy,
+    Count,
+    SpinChannel,
+    ElectronicDensityOfStates,
+    ProjectedElectronicDensityOfStates,
+)
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
-
-from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
-from nomad_simulations.schema_packages.physical_property import PhysicalProperty
-from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
-from nomad_simulations.schema_packages.utils import get_sibling_section, get_variables
-from nomad_simulations.schema_packages.variables import Energy2 as Energy
+    import pint
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
 )
 
 
-class SpectralProfile(PhysicalProperty):
-    """
-    A base section used to define the spectral profile.
-    """
+class ElectronicDOSSection(ArchiveSection):
+    dos = ElectronicDensityOfStates()
 
-    value = Quantity(
-        type=np.float64,
-        description="""
-        The value of the intensities of a spectral profile in arbitrary units.
-        """,
-    )  # TODO check units and normalization_factor of DOS and Spectras and see whether they can be merged
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.rank = []
-
-    def is_valid_spectral_profile(self) -> bool:
-        """
-        Check if the spectral profile is valid, i.e., if all `value` are defined positive.
-
-        Returns:
-            (bool): True if the spectral profile is valid, False otherwise.
-        """
-        if (self.value < 0.0).any():
-            return False
-        return True
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        if self.is_valid_spectral_profile() is False:
-            logger.error(
-                'Invalid negative intensities found: could not validate spectral profile.'
-            )
-            return
-
-
-class DOSProfile(SpectralProfile):
-    """
-    A base section used to define the `value` of the `ElectronicDensityOfState` property. This is useful when containing
-    contributions for `projected_dos` with the correct unit.
-    """
-
-    value = Quantity(
-        type=np.float64,
-        unit='1/joule',
-        description="""
-        The value of the electronic DOS.
-        """,
-    )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-
-    def resolve_pdos_name(self, logger: 'BoundLogger') -> Optional[str]:
-        """
-        Resolve the `name` of the projected `DOSProfile` from the `entity_ref` section. This is resolved as:
-            - `'atom X'` with 'X' being the chemical symbol for `AtomsState` references.
-            -  `'orbital Y X'` with 'X' being the chemical symbol and 'Y' the orbital label for `OrbitalsState` references.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[str]): The resolved `name` of the projected DOS profile.
-        """
-        if self.entity_ref is None and not self.name == 'ElectronicDensityOfStates':
-            logger.warning(
-                'The `entity_ref` is not set for the DOS profile. Could not resolve the `name`.'
-            )
-            return None
-
-        # Resolve the `name` from the `entity_ref`
-        name = None
-        if isinstance(self.entity_ref, AtomsState):
-            name = f'atom {self.entity_ref.chemical_symbol}'
-        elif isinstance(self.entity_ref, OrbitalsState):
-            name = f'orbital {self.entity_ref.l_quantum_symbol}{self.entity_ref.ml_quantum_symbol} {self.entity_ref.m_parent.chemical_symbol}'
-        return name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        # We resolve
-        self.name = self.resolve_pdos_name(logger)
-
-
-class ElectronicDensityOfStates(DOSProfile):
-    """
-    Number of electronic states accessible for the charges per energy and per volume.
-    """
-
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
-    iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicDensityOfStates'
-
-    spin_channel = Quantity(
-        type=np.int32,
-        description="""
-        Spin channel of the corresponding electronic DOS. It can take values of 0 or 1.
-        """,
-    )
+    pdos = ProjectedElectronicDensityOfStates()
 
     # TODO clarify the role of `energies_origin` once `ElectronicEigenvalues` is implemented
     energies_origin = Quantity(
@@ -135,7 +36,7 @@ class ElectronicDensityOfStates(DOSProfile):
         Energy level denoting the origin along the energy axis, used for comparison and visualization. It is
         defined as the `ElectronicEigenvalues.highest_occupied_energy`.
         """,
-    )
+    )  # ? i.e. Fermi-level
 
     normalization_factor = Quantity(
         type=np.float64,
@@ -146,53 +47,23 @@ class ElectronicDensityOfStates(DOSProfile):
         """,
     )
 
-    # ? Do we want to store the integrated value here os as part of an nomad-analysis tool? Check `dos_integrator.py` module in dos normalizer repository
-    # value_integrated = Quantity(
-    #     type=np.float64,
-    #     description="""
-    #     The cumulative intensities integrated from from the lowest (most negative) energy to the Fermi level.
-    #     """,
-    # )
-
-    projected_dos = SubSection(
-        sub_section=DOSProfile.m_def,
-        repeats=True,
-        description="""
-        Projected DOS. It can be atom- (different elements in the unit cell) or orbital-projected. These can be calculated in a cascade as:
-            - If the total DOS is not present, we sum all atom-projected DOS to obtain it.
-            - If the atom-projected DOS is not present, we sum all orbital-projected DOS to obtain it.
-        Note: the cover given by summing up contributions is not perfect, and will depend on the projection functions used.
-
-        In `projected_dos`, `name` and `entity_ref` must be set in order for normalization to work:
-            - The `entity_ref` is the `OrbitalsState` or `AtomsState` sections.
-            - The `name` of the projected DOS should be `'atom X'` or `'orbital Y X'`, with 'X' being the chemical symbol and 'Y' the orbital label.
-            These can be extracted from `entity_ref`.
-        """,
-    )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
     def resolve_energies_origin(
         self,
-        energies: pint.Quantity,
-        fermi_level: Optional[pint.Quantity],
+        energies: 'pint.Quantity',
+        fermi_level: Optional['pint.Quantity'],
         logger: 'BoundLogger',
-    ) -> Optional[pint.Quantity]:
+    ) -> Optional['pint.Quantity']:
         """
         Resolve the origin of reference for the energies from the sibling `ElectronicEigenvalues` section and its
         `highest_occupied` level, or if this does not exist, from the `fermi_level` value as extracted from the sibling property, `FermiLevel`.
 
         Args:
-            fermi_level (Optional[pint.Quantity]): The resolved Fermi level.
-            energies (pint.Quantity): The grid points of the `Energy` variable.
-            logger (BoundLogger): The logger to log messages.
+            fermi_level: The resolved Fermi level.
+            energies: The grid points of the `Energy` variable.
+            logger: The logger to log messages.
 
         Returns:
-            (Optional[pint.Quantity]): The resolved origin of reference for the energies.
+            The resolved origin of reference for the energies.
         """
         # Check if the variables contain more than one variable (different than Energy)
         # ? Is this correct or should be use the index of energies to extract the proper shape element in `self.value` being used for `dos_values`?
@@ -367,50 +238,18 @@ class ElectronicDensityOfStates(DOSProfile):
                 band_gap.value = homo - lumo
         return band_gap
 
-    def extract_projected_dos(
-        self, type: str, logger: 'BoundLogger'
-    ) -> list[Optional[DOSProfile]]:
-        """
-        Extract the projected DOS from the `projected_dos` section and the specified `type`.
-
-        Args:
-            type (str): The type of the projected DOS to extract. It can be `'atom'` or `'orbital'`.
-
-        Returns:
-            (DOSProfile): The extracted projected DOS.
-        """
-        extracted_pdos = []
-        for pdos in self.projected_dos:
-            # We make sure each PDOS is normalized
-            pdos.normalize(None, logger)
-
-            # Initial check for `name` and `entity_ref`
-            if (
-                pdos.name is None
-                or pdos.entity_ref is None
-                or len(pdos.entity_ref) == 0
-            ):
-                logger.warning(
-                    '`name` or `entity_ref` are not set for `projected_dos` and they are required for normalization to work.'
-                )
-                return None
-
-            if type in pdos.name:
-                extracted_pdos.append(pdos)
-        return extracted_pdos
-
     def generate_from_projected_dos(
         self, logger: 'BoundLogger'
-    ) -> Optional[pint.Quantity]:
+    ) -> Optional['pint.Quantity']:
         """
         Generate the total `value` of the electronic DOS from the `projected_dos` contributions. If the `projected_dos`
         is not present, it returns `None`.
 
         Args:
-            logger (BoundLogger): The logger to log messages.
+            logger: The logger to log messages.
 
         Returns:
-            (Optional[pint.Quantity]): The total `value` of the electronic DOS.
+            The total `value` of the electronic DOS.
         """
         if self.projected_dos is None or len(self.projected_dos) == 0:
             return None
@@ -462,6 +301,15 @@ class ElectronicDensityOfStates(DOSProfile):
             value = np.sum(atom_values, axis=0) * atom_unit
         return value
 
+    def plot(self):  # ? to be usurped by plotting annotations
+        self.m_all_validate()
+        energy_axes = self.values.get_values(Energy).by(SpinChannel)
+        figure_main = px.line(
+            x=np.sort(np.array(set(*energy_axes))),  # overlay along spin dim
+            y=self.values.get_values(Count).by(SpinChannel),
+            color=self.values.get_variable(SpinChannel),
+        )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
@@ -502,59 +350,20 @@ class ElectronicDensityOfStates(DOSProfile):
             self.value = value_from_pdos
 
 
-class AbsorptionSpectrum(SpectralProfile):
-    """ """
+class XASSpectrum(AbsorptionSpectrum):
+    xas = Spectrum()
 
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
+    xanes_spectrum = Spectrum()
 
-    axis = Quantity(
+    exafs_spectrum = Spectrum()
+
+    polarization_axis = Quantity(
         type=MEnum('xx', 'yy', 'zz'),
         description="""
         Axis of the absorption spectrum. This is related with the polarization direction, and can be seen as the
         principal term in the tensor `Permittivity.value` (see permittivity.py module).
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        # Set the name of the section
-        self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-
-class XASSpectrum(AbsorptionSpectrum):
-    """
-    X-ray Absorption Spectrum (XAS).
-    """
-
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
-
-    xanes_spectrum = SubSection(
-        sub_section=AbsorptionSpectrum.m_def,
-        description="""
-        X-ray Absorption Near Edge Structure (XANES) spectrum.
-        """,
-        repeats=False,
-    )
-
-    exafs_spectrum = SubSection(
-        sub_section=AbsorptionSpectrum.m_def,
-        description="""
-        Extended X-ray Absorption Fine Structure (EXAFS) spectrum.
-        """,
-        repeats=False,
-    )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        # Set the name of the section
-        self.name = self.m_def.name
 
     def generate_from_contributions(self, logger: 'BoundLogger') -> None:
         """
@@ -564,6 +373,8 @@ class XASSpectrum(AbsorptionSpectrum):
         Args:
             logger (BoundLogger): The logger to log messages.
         """
+        self.m_validate()
+
         # TODO check if this method is general enough
         if self.xanes_spectrum is not None and self.exafs_spectrum is not None:
             # Concatenate XANE and EXAFS `Energy` grid points
