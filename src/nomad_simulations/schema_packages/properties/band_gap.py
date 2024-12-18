@@ -4,7 +4,7 @@ import numpy as np
 from nomad.units import ureg
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import MEnum, Quantity
-from nomad.metainfo.physical_properties import DatasetTemplate, Energy
+from nomad.metainfo.datasets import DatasetTemplate, Energy
 from ..variables import (
     SpinChannel,
     MomentumTransfer,
@@ -29,8 +29,8 @@ class HomoLumoGap(ArchiveSection):  # ? class description
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         self.m_all_validate()  # ensure constraints 
-        if np.any(self.values.fields < 0):
-            logger.warning(f'Negative band gap detected: {self.values.fields} J')
+        if np.any((energies := self.get_variable(Energy).get_values()) < 0):  # ? failure handling
+            logger.warning(f'Negative band gap detected: {energies.to('J').magnitude} J')
 
 
 class ElectronicBandGap(HomoLumoGap):  # ! TODO: add optical band gap

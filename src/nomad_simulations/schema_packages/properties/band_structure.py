@@ -2,9 +2,11 @@ from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 import pint
+import plotly.express as px
+
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import MEnum, Quantity
-from nomad.metainfo.physical_properties import MaterialProperty, Count
+from nomad.metainfo.physical_properties import DatasetTemplate, Count, Energy
 from ..variables import SpinChannel, KMesh
 
 if TYPE_CHECKING:
@@ -33,24 +35,14 @@ fully emptied, which have an effect on the electron-electron interaction effects
 
 
 class ElectronicEigenstates(ArchiveSection):
-    values = MaterialProperty(
+    values = DatasetTemplate(
         name='ElectronicEigenstates',
-        fields=[Energy, Occupancy],  # shape defined by variables
-        variables=[SpinChannel, KMesh],  # ? enforce spanned dimension at metainfo level
+        mandatory_fields=[Energy, Occupancy],
+        mandatory_variables=[SpinChannel],
         iri='http://fairmat-nfdi.eu/taxonomy/ElectronicEigenvalues',
-        description="""A base section used to define basic quantities for the `ElectronicEigenvalues`  and `ElectronicEigenstates` properties.""",
-    )
-
-    kind = Quantity(
-        type=MEnum('KS', 'KSxc', 'SigX', 'SigC', 'Zk'),
         description="""
-        Contributions to the electronic eigenvalues. Example, in the case of a DFT+GW calculation, the GW eigenvalues
-        are stored under `value`, and each contribution is identified by `label`:
-            - `'KS'`: Kohn-Sham contribution. This is also stored in the DFT entry under `ElectronicEigenvalues.value`.
-            - `'KSxc'`: Diagonal matrix elements of the expectation value of the Kohn-Sahm exchange-correlation potential.
-            - `'SigX'`: Diagonal matrix elements of the exchange self-energy. This is also stored in the GW entry under `ElectronicSelfEnergy.value`.
-            - `'SigC'`: Diagonal matrix elements of the correlation self-energy. This is also stored in the GW entry under `ElectronicSelfEnergy.value`.
-            - `'Zk'`: Quasiparticle renormalization factors contribution. This is also stored in the GW entry under `QuasiparticleWeights.value`.
+        A base section used to define basic quantities for
+        the `ElectronicEigenvalues` and `ElectronicEigenstates` properties.
         """,
     )
 
@@ -58,13 +50,6 @@ class ElectronicEigenstates(ArchiveSection):
     # ? core bands separated by gaps, and equivalently, higher-energy valence bands separated by gaps?
 
     # references
-    reciprocal_cell = Quantity(
-        type=KSpace.reciprocal_lattice_vectors,
-        description="""
-        Reference to the reciprocal lattice vectors stored under `KSpace`.
-        """,
-    )  # !
-
     atoms_state_ref = Quantity(
         type=AtomsState,
         description="""
@@ -80,30 +65,11 @@ class ElectronicEigenstates(ArchiveSection):
     )  # ! TODO: unify with `atoms_state_ref`
 
     # derived properties
-    n_bands = Quantity(
-        type=np.int32,
-        description="""
-        Number of bands / eigenvalues.
-        """,
-    )  # ? remove
+    n_eigenvalues = Count  # ? remove
 
-    highest_occupied = Quantity(
-        type=np.float64,  # ! energy, k-point
-        unit='joule',
-        description="""
-        Highest occupied electronic eigenvalue. Together with `lowest_unoccupied`, it defines the
-        electronic band gap.
-        """,
-    )
+    highest_occupied = Energy  # ? property
 
-    lowest_unoccupied = Quantity(
-        type=np.float64,  # ! energy, k-point
-        unit='joule',
-        description="""
-        Lowest unoccupied electronic eigenvalue. Together with `highest_occupied`, it defines the
-        electronic band gap.
-        """,
-    )
+    lowest_unoccupied = Energy  # ? property
 
     def order_eigenvalues(self) -> Union[bool, tuple['pint.Quantity', np.ndarray]]:
         """
@@ -214,9 +180,61 @@ class ElectronicEigenstates(ArchiveSection):
         self.reciprocal_cell = self.resolve_reciprocal_cell()
 
 
-# TODO: consider matching different k-channels for indirect bandgaps
-def bandstructure_to_dos(bs: ElectronicEigenstates) -> ElectronicDOS:
-    pass
+class DensityOfStates(ElectronicEigenstates):
+    # fermi_level
 
-def dos_to_bandgap(dos: ElectronicDOS) -> ElectronicBandGap:
-    pass
+    # band_gap
+
+    partial_dos = DatasetTemplate(
+        mandatory_fields=[Energy, Count],  # ! relax 
+        mandatory_variables=[SpinChannel, AtomsState],  # to be interpreted as the symbol, i.e. p_x
+    )  # ? instead of subsection
+
+    def plot(self):
+        self.m_all_validate()
+        energy_axes = self.values.get_values(Energy).by(SpinChannel)
+        figure_main = px.line(
+            x=np.sort(np.array(set(*energy_axes))), # overlay along spin dim
+            y=self.values.get_values(Count).by(SpinChannel),
+            color=self.values.get_variable(SpinChannel),
+        )
+
+
+class BandStructure(ArchiveSection):
+    values = DatasetTemplate(
+        name='BandStructure',
+        fields=[ElectronicEigenstates.values],
+        variables=[KMesh],  # ? at what level will `SpinChannel` exist
+    )
+
+    kind = Quantity(
+        type=MEnum('KS', 'KSxc', 'SigX', 'SigC', 'Zk'),
+        description="""
+        Contributions to the electronic eigenvalues. Example, in the case of a DFT+GW calculation, the GW eigenvalues
+        are stored under `value`, and each contribution is identified by `label`:
+            - `'KS'`: Kohn-Sham contribution. This is also stored in the DFT entry under `ElectronicEigenvalues.value`.
+            - `'KSxc'`: Diagonal matrix elements of the expectation value of the Kohn-Sahm exchange-correlation potential.
+            - `'SigX'`: Diagonal matrix elements of the exchange self-energy. This is also stored in the GW entry under `ElectronicSelfEnergy.value`.
+            - `'SigC'`: Diagonal matrix elements of the correlation self-energy. This is also stored in the GW entry under `ElectronicSelfEnergy.value`.
+            - `'Zk'`: Quasiparticle renormalization factors contribution. This is also stored in the GW entry under `QuasiparticleWeights.value`.
+        """,
+    )  # ? move to `ElectronicEigenstates`
+
+    reciprocal_cell = Quantity(
+        type=KSpace.reciprocal_lattice_vectors,
+        description="""
+        Reference to the reciprocal lattice vectors stored under `KSpace`.
+        """,
+    )  # !
+
+    highest_occupied = DatasetTemplate(
+        name='HighestOccupied',
+        mandatory_fields=[Energy, KMesh],
+    ) # ? property
+
+    lowest_unoccupied = ighest_occupied = DatasetTemplate(
+        name='LowestUnoccupied',
+        mandatory_fields=[Energy, KMesh],
+    ) # ? property
+
+    # ! plot

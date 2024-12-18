@@ -4,9 +4,9 @@ from enum import Enum
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import MEnum, Quantity
-from nomadmetainfo.physical_properties import (
-    PhysicalProperty,
-    MaterialProperty,
+from nomad.metainfo.datasets import (
+    ValuesTemplate,
+    DatasetTemplate,
 )
 
 if TYPE_CHECKING:
@@ -22,14 +22,14 @@ from nomad_simulations.schema_packages.numerical_settings import (
 )
 
 
-SpinChannel = PhysicalProperty(
+SpinChannel = ValuesTemplate(
     name='SpinChannel',
     type=MEnum('alpha', 'beta', 'both'),
     # ! iri
 )
 
 
-KMesh = PhysicalProperty(
+KMesh = ValuesTemplate(
     type=np.float64,  # ? KMeshSettings.points,
     shape=[3],
     unit='1/m',
@@ -41,7 +41,7 @@ KMesh = PhysicalProperty(
 )
 
 
-MomentumTransfer = PhysicalProperty(
+MomentumTransfer = ValuesTemplate(
     type=np.float64,
     shape=[2, 3],
     unit='1/meter',
@@ -57,7 +57,7 @@ MomentumTransfer = PhysicalProperty(
 )
 
 
-class Variables(ArchiveSection):
+class Variables(ArchiveSection):  # ! TODO: deprecate
     """
     Variables over which the physical property varies, and they are defined as grid points, i.e., discretized
     values by `n_points` and `points`. These are used to calculate the `shape` of the physical property.
