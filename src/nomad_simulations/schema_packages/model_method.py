@@ -1242,7 +1242,7 @@ class MolecularOrbital(ArchiveSection):
         type=str, description='Symmetry label of the molecular orbital.'
     )
 
-    reference_orbital = SubSection(
+    orbital_ref = SubSection(
         sub_section=OrbitalsState.m_def,
         description='Reference to the underlying atomic orbital state.',
     )
@@ -1275,7 +1275,7 @@ class LCAO(ArchiveSection):
         - canonical: Default canonical molecular orbitals.
         - natural: Natural orbitals obtained from the density matrix.
         - localized: Localized orbitals such as Boys or Foster-Boys localization.
-        TODO: this will be later connected to many other things.
+        TODO: this will be later connected to MCSCF.
         """,
         a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
@@ -1346,7 +1346,7 @@ class LCAO(ArchiveSection):
                     f'For {self.reference_type}, the number of alpha and beta electrons must be equal.'
                 )
                 return False
-        if self.reference_type in ['ROHF', 'ROKS']:
+        elif self.reference_type in ['ROHF', 'ROKS']:
             if abs(self.n_alpha_electrons - self.n_beta_electrons) != 1:
                 logger.error(
                     f'For {self.reference_type}, there must be exactly one unpaired electron.'
@@ -1383,7 +1383,7 @@ class LCAO(ArchiveSection):
 
 class GTOIntegralDecomposition(BaseModelMethod):
     """
-    A general class for integral decomposition techniques for Coulomb and exchange integrals.
+    A general class for integral decomposition techniques for Coulomb and exchange integrals to speed up the calculation.
     Examples:
     Resolution of identity (RI-approximation):
     RI
@@ -1393,22 +1393,21 @@ class GTOIntegralDecomposition(BaseModelMethod):
     """
 
     approximation_type = Quantity(
-        type=str,
+        type=MEnum('RIJ', 'RIJK', 'RIK', 'SENEX', 'RIJCOSX'),
         description="""
-        RIJ, RIK, RIJK,
+        RIJ     : also known as RIJONX, where only Coulomb integrals are approximated.
+        RIJK    : both Coulomb and exchange integrals.
+        RIJCOSX : RIJ for Coulomb and COSX for HF exchange.
         """,
     )
 
     approximated_term = Quantity(
         type=str,
         description="""
-        such as coulomb, exchange, explicit-correlation
-        to be converted to an MEnum later.
+        Such as coulomb, exchange, explicit-correlation, MP2 integrals and so on.
+        TODO: MEnum.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class HartreeFock(ModelMethodElectronic):
@@ -1427,6 +1426,7 @@ class HartreeFock(ModelMethodElectronic):
 class PerturbationMethod(ModelMethodElectronic):
     type = Quantity(
         type=MEnum('MP', 'RS', 'BW'),
+        default='MP',
         description="""
         Perturbation approach. The abbreviations stand for:
         | Abbreviation | Description |
@@ -1435,8 +1435,8 @@ class PerturbationMethod(ModelMethodElectronic):
         | `'RS'`       | Rayleigh-Schrödigner |
         | `'BW'`       | Brillouin-Wigner |
         """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
-    )  # TODO: check if the special symbols are supported
+        # a_eln=ELNAnnotation(component='EnumEditQuantity'),
+    )
 
     order = Quantity(
         type=np.int32,
@@ -1475,5 +1475,5 @@ class LocalCorrelation(ArchiveSection):
 
             # TODO: improve list!
         """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
+        # a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
