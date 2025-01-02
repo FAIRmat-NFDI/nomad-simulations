@@ -1416,9 +1416,9 @@ class HartreeFock(ModelMethodElectronic):
     """
 
     reference_determinant = Quantity(
-        type=MEnum('UHF', 'RHF', 'ROHF', 'UKS', 'RKS', 'ROKS'),
+        type=MEnum('UHF', 'RHF', 'ROHF'),
         description="""
-        the type of reference determinant.
+        Type of reference determinant.
         """,
     )
 
