@@ -344,7 +344,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
 
     total_number_of_basis_functions = Quantity(
         type=np.int32,
-        description='',
+        description=""""the total number of basis functions""",
     )
 
     functional_composition = SubSection(

@@ -1349,7 +1349,7 @@ class LCAO(ArchiveSection):
         elif self.reference_type in ['ROHF', 'ROKS']:
             if abs(self.n_alpha_electrons - self.n_beta_electrons) != 1:
                 logger.error(
-                    f'For {self.reference_type}, there must be exactly one unpaired electron.'
+                    f'For {self.reference_type}, there must be unpaired electron(s).'
                 )
                 return False
         return True
@@ -1435,7 +1435,6 @@ class PerturbationMethod(ModelMethodElectronic):
         | `'RS'`       | Rayleigh-Schrödigner |
         | `'BW'`       | Brillouin-Wigner |
         """,
-        # a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
 
     order = Quantity(
@@ -1475,5 +1474,77 @@ class LocalCorrelation(ArchiveSection):
 
             # TODO: improve list!
         """,
-        # a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
+
+
+class CoupledCluster(ModelMethodElectronic):
+    """
+    A base section used to define the parameters of a Coupled Cluster calculation.
+    A standard schema is defined, though the most common cases can be summarized in the `type` quantity.
+    """
+
+    type = Quantity(
+        type=str,
+        description="""
+        Coupled Cluster flavor.
+        Examples: CC2, CC3, CCD, CCSD, BCCD, QCCD and so on.
+        The perturbative corrections are not included.
+        """,
+        a_eln=ELNAnnotation(component='StringEditQuantity'),
+    )
+
+    excitation_order = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Orders at which the excitation are used.
+        1 = single, 2 = double, 3 = triple, 4 = quadruple, etc.
+        """
+    )
+
+    reference_determinant = Quantity(
+        type=MEnum('UHF','RHF','ROHF',
+                   'UKS', 'RKS', 'ROKS'),
+        description="""
+        The type of reference determinant.
+        """,
+    )
+
+    perturbation_method = SubSection(sub_section=PerturbationMethod.m_def)
+
+    local_correlation = SubSection(sub_section=LocalCorrelation.m_def)
+
+    perturbative_correction = Quantity(
+        type=MEnum('(T)', '[T]',
+                   '(T0)', '[T0]',
+                   '(Q)'),
+        description="""
+        The type of perturbative corrections.
+        A perturbative correction is different than a perturbation method.
+        """
+    )
+
+    explicit_correlation = Quantity(
+        type=MEnum('F12', 'F12a', 'F12b', 'F12c',
+                   'R12', ''),
+        default='',
+        description="""
+        Explicit correlation treatment.
+        These methods introduce the interelectronic distance coordinate
+        directly into the wavefunction to treat dynamical electron correlation.
+        It can be added linearly (R12) or exponentially (F12).
+        """,
+    )
+
+    is_frozencore = Quantity(
+        type=bool,
+        description="""
+        Flag for frozencore approximation.
+        In post-HF calculation only the valence electrons are typically correlated.
+        The others are kept frozen.
+        FC approximations differ between quantum chemistry codes.
+        """,
+    )
+
+
+
