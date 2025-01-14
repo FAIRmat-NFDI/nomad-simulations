@@ -1223,7 +1223,7 @@ class DMFT(ModelMethodElectronic):
         super().normalize(archive, logger)
 
 
-class MolecularOrbital(ArchiveSection):
+class BaseMolecularOrbital(ArchiveSection):
     """
     A section representing a single molecular orbital.
     """
@@ -1248,9 +1248,9 @@ class MolecularOrbital(ArchiveSection):
     )
 
 
-class LCAO(ArchiveSection):
+class MolecularOrbitals(ArchiveSection):
     """
-    A base class for molecular orbital schemes used in quantum chemistry calculations.
+    A section for molecular orbital schemes used in quantum chemistry calculations.
     Supports unrestricted (UHF, UKS), restricted (RHF, RKS), and restricted open-shell (ROHF, ROKS) schemes.
     """
 
@@ -1302,7 +1302,7 @@ class LCAO(ArchiveSection):
     )
 
     molecular_orbitals = SubSection(
-        sub_section=MolecularOrbital.m_def,
+        sub_section=BaseMolecularOrbital.m_def,
         repeats=True,
         description="""
         Detailed information about each molecular orbital,
@@ -1398,6 +1398,7 @@ class GTOIntegralDecomposition(BaseModelMethod):
         RIJ     : also known as RIJONX, where only Coulomb integrals are approximated.
         RIJK    : both Coulomb and exchange integrals.
         RIJCOSX : RIJ for Coulomb and COSX for HF exchange.
+        SENEX   : Similar to COSX, relevant for Turbomole.
         """,
     )
 
@@ -1448,8 +1449,8 @@ class PerturbationMethod(ModelMethodElectronic):
     density = Quantity(
         type=MEnum('relaxed', 'unrelaxed'),
         description="""
-        unrelaxed density: MP2 expectation value density
-        relaxed density  : incorporates orbital relaxation
+        unrelaxed density: MP2 expectation value density.
+        relaxed density  : incorporates orbital relaxation.
         """,
     )
 
@@ -1461,18 +1462,17 @@ class LocalCorrelation(ArchiveSection):
     It has a corresponding localization method.
     """
 
-    method = Quantity(
-        type=MEnum('LMP2', 'LCCD', 'LCCSD', 'LCCSD(T)', 'DLPNO-CCSD(T)', 'LocalDFT'),
+    type = Quantity(
+        type=MEnum('PNO', 'domain'),
         description="""
-        The local correlation method applied. For example:
-            - LMP2: Local Møller-Plesset perturbation theory
-            - LCCD: Local Coupled-Cluster with Doubles
-            - LCCSD: Local Coupled-Cluster with Singles and Doubles
-            - LCCSD(T): Local Coupled-Cluster with Singles, Doubles, and Perturbative Triples
-            - DLPNO-CCSD(T): Domain-Based Local Pair Natural Orbital CCSD(T)
-            - LocalDFT: Local Density Functional Theory.
+        the type of local correlation.
+        """,
+    )
 
-            # TODO: improve list!
+    ansatz = Quantity(
+        type=MEnum('LMP2', 'LCC', 'LocalDFT'),
+        description="""
+        The underlying ansatz for the local correlation treatment.
         """,
     )
 
@@ -1493,40 +1493,49 @@ class CoupledCluster(ModelMethodElectronic):
         a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
+    reference_determinant = Quantity(
+        type=MEnum('UHF', 'RHF', 'ROHF', 'UKS', 'RKS', 'ROKS'),
+        description="""
+        The type of reference determinant.
+        """,
+    )
+
     excitation_order = Quantity(
         type=np.int32,
         shape=['*'],
         description="""
         Orders at which the excitation are used.
         1 = single, 2 = double, 3 = triple, 4 = quadruple, etc.
-        """
+        """,
     )
 
-    reference_determinant = Quantity(
-        type=MEnum('UHF','RHF','ROHF',
-                   'UKS', 'RKS', 'ROKS'),
+    perturbative_correction_order = Quantity(
+        type=np.int32,
+        shape=['*'],
         description="""
-        The type of reference determinant.
+        Orders at which the excitation are used.
+        1 = single, 2 = double, 3 = triple, 4 = quadruple, etc.
+        """,
+    )
+
+    perturbative_correction = Quantity(
+        type=MEnum('(T)', '[T]', '(T0)', '[T0]', '(Q)'),
+        description="""
+        The type of perturbative corrections.
+        A perturbative correction is different than a perturbation method.
         """,
     )
 
     perturbation_method = SubSection(sub_section=PerturbationMethod.m_def)
 
-    local_correlation = SubSection(sub_section=LocalCorrelation.m_def)
+    local_correlation = SubSection(sub_section=LocalCorrelation.m_def, repeats=True)
 
-    perturbative_correction = Quantity(
-        type=MEnum('(T)', '[T]',
-                   '(T0)', '[T0]',
-                   '(Q)'),
-        description="""
-        The type of perturbative corrections.
-        A perturbative correction is different than a perturbation method.
-        """
+    gto_integral_decomposition = SubSection(
+        sub_section=GTOIntegralDecomposition.m_def, repeats=True
     )
 
     explicit_correlation = Quantity(
-        type=MEnum('F12', 'F12a', 'F12b', 'F12c',
-                   'R12', ''),
+        type=MEnum('F12', 'F12a', 'F12b', 'F12c', 'R12', ''),
         default='',
         description="""
         Explicit correlation treatment.
@@ -1545,6 +1554,3 @@ class CoupledCluster(ModelMethodElectronic):
         FC approximations differ between quantum chemistry codes.
         """,
     )
-
-
-

@@ -344,16 +344,12 @@ class AtomCenteredBasisSet(BasisSetComponent):
 
     total_number_of_basis_functions = Quantity(
         type=np.int32,
-        description=""""the total number of basis functions""",
+        description=""""The total number of basis functions.""",
     )
 
     functional_composition = SubSection(
         sub_section=AtomCenteredFunction.m_def, repeats=True
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-        # self.name = self.m_def.name
 
 
 class APWBaseOrbital(ArchiveSection):

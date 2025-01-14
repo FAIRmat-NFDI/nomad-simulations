@@ -966,6 +966,7 @@ class OrbitalLocalization(SelfConsistency):
 
     orbital_window = Quantity(
         shape=['*'],
+        type=str,
         description="""
         the Molecular orbital range to be localized.
         """,
@@ -975,6 +976,103 @@ class OrbitalLocalization(SelfConsistency):
         type=np.float64,
         description="""
         the energy window for the first occupied MO to be localized (in a.u.).
+        """,
+    )
+
+
+class PNOSettings(NumericalSettings):
+    """Numerical settings that control pair natural orbitals (PNOs).
+    The nomenclature has been adapted from Molpro.
+    """
+
+    domain_connectivity = Quantity(
+        type=int,
+        description="""
+        the connectivity parameter for domain extension.
+        """,
+    )
+
+    domain_radius = Quantity(
+        type=int,
+        description="""
+        the radius parameter for domain extension.
+        """,
+    )
+
+    t_domain_osv_occ = Quantity(
+        type=np.float32,
+        description="""
+        OSV domain occupation number threshold.
+        """,
+    )
+
+    t_occ_lmp2 = Quantity(
+        type=np.float32,
+        description="""
+        LMP2 PNO domains (occ. number threshold).
+        """,
+    )
+
+    t_energy_lmp2 = Quantity(
+        type=np.float32,
+        description="""
+        LMP2 PNO domains (energy threshold).
+        """,
+    )
+
+    t_occ_lccsd = Quantity(
+        type=np.float32,
+        description="""
+        LCCSD PNO domains (occ. number threshold).
+        """,
+    )
+
+    t_energy_lccsd = Quantity(
+        type=np.float32,
+        description="""
+        LCCSD PNO domains (energy threshold).
+        """,
+    )
+
+    t_close_pair = Quantity(
+        type=str,
+        description="""
+        close pair energy threshold.
+        """,
+    )
+
+    t_weak_pair = Quantity(
+        type=np.float32,
+        description="""
+        weak pair energy threshold.
+        """,
+    )
+
+    t_distant_pair = Quantity(
+        type=np.float32,
+        description="""
+        distant pair energy threshold
+        """,
+    )
+
+    t_verydistant_pair = Quantity(
+        type=np.float32,
+        description="""
+        very distant pair energy threshold
+        """,
+    )
+
+    t_triples_preselection = Quantity(
+        type=np.float32,
+        description="""
+        preselection of triples list.
+        """,
+    )
+
+    t_triples_iteration = Quantity(
+        type=np.float32,
+        description="""
+        selection of triples for iterations
         """,
     )
 
