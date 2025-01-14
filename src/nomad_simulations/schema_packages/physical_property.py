@@ -15,6 +15,10 @@ from nomad.metainfo import (
     SubSection,
 )
 from nomad.metainfo.metainfo import Dimension, DirectQuantity, _placeholder_quantity
+from nomad.metainfo.datasets import (
+    ValuesTemplate,
+    DatasetTemplate,
+)
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -331,3 +335,38 @@ class PropertyContribution(PhysicalProperty):
         super().normalize(archive, logger)
         if not self.name:
             self.name = self.get('model_method_ref').get('name')
+
+
+class PhysicalPropertyDecomposition:
+    """
+    Generator class to convert a `values_template: ValuesTemplate` to a `DatasetTemplate`
+    with `mandatory_fields = [values_template, list[value_template], kind, reference]`.
+    """
+
+    def __init__(
+        self,
+        value_template: 'ValuesTemplate',
+        kind: Optional['ValuesTemplate'] = None,
+        reference_type: Optional['ValuesTemplate'] = None,
+    ) -> None:
+        self.value_template = value_template
+        self.kind = kind
+        self.reference_type = reference_type
+
+    def _generate_repeating_value(self) -> 'ValuesTemplate':
+        """
+        Generate a repeating `ValuesTemplate` for the `value` quantity.
+        """
+        repeating_value = self.value.m_copy()
+        repeating_value.m_def.shape = repeating_value.shape + ['*']
+        return repeating_value
+
+    def __call__(self, *args, **kwargs) -> 'DatasetTemplate':
+        return DatasetTemplate(
+            mandatory_fields=[
+                self.value_template,
+                self._generate_repeating_value(),
+                self.kind,
+                self.reference_type,
+            ],
+        )
