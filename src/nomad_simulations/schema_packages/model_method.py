@@ -1223,31 +1223,6 @@ class DMFT(ModelMethodElectronic):
         super().normalize(archive, logger)
 
 
-class BaseMolecularOrbital(ArchiveSection):
-    """
-    A section representing a single molecular orbital.
-    """
-
-    energy = Quantity(
-        type=np.float64,
-        # unit='electron_volt',
-        description='Energy of the molecular orbital.',
-    )
-
-    occupation = Quantity(
-        type=np.float64, description='Occupation number of the molecular orbital.'
-    )
-
-    symmetry_label = Quantity(
-        type=str, description='Symmetry label of the molecular orbital.'
-    )
-
-    orbital_ref = SubSection(
-        sub_section=OrbitalsState.m_def,
-        description='Reference to the underlying atomic orbital state.',
-    )
-
-
 class MolecularOrbitals(ArchiveSection):
     """
     A section for molecular orbital schemes used in quantum chemistry calculations.
@@ -1264,18 +1239,6 @@ class MolecularOrbitals(ArchiveSection):
         - RKS: Restricted Kohn-Sham
         - ROKS: Restricted Open-Shell Kohn-Sham
         - UKS: Unrestricted Kohn-Sham
-        """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
-    )
-
-    orbital_set = Quantity(
-        type=MEnum('canonical', 'natural', 'localized'),
-        description="""
-        Specifies the type of orbitals used in the molecular orbital scheme:
-        - canonical: Default canonical molecular orbitals.
-        - natural: Natural orbitals obtained from the density matrix.
-        - localized: Localized orbitals such as Boys or Foster-Boys localization.
-        TODO: this will be later connected to MCSCF.
         """,
         a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
@@ -1301,16 +1264,16 @@ class MolecularOrbitals(ArchiveSection):
         """,
     )
 
-    molecular_orbitals = SubSection(
-        sub_section=BaseMolecularOrbital.m_def,
-        repeats=True,
-        description="""
-        Detailed information about each molecular orbital,
-        including energy, occupation, and symmetry label.
-        """,
-    )
+    # molecular_orbitals = SubSection(
+    #     sub_section=BaseMolecularOrbital.m_def,
+    #     repeats=True,
+    #     description="""
+    #     Detailed information about each molecular orbital,
+    #     including energy, occupation, and symmetry label.
+    #     """,
+    # )
 
-    total_spin = Quantity(
+    sz_projection = Quantity(
         type=np.float64,
         description="""
         Total spin of the system defined as S = (n_alpha_electrons - n_beta_electrons) / 2.
@@ -1364,24 +1327,8 @@ class MolecularOrbitals(ArchiveSection):
         if not self.validate_scheme(logger):
             logger.error('Invalid molecular orbital scheme.')
 
-        # Resolve the number of molecular orbitals
-        if self.n_molecular_orbitals is None and self.molecular_orbitals:
-            self.n_molecular_orbitals = len(self.molecular_orbitals)
 
-        # Validate molecular orbital occupation
-        total_occupation = sum(
-            orbital.occupation
-            for orbital in self.molecular_orbitals
-            if orbital.occupation is not None
-        )
-        expected_occupation = self.n_alpha_electrons + self.n_beta_electrons
-        if total_occupation != expected_occupation:
-            logger.warning(
-                f'The total occupation ({total_occupation}) does not match the expected value ({expected_occupation}).'
-            )
-
-
-class GTOIntegralDecomposition(BaseModelMethod):
+class IntegralDecomposition(BaseModelMethod):
     """
     A general class for integral decomposition techniques for Coulomb and exchange integrals to speed up the calculation.
     Examples:
@@ -1463,16 +1410,20 @@ class LocalCorrelation(ArchiveSection):
     """
 
     type = Quantity(
-        type=MEnum('PNO', 'domain'),
+        type=MEnum('PNO', 'LPNO', 'DLPNO'),
         description="""
         the type of local correlation.
         """,
     )
 
     ansatz = Quantity(
-        type=MEnum('LMP2', 'LCC', 'LocalDFT'),
+        type=MEnum('MP2', 'CC', 'DH-DFT'),
         description="""
         The underlying ansatz for the local correlation treatment.
+        LMP2
+        LCC
+        DH-DFT: double-hybrid DFT
+        ...
         """,
     )
 
@@ -1493,6 +1444,7 @@ class CoupledCluster(ModelMethodElectronic):
         a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
+    # add a real reference determinant reference
     reference_determinant = Quantity(
         type=MEnum('UHF', 'RHF', 'ROHF', 'UKS', 'RKS', 'ROKS'),
         description="""

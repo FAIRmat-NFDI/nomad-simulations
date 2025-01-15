@@ -641,3 +641,72 @@ class AtomsState(Entity):
             self.chemical_symbol = self.resolve_chemical_symbol(logger=logger)
         if self.atomic_number is None:
             self.atomic_number = self.resolve_atomic_number(logger=logger)
+
+
+class MolecularOrbitalsState(Entity):
+    """
+    A base section to define molecular orbitals.
+    """
+
+    symmetry_label = Quantity(
+        type=str,
+        description="""
+        Symmetry label of the molecular orbital (e.g., 'sigma', 'pi', 'delta').
+        """,
+    )
+
+    energy = Quantity(
+        type=np.float64,
+        #unit='eV',
+        description="""
+        Energy of the molecular orbital.
+        """,
+    )
+
+    occupation = Quantity(
+        type=np.float64,
+        description="""
+        Occupation of the molecular orbital. This value is typically an integer (0 or 2)
+        in closed-shell systems, but can be fractional in open-shell or spin-polarized
+        calculations.
+        """,
+    )
+
+    spin = Quantity(
+        type=MEnum('alpha', 'beta'),
+        description="""
+        Spin of the molecular orbital. 'alpha' corresponds to spin-up, 'beta' corresponds
+        to spin-down.
+        """,
+    )
+
+    coefficients = Quantity(
+        type=np.float64,
+        shape=['number_of_atoms', 'number_of_basis_functions'],
+        description="""
+        Coefficients of the molecular orbital expressed as a linear combination of atomic orbitals.
+        The shape corresponds to the number of atoms and their associated basis functions.
+        """,
+    )
+
+    atom_contributions = SubSection(
+        sub_section=AtomsState.m_def,
+        repeats=True,
+        description="""
+        Contribution of each atom to the molecular orbital, as defined by its basis functions.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Validation: Ensure occupation values are consistent
+        if self.occupation is not None and (self.occupation < 0 or self.occupation > 2):
+            logger.error("The molecular orbital occupation must be between 0 and 2.")
+
+        # Validation: Ensure coefficients are provided if atom contributions are defined
+        if self.atom_contributions and self.coefficients is None:
+            logger.error(
+                "Coefficients must be defined when atom contributions are provided."
+            )
+
