@@ -324,7 +324,6 @@ class PropertyContribution(PhysicalProperty):
         description="""
         Reference to the `ModelMethod` section to which the property is linked to.
         """,
-        # a_eln=ELNAnnotation(component='ReferenceEditQuantity'),
     )
 
     def normalize(self, archive, logger) -> None:

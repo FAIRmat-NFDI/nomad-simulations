@@ -57,7 +57,6 @@ class BasisSetComponent(ArchiveSection):
         description="""
         Reference to the section `AtomsState` specifying the localization of the basis set.
         """,
-        # a_eln=ELNAnnotation(components='ReferenceEditQuantity'),
     )
 
     # TODO: add atom index-based instantiator for species if not present
@@ -69,7 +68,6 @@ class BasisSetComponent(ArchiveSection):
         Reference to the section `BaseModelMethod` containing the information
         of the Hamiltonian term to which the basis set applies.
         """,
-        # a_eln=ELNAnnotation(components='ReferenceEditQuantity'),
     )
 
     # ? band_scope or orbital_scope: valence vs core

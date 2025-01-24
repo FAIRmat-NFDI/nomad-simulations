@@ -73,7 +73,6 @@ class GeometricSpace(Entity):
         description="""
         Length of the first basis vector.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     length_vector_b = Quantity(
@@ -82,7 +81,6 @@ class GeometricSpace(Entity):
         description="""
         Length of the second basis vector.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     length_vector_c = Quantity(
@@ -91,7 +89,6 @@ class GeometricSpace(Entity):
         description="""
         Length of the third basis vector.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     angle_vectors_b_c = Quantity(
@@ -100,7 +97,6 @@ class GeometricSpace(Entity):
         description="""
         Angle between second and third basis vector.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     angle_vectors_a_c = Quantity(
@@ -109,7 +105,6 @@ class GeometricSpace(Entity):
         description="""
         Angle between first and third basis vector.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     angle_vectors_a_b = Quantity(
@@ -118,7 +113,6 @@ class GeometricSpace(Entity):
         description="""
         Angle between first and second basis vector.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     volume = Quantity(
@@ -127,7 +121,6 @@ class GeometricSpace(Entity):
         description="""
         Volume of a 3D real space entity.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     surface_area = Quantity(
@@ -136,7 +129,6 @@ class GeometricSpace(Entity):
         description="""
         Surface area of a 3D real space entity.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     area = Quantity(
@@ -145,7 +137,6 @@ class GeometricSpace(Entity):
         description="""
         Area of a 2D real space entity.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     length = Quantity(
@@ -154,7 +145,6 @@ class GeometricSpace(Entity):
         description="""
         Total length of a 1D real space entity.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     coordinates_system = Quantity(
@@ -657,7 +647,6 @@ class Symmetry(ArchiveSection):
         description="""
         Reference to the AtomicCell section that the symmetry refers to.
         """,
-        # a_eln=ELNAnnotation(component='ReferenceEditQuantity'),
     )
 
     def resolve_analyzed_atomic_cell(
@@ -991,7 +980,6 @@ class ModelSystem(System):
         crystal or it can be filled up. For example, an heterostructure of graphene (G) sandwiched
         in between hexagonal boron nitrides (hBN) slabs could be named 'hBN/G/hBN'.
         """,
-        # a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
     # TODO work on improving and extending this quantity and the description
@@ -1009,7 +997,6 @@ class ModelSystem(System):
         description="""
         Type of the system (atom, bulk, surface, etc.) which is determined by the normalizer.
         """,
-        # a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
 
     dimensionality = Quantity(
@@ -1020,7 +1007,6 @@ class ModelSystem(System):
 
             https://doi.org/10.1103/PhysRevLett.118.106101.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     # TODO improve on the definition and usage

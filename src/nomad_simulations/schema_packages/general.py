@@ -70,7 +70,6 @@ class Program(Entity):
         description="""
         The name of the program.
         """,
-        # a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
     version = Quantity(
@@ -78,7 +77,6 @@ class Program(Entity):
         description="""
         The version label of the program.
         """,
-        # a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
     link = Quantity(
@@ -86,7 +84,6 @@ class Program(Entity):
         description="""
         Website link to the program in published information.
         """,
-        # a_eln=ELNAnnotation(component='URLEditQuantity'),
     )
 
     version_internal = Quantity(
@@ -95,7 +92,6 @@ class Program(Entity):
         Specifies a program version tag used internally for development purposes.
         Any kind of tagging system is supported, including git commit hashes.
         """,
-        # a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
     subroutine_name_internal = Quantity(
@@ -106,7 +102,6 @@ class Program(Entity):
         so the naming is representative. This naming is mostly meant for users
         who are familiar with the program's structure.
         """,
-        # a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
     compilation_host = Quantity(
@@ -114,7 +109,6 @@ class Program(Entity):
         description="""
         Specifies the host on which the program was compiled.
         """,
-        # a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
 
@@ -137,7 +131,6 @@ class BaseSimulation(Activity):
         description="""
         The date and time when this computation ended.
         """,
-        # a_eln=ELNAnnotation(component='DateTimeEditQuantity'),
     )
 
     cpu1_start = Quantity(
@@ -146,7 +139,6 @@ class BaseSimulation(Activity):
         description="""
         The starting time of the computation on the (first) CPU 1.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     cpu1_end = Quantity(
@@ -155,7 +147,6 @@ class BaseSimulation(Activity):
         description="""
         The end time of the computation on the (first) CPU 1.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     wall_start = Quantity(
@@ -164,7 +155,6 @@ class BaseSimulation(Activity):
         description="""
         The internal wall-clock time from the starting of the computation.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     wall_end = Quantity(
@@ -173,7 +163,6 @@ class BaseSimulation(Activity):
         description="""
         The internal wall-clock time from the end of the computation.
         """,
-        # a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     program = SubSection(sub_section=Program.m_def, repeats=False)
