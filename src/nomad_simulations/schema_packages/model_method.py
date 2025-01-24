@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.metainfo import URL, MEnum, Quantity, Section, SubSection
 
 if TYPE_CHECKING:
@@ -1008,7 +1007,6 @@ class CoreHoleSpectra(ModelMethodElectronic):
     #     description="""
     #     Solver algorithm used for the core-hole spectra.
     #     """,
-    #     a_eln=ELNAnnotation(component="StringEditQuantity"),
     # )
 
     type = Quantity(

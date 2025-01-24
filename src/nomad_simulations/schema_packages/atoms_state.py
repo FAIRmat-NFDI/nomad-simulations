@@ -4,7 +4,6 @@ import ase
 import numpy as np
 import pint
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.datamodel.metainfo.basesections import Entity
 from nomad.metainfo import MEnum, Quantity, SubSection
 from nomad.units import ureg

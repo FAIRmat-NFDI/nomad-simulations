@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 from nomad import utils
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.datamodel.metainfo.basesections import Entity
 from nomad.metainfo import (
     URL,
