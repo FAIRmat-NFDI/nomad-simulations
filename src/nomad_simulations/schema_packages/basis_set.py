@@ -204,6 +204,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
         sub_section=AtomCenteredFunction.m_def, repeats=True
     )  # TODO change name
 
+
 class APWBaseOrbital(ArchiveSection):
     """
     Abstract base section for (S)(L)APW and local orbital component wavefunctions.
