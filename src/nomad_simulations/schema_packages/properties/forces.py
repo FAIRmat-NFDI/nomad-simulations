@@ -32,9 +32,6 @@ class BaseForce(PhysicalProperty):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class ForceContribution(BaseForce, PropertyContribution):
     """
@@ -51,9 +48,6 @@ class ForceContribution(BaseForce, PropertyContribution):
     quantity will contain the force contribution from this component evaluated over all
     relevant atoms or electrons or as a function of them.
     """
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 ###################################
@@ -74,6 +68,3 @@ class TotalForce(BaseForce):
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

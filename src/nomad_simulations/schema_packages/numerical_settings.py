@@ -32,9 +32,6 @@ class NumericalSettings(ArchiveSection):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class Smearing(NumericalSettings):
     """
@@ -884,6 +881,3 @@ class SelfConsistency(NumericalSettings):
         super().__init__(m_def, m_context, **kwargs)
         # Set the name of the section
         self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

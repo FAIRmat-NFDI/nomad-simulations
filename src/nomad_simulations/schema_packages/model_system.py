@@ -400,9 +400,6 @@ class Cell(GeometricSpace):
         # this does not hold in general, but here we use finite sets
         return not self.is_equal_cell(other)
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class AtomicCell(Cell):
     """

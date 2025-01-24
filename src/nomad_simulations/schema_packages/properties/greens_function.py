@@ -210,9 +210,6 @@ class ElectronicGreensFunction(BaseGreensFunction):
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class ElectronicSelfEnergy(BaseGreensFunction):
     """
@@ -235,9 +232,6 @@ class ElectronicSelfEnergy(BaseGreensFunction):
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class HybridizationFunction(BaseGreensFunction):
     """
@@ -259,9 +253,6 @@ class HybridizationFunction(BaseGreensFunction):
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class QuasiparticleWeight(PhysicalProperty):

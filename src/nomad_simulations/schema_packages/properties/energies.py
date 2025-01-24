@@ -32,9 +32,6 @@ class BaseEnergy(PhysicalProperty):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class EnergyContribution(BaseEnergy, PropertyContribution):
     """
@@ -51,10 +48,6 @@ class EnergyContribution(BaseEnergy, PropertyContribution):
     quantity will contain the energy contribution from this component evaluated over all
     relevant atoms or electrons or as a function of them.
     """
-
-    # TODO address the dual parent normalization explicity
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 ####################################
@@ -78,9 +71,6 @@ class FermiLevel(BaseEnergy):
         self.rank = []
         self.name = self.m_def.name
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 #! The only issue with this structure is that total energy will never be a sum of its contributions,
 #! since kinetic energy lives separately, but I think maybe this is ok?
@@ -99,9 +89,6 @@ class TotalEnergy(BaseEnergy):
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 # ? Separate quantities for nuclear and electronic KEs?
 class KineticEnergy(BaseEnergy):
@@ -115,9 +102,6 @@ class KineticEnergy(BaseEnergy):
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class PotentialEnergy(BaseEnergy):
     """
@@ -129,6 +113,3 @@ class PotentialEnergy(BaseEnergy):
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

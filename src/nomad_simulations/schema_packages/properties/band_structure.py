@@ -54,9 +54,6 @@ class BaseElectronicEigenvalues(PhysicalProperty):
         # ! `n_bands` need to be set up during initialization of the class
         self.rank = [int(kwargs.get('n_bands'))]
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class ElectronicEigenvalues(BaseElectronicEigenvalues):
     """ """
@@ -321,9 +318,6 @@ class ElectronicBandStructure(ElectronicEigenvalues):
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class Occupancy(PhysicalProperty):
     """
@@ -373,6 +367,3 @@ class Occupancy(PhysicalProperty):
         self.name = self.m_def.name
 
     # TODO add extraction from `ElectronicEigenvalues.occupation`
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

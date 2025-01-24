@@ -204,13 +204,6 @@ class AtomCenteredBasisSet(BasisSetComponent):
         sub_section=AtomCenteredFunction.m_def, repeats=True
     )  # TODO change name
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-        # self.name = self.m_def.name
-        # TODO: set name based on basis functions
-        # ? use basis set names from Basis Set Exchange
-
-
 class APWBaseOrbital(ArchiveSection):
     """
     Abstract base section for (S)(L)APW and local orbital component wavefunctions.

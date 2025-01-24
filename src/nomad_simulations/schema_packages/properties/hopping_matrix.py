@@ -54,9 +54,6 @@ class HoppingMatrix(PhysicalProperty):
 
     # TODO add normalization to extract DOS, band structure, etc, properties from `HoppingMatrix`
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class CrystalFieldSplitting(PhysicalProperty):
     """
@@ -89,6 +86,3 @@ class CrystalFieldSplitting(PhysicalProperty):
         # ! `n_orbitals` need to be set up during initialization of the class
         self.rank = [int(kwargs.get('n_orbitals'))]
         self.name = self.m_def.name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
