@@ -660,20 +660,6 @@ class MolecularOrbitals(Entity):
 
     """
 
-    mo_type = Quantity(
-        type=str,
-        shape=['mo_num'],
-        description="""
-        Type of the molecular orbitals
-         e.g. 'canonical', 'localized'.
-        In case of CASSCF calculations, there will be orbital subspaces of different nature.
-        E.g. : 
-        Internal orbitals : canonical
-        Active orbitals   : natural
-        Virtual orbitals  : canonical
-        """,
-    )
-
     mo_num = Quantity(
         type=np.int32,
         description="""
@@ -686,6 +672,20 @@ class MolecularOrbitals(Entity):
         description="""
         Number of atomic orbitals or basis functions (often needed for coefficient shape).
         Corresponds to the 'ao.num' dimension in TREXIO.
+        """,
+    )
+
+    mo_type = Quantity(
+        type=str,
+        shape=['mo_num'],
+        description="""
+        Type of the molecular orbitals
+         e.g. 'canonical', 'localized'.
+        In case of CASSCF calculations, there will be orbital subspaces of different nature.
+        E.g. : 
+        Internal orbitals : canonical
+        Active orbitals   : natural
+        Virtual orbitals  : canonical
         """,
     )
 
@@ -743,5 +743,3 @@ class MolecularOrbitals(Entity):
         Typically 0 for alpha, 1 for beta.
         """,
     )
-
-

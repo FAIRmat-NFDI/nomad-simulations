@@ -955,7 +955,7 @@ class SelfConsistency(NumericalSettings):
 class OrbitalLocalization(SelfConsistency):
     """
     Numerical settings that control orbital localization, typically applied
-    to transform canonical molecular orbitals into localized orbitals. 
+    to transform canonical molecular orbitals into localized orbitals.
     These localized orbitals can then be used for:
       - Local correlation methods (e.g., LMP2, local CC)
       - Interpretable chemical analysis (e.g., identifying bonds, lone pairs)
@@ -965,10 +965,10 @@ class OrbitalLocalization(SelfConsistency):
     iterative, requiring thresholds and iteration limits akin to an SCF loop.
 
     References:
-      - R. F. Boys, "Construction of Some Molecular Orbitals to Be Approximately Invariant 
+      - R. F. Boys, "Construction of Some Molecular Orbitals to Be Approximately Invariant
         for Changes in Molecular Conformation," Rev. Mod. Phys. 32, 296 (1960). [Boys]
       - J. Pipek, P. G. Mezey, J. Chem. Phys. 90, 4916 (1989). [PM method]
-      - J. L. Knizia, "Intrinsic Atomic Orbitals: An Unbiased Bridge between Quantum Theory 
+      - J. L. Knizia, "Intrinsic Atomic Orbitals: An Unbiased Bridge between Quantum Theory
         and Chemical Concepts," J. Chem. Theory Comput. 9, 4834 (2013). [IBO method]
       - P. Pulay, Chem. Phys. Lett. 100, 151 (1983). [Local correlation context]
     """
@@ -1010,113 +1010,50 @@ class OrbitalLocalization(SelfConsistency):
     )
 
 
-class PNOSettings(NumericalSettings):
+class PairApproximationSettings(NumericalSettings):
     """
-    Numerical settings that control **Pair Natural Orbitals (PNOs)** in local correlation approaches.
+    Numerical settings that control Pair Natural Orbitals (PNOs) in local correlation approaches.
     PNOs are a compact representation of the virtual orbital space for each pair (or domain)
     of occupied orbitals, improving efficiency in post-HF methods (e.g., local MP2, local CC).
+
+    The nomenclature for these thresholds is adapted from different programs (e.g., Molpro, ORCA).
+    This class is code-agnostic and allows a single 'approximation_level' to store
+    code-specific presets such as:
+    'tightPNO', 'normalPNO', 'loosePNO' (ORCA) or
+    'default', 'tight', 'vtight' (Molpro), etc.
+
+    For more fine-grained custom thresholds, the user can fill the other
+    domain/pair fields (occupancies, energy thresholds, etc.) on the parser side as needed.
 
     The nomenclature for these thresholds is adapted from Molpro, ORCA, etc.
     See also:
       - H.-J. Werner, P. J. Knowles, G. Knizia, F. R. Manby, M. Schütz,
-        "Molpro: a general-purpose quantum chemistry program package," 
+        "Molpro: a general-purpose quantum chemistry program package,"
         WIREs Comput. Mol. Sci. 2, 242 (2012).
-      - F. Neese, "The ORCA program system," 
+      - F. Neese, "The ORCA program system,"
         WIREs Comput. Mol. Sci. 2, 73-78 (2012) for DLPNO expansions.
-      - G. Knizia, "Intrinsic Bond Orbitals," 
+      - G. Knizia, "Intrinsic Bond Orbitals,"
         J. Chem. Theory Comput. 9, 4834 (2013) for orbital transformations in local correlation.
     """
 
-    domain_connectivity = Quantity(
-        type=int,
-        description="""
-        the connectivity parameter for domain extension.
-        """,
-    )
+    # type = Quantity(
+    #     type=MEnum('PAO', 'OSV', 'PNO'),
+    #     description="""
+    #     PAO : pair atomic orbitals
+    #     OSV : orbital-specific virtuals
+    #     PNO : pair natural orbitals
+    #     """,
+    # )
 
-    domain_radius = Quantity(
-        type=int,
-        description="""
-        the radius parameter for domain extension.
-        """,
-    )
-
-    t_domain_osv_occ = Quantity(
-        type=np.float32,
-        description="""
-        OSV domain occupation number threshold.
-        """,
-    )
-
-    t_occ_lmp2 = Quantity(
-        type=np.float32,
-        description="""
-        LMP2 PNO domains (occ. number threshold).
-        """,
-    )
-
-    t_energy_lmp2 = Quantity(
-        type=np.float32,
-        description="""
-        LMP2 PNO domains (energy threshold).
-        """,
-    )
-
-    t_occ_lccsd = Quantity(
-        type=np.float32,
-        description="""
-        LCCSD PNO domains (occ. number threshold).
-        """,
-    )
-
-    t_energy_lccsd = Quantity(
-        type=np.float32,
-        description="""
-        LCCSD PNO domains (energy threshold).
-        """,
-    )
-
-    t_close_pair = Quantity(
+    code_specific_approximation_tier = Quantity(
         type=str,
         description="""
-        close pair energy threshold.
+        A single keyword or label indicating a preset PNO approximation level. Examples:
+         - In ORCA: 'loosePNO', 'normalPNO', 'tightPNO'
+         - In Molpro: 'default', 'tight', 'vtight'
+         - In Psi4: 'loose', 'normal', 'tight' for PNO_CONVERGENCE keyword
+         - Or any other custom label recognized by your code
+        
+        This field is purely descriptive to unify different codes' preset naming.
         """,
     )
-
-    t_weak_pair = Quantity(
-        type=np.float32,
-        description="""
-        weak pair energy threshold.
-        """,
-    )
-
-    t_distant_pair = Quantity(
-        type=np.float32,
-        description="""
-        distant pair energy threshold
-        """,
-    )
-
-    t_verydistant_pair = Quantity(
-        type=np.float32,
-        description="""
-        very distant pair energy threshold
-        """,
-    )
-
-    t_triples_preselection = Quantity(
-        type=np.float32,
-        description="""
-        preselection of triples list.
-        """,
-    )
-
-    t_triples_iteration = Quantity(
-        type=np.float32,
-        description="""
-        selection of triples for iterations
-        """,
-    )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

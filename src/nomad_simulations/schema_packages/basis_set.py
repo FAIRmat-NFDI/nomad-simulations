@@ -187,18 +187,18 @@ class APWPlaneWaveBasisSet(PlaneWaveBasisSet):
 
 class AtomCenteredFunction(ArchiveSection):
     """
-    Specifies a single contracted basis function in an atom-centered basis set. 
-    
-    In many quantum-chemistry codes, an atom-centered basis set is composed of 
-    several "shells," each shell containing one or more basis functions of a certain 
-    angular momentum. For instance, a shell of p-type orbitals (L=1) typically 
+    Specifies a single contracted basis function in an atom-centered basis set.
+
+    In many quantum-chemistry codes, an atom-centered basis set is composed of
+    several "shells," each shell containing one or more basis functions of a certain
+    angular momentum. For instance, a shell of p-type orbitals (L=1) typically
     consists of 3 degenerate functions (p_x, p_y, p_z) if `harmonic_type='cartesian'`
     or 3 spherical harmonics if `harmonic_type='spherical'`.
-    
-    A single "atom-centered function" can be a linear combination of multiple 
-    primitive Gaussians (or Slater-type orbitals, STOs). 
-    In practice, these contract together to form the final basis function used by 
-    the SCF or post-SCF method. Often, each contraction is labeled by its 
+
+    A single "atom-centered function" can be a linear combination of multiple
+    primitive Gaussians (or Slater-type orbitals, STOs).
+    In practice, these contract together to form the final basis function used by
+    the SCF or post-SCF method. Often, each contraction is labeled by its
     angular momentum (e.g., s, p, d, f) and a set of exponents and coefficients.
 
     **References**:
@@ -353,16 +353,16 @@ class AtomCenteredFunction(ArchiveSection):
 class AtomCenteredBasisSet(BasisSetComponent):
     """
     Defines an **atom-centered basis set** for quantum chemistry calculations.
-    Unlike plane-wave methods, these expansions are typically built around each atom's 
+    Unlike plane-wave methods, these expansions are typically built around each atom's
     position, using either:
       - Slater-type orbitals (STO)
       - Gaussian-type orbitals (GTO)
       - Numerical atomic orbitals (NAO)
       - Effective-core potentials or point-charges (PC, cECP, etc.)
-    
+
     This section references multiple `AtomCenteredFunction` objects, each describing
-    a single contracted function or shell. Additionally, one can label the overall 
-    basis set name (e.g., "cc-pVTZ", "def2-SVP", "6-31G**") and specify the high-level 
+    a single contracted function or shell. Additionally, one can label the overall
+    basis set name (e.g., "cc-pVTZ", "def2-SVP", "6-31G**") and specify the high-level
     role of the basis set in the calculation.
 
     **Common examples**:
@@ -411,7 +411,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
             'orbital',
             'auxiliary_scf',
             'auxiliary_post_hf',
-            'cabs',  
+            'cabs',
         ),
         description="""
         The role of this basis set in the calculation:

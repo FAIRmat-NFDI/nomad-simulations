@@ -1272,17 +1272,17 @@ class IntegralDecomposition(BaseModelMethod):
 
 class HartreeFock(ModelMethodElectronic):
     """
-    Defines a Hartree–Fock (HF) calculation using a specified reference determinant 
+    Defines a Hartree–Fock (HF) calculation using a specified reference determinant
     (RHF, UHF, or ROHF).
 
     In HF theory:
       - RHF  = Restricted Hartree–Fock, for closed-shell systems.
       - UHF  = Unrestricted Hartree–Fock, allows different orbitals for alpha/beta spin.
-      - ROHF = Restricted Open-Shell Hartree–Fock, a partially restricted approach for 
+      - ROHF = Restricted Open-Shell Hartree–Fock, a partially restricted approach for
                open-shell systems.
 
     **References**:
-      - Roothaan, C. C. J. (1951). "New Developments in Molecular Orbital Theory." 
+      - Roothaan, C. C. J. (1951). "New Developments in Molecular Orbital Theory."
         Rev. Mod. Phys. 23, 69.
       - Szabo, A., & Ostlund, N. S. (1989). *Modern Quantum Chemistry*. McGraw-Hill.
       - Jensen, F. (2007). *Introduction to Computational Chemistry*. 2nd ed., Wiley.
@@ -1306,7 +1306,7 @@ class HartreeFock(ModelMethodElectronic):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         """
         Perform minimal consistency checks between the HF reference determinant
-        and the final molecular orbitals spin array (if available).
+        and the final molecular orbitals spin array (if available).NumericalIntegration
         """
         super().normalize(archive, logger)
 
@@ -1319,15 +1319,15 @@ class HartreeFock(ModelMethodElectronic):
                     # For RHF, we typically expect spin=0 (alpha) only
                     if not np.all(mo_spin == 0):
                         logger.warning(
-                            "RHF reference used, but molecular_orbitals.spin contains non-zero spin indices."
+                            'RHF reference used, but molecular_orbitals.spin contains non-zero spin indices.'
                         )
                 elif self.reference_determinant == 'UHF':
                     # UHF often has spin=0 for alpha and spin=1 for beta
                     # If we only see spin=0, that's effectively no spin polarization
                     if len(unique_spins) == 1 and unique_spins[0] == 0:
                         logger.info(
-                            "UHF reference chosen, but only alpha spin found in MOs (spin=0). "
-                            "This might still be valid if spin polarization is zero."
+                            'UHF reference chosen, but only alpha spin found in MOs (spin=0). '
+                            'This might still be valid if spin polarization is zero.'
                         )
                 # For ROHF, spin indexing can vary across codes, so no strict check here.
 
@@ -1374,7 +1374,6 @@ class PerturbationMethod(ModelMethodElectronic):
         This is typically relevant only for MP2 calculations.
         """,
     )
-
 
 
 class LocalCorrelation(ArchiveSection):
