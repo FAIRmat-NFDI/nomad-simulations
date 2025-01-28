@@ -1,15 +1,35 @@
-from nomad.datamodel import EntryArchive
+from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, Workflow
-from nomad.metainfo.util import MSubSectionList
+from nomad.metainfo import SubSection
 from structlog.stdlib import BoundLogger
 
 INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
+
+
+class SimulationWorkflowMethod(ArchiveSection):
+    """
+    Base class for simulation workflow method sub-section definition.
+    """
+
+    pass
+
+
+class SimulationWorkflowResults(ArchiveSection):
+    """
+    Base class for simulation workflow results sub-section definition.
+    """
+
+    pass
 
 
 class SimulationWorkflow(Workflow):
     """
     Base class for simulation workflows.
     """
+
+    method = SubSection(sub_section=SimulationWorkflowMethod.m_def)
+
+    results = SubSection(sub_section=SimulationWorkflowResults.m_def)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger):
         """
@@ -69,3 +89,15 @@ class SimulationWorkflow(Workflow):
             if not self.outputs:
                 # assign parent outputs as workflow outputs
                 self.outputs.extend(parent_outputs)
+
+        if not self.method:
+            self.method = SimulationWorkflowMethod()
+
+        if not self.results:
+            self.results = SimulationWorkflowResults()
+
+        # set method as inputs
+        self.inputs.append(Link(name='Input method', section=self.method))
+
+        # set results as outputs
+        self.outputs.append(Link(name='Ouput results', section=self.results))
