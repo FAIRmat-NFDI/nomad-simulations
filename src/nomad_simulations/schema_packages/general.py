@@ -20,6 +20,8 @@ from nomad_simulations.schema_packages.utils import (
     is_not_representative,
 )
 
+from .common import Time
+
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
 )
@@ -111,7 +113,7 @@ class Program(Entity):
     )
 
 
-class BaseSimulation(Activity):
+class BaseSimulation(Activity, Time):
     """
     A computational simulation that produces output data from a given input model system
     and input methodological parameters.
