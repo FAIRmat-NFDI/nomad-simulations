@@ -1,5 +1,6 @@
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, Workflow
+from nomad.metainfo.util import MSubSectionList
 from structlog.stdlib import BoundLogger
 
 INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
@@ -43,24 +44,28 @@ class SimulationWorkflow(Workflow):
                 # link tasks based on overlap in execution time
                 if time[0] >= times[parent_n][1]:
                     # if no overlap, assign outputs of parent as input to next task
-                    task.inputs = [
-                        Link(name='Input', section=output.section)
-                        for output in parent_outputs or task.outputs
-                    ]
+                    task.inputs.extend(
+                        [
+                            Link(name='Input', section=output.section)
+                            for output in parent_outputs or task.outputs
+                        ]
+                    )
                     # assign first parent outputs as workflow inputs
                     if not self.inputs:
-                        self.inputs = task.inputs
+                        self.inputs.extend(task.inputs)
                     # assign as new parent
                     parent_n = n
                     # reset outputs
-                    parent_outputs = task.outputs
+                    parent_outputs = list(task.outputs)
                 else:
                     parent_outputs.extend(task.outputs)
                     # if overlap, assign parent outputs to task inputs
-                    task.inputs = [
-                        Link(name='Input', section=output.section)
-                        for output in self.tasks[parent_n or n].outputs
-                    ]
+                    task.inputs.extend(
+                        [
+                            Link(name='Input', section=output.section)
+                            for output in self.tasks[parent_n or n].outputs
+                        ]
+                    )
             if not self.outputs:
                 # assign parent outputs as workflow outputs
-                self.outputs = parent_outputs
+                self.outputs.extend(parent_outputs)

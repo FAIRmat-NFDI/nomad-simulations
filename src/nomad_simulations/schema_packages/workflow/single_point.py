@@ -20,7 +20,7 @@ class SinglePoint(SimulationWorkflow):
             return
 
         if not self.inputs:
-            self.inputs = self.tasks[0].inputs
+            self.inputs.extend(self.tasks[0].inputs)
 
         inps: list[Link] = []
         for inp in self.inputs:
@@ -32,4 +32,9 @@ class SinglePoint(SimulationWorkflow):
                 inps.append(
                     Link(name='Input method', section=inp.section.model_method_ref)
                 )
-        self.inputs = inps
+        self.inputs.clear()
+        self.inputs.extend(inps)
+
+        # reconnect inputs to link as these are redefined
+        self.tasks[0].inputs.clear()
+        self.tasks[0].inputs.extend(inps)

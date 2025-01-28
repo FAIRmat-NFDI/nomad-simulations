@@ -16,7 +16,7 @@ class DFTGWWorkflow(SimulationWorkflow):
         super().normalize(archive, logger)
 
         if not self.name:
-            self.name = 'DFT+GW'
+            self.name: str = 'DFT+GW'
 
         if len(self.tasks) != 2:
             logger.error(INCORRECT_N_TASKS)
@@ -24,11 +24,11 @@ class DFTGWWorkflow(SimulationWorkflow):
 
         if not self.inputs:
             # set inputs to inputs of DFT
-            self.inputs = self.tasks[0].task.inputs
+            self.inputs.extend(self.tasks[0].task.inputs)
 
         if not self.outputs:
             # set ouputs to outputs of GW
-            self.outputs = self.tasks[1].task.outputs
+            self.outputs.extend(self.tasks[1].task.outputs)
 
         # link dft and gw workflows
         self.tasks[0].inputs = self.inputs
