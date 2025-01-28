@@ -175,9 +175,9 @@ class NumericalIntegration(NumericalSettings):
     integration_thresh = Quantity(
         type=np.float64,
         description="""
-        Accuracy threshold for integration grid.
-        GRIDTHR in Molpro.
-        BFCut in ORCA.
+        An accuracy threshold for the integration grid, controlling how fine the 
+        discretization is. Some programs label it "integral accuracy" or "grid accuracy".
+        For instance, GRIDTHR in Molpro or BFCut in ORCA.
         """,
     )
 
@@ -954,13 +954,37 @@ class SelfConsistency(NumericalSettings):
 
 class OrbitalLocalization(SelfConsistency):
     """
-    Numerical settings that control orbital localization.
+    Numerical settings that control orbital localization, typically applied
+    to transform canonical molecular orbitals into localized orbitals. 
+    These localized orbitals can then be used for:
+      - Local correlation methods (e.g., LMP2, local CC)
+      - Interpretable chemical analysis (e.g., identifying bonds, lone pairs)
+      - Faster post-HF or excited-state calculations
+
+    Inherit from `SelfConsistency` because some localization algorithms are
+    iterative, requiring thresholds and iteration limits akin to an SCF loop.
+
+    References:
+      - R. F. Boys, "Construction of Some Molecular Orbitals to Be Approximately Invariant 
+        for Changes in Molecular Conformation," Rev. Mod. Phys. 32, 296 (1960). [Boys]
+      - J. Pipek, P. G. Mezey, J. Chem. Phys. 90, 4916 (1989). [PM method]
+      - J. L. Knizia, "Intrinsic Atomic Orbitals: An Unbiased Bridge between Quantum Theory 
+        and Chemical Concepts," J. Chem. Theory Comput. 9, 4834 (2013). [IBO method]
+      - P. Pulay, Chem. Phys. Lett. 100, 151 (1983). [Local correlation context]
     """
 
     localization_method = Quantity(
         type=MEnum('FB', 'PM', 'IBO', 'IAOIBO', 'IAOBOYS', 'NEWBOYS', 'AHFB'),
         description="""
-        Name of the localization method.
+        The chosen localization algorithm:
+          - FB     : Foster-Boys method (a variant of Boys localization)
+          - PM     : Pipek–Mezey localization
+          - IBO    : Intrinsic Bond Orbitals (Knizia)
+          - IAOIBO : Combination of Intrinsic Atomic Orbitals + Intrinsic Bond Orbitals
+          - IAOBOYS: IAO-based Boys approach (a custom variant)
+          - NEWBOYS: Another specialized Boys-based approach
+          - AHFB   : Augmented Hessian Foster-Boys, an alternative with different
+                     optimization steps
         """,
     )
 
@@ -968,21 +992,39 @@ class OrbitalLocalization(SelfConsistency):
         shape=['*'],
         type=str,
         description="""
-        the Molecular orbital range to be localized.
+        The set of molecular orbitals to be localized (e.g., 'occupied only', 'valence only',
+        or a range like `[5..20]`). This can be code- or user-defined. For instance,
+        'occupied' might indicate all occupied orbitals except possibly core orbitals,
+        'valence' might skip deep core and also skip high-lying virtual orbitals, etc.
         """,
     )
 
     core_threshold = Quantity(
         type=np.float64,
         description="""
-        the energy window for the first occupied MO to be localized (in a.u.).
+        The energy window or threshold defining which orbitals are considered core,
+        and thus excluded from the localization procedure. For example, an orbital with
+        an energy below -20.0 eV might be automatically treated as a frozen core orbital and
+        not localized.
         """,
     )
 
 
 class PNOSettings(NumericalSettings):
-    """Numerical settings that control pair natural orbitals (PNOs).
-    The nomenclature has been adapted from Molpro.
+    """
+    Numerical settings that control **Pair Natural Orbitals (PNOs)** in local correlation approaches.
+    PNOs are a compact representation of the virtual orbital space for each pair (or domain)
+    of occupied orbitals, improving efficiency in post-HF methods (e.g., local MP2, local CC).
+
+    The nomenclature for these thresholds is adapted from Molpro, ORCA, etc.
+    See also:
+      - H.-J. Werner, P. J. Knowles, G. Knizia, F. R. Manby, M. Schütz,
+        "Molpro: a general-purpose quantum chemistry program package," 
+        WIREs Comput. Mol. Sci. 2, 242 (2012).
+      - F. Neese, "The ORCA program system," 
+        WIREs Comput. Mol. Sci. 2, 73-78 (2012) for DLPNO expansions.
+      - G. Knizia, "Intrinsic Bond Orbitals," 
+        J. Chem. Theory Comput. 9, 4834 (2013) for orbital transformations in local correlation.
     """
 
     domain_connectivity = Quantity(

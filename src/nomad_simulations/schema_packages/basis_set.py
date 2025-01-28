@@ -187,7 +187,24 @@ class APWPlaneWaveBasisSet(PlaneWaveBasisSet):
 
 class AtomCenteredFunction(ArchiveSection):
     """
-    Specifies a single function (term) in an atom-centered basis set.
+    Specifies a single contracted basis function in an atom-centered basis set. 
+    
+    In many quantum-chemistry codes, an atom-centered basis set is composed of 
+    several "shells," each shell containing one or more basis functions of a certain 
+    angular momentum. For instance, a shell of p-type orbitals (L=1) typically 
+    consists of 3 degenerate functions (p_x, p_y, p_z) if `harmonic_type='cartesian'`
+    or 3 spherical harmonics if `harmonic_type='spherical'`.
+    
+    A single "atom-centered function" can be a linear combination of multiple 
+    primitive Gaussians (or Slater-type orbitals, STOs). 
+    In practice, these contract together to form the final basis function used by 
+    the SCF or post-SCF method. Often, each contraction is labeled by its 
+    angular momentum (e.g., s, p, d, f) and a set of exponents and coefficients.
+
+    **References**:
+      - T. Helgaker, P. Jørgensen, J. Olsen, *Molecular Electronic-Structure Theory*, Wiley (2000).
+      - F. Jensen, *Introduction to Computational Chemistry*, 2nd ed., Wiley (2007).
+      - J. B. Foresman, Æ. Frisch, *Exploring Chemistry with Electronic Structure Methods*, Gaussian Inc.
     """
 
     harmonic_type = Quantity(
@@ -197,7 +214,13 @@ class AtomCenteredFunction(ArchiveSection):
         ),
         default='spherical',
         description="""
-        Specifies whether the basis functions are spherical-harmonic or cartesian functions.
+        Specifies whether the basis functions are expanded in **spherical** (pure) 
+        harmonics or **cartesian** harmonics. Many modern quantum-chemistry codes 
+        default to *spherical harmonics* for d, f, g..., which eliminates the 
+        redundant functions found in the cartesian sets.
+        
+        - `'spherical'` : (2l+1) functions for a shell of angular momentum l
+        - `'cartesian'` : (l+1)(l+2)/2 functions for that shell (extra functions appear)
         """,
     )
 
@@ -218,16 +241,28 @@ class AtomCenteredFunction(ArchiveSection):
             'spdf',
         ),
         description="""
-        L=a+b+c
-        The angular momentum of GTO to be added.
+        Symbolic label for the **angular momentum** of this contracted function. 
+        Typical single-letter labels:
+          - 's' => L=0
+          - 'p' => L=1
+          - 'd' => L=2
+          - 'f' => L=3
+          - 'g' => L=4
+          - 'h', 'i', etc. => still higher angular momenta
+        Combined labels like 'sp' or 'spdf' indicate a **combined shell** in which 
+        multiple angular momenta share exponents. For example, in some older Pople 
+        basis sets, an 'sp' shell has an s- and p-type function sharing the same 
+        exponents but different contraction coefficients.
         """,
     )
 
     n_primitive = Quantity(
         type=np.int32,
         description="""
-        Number of primitives.
-        Linear combinations of the primitive Gaussians are formed to approximate the radial extent of an STO.
+        Number of **primitive** functions in this contracted basis function. 
+        For example, in a contracted Gaussian-type orbital (GTO) approach, each basis 
+        function might be built from a sum of `n_primitive` Gaussians with different 
+        exponents, each scaled by a contraction coefficient.
         """,
     )
 
@@ -235,7 +270,10 @@ class AtomCenteredFunction(ArchiveSection):
         type=np.float32,
         shape=['n_primitive'],
         description="""
-        List of exponents for the basis function.
+        The **exponents** of each primitive basis function. 
+        In a Gaussian basis set (GTO), these are the alpha_i in 
+        exp(-alpha_i * r^2). In a Slater-type basis (STO), they'd be 
+        exp(-zeta_i * r). Typically sorted from largest to smallest.
         """,
     )
 
@@ -243,14 +281,21 @@ class AtomCenteredFunction(ArchiveSection):
         type=np.float32,
         shape=['*'],  # Flexible shape to handle combined types (e.g. SP, SPD..)
         description="""
-        List of contraction coefficients corresponding to the exponents.
+        The **contraction coefficients** associated with each primitive exponent. 
+        In the simplest case (pure s- or p-function), this array has length 
+        equal to `n_primitive`. For combined shells (like 'sp'), the length 
+        might be `2 * n_primitive`, because you have separate coefficients 
+        for the s-part and the p-part.
         """,
     )
 
     point_charge = Quantity(
         type=np.float32,
         description="""
-        the value of the point charge.
+        If using a basis function that explicitly includes a point-charge or an 
+        ECP-like pseudo-component, this field can store that net charge. 
+        Typically 0 for standard GTO or STO expansions. 
+        Some extended basis concepts (or embedded charges) might set it differently.
         """,
     )
 
@@ -271,7 +316,7 @@ class AtomCenteredFunction(ArchiveSection):
                     f'found {len(self.exponents)}.'
                 )
 
-        # Resolve combined types
+        # For combined shells (like 'sp', 'spd', etc.), ensure the coefficient array is large enough
         if self.function_type and len(self.function_type) > 1:
             num_types = len(self.function_type)  # For SP: 2, SPD: 3, etc.
             if self.contraction_coefficients is not None:
@@ -307,13 +352,36 @@ class AtomCenteredFunction(ArchiveSection):
 
 class AtomCenteredBasisSet(BasisSetComponent):
     """
-    Defines an atom-centered basis set.
+    Defines an **atom-centered basis set** for quantum chemistry calculations.
+    Unlike plane-wave methods, these expansions are typically built around each atom's 
+    position, using either:
+      - Slater-type orbitals (STO)
+      - Gaussian-type orbitals (GTO)
+      - Numerical atomic orbitals (NAO)
+      - Effective-core potentials or point-charges (PC, cECP, etc.)
+    
+    This section references multiple `AtomCenteredFunction` objects, each describing
+    a single contracted function or shell. Additionally, one can label the overall 
+    basis set name (e.g., "cc-pVTZ", "def2-SVP", "6-31G**") and specify the high-level 
+    role of the basis set in the calculation.
+
+    **Common examples**:
+      - **Pople basis** (3-21G, 6-31G(d), 6-311++G(2df,2pd), etc.)
+      - **Dunning correlation-consistent** (cc-pVDZ, cc-pVTZ, aug-cc-pVTZ, etc.)
+      - **Slater basis** used in ADF, for instance
+      - **ECP** (Effective Core Potential) expansions like LANL2DZ or SDD for transition metals
+
+    **References**:
+      - F. Jensen, *Introduction to Computational Chemistry*, 2nd ed., Wiley (2007).
+      - A. Szabo, N. S. Ostlund, *Modern Quantum Chemistry*, McGraw-Hill (1989).
+      - T. H. Dunning Jr., J. Chem. Phys. 90, 1007 (1989) for correlation-consistent basis sets.
     """
 
     basis_set = Quantity(
         type=str,
         description="""
-        name of the basis set.
+        **Name** or label of the basis set as recognized by the code or standard 
+        library. Examples: "6-31G*", "cc-pVTZ", "def2-SVP", "STO-3G", "LANL2DZ" (ECP).
         """,
     )
 
@@ -326,7 +394,15 @@ class AtomCenteredBasisSet(BasisSetComponent):
             'PC',  # Point charges
         ),
         description="""
-        Type of the basis set, e.g. STO or GTO.
+        The **functional form** of the basis set:
+          - 'STO': Slater-type orbitals
+          - 'GTO': Gaussian-type orbitals
+          - 'NAO': Numerical atomic orbitals
+          - 'cECP': Some variant of a "capped" or shape-consistent ECP 
+          - 'PC': Point charges (or ghost basis centers)
+
+        If a code uses a mixture (e.g., GTO + ECP), it might either store them 
+        as separate `AtomCenteredBasisSet` sections or unify them if the code does so internally.
         """,
     )
 
@@ -335,16 +411,24 @@ class AtomCenteredBasisSet(BasisSetComponent):
             'orbital',
             'auxiliary_scf',
             'auxiliary_post_hf',
-            'cabs',  # complementary auxiliary basis set
+            'cabs',  
         ),
         description="""
-        The role of the basis set.
+        The role of this basis set in the calculation:
+          - 'orbital': main orbital basis for the SCF
+          - 'auxiliary_scf': used for RI-J or density fitting in SCF
+          - 'auxiliary_post_hf': used in MP2, CC, etc. 
+          - 'cabs': complementary auxiliary basis for explicitly correlated (F12) methods.
         """,
     )
 
     total_number_of_basis_functions = Quantity(
         type=np.int32,
-        description=""""The total number of basis functions.""",
+        description="""
+        The **total** number of contracted basis functions in this entire set. 
+        This is typically the sum of all `(2l+1)` or cartesian expansions across
+        all shells on all relevant atoms (within the scope of this section).
+        """,
     )
 
     functional_composition = SubSection(

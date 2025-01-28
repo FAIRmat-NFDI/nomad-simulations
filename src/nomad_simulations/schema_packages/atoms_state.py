@@ -643,70 +643,105 @@ class AtomsState(Entity):
             self.atomic_number = self.resolve_atomic_number(logger=logger)
 
 
-class MolecularOrbitalsState(Entity):
+class MolecularOrbitals(Entity):
     """
-    A base section to define molecular orbitals.
+    This class stores all molecular orbitals (MO) in a single container, with each Quantity using
+    arrays indexed by mo_num and ao_num.
+
+        Comparison to TREXIO:
+      - mo/type           -> mo_type
+      - mo/num            -> mo_num
+      - mo/coefficient    -> coefficient
+      - mo/coefficient_im -> coefficient_im
+      - mo/symmetry       -> symmetry
+      - mo/occupation     -> occupation
+      - mo/energy         -> energy
+      - mo/spin           -> spin
+
     """
 
-    symmetry_label = Quantity(
+    mo_type = Quantity(
         type=str,
+        shape=['mo_num'],
         description="""
-        Symmetry label of the molecular orbital (e.g., 'sigma', 'pi', 'delta').
+        Type of the molecular orbitals
+         e.g. 'canonical', 'localized'.
+        In case of CASSCF calculations, there will be orbital subspaces of different nature.
+        E.g. : 
+        Internal orbitals : canonical
+        Active orbitals   : natural
+        Virtual orbitals  : canonical
         """,
     )
 
-    energy = Quantity(
-        type=np.float64,
-        #unit='eV',
+    mo_num = Quantity(
+        type=np.int32,
         description="""
-        Energy of the molecular orbital.
+        Number of molecular orbitals.
+        """,
+    )
+
+    ao_num = Quantity(
+        type=np.int32,
+        description="""
+        Number of atomic orbitals or basis functions (often needed for coefficient shape).
+        Corresponds to the 'ao.num' dimension in TREXIO.
+        """,
+    )
+
+    coefficient = Quantity(
+        type=np.float64,
+        shape=['mo_num', 'ao_num'],
+        description="""
+        Real part of the MO coefficients. The shape is
+        [mo.num, ao.num], meaning each row corresponds to one MO, and each column
+        to one atomic orbital (or basis function).
+        """,
+    )
+
+    coefficient_im = Quantity(
+        type=np.float64,
+        shape=['mo_num', 'ao_num'],
+        description="""
+        Imaginary part of the MO coefficients. The shape is
+        [mo.num, ao.num]. This array may be omitted or set to zero if the orbitals
+        are purely real.
+        """,
+    )
+
+    symmetry = Quantity(
+        type=str,
+        shape=['mo_num'],
+        description="""
+        Symmetry label for each MO, e.g. group-theory labels or
+        simpler 'sigma', 'pi', 'delta'.
         """,
     )
 
     occupation = Quantity(
         type=np.float64,
+        shape=['mo_num'],
         description="""
-        Occupation of the molecular orbital. This value is typically an integer (0 or 2)
-        in closed-shell systems, but can be fractional in open-shell or spin-polarized
-        calculations.
+        Occupation numbers for each MO. Typically in [0, 2]
+        for closed-shell systems, but might be fractional in open-shell systems or multi-reference calculations.
+        """,
+    )
+
+    energy = Quantity(
+        type=np.float64,
+        shape=['mo_num'],
+        description="""
+        Orbital energies for each MO.
         """,
     )
 
     spin = Quantity(
-        type=MEnum('alpha', 'beta'),
+        type=np.int32,
+        shape=['mo_num'],
         description="""
-        Spin of the molecular orbital. 'alpha' corresponds to spin-up, 'beta' corresponds
-        to spin-down.
+        Spin channel for each MO if this is an unrestricted open-shell set. 
+        Typically 0 for alpha, 1 for beta.
         """,
     )
 
-    coefficients = Quantity(
-        type=np.float64,
-        shape=['number_of_atoms', 'number_of_basis_functions'],
-        description="""
-        Coefficients of the molecular orbital expressed as a linear combination of atomic orbitals.
-        The shape corresponds to the number of atoms and their associated basis functions.
-        """,
-    )
-
-    atom_contributions = SubSection(
-        sub_section=AtomsState.m_def,
-        repeats=True,
-        description="""
-        Contribution of each atom to the molecular orbital, as defined by its basis functions.
-        """,
-    )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        # Validation: Ensure occupation values are consistent
-        if self.occupation is not None and (self.occupation < 0 or self.occupation > 2):
-            logger.error("The molecular orbital occupation must be between 0 and 2.")
-
-        # Validation: Ensure coefficients are provided if atom contributions are defined
-        if self.atom_contributions and self.coefficients is None:
-            logger.error(
-                "Coefficients must be defined when atom contributions are provided."
-            )
 

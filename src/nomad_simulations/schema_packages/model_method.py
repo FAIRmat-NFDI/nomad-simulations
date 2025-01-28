@@ -11,7 +11,11 @@ if TYPE_CHECKING:
     from nomad.metainfo import Context
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import CoreHole, OrbitalsState
+from nomad_simulations.schema_packages.atoms_state import (
+    CoreHole,
+    MolecularOrbitals,
+    OrbitalsState,
+)
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 from nomad_simulations.schema_packages.utils import is_not_representative
@@ -1223,120 +1227,24 @@ class DMFT(ModelMethodElectronic):
         super().normalize(archive, logger)
 
 
-class MolecularOrbitals(ArchiveSection):
-    """
-    A section for molecular orbital schemes used in quantum chemistry calculations.
-    Supports unrestricted (UHF, UKS), restricted (RHF, RKS), and restricted open-shell (ROHF, ROKS) schemes.
-    """
-
-    reference_type = Quantity(
-        type=MEnum('RHF', 'ROHF', 'UHF', 'RKS', 'ROKS', 'UKS'),
-        description="""
-        Specifies the type of reference wavefunction:
-        - RHF: Restricted Hartree-Fock
-        - ROHF: Restricted Open-Shell Hartree-Fock
-        - UHF: Unrestricted Hartree-Fock
-        - RKS: Restricted Kohn-Sham
-        - ROKS: Restricted Open-Shell Kohn-Sham
-        - UKS: Unrestricted Kohn-Sham
-        """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
-    )
-
-    n_alpha_electrons = Quantity(
-        type=np.int32,
-        description="""
-        Number of alpha electrons (spin up) in the molecular system.
-        """,
-    )
-
-    n_beta_electrons = Quantity(
-        type=np.int32,
-        description="""
-        Number of beta electrons (spin down) in the molecular system.
-        """,
-    )
-
-    n_molecular_orbitals = Quantity(
-        type=np.int32,
-        description="""
-        Total number of molecular orbitals in the system.
-        """,
-    )
-
-    # molecular_orbitals = SubSection(
-    #     sub_section=BaseMolecularOrbital.m_def,
-    #     repeats=True,
-    #     description="""
-    #     Detailed information about each molecular orbital,
-    #     including energy, occupation, and symmetry label.
-    #     """,
-    # )
-
-    sz_projection = Quantity(
-        type=np.float64,
-        description="""
-        Total spin of the system defined as S = (n_alpha_electrons - n_beta_electrons) / 2.
-        Connect to the model system.
-        """,
-    )
-
-    spin_multiplicity = Quantity(
-        type=np.int32,
-        description="""
-        Spin multiplicity of the system defined as 2S + 1.
-        """,
-    )
-
-    def resolve_spin_properties(self, logger: 'BoundLogger') -> None:
-        """
-        Resolves the total spin and spin multiplicity of the system based on alpha and beta electrons.
-        """
-        if self.n_alpha_electrons is not None and self.n_beta_electrons is not None:
-            self.total_spin = (self.n_alpha_electrons - self.n_beta_electrons) / 2
-            self.spin_multiplicity = int(2 * self.total_spin + 1)
-
-    def validate_scheme(self, logger: 'BoundLogger') -> bool:
-        """
-        Validates the consistency of the molecular orbital scheme.
-
-        Returns:
-            (bool): True if the scheme is consistent, False otherwise.
-        """
-        if self.reference_type in ['RHF', 'RKS']:
-            if self.n_alpha_electrons != self.n_beta_electrons:
-                logger.error(
-                    f'For {self.reference_type}, the number of alpha and beta electrons must be equal.'
-                )
-                return False
-        elif self.reference_type in ['ROHF', 'ROKS']:
-            if abs(self.n_alpha_electrons - self.n_beta_electrons) != 1:
-                logger.error(
-                    f'For {self.reference_type}, there must be unpaired electron(s).'
-                )
-                return False
-        return True
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        # Resolve spin properties
-        self.resolve_spin_properties(logger)
-
-        # Validate the molecular orbital scheme
-        if not self.validate_scheme(logger):
-            logger.error('Invalid molecular orbital scheme.')
-
-
 class IntegralDecomposition(BaseModelMethod):
     """
-    A general class for integral decomposition techniques for Coulomb and exchange integrals to speed up the calculation.
-    Examples:
-    Resolution of identity (RI-approximation):
-    RI
-    RIJK
-    ....
-    Chain-of-spheres (COSX) algorithm for exchange: doi:10.1016/j.chemphys.2008.10.036
+    A general class for integral decomposition techniques that approximate
+    Coulomb and/or exchange integrals to reduce computational cost in quantum
+    chemistry. Examples include:
+
+      - Resolution of the Identity (RI, a.k.a. density fitting)
+      - Chain-of-Spheres exchange (COSX)
+      - Cholesky Decomposition (CD)
+      - Other domain-based or rank-reduced approximations
+
+    Typical references:
+      - F. Weigend, M. Häser, The RI-MP2 method: Algorithmic
+        implementation of efficient, approximate MP2 theories,
+        Theor. Chem. Acc. 97, 331-340 (1997).
+      - S. Hättig, F. Weigend, J. Chem. Phys. 113, 5154 (2000). (RI-J)
+      - Neese et al., “Chain-of-spheres algorithms for HF exchange,”
+        Chem. Phys. 356 (2008), 98-109.
     """
 
     approximation_type = Quantity(
@@ -1350,17 +1258,34 @@ class IntegralDecomposition(BaseModelMethod):
     )
 
     approximated_term = Quantity(
-        type=str,
+        type=MEnum('coulomb', 'exchange', 'mp2', 'cc', 'explicit_correlation', 'other'),
         description="""
-        Such as coulomb, exchange, explicit-correlation, MP2 integrals and so on.
-        TODO: MEnum.
+        Which terms are approximated by this method:
+          - 'coulomb': only the J integrals
+          - 'exchange': only K integrals
+          - 'mp2': MP2 integrals
+          - 'cc': Coupled Cluster integrals
+          - 'explicit_correlation': e.g. R12, F12 integrals
         """,
     )
 
 
 class HartreeFock(ModelMethodElectronic):
     """
-    A base section for Hartree Fock ansatz.
+    Defines a Hartree–Fock (HF) calculation using a specified reference determinant 
+    (RHF, UHF, or ROHF).
+
+    In HF theory:
+      - RHF  = Restricted Hartree–Fock, for closed-shell systems.
+      - UHF  = Unrestricted Hartree–Fock, allows different orbitals for alpha/beta spin.
+      - ROHF = Restricted Open-Shell Hartree–Fock, a partially restricted approach for 
+               open-shell systems.
+
+    **References**:
+      - Roothaan, C. C. J. (1951). "New Developments in Molecular Orbital Theory." 
+        Rev. Mod. Phys. 23, 69.
+      - Szabo, A., & Ostlund, N. S. (1989). *Modern Quantum Chemistry*. McGraw-Hill.
+      - Jensen, F. (2007). *Introduction to Computational Chemistry*. 2nd ed., Wiley.
     """
 
     reference_determinant = Quantity(
@@ -1369,6 +1294,42 @@ class HartreeFock(ModelMethodElectronic):
         Type of reference determinant.
         """,
     )
+
+    molecular_orbitals_ref = Quantity(
+        type=MolecularOrbitals,
+        description="""
+        Final, converged molecular orbitals from the Hartree–Fock SCF procedure. This includes
+        orbital energies, occupations, symmetry labels, and spin channels if applicable.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        Perform minimal consistency checks between the HF reference determinant
+        and the final molecular orbitals spin array (if available).
+        """
+        super().normalize(archive, logger)
+
+        if self.molecular_orbitals is not None:
+            # If the user is storing a spin array for MOs, check for consistency with the determinant
+            mo_spin = self.molecular_orbitals.spin
+            if mo_spin is not None and len(mo_spin) > 0:
+                unique_spins = np.unique(mo_spin)
+                if self.reference_determinant == 'RHF':
+                    # For RHF, we typically expect spin=0 (alpha) only
+                    if not np.all(mo_spin == 0):
+                        logger.warning(
+                            "RHF reference used, but molecular_orbitals.spin contains non-zero spin indices."
+                        )
+                elif self.reference_determinant == 'UHF':
+                    # UHF often has spin=0 for alpha and spin=1 for beta
+                    # If we only see spin=0, that's effectively no spin polarization
+                    if len(unique_spins) == 1 and unique_spins[0] == 0:
+                        logger.info(
+                            "UHF reference chosen, but only alpha spin found in MOs (spin=0). "
+                            "This might still be valid if spin polarization is zero."
+                        )
+                # For ROHF, spin indexing can vary across codes, so no strict check here.
 
 
 class PerturbationMethod(ModelMethodElectronic):
@@ -1379,7 +1340,7 @@ class PerturbationMethod(ModelMethodElectronic):
         Perturbation approach. The abbreviations stand for:
         | Abbreviation | Description |
         | ------------ | ----------- |
-        | `'MP'`       | Moller-Plesset |
+        | `'MP'`       | Møller-Plesset |
         | `'RS'`       | Rayleigh-Schrödigner |
         | `'BW'`       | Brillouin-Wigner |
         """,
@@ -1401,18 +1362,43 @@ class PerturbationMethod(ModelMethodElectronic):
         """,
     )
 
+    spin_component_scaling = Quantity(
+        type=MEnum('none', 'SCS', 'SOS', 'custom'),
+        default='none',
+        description="""
+        Spin-component scaling approach for perturbation methods:
+          - none  : no spin-component scaling
+          - SCS   : spin-component scaled (Grimme's approach, https://doi.org/10.1002/wcms.1110)
+          - SOS   : spin-opposite scaled
+          - custom: user-defined scaling factors
+        This is typically relevant only for MP2 calculations.
+        """,
+    )
+
+
 
 class LocalCorrelation(ArchiveSection):
     """
-    A base section used to define the parameters of a local correlation for the post-HF methods.
+    A base section used to define the parameters of a local correlation method for
+    post-HF calculations, e.g. LMP2, LCC, or domain-based local pair natural orbitals
+    (PNO, LPNO, DLPNO) in coupled cluster or double-hybrid DFT.
 
-    It has a corresponding localization method.
+    Typical references:
+      - Pulay, Chem. Phys. Lett. 100, 151 (1983) (LMP2 concept).
+      - G. Knizia, G. K.-L. Chan, “Density Matrix Embedding,” J. Chem. Theory Comput. 9, 1428 (2013).
+      - F. Neese, “The ORCA program system,” WIREs Comput. Mol. Sci. 2, 73-78 (2012)
+        for DLPNO approaches.
     """
 
     type = Quantity(
-        type=MEnum('PNO', 'LPNO', 'DLPNO'),
+        type=MEnum('PNO', 'LPNO', 'DLPNO', 'LMP2', 'other'),
         description="""
-        the type of local correlation.
+        The local correlation flavor:
+          - 'PNO'   : Pair Natural Orbitals in generic form
+          - 'LPNO'  : Local PNO approach
+          - 'DLPNO' : Domain-based Local PNO approach
+          - 'LMP2'  : Local MP2 (Pulay approach)
+          - 'other' : Another local correlation scheme
         """,
     )
 
@@ -1437,18 +1423,24 @@ class CoupledCluster(ModelMethodElectronic):
     type = Quantity(
         type=str,
         description="""
-        Coupled Cluster flavor.
-        Examples: CC2, CC3, CCD, CCSD, BCCD, QCCD and so on.
-        The perturbative corrections are not included.
+        String labeling the Coupled Cluster flavor (e.g., CC2, CC3, CCD, CCSD, CCSDT, etc.).
+        If a known standard approach, it might match these examples:
+          - CC2, CC3  : approximate methods for excited states
+          - CCD       : Coupled Cluster Doubles
+          - CCSD      : Singles and Doubles
+          - CCSDT     : Singles, Doubles, and Triples
+          - CCSDTQ    : Singles, Doubles, Triples, and Quadruples
+        By default, the "perturbative corrections" like (T) are not included in this string.
         """,
         a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
-    # add a real reference determinant reference
     reference_determinant = Quantity(
         type=MEnum('UHF', 'RHF', 'ROHF', 'UKS', 'RKS', 'ROKS'),
         description="""
-        The type of reference determinant.
+        The type of reference determinant on which the Coupled Cluster expansion is built.
+          - UHF / RHF / ROHF : common for wavefunction-based reference
+          - UKS / RKS / ROKS : if a KS-DFT reference is used (rare but possible).        
         """,
     )
 
@@ -1456,8 +1448,13 @@ class CoupledCluster(ModelMethodElectronic):
         type=np.int32,
         shape=['*'],
         description="""
-        Orders at which the excitation are used.
-        1 = single, 2 = double, 3 = triple, 4 = quadruple, etc.
+        The excitation orders explicitly included in the cluster operator, e.g. [1,2]
+        for CCSD. 
+        - 1 = singles 
+        - 2 = doubles 
+        - 3 = triples 
+        - 4 = quadruples, etc.
+        Example: CCSDT => [1, 2, 3].
         """,
     )
 
@@ -1465,16 +1462,22 @@ class CoupledCluster(ModelMethodElectronic):
         type=np.int32,
         shape=['*'],
         description="""
-        Orders at which the excitation are used.
-        1 = single, 2 = double, 3 = triple, 4 = quadruple, etc.
+        The excitation orders included only in a perturbative manner.
+        For instance, in CCSD(T), singles and doubles are solved iteratively,
+        while triples appear as a perturbative correction => [3].
         """,
     )
 
     perturbative_correction = Quantity(
         type=MEnum('(T)', '[T]', '(T0)', '[T0]', '(Q)'),
         description="""
-        The type of perturbative corrections.
-        A perturbative correction is different than a perturbation method.
+        Label for the perturbative corrections:
+          - '(T)'   : standard perturbative triples
+          - '[T]'   : Brueckner-based or other variant
+          - '(T0)'  : approximate version of (T)
+          - '[T0]'  : approximate, typically for Brueckner references
+          - '(Q)'   : perturbative quadruples, e.g., CCSDT(Q)
+          - 'none'  : no perturbative correction
         """,
     )
 
@@ -1482,8 +1485,8 @@ class CoupledCluster(ModelMethodElectronic):
 
     local_correlation = SubSection(sub_section=LocalCorrelation.m_def, repeats=True)
 
-    gto_integral_decomposition = SubSection(
-        sub_section=GTOIntegralDecomposition.m_def, repeats=True
+    integral_decomposition = SubSection(
+        sub_section=IntegralDecomposition.m_def, repeats=True
     )
 
     explicit_correlation = Quantity(
