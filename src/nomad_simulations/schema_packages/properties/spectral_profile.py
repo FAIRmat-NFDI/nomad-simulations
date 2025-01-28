@@ -522,9 +522,6 @@ class AbsorptionSpectrum(SpectralProfile):
         # Set the name of the section
         self.name = self.m_def.name
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class XASSpectrum(AbsorptionSpectrum):
     """

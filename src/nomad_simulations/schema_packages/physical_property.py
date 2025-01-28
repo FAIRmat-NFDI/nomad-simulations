@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 from nomad import utils
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.datamodel.metainfo.basesections import Entity
 from nomad.metainfo import (
     URL,
@@ -324,7 +323,6 @@ class PropertyContribution(PhysicalProperty):
         description="""
         Reference to the `ModelMethod` section to which the property is linked to.
         """,
-        a_eln=ELNAnnotation(component='ReferenceEditQuantity'),
     )
 
     def normalize(self, archive, logger) -> None:

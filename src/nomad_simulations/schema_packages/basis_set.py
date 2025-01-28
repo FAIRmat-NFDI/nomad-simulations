@@ -12,7 +12,6 @@ import numpy as np
 import pint
 from nomad import utils
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.metainfo import MEnum, Quantity, SubSection
 from nomad.units import ureg
 
@@ -57,7 +56,6 @@ class BasisSetComponent(ArchiveSection):
         description="""
         Reference to the section `AtomsState` specifying the localization of the basis set.
         """,
-        a_eln=ELNAnnotation(components='ReferenceEditQuantity'),
     )
 
     # TODO: add atom index-based instantiator for species if not present
@@ -69,7 +67,6 @@ class BasisSetComponent(ArchiveSection):
         Reference to the section `BaseModelMethod` containing the information
         of the Hamiltonian term to which the basis set applies.
         """,
-        a_eln=ELNAnnotation(components='ReferenceEditQuantity'),
     )
 
     # ? band_scope or orbital_scope: valence vs core
@@ -203,12 +200,6 @@ class AtomCenteredBasisSet(BasisSetComponent):
     functional_composition = SubSection(
         sub_section=AtomCenteredFunction.m_def, repeats=True
     )  # TODO change name
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-        # self.name = self.m_def.name
-        # TODO: set name based on basis functions
-        # ? use basis set names from Basis Set Exchange
 
 
 class APWBaseOrbital(ArchiveSection):

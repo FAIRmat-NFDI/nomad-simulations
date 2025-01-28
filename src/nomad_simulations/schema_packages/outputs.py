@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.metainfo import Quantity, SubSection
 
 if TYPE_CHECKING:
@@ -57,7 +56,6 @@ class Outputs(ArchiveSection):
         description="""
         Reference to the `ModelSystem` section in which the output physical properties were calculated.
         """,
-        a_eln=ELNAnnotation(component='ReferenceEditQuantity'),
     )
 
     model_method_ref = Quantity(
@@ -66,7 +64,6 @@ class Outputs(ArchiveSection):
         Reference to the `ModelMethod` section containing the details of the mathematical
         model with which the output physical properties were calculated.
         """,
-        a_eln=ELNAnnotation(component='ReferenceEditQuantity'),
     )
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -357,9 +354,6 @@ class WorkflowOutputs(Outputs):
     #     output property.
     #     """,
     # )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class TrajectoryOutputs(WorkflowOutputs):

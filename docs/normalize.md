@@ -25,7 +25,7 @@ class Section1(ArchiveSection):
 class Section2(ArchiveSection):
     normalizer_level = 0
 
-    def normalize(self, achive, logger):
+    def normalize(self, archive, logger):
         super().normalize(archive, logger)
         # Some operations here or before `super().normalize(archive, logger)`
 
@@ -36,7 +36,7 @@ class ParentSection(ArchiveSection):
 
     sub_section_2 = SubSection(Section2.m_def, repeats=True)
 
-    def normalize(self, achive, logger):
+    def normalize(self, archive, logger):
         super().normalize(archive, logger)
         # Some operations here or before `super().normalize(archive, logger)`
 ```

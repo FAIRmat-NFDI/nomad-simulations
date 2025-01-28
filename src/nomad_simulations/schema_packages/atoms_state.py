@@ -4,7 +4,6 @@ import ase
 import numpy as np
 import pint
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.datamodel.metainfo.basesections import Entity
 from nomad.metainfo import MEnum, Quantity, SubSection
 from nomad.units import ureg
@@ -308,7 +307,6 @@ class CoreHole(ArchiveSection):
         description="""
         Reference to the OrbitalsState section that is used as a basis to obtain the `CoreHole` section.
         """,
-        a_eln=ELNAnnotation(component='ReferenceEditQuantity'),
     )
 
     n_excited_electrons = Quantity(
@@ -411,7 +409,6 @@ class HubbardInteractions(ArchiveSection):
         description="""
         Value of the (intraorbital) Hubbard interaction
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     j_hunds_coupling = Quantity(
@@ -420,7 +417,6 @@ class HubbardInteractions(ArchiveSection):
         description="""
         Value of the (interorbital) Hund's coupling.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     u_interorbital_interaction = Quantity(
@@ -430,7 +426,6 @@ class HubbardInteractions(ArchiveSection):
         Value of the (interorbital) Coulomb interaction. In rotational invariant systems,
         u_interorbital_interaction = u_interaction - 2 * j_hunds_coupling.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     j_local_exchange_interaction = Quantity(
@@ -439,7 +434,6 @@ class HubbardInteractions(ArchiveSection):
         description="""
         Value of the exchange interaction. In rotational invariant systems, j_local_exchange_interaction = j_hunds_coupling.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     u_effective = Quantity(
@@ -474,7 +468,6 @@ class HubbardInteractions(ArchiveSection):
         description="""
         Name of the double counting correction algorithm applied.
         """,
-        a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
     def resolve_u_interactions(self, logger: 'BoundLogger') -> Optional[tuple]:
@@ -586,7 +579,6 @@ class AtomsState(Entity):
         Note: for `CoreHole` systems we do not consider the charge of the atom even if
         we do not store the final `OrbitalsState` where the electron was excited to.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     core_hole = SubSection(sub_section=CoreHole.m_def, repeats=False)

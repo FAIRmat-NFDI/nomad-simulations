@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.metainfo import URL, MEnum, Quantity, Section, SubSection
 
 if TYPE_CHECKING:
@@ -46,7 +45,6 @@ class BaseModelMethod(ArchiveSection):
         Name of the mathematical model. This is typically used to identify the model Hamiltonian used in the
         simulation. Typical standard names: 'DFT', 'TB', 'GW', 'BSE', 'DMFT', 'NMR', 'kMC'.
         """,
-        a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
     type = Quantity(
@@ -56,7 +54,6 @@ class BaseModelMethod(ArchiveSection):
         model can be 'Wannier', 'DFTB', 'xTB' or 'Slater-Koster'. This quantity should be
         rewritten to a MEnum when inheriting from this class.
         """,
-        a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
     external_reference = Quantity(
@@ -64,13 +61,9 @@ class BaseModelMethod(ArchiveSection):
         description="""
         External reference to the model e.g. DOI, URL.
         """,
-        a_eln=ELNAnnotation(component='URLEditQuantity'),
     )
 
     numerical_settings = SubSection(sub_section=NumericalSettings.m_def, repeats=True)
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class ModelMethod(BaseModelMethod):
@@ -87,9 +80,6 @@ class ModelMethod(BaseModelMethod):
         Contribution or sub-term of the total model Hamiltonian.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class ModelMethodElectronic(ModelMethod):
@@ -118,11 +108,7 @@ class ModelMethodElectronic(ModelMethod):
         Describes the relativistic treatment used for the calculation of the final energy
         and related quantities. If `None`, no relativistic treatment is applied.
         """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class XCFunctional(ArchiveSection):
@@ -136,7 +122,6 @@ class XCFunctional(ArchiveSection):
         Provides the name of one of the exchange or correlation (XC) functional following the libxc
         convention. For the code base containing the conventions, see https://gitlab.com/libxc/libxc.
         """,  # TODO: step away from the libxc naming convention
-        a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
     name = Quantity(
@@ -153,7 +138,6 @@ class XCFunctional(ArchiveSection):
         Weight of the functional. This quantity is relevant when defining linear combinations of the
         different functionals. If not specified, its value is 1.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     # ? add method to extract `name` from `libxc_name`
@@ -220,7 +204,6 @@ class DFT(ModelMethodElectronic):
         description="""
         Amount of exact exchange mixed in with the XC functional (value range = [0, 1]).
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     # ! MEnum this
@@ -252,7 +235,6 @@ class DFT(ModelMethodElectronic):
         | `"SIC_MAURI_US"`          | A (scaled) correction proposed by Mauri and co-
         workers on the spin density / doublet unpaired orbital |
         """,
-        a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
     van_der_waals_correction = Quantity(
@@ -269,7 +251,6 @@ class DFT(ModelMethodElectronic):
         | `"MDB"` | http://dx.doi.org/10.1103/PhysRevLett.108.236402 and http://dx.doi.org/10.1063/1.4865104 |
         | `"XC"` | The method to calculate the VdW energy uses a non-local functional |
         """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
 
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
@@ -426,7 +407,6 @@ class TB(ModelMethodElectronic):
         | `'SlaterKoster'` | https://journals.aps.org/pr/abstract/10.1103/PhysRev.94.1498 |
         | `'unavailable'` | - |
         """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
 
     # ? these 4 quantities will change when `BasisSet` is defined
@@ -854,7 +834,6 @@ class ExcitedStateMethodology(ModelMethodElectronic):
         description="""
         Number of states used to calculate the excitations.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     n_empty_states = Quantity(
@@ -862,7 +841,6 @@ class ExcitedStateMethodology(ModelMethodElectronic):
         description="""
         Number of empty states used to calculate the excitations. This quantity is complementary to `n_states`.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     broadening = Quantity(
@@ -871,11 +849,7 @@ class ExcitedStateMethodology(ModelMethodElectronic):
         description="""
         Lifetime broadening applied to the spectra in full-width at half maximum for excited-state calculations.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class Screening(ExcitedStateMethodology):
@@ -890,11 +864,7 @@ class Screening(ExcitedStateMethodology):
         Value of the static dielectric constant at infinite q. For metals, this is infinite
         (or a very large value), while for insulators is finite.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class GW(ExcitedStateMethodology):
@@ -927,7 +897,6 @@ class GW(ExcitedStateMethodology):
         | `'qp-scGW0'`  | quasiparticle self-consistent G with fixed W0 | https://journals.aps.org/prb/abstract/10.1103/PhysRevB.76.115109 |
         | `'qp-scGW'`  | quasiparticle self-consistent G and W | https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.96.226402 |
         """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
 
     analytical_continuation = Quantity(
@@ -953,7 +922,6 @@ class GW(ExcitedStateMethodology):
         | `'ppm_FaridEngel'` | Farid and Engel plasmon-pole model  | https://journals.aps.org/prb/abstract/10.1103/PhysRevB.47.15931 |
         | `'multi_pole'` | Multi-pole fitting  | https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.74.1827 |
         """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
 
     # TODO improve description
@@ -970,11 +938,7 @@ class GW(ExcitedStateMethodology):
         description="""
         Reference to the `Screening` section that the GW calculation used to obtain the screened Coulomb interactions.
         """,
-        a_eln=ELNAnnotation(component='ReferenceEditQuantity'),
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class BSE(ExcitedStateMethodology):
@@ -1003,7 +967,6 @@ class BSE(ExcitedStateMethodology):
         | `'IP'` | Independent-particle approach |
         | `'RPA'` | Random Phase Approximation |
         """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
 
     solver = Quantity(
@@ -1019,7 +982,6 @@ class BSE(ExcitedStateMethodology):
         | `'SLEPc'` | Scalable Library for Eigenvalue Problem Computations | https://slepc.upv.es/ |
         | `'TDA'` | Tamm-Dancoff approximation | https://doi.org/10.1016/S0009-2614(99)01149-5 |
         """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
 
     screening_ref = Quantity(
@@ -1027,11 +989,7 @@ class BSE(ExcitedStateMethodology):
         description="""
         Reference to the `Screening` section that the BSE calculation used to obtain the screened Coulomb interactions.
         """,
-        a_eln=ELNAnnotation(component='ReferenceEditQuantity'),
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 # ? Is this class really necessary or should go in outputs.py?
@@ -1049,7 +1007,6 @@ class CoreHoleSpectra(ModelMethodElectronic):
     #     description="""
     #     Solver algorithm used for the core-hole spectra.
     #     """,
-    #     a_eln=ELNAnnotation(component="StringEditQuantity"),
     # )
 
     type = Quantity(
@@ -1057,7 +1014,6 @@ class CoreHoleSpectra(ModelMethodElectronic):
         description="""
         Type of the CoreHole excitation spectra calculated, either "absorption" or "emission".
         """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
 
     edge = Quantity(
@@ -1092,7 +1048,6 @@ class CoreHoleSpectra(ModelMethodElectronic):
         description="""
         Reference to the `CoreHole` section that contains the information of the edge of the excited core-hole.
         """,
-        a_eln=ELNAnnotation(component='ReferenceEditQuantity'),
     )
 
     excited_state_method_ref = Quantity(
@@ -1100,13 +1055,9 @@ class CoreHoleSpectra(ModelMethodElectronic):
         description="""
         Reference to the `ModelMethodElectronic` section (e.g., `DFT` or `BSE`) that was used to obtain the core-hole spectra.
         """,
-        a_eln=ELNAnnotation(component='ReferenceEditQuantity'),
     )
 
     # TODO add normalization to obtain `edge`
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class DMFT(ModelMethodElectronic):
@@ -1218,6 +1169,3 @@ class DMFT(ModelMethodElectronic):
         `orbitals_ref` and their spin state.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

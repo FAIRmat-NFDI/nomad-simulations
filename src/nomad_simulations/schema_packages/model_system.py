@@ -36,7 +36,6 @@ from matid.classification.classifications import (
 from nomad.atomutils import Formula, get_normalized_wyckoff, search_aflow_prototype
 from nomad.config import config
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.datamodel.metainfo.basesections import Entity, System
 from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
@@ -73,7 +72,6 @@ class GeometricSpace(Entity):
         description="""
         Length of the first basis vector.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     length_vector_b = Quantity(
@@ -82,7 +80,6 @@ class GeometricSpace(Entity):
         description="""
         Length of the second basis vector.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     length_vector_c = Quantity(
@@ -91,7 +88,6 @@ class GeometricSpace(Entity):
         description="""
         Length of the third basis vector.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     angle_vectors_b_c = Quantity(
@@ -100,7 +96,6 @@ class GeometricSpace(Entity):
         description="""
         Angle between second and third basis vector.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     angle_vectors_a_c = Quantity(
@@ -109,7 +104,6 @@ class GeometricSpace(Entity):
         description="""
         Angle between first and third basis vector.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     angle_vectors_a_b = Quantity(
@@ -118,7 +112,6 @@ class GeometricSpace(Entity):
         description="""
         Angle between first and second basis vector.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     volume = Quantity(
@@ -127,7 +120,6 @@ class GeometricSpace(Entity):
         description="""
         Volume of a 3D real space entity.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     surface_area = Quantity(
@@ -136,7 +128,6 @@ class GeometricSpace(Entity):
         description="""
         Surface area of a 3D real space entity.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     area = Quantity(
@@ -145,7 +136,6 @@ class GeometricSpace(Entity):
         description="""
         Area of a 2D real space entity.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     length = Quantity(
@@ -154,7 +144,6 @@ class GeometricSpace(Entity):
         description="""
         Total length of a 1D real space entity.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     coordinates_system = Quantity(
@@ -399,9 +388,6 @@ class Cell(GeometricSpace):
     def is_ne_cell(self, other) -> bool:
         # this does not hold in general, but here we use finite sets
         return not self.is_equal_cell(other)
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class AtomicCell(Cell):
@@ -660,7 +646,6 @@ class Symmetry(ArchiveSection):
         description="""
         Reference to the AtomicCell section that the symmetry refers to.
         """,
-        a_eln=ELNAnnotation(component='ReferenceEditQuantity'),
     )
 
     def resolve_analyzed_atomic_cell(
@@ -994,7 +979,6 @@ class ModelSystem(System):
         crystal or it can be filled up. For example, an heterostructure of graphene (G) sandwiched
         in between hexagonal boron nitrides (hBN) slabs could be named 'hBN/G/hBN'.
         """,
-        a_eln=ELNAnnotation(component='StringEditQuantity'),
     )
 
     # TODO work on improving and extending this quantity and the description
@@ -1012,7 +996,6 @@ class ModelSystem(System):
         description="""
         Type of the system (atom, bulk, surface, etc.) which is determined by the normalizer.
         """,
-        a_eln=ELNAnnotation(component='EnumEditQuantity'),
     )
 
     dimensionality = Quantity(
@@ -1023,7 +1006,6 @@ class ModelSystem(System):
 
             https://doi.org/10.1103/PhysRevLett.118.106101.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     # TODO improve on the definition and usage
