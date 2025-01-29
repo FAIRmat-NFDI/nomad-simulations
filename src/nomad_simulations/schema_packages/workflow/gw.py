@@ -1,7 +1,10 @@
 from nomad.datamodel import EntryArchive
+from nomad.metainfo import SchemaPackage
 from structlog.stdlib import BoundLogger
 
 from .general import INCORRECT_N_TASKS, SimulationWorkflow
+
+m_package = SchemaPackage()
 
 
 class DFTGWWorkflow(SimulationWorkflow):
@@ -35,3 +38,6 @@ class DFTGWWorkflow(SimulationWorkflow):
         self.tasks[0].outputs = self.tasks[0].task.outputs
         self.tasks[1].inputs = self.tasks[0].outputs
         self.tasks[1].outputs = self.outputs
+
+
+m_package.__init_metainfo__()

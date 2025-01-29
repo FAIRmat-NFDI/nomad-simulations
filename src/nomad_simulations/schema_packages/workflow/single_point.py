@@ -1,8 +1,32 @@
 from nomad.datamodel import EntryArchive
-from nomad.datamodel.metainfo.workflow import Link
+from nomad.datamodel.metainfo.workflow import Task
+from nomad.metainfo import SchemaPackage
 from structlog.stdlib import BoundLogger
 
-from .general import INCORRECT_N_TASKS, SimulationWorkflow
+from .general import (
+    INCORRECT_N_TASKS,
+    SimulationWorkflow,
+    SimulationWorkflowModel,
+    SimulationWorkflowResults,
+)
+
+m_package = SchemaPackage()
+
+
+class SinglePointModel(SimulationWorkflowModel):
+    """
+    Contains definitions for the input model of a single point workflow.
+    """
+
+    pass
+
+
+class SinglePointResults(SimulationWorkflowResults):
+    """
+    Contains defintions for the results of a single point workflow.
+    """
+
+    pass
 
 
 class SinglePoint(SimulationWorkflow):
@@ -10,31 +34,27 @@ class SinglePoint(SimulationWorkflow):
     Definitions for single point workflow.
     """
 
-    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        """
-        Specify the method and system as inputs.
-        """
-        super().normalize(archive, logger)
-        if len(self.tasks) != 1:
+    task_label = 'Calculation'
+
+    def generate_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        if not self.model:
+            self.model = SinglePointModel()
+        super().generate_inputs(archive, logger)
+
+    def generate_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        if not self.results:
+            self.results = SinglePointResults()
+        super().generate_outputs(archive, logger)
+
+    def generate_tasks(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        if len(archive.data.outputs) != 1:
             logger.error(INCORRECT_N_TASKS)
-            return
 
-        if not self.inputs:
-            self.inputs.extend(self.tasks[0].inputs)
+        task = Task(name=self.task_label)
+        task.inputs.extend(self.inputs)
+        task.outputs.extend(self.outputs)
 
-        inps: list[Link] = []
-        for inp in self.inputs:
-            if inp.section and inp.section.model_system_ref:
-                inps.append(
-                    Link(name='Input system', section=inp.section.model_system_ref)
-                )
-            if inp.section and inp.section.model_method_ref:
-                inps.append(
-                    Link(name='Input method', section=inp.section.model_method_ref)
-                )
-        self.inputs.clear()
-        self.inputs.extend(inps)
+        self.tasks.append(task)
 
-        # reconnect inputs to link as these are redefined
-        self.tasks[0].inputs.clear()
-        self.tasks[0].inputs.extend(inps)
+
+m_package.__init_metainfo__()

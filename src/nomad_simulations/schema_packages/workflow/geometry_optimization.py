@@ -1,19 +1,18 @@
+import numpy as np
 from nomad.datamodel import EntryArchive
-from nomad.datamodel.metainfo.workflow import Link, Task
-from nomad.metainfo import MEnum, Quantity
-from nomad.metainfo.util import MSubSectionList
+from nomad.metainfo import MEnum, Quantity, SchemaPackage
 from structlog.stdlib import BoundLogger
-
-from nomad_simulations.schema_packages.outputs import Outputs
 
 from .general import (
     SimulationWorkflow,
-    SimulationWorkflowMethod,
+    SimulationWorkflowModel,
     SimulationWorkflowResults,
 )
 
+m_package = SchemaPackage()
 
-class GeometryOptimizationMethod(SimulationWorkflowMethod):
+
+class GeometryOptimizationModel(SimulationWorkflowModel):
     optimization_type = Quantity(
         type=MEnum('static', 'atomic', 'cell_shape', 'cell_volume'),
         shape=[],
@@ -94,13 +93,73 @@ class GeometryOptimizationMethod(SimulationWorkflowMethod):
         type=int,
         shape=[],
         description="""
-        The number of optimization steps between sucessive outputs.
+        The number of optimization steps between saved outputs.
         """,
     )
 
 
 class GeometryOptimizationResults(SimulationWorkflowResults):
-    pass
+    n_steps = Quantity(
+        type=int,
+        shape=[],
+        description="""
+        Number of saved optimization steps.
+        """,
+    )
+
+    energies = Quantity(
+        type=np.float64,
+        unit='joule',
+        shape=['optimization_steps'],
+        description="""
+        List of energy_total values gathered from the single configuration
+        calculations that are a part of the optimization trajectory.
+        """,
+    )
+
+    steps = Quantity(
+        type=np.int32,
+        shape=['optimization_steps'],
+        description="""
+        The step index corresponding to each saved configuration.
+        """,
+    )
+
+    final_energy_difference = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='joule',
+        description="""
+        The difference in the energy_total between the last two steps during
+        optimization.
+        """,
+    )
+
+    final_force_maximum = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='newton',
+        description="""
+        The maximum net force in the last optimization step.
+        """,
+    )
+
+    final_displacement_maximum = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='meter',
+        description="""
+        The maximum displacement in the last optimization step with respect to previous.
+        """,
+    )
+
+    is_converged_geometry = Quantity(
+        type=bool,
+        shape=[],
+        description="""
+        Indicates if the geometry convergence criteria were fulfilled.
+        """,
+    )
 
 
 class GeometryOptimization(SimulationWorkflow):
@@ -108,37 +167,28 @@ class GeometryOptimization(SimulationWorkflow):
     Definitions for geometry optimization workflow.
     """
 
-    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        """
-        Specify the inputs and outputs of the tasks as the model system.
-        """
+    task_label = 'Step'
 
-        # set up first method and results before we call base normalizer
-        if not self.method:
-            self.method = GeometryOptimizationMethod()
+    def generate_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        if not self.model:
+            self.model = GeometryOptimizationModel()
+        super().generate_inputs(archive, logger)
 
+    def generate_outputs(self, archive: EntryArchive, logger: BoundLogger):
         if not self.results:
             self.results = GeometryOptimizationResults()
+        super().generate_outputs(archive, logger)
 
-        super().normalize(archive, logger)
-
-        def extend_links(task: Task) -> None:
-            def get_system_links(links: MSubSectionList, name: str) -> list[Link]:
-                return [
-                    Link(name=name, section=link.section.model_system_ref)
-                    for link in links
-                    if isinstance(link.section, Outputs)
-                    and link.section.model_system_ref
-                ]
-
-            task.inputs.extend(get_system_links(self.inputs, 'Input system'))
-            task.outputs.extend(get_system_links(self.outputs, 'Output system'))
-
-        if not self.name:
-            self.name = 'Geometry Optimization'
-
-        extend_links(self)
+    def generate_tasks(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        super().generate_tasks(archive, logger)
         for n, task in enumerate(self.tasks):
             if not task.name:
-                task.name = f'Step {n}'
-            extend_links(task)
+                task.name = f'{self.task_label} {n}'
+
+        # link inputs to first task
+        self.tasks[0].inputs.extend(self.inputs)
+        # add outputs of last task to outputs
+        self.outputs.extend(self.tasks[-1].outputs)
+
+
+m_package.__init_metainfo__()
