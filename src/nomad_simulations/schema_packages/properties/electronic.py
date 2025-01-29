@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from nomad.config import config
-from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection
+from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection, MEnum
 from nomad.datamodel.metainfo.plot import PlotSection, PlotlyFigure
 from nomad_simulations.schema_packages.general import ModelBaseSection
 import plotly.graph_objects as go
@@ -15,8 +15,52 @@ configuration = config.get_plugin_entry_point(
 m_package = SchemaPackage()
 
 
-class Spin(ModelBaseSection):
-    pass
+SingleElectronSimpleSpin = Quantity(
+    type=MEnum('alpha', 'beta'),
+    default='alpha',
+    description='Simple spin',
+)
+
+
+class SpinResolvedDOS(ModelBaseSection):
+    """Spin resolved DOS"""
+
+    spin = SingleElectronSimpleSpin
+
+    values = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description='Actual DOS values',
+    )  # ? add renormalized_values
+
+    def name_from_section(self) -> str:
+        return self.spin
+    
+
+class SemanticDOS(ModelBaseSection):
+    """Electronic Density of State set that has a clear semantic meaning,
+    e.g. total DOS, projected DOS, etc."""
+
+    label = Quantity(
+        type=str,
+        default='total',
+        description='Label of the DOS',
+    )  # TODO: el n m
+
+    energies = Quantity(
+        type=np.float64,
+        unit='J',
+        shape=['*'],
+        description='Energy values at which the DOS is evaluated',
+    )
+
+    spin_channels = SubSection(sub_section=SpinResolvedDOS.m_def, repeats=True)
+
+    def name_from_section(self) -> str:
+        if self.label:
+            return self.label
+        else:
+            return 'total'
 
 
 class DOS(PlotSection, ModelBaseSection):
@@ -24,59 +68,18 @@ class DOS(PlotSection, ModelBaseSection):
 
     m_def = Section()
 
-    class SemanticDOS(ModelBaseSection):
-        """Electronic Density of State set that has a clear semantic meaning,
-        e.g. total DOS, projected DOS, etc."""
-
-        class SpinResolvedDOS(ModelBaseSection):
-            """Spin resolved DOS"""
-
-            spin = Quantity(
-                type=Spin,
-                description='Spin channel',
-            )
-
-            values = Quantity(
-                type=np.float64,
-                shape=['*'],
-                description='Actual DOS values',
-            )  # ? add renormalized_values
-
-            def name_from_section(self, section) -> str:
-                return self.spin.name_from_section()
-
-        label = Quantity(
-            type=str,
-            default='total',
-            description='Label of the DOS',
-        )  # TODO: el n m
-
-        energies = Quantity(
-            type=np.float64,
-            unit='J',
-            shape=['*'],
-            description='Energy values at which the DOS is evaluated',
-        )
-
-        spin_channels = SubSection(subsection=SpinResolvedDOS.m_def, repeats=True)
-
-        def name_from_section(self, section) -> str:
-            if section.label:
-                return section.label
-            else:
-                return 'total'
-
-    collections = SubSection(subsection=SemanticDOS.m_def, repeats=True)
+    collections = SubSection(sub_section=SemanticDOS.m_def, repeats=True)
 
     def generate_plot(self) -> go.Figure:
         fig = go.Figure()
         for collection in self.collections:
             for spin_channel in collection.spin_channels:
                 fig.add_trace(
-                    px.line(
+                    go.Scatter(
                         x=collection.energies,
                         y=spin_channel.values,
-                        name=f'{collection.name_from_section()} {spin_channel.spin.name_from_section()}',
+                        mode='lines',
+                        name=f'{collection.name_from_section()} {spin_channel.name_from_section()}',
                     )
                 )
         return fig
