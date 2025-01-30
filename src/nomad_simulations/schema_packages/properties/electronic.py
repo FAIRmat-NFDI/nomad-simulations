@@ -29,6 +29,7 @@ class SpinResolvedDOS(ModelBaseSection):
 
     values = Quantity(
         type=np.float64,
+        # unit='1/J',
         shape=['*'],
         description='Actual DOS values',
     )  # ? add renormalized_values
@@ -67,6 +68,17 @@ class DOS(PlotSection, ModelBaseSection):
     """Collection of Electronic Density of States"""
 
     m_def = Section()
+
+    name = 'DOS'
+
+    highest_occupied_state = Quantity(
+        type=np.float64,
+        unit='J',
+        description="""
+        Energy level denoting the origin along the energy axis, used for comparison and visualization. It is
+        defined as the `ElectronicEigenvalues.highest_occupied_energy`.
+        """,
+    )
 
     collections = SubSection(sub_section=SemanticDOS.m_def, repeats=True)
 
