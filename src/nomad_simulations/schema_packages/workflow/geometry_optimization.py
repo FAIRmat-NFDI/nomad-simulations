@@ -3,16 +3,16 @@ from nomad.datamodel import EntryArchive
 from nomad.metainfo import MEnum, Quantity, SchemaPackage
 from structlog.stdlib import BoundLogger
 
-from .general import (
-    SimulationWorkflow,
-    SimulationWorkflowModel,
-    SimulationWorkflowResults,
-)
+from nomad_simulations.schema_packages.properties.energies import BaseEnergy
+
+from .general import SerialWorkflow, SimulationWorkflowModel, SimulationWorkflowResults
 
 m_package = SchemaPackage()
 
 
 class GeometryOptimizationModel(SimulationWorkflowModel):
+    label = 'Geometry optimization parameters'
+
     optimization_type = Quantity(
         type=MEnum('static', 'atomic', 'cell_shape', 'cell_volume'),
         shape=[],
@@ -81,7 +81,7 @@ class GeometryOptimizationModel(SimulationWorkflowModel):
         """,
     )
 
-    optimization_steps_maximum = Quantity(
+    n_steps_maximum = Quantity(
         type=int,
         shape=[],
         description="""
@@ -99,6 +99,8 @@ class GeometryOptimizationModel(SimulationWorkflowModel):
 
 
 class GeometryOptimizationResults(SimulationWorkflowResults):
+    label = 'Geometry optimiztation results'
+
     n_steps = Quantity(
         type=int,
         shape=[],
@@ -110,7 +112,7 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
     energies = Quantity(
         type=np.float64,
         unit='joule',
-        shape=['optimization_steps'],
+        shape=['n_steps'],
         description="""
         List of energy_total values gathered from the single configuration
         calculations that are a part of the optimization trajectory.
@@ -119,7 +121,7 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
 
     steps = Quantity(
         type=np.int32,
-        shape=['optimization_steps'],
+        shape=['n_steps'],
         description="""
         The step index corresponding to each saved configuration.
         """,
@@ -161,34 +163,43 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
         """,
     )
 
+    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        if not self.n_steps:
+            self.n_steps = len(archive.data.outputs)
 
-class GeometryOptimization(SimulationWorkflow):
+        if not self.energies:
+            energies = []
+            for outputs in archive.data.outputs:
+                try:
+                    energies.append(outputs.total_energies[-1].value.magnitude)
+                except Exception:
+                    logger.error('Energy not found in outputs.')
+                    break
+            if energies:
+                energies = np.array(energies)
+                self.energies = energies * BaseEnergy.value.unit
+                denergies = energies[1:] - energies[: len(energies) - 1]
+                self.final_energy_difference = (
+                    denergies[denergies.nonzero()[0][-1]] * BaseEnergy.value.unit
+                )
+
+
+class GeometryOptimization(SerialWorkflow):
     """
     Definitions for geometry optimization workflow.
     """
 
     task_label = 'Step'
 
-    def generate_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not self.model:
             self.model = GeometryOptimizationModel()
-        super().generate_inputs(archive, logger)
+        super().map_inputs(archive, logger)
 
-    def generate_outputs(self, archive: EntryArchive, logger: BoundLogger):
+    def map_outputs(self, archive: EntryArchive, logger: BoundLogger):
         if not self.results:
             self.results = GeometryOptimizationResults()
-        super().generate_outputs(archive, logger)
-
-    def generate_tasks(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        super().generate_tasks(archive, logger)
-        for n, task in enumerate(self.tasks):
-            if not task.name:
-                task.name = f'{self.task_label} {n}'
-
-        # link inputs to first task
-        self.tasks[0].inputs.extend(self.inputs)
-        # add outputs of last task to outputs
-        self.outputs.extend(self.tasks[-1].outputs)
+        super().map_outputs(archive, logger)
 
 
 m_package.__init_metainfo__()

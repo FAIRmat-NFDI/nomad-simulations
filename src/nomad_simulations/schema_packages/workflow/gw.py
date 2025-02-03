@@ -1,16 +1,48 @@
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import SchemaPackage
+from nomad.metainfo import SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
-from .general import INCORRECT_N_TASKS, SimulationWorkflow
+from .general import (
+    INCORRECT_N_TASKS,
+    ElectronicStructureResults,
+    SerialWorkflow,
+    SimulationWorkflowModel,
+    SimulationWorkflowResults,
+)
 
 m_package = SchemaPackage()
 
 
-class DFTGWWorkflow(SimulationWorkflow):
+class DFTGWModel(SimulationWorkflowModel):
+    label = 'DFT+GW workflow parameters'
+
+
+class DFTGWResults(SimulationWorkflowResults):
+    """
+    Contains references to DFT and GW outputs.
+    """
+
+    label = 'DFT+GW workflow results'
+
+    dft = SubSection(sub_section=ElectronicStructureResults)
+
+    gw = SubSection(sub_section=ElectronicStructureResults)
+
+
+class DFTGWWorkflow(SerialWorkflow):
     """
     Definitions for GW calculation based on DFT workflow.
     """
+
+    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        if not self.model:
+            self.model = DFTGWModel()
+        super().map_inputs(archive, logger)
+
+    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        if not self.results:
+            self.results = DFTGWResults()
+        super().map_outputs(archive, logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         """
@@ -24,20 +56,6 @@ class DFTGWWorkflow(SimulationWorkflow):
         if len(self.tasks) != 2:
             logger.error(INCORRECT_N_TASKS)
             return
-
-        if not self.inputs:
-            # set inputs to inputs of DFT
-            self.inputs.extend(self.tasks[0].task.inputs)
-
-        if not self.outputs:
-            # set ouputs to outputs of GW
-            self.outputs.extend(self.tasks[1].task.outputs)
-
-        # link dft and gw workflows
-        self.tasks[0].inputs = self.inputs
-        self.tasks[0].outputs = self.tasks[0].task.outputs
-        self.tasks[1].inputs = self.tasks[0].outputs
-        self.tasks[1].outputs = self.outputs
 
 
 m_package.__init_metainfo__()

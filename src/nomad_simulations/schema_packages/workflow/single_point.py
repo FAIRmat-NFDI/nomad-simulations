@@ -1,5 +1,5 @@
 from nomad.datamodel import EntryArchive
-from nomad.datamodel.metainfo.workflow import Task
+from nomad.datamodel.metainfo.workflow import Link, Task
 from nomad.metainfo import SchemaPackage
 from structlog.stdlib import BoundLogger
 
@@ -18,7 +18,7 @@ class SinglePointModel(SimulationWorkflowModel):
     Contains definitions for the input model of a single point workflow.
     """
 
-    pass
+    label = 'Single point model'
 
 
 class SinglePointResults(SimulationWorkflowResults):
@@ -26,7 +26,7 @@ class SinglePointResults(SimulationWorkflowResults):
     Contains defintions for the results of a single point workflow.
     """
 
-    pass
+    label = 'Single point results'
 
 
 class SinglePoint(SimulationWorkflow):
@@ -36,25 +36,37 @@ class SinglePoint(SimulationWorkflow):
 
     task_label = 'Calculation'
 
-    def generate_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if not self.model:
-            self.model = SinglePointModel()
-        super().generate_inputs(archive, logger)
+    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        # if not self.model:
+        #     self.model = SinglePointModel()
+        # super().map_inputs(archive, logger)
+        # no need to wrap model and system
+        if not archive.data:
+            return
+        if archive.data.model_method:
+            self.inputs.append(
+                Link(name='Input method', section=archive.data.model_method[0])
+            )
 
-    def generate_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if not self.results:
-            self.results = SinglePointResults()
-        super().generate_outputs(archive, logger)
+        if archive.data.model_system:
+            self.inputs.append(
+                Link(name='Input system', section=archive.data.model_system[0])
+            )
 
-    def generate_tasks(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if len(archive.data.outputs) != 1:
+    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        # if not self.results:
+        #     self.results = SinglePointResults()
+        # super().map_outputs(archive, logger)
+        # no need to wrap outputs, nothing to add as last task outputs is
+        # added in SimulationWorkflow
+        pass
+
+    def map_tasks(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        super().map_tasks(archive, logger)
+        if len(self.tasks) != 1:
             logger.error(INCORRECT_N_TASKS)
-
-        task = Task(name=self.task_label)
-        task.inputs.extend(self.inputs)
-        task.outputs.extend(self.outputs)
-
-        self.tasks.append(task)
+            return
+        self.tasks[0].name = self.task_label
 
 
 m_package.__init_metainfo__()
