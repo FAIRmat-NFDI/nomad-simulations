@@ -80,10 +80,22 @@ class SemanticGroup(ModelBaseSection):
 
     def name_from_section(self) -> str:  # !
         return self.semantic_group
+    
+    def plot(self) -> go.Scatter:
+        """Generate an individual plotly plot."""
 
 class SemanticGroupContainer(ModelBaseSection):
+    """Container for semantic groups of electronic states""" # ! re-word
+
+    m_def = Section()
+
     groups = SubSection(sub_section=SemanticGroup.m_def, repeats=True)
 
+    def plot(self) -> go.Figure:
+        figure = go.Figure()
+        for group in self.groups:
+            figure.add_trace(group.plot())
+        return figure
 
 class Frontiers(ModelBaseSection):
     """Frontiers of the electronic states"""
@@ -128,29 +140,35 @@ class FermiRegion(ModelBaseSection):
                 pass
 
 
-class ElectronicEigenvalues(ModelBaseSection):
+class ElectronicEigenvalues(SemanticGroupContainer):
     """Eigenvalues of the electronic states"""
 
-    spin = SingleElectronSimpleSpin
+    class EigenvalueGroup(SemanticGroup):
 
-    energies = Quantity(
-        type=np.float64,
-        unit='J',
-        shape=['*'],
-        description='The eigenstate obtained from solving the electronic Schrödinger equation',  # ! re-word
-    )
+        class EigenvalueLabel(ProjectionTarget):  # ? necessary
 
-    occupations = Quantity(
-        type=m_unit64,
-        shape=['*'],
-        description='Occupation of the states',
-    )
+            spin = SingleElectronSimpleSpin
 
-    def name_from_section(self) -> str:
-        try:
-            return f"{self.semantic_group.name_from_section()} {self.spin}"
-        except AttributeError:
-            return self.spin
+            def name_from_section(self) -> str:
+                try:
+                    return f"{self.semantic_group.name_from_section()} {self.spin}"
+                except AttributeError:
+                    return self.spin
+
+        label = SubSection(subsection=EigenvalueLabel.m_def)
+
+        energies = Quantity(
+            type=np.float64,
+            unit='J',
+            shape=['*'],
+            description='The eigenstate obtained from solving the electronic Schrödinger equation',  # ! re-word
+        )
+
+        occupations = Quantity(
+            type=m_unit64,
+            shape=['*'],
+            description='Occupation of the states',
+        )
 
 
 class KResolvedElectronicEigenvalues(ElectronicEigenvalues):
@@ -182,7 +200,7 @@ class DensityOfStates(SemanticGroupContainer):
 
         def plot(self) -> go.Scatter:
             return go.Scatter(
-                x=self.m_parent.m_parent.energies,  # ! check
+                x=self.m_parent.energies,  # ! check
                 y=self.values,
                 mode='lines',
                 name=self.name_from_section(),
@@ -193,6 +211,57 @@ class DensityOfStates(SemanticGroupContainer):
 
     groups = SubSection(sub_section=DOSGroup.m_def, repeats=True)
 
+    def normalize(self, *args, **kwargs):
+        super().normalize(*args, **kwargs)
+        # this does not check if the plot was already stored
+        self.figures.append(
+            PlotlyFigure(
+                label='Density of States',
+                index=len(self.figures),
+                figure=self.plot().to_plotly_json(),
+            )
+        )
+
+
+class BandStructure(SemanticGroupContainer):
+    k_path = SubSection(sub_section=KPoint.m_def, repeats=True)
+
+    class BandGroup(SemanticGroup):
+
+        class BandLabel(ProjectionTarget):  # ? necessary
+            spin = SingleElectronSimpleSpin
+
+        label = SubSection(subsection=BandLabel.m_def)
+
+        energies = Quantity(
+            type=np.float64,
+            unit='J',
+            shape=['*'],
+            description='The eigenstate obtained from solving the electronic Schrödinger equation',  # ! re-word
+        )
+
+        def plot(self) -> go.Scatter:
+            return go.Scatter(
+                x=[k_point.k_point for k_point in self.m_parent.k_path],
+                y=self.energies,
+                mode='lines',
+                name=self.name_from_section(),
+                legend_group=self.label.plotly_legend_group(),
+                legendgrouptitle_text=self.label.plotly_legend_group(),
+                visible=False,
+            )
+        
+    def normalize(self, *args, **kwargs) -> None:
+        super().normalize(*args, **kwargs)
+        # this does not check if the plot was already stored
+        self.figures.append(
+            PlotlyFigure(
+                label='Band Structure',
+                index=len(self.figures),
+                figure=self.plot().to_plotly_json(),
+            )
+        )
+
 
 class KResolvedElectronicProperties(PlotSection, ModelBaseSection):
     """Collection section specialized in grouping together electronic properties defined by the k-space,
@@ -201,36 +270,13 @@ class KResolvedElectronicProperties(PlotSection, ModelBaseSection):
 
     m_def = Section()
 
-    k_path = SubSection(sub_section=KPoint.m_def, repeats=True)
+    fermi_region = SubSection(sub_section=FermiRegion.m_def)
 
-    eigenvalues = SubSection(sub_section=KResolvedElectronicEigenvalues.m_def, repeats=True)
+    eigenvalues = SubSection(sub_section=KResolvedElectronicEigenvalues.m_def)
 
-    dos = SubSection(sub_section=DensityOfStates.m_def, repeats=True)
+    dos = SubSection(sub_section=DensityOfStates.m_def)
 
-    highest_occupied_energy = HighestOccupiedEnergy.m_def.m_copy()
-    highest_occupied_energy.description += "Here it spans the whole sampled K-space."
-
-    lowest_unoccupied_energy = LowestUnoccupiedEnergy.m_def.m_copy()
-    lowest_unoccupied_energy.description += "Here it spans the whole sampled K-space."
-
-    band_gap = BandGap.m_def.m_copy()
-    band_gap.description += "At the level of a bulk material, this coincides with the band gap."
-    
-    def plot_dos(self) -> go.Figure:
-        semantic_order = ('s', 'p', 'd', 'f')
-        self.dos.sort(key=lambda dos: (semantic_order.index(dos.semantic_group), dos.spin))
-        return go.Figure(data=[dos.plot() for dos in self.dos])
-    
-    def normalize(self, archive, logger):
-        super().normalize(archive, logger)
-        # this does not check if the plot was already stored
-        self.figures.append(
-            PlotlyFigure(
-                label='Full DOS',
-                index=len(self.figures),
-                figure=self.plot_dos().to_plotly_json(),
-            )
-        )
+    band_structure = SubSection(sub_section=BandStructure.m_def)
 
 
 m_package.__init_metainfo__()
