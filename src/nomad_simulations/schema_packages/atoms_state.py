@@ -13,10 +13,11 @@ if TYPE_CHECKING:
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.general import ModelBaseSection
 from nomad_simulations.schema_packages.utils import RussellSaundersState
 
 
-class OrbitalsState(Entity):
+class OrbitalsState(ModelBaseSection):
     """
     A base section used to define the orbital state of an atom.
     """
@@ -102,7 +103,7 @@ class OrbitalsState(Entity):
         energy. It is equal to 2 * l + 1 for non-relativistic systems and 2 * j + 1 for
         relativistic systems, if ms_quantum_number is defined (otherwise a factor of 2 is included).
         """,
-    )
+    )  # ? move to Eigenvalues
 
     occupation = Quantity(
         type=np.float64,
@@ -110,7 +111,7 @@ class OrbitalsState(Entity):
         The number of electrons in the orbital state. The state is fully occupied if
         occupation = degeneracy.
         """,
-    )
+    )  # ? move to Eigenvalues
 
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
         super().__init__(m_def, m_context, **kwargs)

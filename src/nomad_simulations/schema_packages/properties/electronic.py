@@ -2,9 +2,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from nomad.config import config
-from nomad.metainfo import Quantity, SchemaPackage, Section, SubSection, MEnum
+from nomad.metainfo import placeholder, Quantity, SchemaPackage, Section, SubSection, MEnum, m_float64
 from nomad.datamodel.metainfo.plot import PlotSection, PlotlyFigure
 from nomad_simulations.schema_packages.general import ModelBaseSection
+from nomad_simulations.schema_packages.properties import energy
+from nomad_simulations.schema_packages.atoms_state import Orbital
 import plotly.graph_objects as go
 
 configuration = config.get_plugin_entry_point(
@@ -20,94 +22,32 @@ SingleElectronSimpleSpin = Quantity(
     description='Simple spin',
 )
 
-HighestOccupiedEnergy = Quantity(
-    type=np.float64,
-    unit='J',
-    description='Highest occupied energy level.',
-)
-
-LowestUnoccupiedEnergy = Quantity(
-    type=np.float64,
-    unit='J',
-    description='Lowest unoccupied energy level.',
-)
-
-BandGap = Quantity(
-    type=np.float64,
-    unit='J',
-    description='''
-    The gap between the highest occupied state and the lowest unoccupied state.
-    `None` shows that the band gap was not extracted.
-    ''',
-)
-
-
-class m_unit64(m_float64):
-    pass
-
-
-class ElectronicEigenvalues(ModelBaseSection):
-    """Eigenvalues of the electronic states"""
-
-    spin = SingleElectronSimpleSpin
-
-    semantic_group = placeholder
-
-    energies = Quantity(
-        type=np.float64,
-        unit='J',
-        shape=['*'],
-        description='The eigenstate obtained from solving the electronic Schrödinger equation',  # ! re-word
+class ProjectionTarget(Orbital):
+    element = Quantity(
+        type=str,
     )
 
-    occupations = Quantity(
-        type=m_unit64,
+    atom_index = Quantity(
+        type=int,
         shape=['*'],
-        description='Occupation of the states',
-    )
-
-    highest_occupied_energy = HighestOccupiedEnergy
-
-    lowest_unoccupied_energy = LowestUnoccupiedEnergy
-
-    energy_gap = BandGap
-
-    def name_from_section(self) -> str:
-        try:
-            return f"{self.semantic_group.name_from_section()} {self.spin}"
-        except AttributeError:
-            return self.spin
-
-
-class DensityOfStates(ModelBaseSection):
-    spin = SingleElectronSimpleSpin
-
-    semantic_group = placeholder
-
-    energies = Quantity(
-        type=np.float64,
-        unit='J',
-        shape=['*'],
-        description='The eigenstate obtained from solving the electronic Schrödinger equation',  # ! re-word
-    )
-
-    values = Quantity(
-        type=np.float64,
-        # ? unit='1/J',
-        shape=['*'],
-        description='Density of states',
     )
 
     def name_from_section(self) -> str:
-        pass
-
-    def plot(self) -> go.Scatter:
-        return go.Scatter(
-            x=self.energies,
-            y=self.values,
-            mode='lines',
-            name=self.name_from_section(),
-        )
+        projected = False
+        name = ''
+        if self.element is not None:
+            name += self.element
+            projected = True
+        if self.atom_index is not None:
+            name += f'_{self.atom_index}'
+            projected = True
+        if self.l_quantum_symbols is not None:
+            projected = True
+            if self.n_quantum_numbers is not None:
+                name += f' {self.n_quantum_numbers}{self.l_quantum_symbols}'
+            else:
+                name += f' {self.l_quantum_symbols}'
+        return name if projected else 'total'
 
 
 class KPoint(ModelBaseSection):
@@ -127,10 +67,131 @@ class KPoint(ModelBaseSection):
 
     def name_from_section(self) -> str:
         return self.high_symmetry_label
-        
+
+
+class m_unit64(m_float64):
+    pass
+
+
+class SemanticGroup(ModelBaseSection):
+    """Group of electronic states with the same symmetry"""
+
+    label = placeholder
+
+    def name_from_section(self) -> str:  # !
+        return self.semantic_group
+
+class SemanticGroupContainer(ModelBaseSection):
+    groups = SubSection(sub_section=SemanticGroup.m_def, repeats=True)
+
+
+class Frontiers(ModelBaseSection):
+    """Frontiers of the electronic states"""
+
+    highest_occupied_energy = energy.m_def.m_copy()
+
+    lowest_unoccupied_energy = energy.m_def.m_copy()
+
+    energy_gap = energy.m_def.m_copy()
+
+
+class FermiRegion(ModelBaseSection):
+    """Region around the Fermi level"""
+
+    valence_band_maximum = energy.m_def.m_copy()
+
+    condunction_band_minimum = energy.m_def.m_copy()
+    # ? satellites
+
+    fermi_level = energy.m_def.m_copy()
+    # ! add 
+
+    band_gap = energy.m_def.m_copy()
+    # ! None
+
+    parsed_quantities = Quantity(
+        type=MEnum('valence band maximum', 'condunction band minimum', 'fermi level'),
+        shape=['*'],
+    )
+
+    def normalize(self, *args, **kwargs) -> None:
+        super().normalize(*args, **kwargs)
+        # mark which quantities were parsed
+        for quantity in ('valence_band_maximum', 'condunction_band_minimum', 'fermi_level'):
+            if getattr(self, quantity) is not None:
+                self.parsed_quantities.append(quantity)  # ! initialize
+        # compute band gap if not provided
+        if self.band_gaps is None:
+            try:
+                self.band_gap = self.condunction_band_minimum - self.valence_band_maximum
+            except (TypeError, AttributeError):
+                pass
+
+
+class ElectronicEigenvalues(ModelBaseSection):
+    """Eigenvalues of the electronic states"""
+
+    spin = SingleElectronSimpleSpin
+
+    energies = Quantity(
+        type=np.float64,
+        unit='J',
+        shape=['*'],
+        description='The eigenstate obtained from solving the electronic Schrödinger equation',  # ! re-word
+    )
+
+    occupations = Quantity(
+        type=m_unit64,
+        shape=['*'],
+        description='Occupation of the states',
+    )
+
+    def name_from_section(self) -> str:
+        try:
+            return f"{self.semantic_group.name_from_section()} {self.spin}"
+        except AttributeError:
+            return self.spin
+
 
 class KResolvedElectronicEigenvalues(ElectronicEigenvalues):
     k_point = SubSection(sub_section=KPoint.m_def)
+
+
+class DensityOfStates(SemanticGroupContainer):
+
+    energies = Quantity(
+        type=np.float64,
+        unit='J',
+        shape=['*'],
+        description='The eigenstate obtained from solving the electronic Schrödinger equation',  # ! re-word
+    )
+
+    class DOSGroup(SemanticGroup):
+
+        class DOSLabel(ProjectionTarget):
+            spin = SingleElectronSimpleSpin
+        
+        label = SubSection(subsection=DOSLabel.m_def)
+
+        values = Quantity(
+            type=np.float64,
+            # ? unit='1/J',
+            shape=['*'],
+            description='Density of states',
+        )
+
+        def plot(self) -> go.Scatter:
+            return go.Scatter(
+                x=self.m_parent.m_parent.energies,  # ! check
+                y=self.values,
+                mode='lines',
+                name=self.name_from_section(),
+                legend_group=self.label.plotly_legend_group(),
+                legendgrouptitle_text=self.label.plotly_legend_group(),
+                visible=False,
+            )
+
+    groups = SubSection(sub_section=DOSGroup.m_def, repeats=True)
 
 
 class KResolvedElectronicProperties(PlotSection, ModelBaseSection):
@@ -158,7 +219,7 @@ class KResolvedElectronicProperties(PlotSection, ModelBaseSection):
     def plot_dos(self) -> go.Figure:
         semantic_order = ('s', 'p', 'd', 'f')
         self.dos.sort(key=lambda dos: (semantic_order.index(dos.semantic_group), dos.spin))
-        return go.Figure(data=[self.dos.plot() for dos in self.dos])
+        return go.Figure(data=[dos.plot() for dos in self.dos])
     
     def normalize(self, archive, logger):
         super().normalize(archive, logger)

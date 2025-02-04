@@ -10,7 +10,7 @@ import numpy as np
 from nomad.config import config
 from nomad.datamodel.data import Schema, ArchiveSection
 from nomad.datamodel.metainfo.basesections import Activity, Entity
-from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection
+from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection, Reference
 
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
@@ -78,9 +78,19 @@ class ModelBaseSection(ArchiveSection):
         """,  # ? TODO: impose the format of the IRI
     )
 
+    normalized_from = Quantity(
+        type=Reference(ArchiveSection),
+    )
+
     def name_from_section(self) -> str:
         """Return the name of the section based on the class name."""
-        return ''.join(['_' + c.lower() if c.isupper() else c for c in self.__class__.__name__]).lstrip('_')
+        return ''.join(['_' + c.lower() if c.isupper() else c for c in self.__class__.__name__]).lstrip('_')  # ! d_o_s
+    
+
+    @property
+    def plotly_legend_group(self) -> str:
+        """Return the legend group for the plotly figure."""
+        pass
     
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
@@ -201,7 +211,6 @@ class BaseSimulation(Activity):
 
     program = SubSection(sub_section=Program.m_def, repeats=False)
 
-
 class Simulation(BaseSimulation, Schema):
     """
     A `Simulation` is a computational calculation that produces output data from a given input model system
@@ -223,7 +232,7 @@ class Simulation(BaseSimulation, Schema):
 
     model_method = SubSection(sub_section=ModelMethod.m_def, repeats=True)
 
-    outputs = SubSection(sub_section=Outputs.m_def, repeats=True)
+    outputs = SubSection(sub_section=ModelBaseSection.m_def, repeats=True)
 
     def _set_system_branch_depth(
         self, system_parent: ModelSystem, branch_depth: int = 0
