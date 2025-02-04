@@ -60,7 +60,7 @@ class TotalEnergy(DecomposableProperty):
     contributions = SubSection(sub_section=EnergyContribution.m_def, repeats=True)
 
 
-class TotalForce(DecomposableProperty):
+class TotalForce(DecomposableProperty):  # ? connect to model_system
     """
     The total force on a system. `contributions` specify individual force
     contributions to the `TotalForce`.
