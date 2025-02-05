@@ -1,8 +1,20 @@
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pint
 
 import numpy as np
 from nomad.config import config
-from nomad.metainfo import placeholder, Quantity, SchemaPackage, Section, SubSection, MEnum, m_float64
+from nomad.metainfo import (
+    placeholder,
+    Quantity,
+    SchemaPackage,
+    Section,
+    SubSection,
+    MEnum,
+    m_float64,
+    Reference,
+)
 from nomad.datamodel.metainfo.plot import PlotSection, PlotlyFigure
 from nomad_simulations.schema_packages.general import ModelBaseSection
 from nomad_simulations.schema_packages.properties import energy
@@ -21,6 +33,7 @@ SingleElectronSimpleSpin = Quantity(
     default='alpha',
     description='Simple spin',
 )
+
 
 class ProjectionTarget(Orbital):
     element = Quantity(
@@ -55,7 +68,7 @@ class KPoint(ModelBaseSection):
 
     k_point = Quantity(
         type=np.float64,
-        shape=["*"],
+        shape=['*'],
         unit='1/m',
         description='The k-point in reciprocal space',
     )
@@ -80,12 +93,13 @@ class SemanticGroup(ModelBaseSection):
 
     def name_from_section(self) -> str:  # !
         return self.semantic_group
-    
+
     def plot(self) -> go.Scatter:
         """Generate an individual plotly plot."""
 
-class SemanticGroupContainer(ModelBaseSection):
-    """Container for semantic groups of electronic states""" # ! re-word
+
+class SemanticGroupContainer(ModelBaseSection, PlotSection):
+    """Container for semantic groups of electronic states"""  # ! re-word
 
     m_def = Section()
 
@@ -96,6 +110,22 @@ class SemanticGroupContainer(ModelBaseSection):
         for group in self.groups:
             figure.add_trace(group.plot())
         return figure
+
+    def store_plot(self, figure: go.Figure) -> None:
+        # does not check if the plot was already stored
+        self.figures.append(
+            PlotlyFigure(
+                index=len(self.figures),
+                figure=figure.to_plotly_json(),
+            )
+        )
+
+    def normalize(self, *args, **kwargs) -> None:
+        super(ModelBaseSection).normalize(*args, **kwargs)
+        self.figures = []
+        self.store_plot(self.plot())
+        super(PlotSection).normalize(*args, **kwargs)
+
 
 class Frontiers(ModelBaseSection):
     """Frontiers of the electronic states"""
@@ -108,50 +138,109 @@ class Frontiers(ModelBaseSection):
 
 
 class FermiRegion(ModelBaseSection):
-    """Region around the Fermi level"""
+    """
+    Section describing the region around the Fermi level, up until the nearest bands.
+    This region may be described either at a system-wide level, or for a subsystem.
+    This is determined by the section containing the `FermiRegion` section.
+    """
 
     valence_band_maximum = energy.m_def.m_copy()
+    valence_band_maximum.description = """
+    The energy of the highest occupied state, similar to HOMO in a molecular setting.
+    This value is used for alginment of various electronic structures.
+    """
 
-    condunction_band_minimum = energy.m_def.m_copy()
-    # ? satellites
+    conduction_band_minimum = energy.m_def.m_copy()
+    conduction_band_minimum.description = """
+    The energy of the lowest unoccupied state, similar to LUMO in a molecular setting.
+    This typically coincides with the conduction band minimum, barring any satellites.
+    """
 
     fermi_level = energy.m_def.m_copy()
-    # ! add 
+    fermi_level.description = """
+    Classical definition of the Fermi level,
+    as the middle between the valence band maximum and conduction band minimum.
+    """
 
     band_gap = energy.m_def.m_copy()
-    # ! None
+    band_gap.description = """
+    The energy difference between the conduction band minimum and the valence band maximum.
+    `band_gap = None` (i.e. band gap not processed) is different here from `band_gap = 0` (no band gap, metallic system).
+    """
+
+    band_options = {
+        'valence_band_maximum': 'vbm',
+        'conduction_band_minimum': 'cbm',
+        'fermi_level': 'fermi',
+    }
 
     parsed_quantities = Quantity(
-        type=MEnum('valence band maximum', 'condunction band minimum', 'fermi level'),
+        type=MEnum(band_options.values()),
         shape=['*'],
+        description='Quantities populated by the parser.',
     )
+
+    def _register_parsed(self) -> list[str]:
+        return [
+            abbreviation
+            for quantity_name, abbreviation in self.__class__.band_options.items()
+            if getattr(self, quantity_name) is not None
+        ]
+
+    def compute_band_gap(self) -> Optional[float]:
+        try:
+            return self.conduction_band_minimum - self.valence_band_maximum
+        except (TypeError, AttributeError):
+            return None
+
+    def compute_fermi_level(self) -> Optional[float]:
+        try:
+            return (self.conduction_band_minimum + self.valence_band_maximum) / 2
+        except (TypeError, AttributeError):
+            return None
 
     def normalize(self, *args, **kwargs) -> None:
         super().normalize(*args, **kwargs)
-        # mark which quantities were parsed
-        for quantity in ('valence_band_maximum', 'condunction_band_minimum', 'fermi_level'):
-            if getattr(self, quantity) is not None:
-                self.parsed_quantities.append(quantity)  # ! initialize
-        # compute band gap if not provided
-        if self.band_gaps is None:
-            try:
-                self.band_gap = self.condunction_band_minimum - self.valence_band_maximum
-            except (TypeError, AttributeError):
-                pass
+        self.parsed_quantities = self.m_setdefault('parsed_quantities')
+        self.parsed_quantities = self._register_parsed()
+        self.band_gap = (
+            self.compute_band_gap() if self.band_gap is None else self.band_gap
+        )
+        self.fermi_level = (
+            self.compute_fermi_level() if self.fermi_level is None else self.fermi_level
+        )
+
+
+class FermiRegionContainer(SemanticGroupContainer):
+    fermi_region = SubSection(sub_section=FermiRegion.m_def)
+
+    def max_vbm(self) -> float:
+        return [group.fermi_region.valence_band_maximum for group in self.groups]
+
+    def min_cbm(self) -> float:
+        return [group.fermi_region.conduction_band_minimum for group in self.groups]
+
+    def normalize(self, *arg, **kwargs) -> None:
+        super().normalize(*arg, **kwargs)
+        if self.fermi_region is None:
+            self.fermi_region.m_setdefault(FermiRegion)
+        if self.fermi_region.valence_band_maximum is None:
+            self.fermi_region.valence_band_maximum = max(self.max_vbm)
+        if self.fermi_region.conduction_band_minimum is None:
+            self.fermi_region.conduction_band_minimum = min(self.min_cbm)
+        self.fermi_region.normalize(*arg, **kwargs)
 
 
 class ElectronicEigenvalues(SemanticGroupContainer):
     """Eigenvalues of the electronic states"""
 
-    class EigenvalueGroup(SemanticGroup):
-
+    class EigenvalueGroup(SemanticGroupContainer):
         class EigenvalueLabel(ProjectionTarget):  # ? necessary
-
             spin = SingleElectronSimpleSpin
 
             def name_from_section(self) -> str:
                 try:
-                    return f"{self.semantic_group.name_from_section()} {self.spin}"
+                    return f'{self.semantic_group.name_from_section()} {self.spin}'
                 except AttributeError:
                     return self.spin
 
@@ -170,13 +259,32 @@ class ElectronicEigenvalues(SemanticGroupContainer):
             description='Occupation of the states',
         )
 
+    groups = SubSection(sub_section=EigenvalueGroup.m_def, repeats=True)
 
-class KResolvedElectronicEigenvalues(ElectronicEigenvalues):
+
+class KResolvedElectronicEigenvalues(ElectronicEigenvalues, FermiRegionContainer):
     k_point = SubSection(sub_section=KPoint.m_def)
 
+    class KResolvedEigenvalueGroup(
+        ElectronicEigenvalues.EigenvalueGroup, FermiRegionContainer
+    ):
+        pass
 
-class DensityOfStates(SemanticGroupContainer):
+    groups = SubSection(sub_section=KResolvedEigenvalueGroup.m_def, repeats=True)
 
+
+class ReferencedFermiRegionContainer(FermiRegionContainer):
+    def energy_shift(self) -> 'pint.Quantity':
+        try:
+            return (
+                self.m_parent.fermi_region.valence_band_maximum
+                - self.fermi_region.valence_band_maximum
+            )
+        except AttributeError:
+            raise AttributeError('Cannot align plots: Fermi region not defined.')
+
+
+class DensityOfStates(ReferencedFermiRegionContainer):
     energies = Quantity(
         type=np.float64,
         unit='J',
@@ -185,10 +293,9 @@ class DensityOfStates(SemanticGroupContainer):
     )
 
     class DOSGroup(SemanticGroup):
-
         class DOSLabel(ProjectionTarget):
             spin = SingleElectronSimpleSpin
-        
+
         label = SubSection(subsection=DOSLabel.m_def)
 
         values = Quantity(
@@ -200,7 +307,7 @@ class DensityOfStates(SemanticGroupContainer):
 
         def plot(self) -> go.Scatter:
             return go.Scatter(
-                x=self.m_parent.energies,  # ! check
+                x=self.m_parent.energies + self.m_parent.energy_shift(),  # ! check
                 y=self.values,
                 mode='lines',
                 name=self.name_from_section(),
@@ -211,23 +318,16 @@ class DensityOfStates(SemanticGroupContainer):
 
     groups = SubSection(sub_section=DOSGroup.m_def, repeats=True)
 
-    def normalize(self, *args, **kwargs):
-        super().normalize(*args, **kwargs)
-        # this does not check if the plot was already stored
-        self.figures.append(
-            PlotlyFigure(
-                label='Density of States',
-                index=len(self.figures),
-                figure=self.plot().to_plotly_json(),
-            )
-        )
+    def plot(self) -> go.Figure:
+        figure = super(SemanticGroupContainer).plot()
+        figure.label = 'Density of States'
+        return figure
 
 
-class BandStructure(SemanticGroupContainer):
+class BandStructure(ReferencedFermiRegionContainer):
     k_path = SubSection(sub_section=KPoint.m_def, repeats=True)
 
     class BandGroup(SemanticGroup):
-
         class BandLabel(ProjectionTarget):  # ? necessary
             spin = SingleElectronSimpleSpin
 
@@ -250,7 +350,7 @@ class BandStructure(SemanticGroupContainer):
                 legendgrouptitle_text=self.label.plotly_legend_group(),
                 visible=False,
             )
-        
+
     def normalize(self, *args, **kwargs) -> None:
         super().normalize(*args, **kwargs)
         # this does not check if the plot was already stored
@@ -263,12 +363,12 @@ class BandStructure(SemanticGroupContainer):
         )
 
 
-class KResolvedElectronicProperties(PlotSection, ModelBaseSection):
-    """Collection section specialized in grouping together electronic properties defined by the k-space,
+class KResolvedElectronicProperties(ModelBaseSection):
+    """
+    Collection section specialized in grouping together electronic properties defined by the k-space,
     e.g. electronic eigenvalues, band structure, density of states, etc.
-    Due to the inconsistent nature of the Fermi level, we use `highest_occupied_state`, extracted from `eigenvalues`."""
-
-    m_def = Section()
+    Due to the inconsistent nature of the Fermi level, we use `highest_occupied_state`, extracted from `eigenvalues`.
+    """
 
     fermi_region = SubSection(sub_section=FermiRegion.m_def)
 
@@ -277,6 +377,25 @@ class KResolvedElectronicProperties(PlotSection, ModelBaseSection):
     dos = SubSection(sub_section=DensityOfStates.m_def)
 
     band_structure = SubSection(sub_section=BandStructure.m_def)
+
+    def collect_vbm(self) -> tuple['pint.Quantity', 'Reference']:
+        target_sections = (self.eigenvalues, self.dos, self.band_structure)
+        vbms = [
+            (prop.fermi_region.valence_band_maximum, Reference(prop))
+            for prop in target_sections
+            if prop
+            and prop.fermi_region
+            and prop.fermi_region.valence_band_maximum is not None
+        ]
+        return max(vbms, key=lambda x: x[0])
+
+    def normalize(self, *args, **kwargs) -> None:
+        super().normalize(*args, **kwargs)
+        vbm, ref = self.collect_vbm()
+        self.m_setdefault(FermiRegion)
+        self.fermi_region.valence_band_maximum = vbm
+        self.fermi_region.normalized_from = ref
+        # ? normalize fermi region
 
 
 m_package.__init_metainfo__()
