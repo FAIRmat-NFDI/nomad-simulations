@@ -14,7 +14,6 @@ from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties import (
     AbsorptionSpectrum,
-    ChemicalPotential,
     CrystalFieldSplitting,
     ElectronicBandGap,
     ElectronicBandStructure,
@@ -22,18 +21,12 @@ from nomad_simulations.schema_packages.properties import (
     ElectronicEigenvalues,
     ElectronicGreensFunction,
     ElectronicSelfEnergy,
-    FermiLevel,
     FermiSurface,
     HoppingMatrix,
     HybridizationFunction,
-    KineticEnergy,
     Occupancy,
     Permittivity,
-    PotentialEnergy,
     QuasiparticleWeight,
-    Temperature,
-    TotalEnergy,
-    TotalForce,
     XASSpectrum,
 )
 
@@ -70,9 +63,9 @@ class Outputs(ArchiveSection):
     # List of properties
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-    fermi_levels = SubSection(sub_section=FermiLevel.m_def, repeats=True)
+    # fermi_levels = SubSection(sub_section=FermiLevel.m_def, repeats=True)
 
-    chemical_potentials = SubSection(sub_section=ChemicalPotential.m_def, repeats=True)
+    # chemical_potentials = SubSection(sub_section=ChemicalPotential.m_def, repeats=True)
 
     crystal_field_splittings = SubSection(
         sub_section=CrystalFieldSplitting.m_def, repeats=True
@@ -120,15 +113,15 @@ class Outputs(ArchiveSection):
 
     xas_spectra = SubSection(sub_section=XASSpectrum.m_def, repeats=True)
 
-    total_energies = SubSection(sub_section=TotalEnergy.m_def, repeats=True)
+    # total_energies = SubSection(sub_section=TotalEnergy.m_def, repeats=True)
 
-    kinetic_energies = SubSection(sub_section=KineticEnergy.m_def, repeats=True)
+    # kinetic_energies = SubSection(sub_section=KineticEnergy.m_def, repeats=True)
 
-    potential_energies = SubSection(sub_section=PotentialEnergy.m_def, repeats=True)
+    # potential_energies = SubSection(sub_section=PotentialEnergy.m_def, repeats=True)
 
-    total_forces = SubSection(sub_section=TotalForce.m_def, repeats=True)
+    # total_forces = SubSection(sub_section=TotalForce.m_def, repeats=True)
 
-    temperatures = SubSection(sub_section=Temperature.m_def, repeats=True)
+    # temperatures = SubSection(sub_section=Temperature.m_def, repeats=True)
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #

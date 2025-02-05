@@ -13,11 +13,10 @@ if TYPE_CHECKING:
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.general import ModelBaseSection
 from nomad_simulations.schema_packages.utils import RussellSaundersState
 
 
-class OrbitalsState(ModelBaseSection):
+class OrbitalsState(ArchiveSection):
     """
     A base section used to define the orbital state of an atom.
     """

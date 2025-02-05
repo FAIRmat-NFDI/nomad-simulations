@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 

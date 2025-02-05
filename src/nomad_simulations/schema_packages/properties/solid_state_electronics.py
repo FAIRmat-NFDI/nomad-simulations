@@ -58,10 +58,10 @@ class FermiRegion(ModelBaseSection):
     This is determined by the section containing the `FermiRegion` section.
     """
 
-    valence_band_maximum = energy.m_def.m_copy()
+    valence_band_maximum = energy
     valence_band_maximum.description = """
     The energy of the highest occupied state, similar to HOMO in a molecular setting.
-    This value is used for alginment of various electronic structures.
+    This value is used for alignment of various electronic structures.
     """
 
     conduction_band_minimum = energy.m_def.m_copy()
@@ -89,7 +89,7 @@ class FermiRegion(ModelBaseSection):
     }
 
     parsed_quantities = Quantity(
-        type=MEnum(band_options.values()),
+        type=MEnum(*band_options.values()),
         shape=['*'],
         description='Quantities populated by the parser.',
     )
@@ -115,7 +115,6 @@ class FermiRegion(ModelBaseSection):
 
     def normalize(self, *args, **kwargs) -> None:
         super().normalize(*args, **kwargs)
-        self.parsed_quantities = self.m_setdefault('parsed_quantities')
         self.parsed_quantities = self._register_parsed()
         self.band_gap = (
             self.compute_band_gap() if self.band_gap is None else self.band_gap
@@ -179,7 +178,7 @@ class DensityOfStates(ReferencedFermiRegionContainer):
         class DOSLabel(ProjectionTarget):
             spin = SingleElectronSimpleSpin
 
-        label = SubSection(subsection=DOSLabel.m_def)
+        label = SubSection(sub_section=DOSLabel.m_def)
 
         values = Quantity(
             type=np.float64,
@@ -193,8 +192,8 @@ class DensityOfStates(ReferencedFermiRegionContainer):
                 x=self.m_parent.energies + self.m_parent.energy_shift(),  # ! check
                 y=self.values,
                 mode='lines',
-                name=self.name_from_section(),
-                legend_group=self.label.plotly_legend_group(),
+                name=self.label.name_from_section(),
+                legendgroup=self.label.plotly_legend_group(),
                 legendgrouptitle_text=self.label.plotly_legend_group(),
                 visible=False,
             )
@@ -202,8 +201,8 @@ class DensityOfStates(ReferencedFermiRegionContainer):
     groups = SubSection(sub_section=DOSGroup.m_def, repeats=True)
 
     def plot(self) -> go.Figure:
-        figure = super(SemanticGroupContainer).plot()
-        figure.label = 'Density of States'
+        figure = super().plot()
+        figure.update_layout(title='Density of States')
         return figure
 
 
@@ -214,7 +213,7 @@ class BandStructure(ReferencedFermiRegionContainer):
         class BandLabel(ProjectionTarget):  # ? necessary
             spin = SingleElectronSimpleSpin
 
-        label = SubSection(subsection=BandLabel.m_def)
+        label = SubSection(sub_section=BandLabel.m_def)
 
         energies = Quantity(
             type=np.float64,
@@ -264,21 +263,24 @@ class KResolvedElectronicProperties(ModelBaseSection):
     def collect_vbm(self) -> tuple['pint.Quantity', 'Reference']:
         target_sections = (self.eigenvalues, self.dos, self.band_structure)
         vbms = [
-            (prop.fermi_region.valence_band_maximum, Reference(prop))
+            (prop.fermi_region.valence_band_maximum, prop)
             for prop in target_sections
             if prop
             and prop.fermi_region
             and prop.fermi_region.valence_band_maximum is not None
         ]
-        return max(vbms, key=lambda x: x[0])
+        return max(vbms, key=lambda x: x[0]) if vbms else ()
 
     def normalize(self, *args, **kwargs) -> None:
         super().normalize(*args, **kwargs)
-        vbm, ref = self.collect_vbm()
-        self.m_setdefault(FermiRegion)
-        self.fermi_region.valence_band_maximum = vbm
-        self.fermi_region.normalized_from = ref
-        # ? normalize fermi region
+        try:
+            vbm, ref = self.collect_vbm()
+            self.m_setdefault('fermi_region')
+            self.fermi_region.valence_band_maximum = vbm
+            self.fermi_region.normalized_from = ref
+            # ? normalize fermi region
+        except ValueError:
+            pass
 
 
 m_package.__init_metainfo__()

@@ -1,20 +1,17 @@
-from typing import TYPE_CHECKING
-
 import numpy as np
 from nomad.config import config
 from nomad.metainfo import (
-    placeholder,
     Quantity,
     SchemaPackage,
     Section,
     SubSection,
     MEnum,
-    m_float64,
 )
+from nomad.metainfo.data_type import m_float64
 from nomad.datamodel.metainfo.plot import PlotSection, PlotlyFigure
 from nomad_simulations.schema_packages.general import ModelBaseSection
 from nomad_simulations.schema_packages.properties import energy
-from nomad_simulations.schema_packages.atoms_state import Orbital
+from nomad_simulations.schema_packages.atoms_state import OrbitalsState
 import plotly.graph_objects as go
 
 configuration = config.get_plugin_entry_point(
@@ -31,7 +28,7 @@ SingleElectronSimpleSpin = Quantity(
 )
 
 
-class ProjectionTarget(Orbital):
+class ProjectionTarget(ModelBaseSection, OrbitalsState):
     element = Quantity(
         type=str,
     )
@@ -50,13 +47,16 @@ class ProjectionTarget(Orbital):
         if self.atom_index is not None:
             name += f'_{self.atom_index}'
             projected = True
-        if self.l_quantum_symbols is not None:
+        if self.l_quantum_symbol is not None:
             projected = True
-            if self.n_quantum_numbers is not None:
-                name += f' {self.n_quantum_numbers}{self.l_quantum_symbols}'
+            if self.n_quantum_number is not None:
+                name += f' {self.n_quantum_number}{self.l_quantum_symbol}'
             else:
-                name += f' {self.l_quantum_symbols}'
+                name += f' {self.l_quantum_symbol}'
         return name if projected else 'total'
+    
+    def plotly_legend_group(self) -> str:
+        return self.name_from_section()
 
 
 class m_unit64(m_float64):
@@ -66,13 +66,14 @@ class m_unit64(m_float64):
 class SemanticGroup(ModelBaseSection):
     """Group of electronic states with the same symmetry"""
 
-    label = placeholder
+    label = None
 
     def name_from_section(self) -> str:  # !
-        return self.semantic_group
+        return self.label
 
     def plot(self) -> go.Scatter:
         """Generate an individual plotly plot."""
+        pass
 
 
 class SemanticGroupContainer(ModelBaseSection, PlotSection):
@@ -98,10 +99,10 @@ class SemanticGroupContainer(ModelBaseSection, PlotSection):
         )
 
     def normalize(self, *args, **kwargs) -> None:
-        super(ModelBaseSection).normalize(*args, **kwargs)
+        super(ModelBaseSection, self).normalize(*args, **kwargs)
         self.figures = []
         self.store_plot(self.plot())
-        super(PlotSection).normalize(*args, **kwargs)
+        super(PlotSection, self).normalize(*args, **kwargs)
 
 
 class Frontiers(ModelBaseSection):
@@ -121,17 +122,11 @@ class ElectronicEigenvalues(SemanticGroupContainer):
         class EigenvalueLabel(ProjectionTarget):  # ? necessary
             spin = SingleElectronSimpleSpin
 
-            def name_from_section(self) -> str:
-                try:
-                    return f'{self.semantic_group.name_from_section()} {self.spin}'
-                except AttributeError:
-                    return self.spin
-
-        label = SubSection(subsection=EigenvalueLabel.m_def)
+        label = SubSection(sub_section=EigenvalueLabel.m_def)
 
         energies = Quantity(
             type=np.float64,
-            unit='J',
+            unit='joule',
             shape=['*'],
             description='The eigenstate obtained from solving the electronic Schrödinger equation',  # ! re-word
         )
