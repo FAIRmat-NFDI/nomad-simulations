@@ -1,3 +1,4 @@
+import json
 import numpy as np
 import plotly.io as pio
 
@@ -14,6 +15,7 @@ from nomad_simulations.schema_packages.properties.solid_state_electronics import
 
 logger = utils.get_logger(__name__)
 no_points = 50
+v_dos = np.append(0, np.append(np.abs(np.random.rand(no_points-2)), 0))
 
 archive = EntryArchive(
     data=Simulation(
@@ -28,13 +30,27 @@ archive = EntryArchive(
                             label=DensityOfStates.DOSGroup.DOSLabel(
                                 spin='alpha',
                             ),
-                            values=list(np.abs(np.random.rand(no_points))),
+                            values=list(v_dos),
                         ),
                         DensityOfStates.DOSGroup(
                             label=DensityOfStates.DOSGroup.DOSLabel(
                                 spin='beta',
                             ),
-                            values=list(np.abs(np.random.rand(no_points))),
+                            values=list(-v_dos),
+                        ),
+                        DensityOfStates.DOSGroup(
+                            label=DensityOfStates.DOSGroup.DOSLabel(
+                                spin='alpha',
+                                element='Fe',
+                            ),
+                            values=list(v_dos / 2),
+                        ),
+                        DensityOfStates.DOSGroup(
+                            label=DensityOfStates.DOSGroup.DOSLabel(
+                                spin='beta',
+                                element='Fe',
+                            ),
+                            values=list(-v_dos / 2),
                         ),
                     ],
                 ),
@@ -44,7 +60,8 @@ archive = EntryArchive(
 )
 
 # archive.data.normalize(archive, logger)
-archive.data.outputs[0].normalize(archive, logger)
 archive.data.outputs[0].dos.normalize(archive, logger)
-print(archive.m_to_dict())
+archive.data.outputs[0].normalize(archive, logger)
+with open('test.archive.json', 'w') as f:
+    json.dump(archive.m_to_dict(), f)
 pio.show(archive.data.outputs[0].dos.figures[0].figure)
