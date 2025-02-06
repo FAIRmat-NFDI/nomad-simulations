@@ -83,25 +83,14 @@ class SemanticGroupContainer(ModelBaseSection, PlotSection):
 
     groups = SubSection(sub_section=SemanticGroup.m_def, repeats=True)
 
-    def plot(self) -> go.Figure:
+    def plot(self) -> PlotlyFigure:
         figure = go.Figure()
         for group in self.groups:
             figure.add_trace(group.plot())
-        return figure
-
-    def store_plot(self, figure: go.Figure) -> None:
-        # does not check if the plot was already stored
-        self.figures.append(
-            PlotlyFigure(
-                index=len(self.figures),
-                figure=figure.to_plotly_json(),
-            )
-        )
+        return PlotlyFigure(figure=figure.to_plotly_json())
 
     def normalize(self, *args, **kwargs) -> None:
         super(ModelBaseSection, self).normalize(*args, **kwargs)
-        self.figures = []
-        self.store_plot(self.plot())
         super(PlotSection, self).normalize(*args, **kwargs)
 
 

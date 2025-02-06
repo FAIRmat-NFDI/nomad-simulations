@@ -95,11 +95,11 @@ class FermiRegion(ModelBaseSection):
     )
 
     def _register_parsed(self) -> list[str]:
-        return [
-            abbreviation
-            for quantity_name, abbreviation in self.__class__.band_options.items()
-            if getattr(self, quantity_name) is not None
-        ]
+        registered_quantities: list[str] = []
+        for quantity in self.m_def.quantities:
+            if quantity.name in self.band_options:
+                registered_quantities.append(self.band_options[quantity.name])
+        return registered_quantities
 
     def compute_band_gap(self) -> Optional[float]:
         try:
@@ -169,7 +169,7 @@ class ReferencedFermiRegionContainer(FermiRegionContainer):
 class DensityOfStates(ReferencedFermiRegionContainer):
     energies = Quantity(
         type=np.float64,
-        unit='J',
+        unit='joule',
         shape=['*'],
         description='The eigenstate obtained from solving the electronic Schrödinger equation',  # ! re-word
     )
@@ -189,20 +189,19 @@ class DensityOfStates(ReferencedFermiRegionContainer):
 
         def plot(self) -> go.Scatter:
             return go.Scatter(
-                x=self.m_parent.energies + self.m_parent.energy_shift(),  # ! check
-                y=self.values,
+                x=(self.m_parent.energies + self.m_parent.energy_shift()).magnitude,  # ! check
+                y=self.values,  #.magnitude,
                 mode='lines',
                 name=self.label.name_from_section(),
                 legendgroup=self.label.plotly_legend_group(),
                 legendgrouptitle_text=self.label.plotly_legend_group(),
-                visible=False,
             )
 
     groups = SubSection(sub_section=DOSGroup.m_def, repeats=True)
 
-    def plot(self) -> go.Figure:
+    def plot(self) -> PlotlyFigure:
         figure = super().plot()
-        figure.update_layout(title='Density of States')
+        figure.label='Density of States'
         return figure
 
 
@@ -281,6 +280,7 @@ class KResolvedElectronicProperties(ModelBaseSection):
             # ? normalize fermi region
         except ValueError:
             pass
+        self.dos.figures.append(self.dos.plot())
 
 
 m_package.__init_metainfo__()
