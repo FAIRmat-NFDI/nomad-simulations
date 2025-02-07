@@ -10,7 +10,6 @@ from nomad.units import ureg
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import RussellSaundersState
@@ -112,38 +111,29 @@ class OrbitalsState(ArchiveSection):
         """,
     )  # ? move to Eigenvalues
 
-    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
-        super().__init__(m_def, m_context, **kwargs)
-        self._orbitals = {
-            -1: dict(zip(range(4), ('s', 'p', 'd', 'f'))),
-            0: {0: ''},
-            1: dict(zip(range(-1, 2), ('x', 'z', 'y'))),
-            2: dict(zip(range(-2, 3), ('xy', 'xz', 'z^2', 'yz', 'x^2-y^2'))),
-            3: dict(
-                zip(
-                    range(-3, 4),
-                    (
-                        'x(x^2-3y^2)',
-                        'xyz',
-                        'xz^2',
-                        'z^3',
-                        'yz^2',
-                        'z(x^2-y^2)',
-                        'y(3x^2-y^2)',
-                    ),
-                )
-            ),
-        }
-        self._orbitals_map: dict[str, Any] = {
-            'l_symbols': self._orbitals[-1],
-            'ml_symbols': {i: self._orbitals[i] for i in range(4)},
-            'ms_symbols': dict(zip((-0.5, 0.5), ('down', 'up'))),
-            'l_numbers': {v: k for k, v in self._orbitals[-1].items()},
-            'ml_numbers': {
-                k: {v: k for k, v in self._orbitals[k].items()} for k in range(4)
-            },
-            'ms_numbers': dict(zip(('down', 'up'), (-0.5, 0.5))),
-        }
+    l_symbols = {0: 's', 1: 'p', 2: 'd', 3: 'f'}
+
+    l_numbers = {'s': 0, 'p': 1, 'd': 2, 'f': 3}
+    
+    ms_symbols = {-0.5: 'down', 0.5: 'up'}
+    
+    ms_numbers = {'down': -0.5, 'up': 0.5}
+
+    ml_symbols = {
+        0: {0: ''},
+        1: {-1: 'x', 0: 'z', 1: 'y'},
+        2: {-2: 'xy', -1: 'xz', 0: 'z^2', 1: 'yz', 2: 'x^2-y^2'},
+        3: {-3: 'x(x^2-3y^2)', -2: 'xyz', -1: 'xz^2', 0: 'z^3',
+            1: 'yz^2', 2: 'z(x^2-y^2)', 3: 'y(3x^2-y^2)'}
+    }
+    
+    ml_numbers = {
+        0: {'': 0},
+        1: {'x': -1, 'z': 0, 'y': 1},
+        2: {'xy': -2, 'xz': -1, 'z^2': 0, 'yz': 1, 'x^2-y^2': 2},
+        3: {'x(x^2-3y^2)': -3, 'xyz': -2, 'xz^2': -1, 'z^3': 0,
+            'yz^2': 1, 'z(x^2-y^2)': 2, 'y(3x^2-y^2)': 3}
+    }
 
     def validate_quantum_numbers(self, logger: 'BoundLogger') -> bool:
         """
@@ -181,7 +171,7 @@ class OrbitalsState(ArchiveSection):
         self, quantum_name: str, quantum_type: str, logger: 'BoundLogger'
     ) -> Optional[Union[str, int]]:
         """
-        Resolves the quantum number or symbol from the `self._orbitals_map` on the passed `quantum_type`.
+        Resolves the quantum number or symbol on the passed `quantum_type`.
         `quantum_type` can be either 'number' or 'symbol'. If the quantum type is not found, then the countertype
         (e.g., quantum_type == 'number' => countertype == 'symbol') is used to resolve it.
 
@@ -191,7 +181,7 @@ class OrbitalsState(ArchiveSection):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (Optional[Union[str, int]]): The quantum number or symbol resolved from the orbitals_map.
+            (Optional[Union[str, int]]): The quantum number or symbol.
         """
         if quantum_name not in ['l', 'ml', 'ms']:
             logger.warning("The quantum_name is not recognized. Try 'l', 'ml' or 'ms'.")
@@ -219,7 +209,7 @@ class OrbitalsState(ArchiveSection):
             return None
 
         # If the counterpart exists, then resolve the quantity from the orbitals_map
-        orbital_quantity = self._orbitals_map.get(f'{quantum_name}_{quantum_type}s', {})
+        orbital_quantity = self.__class__.get(f'{quantum_name}_{quantum_type}s', {})
         if quantum_name in ['l', 'ms']:
             quantity = orbital_quantity.get(other_quantity)
         elif quantum_name == 'ml':
