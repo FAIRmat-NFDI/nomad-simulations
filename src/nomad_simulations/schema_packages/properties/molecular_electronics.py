@@ -54,9 +54,6 @@ class ProjectionTarget(ModelBaseSection, OrbitalsState):
             else:
                 name += f' {self.l_quantum_symbol}'
         return name if projected else 'total'
-    
-    def plotly_legend_group(self) -> str:
-        return self.name_from_section()
 
 
 class m_unit64(m_float64):
@@ -69,7 +66,7 @@ class SemanticGroup(ModelBaseSection):
     label = None
 
     def name_from_section(self) -> str:  # !
-        return self.label
+        return self.label.name_from_section()
 
     def plot(self) -> go.Scatter:
         """Generate an individual plotly plot."""

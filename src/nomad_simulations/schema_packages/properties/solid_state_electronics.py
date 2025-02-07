@@ -192,9 +192,9 @@ class DensityOfStates(ReferencedFermiRegionContainer):
                 x=(self.m_parent.energies + self.m_parent.energy_shift()).magnitude,  # ! check
                 y=self.values,  #.magnitude,
                 mode='lines',
-                name=self.label.name_from_section(),
-                legendgroup=self.label.plotly_legend_group(),
-                legendgrouptitle_text=self.label.plotly_legend_group(),
+                name=self.label.spin,
+                legendgroup=self.label.name_from_section(),
+                legendgrouptitle_text=self.label.name_from_section(),
             )
 
     groups = SubSection(sub_section=DOSGroup.m_def, repeats=True)

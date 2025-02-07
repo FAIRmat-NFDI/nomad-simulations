@@ -2,10 +2,11 @@ import json
 import numpy as np
 import plotly.io as pio
 
-from nomad.datamodel import EntryArchive
+from nomad.client.processing import normalize_all
+from nomad.datamodel import EntryArchive, EntryMetadata
 import nomad.utils as utils
 from nomad.units import ureg
-from nomad_simulations.schema_packages.general import Simulation
+from nomad_simulations.schema_packages.general import Simulation, ModelSystem, ModelMethod
 from nomad_simulations.schema_packages.properties.solid_state_electronics import (
     FermiRegion,
     KResolvedElectronicProperties,
@@ -56,12 +57,13 @@ archive = EntryArchive(
                 ),
             ),
         ],
+        model_system=[ModelSystem()],
+        model_method=[ModelMethod()],
     ),
+    metadata=EntryMetadata(entry_id='test'),
 )
 
-# archive.data.normalize(archive, logger)
-archive.data.outputs[0].dos.normalize(archive, logger)
-archive.data.outputs[0].normalize(archive, logger)
+normalize_all(archive)
 with open('test.archive.json', 'w') as f:
-    json.dump(archive.m_to_dict(), f)
-pio.show(archive.data.outputs[0].dos.figures[0].figure)
+    json.dump(archive.m_to_dict(with_def_id=True), f)
+# pio.show(archive.data.outputs[0].dos.figures[0].figure)

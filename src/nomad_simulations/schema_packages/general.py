@@ -98,7 +98,6 @@ class ModelBaseSection(ArchiveSection):
             self.name = self.name_from_section()
 
 
-
 class Program(Entity):
     """
     A base section used to specify a well-defined program used for computation.
