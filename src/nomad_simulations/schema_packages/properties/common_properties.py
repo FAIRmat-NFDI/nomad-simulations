@@ -2,13 +2,7 @@ import numpy as np
 from nomad.metainfo.metainfo import Quantity
 
 
-energy = Quantity(
-    type=np.float64,
-    unit='joule',
-    description="""
-    The energy contribution.
-    """,
-)
+# ! these quantities cannot be re-used
 
 virial_tensor = Quantity(
     type=np.float64,

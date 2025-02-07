@@ -7,7 +7,6 @@ from nomad.metainfo import (
     SubSection,
     MEnum,
 )
-from nomad.metainfo.data_type import m_float64
 from nomad.datamodel.metainfo.plot import PlotSection, PlotlyFigure
 from ..base_sections import ModelBaseSection
 from .common_properties import energy
@@ -21,6 +20,7 @@ configuration = config.get_plugin_entry_point(
 m_package = SchemaPackage()
 
 
+# ? split out spin for better handling
 SingleElectronSimpleSpin = Quantity(
     type=MEnum('alpha', 'beta'),
     default='alpha',
@@ -29,6 +29,8 @@ SingleElectronSimpleSpin = Quantity(
 
 
 class ProjectionTarget(ModelBaseSection, OrbitalsState):
+    """Label section for an element, ionic state, or (atomic) quantum state"""
+
     element = Quantity(
         type=str,
     )
@@ -56,12 +58,11 @@ class ProjectionTarget(ModelBaseSection, OrbitalsState):
         return name if projected else 'total'
 
 
-class m_unit64(m_float64):
-    pass
-
-
-class SemanticGroup(ModelBaseSection):
-    """Group of electronic states with the same symmetry"""
+class SemanticGroup(ModelBaseSection):  # ! hide from metainfo
+    """
+    Abstract interface for a generic kind of grouping.
+    It produces a scatter framework marked by `label`.
+    """
 
     label = None
 
@@ -92,17 +93,29 @@ class SemanticGroupContainer(ModelBaseSection, PlotSection):
 
 
 class Frontiers(ModelBaseSection):
-    """Frontiers of the electronic states"""
+    """Frontier orbitals of the electronic states."""
 
-    highest_occupied_energy = energy.m_def.m_copy()
+    homo = Quantity(
+        type=np.float64,
+        unit='joule',
+        description='Highest occupied molecular orbital',
+    )
 
-    lowest_unoccupied_energy = energy.m_def.m_copy()
+    lumo = Quantity(
+        type=np.float64,
+        unit='joule',
+        description='Lowest unoccupied molecular orbital',
+    )
 
-    energy_gap = energy.m_def.m_copy()
+    energy_gap = Quantity(
+        type=np.float64,
+        unit='joule',
+        description='The energy gap between the homo and lumo',
+    )
 
 
 class ElectronicEigenvalues(SemanticGroupContainer):
-    """Eigenvalues of the electronic states"""
+    """Eigenvalues of the electronic states."""
 
     class EigenvalueGroup(SemanticGroupContainer):
         class EigenvalueLabel(ProjectionTarget):  # ? necessary
@@ -118,7 +131,7 @@ class ElectronicEigenvalues(SemanticGroupContainer):
         )
 
         occupations = Quantity(
-            type=m_unit64,
+            type=np.float64,  # ! use typing for better restrictions
             shape=['*'],
             description='Occupation of the states',
         )

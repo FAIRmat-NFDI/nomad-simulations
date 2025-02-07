@@ -209,7 +209,7 @@ class OrbitalsState(ArchiveSection):
             return None
 
         # If the counterpart exists, then resolve the quantity from the orbitals_map
-        orbital_quantity = self.__class__.get(f'{quantum_name}_{quantum_type}s', {})
+        orbital_quantity = getattr(self.__class__, f'{quantum_name}_{quantum_type}s', {})
         if quantum_name in ['l', 'ms']:
             quantity = orbital_quantity.get(other_quantity)
         elif quantum_name == 'ml':

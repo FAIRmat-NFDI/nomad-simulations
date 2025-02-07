@@ -11,6 +11,7 @@ from nomad_simulations.schema_packages.properties.solid_state_electronics import
     FermiRegion,
     KResolvedElectronicProperties,
     DensityOfStates,
+    ProjectionTarget,
 )
 
 
@@ -22,33 +23,33 @@ archive = EntryArchive(
     data=Simulation(
         outputs=[
             KResolvedElectronicProperties(
-                fermi_region=FermiRegion(valence_band_maximum=1.5 * ureg.J),
+                fermi_region=FermiRegion(vbm=1.5 * ureg.J),
                 dos=DensityOfStates(
-                    fermi_region=FermiRegion(valence_band_maximum=0),
+                    fermi_region=FermiRegion(vbm=0 * ureg.J),
                     energies=np.array(range(no_points)) * ureg.J,
                     groups=[
                         DensityOfStates.DOSGroup(
-                            label=DensityOfStates.DOSGroup.DOSLabel(
-                                spin='alpha',
+                            label=ProjectionTarget(
+                                ms_quantum_symbol='up',
                             ),
                             values=list(v_dos),
                         ),
                         DensityOfStates.DOSGroup(
-                            label=DensityOfStates.DOSGroup.DOSLabel(
-                                spin='beta',
+                            label=ProjectionTarget(
+                                ms_quantum_symbol='down',
                             ),
                             values=list(-v_dos),
                         ),
                         DensityOfStates.DOSGroup(
-                            label=DensityOfStates.DOSGroup.DOSLabel(
-                                spin='alpha',
+                            label=ProjectionTarget(
+                                ms_quantum_symbol='up',
                                 element='Fe',
                             ),
                             values=list(v_dos / 2),
                         ),
                         DensityOfStates.DOSGroup(
-                            label=DensityOfStates.DOSGroup.DOSLabel(
-                                spin='beta',
+                            label=ProjectionTarget(
+                                ms_quantum_symbol='down',
                                 element='Fe',
                             ),
                             values=list(-v_dos / 2),
@@ -66,4 +67,4 @@ archive = EntryArchive(
 normalize_all(archive)
 with open('test.archive.json', 'w') as f:
     json.dump(archive.m_to_dict(with_def_id=True), f)
-# pio.show(archive.data.outputs[0].dos.figures[0].figure)
+pio.show(archive.data.outputs[0].dos.figures[0].figure)

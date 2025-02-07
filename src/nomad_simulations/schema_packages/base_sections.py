@@ -1,5 +1,3 @@
-from typing import TYPE_CHECKING
-
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import Quantity, Reference
 
@@ -7,7 +5,7 @@ from nomad.metainfo import Quantity, Reference
 class ModelBaseSection(ArchiveSection):
     """
     Base class for the model sections.
-    Toggles the display name, as well as adds definition status.
+    Toggles the display name and adds a definition status.
     """
 
     name = Quantity(
@@ -28,7 +26,10 @@ class ModelBaseSection(ArchiveSection):
     )
 
     normalized_from = Quantity(
-        type=Reference(ArchiveSection),
+        type=Reference(ArchiveSection), # ? repeating possible
+        description="""
+        Denotes any section that was used to normalize this section.
+        """,
     )
 
     def name_from_section(self) -> str:
