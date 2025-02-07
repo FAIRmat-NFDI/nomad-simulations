@@ -14,9 +14,9 @@ from nomad.metainfo import (
     Reference,
 )
 from nomad.datamodel.metainfo.plot import PlotlyFigure
-from nomad_simulations.schema_packages.general import ModelBaseSection
-from nomad_simulations.schema_packages.properties import energy
-from nomad_simulations.schema_packages.properties.molecular_electronics import (
+from ..base_sections import ModelBaseSection
+from .common_properties import energy
+from .molecular_electronics import (
     SingleElectronSimpleSpin,
     ProjectionTarget,
     SemanticGroup,
@@ -281,6 +281,3 @@ class KResolvedElectronicProperties(ModelBaseSection):
         except ValueError:
             pass
         self.dos.figures.append(self.dos.plot())
-
-
-m_package.__init_metainfo__()

@@ -9,9 +9,9 @@ from nomad.metainfo import (
 )
 from nomad.metainfo.data_type import m_float64
 from nomad.datamodel.metainfo.plot import PlotSection, PlotlyFigure
-from nomad_simulations.schema_packages.general import ModelBaseSection
-from nomad_simulations.schema_packages.properties import energy
-from nomad_simulations.schema_packages.atoms_state import OrbitalsState
+from ..base_sections import ModelBaseSection
+from .common_properties import energy
+from ..atoms_state import OrbitalsState
 import plotly.graph_objects as go
 
 configuration = config.get_plugin_entry_point(

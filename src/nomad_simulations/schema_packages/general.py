@@ -7,13 +7,14 @@ if TYPE_CHECKING:
 
 import numpy as np
 from nomad.config import config
-from nomad.datamodel.data import Schema, ArchiveSection
+from nomad.datamodel.data import Schema
 from nomad.datamodel.metainfo.basesections import Activity, Entity
-from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection, Reference
+from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection
 
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
-from nomad_simulations.schema_packages.outputs import Outputs
+# from nomad_simulations.schema_packages.outputs import Outputs
+from nomad_simulations.schema_packages.properties.solid_state_electronics import KResolvedElectronicProperties
 from nomad_simulations.schema_packages.utils import (
     get_composition,
     is_not_representative,
@@ -52,50 +53,6 @@ def check_normalized(func: 'Callable'):
         self._is_normalized = True
 
     return wrapper
-
-
-class ModelBaseSection(ArchiveSection):
-    """
-    Base class for the model sections.
-    Toggles the display name, as well as adds definition status.
-    """
-
-    name = Quantity(
-        type=str,
-        description="""
-        Display name of the model within the archive.
-        """,
-    )
-
-    iri = Quantity(
-        type=str,
-        shape=['*'],
-        description="""
-        The International Resource Identifier (IRI) of the model.
-        Can be used to link definitions from curated vocabularies or ontologies.
-        Use `http` or `https` specifier for active hyperlinks.
-        """,  # ? TODO: impose the format of the IRI
-    )
-
-    normalized_from = Quantity(
-        type=Reference(ArchiveSection),
-    )
-
-    def name_from_section(self) -> str:
-        """Return the name of the section based on the class name."""
-        return ''.join(['_' + c.lower() if c.isupper() else c for c in self.__class__.__name__]).lstrip('_')  # ! d_o_s
-    
-
-    @property
-    def plotly_legend_group(self) -> str:
-        """Return the legend group for the plotly figure."""
-        pass
-    
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-        if not self.name:
-            self.name = self.name_from_section()
 
 
 class Program(Entity):
@@ -230,7 +187,7 @@ class Simulation(BaseSimulation, Schema):
 
     model_method = SubSection(sub_section=ModelMethod.m_def, repeats=True)
 
-    outputs = SubSection(sub_section=ModelBaseSection.m_def, repeats=True)
+    outputs = SubSection(sub_section=KResolvedElectronicProperties.m_def, repeats=True)
 
     def _set_system_branch_depth(
         self, system_parent: ModelSystem, branch_depth: int = 0

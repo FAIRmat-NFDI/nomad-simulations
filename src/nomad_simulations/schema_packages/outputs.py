@@ -17,7 +17,6 @@ from nomad_simulations.schema_packages.properties import (
     CrystalFieldSplitting,
     ElectronicBandGap,
     ElectronicBandStructure,
-    ElectronicDensityOfStates,
     ElectronicEigenvalues,
     ElectronicGreensFunction,
     ElectronicSelfEnergy,
@@ -78,10 +77,6 @@ class Outputs(ArchiveSection):
     )
 
     electronic_band_gaps = SubSection(sub_section=ElectronicBandGap.m_def, repeats=True)
-
-    electronic_dos = SubSection(
-        sub_section=ElectronicDensityOfStates.m_def, repeats=True
-    )
 
     fermi_surfaces = SubSection(sub_section=FermiSurface.m_def, repeats=True)
 
