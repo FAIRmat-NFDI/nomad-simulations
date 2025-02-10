@@ -15,7 +15,6 @@ from nomad.metainfo import (
 )
 from nomad.datamodel.metainfo.plot import PlotlyFigure
 from ..base_sections import ModelBaseSection
-from .common_properties import energy
 from .molecular_electronics import (
     ProjectionTarget,
     SemanticGroup,
@@ -137,18 +136,17 @@ def max_vbm(fermi_regions: list[FermiRegion]) -> Optional[float]:
     if len(vbms) > 0:
         return max(vbms)
 
+
 def min_cbm(fermi_regions: list[FermiRegion]) -> Optional[float]:
     # what if some regions have no cbm?
     cbms = [fermi_region.cbm for fermi_region in fermi_regions]
     if len(cbms) > 0:
         return min(cbms)
 
+
 def energy_shift(section) -> 'pint.Quantity':
     try:
-        return (
-            section.m_parent.fermi_region.vbm
-            - section.fermi_region.vbm
-        )
+        return section.m_parent.fermi_region.vbm - section.fermi_region.vbm
     except AttributeError:
         raise AttributeError('Cannot align plots: Fermi region not defined.')
 
@@ -161,7 +159,6 @@ class KResolvedElectronicEigenvalues(ElectronicEigenvalues):
     k_points = SubSection(sub_section=KPoint.m_def, repeats=True)
 
     class KResolvedEigenvalueGroup(ElectronicEigenvalues.EigenvalueGroup):
-
         fermi_region = SubSection(sub_section=FermiRegion.m_def)
 
     groups = SubSection(sub_section=KResolvedEigenvalueGroup.m_def, repeats=True)
@@ -180,8 +177,9 @@ class DensityOfStates(SemanticGroupContainer):
     )
 
     class DOSGroup(SemanticGroup):
-
-        fermi_region = SubSection(sub_section=FermiRegion.m_def)  # deactivate normalization
+        fermi_region = SubSection(
+            sub_section=FermiRegion.m_def
+        )  # deactivate normalization
 
         label = SubSection(sub_section=ProjectionTarget.m_def)
 
@@ -194,8 +192,10 @@ class DensityOfStates(SemanticGroupContainer):
 
         def plot(self) -> go.Scatter:
             return go.Scatter(
-                x=(self.m_parent.energies + energy_shift(self.m_parent)).magnitude,  # ! check
-                y=self.values,  #.magnitude,
+                x=(
+                    self.m_parent.energies + energy_shift(self.m_parent)
+                ).magnitude,  # ! check
+                y=self.values,  # .magnitude,
                 mode='lines',
                 name=self.label.ms_quantum_symbol,
                 legendgroup=self.label.name_from_section(),
@@ -206,9 +206,9 @@ class DensityOfStates(SemanticGroupContainer):
 
     def plot(self) -> PlotlyFigure:
         figure = super().plot()
-        figure.label='Density of States'
+        figure.label = 'Density of States'
         return figure
-    
+
     def normalize(self, *args, **kwargs):
         super().normalize(*args, **kwargs)
         if not self.fermi_region:
@@ -228,7 +228,6 @@ class BandStructure(SemanticGroupContainer):
     k_path = SubSection(sub_section=KPoint.m_def, repeats=True)
 
     class BandGroup(SemanticGroup):
-
         label = SubSection(sub_section=ProjectionTarget.m_def)
 
         fermi_region = SubSection(sub_section=FermiRegion.m_def)
@@ -242,7 +241,9 @@ class BandStructure(SemanticGroupContainer):
 
         def plot(self) -> go.Scatter:
             return go.Scatter(
-                x=[k_point.k_point for k_point in self.m_parent.k_path],  # ! TODO: pad out other k-points
+                x=[
+                    k_point.k_point for k_point in self.m_parent.k_path
+                ],  # ! TODO: pad out other k-points
                 y=self.energies,
                 mode='lines',
                 name=self.label.ms_quantum_symbol,
@@ -252,9 +253,9 @@ class BandStructure(SemanticGroupContainer):
 
     def plot(self) -> PlotlyFigure:
         figure = super().plot()
-        figure.label='Band Structure'
+        figure.label = 'Band Structure'
         return figure
-    
+
     def normalize(self, *args, **kwargs):
         super().normalize(*args, **kwargs)
         if not self.fermi_region:
@@ -280,7 +281,9 @@ class KResolvedElectronicProperties(ModelBaseSection):
     3. `band_structure`
     """
 
-    fermi_region = SubSection(sub_section=FermiRegion.m_def)  # ! deactivate normalization
+    fermi_region = SubSection(
+        sub_section=FermiRegion.m_def
+    )  # ! deactivate normalization
 
     eigenvalues = SubSection(sub_section=KResolvedElectronicEigenvalues.m_def)
 
@@ -294,9 +297,7 @@ class KResolvedElectronicProperties(ModelBaseSection):
         vbms = [
             (prop.fermi_region.vbm, prop)
             for prop in target_sections
-            if prop
-            and prop.fermi_region
-            and prop.fermi_region.vbm is not None
+            if prop and prop.fermi_region and prop.fermi_region.vbm is not None
         ]
         return max(vbms, key=lambda x: x[0]) if vbms else ()
 
