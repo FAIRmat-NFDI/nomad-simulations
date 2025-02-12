@@ -196,7 +196,7 @@ class GeometryOptimization(SerialWorkflow):
             self.model = GeometryOptimizationModel()
         super().map_inputs(archive, logger)
 
-    def map_outputs(self, archive: EntryArchive, logger: BoundLogger):
+    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not self.results:
             self.results = GeometryOptimizationResults()
         super().map_outputs(archive, logger)

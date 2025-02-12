@@ -13,6 +13,10 @@ INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
 m_package = SchemaPackage()
 
 
+class SimulationTask(Task):
+    pass
+
+
 class SimulationWorkflowModel(ArchiveSection):
     """
     Base class for simulation workflow model sub-section definition.
@@ -66,9 +70,16 @@ class SimulationWorkflowResults(ArchiveSection):
             self.final_outputs = archive.data.outputs[-1]
 
 
-class SimulationWorkflow(Workflow):
+class SimulationTaskReference(TaskReference, SimulationTask):
+    pass
+
+
+class SimulationWorkflow(Workflow, SimulationTask):
     """
     Base class for simulation workflows.
+
+    It contains sub-sections model and results which are included in inputs and
+    outputs, respectively.
     """
 
     task_label = 'Task'
@@ -78,125 +89,55 @@ class SimulationWorkflow(Workflow):
     results = SubSection(sub_section=SimulationWorkflowResults.m_def)
 
     def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if not self.model:
-            self.model = SimulationWorkflowModel()
-
-        self.model.normalize(archive, logger)
-
-        # set method as inputs
-        self.inputs.append(Link(name=self.model.label, section=self.model))
+        if self.model:
+            self.model.normalize(archive, logger)
+            # add method to inputs
+            self.inputs.append(Link(name=self.model.label, section=self.model))
 
     def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if not self.results:
-            self.results = SimulationWorkflowResults()
-
-        self.results.normalize(archive, logger)
-
-        # set results as outputs
-        self.outputs.append(Link(name=self.results.label, section=self.results))
+        if self.results:
+            self.results.normalize(archive, logger)
+            # add results to outputs
+            self.outputs.append(Link(name=self.results.label, section=self.results))
 
     def map_tasks(self, archive: EntryArchive, logger: BoundLogger) -> None:
         """
         Generate tasks from archive data outputs. Tasks are ordered and linked based
         on the execution time of the calculation corresponding to the output.
-        By default, the tasks follow the order of the outputs and are linked sequentially.
         """
         if not archive.data or not archive.data.outputs:
             return
 
-        # default should to serial execution
-        times: list[tuple[float, float]] = list(
-            [
-                (
-                    o.wall_start.magnitude if o.wall_start else n,
-                    o.wall_end.magnitude if o.wall_end else n,
+        tasks = []
+        for outputs in archive.data.outputs:
+            tasks.append(
+                SimulationTask(
+                    outputs=[
+                        Link(
+                            name='Outputs',
+                            section=outputs,
+                        )
+                    ]
                 )
-                for n, o in enumerate(archive.data.outputs)
-            ]
-        )
-        times.sort(key=lambda x: x[0])
-        # current index of parent
-        parent_n = 0
-        for n, time in enumerate(times):
-            task = Task(
-                outputs=[
-                    Link(
-                        name='Outputs',
-                        section=archive.data.outputs[n],
-                    )
-                ],
             )
-            self.tasks.append(task)
-            # link tasks based on overlap in execution time
-            if time[0] >= times[parent_n][1]:
-                # assign as new parent
-                parent_n = n
-                # reset outputs
-                self._grouped_tasks.append([n])
-            else:
-                if not self._grouped_tasks:
-                    self._grouped_tasks.append([])
-                self._grouped_tasks[-1].append(n)
+
+        self.tasks.extend(tasks)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger):
+        """
+        Link tasks based on start and end times.
+        """
+        if not self.name:
+            self.name = self.m_def.name
+
         if not self.inputs:
             self.map_inputs(archive, logger)
 
         if not self.outputs:
             self.map_outputs(archive, logger)
 
-        # group tasks in parallel
-        # assume serial workflow
-        self._grouped_tasks = [[n] for n in range(len(self.tasks))]
-
         if not self.tasks:
             self.map_tasks(archive, logger)
-
-        # add task inputs/outputs to reference
-        # TODO do this in TaskReference normalizer
-        for task in self.tasks:
-            if isinstance(task, TaskReference):
-                task.inputs.extend(task.task.inputs)
-                task.outputs.extend(task.task.outputs)
-
-        # link successive task groups, first group adds workflow inputs
-        for tasks_n, grouped_tasks in enumerate(self._grouped_tasks):
-            # assign outputs of previous tasks an input to next tasks
-            if tasks_n:
-                inputs = [
-                    inp
-                    for task in [
-                        self.tasks[n] for n in self._grouped_tasks[tasks_n - 1]
-                    ]
-                    for inp in task.outputs
-                ]
-            else:
-                inputs = self.inputs
-            for n in grouped_tasks:
-                self.tasks[n].inputs.extend(inputs)
-                if isinstance(self.tasks[n], TaskReference):
-                    self.tasks[n].task.inputs.extend(inputs)
-
-        if self._grouped_tasks:
-            # add inputs of first group to workflow inputs
-            self.inputs.extend(
-                [
-                    inp
-                    for task in [self.tasks[n] for n in self._grouped_tasks[0]]
-                    for inp in task.inputs
-                    if inp not in self.inputs
-                ]
-            )
-
-            # add outputs of last group to workflow outputs
-            self.outputs.extend(
-                [
-                    out
-                    for task in [self.tasks[n] for n in self._grouped_tasks[-1]]
-                    for out in task.outputs
-                    if out not in self.outputs
-                ]
-            )
 
 
 class SerialWorkflow(SimulationWorkflow):
@@ -209,6 +150,35 @@ class SerialWorkflow(SimulationWorkflow):
         for n, task in enumerate(self.tasks):
             if not task.name:
                 task.name = f'{self.task_label} {n}'
+
+    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger)
+
+        if not self.tasks:
+            logger.error(INCORRECT_N_TASKS)
+            return
+
+        # link tasks sequentially
+        for n, task in enumerate(self.tasks):
+            if n == 0:
+                inputs = self.inputs
+            else:
+                previous_task = self.tasks[n - 1]
+                inputs = [
+                    Link(
+                        name='Linked task',
+                        section=previous_task.task
+                        if isinstance(previous_task, TaskReference)
+                        else previous_task,
+                    )
+                ]
+
+            task.inputs.extend([inp for inp in inputs if inp not in task.inputs])
+
+        # add oututs of last task to outputs
+        self.outputs.extend(
+            [out for out in self.tasks[-1].outputs if out not in self.outputs]
+        )
 
 
 class ElectronicStructureResults(SimulationWorkflowResults):
