@@ -5,14 +5,7 @@ import numpy as np
 from nomad import utils
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections import Entity
-from nomad.metainfo import (
-    URL,
-    MEnum,
-    Quantity,
-    Reference,
-    SectionProxy,
-    SubSection,
-)
+from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy, SubSection
 from nomad.metainfo.metainfo import Dimension
 
 if TYPE_CHECKING:
@@ -243,7 +236,10 @@ class PhysicalProperty(ArchiveSection):
     def __init__(
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
+        value = kwargs.pop('value', None)
         super().__init__(m_def, m_context, **kwargs)
+        if value is not None:
+            self.value = value
 
         # Checking if IRI is defined
         if self.iri is None:
@@ -251,44 +247,14 @@ class PhysicalProperty(ArchiveSection):
                 'The used property is not defined in the FAIRmat taxonomy (https://fairmat-nfdi.github.io/fairmat-taxonomy/). You can contribute there if you want to extend the list of available materials properties.'
             )
 
-        # Checking if the quantities `n_` are defined, as this are used to calculate `rank`
-        for quantity, _ in self.m_def.all_quantities.items():
-            if quantity.startswith('n_') and getattr(self, quantity) is None:
-                raise ValueError(
-                    f'`{quantity}` is not defined during initialization of the class.'
-                )
-
-    def __setattr__(self, name: str, val: Any) -> None:
-        # For the special case of `value`, its `shape` needs to be defined from `_full_shape`
+    def __setattr__(self, name, value):
         if name == 'value':
-            if val is None:
-                raise ValueError(
-                    f'The value of the physical property {self.name} is None. Please provide a finite valid value.'
-                )
-            _new_value = self._new_value
-
-            # patch for when `val` does not have units and it is passed as a list (instead of np.array)
-            if isinstance(val, list):
-                val = np.array(val)
-
-            # non-scalar or scalar `val`
             try:
-                value_shape = list(val.shape)
-            except AttributeError:
-                value_shape = []
-
-            if value_shape != self.full_shape:
-                raise ValueError(
-                    f'The shape of the stored `value` {value_shape} does not match the full shape {self.full_shape} '
-                    f'extracted from the variables `n_points` and the `shape` defined in `PhysicalProperty`.'
-                )
-            _new_value.shape = self.full_shape
-            if hasattr(val, 'magnitude'):
-                _new_value = val.magnitude * val.u
-            else:
-                _new_value = val
-            return super().__setattr__(name, _new_value)
-        return super().__setattr__(name, val)
+                value = np.array(value)
+                self.__class__.value.shape = ['*'] * value.ndim
+            except Exception:
+                pass
+        return super().__setattr__(name, value)
 
     def _is_derived(self) -> bool:
         """
