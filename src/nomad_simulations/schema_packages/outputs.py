@@ -68,6 +68,8 @@ class Outputs(Time):
         """,
     )
 
+
+class ElectronicStructureOutputs(Outputs):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # List of properties
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
