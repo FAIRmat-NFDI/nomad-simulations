@@ -108,18 +108,27 @@ class SimulationWorkflow(Workflow, SimulationTask):
         if not archive.data or not archive.data.outputs:
             return
 
+        outputs = list(archive.data.outputs)
+        outputs.sort(key=lambda x: x.wall_start or 0)
         tasks = []
-        for outputs in archive.data.outputs:
-            tasks.append(
-                SimulationTask(
-                    outputs=[
-                        Link(
-                            name='Outputs',
-                            section=outputs,
-                        )
-                    ]
-                )
+        parent_n = 0
+        for n, output in enumerate(outputs):
+            task = SimulationTask(
+                name=f'{self.task_label} {n}',
+                outputs=[Link(name='Outputs', section=output)],
             )
+            tasks.append(task)
+            tstart = output.wall_start
+            tend = outputs[parent_n].wall_end
+            if tstart is None and tend is None:
+                continue
+            if tstart >= tend:
+                task.inputs.extend(
+                    [Link(name='Linked task', section=t) for t in tasks[parent_n:n]]
+                )
+                parent_n = n
+            elif n != parent_n:
+                task.inputs.append(Link(name='Linked task', section=tasks[parent_n]))
 
         self.tasks.extend(tasks)
 
@@ -160,6 +169,8 @@ class SerialWorkflow(SimulationWorkflow):
 
         # link tasks sequentially
         for n, task in enumerate(self.tasks):
+            if task.inputs:
+                continue
             if n == 0:
                 inputs = self.inputs
             else:
