@@ -251,7 +251,7 @@ class PhysicalProperty(ArchiveSection):
         if name == 'value':
             try:
                 value = np.array(value)
-                self.__class__.value.shape = ['*'] * value.ndim
+                # self.__class__.value.shape = ['*'] * value.ndim
             except Exception:
                 pass
         return super().__setattr__(name, value)
