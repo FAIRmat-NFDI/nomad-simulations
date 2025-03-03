@@ -36,7 +36,8 @@ from matid.classification.classifications import (
 from nomad.atomutils import Formula, get_normalized_wyckoff, search_aflow_prototype
 from nomad.config import config
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.basesections import Entity, System
+#from nomad.datamodel.metainfo.basesections import Entity, System
+from nomad.datamodel.metainfo.basesections.v2 import Entity, System
 from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
