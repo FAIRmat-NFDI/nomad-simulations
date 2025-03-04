@@ -13,7 +13,7 @@ The `ModelSystem` section encodes essential information such as:
 !!! warning
     This part is still under construction.
 
-    Currently the ModelSystem is being refactored .
+    Currently the ModelSystem is being refactored.
 
 
 
