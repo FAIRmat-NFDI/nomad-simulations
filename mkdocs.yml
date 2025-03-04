@@ -7,6 +7,7 @@ nav:
   - Home: index.md
   - Simulation schema:
     - Overview: general.md
+    - Program: program/program.md
     - ModelSystem: model_system/model_system.md
     - ModelMethod: model_method/model_method.md
     - Outputs: outputs/outputs.md
