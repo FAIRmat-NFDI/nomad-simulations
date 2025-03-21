@@ -399,16 +399,18 @@ class AtomicCell(Cell):
 
     atoms_state = SubSection(sub_section=AtomsState.m_def, repeats=True)
 
-    n_atoms = Quantity(
-        type=np.int32,
-        description="""
-        Number of atoms in the atomic cell.
-        """,
-    )
+    # this is moved to ModelSystem.
+    # n_atoms = Quantity(
+    #     type=np.int32,
+    #     description="""
+    #     Number of atoms in the atomic cell.
+    #     """,
+    # )
 
     equivalent_atoms = Quantity(
         type=np.int32,
-        shape=['n_atoms'],
+        #shape=['n_atoms'],
+        shape=['*'], # temporarily
         description="""
         List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
         then the list is simply the index of each element, e.g.:
@@ -1060,6 +1062,25 @@ class ModelSystem(System):
             we create a `model_system` child for the `'Ti'` atom only, then in that child
             `ModelSystem.model_system.atom_indices = [1]`. If now we want to refer both to
             the `'Ti'` and the last `'O'` atoms, `ModelSystem.model_system.atom_indices = [1, 4]`.
+        """,
+    )
+
+    # Moved from AtomicCell to here.
+    n_atoms = Quantity(
+        type=np.int32,
+        description="""
+        Number of atoms in the simulation.
+        """,
+    )
+
+    # New quantity to store all atom positions (Cartesian coordinates)
+    positions = Quantity(
+        type=np.float64,
+        shape=['n_atoms', 3],
+        unit='meter',
+        description="""
+            Cartesian coordinates of all atoms in the top-level system.
+            All subsystems will reference these positions via atom_indices.
         """,
     )
 
