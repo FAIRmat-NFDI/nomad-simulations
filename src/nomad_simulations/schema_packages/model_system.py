@@ -1097,7 +1097,7 @@ class ModelSystem(System):
         """,
     )
 
-    model_system = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
+    # model_system = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
 
     def resolve_system_type_and_dimensionality(
         self, ase_atoms: ase.Atoms, logger: 'BoundLogger'
