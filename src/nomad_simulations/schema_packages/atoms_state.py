@@ -4,7 +4,9 @@ import ase
 import numpy as np
 import pint
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.basesections import Entity
+
+# from nomad.datamodel.metainfo.basesections import Entity
+from nomad.datamodel.metainfo.basesections.v2 import Element, Entity
 from nomad.metainfo import MEnum, Quantity, SubSection
 from nomad.units import ureg
 
@@ -545,41 +547,41 @@ class HubbardInteractions(ArchiveSection):
                 )
 
 
-class AtomsState(Entity):
+class AtomsState(Element):
     """
     A base section to define each atom state information.
     """
 
     # TODO check what happens with ghost atoms that can have `chemical_symbol='X'`
-    chemical_symbol = Quantity(
-        type=MEnum(ase.data.chemical_symbols[1:]),
-        description="""
-        Symbol of the element, e.g. 'H', 'Pb'. This quantity is equivalent to `atomic_numbers`.
-        """,
-    )
+    # chemical_symbol = Quantity(
+    #     type=MEnum(ase.data.chemical_symbols[1:]),
+    #     description="""
+    #     Symbol of the element, e.g. 'H', 'Pb'. This quantity is equivalent to `atomic_numbers`.
+    #     """,
+    # )
 
-    atomic_number = Quantity(
-        type=np.int32,
-        description="""
-        Atomic number Z. This quantity is equivalent to `chemical_symbol`.
-        """,
-    )
+    # atomic_number = Quantity(
+    #     type=np.int32,
+    #     description="""
+    #     Atomic number Z. This quantity is equivalent to `chemical_symbol`.
+    #     """,
+    # )
 
     orbitals_state = SubSection(sub_section=OrbitalsState.m_def, repeats=True)
 
-    charge = Quantity(
-        type=np.int32,
-        default=0,
-        description="""
-        Charge of the atom. It is defined as the number of extra electrons or holes in the
-        atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`OrbitalsState.occupation`
-        coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)
-        for cations or any negative integer (-1, -2...) for anions.
+    # charge = Quantity(
+    #     type=np.int32,
+    #     default=0,
+    #     description="""
+    #     Charge of the atom. It is defined as the number of extra electrons or holes in the
+    #     atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`OrbitalsState.occupation`
+    #     coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)
+    #     for cations or any negative integer (-1, -2...) for anions.
 
-        Note: for `CoreHole` systems we do not consider the charge of the atom even if
-        we do not store the final `OrbitalsState` where the electron was excited to.
-        """,
-    )
+    #     Note: for `CoreHole` systems we do not consider the charge of the atom even if
+    #     we do not store the final `OrbitalsState` where the electron was excited to.
+    #     """,
+    # )
 
     core_hole = SubSection(sub_section=CoreHole.m_def, repeats=False)
 
@@ -587,49 +589,60 @@ class AtomsState(Entity):
         sub_section=HubbardInteractions.m_def, repeats=False
     )
 
-    def resolve_chemical_symbol(self, logger: 'BoundLogger') -> Optional[str]:
-        """
-        Resolves the `chemical_symbol` from the `atomic_number`.
+    # def resolve_chemical_symbol(self, logger: 'BoundLogger') -> Optional[str]:
+    #     """
+    #     Resolves the `chemical_symbol` from the `atomic_number`.
 
-        Args:
-            logger (BoundLogger): The logger to log messages.
+    #     Args:
+    #         logger (BoundLogger): The logger to log messages.
 
-        Returns:
-            (Optional[str]): The resolved `chemical_symbol`.
-        """
-        if self.atomic_number is not None:
-            try:
-                return ase.data.chemical_symbols[self.atomic_number]
-            except IndexError:
-                logger.error(
-                    'The `AtomsState.atomic_number` is out of range of the periodic table.'
-                )
-        return None
+    #     Returns:
+    #         (Optional[str]): The resolved `chemical_symbol`.
+    #     """
+    #     if self.atomic_number is not None:
+    #         try:
+    #             return ase.data.chemical_symbols[self.atomic_number]
+    #         except IndexError:
+    #             logger.error(
+    #                 'The `AtomsState.atomic_number` is out of range of the periodic table.'
+    #             )
+    #     return None
 
-    def resolve_atomic_number(self, logger: 'BoundLogger') -> Optional[int]:
-        """
-        Resolves the `atomic_number` from the `chemical_symbol`.
+    # def resolve_atomic_number(self, logger: 'BoundLogger') -> Optional[int]:
+    #     """
+    #     Resolves the `atomic_number` from the `chemical_symbol`.
 
-        Args:
-            logger (BoundLogger): The logger to log messages.
+    #     Args:
+    #         logger (BoundLogger): The logger to log messages.
 
-        Returns:
-            (Optional[int]): The resolved `atomic_number`.
-        """
-        if self.chemical_symbol is not None:
-            try:
-                return ase.data.atomic_numbers[self.chemical_symbol]
-            except IndexError:
-                logger.error(
-                    'The `AtomsState.chemical_symbol` is not recognized in the periodic table.'
-                )
-        return None
+    #     Returns:
+    #         (Optional[int]): The resolved `atomic_number`.
+    #     """
+    #     if self.chemical_symbol is not None:
+    #         try:
+    #             return ase.data.atomic_numbers[self.chemical_symbol]
+    #         except IndexError:
+    #             logger.error(
+    #                 'The `AtomsState.chemical_symbol` is not recognized in the periodic table.'
+    #             )
+    #     return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # ?? Call the parent's normalization (from Element) ??
         super().normalize(archive, logger)
 
-        # Get chemical_symbol from atomic_number and viceversa
-        if self.chemical_symbol is None:
-            self.chemical_symbol = self.resolve_chemical_symbol(logger=logger)
-        if self.atomic_number is None:
-            self.atomic_number = self.resolve_atomic_number(logger=logger)
+        # Ensure consistency: if one of chemical_symbol or atomic_number is missing, attempt to resolve it.
+        if self.chemical_symbol is None and self.atomic_number is not None:
+            try:
+                self.chemical_symbol = ase.data.chemical_symbols[self.atomic_number]
+            except IndexError:
+                logger.error(
+                    f'The atomic number {self.atomic_number} is out of range of the periodic table.'
+                )
+        elif self.atomic_number is None and self.chemical_symbol is not None:
+            try:
+                self.atomic_number = ase.data.atomic_numbers[self.chemical_symbol]
+            except KeyError:
+                logger.error(
+                    f"The chemical symbol '{self.chemical_symbol}' is not recognized in the periodic table."
+                )

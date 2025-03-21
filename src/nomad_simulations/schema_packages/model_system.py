@@ -409,8 +409,8 @@ class AtomicCell(Cell):
 
     equivalent_atoms = Quantity(
         type=np.int32,
-        #shape=['n_atoms'],
-        shape=['*'], # temporarily
+        # shape=['n_atoms'],
+        shape=['*'],  # temporarily
         description="""
         List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
         then the list is simply the index of each element, e.g.:
