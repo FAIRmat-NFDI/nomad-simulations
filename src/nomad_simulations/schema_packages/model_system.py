@@ -1123,6 +1123,21 @@ class ModelSystem(System):
         """,
     )
 
+    total_charge = Quantity(
+        type=np.int32,
+        description="""
+        Total charge of the system.
+        """,
+    )
+
+    total_spin = Quantity(
+        type=np.int32,
+        description="""
+        Total spin state of the system.
+        Not to be confused with the spin multiplicity 2S + 1.
+        """,
+    )
+
     # New subsection: list of atomic state entries (each based on Element)
     atom_states = SubSection(
         section_def=AtomsState.m_def,
