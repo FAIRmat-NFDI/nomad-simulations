@@ -1131,6 +1131,7 @@ class ModelSystem(System):
     )
 
     # model_system = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
+    sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
 
     def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
         """
