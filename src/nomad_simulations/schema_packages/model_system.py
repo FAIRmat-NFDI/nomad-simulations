@@ -312,24 +312,24 @@ class Cell(GeometricSpace):
         """,
     )
 
-    positions = Quantity(
-        type=np.float64,
-        shape=['n_cell_points', 3],
-        unit='meter',
-        description="""
-        Positions of all the atoms in Cartesian coordinates.
-        """,
-    )
+    # positions = Quantity(
+    #     type=np.float64,
+    #     shape=['n_cell_points', 3],
+    #     unit='meter',
+    #     description="""
+    #     Positions of all the atoms in Cartesian coordinates.
+    #     """,
+    # )
 
-    velocities = Quantity(
-        type=np.float64,
-        shape=['n_cell_points', 3],
-        unit='meter / second',
-        description="""
-        Velocities of the atoms. It is the change in cartesian coordinates of the atom position
-        with time.
-        """,
-    )
+    # velocities = Quantity(
+    #     type=np.float64,
+    #     shape=['n_cell_points', 3],
+    #     unit='meter / second',
+    #     description="""
+    #     Velocities of the atoms. It is the change in cartesian coordinates of the atom position
+    #     with time.
+    #     """,
+    # )
 
     lattice_vectors = Quantity(
         type=np.float64,
@@ -360,12 +360,12 @@ class Cell(GeometricSpace):
         """,
     )
 
-    @staticmethod
-    def _generate_comparer(obj: 'Cell') -> 'Generator[Any, None, None]':
-        try:
-            return ((HashedPositions(pos)) for pos in obj.positions)
-        except AttributeError:
-            raise NotImplementedError
+    # @staticmethod
+    # def _generate_comparer(obj: 'Cell') -> 'Generator[Any, None, None]':
+    #     try:
+    #         return ((HashedPositions(pos)) for pos in obj.positions)
+    #     except AttributeError:
+    #         raise NotImplementedError
 
     @catch_not_implemented
     def is_lt_cell(self, other) -> bool:
