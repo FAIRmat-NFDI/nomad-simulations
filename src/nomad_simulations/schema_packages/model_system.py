@@ -398,7 +398,7 @@ class AtomicCell(Cell):
     """
 
     # this can be found under ModelSystem
-    #atoms_state = SubSection(sub_section=AtomsState.m_def, repeats=True)
+    # atoms_state = SubSection(sub_section=AtomsState.m_def, repeats=True)
 
     # this is moved to ModelSystem.
     # n_atoms = Quantity(
@@ -423,7 +423,7 @@ class AtomicCell(Cell):
     # ! improve description and clarify whether this belongs to `Symmetry` with @lauri-codes
     wyckoff_letters = Quantity(
         type=str,
-        #shape=['n_atoms'],
+        # shape=['n_atoms'],
         shape=['*'],  # temporarily
         description="""
         Wyckoff letters associated with each atom.
@@ -1142,7 +1142,7 @@ class ModelSystem(System):
     atom_states = SubSection(
         section_def=AtomsState.m_def,
         repeats=True,
-        description="List of atomic elements (and their electronic state) for the simulation."
+        description='List of atomic elements (and their electronic state) for the simulation.',
     )
 
     # model_system = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
@@ -1154,11 +1154,11 @@ class ModelSystem(System):
         """
         symbols = []
         if not self.atom_states:
-            logger.warning("No atom_states found in ModelSystem.")
+            logger.warning('No atom_states found in ModelSystem.')
             return symbols
         for state in self.atom_states:
             if not state.chemical_symbol:
-                logger.warning("Missing chemical_symbol in one of the atom_states.")
+                logger.warning('Missing chemical_symbol in one of the atom_states.')
                 return []
             symbols.append(state.chemical_symbol)
         return symbols
@@ -1173,7 +1173,7 @@ class ModelSystem(System):
         """
         symbols = self.get_chemical_symbols(logger)
         if not symbols:
-            logger.error("Cannot generate ASE Atoms without chemical symbols.")
+            logger.error('Cannot generate ASE Atoms without chemical symbols.')
             return None
 
         ase_atoms = ase.Atoms(symbols=symbols)
@@ -1182,24 +1182,30 @@ class ModelSystem(System):
         if self.cell and len(self.cell) > 0:
             cell_section = self.cell[0]
             if cell_section.periodic_boundary_conditions is None:
-                logger.info("Cell periodic_boundary_conditions not found; using default [False, False, False].")
+                logger.info(
+                    'Cell periodic_boundary_conditions not found; using default [False, False, False].'
+                )
                 pbc = [False, False, False]
             else:
                 pbc = cell_section.periodic_boundary_conditions
             ase_atoms.set_pbc(pbc=pbc)
 
             if cell_section.lattice_vectors is not None:
-                ase_atoms.set_cell(cell_section.lattice_vectors.to('angstrom').magnitude)
+                ase_atoms.set_cell(
+                    cell_section.lattice_vectors.to('angstrom').magnitude
+                )
             else:
-                logger.warning("No lattice_vectors found in cell[0].")
+                logger.warning('No lattice_vectors found in cell[0].')
         else:
-            logger.warning("No cell section available in ModelSystem.")
+            logger.warning('No cell section available in ModelSystem.')
 
         if self.positions is None:
-            logger.error("ModelSystem.positions is not available.")
+            logger.error('ModelSystem.positions is not available.')
             return None
         if len(self.positions) != len(symbols):
-            logger.error("Mismatch between number of positions and number of atom_states.")
+            logger.error(
+                'Mismatch between number of positions and number of atom_states.'
+            )
             return None
         ase_atoms.set_positions(self.positions.to('angstrom').magnitude)
         return ase_atoms
@@ -1217,14 +1223,16 @@ class ModelSystem(System):
 
         positions = ase_atoms.get_positions()
         if not positions.tolist():
-            logger.error("ASE Atoms has no positions.")
+            logger.error('ASE Atoms has no positions.')
             return
         self.positions = positions * ureg('angstrom')
 
         # Optionally, update cell information from ASE
         if self.cell and len(self.cell) > 0:
             cell = ase_atoms.get_cell()
-            self.cell[0].lattice_vectors = ase.geometry.complete_cell(cell) * ureg('angstrom')
+            self.cell[0].lattice_vectors = ase.geometry.complete_cell(cell) * ureg(
+                'angstrom'
+            )
             self.cell[0].periodic_boundary_conditions = ase_atoms.get_pbc()
 
     def resolve_system_type_and_dimensionality(
@@ -1327,11 +1335,13 @@ class ModelSystem(System):
         # Generate ASE Atoms object from top-level ModelSystem data
         ase_atoms = self.to_ase_atoms(logger)
         if ase_atoms is None:
-            logger.error("Could not generate ASE Atoms from ModelSystem.")
+            logger.error('Could not generate ASE Atoms from ModelSystem.')
             return
 
         # Resolve system type and dimensionality using ASE atoms
-        self.type, self.dimensionality = self.resolve_system_type_and_dimensionality(ase_atoms, logger)
+        self.type, self.dimensionality = self.resolve_system_type_and_dimensionality(
+            ase_atoms, logger
+        )
 
         # Create and normalize Symmetry section if applicable
         if self.type == 'bulk' and self.symmetry is not None:
@@ -1342,4 +1352,6 @@ class ModelSystem(System):
         sec_chemical_formula = self.m_create(ChemicalFormula)
         sec_chemical_formula.normalize(archive, logger)
         if sec_chemical_formula.m_cache:
-            self.elemental_composition = sec_chemical_formula.m_cache.get('elemental_composition', [])
+            self.elemental_composition = sec_chemical_formula.m_cache.get(
+                'elemental_composition', []
+            )

@@ -82,11 +82,15 @@ def generate_model_system(
     model_system = ModelSystem(type=system_type, is_representative=is_representative)
     atomic_cell = AtomicCell(
         type=type,
-        positions=positions * ureg.angstrom,
+        # positions=positions * ureg.angstrom,
         lattice_vectors=lattice_vectors * ureg.angstrom,
         periodic_boundary_conditions=pbc,
     )
     model_system.cell.append(atomic_cell)
+
+    # In the new design, the global atomic positions belong directly to the ModelSystem.
+    model_system.positions = np.array(positions) * ureg.angstrom
+    model_system.n_atoms = len(positions)
 
     # Add atoms_state to the model_system
     atoms_state = []
@@ -102,13 +106,14 @@ def generate_model_system(
         # and obtain the atomic number for each AtomsState
         atom_state.normalize(EntryArchive(), logger)
         atoms_state.append(atom_state)
-    atomic_cell.atoms_state = atoms_state
+    # atomic_cell.atoms_state = atoms_state
+    model_system.atom_states = atoms_state
     return model_system
 
 
 def generate_atomic_cell(
     lattice_vectors: list[list[float]] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-    positions: Optional[list] = None,
+    positions: Optional[list] = None,  # this is no longer placed here.
     periodic_boundary_conditions: list[bool] = [False, False, False],
     chemical_symbols: list[str] = ['H', 'H', 'O'],
     atomic_numbers: list[int] = [1, 1, 8],
@@ -116,26 +121,26 @@ def generate_atomic_cell(
     """
     Generate an `AtomicCell` section with the given parameters.
     """
-    # Define positions if not provided
-    if positions is None and chemical_symbols is not None:
-        n_atoms = len(chemical_symbols)
-        positions = [[i / n_atoms, i / n_atoms, i / n_atoms] for i in range(n_atoms)]
+    # Commented out due to the new design
+    # if positions is None and chemical_symbols is not None:
+    #     n_atoms = len(chemical_symbols)
+    #     positions = [[i / n_atoms, i / n_atoms, i / n_atoms] for i in range(n_atoms)]
 
     # Define the atomic cell
     atomic_cell = AtomicCell(periodic_boundary_conditions=periodic_boundary_conditions)
     if lattice_vectors:
         atomic_cell.lattice_vectors = lattice_vectors * ureg('angstrom')
-    if positions:
-        atomic_cell.positions = positions * ureg('angstrom')
+    # if positions:
+    #     atomic_cell.positions = positions * ureg('angstrom')
 
-    # Add the elements information
-    for index, atom in enumerate(chemical_symbols):
-        atom_state = AtomsState()
-        setattr(atom_state, 'chemical_symbol', atom)
-        atomic_number = atom_state.resolve_atomic_number(logger=logger)
-        assert atomic_number == atomic_numbers[index]
-        atom_state.atomic_number = atomic_number
-        atomic_cell.atoms_state.append(atom_state)
+    # # Add the elements information
+    # for index, atom in enumerate(chemical_symbols):
+    #     atom_state = AtomsState()
+    #     setattr(atom_state, 'chemical_symbol', atom)
+    #     atomic_number = atom_state.resolve_atomic_number(logger=logger)
+    #     assert atomic_number == atomic_numbers[index]
+    #     atom_state.atomic_number = atomic_number
+    #     atomic_cell.atoms_state.append(atom_state)
 
     return atomic_cell
 
@@ -197,15 +202,18 @@ def generate_simulation_electronic_dos(
     # electronic_dos.value = total_dos * ureg('1/joule')
     orbital_s_Ga_pdos = DOSProfile(
         variables=variables_energy,
-        entity_ref=model_system.cell[0].atoms_state[0].orbitals_state[0],
+        # entity_ref=model_system.cell[0].atoms_state[0].orbitals_state[0],
+        entity_ref=model_system.atom_states[0].orbitals_state[0],
     )
     orbital_px_As_pdos = DOSProfile(
         variables=variables_energy,
-        entity_ref=model_system.cell[0].atoms_state[1].orbitals_state[0],
+        # entity_ref=model_system.cell[0].atoms_state[1].orbitals_state[0],
+        entity_ref=model_system.atom_states[1].orbitals_state[0],
     )
     orbital_py_As_pdos = DOSProfile(
         variables=variables_energy,
-        entity_ref=model_system.cell[0].atoms_state[1].orbitals_state[1],
+        # entity_ref=model_system.cell[0].atoms_state[1].orbitals_state[1],
+        entity_ref=model_system.atom_states[1].orbitals_state[1],
     )
     orbital_s_Ga_pdos.value = [0.2, 0.5, 0, 0, 0, 0.0, 0.0] * ureg('1/joule')
     orbital_px_As_pdos.value = [1.0, 0.2, 0, 0, 0, 0.3, 0.0] * ureg('1/joule')

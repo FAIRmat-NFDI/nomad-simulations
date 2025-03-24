@@ -589,43 +589,43 @@ class AtomsState(Element):
         sub_section=HubbardInteractions.m_def, repeats=False
     )
 
-    # def resolve_chemical_symbol(self, logger: 'BoundLogger') -> Optional[str]:
-    #     """
-    #     Resolves the `chemical_symbol` from the `atomic_number`.
+    def resolve_chemical_symbol(self, logger: 'BoundLogger') -> Optional[str]:
+        """
+        Resolves the `chemical_symbol` from the `atomic_number`.
 
-    #     Args:
-    #         logger (BoundLogger): The logger to log messages.
+        Args:
+            logger (BoundLogger): The logger to log messages.
 
-    #     Returns:
-    #         (Optional[str]): The resolved `chemical_symbol`.
-    #     """
-    #     if self.atomic_number is not None:
-    #         try:
-    #             return ase.data.chemical_symbols[self.atomic_number]
-    #         except IndexError:
-    #             logger.error(
-    #                 'The `AtomsState.atomic_number` is out of range of the periodic table.'
-    #             )
-    #     return None
+        Returns:
+            (Optional[str]): The resolved `chemical_symbol`.
+        """
+        if self.atomic_number is not None:
+            try:
+                return ase.data.chemical_symbols[self.atomic_number]
+            except IndexError:
+                logger.error(
+                    'The `AtomsState.atomic_number` is out of range of the periodic table.'
+                )
+        return None
 
-    # def resolve_atomic_number(self, logger: 'BoundLogger') -> Optional[int]:
-    #     """
-    #     Resolves the `atomic_number` from the `chemical_symbol`.
+    def resolve_atomic_number(self, logger: 'BoundLogger') -> Optional[int]:
+        """
+        Resolves the `atomic_number` from the `chemical_symbol`.
 
-    #     Args:
-    #         logger (BoundLogger): The logger to log messages.
+        Args:
+            logger (BoundLogger): The logger to log messages.
 
-    #     Returns:
-    #         (Optional[int]): The resolved `atomic_number`.
-    #     """
-    #     if self.chemical_symbol is not None:
-    #         try:
-    #             return ase.data.atomic_numbers[self.chemical_symbol]
-    #         except IndexError:
-    #             logger.error(
-    #                 'The `AtomsState.chemical_symbol` is not recognized in the periodic table.'
-    #             )
-    #     return None
+        Returns:
+            (Optional[int]): The resolved `atomic_number`.
+        """
+        if self.chemical_symbol is not None:
+            try:
+                return ase.data.atomic_numbers[self.chemical_symbol]
+            except IndexError:
+                logger.error(
+                    'The `AtomsState.chemical_symbol` is not recognized in the periodic table.'
+                )
+        return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         # ?? Call the parent's normalization (from Element) ??

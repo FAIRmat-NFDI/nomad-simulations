@@ -193,7 +193,7 @@ class Simulation(BaseSimulation, Schema):
     def _set_system_branch_depth(
         self, system_parent: ModelSystem, branch_depth: int = 0
     ):
-        for system_child in system_parent.model_system:
+        for system_child in system_parent.sub_systems:
             system_child.branch_depth = branch_depth + 1
             self._set_system_branch_depth(
                 system_parent=system_child, branch_depth=branch_depth + 1
@@ -249,7 +249,7 @@ class Simulation(BaseSimulation, Schema):
                 atom_labels (list[str]): The global list of atom labels corresponding
                 to the atom indices stored in system.
             """
-            subsystems = system.model_system
+            subsystems = system.sub_systems
             set_composition_formula(
                 system=system, subsystems=subsystems, atom_labels=atom_labels
             )
@@ -257,12 +257,18 @@ class Simulation(BaseSimulation, Schema):
                 for subsystem in subsystems:
                     get_composition_recurs(system=subsystem, atom_labels=atom_labels)
 
-        atoms_state = (
-            system_parent.cell[0].atoms_state if system_parent.cell is not None else []
-        )
+        # atoms_state = (
+        #     system_parent.cell[0].atoms_state if system_parent.cell is not None else []
+        # )
+        # atom_labels = (
+        #     [atom.chemical_symbol for atom in atoms_state]
+        #     if atoms_state is not None
+        #     else []
+        # )
+
         atom_labels = (
-            [atom.chemical_symbol for atom in atoms_state]
-            if atoms_state is not None
+            [atom.chemical_symbol for atom in system_parent.atom_states]
+            if system_parent.atom_states
             else []
         )
         get_composition_recurs(system=system_parent, atom_labels=atom_labels)
@@ -284,7 +290,7 @@ class Simulation(BaseSimulation, Schema):
         # Setting up the `branch_depth` in the parent-child tree
         for system_parent in self.model_system:
             system_parent.branch_depth = 0
-            if len(system_parent.model_system) == 0:
+            if len(system_parent.sub_systems) == 0:
                 continue
             self._set_system_branch_depth(system_parent=system_parent)
 

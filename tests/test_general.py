@@ -25,7 +25,8 @@ class TestSimulation:
                 [
                     ModelSystem(
                         name='depth 0',
-                        model_system=[
+                        # model_system=[
+                        sub_systems=[
                             ModelSystem(name='depth 1'),
                             ModelSystem(name='depth 1'),
                         ],
@@ -37,10 +38,12 @@ class TestSimulation:
                 [
                     ModelSystem(
                         name='depth 0',
-                        model_system=[
+                        # model_system=[
+                        sub_systems=[
                             ModelSystem(
                                 name='depth 1',
-                                model_system=[ModelSystem(name='depth 2')],
+                                # model_system=[ModelSystem(name='depth 2')],
+                                sub_systems=[ModelSystem(name='depth 2')],
                             ),
                             ModelSystem(name='depth 1'),
                         ],
@@ -63,7 +66,7 @@ class TestSimulation:
         simulation = Simulation(model_system=system)
         for system_parent in simulation.model_system:
             system_parent.branch_depth = 0
-            if len(system_parent.model_system) == 0:
+            if len(system_parent.sub_systems) == 0:
                 continue
             simulation._set_system_branch_depth(system_parent=system_parent)
 
@@ -71,7 +74,7 @@ class TestSimulation:
         def get_flat_depths(
             system_parent: ModelSystem, quantity_name: str, value: list = []
         ):
-            for system_child in system_parent.model_system:
+            for system_child in system_parent.sub_systems:
                 val = getattr(system_child, quantity_name)
                 value.append(val)
                 get_flat_depths(
@@ -79,12 +82,19 @@ class TestSimulation:
                 )
             return value
 
-        value = get_flat_depths(
+        # value = get_flat_depths(
+        #     system_parent=simulation.model_system[0],
+        #     quantity_name='branch_depth',
+        #     value=[0],
+        # )
+        # assert value == result
+
+        flat = get_flat_depths(
             system_parent=simulation.model_system[0],
             quantity_name='branch_depth',
             value=[0],
         )
-        assert value == result
+        assert flat == result
 
     @pytest.mark.parametrize(
         'is_representative, has_atom_indices, mol_label_list, n_mol_list, atom_labels_list, composition_formula_list, custom_formulas',
@@ -192,14 +202,6 @@ class TestSimulation:
             composition_formula_list (list[str]): Resulting composition formulas after normalization. The
             ordering is dictated by the recursive traversing of the hierarchy in get_system_recurs(),
             which follows each branch to its deepest level before moving to the next branch, i.e.,
-                [model_system.composition_formula,
-                model_system.model_system[0].composition_formula],
-                model_system.model_system[0].model_system[0].composition_formula,
-                model_system.model_system[0].model_system[1].composition_formula, ...,
-                model_system.model_system[1].composition_formula, ...]
-            custom_formulas (list[str]): Custom composition formulas that can be set in the generation
-            of the hierarchy, which will cause the normalize to ignore (i.e., not overwrite) these formula entries.
-            The ordering is as described above.
         """
 
         ### Generate the system hierarchy ###
@@ -226,14 +228,14 @@ class TestSimulation:
             )
             model_system_mol_group.composition_formula = custom_formulas[ctr_comp]
             ctr_comp += 1
-            model_system.model_system.append(model_system_mol_group)
+            model_system.sub_systems.append(model_system_mol_group)
             for _ in range(n_mol):
                 # Create a branch in the hierarchy for this molecule
                 model_system_mol = ModelSystem(branch_label=mol_label)
                 model_system_mol.branch_label = mol_label
                 model_system_mol.composition_formula = custom_formulas[ctr_comp]
                 ctr_comp += 1
-                model_system_mol_group.model_system.append(model_system_mol)
+                model_system_mol_group.sub_systems.append(model_system_mol)
                 # add the corresponding atoms to the global atom list
                 for atom_label in atom_labels:
                     if atom_label is not None:
