@@ -547,9 +547,18 @@ class HubbardInteractions(ArchiveSection):
                 )
 
 
-class AtomsState(Entity):
+class AtomDefinition(Entity):
     """
-    A base section to define each atom state information.
+    A base section that defines a single atomic species or element, to be referenced
+    by `AtomsState` or other sections. It stores the essential properties of an
+    element (symbol and atomic number), ensures consistency between them, and can
+    resolve one from the other if only one is provided.
+
+    Typical usage:
+      - Create one `AtomDefinition` for each unique element (or pseudo-atom).
+      - In simulation data, multiple `AtomsState` sections can then reference the
+        same `AtomDefinition`, thus avoiding repeated `chemical_symbol` or
+        `atomic_number` in every single atom entry.
     """
 
     # TODO check what happens with ghost atoms that can have `chemical_symbol='X'`
@@ -565,28 +574,6 @@ class AtomsState(Entity):
         description="""
         Atomic number Z. This quantity is equivalent to `chemical_symbol`.
         """,
-    )
-
-    orbitals_state = SubSection(sub_section=OrbitalsState.m_def, repeats=True)
-
-    charge = Quantity(
-        type=np.int32,
-        default=0,
-        description="""
-        Charge of the atom. It is defined as the number of extra electrons or holes in the
-        atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`OrbitalsState.occupation`
-        coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)
-        for cations or any negative integer (-1, -2...) for anions.
-
-        Note: for `CoreHole` systems we do not consider the charge of the atom even if
-        we do not store the final `OrbitalsState` where the electron was excited to.
-        """,
-    )
-
-    core_hole = SubSection(sub_section=CoreHole.m_def, repeats=False)
-
-    hubbard_interactions = SubSection(
-        sub_section=HubbardInteractions.m_def, repeats=False
     )
 
     def resolve_chemical_symbol(self, logger: 'BoundLogger') -> Optional[str]:
@@ -635,3 +622,41 @@ class AtomsState(Entity):
             self.chemical_symbol = self.resolve_chemical_symbol(logger=logger)
         if self.atomic_number is None:
             self.atomic_number = self.resolve_atomic_number(logger=logger)
+
+
+class AtomsState(Entity):
+    """
+    A base section to define each atom state information.
+    """
+
+    atom_definition_ref = Quantity(
+        type=AtomDefinition,
+        description="""
+        A reference to the `AtomDefinition` section that describes this atom's species. This
+        reference avoids storing repeated elemental data (e.g., `chemical_symbol` and
+        `atomic_number`) in every atom, ensuring that all atoms of the same type link back
+        to a single shared definition.
+        """,
+    )
+
+    orbitals_state = SubSection(sub_section=OrbitalsState.m_def, repeats=True)
+
+    charge = Quantity(
+        type=np.int32,
+        default=0,
+        description="""
+        Charge of the atom. It is defined as the number of extra electrons or holes in the
+        atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`OrbitalsState.occupation`
+        coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)
+        for cations or any negative integer (-1, -2...) for anions.
+
+        Note: for `CoreHole` systems we do not consider the charge of the atom even if
+        we do not store the final `OrbitalsState` where the electron was excited to.
+        """,
+    )
+
+    core_hole = SubSection(sub_section=CoreHole.m_def, repeats=False)
+
+    hubbard_interactions = SubSection(
+        sub_section=HubbardInteractions.m_def, repeats=False
+    )
