@@ -51,7 +51,7 @@ if TYPE_CHECKING:
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.atoms_state import AtomDefinition, AtomsState
 from nomad_simulations.schema_packages.utils import (
     catch_not_implemented,
     get_sibling_section,
@@ -659,47 +659,34 @@ class Symmetry(ArchiveSection):
         symmetry_analyzer: 'SymmetryAnalyzer',
         cell_type: str,
         logger: 'BoundLogger',
-    ) -> 'Optional[AtomicCell]':
+    ) -> 'Optional[Cell]':
         """
-        Resolves the `AtomicCell` section from the `SymmetryAnalyzer` object and the cell_type
-        (primitive or conventional).
-
-        Args:
-            symmetry_analyzer (SymmetryAnalyzer): The `SymmetryAnalyzer` object used to resolve.
-            cell_type (str): The type of cell to resolve, either 'primitive' or 'conventional'.
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[AtomicCell]): The resolved `AtomicCell` section or None if the cell_type
-            is not recognized.
+        Resolves an atomic cell from the symmetry_analyzer data.
+        Note: In the new design, the cell contains only geometric data.
+        The per-atom electronic/state information is stored at the ModelSystem level (atom_states).
         """
-        if cell_type not in ['primitive', 'conventional']:
-            logger.error(
-                "Cell type not recognized, only 'primitive' and 'conventional' are allowed."
-            )
+        try:
+            wyckoff = symmetry_analyzer.get_wyckoff_letters(cell_type)
+            equivalent_atoms = getattr(
+                symmetry_analyzer, f'get_equivalent_atoms_{cell_type}'
+            )()
+            system = getattr(symmetry_analyzer, f'get_{cell_type}_system')()
+        except Exception as e:
+            logger.error('Error extracting symmetry data', exc_info=e)
             return None
-        wyckoff = getattr(symmetry_analyzer, f'get_wyckoff_letters_{cell_type}')()
-        equivalent_atoms = getattr(
-            symmetry_analyzer, f'get_equivalent_atoms_{cell_type}'
-        )()
-        system = getattr(symmetry_analyzer, f'get_{cell_type}_system')()
 
-        positions = system.get_scaled_positions()
         cell = system.get_cell()
-        atomic_numbers = system.get_atomic_numbers()
-        labels = system.get_chemical_symbols()
 
-        atomic_cell = AtomicCell(type=cell_type)
+        # Create the cell (or atomic cell) for geometry only
+        atomic_cell = Cell(type=cell_type)
         atomic_cell.lattice_vectors = cell * ureg.angstrom
-        for label, atomic_number in zip(labels, atomic_numbers):
-            atom_state = AtomsState(chemical_symbol=label, atomic_number=atomic_number)
-            atomic_cell.m_add_sub_section(AtomicCell.atoms_state, atom_state)
-        atomic_cell.positions = (
-            positions * ureg.angstrom
-        )  # ? why do we need to pass units
+        # Note: positions are no longer stored in the cell in the new design.
         atomic_cell.wyckoff_letters = wyckoff
         atomic_cell.equivalent_atoms = equivalent_atoms
-        atomic_cell.get_geometric_space_for_atomic_cell(logger=logger)
+        try:
+            atomic_cell.get_geometric_space_for_atomic_cell(logger=logger)
+        except Exception as e:
+            logger.warning('Could not extract geometric space from cell', exc_info=e)
         return atomic_cell
 
     def resolve_bulk_symmetry(
@@ -1151,16 +1138,23 @@ class ModelSystem(System):
     def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
         """
         Extracts chemical symbols from the atom_states subsection.
+        Now uses the atom_definition_ref in each AtomsState.
         """
         symbols = []
         if not self.atom_states:
             logger.warning('No atom_states found in ModelSystem.')
             return symbols
         for state in self.atom_states:
-            if not state.chemical_symbol:
-                logger.warning('Missing chemical_symbol in one of the atom_states.')
+            if not state.atom_definition_ref:
+                logger.warning('Missing atom_definition_ref in one of the atom_states.')
                 return []
-            symbols.append(state.chemical_symbol)
+            symbol = state.atom_definition_ref.chemical_symbol
+            if not symbol:
+                logger.warning(
+                    'Missing chemical_symbol in the AtomDefinition of one of the atom_states.'
+                )
+                return []
+            symbols.append(symbol)
         return symbols
 
     def to_ase_atoms(self, logger: 'BoundLogger') -> 'Optional[ase.Atoms]':
@@ -1213,12 +1207,19 @@ class ModelSystem(System):
     def from_ase_atoms(self, ase_atoms: ase.Atoms, logger: 'BoundLogger') -> None:
         """
         Populates ModelSystem from an ASE Atoms object.
-        Replaces the atom_states subsection with new entries based on the ASE chemical symbols
-        and assigns ASE positions to the top-level positions quantity.
+        Replaces the atom_states subsection with new entries based on the ASE chemical symbols,
+        using AtomDefinition to store elemental data, and assigns ASE positions to the top-level positions quantity.
         """
         self.atom_states.clear()
-        for symbol in ase_atoms.get_chemical_symbols():
-            state = AtomsState(chemical_symbol=symbol)
+
+        # Iterate over chemical symbols and atomic numbers from the ASE Atoms object
+        for symbol, atomic_number in zip(
+            ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers()
+        ):
+            atom_def = AtomDefinition(
+                chemical_symbol=symbol, atomic_number=atomic_number
+            )
+            state = AtomsState(atom_definition_ref=atom_def)
             self.atom_states.append(state)
 
         positions = ase_atoms.get_positions()
@@ -1226,6 +1227,7 @@ class ModelSystem(System):
             logger.error('ASE Atoms has no positions.')
             return
         self.positions = positions * ureg('angstrom')
+        self.n_atoms = len(self.positions)
 
         # Optionally, update cell information from ASE
         if self.cell and len(self.cell) > 0:

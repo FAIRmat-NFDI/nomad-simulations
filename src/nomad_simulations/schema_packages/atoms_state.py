@@ -549,9 +549,9 @@ class HubbardInteractions(ArchiveSection):
 
 class AtomDefinition(Entity):
     """
-    A base section that defines a single atomic species or element, to be referenced
+     A base section that defines a single atomic species or element, to be referenced
     by `AtomsState` or other sections. It stores the essential properties of an
-    element (symbol and atomic number), ensures consistency between them, and can
+    element (symbol, atomic number and charge), ensures consistency between them, and can
     resolve one from the other if only one is provided.
 
     Typical usage:
@@ -573,6 +573,20 @@ class AtomDefinition(Entity):
         type=np.int32,
         description="""
         Atomic number Z. This quantity is equivalent to `chemical_symbol`.
+        """,
+    )
+
+    charge = Quantity(
+        type=np.int32,
+        default=0,
+        description="""
+        Charge of the atom. It is defined as the number of extra electrons or holes in the
+        atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`OrbitalsState.occupation`
+        coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)
+        for cations or any negative integer (-1, -2...) for anions.
+
+        Note: for `CoreHole` systems we do not consider the charge of the atom even if
+        we do not store the final `OrbitalsState` where the electron was excited to.
         """,
     )
 
@@ -640,20 +654,6 @@ class AtomsState(Entity):
     )
 
     orbitals_state = SubSection(sub_section=OrbitalsState.m_def, repeats=True)
-
-    charge = Quantity(
-        type=np.int32,
-        default=0,
-        description="""
-        Charge of the atom. It is defined as the number of extra electrons or holes in the
-        atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`OrbitalsState.occupation`
-        coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)
-        for cations or any negative integer (-1, -2...) for anions.
-
-        Note: for `CoreHole` systems we do not consider the charge of the atom even if
-        we do not store the final `OrbitalsState` where the electron was excited to.
-        """,
-    )
 
     core_hole = SubSection(sub_section=CoreHole.m_def, repeats=False)
 
