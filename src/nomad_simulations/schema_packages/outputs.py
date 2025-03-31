@@ -199,7 +199,7 @@ class ElectronicStructureOutputs(Outputs):
             self.model_method_ref = self.set_model_method_ref()
 
 
-class SCFOutputs(Outputs):
+class SCFOutputs(ElectronicStructureOutputs):  # TODO: separate out from `ElectronicStructureOutputs`
     """
     This section contains the self-consistent (SCF) steps performed to converge an output property.
 
