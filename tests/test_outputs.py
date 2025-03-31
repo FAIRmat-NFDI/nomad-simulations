@@ -6,7 +6,10 @@ from nomad.datamodel import EntryArchive
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
-from nomad_simulations.schema_packages.outputs import SCFOutputs, ElectronicStructureOutputs
+from nomad_simulations.schema_packages.outputs import (
+    ElectronicStructureOutputs,
+    SCFOutputs,
+)
 from nomad_simulations.schema_packages.properties import ElectronicBandGap
 
 from . import logger
@@ -199,12 +202,22 @@ class TestSCFOutputs:
             # length of `scf_last_steps` is different from 2
             ([ElectronicStructureOutputs()], 0, None, None, []),
             # no property matching `'electronic_band_gaps'` stored under the `scf_last_steps`
-            ([ElectronicStructureOutputs(), ElectronicStructureOutputs()], 0, None, None, []),
+            (
+                [ElectronicStructureOutputs(), ElectronicStructureOutputs()],
+                0,
+                None,
+                None,
+                [],
+            ),
             # `i_property` is out of range
             (
                 [
-                    ElectronicStructureOutputs(electronic_band_gaps=[ElectronicBandGap()]),
-                    ElectronicStructureOutputs(electronic_band_gaps=[ElectronicBandGap()]),
+                    ElectronicStructureOutputs(
+                        electronic_band_gaps=[ElectronicBandGap()]
+                    ),
+                    ElectronicStructureOutputs(
+                        electronic_band_gaps=[ElectronicBandGap()]
+                    ),
                 ],
                 2,
                 None,
@@ -214,8 +227,12 @@ class TestSCFOutputs:
             # no `value` stored in the `scf_last_steps` property
             (
                 [
-                    ElectronicStructureOutputs(electronic_band_gaps=[ElectronicBandGap()]),
-                    ElectronicStructureOutputs(electronic_band_gaps=[ElectronicBandGap()]),
+                    ElectronicStructureOutputs(
+                        electronic_band_gaps=[ElectronicBandGap()]
+                    ),
+                    ElectronicStructureOutputs(
+                        electronic_band_gaps=[ElectronicBandGap()]
+                    ),
                 ],
                 0,
                 None,
@@ -225,8 +242,12 @@ class TestSCFOutputs:
             # no `SelfConsistency` section and `threshold_change_unit` defined and matching units for property `value` (`'joule'`)
             (
                 [
-                    ElectronicStructureOutputs(electronic_band_gaps=[ElectronicBandGap()]),
-                    ElectronicStructureOutputs(electronic_band_gaps=[ElectronicBandGap()]),
+                    ElectronicStructureOutputs(
+                        electronic_band_gaps=[ElectronicBandGap()]
+                    ),
+                    ElectronicStructureOutputs(
+                        electronic_band_gaps=[ElectronicBandGap()]
+                    ),
                 ],
                 0,
                 [1.0, 2.0],
@@ -236,8 +257,12 @@ class TestSCFOutputs:
             # valid case
             (
                 [
-                    ElectronicStructureOutputs(electronic_band_gaps=[ElectronicBandGap()]),
-                    ElectronicStructureOutputs(electronic_band_gaps=[ElectronicBandGap()]),
+                    ElectronicStructureOutputs(
+                        electronic_band_gaps=[ElectronicBandGap()]
+                    ),
+                    ElectronicStructureOutputs(
+                        electronic_band_gaps=[ElectronicBandGap()]
+                    ),
                 ],
                 0,
                 [1.0, 2.0],

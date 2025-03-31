@@ -20,7 +20,11 @@ from nomad_simulations.schema_packages.numerical_settings import (
     KSpace,
     SelfConsistency,
 )
-from nomad_simulations.schema_packages.outputs import Outputs, SCFOutputs, ElectronicStructureOutputs
+from nomad_simulations.schema_packages.outputs import (
+    ElectronicStructureOutputs,
+    Outputs,
+    SCFOutputs,
+)
 from nomad_simulations.schema_packages.properties import (
     DOSProfile,
     ElectronicBandGap,
@@ -154,7 +158,9 @@ def generate_scf_electronic_band_gap_template(
     value = None
     for i in range(n_scf_steps):
         value = 1 + sum([1 / (10**j) for j in range(1, i + 2)])
-        scf_step = ElectronicStructureOutputs(electronic_band_gaps=[ElectronicBandGap(value=value)])
+        scf_step = ElectronicStructureOutputs(
+            electronic_band_gaps=[ElectronicBandGap(value=value)]
+        )
         scf_outputs.scf_steps.append(scf_step)
     # Add a SCF calculated PhysicalProperty
     if value is not None:
