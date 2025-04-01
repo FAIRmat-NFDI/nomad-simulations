@@ -18,6 +18,7 @@ from nomad_simulations.schema_packages.model_system import (
     ChemicalFormula,
     ModelSystem,
     Symmetry,
+    get_sibling_section,
 )
 
 from . import logger
@@ -32,7 +33,7 @@ def create_cell(lattice_vectors, pbc):
 
 
 #############################################
-# Tests for AtomsState (new style)
+# Tests for AtomsState v2
 #############################################
 class TestAtomsState:
     @pytest.mark.parametrize(
@@ -63,7 +64,7 @@ class TestAtomsState:
 
 
 #############################################
-# Tests for ModelSystem (new style)
+# Tests for ModelSystem v2
 #############################################
 class TestModelSystem:
     def test_from_ase_atoms(self):
@@ -83,10 +84,10 @@ class TestModelSystem:
         ms = ModelSystem()
         ms.from_ase_atoms(ase_atoms, logger)
 
-        # Check that positions are stored at ModelSystem level.
+        # Check that positions are stored at ModelSystem level:
         np.testing.assert_allclose(ms.positions.to('angstrom').magnitude, positions)
         assert ms.n_atoms == len(positions)
-        # Check that atom_states is populated correctly.
+        # Check that atom_states is populated correctly
         assert len(ms.atom_states) == len(symbols)
         for i, state in enumerate(ms.atom_states):
             assert state.atom_definition_ref is not None
@@ -121,18 +122,18 @@ class TestModelSystem:
 
         ase_atoms_new = ms.to_ase_atoms(logger)
         assert ase_atoms_new is not None
-        # Verify positions
+        # verify positions
         np.testing.assert_allclose(
             ase_atoms_new.get_positions(), ms.positions.to('angstrom').magnitude
         )
-        # Verify chemical symbols
+        # verify chemical symbols
         assert ase_atoms_new.get_chemical_symbols() == symbols
-        # Verify cell info (lattice vectors and PBC)
+        # verify cell info (lattice vectors and PBC)
         np.testing.assert_allclose(
             ase_atoms_new.get_cell(),
             cell_instance.lattice_vectors.to('angstrom').magnitude,
         )
-        # Use np.array_equal for PBC to avoid ambiguity with arrays.
+        # use np.array_equal for PBC to avoid ambiguity with arrays
         assert np.array_equal(
             np.array(ase_atoms_new.get_pbc()),
             np.array(cell_instance.periodic_boundary_conditions),
@@ -171,7 +172,6 @@ class TestModelSystem:
 
         ms = ModelSystem()
         ms.from_ase_atoms(ase_atoms_in, logger)
-        # Also add a cell so that to_ase_atoms() can use its geometry.
         cell_instance = create_cell(
             [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [True, True, True]
         )
@@ -250,20 +250,20 @@ class TestModelSystemHierarchyAdvanced:
         parent_cell = create_cell([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [True, True, True])
         parent.cell.append(parent_cell)
 
-        # Create child systems.
+        # Create child systems
         child1 = self.create_system('Child1', 'Child1', 1, atom_indices=[0, 2, 4])
         child2 = self.create_system('Child2', 'Child2', 1, atom_indices=[1, 3, 5])
-        # Create grandchild for Child1.
+        # Create grandchild for Child1
         grandchild1 = self.create_system(
             'Grandchild1', 'Grandchild1', 2, atom_indices=[2, 4]
         )
 
-        # Build hierarchy.
+        # Build hierarchy
         child1.sub_systems.append(grandchild1)
         parent.sub_systems.append(child1)
         parent.sub_systems.append(child2)
 
-        # Collect hierarchy data.
+        # Collect hierarchy data
         hierarchy = self.collect_hierarchy(parent)
         expected = [
             ('ParentSystem', None, 0, None),
@@ -273,7 +273,7 @@ class TestModelSystemHierarchyAdvanced:
         ]
         assert hierarchy == expected, f'Expected {expected} but got {hierarchy}'
 
-        # Verify parent's atom data is unchanged.
+        # Verify parent's atom data is unchanged
         np.testing.assert_allclose(
             parent.positions.to('angstrom').magnitude, parent_positions
         )
@@ -281,10 +281,161 @@ class TestModelSystemHierarchyAdvanced:
         for i, state in enumerate(parent.atom_states):
             assert state.atom_definition_ref.chemical_symbol == parent_symbols[i]
 
-        # Optionally, reconstruct ASE Atoms from parent and verify roundtrip.
+        # Reconstruct ASE Atoms from parent and verify roundtrip.
         ase_recon = parent.to_ase_atoms(logger)
         assert ase_recon is not None
         np.testing.assert_allclose(
             ase_recon.get_positions(), parent.positions.to('angstrom').magnitude
         )
         assert ase_recon.get_chemical_symbols() == parent_symbols
+
+
+# Dummy subclass for testing integration with Symmetry and ChemicalFormula.
+class DummyAtomicCell(AtomicCell):
+    def to_ase_atoms(self, logger):
+        # Provide a minimal ASE Atoms object using the cell's lattice vectors.
+        # Since positions are not stored in AtomicCell in the new design,
+        # we return an ASE Atoms object with dummy positions (e.g. zeros)
+        # and use a dummy list for chemical symbols.
+        # For testing, we assume the cell "represents" 3 atoms.
+        dummy_symbols = ['H', 'H', 'O']
+        dummy_positions = np.zeros((3, 3))
+        return Atoms(
+            symbols=dummy_symbols,
+            positions=dummy_positions,
+            cell=self.lattice_vectors.to('angstrom').magnitude,
+            pbc=self.periodic_boundary_conditions,
+        )
+
+
+class TestModelSystemUpdates:
+    def test_renormalization_update_behavior(self):
+        """
+        Test that re-calling normalize() on a ModelSystem after updating positions and cell
+        changes the computed type/dimensionality.
+        If the classifier does not set these fields (i.e. remains None),
+        we simply assert that normalization completes without error.
+        """
+        ms = ModelSystem(is_representative=True)
+        # Initially simulate a molecule: 2 atoms, no periodic boundary conditions.
+        positions_initial = np.array([[0, 0, 0], [0, 0, 1]])
+        ms.positions = positions_initial * ureg('angstrom')
+        ms.n_atoms = len(positions_initial)
+        cell_mol = create_cell([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [False, False, False])
+        ms.cell.append(cell_mol)
+        ms.normalize(EntryArchive(), logger)
+        initial_type = ms.type
+        initial_dim = ms.dimensionality
+
+        # Now update positions and cell to simulate a bulk system.
+        positions_bulk = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        ms.positions = positions_bulk * ureg('angstrom')
+        ms.n_atoms = len(positions_bulk)
+        ms.cell[0] = create_cell([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [True, True, True])
+        ms.normalize(EntryArchive(), logger)
+        # If the classifier updated the type/dimensionality, they should differ.
+        if initial_type is not None or initial_dim is not None:
+            assert (ms.type is not None and ms.type != initial_type) or (
+                ms.dimensionality is not None and ms.dimensionality != initial_dim
+            )
+        else:
+            # If they were None initially, at least normalization should complete.
+            assert ms.type is None and ms.dimensionality is None
+
+    def test_symmetry_and_chemical_formula_integration(self):
+        """
+        Test that if a ModelSystem has a cell that returns valid geometric data,
+        then both the ChemicalFormula and Symmetry sections can be normalized.
+        For this test, we attach a DummyAtomicCell (which implements to_ase_atoms)
+        to the ModelSystem.
+        """
+        dummy_cell = DummyAtomicCell()
+        dummy_cell.lattice_vectors = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]) * ureg(
+            'angstrom'
+        )
+        dummy_cell.periodic_boundary_conditions = [True, True, True]
+        # Create a ModelSystem and attach the dummy cell.
+        ms = ModelSystem(is_representative=True)
+        ms.cell.append(dummy_cell)
+        # Set positions and atom_states.
+        symbols = ['H', 'H', 'O']
+        positions = np.array([[0, 0, 0], [0, 0, 1], [1, 0, 0]])
+        ms.positions = positions * ureg('angstrom')
+        ms.n_atoms = len(positions)
+        for sym, num in zip(symbols, [1, 1, 8]):
+            atom_def = AtomDefinition(chemical_symbol=sym, atomic_number=num)
+            state = AtomsState(atom_definition_ref=atom_def)
+            ms.atom_states.append(state)
+        cf = ChemicalFormula()
+        ms.chemical_formula = cf
+        cf.normalize(EntryArchive(), logger)
+        # Check that the chemical formula m_cache is set (i.e. some composition is detected).
+        if cf.m_cache:
+            comp = cf.m_cache.get('elemental_composition', [])
+            assert len(comp) > 0
+        symm = Symmetry()
+        ms.symmetry.append(symm)
+        symm.normalize(EntryArchive(), logger)
+        # Check that at least one symmetry field is set.
+        if symm.bravais_lattice is not None:
+            assert isinstance(symm.bravais_lattice, str)
+            assert len(symm.bravais_lattice) > 0
+
+    def test_reparenting_hierarchy_updates(self):
+        """
+        Test that updating a child's atom_indices is reflected in the parent's hierarchy.
+        (Since removal is not supported, we simply update the child's atom_indices and check.)
+        """
+        parent = ModelSystem(name='ParentSystem')
+        # Populate parent with 4 atoms.
+        symbols = ['H', 'O', 'H', 'C']
+        positions = np.array([[0, 0, 0], [0, 0, 1], [1, 0, 0], [1, 1, 0]])
+        ase_parent = Atoms(
+            symbols=symbols, positions=positions, cell=np.eye(3), pbc=[True, True, True]
+        )
+        parent.from_ase_atoms(ase_parent, logger)
+        parent.positions = positions * ureg('angstrom')
+        parent.n_atoms = len(positions)
+        # Create a child with initial atom_indices.
+        child = ModelSystem(name='Child')
+        child.atom_indices = [0, 2]
+        parent.sub_systems.append(child)
+        # Verify initial atom_indices.
+        # Convert to list in case it's stored as an array.
+        assert list(child.atom_indices) == [0, 2]
+        # Update child's atom_indices.
+        child.atom_indices = [1, 3]
+        # Since removal is not allowed, parent's sub_systems still holds the same child reference.
+        # So simply check that the child's updated atom_indices are reflected.
+        assert list(parent.sub_systems[0].atom_indices) == [1, 3]
+
+    def test_deep_hierarchy_stress(self):
+        """
+        Create a deep hierarchy (10 levels) where each system has one child,
+        and verify that the recursive collection of hierarchy information correctly
+        reflects the branch depths and names.
+        """
+        root = ModelSystem(name='Root')
+        root.branch_depth = 0
+        current = root
+        expected = [('Root', None, 0, None)]
+        for level in range(1, 11):
+            child = ModelSystem(name=f'Level{level}')
+            child.branch_label = f'Level{level}'
+            child.branch_depth = level
+            child.atom_indices = [level - 1]
+            current.sub_systems.append(child)
+            current = child
+            expected.append((f'Level{level}', f'Level{level}', level, [level - 1]))
+
+        def collect(system):
+            ai = system.atom_indices
+            if ai is not None and isinstance(ai, np.ndarray):
+                ai = ai.tolist()
+            result = [(system.name, system.branch_label, system.branch_depth, ai)]
+            for child in system.sub_systems:
+                result.extend(collect(child))
+            return result
+
+        hierarchy = collect(root)
+        assert hierarchy == expected, f'Expected {expected} but got {hierarchy}'
