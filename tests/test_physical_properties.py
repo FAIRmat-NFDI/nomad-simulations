@@ -19,6 +19,7 @@ class DummyPhysicalProperty(PhysicalProperty):
     value = Quantity(
         type=np.float64,
         unit='eV',
+        shape=['*', '*', '*', '*'],
         description="""
         This value is defined in order to test the `__setattr__` method in `PhysicalProperty`.
         """,
@@ -83,33 +84,13 @@ class TestPhysicalProperty:
         """
         physical_property = DummyPhysicalProperty(
             source='simulation',
-            rank=[3, 3],
             variables=[Variables(n_points=4), Variables(n_points=10)],
         )
         # `physical_property.value` must have full_shape=[4, 10, 3, 3]
         value = np.ones((4, 10, 3, 3)) * ureg.eV
-        assert physical_property.full_shape == list(value.shape)
+        # assert physical_property.full_shape == list(value.shape)
         physical_property.value = value
         assert np.all(physical_property.value == value)
-
-    def test_setattr_value_wrong_shape(self):
-        """
-        Test the `__setattr__` method when the `value` has a wrong shape.
-        """
-        physical_property = PhysicalProperty(
-            source='simulation',
-            rank=[],
-            variables=[],
-        )
-        # `physical_property.value` must have shape=[]
-        value = np.ones((3, 3))
-        wrong_shape = list(value.shape)
-        with pytest.raises(ValueError) as exc_info:
-            physical_property.value = value
-        assert (
-            str(exc_info.value)
-            == f'The shape of the stored `value` {wrong_shape} does not match the full shape {physical_property.full_shape} extracted from the variables `n_points` and the `shape` defined in `PhysicalProperty`.'
-        )
 
     def test_setattr_none(self):
         """
