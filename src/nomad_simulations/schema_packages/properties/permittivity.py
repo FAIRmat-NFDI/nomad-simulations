@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 
-import numpy as np
 from nomad.metainfo import MEnum, Quantity
+from nomad.metainfo.data_type import m_complex128
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -35,8 +35,9 @@ class Permittivity(PhysicalProperty):
     )
 
     value = Quantity(
-        type=np.complex128,
+        type=m_complex128().no_shape_check(),
         # unit='joule',  # TODO check units (they have to match `SpectralProfile.value`)
+        shape=['*'],
         description="""
         Value of the permittivity tensor. If the value does not depend on the scattering vector `q`, then we
         can extract the optical absorption spectrum from the imaginary part of the permittivity tensor (this is also called
@@ -67,7 +68,7 @@ class Permittivity(PhysicalProperty):
         """
         Extract the absorption spectrum from the imaginary part of the permittivity tensor.
         """
-        # If the `pemittivity` depends on the scattering vector `q`, then we cannot extract the absorption spectrum
+        # If the `permittivity` depends on the scattering vector `q`, then we cannot extract the absorption spectrum
         q_mesh = get_variables(self.variables, KMesh)
         if len(q_mesh) > 0:
             logger.warning(

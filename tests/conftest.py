@@ -159,12 +159,12 @@ def generate_scf_electronic_band_gap_template(
     for i in range(n_scf_steps):
         value = 1 + sum([1 / (10**j) for j in range(1, i + 2)])
         scf_step = ElectronicStructureOutputs(
-            electronic_band_gaps=[ElectronicBandGap(value=value)]
+            electronic_band_gaps=[ElectronicBandGap(value=[value])]
         )
         scf_outputs.scf_steps.append(scf_step)
     # Add a SCF calculated PhysicalProperty
     if value is not None:
-        scf_outputs.electronic_band_gaps.append(ElectronicBandGap(value=value))
+        scf_outputs.electronic_band_gaps.append(ElectronicBandGap(value=[value]))
     else:
         scf_outputs.electronic_band_gaps.append(ElectronicBandGap())
     # and a `SelfConsistency` ref section
@@ -326,7 +326,7 @@ def generate_electronic_eigenvalues(
     """
     Generate an `ElectronicEigenvalues` section with the given parameters.
     """
-    outputs = Outputs()
+    outputs = ElectronicStructureOutputs()
     k_space = KSpace(
         k_line_path=KLinePathSettings(
             points=[
@@ -342,7 +342,7 @@ def generate_electronic_eigenvalues(
         )
     )
     model_method = ModelMethod(numerical_settings=[k_space])
-    if reciprocal_lattice_vectors is not None and len(reciprocal_lattice_vectors) > 0:
+    if reciprocal_lattice_vectors:
         k_space.reciprocal_lattice_vectors = reciprocal_lattice_vectors
     _ = generate_simulation(
         model_system=generate_model_system(),
@@ -350,7 +350,7 @@ def generate_electronic_eigenvalues(
         outputs=outputs,
     )
     electronic_eigenvalues = ElectronicEigenvalues(n_bands=2)
-    outputs.electronic_eigenvalues.append(electronic_eigenvalues)
+    outputs.electronic_eigenvalues = [electronic_eigenvalues]
     electronic_eigenvalues.variables = [
         KLinePath(points=model_method.numerical_settings[0].k_line_path)
     ]

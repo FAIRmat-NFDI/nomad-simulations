@@ -219,7 +219,7 @@ class SCFOutputs(
         """,
     )
 
-    def get_last_scf_steps_value(
+    def get_last_scf_steps_value(  # TODO: redo
         self,
         scf_last_steps: list[Outputs],
         property_name: str,
@@ -228,7 +228,7 @@ class SCFOutputs(
         logger: 'BoundLogger',
     ) -> Optional[list]:
         """
-        Get the last two SCF values' magnitudes of a physical property and appends then in a list.
+        Get the last two SCF values' magnitudes of a physical property and appends them in a list.
 
         Args:
             scf_last_steps (list[Outputs]): The list of SCF steps. This must be of length 2 in order to the method to work.

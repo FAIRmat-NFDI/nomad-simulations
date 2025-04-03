@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 import pint
 from nomad.metainfo import MEnum, Quantity
+from nomad.metainfo.data_type import m_float64
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -54,8 +55,9 @@ class ElectronicBandGap(PhysicalProperty):
     )
 
     value = Quantity(
-        type=np.float64,
+        type=m_float64().no_shape_check(),
         unit='joule',
+        shape=['*'],
         description="""
         The value of the electronic band gap. This value has to be positive, otherwise it will
         prop an error and be set to None by the `normalize()` function.

@@ -4,6 +4,7 @@ import numpy as np
 import pint
 from nomad.config import config
 from nomad.metainfo import MEnum, Quantity, SubSection
+from nomad.metainfo.data_type import m_float64
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -27,17 +28,12 @@ class SpectralProfile(PhysicalProperty):
     """
 
     value = Quantity(
-        type=np.float64,
+        type=m_float64().no_shape_check(),
+        shape=['*'],
         description="""
         The value of the intensities of a spectral profile in arbitrary units.
         """,
     )  # TODO check units and normalization_factor of DOS and Spectras and see whether they can be merged
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.rank = []
 
     def is_valid_spectral_profile(self) -> bool:
         """
@@ -46,9 +42,7 @@ class SpectralProfile(PhysicalProperty):
         Returns:
             (bool): True if the spectral profile is valid, False otherwise.
         """
-        if (self.value < 0.0).any():
-            return False
-        return True
+        return False if np.any(np.array(self.value) < 0.0) else True
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)

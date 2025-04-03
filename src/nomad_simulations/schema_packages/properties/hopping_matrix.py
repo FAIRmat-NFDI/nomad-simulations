@@ -48,8 +48,6 @@ class HoppingMatrix(PhysicalProperty):
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        # ! n_orbitals need to be set up during initialization of the class
-        self.rank = [int(kwargs.get('n_orbitals')), int(kwargs.get('n_orbitals'))]
         self.name = self.m_def.name
 
     # TODO add normalization to extract DOS, band structure, etc, properties from `HoppingMatrix`
@@ -83,6 +81,4 @@ class CrystalFieldSplitting(PhysicalProperty):
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        # ! `n_orbitals` need to be set up during initialization of the class
-        self.rank = [int(kwargs.get('n_orbitals'))]
         self.name = self.m_def.name

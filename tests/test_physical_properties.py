@@ -32,37 +32,19 @@ class TestPhysicalProperty:
     """
 
     @pytest.mark.parametrize(
-        'rank, variables, result_variables_shape, result_full_shape',
+        'variables, result_variables_shape, result_full_shape',
         [
-            ([], [], [], []),
-            ([3], [], [], [3]),
-            ([3, 3], [], [], [3, 3]),
-            ([], [Variables(n_points=4)], [4], [4]),
-            ([3], [Variables(n_points=4)], [4], [4, 3]),
-            ([3, 3], [Variables(n_points=4)], [4], [4, 3, 3]),
+            ([], [], []),
+            ([Variables(n_points=4)], [4], [4]),
             (
-                [],
                 [Variables(n_points=4), Variables(n_points=10)],
                 [4, 10],
                 [4, 10],
-            ),
-            (
-                [3],
-                [Variables(n_points=4), Variables(n_points=10)],
-                [4, 10],
-                [4, 10, 3],
-            ),
-            (
-                [3, 3],
-                [Variables(n_points=4), Variables(n_points=10)],
-                [4, 10],
-                [4, 10, 3, 3],
             ),
         ],
     )
     def test_static_properties(
         self,
-        rank: list,
         variables: list,
         result_variables_shape: list,
         result_full_shape: list,
@@ -72,7 +54,6 @@ class TestPhysicalProperty:
         """
         physical_property = PhysicalProperty(
             source='simulation',
-            rank=rank,
             variables=variables,
         )
         assert physical_property.variables_shape == result_variables_shape

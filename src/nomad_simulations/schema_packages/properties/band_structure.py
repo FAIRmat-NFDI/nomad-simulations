@@ -4,6 +4,7 @@ import numpy as np
 import pint
 from nomad.config import config
 from nomad.metainfo import Quantity, SubSection
+from nomad.metainfo.data_type import m_float64
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -40,19 +41,13 @@ class BaseElectronicEigenvalues(PhysicalProperty):
     )
 
     value = Quantity(
-        type=np.float64,
+        type=m_float64().no_shape_check(),
         unit='joule',
+        shape=['*'],
         description="""
         Value of the electronic eigenvalues.
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        # ! `n_bands` need to be set up during initialization of the class
-        self.rank = [int(kwargs.get('n_bands'))]
 
 
 class ElectronicEigenvalues(BaseElectronicEigenvalues):
@@ -209,9 +204,9 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
             band_gap = ElectronicBandGap(is_derived=True, physical_property_ref=self)
 
             if (lumo - homo).magnitude < 0:
-                band_gap.value = 0.0
+                band_gap.value = [0.]
             else:
-                band_gap.value = lumo - homo
+                band_gap.value = [lumo - homo]
         return band_gap
 
     # TODO fix this method once `FermiSurface` property is implemented

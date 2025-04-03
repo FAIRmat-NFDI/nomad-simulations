@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from nomad.metainfo import MEnum, Quantity
+from nomad.metainfo.data_type import m_float64
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -328,7 +329,8 @@ class QuasiparticleWeight(PhysicalProperty):
     )
 
     value = Quantity(
-        type=np.float64,
+        type=m_float64().no_shape_check(),
+        shape=['*'],
         description="""
         Value of the quasiparticle weight matrices.
         """,
@@ -353,7 +355,7 @@ class QuasiparticleWeight(PhysicalProperty):
         Returns:
             (bool): True if the quasiparticle weight is valid, False otherwise.
         """
-        if (self.value < 0.0).any() or (self.value > 1.0).any():
+        if np.any(np.array(self.value) < 0.0) or np.any(np.array(self.value) > 1.0):
             return False
         return True
 
@@ -364,13 +366,14 @@ class QuasiparticleWeight(PhysicalProperty):
         Returns:
             str: The resolved `system_correlation_strengths` of the quasiparticle weight.
         """
-        if np.all(self.value > 0.7):
+        value = np.array(self.value)
+        if np.all(value > 0.7):
             return 'non-correlated metal'
-        elif np.all((self.value < 0.4) & (self.value > 0)):
+        elif np.all((value < 0.4) & (value > 0)):
             return 'strongly-correlated metal'
-        elif np.any(self.value == 0) and np.any(self.value > 0):
+        elif np.any(value == 0) and np.any(value > 0):
             return 'OSMI'
-        elif np.all(self.value < 1e-2):
+        elif np.all(value < 1e-2):
             return 'Mott insulator'
         return None
 

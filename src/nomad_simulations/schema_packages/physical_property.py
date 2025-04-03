@@ -1,12 +1,11 @@
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from nomad import utils
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections import Entity
 from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy, SubSection
-from nomad.metainfo.metainfo import Dimension
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -112,23 +111,10 @@ class PhysicalProperty(ArchiveSection):
         # ! add more examples in the description to improve the understanding of this quantity
     )
 
-    rank = Quantity(
-        type=Dimension,
-        shape=['0..*'],
-        default=[],
-        name='rank',
-        description="""
-        Rank of the tensor describing the physical property. This quantity is stored as a Dimension:
-            - scalars (tensor rank 0) have `rank=[]` (`len(rank) = 0`),
-            - vectors (tensor rank 1) have `rank=[a]` (`len(rank) = 1`),
-            - matrices (tensor rank 2), have `rank=[a, b]` (`len(rank) = 2`),
-            - etc.
-        """,
-    )
-
     variables = SubSection(sub_section=Variables.m_def, repeats=True)
 
     # * `value` must be overwritten in the derived classes defining its type, unit, and description
+    # TODO use abstract to enforce policy?
     value: Quantity = None
 
     entity_ref = Quantity(
@@ -194,7 +180,7 @@ class PhysicalProperty(ArchiveSection):
         return []
 
     @property
-    def full_shape(self) -> list:
+    def full_shape(self) -> list[int]:
         """
         Full shape of the physical property. This quantity is calculated as a concatenation of the `variables_shape`
         and `rank`:
@@ -212,7 +198,8 @@ class PhysicalProperty(ArchiveSection):
         Returns:
             (list): The full shape of the physical property.
         """
-        return self.variables_shape + self.rank
+        value_shape = self.value.shape if self.value is not None else []
+        return self.variables_shape + value_shape
 
     @property
     def _new_value(self) -> Quantity:
@@ -258,7 +245,7 @@ class PhysicalProperty(ArchiveSection):
 
     def _is_derived(self) -> bool:
         """
-        Resolves if the physical property is derived or not.
+        Resolves whether the physical property is derived or not.
 
         Returns:
             (bool): The flag indicating whether the physical property is derived or not.

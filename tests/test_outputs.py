@@ -95,7 +95,7 @@ class TestOutputs:
         outputs = ElectronicStructureOutputs()
 
         for i, band_gap in enumerate(band_gaps):
-            band_gap.value = values[i]
+            band_gap.value = [values[i]]
             outputs.electronic_band_gaps.append(band_gap)
         gaps = outputs.extract_spin_polarized_property(
             property_name='electronic_band_gaps'
@@ -103,7 +103,7 @@ class TestOutputs:
         assert len(gaps) == result_length
         if len(result) > 0:
             for i, result_gap in enumerate(result):
-                result_gap.value = values[i]
+                result_gap.value = [values[i]]
                 # ? comparing the sections does not work
                 assert gaps[i].value == result_gap.value
         else:
@@ -283,7 +283,7 @@ class TestSCFOutputs:
         for i, scf_step in enumerate(scf_last_steps):
             property_section = getattr(scf_step, 'electronic_band_gaps')
             if property_section is not None and values is not None:
-                property_section[i_property].value = values[i]
+                property_section[i_property].value = [values[i]]
         scf_values = scf_outputs.get_last_scf_steps_value(
             scf_last_steps=scf_last_steps,
             property_name='electronic_band_gaps',

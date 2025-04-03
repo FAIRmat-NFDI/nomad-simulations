@@ -8,7 +8,7 @@ from nomad.units import ureg
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
-from nomad_simulations.schema_packages.outputs import Outputs
+from nomad_simulations.schema_packages.outputs import ElectronicStructureOutputs
 from nomad_simulations.schema_packages.properties import (
     AbsorptionSpectrum,
     ElectronicDensityOfStates,
@@ -54,7 +54,6 @@ class TestElectronicDensityOfStates:
             == 'http://fairmat-nfdi.eu/taxonomy/ElectronicDensityOfStates'
         )
         assert electronic_dos.name == 'ElectronicDensityOfStates'
-        assert electronic_dos.rank == []
 
     def test_resolve_energies_origin(self):
         """
@@ -68,7 +67,7 @@ class TestElectronicDensityOfStates:
         Test the `resolve_normalization_factor` method.
         """
         simulation = Simulation()
-        outputs = Outputs()
+        outputs = ElectronicStructureOutputs()
         # We only used the `simulation_electronic_dos` fixture to get the `ElectronicDensityOfStates` to test missing refs
         electronic_dos = simulation_electronic_dos.outputs[0].electronic_dos[0]
         electronic_dos.energies_origin = 0.5 * ureg.joule
@@ -232,7 +231,6 @@ class TestAbsorptionSpectrum:
         absorption_spectrum = AbsorptionSpectrum()
         assert absorption_spectrum.iri is None  # Add iri when available
         assert absorption_spectrum.name == 'AbsorptionSpectrum'
-        assert absorption_spectrum.rank == []
 
 
 class TestXASSpectrum:
@@ -248,7 +246,6 @@ class TestXASSpectrum:
         xas_spectrum = XASSpectrum()
         assert xas_spectrum.iri is None  # Add iri when available
         assert xas_spectrum.name == 'XASSpectrum'
-        assert xas_spectrum.rank == []
 
     @pytest.mark.parametrize(
         'xanes_energies, exafs_energies, xas_values',
@@ -283,6 +280,6 @@ class TestXASSpectrum:
             xas_spectrum.exafs_spectrum = exafs_spectrum
         xas_spectrum.generate_from_contributions(logger)
         if xas_spectrum.value is not None:
-            assert (xas_spectrum.value == xas_values).all()
+            assert xas_spectrum.value == xas_values
         else:
             assert xas_spectrum.value == xas_values

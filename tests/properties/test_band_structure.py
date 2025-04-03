@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
 
+from nomad_simulations.schema_packages.outputs import ElectronicStructureOutputs
 from nomad_simulations.schema_packages.properties import ElectronicEigenvalues
 
 from ..conftest import generate_electronic_eigenvalues
@@ -17,31 +18,22 @@ class TestElectronicEigenvalues:
 
     # ! Include this initial `test_default_quantities` method when testing your PhysicalProperty classes
     @pytest.mark.parametrize(
-        'n_bands, rank',
+        'n_bands',
         [
-            (None, None),
-            (10, [10]),
+            (None),
+            (10),
         ],
     )
-    def test_default_quantities(self, n_bands: Optional[int], rank: Optional[list]):
+    def test_default_quantities(self, n_bands: Optional[int]):
         """
         Test the default quantities assigned when creating an instance of the `HoppingMatrix` class.
         """
-        if n_bands is None:
-            with pytest.raises(ValueError) as exc_info:
-                electronic_eigenvalues = ElectronicEigenvalues(n_bands=n_bands)
-            assert (
-                str(exc_info.value)
-                == '`n_bands` is not defined during initialization of the class.'
-            )
-        else:
-            electronic_eigenvalues = ElectronicEigenvalues(n_bands=n_bands)
-            assert (
-                electronic_eigenvalues.iri
-                == 'http://fairmat-nfdi.eu/taxonomy/ElectronicEigenvalues'
-            )
-            assert electronic_eigenvalues.name == 'ElectronicEigenvalues'
-            assert electronic_eigenvalues.rank == rank
+        electronic_eigenvalues = ElectronicEigenvalues(n_bands=n_bands)
+        assert (
+            electronic_eigenvalues.iri
+            == 'http://fairmat-nfdi.eu/taxonomy/ElectronicEigenvalues'
+        )
+        assert electronic_eigenvalues.name == 'ElectronicEigenvalues'
 
     # @pytest.mark.parametrize(
     #     'occupation, result',

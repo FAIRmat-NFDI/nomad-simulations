@@ -23,7 +23,6 @@ class TestPermittivity:
         permittivity = Permittivity()
         assert permittivity.iri == 'http://fairmat-nfdi.eu/taxonomy/Permittivity'
         assert permittivity.name == 'Permittivity'
-        assert permittivity.rank == [3, 3]
 
     @pytest.mark.parametrize(
         'kmesh_grid, variables, result',
@@ -134,7 +133,6 @@ class TestPermittivity:
         if absorption_spectra is not None:
             assert len(absorption_spectra) == 3
             spectrum = absorption_spectra[1]
-            assert spectrum.rank == []
             assert spectrum.axis == 'yy'
             assert len(spectrum.value) == len(permittivity.variables[0].points)
             assert np.allclose(spectrum.value, result)
