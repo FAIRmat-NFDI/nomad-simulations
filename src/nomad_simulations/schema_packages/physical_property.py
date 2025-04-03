@@ -61,9 +61,8 @@ class PhysicalProperty(ArchiveSection):
     """
     A base section used to define the physical properties obtained in a simulation, experiment, or in a post-processing
     analysis. The main quantity of the `PhysicalProperty` is `value`, whose instantiation has to be overwritten in the derived classes
-    when inheriting from `PhysicalProperty`. It also contains `rank`, to define the tensor rank of the physical property, and
-    `variables`, to define the variables over which the physical property varies (see variables.py). This class can also store several
-    string identifiers and quantities for referencing and establishing the character of a physical property.
+    when inheriting from `PhysicalProperty`. It contains `variables`, to define the variables over which the physical property varies (see variables.py).
+    This class can also store several string identifiers and quantities for referencing and establishing the character of a physical property.
     """
 
     # TODO add `errors`
@@ -183,16 +182,12 @@ class PhysicalProperty(ArchiveSection):
     def full_shape(self) -> list[int]:
         """
         Full shape of the physical property. This quantity is calculated as a concatenation of the `variables_shape`
-        and `rank`:
+        and `value.shape`:
 
-            `full_shape = variables_shape + rank`
-
-        where `rank` is passed as an attribute of the `PhysicalProperty` and is related with the order of
-        the tensor of `value`, and `variables_shape` is obtained from the property-decorated function `variables_shape()`
-        and is related with the shapes of the `variables` over which the physical property varies.
+            `full_shape = variables_shape + value.shape`
 
         Example: a physical property which is a 3D vector and varies with `variables=[Temperature, ElectricField]`
-        will have `rank=[3]`, `variables_shape=[n_temperatures, n_electric_fields]`, and thus
+        will have `value.shape=[3]`, `variables_shape=[n_temperatures, n_electric_fields]`, and thus
         `full_shape=[n_temperatures, n_electric_fields, 3]`.
 
         Returns:

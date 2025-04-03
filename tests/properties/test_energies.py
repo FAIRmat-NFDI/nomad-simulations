@@ -19,7 +19,6 @@ class TestFermiLevel:
         fermi_level = FermiLevel()
         assert fermi_level.iri == 'http://fairmat-nfdi.eu/taxonomy/FermiLevel'
         assert fermi_level.name == 'FermiLevel'
-        assert fermi_level.rank == []
 
 
 class TestTotalEnergy:
