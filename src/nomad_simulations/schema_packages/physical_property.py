@@ -196,33 +196,10 @@ class PhysicalProperty(ArchiveSection):
         value_shape = self.value.shape if self.value is not None else []
         return self.variables_shape + value_shape
 
-    @property
-    def _new_value(self) -> Quantity:
-        """
-        Initialize a new `Quantity` object for the `value` quantity with the correct `shape` extracted from
-        the `full_shape` attribute. This copies the main attributes from `value` (`type`, `description`, `unit`).
-        It is used in the `__setattr__` method.
-
-        Returns:
-            (Quantity): The new `Quantity` object for setting the `value` quantity.
-        """
-        value_quantity = self.m_def.all_quantities.get('value')
-        if value_quantity is None:
-            return None
-        return Quantity(
-            type=value_quantity.type,
-            unit=value_quantity.unit,  # ? this can be moved to __setattr__
-            description=value_quantity.description,
-        )
-
     def __init__(
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
-        value = kwargs.pop('value', None)
         super().__init__(m_def, m_context, **kwargs)
-        if value is not None:
-            self.value = value
-
         # Checking if IRI is defined
         if self.iri is None:
             logger.warning(
@@ -250,9 +227,6 @@ class PhysicalProperty(ArchiveSection):
         return False
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        # Resolve if the physical property `is_derived` or not from another physical property.
         self.is_derived = self._is_derived()
 
 
