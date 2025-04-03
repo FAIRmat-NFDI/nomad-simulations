@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -220,14 +220,12 @@ class Simulation(BaseSimulation, Schema):
                 to the atom indices stored in system.
             """
             if not subsystems:
-                atom_indices = (
-                    system.atom_indices if system.atom_indices is not None else []
-                )
-                subsystem_labels = (
-                    [np.array(atom_labels)[atom_indices]]
-                    if atom_labels
-                    else ['Unknown' for atom in range(len(atom_indices))]
-                )
+                if system.atom_indices is not None and atom_labels:
+                    subsystem_labels = [atom_labels[i] for i in system.atom_indices]
+                elif system.atom_indices is not None:
+                    subsystem_labels = ['Unknown'] * len(system.atom_indices)
+                else:
+                    subsystem_labels = []
             else:
                 subsystem_labels = [
                     subsystem.branch_label
