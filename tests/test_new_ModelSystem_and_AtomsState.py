@@ -6,7 +6,7 @@ from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import (
-    AtomDefinition,
+    AtomDefn,
     AtomsState,
     CoreHole,
     HubbardInteractions,
@@ -46,11 +46,11 @@ class TestAtomsState:
         ],
     )
     def test_elemental_data_resolution(self, chemical_symbol, atomic_number):
-        # Create an AtomDefinition with the given data.
-        atom_def = AtomDefinition(
+        # Create an AtomDefn with the given data.
+        atom_def = AtomDefn(
             chemical_symbol=chemical_symbol, atomic_number=atomic_number
         )
-        # Create an AtomsState that references the AtomDefinition.
+        # Create an AtomsState that references the AtomDefn.
         atom_state = AtomsState(atom_definition_ref=atom_def)
         # resolve
         resolved_number = atom_state.atom_definition_ref.resolve_atomic_number(
@@ -71,7 +71,7 @@ class TestModelSystem:
         """
         Test that from_ase_atoms() correctly populates:
           - ModelSystem.positions (at the top level)
-          - ModelSystem.atom_states (each with an AtomDefinition)
+          - ModelSystem.atom_states (each with an AtomDefn)
         """
         # Create a dummy ASE Atoms object with 3 atoms (e.g., H, O, H)
         symbols = ['H', 'O', 'H']
@@ -111,7 +111,7 @@ class TestModelSystem:
         ms.n_atoms = len(positions)
         # Populate atom_states manually.
         for sym, num in zip(symbols, [1, 8, 1]):
-            atom_def = AtomDefinition(chemical_symbol=sym, atomic_number=num)
+            atom_def = AtomDefn(chemical_symbol=sym, atomic_number=num)
             state = AtomsState(atom_definition_ref=atom_def)
             ms.atom_states.append(state)
         # Create a Cell with lattice vectors and PBC.
@@ -363,7 +363,7 @@ class TestModelSystemUpdates:
         ms.positions = positions * ureg('angstrom')
         ms.n_atoms = len(positions)
         for sym, num in zip(symbols, [1, 1, 8]):
-            atom_def = AtomDefinition(chemical_symbol=sym, atomic_number=num)
+            atom_def = AtomDefn(chemical_symbol=sym, atomic_number=num)
             state = AtomsState(atom_definition_ref=atom_def)
             ms.atom_states.append(state)
         cf = ChemicalFormula()
@@ -439,3 +439,45 @@ class TestModelSystemUpdates:
 
         hierarchy = collect(root)
         assert hierarchy == expected, f'Expected {expected} but got {hierarchy}'
+
+
+def test_populate_atom_types():
+    """
+    Test that populate_atom_types() correctly extracts unique AtomDefn entries
+    from the atom_states subsection.
+    """
+    # Create a ModelSystem instance
+    ms = ModelSystem(is_representative=True)
+
+    # Simulate atom_states with duplicate atom definitions:
+    # Two entries for hydrogen (H, atomic_number=1, charge=0) and one for oxygen (O, atomic_number=8, charge=0).
+    test_data = [
+        ("H", 1, 0),
+        ("H", 1, 0),
+        ("O", 8, 0),
+    ]
+    
+    for sym, num, ch in test_data:
+        # Create an AtomDefn instance for each entry.
+        atom_def = AtomDefn(chemical_symbol=sym, atomic_number=num, charge=ch)
+        # Create an AtomsState that references this AtomDefn.
+        state = AtomsState(atom_definition_ref=atom_def)
+        ms.atom_states.append(state)
+    
+    # Ensure atom_types is initially empty.
+    ms.atom_types.clear()
+    assert len(ms.atom_types) == 0
+
+    # Call the new helper function using the globally imported logger.
+    ms.populate_atom_types(logger)
+
+    # We expect 2 unique definitions: one for H and one for O.
+    assert len(ms.atom_types) == 2, f"Expected 2 unique atom types, got {len(ms.atom_types)}"
+
+    # Verify that the unique keys match the expected values.
+    unique_keys = {
+        (atom_def.chemical_symbol, atom_def.atomic_number, atom_def.charge)
+        for atom_def in ms.atom_types
+    }
+    expected_keys = {("H", 1, 0), ("O", 8, 0)}
+    assert unique_keys == expected_keys, f"Expected {expected_keys}, got {unique_keys}"

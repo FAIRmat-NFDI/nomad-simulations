@@ -547,17 +547,17 @@ class HubbardInteractions(ArchiveSection):
                 )
 
 
-class AtomDefinition(Entity):
+class AtomDefn(Entity):
     """
-     A base section that defines a single atomic species or element, to be referenced
+    A base section that defines a single atomic species or element, to be referenced
     by `AtomsState` or other sections. It stores the essential properties of an
     element (symbol, atomic number and charge), ensures consistency between them, and can
     resolve one from the other if only one is provided.
 
     Typical usage:
-      - Create one `AtomDefinition` for each unique element (or pseudo-atom).
+      - Create one `AtomDefn` for each unique element (or pseudo-atom).
       - In simulation data, multiple `AtomsState` sections can then reference the
-        same `AtomDefinition`, thus avoiding repeated `chemical_symbol` or
+        same `AtomDefn`, thus avoiding repeated `chemical_symbol` or
         `atomic_number` in every single atom entry.
     """
 
@@ -644,9 +644,9 @@ class AtomsState(Entity):
     """
 
     atom_definition_ref = Quantity(
-        type=AtomDefinition,
+        type=AtomDefn,
         description="""
-        A reference to the `AtomDefinition` section that describes this atom's species. This
+        A reference to the `ParticleDefn` section that describes this atom's species. This
         reference avoids storing repeated elemental data (e.g., `chemical_symbol` and
         `atomic_number`) in every atom, ensuring that all atoms of the same type link back
         to a single shared definition.
@@ -660,3 +660,6 @@ class AtomsState(Entity):
     hubbard_interactions = SubSection(
         sub_section=HubbardInteractions.m_def, repeats=False
     )
+
+class ParticleState(Entity):
+    pass
