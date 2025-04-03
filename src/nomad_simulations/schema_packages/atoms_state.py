@@ -547,6 +547,36 @@ class HubbardInteractions(ArchiveSection):
                 )
 
 
+class SpinDefn(Entity):
+    """
+    Defines spin properties for a single atomic species.
+    This can include per-atom or per-orbital spin parameters.
+    """
+
+    # For collinear spin, a single value may suffice.
+    # For non-collinear, you might store a vector.
+    spin_type = Quantity(
+        type=MEnum('collinear', 'non-collinear'),
+        default='collinear',
+        description='Specifies whether the spin is treated as a scalar (collinear) or vector (non-collinear).',
+    )
+
+    # Typical per-atom spin value in collinear calculations (in Bohr magnetons)
+    atom_spin_moment = Quantity(
+        type=np.float64,
+        unit='bohr_magneton',
+        description='Scalar spin value per atom for collinear calculations.',
+    )
+
+    # For non-collinear calculations, store the spin vector.
+    atom_spin_vector = Quantity(
+        type=np.float64,
+        shape=['3'],
+        unit='bohr_magneton',
+        description='3D spin vector per atom for non-collinear calculations.',
+    )
+
+
 class AtomDefn(Entity):
     """
     A base section that defines a single atomic species or element, to be referenced
@@ -653,6 +683,10 @@ class AtomsState(Entity):
         """,
     )
 
+    spin_definition_ref = Quantity(
+        type=SpinDefn, description='Reference to the spin definition for this atom.'
+    )
+
     orbitals_state = SubSection(sub_section=OrbitalsState.m_def, repeats=True)
 
     core_hole = SubSection(sub_section=CoreHole.m_def, repeats=False)
@@ -660,6 +694,7 @@ class AtomsState(Entity):
     hubbard_interactions = SubSection(
         sub_section=HubbardInteractions.m_def, repeats=False
     )
+
 
 class ParticleState(Entity):
     pass

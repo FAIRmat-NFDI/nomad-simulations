@@ -452,18 +452,18 @@ def test_populate_atom_types():
     # Simulate atom_states with duplicate atom definitions:
     # Two entries for hydrogen (H, atomic_number=1, charge=0) and one for oxygen (O, atomic_number=8, charge=0).
     test_data = [
-        ("H", 1, 0),
-        ("H", 1, 0),
-        ("O", 8, 0),
+        ('H', 1, 0),
+        ('H', 1, 0),
+        ('O', 8, 0),
     ]
-    
+
     for sym, num, ch in test_data:
         # Create an AtomDefn instance for each entry.
         atom_def = AtomDefn(chemical_symbol=sym, atomic_number=num, charge=ch)
         # Create an AtomsState that references this AtomDefn.
         state = AtomsState(atom_definition_ref=atom_def)
         ms.atom_states.append(state)
-    
+
     # Ensure atom_types is initially empty.
     ms.atom_types.clear()
     assert len(ms.atom_types) == 0
@@ -472,12 +472,14 @@ def test_populate_atom_types():
     ms.populate_atom_types(logger)
 
     # We expect 2 unique definitions: one for H and one for O.
-    assert len(ms.atom_types) == 2, f"Expected 2 unique atom types, got {len(ms.atom_types)}"
+    assert len(ms.atom_types) == 2, (
+        f'Expected 2 unique atom types, got {len(ms.atom_types)}'
+    )
 
     # Verify that the unique keys match the expected values.
     unique_keys = {
         (atom_def.chemical_symbol, atom_def.atomic_number, atom_def.charge)
         for atom_def in ms.atom_types
     }
-    expected_keys = {("H", 1, 0), ("O", 8, 0)}
-    assert unique_keys == expected_keys, f"Expected {expected_keys}, got {unique_keys}"
+    expected_keys = {('H', 1, 0), ('O', 8, 0)}
+    assert unique_keys == expected_keys, f'Expected {expected_keys}, got {unique_keys}'

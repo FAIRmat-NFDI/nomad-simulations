@@ -52,9 +52,10 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import (
-    AtomDefn, 
+    AtomDefn,
     AtomsState,
-    ParticleState)
+    ParticleState,
+)
 from nomad_simulations.schema_packages.utils import (
     catch_not_implemented,
     get_sibling_section,
@@ -1230,9 +1231,7 @@ class ModelSystem(System):
         for symbol, atomic_number in zip(
             ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers()
         ):
-            atom_def = AtomDefn(
-                chemical_symbol=symbol, atomic_number=atomic_number
-            )
+            atom_def = AtomDefn(chemical_symbol=symbol, atomic_number=atomic_number)
             state = AtomsState(atom_definition_ref=atom_def)
             self.atom_states.append(state)
 
@@ -1303,7 +1302,7 @@ class ModelSystem(System):
             )
 
         return system_type, dimensionality
-    
+
     def populate_atom_types(self, logger: 'BoundLogger') -> None:
         """
         Populates the `atom_types` subsection with unique AtomDefn entries
@@ -1313,7 +1312,7 @@ class ModelSystem(System):
         for state in self.atom_states:
             atom_def = state.atom_definition_ref
             if atom_def is None:
-                logger.warning("Missing atom_definition_ref in one of the atom_states.")
+                logger.warning('Missing atom_definition_ref in one of the atom_states.')
                 continue
             # Create a key based on the essential properties
             key = (atom_def.chemical_symbol, atom_def.atomic_number, atom_def.charge)
@@ -1392,6 +1391,6 @@ class ModelSystem(System):
             self.elemental_composition = sec_chemical_formula.m_cache.get(
                 'elemental_composition', []
             )
-        
+
         # populate unique atom definitions
         self.populate_atom_types(logger)
