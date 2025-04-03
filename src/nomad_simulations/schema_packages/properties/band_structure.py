@@ -204,7 +204,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
             band_gap = ElectronicBandGap(is_derived=True, physical_property_ref=self)
 
             if (lumo - homo).magnitude < 0:
-                band_gap.value = [0.]
+                band_gap.value = [0.0]
             else:
                 band_gap.value = [lumo - homo]
         return band_gap

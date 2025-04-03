@@ -49,7 +49,6 @@ class TestCrystalFieldSplitting:
         """
         crystal_field = CrystalFieldSplitting(n_orbitals=n_orbitals)
         assert (
-            crystal_field.iri
-            == 'http://fairmat-nfdi.eu/taxonomy/CrystalFieldSplitting'
+            crystal_field.iri == 'http://fairmat-nfdi.eu/taxonomy/CrystalFieldSplitting'
         )
         assert crystal_field.name == 'CrystalFieldSplitting'
