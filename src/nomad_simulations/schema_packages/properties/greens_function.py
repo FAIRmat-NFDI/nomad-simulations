@@ -32,9 +32,6 @@ class BaseGreensFunction(PhysicalProperty):
     `variables` and can be: `WignerSeitz` (real space), `KMesh`, `MatsubaraFrequency`, `Frequency`, `Time`, or `ImaginaryTime`.
     For example, G(k, ω) will have `variables = [KMesh(points), RealFrequency(points)]`.
 
-    The `rank` is determined by the number of atoms and orbitals involved in correlations, so:
-        `rank = [n_atoms, n_correlated_orbitals]`
-
     Further information in M. Wallerberger et al., Comput. Phys. Commun. 235, 2 (2019).
     """
 
@@ -129,16 +126,6 @@ class BaseGreensFunction(PhysicalProperty):
         | 'iw' | MatsubaraFrequency |
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        # ! n_orbitals need to be set up during initialization of the class
-        self.rank = [
-            int(kwargs.get('n_atoms')),
-            int(kwargs.get('n_correlated_orbitals')),
-        ]
 
     def resolve_space_id(self) -> str:
         """
@@ -340,11 +327,6 @@ class QuasiparticleWeight(PhysicalProperty):
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        # ! n_orbitals need to be set up during initialization of the class
-        self.rank = [
-            int(kwargs.get('n_atoms')),
-            int(kwargs.get('n_correlated_orbitals')),
-        ]
         self.name = self.m_def.name
 
     def is_valid_quasiparticle_weight(self) -> bool:

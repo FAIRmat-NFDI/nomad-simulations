@@ -60,8 +60,6 @@ class FermiLevel(BaseEnergy):
     Energy required to add or extract a charge from a material at zero temperature. It can be also defined as the chemical potential at zero temperature.
     """
 
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
-
     iri = 'http://fairmat-nfdi.eu/taxonomy/FermiLevel'
 
     def __init__(

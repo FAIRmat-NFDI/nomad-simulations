@@ -39,8 +39,7 @@ class HoppingMatrix(PhysicalProperty):
         unit='joule',
         description="""
         Value of the hopping matrix in joules. The elements are complex numbers defined for each Wigner-Seitz point and
-        each pair of orbitals; thus, `rank = [n_orbitals, n_orbitals]`. Note this contains also the onsite values, i.e.,
-        it includes the Wigner-Seitz point (0, 0, 0), hence the `CrystalFieldSplitting` values.
+        each pair of orbitals. Note this contains also the onsite values, i.e., it includes the Wigner-Seitz point (0, 0, 0), hence the `CrystalFieldSplitting` values.
         """,
     )
 

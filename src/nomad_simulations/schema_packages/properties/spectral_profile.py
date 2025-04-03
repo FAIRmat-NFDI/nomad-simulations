@@ -33,7 +33,7 @@ class SpectralProfile(PhysicalProperty):
         description="""
         The value of the intensities of a spectral profile in arbitrary units.
         """,
-    )  # TODO check units and normalization_factor of DOS and Spectras and see whether they can be merged
+    )  # TODO check units and normalization_factor of DOS and Spectra and see whether they can be merged
 
     def is_valid_spectral_profile(self) -> bool:
         """
@@ -111,7 +111,6 @@ class ElectronicDensityOfStates(DOSProfile):
     Number of electronic states accessible for the charges per energy and per volume.
     """
 
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicDensityOfStates'
 
     spin_channel = Quantity(
@@ -499,8 +498,6 @@ class ElectronicDensityOfStates(DOSProfile):
 class AbsorptionSpectrum(SpectralProfile):
     """ """
 
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
-
     axis = Quantity(
         type=MEnum('xx', 'yy', 'zz'),
         description="""
@@ -521,8 +518,6 @@ class XASSpectrum(AbsorptionSpectrum):
     """
     X-ray Absorption Spectrum (XAS).
     """
-
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
 
     xanes_spectrum = SubSection(
         sub_section=AbsorptionSpectrum.m_def,
