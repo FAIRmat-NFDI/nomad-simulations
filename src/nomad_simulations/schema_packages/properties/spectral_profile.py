@@ -35,13 +35,9 @@ class SpectralProfile(PhysicalProperty):
         """,
     )  # TODO check units and normalization_factor of DOS and Spectra and see whether they can be merged
 
-    energies = SubSection(
-        sub_section=Energy.m_def
-    )
+    energies = SubSection(sub_section=Energy.m_def)
 
-    frequencies = SubSection(
-        sub_section=Energy.m_def
-    )
+    frequencies = SubSection(sub_section=Energy.m_def)
 
     def is_valid_spectral_profile(self) -> bool:
         """
@@ -167,7 +163,7 @@ class ElectronicDensityOfStates(DOSProfile):
         description="""
         Energy grid points of the electronic DOS.
         """,
-    )  #? convert to `Quantity`
+    )  # ? convert to `Quantity`
 
     projected_dos = SubSection(
         sub_section=DOSProfile.m_def,
@@ -441,7 +437,7 @@ class ElectronicDensityOfStates(DOSProfile):
                 atom_dos = DOSProfile(
                     name=f'atom {ref.chemical_symbol}',
                     entity_ref=ref,
-                    energies=self.energies, #! centralize energy axis
+                    energies=self.energies,  #! centralize energy axis
                 )
                 orbital_values = [
                     dos.value.magnitude for dos in data
@@ -572,7 +568,9 @@ class XASSpectrum(AbsorptionSpectrum):
                     'The XANES `Energy` grid points are not below the EXAFS `Energy` grid points.'
                 )
                 return
-            self.energies = Energy(points=np.concatenate([xanes_energies, exafs_energies]))
+            self.energies = Energy(
+                points=np.concatenate([xanes_energies, exafs_energies])
+            )
             # Concatenate XANES and EXAFS `value` if they have the same shape ['n_energies']  # ? what about the variables
             try:
                 self.value = np.concatenate(

@@ -1,11 +1,12 @@
 from typing import TYPE_CHECKING, Optional, Union
 
-from nomad_simulations.schema_packages.variables import KLinePath
 import numpy as np
 import pint
 from nomad.config import config
 from nomad.metainfo import Quantity, SubSection
 from nomad.metainfo.data_type import m_float64
+
+from nomad_simulations.schema_packages.variables import KLinePath
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive

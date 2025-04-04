@@ -159,7 +159,7 @@ class BaseGreensFunction(PhysicalProperty):
         elif self.matsubara_frequency is not None:
             time_tag += 'iw'
 
-        if (space_id := space_tag + time_tag):
+        if space_id := space_tag + time_tag:
             return space_id
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:

@@ -31,7 +31,8 @@ from nomad_simulations.schema_packages.properties import (
     ElectronicDensityOfStates,
     ElectronicEigenvalues,
 )
-from nomad_simulations.schema_packages.variables import Energy2 as Energy, KLinePath
+from nomad_simulations.schema_packages.variables import Energy2 as Energy
+from nomad_simulations.schema_packages.variables import KLinePath
 
 from . import logger
 
@@ -350,7 +351,9 @@ def generate_electronic_eigenvalues(
     )
     electronic_eigenvalues = ElectronicEigenvalues(n_bands=2)
     outputs.electronic_eigenvalues = [electronic_eigenvalues]
-    electronic_eigenvalues.k_path = KLinePath(points=model_method.numerical_settings[0].k_line_path)
+    electronic_eigenvalues.k_path = KLinePath(
+        points=model_method.numerical_settings[0].k_line_path
+    )
     if value is not None:
         electronic_eigenvalues.value = value
     if occupation is not None:

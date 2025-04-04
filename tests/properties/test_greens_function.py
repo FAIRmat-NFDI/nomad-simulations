@@ -21,7 +21,12 @@ from nomad_simulations.schema_packages.variables import (
 from . import logger
 
 
-def set_variables(gfs: BaseGreensFunction, variables: list[Union[WignerSeitz, KMesh, Time, ImaginaryTime, Frequency, MatsubaraFrequency]]) -> BaseGreensFunction:
+def set_variables(
+    gfs: BaseGreensFunction,
+    variables: list[
+        Union[WignerSeitz, KMesh, Time, ImaginaryTime, Frequency, MatsubaraFrequency]
+    ],
+) -> BaseGreensFunction:
     """
     Set the variables for the `BaseGreensFunction` class.
     """

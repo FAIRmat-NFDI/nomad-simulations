@@ -87,7 +87,7 @@ class Permittivity(PhysicalProperty):
                 axis=self._axes_map[i],
                 frequencies=self.frequencies,
                 value=val,
-                physical_property_ref=self, #?
+                physical_property_ref=self,  # ?
             )
             spectra.append(absorption_spectrum)
         return spectra
