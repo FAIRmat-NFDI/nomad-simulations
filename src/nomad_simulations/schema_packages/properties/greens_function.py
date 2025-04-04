@@ -161,6 +161,7 @@ class BaseGreensFunction(PhysicalProperty):
 
         if space_id := space_tag + time_tag:
             return space_id
+        return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
