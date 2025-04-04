@@ -4,7 +4,6 @@ import numpy as np
 import pint
 from nomad.config import config
 from nomad.metainfo import MEnum, Quantity, SubSection
-from nomad.metainfo.data_type import m_float64
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -28,7 +27,7 @@ class SpectralProfile(PhysicalProperty):
     """
 
     value = Quantity(
-        type=m_float64().no_shape_check(),
+        type=np.float64,
         shape=['*'],
         description="""
         The value of the intensities of a spectral profile in arbitrary units.

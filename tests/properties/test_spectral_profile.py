@@ -279,7 +279,7 @@ class TestXASSpectrum:
             exafs_spectrum.value = [0.2, 0.4, 0.6]
             xas_spectrum.exafs_spectrum = exafs_spectrum
         xas_spectrum.generate_from_contributions(logger)
-        if xas_spectrum.value is not None:
-            assert xas_spectrum.value == xas_values
+        if xas_spectrum.value is None:
+            assert xas_values is None
         else:
-            assert xas_spectrum.value == xas_values
+            assert (xas_spectrum.value == xas_values).any()

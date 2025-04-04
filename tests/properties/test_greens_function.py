@@ -166,8 +166,9 @@ class TestQuasiparticleWeight:
         """
         Test the `resolve_system_correlation_strengths` method of the `QuasiparticleWeight` class.
         """
-        quasiparticle_weight = QuasiparticleWeight(n_atoms=1, n_correlated_orbitals=3)
-        quasiparticle_weight.value = value
+        quasiparticle_weight = QuasiparticleWeight(
+            n_atoms=1, n_correlated_orbitals=3, value=value
+        )
         assert quasiparticle_weight.resolve_system_correlation_strengths() == result
 
     @pytest.mark.parametrize(
@@ -186,7 +187,8 @@ class TestQuasiparticleWeight:
         """
         Test the `normalize` method of the `QuasiparticleWeight` class.
         """
-        quasiparticle_weight = QuasiparticleWeight(n_atoms=1, n_correlated_orbitals=3)
-        quasiparticle_weight.value = value
+        quasiparticle_weight = QuasiparticleWeight(
+            n_atoms=1, n_correlated_orbitals=3, value=value
+        )
         quasiparticle_weight.normalize(archive=EntryArchive(), logger=logger)
         assert quasiparticle_weight.system_correlation_strengths == result

@@ -159,12 +159,12 @@ def generate_scf_electronic_band_gap_template(
     for i in range(n_scf_steps):
         value = 1 + sum([1 / (10**j) for j in range(1, i + 2)])
         scf_step = ElectronicStructureOutputs(
-            electronic_band_gaps=[ElectronicBandGap(value=[value])]
+            electronic_band_gaps=[ElectronicBandGap(value=value)]
         )
         scf_outputs.scf_steps.append(scf_step)
     # Add a SCF calculated PhysicalProperty
     if value is not None:
-        scf_outputs.electronic_band_gaps.append(ElectronicBandGap(value=[value]))
+        scf_outputs.electronic_band_gaps.append(ElectronicBandGap(value=value))
     else:
         scf_outputs.electronic_band_gaps.append(ElectronicBandGap())
     # and a `SelfConsistency` ref section
@@ -200,7 +200,6 @@ def generate_simulation_electronic_dos(
     variables_energy = Energy(points=energy_points * ureg.joule)
     electronic_dos = ElectronicDensityOfStates(energies=variables_energy)
     outputs.electronic_dos.append(electronic_dos)
-    # electronic_dos.value = total_dos * ureg('1/joule')
     orbital_s_Ga_pdos = DOSProfile(
         energies=variables_energy,
         entity_ref=model_system.cell[0].atoms_state[0].orbitals_state[0],

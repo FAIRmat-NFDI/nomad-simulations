@@ -316,7 +316,7 @@ class QuasiparticleWeight(PhysicalProperty):
         type=m_float64().no_shape_check(),
         shape=['*'],
         description="""
-        Value of the quasiparticle weight matrices.
+        Value of the quasi-particle weight matrices.
         """,
     )
 

@@ -4,7 +4,6 @@ import numpy as np
 import pint
 from nomad.config import config
 from nomad.metainfo import Quantity, SubSection
-from nomad.metainfo.data_type import m_float64
 
 from nomad_simulations.schema_packages.variables import KLinePath
 
@@ -43,9 +42,9 @@ class BaseElectronicEigenvalues(PhysicalProperty):
     )
 
     value = Quantity(
-        type=m_float64().no_shape_check(),
+        type=np.float64,
         unit='joule',
-        shape=['*'],
+        shape=['*', '*'],
         description="""
         Value of the electronic eigenvalues.
         """,
@@ -206,9 +205,9 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
             band_gap = ElectronicBandGap(is_derived=True, physical_property_ref=self)
 
             if (lumo - homo).magnitude < 0:
-                band_gap.value = [0.0]
+                band_gap.value = 0.0
             else:
-                band_gap.value = [lumo - homo]
+                band_gap.value = lumo - homo
         return band_gap
 
     # TODO fix this method once `FermiSurface` property is implemented

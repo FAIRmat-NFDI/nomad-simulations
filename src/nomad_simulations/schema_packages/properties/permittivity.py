@@ -1,8 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 
-from nomad.metainfo import MEnum, Quantity
+from nomad.metainfo import MEnum, Quantity, SubSection
 from nomad.metainfo.data_type import m_complex128
-from nomad.metainfo.metainfo import SubSection
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive

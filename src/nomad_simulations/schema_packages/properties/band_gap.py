@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 import pint
 from nomad.metainfo import MEnum, Quantity
-from nomad.metainfo.data_type import m_float64
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -51,9 +50,8 @@ class ElectronicBandGap(PhysicalProperty):
     )
 
     value = Quantity(
-        type=m_float64().no_shape_check(),
+        type=np.float64,
         unit='joule',
-        shape=['*'],
         description="""
         The value of the electronic band gap. This value has to be positive, otherwise it will
         prop an error and be set to None by the `normalize()` function.
@@ -73,20 +71,12 @@ class ElectronicBandGap(PhysicalProperty):
         Args:
             logger (BoundLogger): The logger to log messages.
         """
-        value = self.value.magnitude
-        if not isinstance(self.value.magnitude, np.ndarray):  # for scalars
-            value = np.array(
-                [value]
-            )  # ! check this when talking with Lauri and Theodore
-
         # Set the value to 0 when it is negative
-        if (value < 0).any():
+        if (self.value < 0).any():
             logger.error('The electronic band gap cannot be defined negative.')
             return None
 
-        if not isinstance(self.value.magnitude, np.ndarray):  # for scalars
-            value = value[0]
-        return value * self.value.u
+        return self.value
 
     def resolve_type(self, logger: 'BoundLogger') -> Optional[str]:
         """
@@ -133,9 +123,4 @@ class ElectronicBandGap(PhysicalProperty):
             return
 
         # Resolve the `type` of the electronic band gap from `momentum_transfer`, ONLY for scalar `value`
-        if isinstance(self.value.magnitude, np.ndarray):
-            logger.info(
-                'We do not support `type` which describe individual elements in an array `value`.'
-            )
-        else:
-            self.type = self.resolve_type(logger)
+        self.type = self.resolve_type(logger)

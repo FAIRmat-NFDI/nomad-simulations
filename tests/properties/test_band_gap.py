@@ -41,7 +41,7 @@ class TestElectronicBandGap:
         Test the `validate_values` method.
         """
         electronic_band_gap = ElectronicBandGap()
-        electronic_band_gap.value = [value] * ureg.joule
+        electronic_band_gap.value = value * ureg.joule
         validated_value = electronic_band_gap.validate_values(logger)
         if validated_value is not None:
             assert np.isclose(validated_value.magnitude, result)
@@ -83,7 +83,7 @@ class TestElectronicBandGap:
         `value` and another with a temperature-dependent `value`
         """
         scalar_band_gap = ElectronicBandGap(type='direct')
-        scalar_band_gap.value = [1.0] * ureg.joule
+        scalar_band_gap.value = 1.0 * ureg.joule
         scalar_band_gap.normalize(EntryArchive(), logger)
         assert scalar_band_gap.type == 'direct'
         assert np.isclose(scalar_band_gap.value.magnitude, 1.0)
