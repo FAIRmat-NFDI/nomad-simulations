@@ -60,18 +60,18 @@ class TestOutputs:
             # no properties to extract
             ([], [], 0, []),
             # non-spin polarized case
-            ([ElectronicBandGap(variables=[])], [2.0], 0, []),
+            ([ElectronicBandGap()], [2.0], 0, []),
             # spin polarized case
             (
                 [
-                    ElectronicBandGap(variables=[], spin_channel=0),
-                    ElectronicBandGap(variables=[], spin_channel=1),
+                    ElectronicBandGap(spin_channel=0),
+                    ElectronicBandGap(spin_channel=1),
                 ],
                 [1.0, 1.5],
                 2,
                 [
-                    ElectronicBandGap(variables=[], spin_channel=0),
-                    ElectronicBandGap(variables=[], spin_channel=1),
+                    ElectronicBandGap(spin_channel=0),
+                    ElectronicBandGap(spin_channel=1),
                 ],
             ),
         ],

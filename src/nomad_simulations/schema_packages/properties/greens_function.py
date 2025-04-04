@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
-from nomad.metainfo import MEnum, Quantity
+from nomad.metainfo import MEnum, Quantity, SubSection
 from nomad.metainfo.data_type import m_float64
 
 if TYPE_CHECKING:
@@ -12,7 +12,6 @@ if TYPE_CHECKING:
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
-from nomad_simulations.schema_packages.utils import get_variables
 from nomad_simulations.schema_packages.variables import (
     Frequency,
     ImaginaryTime,
@@ -28,9 +27,9 @@ class BaseGreensFunction(PhysicalProperty):
     A base class used to define shared commonalities between Green's function-related properties. This is the case for `ElectronicGreensFunction`,
     `ElectronicSelfEnergy`, `HybridizationFunction` in DMFT simulations.
 
-    These physical properties are matrices matrix represented in different spaces. These spaces are stored in
-    `variables` and can be: `WignerSeitz` (real space), `KMesh`, `MatsubaraFrequency`, `Frequency`, `Time`, or `ImaginaryTime`.
-    For example, G(k, ω) will have `variables = [KMesh(points), RealFrequency(points)]`.
+    These physical properties are matrices matrix represented in different spaces. These spaces can be:
+    `WignerSeitz` (real space), `KMesh`, `MatsubaraFrequency`, `Frequency`, `Time`, or `ImaginaryTime`.
+    For example, G(k, ω) will have corresponds to `k_mesh` and `real_frequency` being set.
 
     Further information in M. Wallerberger et al., Comput. Phys. Commun. 235, 2 (2019).
     """
@@ -108,7 +107,7 @@ class BaseGreensFunction(PhysicalProperty):
         description="""
         String used to identify the space in which the Green's function property is represented. The spaces are:
 
-        | `space_id` | `variables` |
+        | `space_id` | variable type |
         | ------ | ------ |
         | 'r' | WignerSeitz |
         | 'rt' | WignerSeitz + Time |
@@ -127,44 +126,41 @@ class BaseGreensFunction(PhysicalProperty):
         """,
     )
 
+    wigner_seitz = SubSection(sub_section=WignerSeitz.m_def)
+
+    k_mesh = SubSection(sub_section=KMesh.m_def)
+
+    matsubara_frequency = SubSection(sub_section=MatsubaraFrequency.m_def)
+
+    real_frequency = SubSection(sub_section=Frequency.m_def)
+
+    time = SubSection(sub_section=Time.m_def)
+
+    imaginary_time = SubSection(sub_section=ImaginaryTime.m_def)
+
     def resolve_space_id(self) -> str:
         """
-        Resolves the `space_id` based on the stored `variables` in the class.
-
-        Returns:
-            str: The resolved `space_id` of the Green's function property.
+        Resolves the `space_id` of the Green's function property.
         """
-        _real_space_map = {
-            'r': WignerSeitz,  # ? check if this is correct
-            'k': KMesh,
-        }
-        _time_space_map = {
-            't': Time,
-            'it': ImaginaryTime,
-            'w': Frequency,
-            'iw': MatsubaraFrequency,
-        }
 
-        def find_space_id(space_map: dict) -> str:
-            """
-            Finds the id string for a given map.
+        space_tag = ''
+        if self.wigner_seitz is not None:
+            space_tag += 'r'
+        elif self.k_mesh is not None:
+            space_tag += 'k'
 
-            Args:
-                space_map (dict[str, Variables]): _description_
+        time_tag = ''
+        if self.time is not None:
+            time_tag += 't'
+        elif self.imaginary_time is not None:
+            time_tag += 'it'
+        elif self.real_frequency is not None:
+            time_tag += 'w'
+        elif self.matsubara_frequency is not None:
+            time_tag += 'iw'
 
-            Returns:
-                str: _description_
-            """
-            for space_id, variable_cls in space_map.items():
-                space_variable = get_variables(
-                    variables=self.variables, variable_cls=variable_cls
-                )
-                if len(space_variable) > 0:
-                    return space_id
-            return ''
-
-        space_id = find_space_id(_real_space_map) + find_space_id(_time_space_map)
-        return space_id if space_id else None
+        if (space_id := space_tag + time_tag):
+            return space_id
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)

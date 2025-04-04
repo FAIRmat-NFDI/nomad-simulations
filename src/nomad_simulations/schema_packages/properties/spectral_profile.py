@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
-from nomad_simulations.schema_packages.utils import get_sibling_section, get_variables
+from nomad_simulations.schema_packages.utils import get_sibling_section
 from nomad_simulations.schema_packages.variables import Energy2 as Energy
 
 configuration = config.get_plugin_entry_point(
@@ -34,6 +34,14 @@ class SpectralProfile(PhysicalProperty):
         The value of the intensities of a spectral profile in arbitrary units.
         """,
     )  # TODO check units and normalization_factor of DOS and Spectra and see whether they can be merged
+
+    energies = SubSection(
+        sub_section=Energy.m_def
+    )
+
+    frequencies = SubSection(
+        sub_section=Energy.m_def
+    )
 
     def is_valid_spectral_profile(self) -> bool:
         """
@@ -65,6 +73,13 @@ class DOSProfile(SpectralProfile):
         unit='1/joule',
         description="""
         The value of the electronic DOS.
+        """,
+    )
+
+    energies = SubSection(
+        sub_section=Energy.m_def,
+        description="""
+        Energy grid points of the projected electronic DOS.
         """,
     )
 
@@ -147,6 +162,13 @@ class ElectronicDensityOfStates(DOSProfile):
     #     """,
     # )
 
+    energies = SubSection(
+        sub_section=Energy.m_def,
+        description="""
+        Energy grid points of the electronic DOS.
+        """,
+    )  #? convert to `Quantity`
+
     projected_dos = SubSection(
         sub_section=DOSProfile.m_def,
         repeats=True,
@@ -171,7 +193,7 @@ class ElectronicDensityOfStates(DOSProfile):
 
     def resolve_energies_origin(
         self,
-        energies: pint.Quantity,
+        energies_points: pint.Quantity,
         fermi_level: Optional[pint.Quantity],
         logger: 'BoundLogger',
     ) -> Optional[pint.Quantity]:
@@ -181,19 +203,12 @@ class ElectronicDensityOfStates(DOSProfile):
 
         Args:
             fermi_level (Optional[pint.Quantity]): The resolved Fermi level.
-            energies (pint.Quantity): The grid points of the `Energy` variable.
+            energies_points (pint.Quantity): The grid points of the `Energy` variable.
             logger (BoundLogger): The logger to log messages.
 
         Returns:
             (Optional[pint.Quantity]): The resolved origin of reference for the energies.
         """
-        # Check if the variables contain more than one variable (different than Energy)
-        # ? Is this correct or should be use the index of energies to extract the proper shape element in `self.value` being used for `dos_values`?
-        if len(self.variables) > 1:
-            logger.warning(
-                'The ElectronicDensityOfStates section contains more than one variable. We cannot extract the energy reference.'
-            )
-            return None
 
         # Extract the `ElectronicEigenvalues` section to get the `highest_occupied` and `lowest_unoccupied` energies
         # TODO implement once `ElectronicEigenvalues` is in the schema
@@ -216,8 +231,8 @@ class ElectronicDensityOfStates(DOSProfile):
         # If it is very far away, normalization may be very inaccurate and we do not report it.
         dos_values = self.value.magnitude
         eref = highest_occupied_energy if fermi_level is None else fermi_level
-        fermi_idx = (np.abs(energies - eref)).argmin()
-        fermi_energy_closest = energies[fermi_idx]
+        fermi_idx = (np.abs(energies_points - eref)).argmin()
+        fermi_energy_closest = energies_points[fermi_idx]
         distance = np.abs(fermi_energy_closest - eref)
         single_peak_fermi = False
         if distance.magnitude <= configuration.dos_energy_tolerance:
@@ -227,7 +242,7 @@ class ElectronicDensityOfStates(DOSProfile):
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies[idx])
+                    energy_distance = np.abs(eref - energies_points[idx])
                 except IndexError:
                     break
                 if energy_distance.magnitude > configuration.dos_energy_tolerance:
@@ -243,7 +258,7 @@ class ElectronicDensityOfStates(DOSProfile):
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies[idx])
+                    energy_distance = np.abs(eref - energies_points[idx])
                 except IndexError:
                     break
                 if energy_distance.magnitude > configuration.dos_energy_tolerance:
@@ -270,7 +285,7 @@ class ElectronicDensityOfStates(DOSProfile):
                         break
                     if value > configuration.dos_intensities_threshold:
                         idx = idx if idx == idx_descend else idx + 1
-                        self.m_cache['highest_occupied_energy'] = energies[idx]
+                        self.m_cache['highest_occupied_energy'] = energies_points[idx]
                         break
                     idx -= 1
                 # Look for lowest unoccupied energy above idx_ascend
@@ -282,7 +297,7 @@ class ElectronicDensityOfStates(DOSProfile):
                         break
                     if value > configuration.dos_intensities_threshold:
                         idx = idx if idx == idx_ascend else idx - 1
-                        self.m_cache['highest_occupied_energy'] = energies[idx]
+                        self.m_cache['highest_occupied_energy'] = energies_points[idx]
                         break
                     idx += 1
 
@@ -408,14 +423,6 @@ class ElectronicDensityOfStates(DOSProfile):
         if self.projected_dos is None or len(self.projected_dos) == 0:
             return None
 
-        # Extract `Energy` variables
-        energies = get_variables(self.variables, Energy)
-        if len(energies) != 1:
-            logger.warning(
-                'The `ElectronicDensityOfStates` does not contain an `Energy` variable to extract the DOS.'
-            )
-            return None
-
         # We distinguish between orbital and atom `projected_dos`
         orbital_projected = self.extract_projected_dos('orbital', logger)
         atom_projected = self.extract_projected_dos('atom', logger)
@@ -434,7 +441,7 @@ class ElectronicDensityOfStates(DOSProfile):
                 atom_dos = DOSProfile(
                     name=f'atom {ref.chemical_symbol}',
                     entity_ref=ref,
-                    variables=energies,
+                    energies=self.energies, #! centralize energy axis
                 )
                 orbital_values = [
                     dos.value.magnitude for dos in data
@@ -458,11 +465,9 @@ class ElectronicDensityOfStates(DOSProfile):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Initial check to see if `variables` contains the required `Energy` variable
-        energies = get_variables(self.variables, Energy)
-        if len(energies) != 0:
+        # Initial check to see whether `energies` is defined
+        if self.energies is None:
             return
-        energies = energies[0].points
 
         # Resolve `fermi_level` from a sibling section with respect to `ElectronicDensityOfStates`
         fermi_level = get_sibling_section(
@@ -472,7 +477,7 @@ class ElectronicDensityOfStates(DOSProfile):
             fermi_level = fermi_level.value
         # and the `energies_origin` from the sibling `ElectronicEigenvalues` section
         self.energies_origin = self.resolve_energies_origin(
-            energies, fermi_level, logger
+            self.energies.points, fermi_level, logger
         )
         if self.energies_origin is None:
             logger.info('Could not resolve the `energies_origin` for the DOS')
@@ -553,24 +558,22 @@ class XASSpectrum(AbsorptionSpectrum):
         # TODO check if this method is general enough
         if self.xanes_spectrum is not None and self.exafs_spectrum is not None:
             # Concatenate XANE and EXAFS `Energy` grid points
-            xanes_variables = get_variables(self.xanes_spectrum.variables, Energy)
-            exafs_variables = get_variables(self.exafs_spectrum.variables, Energy)
+            xanes_variables = self.xanes_spectrum.energies
+            exafs_variables = self.exafs_spectrum.energies
             if len(xanes_variables) == 0 or len(exafs_variables) == 0:
                 logger.warning(
                     'Could not extract the `Energy` grid points from XANES or EXAFS.'
                 )
                 return
-            xanes_energies = xanes_variables[0].points
-            exafs_energies = exafs_variables[0].points
+            xanes_energies = xanes_variables.points
+            exafs_energies = exafs_variables.points
             if xanes_energies.max() > exafs_energies.min():
                 logger.warning(
                     'The XANES `Energy` grid points are not below the EXAFS `Energy` grid points.'
                 )
                 return
-            self.variables = [
-                Energy(points=np.concatenate([xanes_energies, exafs_energies]))
-            ]
-            # Concatenate XANES and EXAFS `value` if they have the same shape ['n_energies']
+            self.energies = Energy(points=np.concatenate([xanes_energies, exafs_energies]))
+            # Concatenate XANES and EXAFS `value` if they have the same shape ['n_energies']  # ? what about the variables
             try:
                 self.value = np.concatenate(
                     [self.xanes_spectrum.value, self.exafs_spectrum.value]

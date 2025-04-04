@@ -110,7 +110,7 @@ class PhysicalProperty(ArchiveSection):
         # ! add more examples in the description to improve the understanding of this quantity
     )
 
-    variables = SubSection(sub_section=Variables.m_def, repeats=True)
+    # variables = SubSection(sub_section=Variables.m_def, repeats=True)
 
     # * `value` must be overwritten in the derived classes defining its type, unit, and description
     # TODO use abstract to enforce policy?
@@ -162,21 +162,21 @@ class PhysicalProperty(ArchiveSection):
         """,
     )
 
-    @property
-    def variables_shape(self) -> Optional[list]:
-        """
-        Shape of the variables over which the physical property varies. This is extracted from
-        `Variables.n_points` and appended in a list.
-
-        Example, a physical property which varies with `Temperature` and `ElectricField` will
-        return `variables_shape = [n_temperatures, n_electric_fields]`.
-
-        Returns:
-            (list): The shape of the variables over which the physical property varies.
-        """
-        if self.variables is not None:
-            return [v.get_n_points(logger) for v in self.variables]
-        return []
+    # @property
+    # def variables_shape(self) -> Optional[list]:
+    #    """
+    #    Shape of the variables over which the physical property varies. This is extracted from
+    #    `Variables.n_points` and appended in a list.
+    #
+    #    Example, a physical property which varies with `Temperature` and `ElectricField` will
+    #    return `variables_shape = [n_temperatures, n_electric_fields]`.
+    #
+    #    Returns:
+    #        (list): The shape of the variables over which the physical property varies.
+    #    """
+    #    if self.variables is not None:
+    #        return [v.get_n_points(logger) for v in self.variables]
+    #    return []
 
     @property
     def full_shape(self) -> list[int]:
@@ -194,7 +194,8 @@ class PhysicalProperty(ArchiveSection):
             (list): The full shape of the physical property.
         """
         value_shape = self.value.shape if self.value is not None else []
-        return self.variables_shape + value_shape
+        # return self.variables_shape + value_shape
+        return [] + value_shape
 
     def __init__(
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs

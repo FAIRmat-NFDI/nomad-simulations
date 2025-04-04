@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING, Optional
 
 from nomad.metainfo import MEnum, Quantity
 from nomad.metainfo.data_type import m_complex128
+from nomad.metainfo.metainfo import SubSection
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -12,7 +13,6 @@ from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.spectral_profile import (
     AbsorptionSpectrum,
 )
-from nomad_simulations.schema_packages.utils import get_variables
 from nomad_simulations.schema_packages.variables import Frequency, KMesh
 
 # TODO add `DielectricStrength` when we have examples and understand how to extract it from the `Permittivity` tensor.
@@ -45,6 +45,10 @@ class Permittivity(PhysicalProperty):
         """,
     )
 
+    frequencies = SubSection(sub_section=Frequency.m_def)
+
+    q_mesh = SubSection(sub_section=KMesh.m_def)
+
     # ? We need use cases to understand if we need to define contributions to the permittivity tensor.
     # ? `ionic` and `electronic` contributions are common in the literature.
 
@@ -57,10 +61,7 @@ class Permittivity(PhysicalProperty):
         self._axes_map = ['xx', 'yy', 'zz']
 
     def resolve_type(self) -> str:
-        frequencies = get_variables(self.variables, Frequency)
-        if len(frequencies) > 0:
-            return 'dynamic'
-        return 'static'
+        return 'static' if self.frequencies is None else 'dynamic'
 
     def extract_absorption_spectra(
         self, logger: 'BoundLogger'
@@ -68,16 +69,12 @@ class Permittivity(PhysicalProperty):
         """
         Extract the absorption spectrum from the imaginary part of the permittivity tensor.
         """
-        # If the `permittivity` depends on the scattering vector `q`, then we cannot extract the absorption spectrum
-        q_mesh = get_variables(self.variables, KMesh)
-        if len(q_mesh) > 0:
+        if self.q_mesh is not None:
             logger.warning(
                 'The `permittivity` depends on the scattering vector `q`, so that we cannot extract the absorption spectrum.'
             )
             return None
-        # Extract the `Frequency` variable to extract the absorption spectrum
-        frequencies = get_variables(self.variables, Frequency)
-        if len(frequencies) == 0:
+        if self.frequencies is None:
             logger.warning(
                 'The `permittivity` does not have a `Frequency` variable to extract the absorption spectrum.'
             )
@@ -87,10 +84,11 @@ class Permittivity(PhysicalProperty):
         for i in range(3):
             val = self.value[:, i, i].imag
             absorption_spectrum = AbsorptionSpectrum(
-                axis=self._axes_map[i], variables=frequencies
+                axis=self._axes_map[i],
+                frequencies=self.frequencies,
+                value=val,
+                physical_property_ref=self, #?
             )
-            absorption_spectrum.value = val
-            absorption_spectrum.physical_property_ref = self
             spectra.append(absorption_spectrum)
         return spectra
 

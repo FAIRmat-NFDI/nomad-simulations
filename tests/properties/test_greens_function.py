@@ -21,9 +21,29 @@ from nomad_simulations.schema_packages.variables import (
 from . import logger
 
 
+def set_variables(gfs: BaseGreensFunction, variables: list[Union[WignerSeitz, KMesh, Time, ImaginaryTime, Frequency, MatsubaraFrequency]]) -> BaseGreensFunction:
+    """
+    Set the variables for the `BaseGreensFunction` class.
+    """
+    for variable in variables:
+        if isinstance(variable, WignerSeitz):
+            gfs.wigner_seitz = variable
+        elif isinstance(variable, KMesh):
+            gfs.k_mesh = variable
+        elif isinstance(variable, Time):
+            gfs.time = variable
+        elif isinstance(variable, ImaginaryTime):
+            gfs.imaginary_time = variable
+        elif isinstance(variable, Frequency):
+            gfs.real_frequency = variable
+        elif isinstance(variable, MatsubaraFrequency):
+            gfs.matsubara_frequency = variable
+    return gfs
+
+
 class TestBaseGreensFunction:
     """
-    Test the `BaseGreensFunction` class defined in `properties/greens_function.py`.aa
+    Test the `BaseGreensFunction` class defined in `properties/greens_function.py`.
     """
 
     @pytest.mark.parametrize(
@@ -59,7 +79,7 @@ class TestBaseGreensFunction:
         Test the `resolve_space_id` method of the `BaseGreensFunction` class.
         """
         gfs = BaseGreensFunction(n_atoms=1, n_correlated_orbitals=1)
-        gfs.variables = variables
+        gfs = set_variables(gfs, variables)
         assert gfs.resolve_space_id() == result
 
     @pytest.mark.parametrize(
@@ -98,7 +118,7 @@ class TestBaseGreensFunction:
         Test the `normalize` method of the `BaseGreensFunction` class.
         """
         gfs = BaseGreensFunction(n_atoms=1, n_correlated_orbitals=1)
-        gfs.variables = variables
+        gfs = set_variables(gfs, variables)
         gfs.space_id = space_id if space_id else None
         gfs.normalize(archive=EntryArchive(), logger=logger)
         assert gfs.space_id == result

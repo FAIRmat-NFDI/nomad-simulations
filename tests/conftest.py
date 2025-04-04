@@ -31,8 +31,7 @@ from nomad_simulations.schema_packages.properties import (
     ElectronicDensityOfStates,
     ElectronicEigenvalues,
 )
-from nomad_simulations.schema_packages.variables import Energy2 as Energy
-from nomad_simulations.schema_packages.variables import KLinePath
+from nomad_simulations.schema_packages.variables import Energy2 as Energy, KLinePath
 
 from . import logger
 
@@ -197,20 +196,20 @@ def generate_simulation_electronic_dos(
     simulation = generate_simulation(model_system=model_system, outputs=outputs)
 
     # Populating the `ElectronicDensityOfStates` section
-    variables_energy = [Energy(points=energy_points * ureg.joule)]
-    electronic_dos = ElectronicDensityOfStates(variables=variables_energy)
+    variables_energy = Energy(points=energy_points * ureg.joule)
+    electronic_dos = ElectronicDensityOfStates(energies=variables_energy)
     outputs.electronic_dos.append(electronic_dos)
     # electronic_dos.value = total_dos * ureg('1/joule')
     orbital_s_Ga_pdos = DOSProfile(
-        variables=variables_energy,
+        energies=variables_energy,
         entity_ref=model_system.cell[0].atoms_state[0].orbitals_state[0],
     )
     orbital_px_As_pdos = DOSProfile(
-        variables=variables_energy,
+        energies=variables_energy,
         entity_ref=model_system.cell[0].atoms_state[1].orbitals_state[0],
     )
     orbital_py_As_pdos = DOSProfile(
-        variables=variables_energy,
+        energies=variables_energy,
         entity_ref=model_system.cell[0].atoms_state[1].orbitals_state[1],
     )
     orbital_s_Ga_pdos.value = [0.2, 0.5, 0, 0, 0, 0.0, 0.0] * ureg('1/joule')
@@ -351,9 +350,7 @@ def generate_electronic_eigenvalues(
     )
     electronic_eigenvalues = ElectronicEigenvalues(n_bands=2)
     outputs.electronic_eigenvalues = [electronic_eigenvalues]
-    electronic_eigenvalues.variables = [
-        KLinePath(points=model_method.numerical_settings[0].k_line_path)
-    ]
+    electronic_eigenvalues.k_path = KLinePath(points=model_method.numerical_settings[0].k_line_path)
     if value is not None:
         electronic_eigenvalues.value = value
     if occupation is not None:

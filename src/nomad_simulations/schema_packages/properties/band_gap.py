@@ -26,8 +26,6 @@ class ElectronicBandGap(PhysicalProperty):
         Type categorization of the electronic band gap. This quantity is directly related with `momentum_transfer` as by
         definition, the electronic band gap is `'direct'` for zero momentum transfer (or if `momentum_transfer` is `None`) and `'indirect'`
         for finite momentum transfer.
-
-        Note: in the case of finite `variables`, this quantity refers to all of the `value` in the array.
         """,
     )
 

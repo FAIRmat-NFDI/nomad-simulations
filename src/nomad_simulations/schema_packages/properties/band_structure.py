@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Optional, Union
 
+from nomad_simulations.schema_packages.variables import KLinePath
 import numpy as np
 import pint
 from nomad.config import config
@@ -252,7 +253,6 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
             is_derived=True,
             physical_property_ref=self,
         )
-        fermi_surface.variables = self.variables
         fermi_surface.value = fermi_values
         return fermi_surface
 
@@ -306,6 +306,8 @@ class ElectronicBandStructure(ElectronicEigenvalues):
     """
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandStructure'
+
+    k_path = SubSection(sub_section=KLinePath.m_def)
 
     def __init__(
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs

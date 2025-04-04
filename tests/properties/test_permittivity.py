@@ -25,7 +25,7 @@ class TestPermittivity:
         assert permittivity.name == 'Permittivity'
 
     @pytest.mark.parametrize(
-        'kmesh_grid, variables, result',
+        'kmesh_grid, frequency, result',
         [
             (None, None, 'static'),
             ([], None, 'static'),
@@ -36,7 +36,7 @@ class TestPermittivity:
     def test_resolve_type(
         self,
         kmesh_grid: Optional[list[int]],
-        variables: Optional[Variables],
+        frequency: Optional[Variables],
         result: str,
     ):
         """
@@ -51,12 +51,9 @@ class TestPermittivity:
         k_mesh_settings.center = 'Monkhorst-Pack'
         k_mesh_settings.points, _ = k_mesh_settings.resolve_points_and_offset(logger)
         if kmesh_grid is not None and len(kmesh_grid) > 0:
-            kmesh_variables = KMesh(points=k_mesh_settings)
-            permittivity.variables.append(kmesh_variables)
-
-        # Adding variables to `permittivity` property
-        if variables is not None and len(variables) > 0:
-            permittivity.variables.append(variables)
+            permittivity.q_mesh = KMesh(points=k_mesh_settings)
+        if frequency is not None:
+            permittivity.frequencies = frequency
         assert permittivity.resolve_type() == result
 
     @pytest.mark.parametrize(
@@ -119,14 +116,14 @@ class TestPermittivity:
         k_mesh_settings.points, _ = k_mesh_settings.resolve_points_and_offset(logger)
         if kmesh_grid is not None and len(kmesh_grid) > 0:
             kmesh_variables = KMesh(points=k_mesh_settings)
-            permittivity.variables.append(kmesh_variables)
+            permittivity.q_mesh = kmesh_variables
 
         # Adding `Frequency` if defined
         if frequencies_points is not None and len(frequencies_points) > 0:
             frequencies = Frequency(points=frequencies_points)
-            permittivity.variables.append(frequencies)
+            permittivity.frequencies = frequencies
 
-        if permittivity.variables is not None and len(permittivity.variables) > 0:
+        if permittivity.q_mesh is not None or permittivity.frequencies is not None:
             permittivity.value = value
 
         absorption_spectra = permittivity.extract_absorption_spectra(logger)
@@ -134,7 +131,8 @@ class TestPermittivity:
             assert len(absorption_spectra) == 3
             spectrum = absorption_spectra[1]
             assert spectrum.axis == 'yy'
-            assert len(spectrum.value) == len(permittivity.variables[0].points)
+            if spectrum.frequencies is not None:
+                assert len(spectrum.value) == len(permittivity.frequencies.points)
             assert np.allclose(spectrum.value, result)
         else:
             assert absorption_spectra == result

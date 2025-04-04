@@ -10,7 +10,7 @@ from nomad_simulations.schema_packages.physical_property import (
     PhysicalProperty,
     validate_quantity_wrt_value,
 )
-from nomad_simulations.schema_packages.variables import Variables
+# from nomad_simulations.schema_packages.variables import Variables
 
 from . import logger
 
@@ -31,41 +31,13 @@ class TestPhysicalProperty:
     Test the `PhysicalProperty` class defined in `physical_property.py`.
     """
 
-    @pytest.mark.parametrize(
-        'variables, result_variables_shape, result_full_shape',
-        [
-            ([], [], []),
-            ([Variables(n_points=4)], [4], [4]),
-            (
-                [Variables(n_points=4), Variables(n_points=10)],
-                [4, 10],
-                [4, 10],
-            ),
-        ],
-    )
-    def test_static_properties(
-        self,
-        variables: list,
-        result_variables_shape: list,
-        result_full_shape: list,
-    ):
-        """
-        Test the static properties of the `PhysicalProperty` class, `variables_shape` and `full_shape`.
-        """
-        physical_property = PhysicalProperty(
-            source='simulation',
-            variables=variables,
-        )
-        assert physical_property.variables_shape == result_variables_shape
-        assert physical_property.full_shape == result_full_shape
-
     def test_setattr_value(self):
         """
         Test the `__setattr__` method when setting the `value` quantity of a physical property.
         """
         physical_property = DummyPhysicalProperty(
             source='simulation',
-            variables=[Variables(n_points=4), Variables(n_points=10)],
+            # variables=[Variables(n_points=4), Variables(n_points=10)],
         )
         # `physical_property.value` must have full_shape=[4, 10, 3, 3]
         value = np.ones((4, 10, 3, 3)) * ureg.eV
