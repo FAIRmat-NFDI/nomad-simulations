@@ -1000,25 +1000,26 @@ class ModelSystem(System):
 
     def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
         """
-        Extracts chemical symbols from the atom_states subsection.
-        Now uses the atom_definition_ref in each AtomsState.
+        Gets the chemical symbols of the atoms in the simulation. These are defined on atoms_state[*].chemical_symbol.
+        Args:
+            logger (BoundLogger): The logger to log messages.s
+
+        Returns:
+            list: The list of chemical symbols of the atoms.
         """
-        symbols = []
+
         if not self.atom_states:
-            logger.warning('No atom_states found in ModelSystem.')
-            return symbols
-        for state in self.atom_states:
-            if not state.atom_definition_ref:
-                logger.warning('Missing atom_definition_ref in one of the atom_states.')
+            return []
+        chemical_symbols = []
+        for atom_state in self.atom_states:
+            # Access the chemical symbol via atom_definition_ref
+            if not atom_state.atom_definition_ref or not atom_state.atom_definition_ref.chemical_symbol:
+                logger.warning("Could not find `AtomsState[*].chemical_symbol`.")
                 return []
-            symbol = state.atom_definition_ref.chemical_symbol
-            if not symbol:
-                logger.warning(
-                    'Missing chemical_symbol in the AtomDefn of one of the atom_states.'
-                )
-                return []
-            symbols.append(symbol)
-        return symbols
+            chemical_symbols.append(atom_state.atom_definition_ref.chemical_symbol)
+        return chemical_symbols
+
+
 
     def to_ase_atoms(self, logger: 'BoundLogger') -> 'Optional[ase.Atoms]':
         """
