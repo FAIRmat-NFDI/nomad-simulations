@@ -983,13 +983,6 @@ class ModelSystem(System):
         """,
     )
 
-    # New subsection: list of unique atom definitions
-    atom_types = SubSection(
-        section_def=AtomDefn.m_def,
-        repeats=True,
-        description='Unique list of atoms for the simulation.',
-    )
-
     # New subsection: list of atomic state entries
     atom_states = SubSection(
         section_def=AtomsState.m_def,
@@ -1157,27 +1150,6 @@ class ModelSystem(System):
             )
 
         return system_type, dimensionality
-
-    def populate_atom_types(self, logger: 'BoundLogger') -> None:
-        """
-        Populates the `atom_types` subsection with unique AtomDefn entries
-        extracted from the `atom_states` subsection.
-        """
-        unique_types = {}
-        for state in self.atom_states:
-            atom_def = state.atom_definition_ref
-            if atom_def is None:
-                logger.warning('Missing atom_definition_ref in one of the atom_states.')
-                continue
-            # Create a key based on the essential properties
-            key = (atom_def.chemical_symbol, atom_def.atomic_number, atom_def.charge)
-            if key not in unique_types:
-                unique_types[key] = atom_def
-        # Clear existing entries (if any)
-        self.atom_types.clear()
-        # Append each unique AtomDefn to atom_types.
-        for atom_def in unique_types.values():
-            self.atom_types.append(atom_def)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
