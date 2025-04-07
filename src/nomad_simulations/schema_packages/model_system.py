@@ -345,37 +345,6 @@ class Cell(GeometricSpace):
         """,
     )
 
-    # @staticmethod
-    # def _generate_comparer(obj: 'Cell') -> 'Generator[Any, None, None]':
-    #     try:
-    #         return ((HashedPositions(pos)) for pos in obj.positions)
-    #     except AttributeError:
-    #         raise NotImplementedError
-
-    # @catch_not_implemented
-    # def is_lt_cell(self, other) -> bool:
-    #     return set(self._generate_comparer(self)) < set(self._generate_comparer(other))
-
-    # @catch_not_implemented
-    # def is_gt_cell(self, other) -> bool:
-    #     return set(self._generate_comparer(self)) > set(self._generate_comparer(other))
-
-    # @catch_not_implemented
-    # def is_le_cell(self, other) -> bool:
-    #     return set(self._generate_comparer(self)) <= set(self._generate_comparer(other))
-
-    # @catch_not_implemented
-    # def is_ge_cell(self, other) -> bool:
-    #     return set(self._generate_comparer(self)) >= set(self._generate_comparer(other))
-
-    # @catch_not_implemented
-    # def is_equal_cell(self, other) -> bool:  # TODO: improve naming
-    #     return set(self._generate_comparer(self)) == set(self._generate_comparer(other))
-
-    # def is_ne_cell(self, other) -> bool:
-    #     # this does not hold in general, but here we use finite sets
-    #     return not self.is_equal_cell(other)
-
 
 class AtomicCell(Cell):
     """
@@ -526,18 +495,43 @@ class Symmetry(ArchiveSection):
         logger: 'BoundLogger',
     ) -> 'Optional[Cell]':
         """
-        Resolves an atomic cell from the symmetry_analyzer data.
-        Note: In the new design, the cell contains only geometric data.
-        The per-atom electronic/state information is stored at the ModelSystem level (atom_states).
+        Resolves the `AtomicCell` section from the `SymmetryAnalyzer` object and the cell_type
+        (primitive or conventional).
+
+        Args:
+            symmetry_analyzer (SymmetryAnalyzer): The `SymmetryAnalyzer` object used to resolve.
+            cell_type (str): The type of cell to resolve, either 'primitive' or 'conventional'.
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            (Optional[AtomicCell]): The resolved `AtomicCell` section or None if the cell_type
+            is not recognized.
         """
+        # Define a mapping for each supported cell type
+        cell_type_map = {
+            'primitive': {
+                'wyckoff': symmetry_analyzer.get_wyckoff_letters_primitive,
+                'equivalent': symmetry_analyzer.get_equivalent_atoms_primitive,
+                'system': symmetry_analyzer.get_primitive_system,
+            },
+            'conventional': {
+                'wyckoff': symmetry_analyzer.get_wyckoff_letters_conventional,
+                'equivalent': symmetry_analyzer.get_equivalent_atoms_conventional,
+                'system': symmetry_analyzer.get_conventional_system,
+            }
+        }
+
+        mapping = cell_type_map.get(cell_type)
+        if mapping is None:
+            logger.error(f"Cell type {cell_type} is not supported.")
+            return None
+
         try:
-            wyckoff = symmetry_analyzer.get_wyckoff_letters(cell_type)
-            equivalent_atoms = getattr(
-                symmetry_analyzer, f'get_equivalent_atoms_{cell_type}'
-            )()
-            system = getattr(symmetry_analyzer, f'get_{cell_type}_system')()
+            wyckoff = mapping['wyckoff']()
+            equivalent_atoms = mapping['equivalent']()
+            system = mapping['system']()
         except Exception as e:
-            logger.error('Error extracting symmetry data', exc_info=e)
+            logger.error("Error extracting symmetry data", exc_info=e)
             return None
 
         cell = system.get_cell()
