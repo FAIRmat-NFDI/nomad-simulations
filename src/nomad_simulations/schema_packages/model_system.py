@@ -518,12 +518,12 @@ class Symmetry(ArchiveSection):
                 'wyckoff': symmetry_analyzer.get_wyckoff_letters_conventional,
                 'equivalent': symmetry_analyzer.get_equivalent_atoms_conventional,
                 'system': symmetry_analyzer.get_conventional_system,
-            }
+            },
         }
 
         mapping = cell_type_map.get(cell_type)
         if mapping is None:
-            logger.error(f"Cell type {cell_type} is not supported.")
+            logger.error(f'Cell type {cell_type} is not supported.')
             return None
 
         try:
@@ -531,7 +531,7 @@ class Symmetry(ArchiveSection):
             equivalent_atoms = mapping['equivalent']()
             system = mapping['system']()
         except Exception as e:
-            logger.error("Error extracting symmetry data", exc_info=e)
+            logger.error('Error extracting symmetry data', exc_info=e)
             return None
 
         cell = system.get_cell()
@@ -767,7 +767,7 @@ class ModelSystem(System):
     Model system used as an input for simulating the material.
 
     This version stores the atomic positions at the top level in the quantity “positions”
-    and the per‐atom state (including electronic state information) in a new subsection “atom_states”.
+    and the per‐atom state (including electronic state information) in a new subsection “particle_states”.
     Downstream subsystems refer to atoms via atom_indices.
 
     Definitions:
@@ -983,13 +983,6 @@ class ModelSystem(System):
         """,
     )
 
-    # New subsection: list of atomic state entries
-    atom_states = SubSection(
-        section_def=AtomsState.m_def,
-        repeats=True,
-        description='List of atomic elements (and their electronic state) for the simulation.',
-    )
-
     particle_states = SubSection(
         section_def=ParticleState.m_def,
         repeats=True,
@@ -1000,26 +993,28 @@ class ModelSystem(System):
 
     def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
         """
-        Gets the chemical symbols of the atoms in the simulation. These are defined on atoms_state[*].chemical_symbol.
+        Gets the chemical symbols from the particle_states that are AtomsState instances.
         Args:
-            logger (BoundLogger): The logger to log messages.s
-
+            logger (BoundLogger): The logger to log messages.
         Returns:
             list: The list of chemical symbols of the atoms.
         """
-
-        if not self.atom_states:
-            return []
         chemical_symbols = []
-        for atom_state in self.atom_states:
-            # Access the chemical symbol via atom_definition_ref
-            if not atom_state.atom_definition_ref or not atom_state.atom_definition_ref.chemical_symbol:
-                logger.warning("Could not find `AtomsState[*].chemical_symbol`.")
-                return []
-            chemical_symbols.append(atom_state.atom_definition_ref.chemical_symbol)
+        for particle_state in self.particle_states:
+            if isinstance(particle_state, AtomsState):
+                # only collect symbols from particle entries that are instances of AtomsState
+                if (
+                    not particle_state.atom_definition_ref
+                    or not particle_state.atom_definition_ref.chemical_symbol
+                ):
+                    logger.warning(
+                        'Could not find `chemical_symbol` in an AtomsState entry.'
+                    )
+                    return []
+                chemical_symbols.append(
+                    particle_state.atom_definition_ref.chemical_symbol
+                )
         return chemical_symbols
-
-
 
     def to_ase_atoms(self, logger: 'BoundLogger') -> 'Optional[ase.Atoms]':
         """
@@ -1074,7 +1069,7 @@ class ModelSystem(System):
         Replaces the atom_states subsection with new entries based on the ASE chemical symbols,
         using AtomDefinition to store elemental data, and assigns ASE positions to the top-level positions quantity.
         """
-        self.atom_states.clear()
+        # self.atom_states.clear()
 
         # Iterate over chemical symbols and atomic numbers from the ASE Atoms object
         for symbol, atomic_number in zip(
@@ -1082,7 +1077,7 @@ class ModelSystem(System):
         ):
             atom_def = AtomDefn(chemical_symbol=symbol, atomic_number=atomic_number)
             state = AtomsState(atom_definition_ref=atom_def)
-            self.atom_states.append(state)
+            self.particle_states.append(state)
 
         positions = ase_atoms.get_positions()
         if not positions.tolist():

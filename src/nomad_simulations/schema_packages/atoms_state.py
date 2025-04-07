@@ -669,6 +669,11 @@ class AtomDefn(Entity):
 
 
 class ParticleState(Entity):
+    """
+    Generic base section representing the state of a particle in a simulation.
+    This can be extended to include any common quantities in the future.
+    """
+
     pass
 
 
