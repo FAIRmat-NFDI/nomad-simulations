@@ -168,15 +168,15 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
             self.n_steps = len(archive.data.outputs)
 
         if not self.energies:
-            energies = []
+            energies_l = []
             for outputs in archive.data.outputs:
                 try:
-                    energies.append(outputs.total_energies[-1].value.magnitude)
+                    energies_l.append(outputs.total_energies[-1].value.magnitude)
                 except Exception:
                     logger.error('Energy not found in outputs.')
                     break
-            if energies:
-                energies = np.array(energies)
+            if energies_l:
+                energies = np.array(energies_l)
                 self.energies = energies * BaseEnergy.value.unit
                 denergies = energies[1:] - energies[: len(energies) - 1]
                 self.final_energy_difference = (

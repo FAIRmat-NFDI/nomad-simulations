@@ -137,7 +137,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
         Link tasks based on start and end times.
         """
         if not self.name:
-            self.name = self.m_def.name
+            self.name: str = self.m_def.name
 
         if not self.inputs:
             self.map_inputs(archive, logger)
