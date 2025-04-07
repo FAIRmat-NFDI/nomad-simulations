@@ -555,9 +555,9 @@ class SpinDefn(Entity):
 
     # For collinear spin, a single value may suffice.
     # For non-collinear, you might store a vector.
-    spin_type = Quantity(
-        type=MEnum('collinear', 'non-collinear'),
-        default='collinear',
+    is_collinear = Quantity(
+        type=bool,
+        default=True,
         description='Specifies whether the spin is treated as a scalar (collinear) or vector (non-collinear).',
     )
 
@@ -579,7 +579,7 @@ class SpinDefn(Entity):
 
 class AtomDefn(Entity):
     """
-    A base section that defines a single atomic species or element, to be referenced
+    Defines a single atomic species or element, to be referenced
     by `AtomsState` or other sections. It stores the essential properties of an
     element (symbol, atomic number and charge), ensures consistency between them, and can
     resolve one from the other if only one is provided.
@@ -668,7 +668,11 @@ class AtomDefn(Entity):
             self.atomic_number = self.resolve_atomic_number(logger=logger)
 
 
-class AtomsState(Entity):
+class ParticleState(Entity):
+    pass
+
+
+class AtomsState(ParticleState):
     """
     A base section to define each atom state information.
     """
@@ -696,5 +700,5 @@ class AtomsState(Entity):
     )
 
 
-class ParticleState(Entity):
+class CoarseGrainedState(ParticleState):
     pass

@@ -255,15 +255,6 @@ class Simulation(BaseSimulation, Schema):
                 for subsystem in subsystems:
                     get_composition_recurs(system=subsystem, atom_labels=atom_labels)
 
-        # atoms_state = (
-        #     system_parent.cell[0].atoms_state if system_parent.cell is not None else []
-        # )
-        # atom_labels = (
-        #     [atom.chemical_symbol for atom in atoms_state]
-        #     if atoms_state is not None
-        #     else []
-        # )
-
         atom_labels = (
             [atom.chemical_symbol for atom in system_parent.atom_states]
             if system_parent.atom_states
