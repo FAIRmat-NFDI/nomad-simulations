@@ -8,7 +8,7 @@ from nomad.units import ureg
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
-from nomad_simulations.schema_packages.outputs import ElectronicStructureOutputs
+from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import (
     AbsorptionSpectrum,
     ElectronicDensityOfStates,
@@ -67,7 +67,7 @@ class TestElectronicDensityOfStates:
         Test the `resolve_normalization_factor` method.
         """
         simulation = Simulation()
-        outputs = ElectronicStructureOutputs()
+        outputs = Outputs()
         # We only used the `simulation_electronic_dos` fixture to get the `ElectronicDensityOfStates` to test missing refs
         electronic_dos = simulation_electronic_dos.outputs[0].electronic_dos[0]
         electronic_dos.energies_origin = 0.5 * ureg.joule

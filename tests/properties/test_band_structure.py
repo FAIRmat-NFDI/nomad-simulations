@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
 
-from nomad_simulations.schema_packages.outputs import ElectronicStructureOutputs
+from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import ElectronicEigenvalues
 
 from ..conftest import generate_electronic_eigenvalues

@@ -21,7 +21,7 @@ from nomad_simulations.schema_packages.numerical_settings import (
     SelfConsistency,
 )
 from nomad_simulations.schema_packages.outputs import (
-    ElectronicStructureOutputs,
+    Outputs,
     Outputs,
     SCFOutputs,
 )
@@ -158,9 +158,7 @@ def generate_scf_electronic_band_gap_template(
     value = None
     for i in range(n_scf_steps):
         value = 1 + sum([1 / (10**j) for j in range(1, i + 2)])
-        scf_step = ElectronicStructureOutputs(
-            electronic_band_gaps=[ElectronicBandGap(value=value)]
-        )
+        scf_step = Outputs(electronic_band_gaps=[ElectronicBandGap(value=value)])
         scf_outputs.scf_steps.append(scf_step)
     # Add a SCF calculated PhysicalProperty
     if value is not None:
@@ -188,12 +186,12 @@ def generate_simulation_electronic_dos(
     energy_points: list[int] = [-3, -2, -1, 0, 1, 2, 3],
 ) -> Simulation:
     """
-    Generate a `Simulation` section with an `ElectronicDensityOfStates` section under `ElectronicStructureOutputs`. It uses
+    Generate a `Simulation` section with an `ElectronicDensityOfStates` section under `Outputs`. It uses
     the template of the model_system created with the `generate_model_system` function.
     """
     # Create the `Simulation` section to make refs work
     model_system = generate_model_system()
-    outputs = ElectronicStructureOutputs()
+    outputs = Outputs()
     simulation = generate_simulation(model_system=model_system, outputs=outputs)
 
     # Populating the `ElectronicDensityOfStates` section
@@ -325,7 +323,7 @@ def generate_electronic_eigenvalues(
     """
     Generate an `ElectronicEigenvalues` section with the given parameters.
     """
-    outputs = ElectronicStructureOutputs()
+    outputs = Outputs()
     k_space = KSpace(
         k_line_path=KLinePathSettings(
             points=[
