@@ -22,7 +22,6 @@ from nomad_simulations.schema_packages.numerical_settings import (
 )
 from nomad_simulations.schema_packages.outputs import (
     Outputs,
-    Outputs,
     SCFOutputs,
 )
 from nomad_simulations.schema_packages.properties import (
