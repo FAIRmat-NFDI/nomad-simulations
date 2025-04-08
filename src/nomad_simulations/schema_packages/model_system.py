@@ -768,7 +768,7 @@ class ModelSystem(System):
 
     This version stores the atomic positions at the top level in the quantity “positions”
     and the per‐atom state (including electronic state information) in a new subsection “particle_states”.
-    Downstream subsystems refer to atoms via atom_indices.
+    Downstream subsystems refer to atoms via particle_indices.
 
     Definitions:
         - `name` refers to all the verbose and user-dependent naming in ModelSystem,
@@ -786,7 +786,7 @@ class ModelSystem(System):
         formats.
 
     This class nest over itself (with the section proxy in `model_system`) to define different
-    parent-child system trees. The quantities `branch_label`, `branch_depth`, `atom_indices`,
+    parent-child system trees. The quantities `branch_label`, `branch_depth`, `particle_indices`,
     and `bond_list` are used to define the parent-child tree.
 
     The normalization is ran in the following order:
@@ -904,33 +904,33 @@ class ModelSystem(System):
         """,
     )
 
-    atom_indices = Quantity(
+    particle_indices = Quantity(
         type=np.int32,
         shape=['*'],
         description="""
-        Indices of the atoms in the child with respect to its parent. Example:
+        Indices of the particles/atoms in the child with respect to its parent. Example:
             - We have SrTiO3, where `AtomicCell.labels = ['Sr', 'Ti', 'O', 'O', 'O']`. If
             we create a `model_system` child for the `'Ti'` atom only, then in that child
-            `ModelSystem.model_system.atom_indices = [1]`. If now we want to refer both to
-            the `'Ti'` and the last `'O'` atoms, `ModelSystem.model_system.atom_indices = [1, 4]`.
+            `ModelSystem.sub_systems[0].particle_indices = [1]`. If now we want to refer both to
+            the `'Ti'` and the last `'O'` atoms, `ModelSystem.sub_systems[0].particle_indices = [1, 4]`.
         """,
     )
 
-    n_atoms = Quantity(
+    n_particles = Quantity(
         type=np.int32,
         description="""
-        Number of atoms in the simulation.
+        Number of particles/atoms in the simulation.
         """,
     )
 
     # New quantity to store all atom positions (Cartesian coordinates)
     positions = Quantity(
         type=np.float64,
-        shape=['n_atoms', 3],
+        shape=['n_particles', 3],
         unit='meter',
         description="""
             Cartesian coordinates of all atoms in the top-level system.
-            All subsystems will reference these positions via atom_indices.
+            All subsystems will reference these positions via particle_indices.
         """,
     )
 
@@ -986,7 +986,7 @@ class ModelSystem(System):
     particle_states = SubSection(
         section_def=ParticleState.m_def,
         repeats=True,
-        description='Particles that dont fit into an `Atom` description',
+        description='Particle states',
     )
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
@@ -1076,7 +1076,7 @@ class ModelSystem(System):
             logger.error('ASE Atoms has no positions.')
             return
         self.positions = positions * ureg('angstrom')
-        self.n_atoms = len(self.positions)
+        self.n_particles = len(self.positions)
 
         # Update cell information from ASE
         if self.cell and len(self.cell) > 0:

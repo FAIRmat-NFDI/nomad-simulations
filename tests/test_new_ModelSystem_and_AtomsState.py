@@ -88,7 +88,7 @@ class TestModelSystem:
 
         # Check positions
         np.testing.assert_allclose(ms.positions.to('angstrom').magnitude, positions)
-        assert ms.n_atoms == len(positions)
+        assert ms.n_particles == len(positions)
         # Check that particle_states is populated correctly.
         assert len(ms.particle_states) == len(symbols)
         for i, state in enumerate(ms.particle_states):
@@ -110,7 +110,7 @@ class TestModelSystem:
         positions = np.array([[0, 0, 0], [0, 0, 1], [1, 0, 0]])
         ms = ModelSystem()
         ms.positions = positions * ureg('angstrom')
-        ms.n_atoms = len(positions)
+        ms.n_particles = len(positions)
         # Populate particle_states manually.
         for sym, num in zip(symbols, [1, 8, 1]):
             atom_def = AtomDefn(chemical_symbol=sym, atomic_number=num)
@@ -186,16 +186,16 @@ class TestModelSystem:
 # Tests for ModelSystem Hierarchy
 #############################################
 class TestModelSystemHierarchyAdvanced:
-    def create_system(self, name, branch_label, branch_depth, atom_indices=None):
+    def create_system(self, name, branch_label, branch_depth, particle_indices=None):
         ms = ModelSystem(name=name)
         ms.branch_label = branch_label
         ms.branch_depth = branch_depth
-        if atom_indices is not None:
-            ms.atom_indices = atom_indices
+        if particle_indices is not None:
+            ms.particle_indices = particle_indices
         return ms
 
     def collect_hierarchy(self, system):
-        ai = system.atom_indices
+        ai = system.particle_indices
         if ai is not None and isinstance(ai, np.ndarray):
             ai = ai.tolist()
         result = [(system.name, system.branch_label, system.branch_depth, ai)]
@@ -215,15 +215,15 @@ class TestModelSystemHierarchyAdvanced:
         )
         parent.from_ase_atoms(ase_parent, logger)
         parent.positions = parent_positions * ureg('angstrom')
-        parent.n_atoms = len(parent_positions)
+        parent.n_particles = len(parent_positions)
         parent.cell.append(
             create_cell([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [True, True, True])
         )
 
-        child1 = self.create_system('Child1', 'Child1', 1, atom_indices=[0, 2, 4])
-        child2 = self.create_system('Child2', 'Child2', 1, atom_indices=[1, 3, 5])
+        child1 = self.create_system('Child1', 'Child1', 1, particle_indices=[0, 2, 4])
+        child2 = self.create_system('Child2', 'Child2', 1, particle_indices=[1, 3, 5])
         grandchild1 = self.create_system(
-            'Grandchild1', 'Grandchild1', 2, atom_indices=[2, 4]
+            'Grandchild1', 'Grandchild1', 2, particle_indices=[2, 4]
         )
         child1.sub_systems.append(grandchild1)
         parent.sub_systems.extend([child1, child2])
@@ -261,7 +261,7 @@ class TestModelSystemUpdates:
         ms = ModelSystem(is_representative=True)
         positions_initial = np.array([[0, 0, 0], [0, 0, 1]])
         ms.positions = positions_initial * ureg('angstrom')
-        ms.n_atoms = len(positions_initial)
+        ms.n_particles = len(positions_initial)
         cell_mol = create_cell([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [False, False, False])
         ms.cell.append(cell_mol)
         ms.normalize(EntryArchive(), logger)
@@ -270,7 +270,7 @@ class TestModelSystemUpdates:
 
         positions_bulk = np.array([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]])
         ms.positions = positions_bulk * ureg('angstrom')
-        ms.n_atoms = len(positions_bulk)
+        ms.n_particles = len(positions_bulk)
         ms.cell[0] = create_cell([[1, 0, 0], [0, 1, 0], [0, 0, 1]], [True, True, True])
         ms.normalize(EntryArchive(), logger)
         if initial_type is not None or initial_dim is not None:
@@ -302,7 +302,7 @@ class TestModelSystemUpdates:
         symbols = ['H', 'H', 'O']
         positions = np.array([[0, 0, 0], [0, 0, 1], [1, 0, 0]])
         ms.positions = positions * ureg('angstrom')
-        ms.n_atoms = len(positions)
+        ms.n_particles = len(positions)
         for sym, num in zip(symbols, [1, 1, 8]):
             atom_def = AtomDefn(chemical_symbol=sym, atomic_number=num)
             state = AtomsState(atom_definition_ref=atom_def)
@@ -329,13 +329,13 @@ class TestModelSystemUpdates:
         )
         ms_parent.from_ase_atoms(ase_parent, logger)
         ms_parent.positions = positions * ureg('angstrom')
-        ms_parent.n_atoms = len(positions)
+        ms_parent.n_particles = len(positions)
         child = ModelSystem(name='Child')
-        child.atom_indices = [0, 2]
+        child.particle_indices = [0, 2]
         ms_parent.sub_systems.append(child)
-        assert list(child.atom_indices) == [0, 2]
-        child.atom_indices = [1, 3]
-        assert list(ms_parent.sub_systems[0].atom_indices) == [1, 3]
+        assert list(child.particle_indices) == [0, 2]
+        child.particle_indices = [1, 3]
+        assert list(ms_parent.sub_systems[0].particle_indices) == [1, 3]
 
     def test_deep_hierarchy_stress(self):
         root = ModelSystem(name='Root')
@@ -346,13 +346,13 @@ class TestModelSystemUpdates:
             child = ModelSystem(name=f'Level{level}')
             child.branch_label = f'Level{level}'
             child.branch_depth = level
-            child.atom_indices = [level - 1]
+            child.particle_indices = [level - 1]
             current.sub_systems.append(child)
             current = child
             expected.append((f'Level{level}', f'Level{level}', level, [level - 1]))
 
         def collect(system):
-            ai = system.atom_indices
+            ai = system.particle_indices
             if ai is not None and isinstance(ai, np.ndarray):
                 ai = ai.tolist()
             result = [(system.name, system.branch_label, system.branch_depth, ai)]
