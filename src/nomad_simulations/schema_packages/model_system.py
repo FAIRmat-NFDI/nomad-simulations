@@ -1052,14 +1052,6 @@ class ModelSystem(System):
         else:
             logger.warning('No cell section available in ModelSystem.')
 
-        if self.positions is None:
-            logger.error('ModelSystem.positions is not available.')
-            return None
-        if len(self.positions) != len(symbols):
-            logger.error(
-                'Mismatch between number of positions and number of atom_states.'
-            )
-            return None
         ase_atoms.set_positions(self.positions.to('angstrom').magnitude)
         return ase_atoms
 
