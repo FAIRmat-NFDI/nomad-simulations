@@ -199,7 +199,7 @@ class GeometricSpace(Entity):
         Args:
             logger (BoundLogger): The logger to log messages.
         """
-        atoms = self.to_ase_atoms(logger=logger)  # function defined in AtomicCell
+        atoms = self.to_ase_atoms(logger=logger)  # FIX: not in AtomicCell anymore 
         cell = atoms.get_cell()
         self.length_vector_a, self.length_vector_b, self.length_vector_c = (
             cell.lengths() * ureg.angstrom
@@ -1061,8 +1061,6 @@ class ModelSystem(System):
         Replaces the atom_states subsection with new entries based on the ASE chemical symbols,
         using AtomDefinition to store elemental data, and assigns ASE positions to the top-level positions quantity.
         """
-        # self.atom_states.clear()
-
         # Iterate over chemical symbols and atomic numbers from the ASE Atoms object
         for symbol, atomic_number in zip(
             ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers()
