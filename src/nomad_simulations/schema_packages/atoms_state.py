@@ -553,27 +553,21 @@ class SpinDefn(Entity):
     This can include per-atom or per-orbital spin parameters.
     """
 
-    # For collinear spin, a single value may suffice.
-    # For non-collinear, you might store a vector.
     is_collinear = Quantity(
         type=bool,
         default=True,
         description='Specifies whether the spin is treated as a scalar (collinear) or vector (non-collinear).',
     )
 
-    # Typical per-atom spin value in collinear calculations (in Bohr magnetons)
-    atom_spin_moment = Quantity(
-        type=np.float64,
-        unit='bohr_magneton',
-        description='Scalar spin value per atom for collinear calculations.',
-    )
-
-    # For non-collinear calculations, store the spin vector.
     atom_spin_vector = Quantity(
         type=np.float64,
         shape=['3'],
         unit='bohr_magneton',
-        description='3D spin vector per atom for non-collinear calculations.',
+        description="""
+        3D spin vector per atom.
+        For collinear calculations, only the z-component should be non-zero.
+        For non-collinear calculations, all components may be used.
+        """,
     )
 
 
@@ -685,7 +679,7 @@ class AtomsState(ParticleState):
     atom_definition_ref = Quantity(
         type=AtomDefn,
         description="""
-        A reference to the `ParticleDefn` section that describes this atom's species. This
+        A reference to the `AtomDefn` section that describes this atom's species. This
         reference avoids storing repeated elemental data (e.g., `chemical_symbol` and
         `atomic_number`) in every atom, ensuring that all atoms of the same type link back
         to a single shared definition.

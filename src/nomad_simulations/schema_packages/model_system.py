@@ -1086,7 +1086,7 @@ class ModelSystem(System):
         self.positions = positions * ureg('angstrom')
         self.n_atoms = len(self.positions)
 
-        # Optionally, update cell information from ASE
+        # Update cell information from ASE
         if self.cell and len(self.cell) > 0:
             cell = ase_atoms.get_cell()
             self.cell[0].lattice_vectors = ase.geometry.complete_cell(cell) * ureg(
