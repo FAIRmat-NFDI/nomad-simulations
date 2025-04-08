@@ -68,12 +68,6 @@ class Outputs(Time):
         """,
     )
 
-
-class ElectronicStructureOutputs(Outputs):
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # List of properties
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
     fermi_levels = SubSection(sub_section=FermiLevel.m_def, repeats=True)
 
     chemical_potentials = SubSection(sub_section=ChemicalPotential.m_def, repeats=True)
@@ -199,9 +193,7 @@ class ElectronicStructureOutputs(Outputs):
             self.model_method_ref = self.set_model_method_ref()
 
 
-class SCFOutputs(
-    ElectronicStructureOutputs
-):  # TODO: separate out from `ElectronicStructureOutputs`
+class SCFOutputs(Outputs):
     """
     This section contains the self-consistent (SCF) steps performed to converge an output property.
 
