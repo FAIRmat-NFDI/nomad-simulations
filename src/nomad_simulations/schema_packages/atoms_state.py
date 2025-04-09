@@ -550,7 +550,7 @@ class HubbardInteractions(ArchiveSection):
 class SpinDefn(Entity):
     """
     Defines spin properties for a single atomic species.
-    This can include per-atom or per-orbital spin parameters.
+    @ EBB : This definition will be enriched in a seperate PR.
     """
 
     is_collinear = Quantity(

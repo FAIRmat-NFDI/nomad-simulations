@@ -199,7 +199,7 @@ class GeometricSpace(Entity):
         Args:
             logger (BoundLogger): The logger to log messages.
         """
-        atoms = self.to_ase_atoms(logger=logger)  # FIX: not in AtomicCell anymore 
+        atoms = self.to_ase_atoms(logger=logger)  # FIX: not in AtomicCell anymore
         cell = atoms.get_cell()
         self.length_vector_a, self.length_vector_b, self.length_vector_c = (
             cell.lengths() * ureg.angstrom
@@ -791,7 +791,7 @@ class ModelSystem(System):
 
     The normalization is ran in the following order:
         1. `OrbitalsState.normalize()` in atoms_state.py under `AtomsState`
-        2. `CoreHoleState.normalize()` in atoms_state.py under `AtomsState`
+        2. `CoreHole.normalize()` in atoms_state.py under `AtomsState`
         3. `HubbardInteractions.normalize()` in atoms_state.py under `AtomsState`
         4. `AtomsState.normalize()` in atoms_state.py
         5. `AtomicCell.normalize()` in atomic_cell.py
@@ -1059,7 +1059,7 @@ class ModelSystem(System):
         """
         Populates ModelSystem from an ASE Atoms object.
         Replaces the atom_states subsection with new entries based on the ASE chemical symbols,
-        using AtomDefinition to store elemental data, and assigns ASE positions to the top-level positions quantity.
+        using AtomDefn to store elemental data, and assigns ASE positions to the top-level positions quantity.
         """
         # Iterate over chemical symbols and atomic numbers from the ASE Atoms object
         for symbol, atomic_number in zip(
