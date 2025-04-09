@@ -7,7 +7,7 @@ from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 from nomad_simulations.schema_packages.outputs import (
-    ElectronicStructureOutputs,
+    Outputs,
     SCFOutputs,
 )
 from nomad_simulations.schema_packages.properties import ElectronicBandGap
@@ -18,15 +18,15 @@ from .conftest import generate_scf_electronic_band_gap_template, generate_simula
 
 class TestOutputs:
     """
-    Test the `ElectronicStructureOutputs` class defined in `outputs.py`.
+    Test the `Outputs` class defined in `outputs.py`.
     """
 
     def test_number_of_properties(self):  # TODO: remove this test
         """
-        Test how many properties are defined under `ElectronicStructureOutputs` and its order. This test is done in order to control better
+        Test how many properties are defined under `Outputs` and its order. This test is done in order to control better
         which properties are already defined and in which order to control their normalizations
         """
-        outputs = ElectronicStructureOutputs()
+        outputs = Outputs()
         assert len(outputs.m_def.all_sub_sections) == 22
         defined_properties = [
             'fermi_levels',
@@ -87,12 +87,12 @@ class TestOutputs:
         Test the `extract_spin_polarized_property` method.
 
         Args:
-            band_gaps (list[ElectronicBandGap]): The `ElectronicBandGap` sections to be stored under `ElectronicStructureOutputs`.
+            band_gaps (list[ElectronicBandGap]): The `ElectronicBandGap` sections to be stored under `Outputs`.
             values (list[float]): The values to be assigned to the `ElectronicBandGap` sections.
             result_length (int): The expected length extracted from `extract_spin_polarized_property`.
             result (list[ElectronicBandGap]): The expected result of the `extract_spin_polarized_property` method.
         """
-        outputs = ElectronicStructureOutputs()
+        outputs = Outputs()
 
         for i, band_gap in enumerate(band_gaps):
             band_gap.value = [values[i]]
@@ -119,9 +119,9 @@ class TestOutputs:
 
         Args:
             model_system (Optional[ModelSystem]): The `ModelSystem` to be tested for the `model_system_ref` reference
-            stored in `ElectronicStructureOutputs`.
+            stored in `Outputs`.
         """
-        outputs = ElectronicStructureOutputs()
+        outputs = Outputs()
         simulation = generate_simulation(model_system=model_system, outputs=outputs)
         model_system_ref = outputs.set_model_system_ref()
         if model_system is not None:
@@ -140,9 +140,9 @@ class TestOutputs:
 
         Args:
             model_method (Optional[ModelMethod]): The `ModelMethod` to be tested for the `model_method_ref` reference
-            stored in `ElectronicStructureOutputs`.
+            stored in `Outputs`.
         """
-        outputs = ElectronicStructureOutputs()
+        outputs = Outputs()
         simulation = generate_simulation(model_method=model_method, outputs=outputs)
         model_method_ref = outputs.set_model_method_ref()
         if model_method is not None:
@@ -172,7 +172,7 @@ class TestOutputs:
             model_method (Optional[ModelMethod]): The expected `model_method_ref` obtained after normalization and
             initially stored under `Simulation.model_method[0]`.
         """
-        outputs = ElectronicStructureOutputs()
+        outputs = Outputs()
         simulation = generate_simulation(
             model_system=model_system, model_method=model_method, outputs=outputs
         )
@@ -200,10 +200,10 @@ class TestSCFOutputs:
             # empty `scf_last_steps`
             ([], 0, None, None, []),
             # length of `scf_last_steps` is different from 2
-            ([ElectronicStructureOutputs()], 0, None, None, []),
+            ([Outputs()], 0, None, None, []),
             # no property matching `'electronic_band_gaps'` stored under the `scf_last_steps`
             (
-                [ElectronicStructureOutputs(), ElectronicStructureOutputs()],
+                [Outputs(), Outputs()],
                 0,
                 None,
                 None,
@@ -212,12 +212,8 @@ class TestSCFOutputs:
             # `i_property` is out of range
             (
                 [
-                    ElectronicStructureOutputs(
-                        electronic_band_gaps=[ElectronicBandGap()]
-                    ),
-                    ElectronicStructureOutputs(
-                        electronic_band_gaps=[ElectronicBandGap()]
-                    ),
+                    Outputs(electronic_band_gaps=[ElectronicBandGap()]),
+                    Outputs(electronic_band_gaps=[ElectronicBandGap()]),
                 ],
                 2,
                 None,
@@ -227,12 +223,8 @@ class TestSCFOutputs:
             # no `value` stored in the `scf_last_steps` property
             (
                 [
-                    ElectronicStructureOutputs(
-                        electronic_band_gaps=[ElectronicBandGap()]
-                    ),
-                    ElectronicStructureOutputs(
-                        electronic_band_gaps=[ElectronicBandGap()]
-                    ),
+                    Outputs(electronic_band_gaps=[ElectronicBandGap()]),
+                    Outputs(electronic_band_gaps=[ElectronicBandGap()]),
                 ],
                 0,
                 None,
@@ -242,12 +234,8 @@ class TestSCFOutputs:
             # no `SelfConsistency` section and `threshold_change_unit` defined and matching units for property `value` (`'joule'`)
             (
                 [
-                    ElectronicStructureOutputs(
-                        electronic_band_gaps=[ElectronicBandGap()]
-                    ),
-                    ElectronicStructureOutputs(
-                        electronic_band_gaps=[ElectronicBandGap()]
-                    ),
+                    Outputs(electronic_band_gaps=[ElectronicBandGap()]),
+                    Outputs(electronic_band_gaps=[ElectronicBandGap()]),
                 ],
                 0,
                 [1.0, 2.0],
@@ -257,12 +245,8 @@ class TestSCFOutputs:
             # valid case
             (
                 [
-                    ElectronicStructureOutputs(
-                        electronic_band_gaps=[ElectronicBandGap()]
-                    ),
-                    ElectronicStructureOutputs(
-                        electronic_band_gaps=[ElectronicBandGap()]
-                    ),
+                    Outputs(electronic_band_gaps=[ElectronicBandGap()]),
+                    Outputs(electronic_band_gaps=[ElectronicBandGap()]),
                 ],
                 0,
                 [1.0, 2.0],
@@ -273,7 +257,7 @@ class TestSCFOutputs:
     )
     def test_get_last_scf_steps_value(
         self,
-        scf_last_steps: list[ElectronicStructureOutputs],
+        scf_last_steps: list[Outputs],
         i_property: int,
         values: list[float],
         scf_parameters: Optional[SelfConsistency],
