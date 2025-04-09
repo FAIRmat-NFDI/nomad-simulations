@@ -1,7 +1,6 @@
 [build-system]
 requires = ["setuptools>=61.0.0", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
-build-constraint-dependencies = ["wheel<0.46"]
 
 [project]
 classifiers = [
@@ -52,6 +51,7 @@ dev = [
 
 [tool.uv]
 index-url = "https://gitlab.mpcdf.mpg.de/api/v4/projects/2187/packages/pypi/simple"
+build-constraint-dependencies = ["wheel<0.46"]
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
