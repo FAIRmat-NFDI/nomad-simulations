@@ -5,8 +5,11 @@ from nomad.datamodel import EntryArchive
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
-    AtomsState,
     ModelSystem,
+)
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomDefn,
+    AtomsState,
 )
 
 from . import logger
@@ -82,19 +85,13 @@ class TestSimulation:
                 )
             return value
 
-        # value = get_flat_depths(
-        #     system_parent=simulation.model_system[0],
-        #     quantity_name='branch_depth',
-        #     value=[0],
-        # )
-        # assert value == result
-
-        flat = get_flat_depths(
+        value = get_flat_depths(
             system_parent=simulation.model_system[0],
             quantity_name='branch_depth',
             value=[0],
         )
-        assert flat == result
+        assert value == result
+        
 
     @pytest.mark.parametrize(
         'is_representative, has_atom_indices, mol_label_list, n_mol_list, atom_labels_list, composition_formula_list, custom_formulas',
@@ -212,17 +209,20 @@ class TestSimulation:
         model_system.is_representative = is_representative
         model_system.composition_formula = custom_formulas[0]
         ctr_comp = 1
+        # Create an AtomicCell (cell geometry only)
         atomic_cell = AtomicCell()
         model_system.cell.append(atomic_cell)
         if has_atom_indices:
-            model_system.atom_indices = []
+            model_system.particle_indices = []
+
+        # add the atoms to the ModelSystem's particle_states.
         for mol_label, n_mol, atom_labels in zip(
             mol_label_list, n_mol_list, atom_labels_list
         ):
-            # Create a branch in the hierarchy for this molecule type
+            # Create a branch (group) for this molecule type.
             model_system_mol_group = ModelSystem()
             if has_atom_indices:
-                model_system_mol_group.atom_indices = []
+                model_system_mol_group.particle_indices = []
             model_system_mol_group.branch_label = (
                 f'group_{mol_label}' if mol_label is not None else None
             )
@@ -230,28 +230,34 @@ class TestSimulation:
             ctr_comp += 1
             model_system.sub_systems.append(model_system_mol_group)
             for _ in range(n_mol):
-                # Create a branch in the hierarchy for this molecule
+                # Create a branch for an individual molecule.
                 model_system_mol = ModelSystem(branch_label=mol_label)
                 model_system_mol.branch_label = mol_label
                 model_system_mol.composition_formula = custom_formulas[ctr_comp]
                 ctr_comp += 1
                 model_system_mol_group.sub_systems.append(model_system_mol)
-                # add the corresponding atoms to the global atom list
+                # Add the corresponding atoms to the global atom list (particle_states)
                 for atom_label in atom_labels:
                     if atom_label is not None:
-                        atomic_cell.atoms_state.append(
-                            AtomsState(chemical_symbol=atom_label)
+                        model_system.particle_states.append(
+                            AtomsState(atom_definition_ref=AtomDefn(chemical_symbol=atom_label))
                         )
-                n_atoms = len(atomic_cell.atoms_state)
-                atom_indices = np.arange(n_atoms - len(atom_labels), n_atoms)
+                n_atoms = len(model_system.particle_states)
+                particle_indices = np.arange(n_atoms - len(atom_labels), n_atoms)
                 if has_atom_indices:
-                    model_system_mol.atom_indices = atom_indices
-                    model_system_mol_group.atom_indices = np.append(
-                        model_system_mol_group.atom_indices, atom_indices
-                    )
-                    model_system.atom_indices = np.append(
-                        model_system.atom_indices, atom_indices
-                    )
+                    model_system_mol.particle_indices = particle_indices
+                    if model_system_mol_group.particle_indices is None:
+                        model_system_mol_group.particle_indices = particle_indices
+                    else:
+                        model_system_mol_group.particle_indices = np.append(
+                            model_system_mol_group.particle_indices, particle_indices
+                        )
+                    if model_system.particle_indices is None:
+                        model_system.particle_indices = particle_indices
+                    else:
+                        model_system.particle_indices = np.append(
+                            model_system.particle_indices, particle_indices
+                        )
 
         simulation.normalize(EntryArchive(), logger)
 
@@ -264,9 +270,9 @@ class TestSimulation:
             for sys in systems:
                 assert sys.composition_formula == composition_formula_list[ctr_comp]
                 ctr_comp += 1
-                subsystems = sys.model_system
+                subsystems = sys.sub_systems
                 if subsystems:
                     ctr_comp = get_system_recurs(subsystems, ctr_comp)
             return ctr_comp
 
-        _ = get_system_recurs(systems=model_system.model_system, ctr_comp=ctr_comp)
+        _ = get_system_recurs(systems=model_system.sub_systems, ctr_comp=ctr_comp)

@@ -6,6 +6,7 @@ from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import (
+    AtomDefn,
     AtomsState,
     CoreHole,
     HubbardInteractions,
@@ -384,9 +385,11 @@ class TestAtomsState:
             chemical_symbol (str): The chemical symbol of the atom.
             atomic_number (int): The atomic number of the atom.
         """
-        # Testing `chemical_symbol`
-        atom_state = AtomsState(chemical_symbol=chemical_symbol)
-        assert atom_state.resolve_atomic_number(logger=logger) == atomic_number
-        # Testing `atomic_number`
-        atom_state.atomic_number = atomic_number
-        assert atom_state.resolve_chemical_symbol(logger=logger) == chemical_symbol
+        # Create an AtomDefn and attach it via atom_definition_ref
+        atom_def = AtomDefn(chemical_symbol=chemical_symbol)
+        atom_state = AtomsState(atom_definition_ref=atom_def)
+        # Test resolution of atomic_number via AtomDefn
+        assert atom_state.atom_definition_ref.resolve_atomic_number(logger=logger) == atomic_number
+        atom_state.atom_definition_ref.atomic_number = atomic_number
+        assert atom_state.atom_definition_ref.resolve_chemical_symbol(logger=logger) == chemical_symbol
+

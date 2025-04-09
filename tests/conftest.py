@@ -6,7 +6,10 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomsState, 
+    OrbitalsState,
+    AtomDefn)
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
@@ -85,7 +88,6 @@ def generate_model_system(
     model_system = ModelSystem(type=system_type, is_representative=is_representative)
     atomic_cell = AtomicCell(
         type=type,
-        positions=positions * ureg.angstrom,
         lattice_vectors=lattice_vectors * ureg.angstrom,
         periodic_boundary_conditions=pbc,
     )
@@ -98,20 +100,23 @@ def generate_model_system(
         for orbital in orbitals:
             orbitals_state.append(
                 OrbitalsState(
-                    l_quantum_symbol=orbital[0], ml_quantum_symbol=orbital[1:]
+                    l_quantum_symbol=orbital[0], 
+                    ml_quantum_symbol=orbital[1:]
                 )
             )  # TODO add this split setter as part of the `OrbitalsState` methods
-        atom_state = AtomsState(chemical_symbol=element, orbitals_state=orbitals_state)
+        atom_def = AtomDefn(chemical_symbol=element)
+        atom_state = AtomsState(atom_definition_ref=atom_def, orbitals_state=orbitals_state)
         # and obtain the atomic number for each AtomsState
         atom_state.normalize(EntryArchive(), logger)
         atoms_state.append(atom_state)
-    atomic_cell.atoms_state = atoms_state
+    
+    for state in atoms_state:
+        model_system.particle_states.append(state)
     return model_system
 
 
 def generate_atomic_cell(
     lattice_vectors: list[list[float]] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-    positions: Optional[list] = None,
     periodic_boundary_conditions: list[bool] = [False, False, False],
     chemical_symbols: list[str] = ['H', 'H', 'O'],
     atomic_numbers: list[int] = [1, 1, 8],
@@ -119,27 +124,14 @@ def generate_atomic_cell(
     """
     Generate an `AtomicCell` section with the given parameters.
     """
-    # Define positions if not provided
-    if positions is None and chemical_symbols is not None:
-        n_atoms = len(chemical_symbols)
-        positions = [[i / n_atoms, i / n_atoms, i / n_atoms] for i in range(n_atoms)]
 
-    # Define the atomic cell
+    # Define the atomic cell solely with cell properties; positions are handled by ModelSystem.
     atomic_cell = AtomicCell(periodic_boundary_conditions=periodic_boundary_conditions)
     if lattice_vectors:
-        atomic_cell.lattice_vectors = lattice_vectors * ureg('angstrom')
-    if positions:
-        atomic_cell.positions = positions * ureg('angstrom')
-
-    # Add the elements information
-    for index, atom in enumerate(chemical_symbols):
-        atom_state = AtomsState()
-        setattr(atom_state, 'chemical_symbol', atom)
-        atomic_number = atom_state.resolve_atomic_number(logger=logger)
-        assert atomic_number == atomic_numbers[index]
-        atom_state.atomic_number = atomic_number
-        atomic_cell.atoms_state.append(atom_state)
-
+        atomic_cell.lattice_vectors = np.array(lattice_vectors) * ureg('angstrom')
+    # Removed assignment of positions to atomic_cell as per new design.
+    # Also, the atoms_state information is now part of ModelSystem (particle_states) instead.
+    
     return atomic_cell
 
 

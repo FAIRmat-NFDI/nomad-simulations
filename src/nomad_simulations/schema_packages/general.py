@@ -222,10 +222,10 @@ class Simulation(BaseSimulation, Schema):
                 to the atom indices stored in system.
             """
             if not subsystems:
-                if system.atom_indices is not None and atom_labels:
-                    subsystem_labels = [atom_labels[i] for i in system.atom_indices]
-                elif system.atom_indices is not None:
-                    subsystem_labels = ['Unknown'] * len(system.atom_indices)
+                if system.particle_indices is not None and atom_labels:
+                    subsystem_labels = [atom_labels[i] for i in system.particle_indices]
+                elif system.particle_indices is not None:
+                    subsystem_labels = ['Unknown'] * len(system.particle_indices)
                 else:
                     subsystem_labels = []
             else:
@@ -258,9 +258,8 @@ class Simulation(BaseSimulation, Schema):
                     get_composition_recurs(system=subsystem, atom_labels=atom_labels)
 
         atom_labels = (
-            [atom.chemical_symbol for atom in system_parent.atom_states]
-            if system_parent.atom_states
-            else []
+            [atom.atom_definition_ref.chemical_symbol for atom in system_parent.particle_states]
+            if system_parent.particle_states else []
         )
         get_composition_recurs(system=system_parent, atom_labels=atom_labels)
 

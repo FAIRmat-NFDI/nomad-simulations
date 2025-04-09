@@ -785,7 +785,7 @@ class ModelSystem(System):
         - `ChemicalFormula` containing the information of the chemical formulas in different
         formats.
 
-    This class nest over itself (with the section proxy in `model_system`) to define different
+    This class nest over itself (with the section proxy in `sub_systems`) to define different
     parent-child system trees. The quantities `branch_label`, `branch_depth`, `particle_indices`,
     and `bond_list` are used to define the parent-child tree.
 
