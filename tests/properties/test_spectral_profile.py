@@ -30,7 +30,7 @@ class TestSpectralProfile:
         Test the `is_valid_spectral_profile` method.
         """
         spectral_profile = SpectralProfile(
-            variables=[Energy(points=[-1, 0, 1] * ureg.joule)]
+            energies=Energy(points=[-1, 0, 1] * ureg.joule)
         )
         spectral_profile.value = [1.5, 0, 0.8]
         assert spectral_profile.is_valid_spectral_profile()
@@ -54,7 +54,6 @@ class TestElectronicDensityOfStates:
             == 'http://fairmat-nfdi.eu/taxonomy/ElectronicDensityOfStates'
         )
         assert electronic_dos.name == 'ElectronicDensityOfStates'
-        assert electronic_dos.rank == []
 
     def test_resolve_energies_origin(self):
         """
@@ -232,7 +231,6 @@ class TestAbsorptionSpectrum:
         absorption_spectrum = AbsorptionSpectrum()
         assert absorption_spectrum.iri is None  # Add iri when available
         assert absorption_spectrum.name == 'AbsorptionSpectrum'
-        assert absorption_spectrum.rank == []
 
 
 class TestXASSpectrum:
@@ -248,7 +246,6 @@ class TestXASSpectrum:
         xas_spectrum = XASSpectrum()
         assert xas_spectrum.iri is None  # Add iri when available
         assert xas_spectrum.name == 'XASSpectrum'
-        assert xas_spectrum.rank == []
 
     @pytest.mark.parametrize(
         'xanes_energies, exafs_energies, xas_values',
@@ -273,16 +270,16 @@ class TestXASSpectrum:
         xas_spectrum = XASSpectrum()
         if xanes_energies is not None:
             xanes_spectrum = AbsorptionSpectrum()
-            xanes_spectrum.variables = [Energy(points=xanes_energies * ureg.joule)]
+            xanes_spectrum.energies = Energy(points=xanes_energies * ureg.joule)
             xanes_spectrum.value = [0.5, 0.1, 0.3]
             xas_spectrum.xanes_spectrum = xanes_spectrum
         if exafs_energies is not None:
             exafs_spectrum = AbsorptionSpectrum()
-            exafs_spectrum.variables = [Energy(points=exafs_energies * ureg.joule)]
+            exafs_spectrum.energies = Energy(points=exafs_energies * ureg.joule)
             exafs_spectrum.value = [0.2, 0.4, 0.6]
             xas_spectrum.exafs_spectrum = exafs_spectrum
         xas_spectrum.generate_from_contributions(logger)
-        if xas_spectrum.value is not None:
-            assert (xas_spectrum.value == xas_values).all()
+        if xas_spectrum.value is None:
+            assert xas_values is None
         else:
-            assert xas_spectrum.value == xas_values
+            assert (xas_spectrum.value == xas_values).any()

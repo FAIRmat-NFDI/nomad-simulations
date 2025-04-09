@@ -160,8 +160,8 @@ class OrbitalsState(Entity):
         if self.n_quantum_number is not None and self.n_quantum_number < 1:
             logger.error('The `n_quantum_number` must be greater than 0.')
             return False
-        if self.l_quantum_number is not None and self.l_quantum_number < 1:
-            logger.error('The `l_quantum_number` must be greater than 0.')
+        if self.l_quantum_number is not None and self.l_quantum_number < 0:
+            logger.error('The `l_quantum_number` must be >= 0.')
             return False
         if self.ml_quantum_number is not None and (
             self.ml_quantum_number < -self.l_quantum_number

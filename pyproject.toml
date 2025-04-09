@@ -50,7 +50,7 @@ dev = [
 ]
 
 [tool.uv]
-index-url = "https://gitlab.mpcdf.mpg.de/api/v4/projects/2187/packages/pypi/simple"
+build-constraint-dependencies = ["wheel<0.46"]
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
