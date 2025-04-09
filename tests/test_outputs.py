@@ -6,7 +6,10 @@ from nomad.datamodel import EntryArchive
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
-from nomad_simulations.schema_packages.outputs import Outputs, SCFOutputs
+from nomad_simulations.schema_packages.outputs import (
+    Outputs,
+    SCFOutputs,
+)
 from nomad_simulations.schema_packages.properties import ElectronicBandGap
 
 from . import logger
@@ -18,7 +21,7 @@ class TestOutputs:
     Test the `Outputs` class defined in `outputs.py`.
     """
 
-    def test_number_of_properties(self):
+    def test_number_of_properties(self):  # TODO: remove this test
         """
         Test how many properties are defined under `Outputs` and its order. This test is done in order to control better
         which properties are already defined and in which order to control their normalizations
@@ -57,18 +60,18 @@ class TestOutputs:
             # no properties to extract
             ([], [], 0, []),
             # non-spin polarized case
-            ([ElectronicBandGap(variables=[])], [2.0], 0, []),
+            ([ElectronicBandGap()], [2.0], 0, []),
             # spin polarized case
             (
                 [
-                    ElectronicBandGap(variables=[], spin_channel=0),
-                    ElectronicBandGap(variables=[], spin_channel=1),
+                    ElectronicBandGap(spin_channel=0),
+                    ElectronicBandGap(spin_channel=1),
                 ],
                 [1.0, 1.5],
                 2,
                 [
-                    ElectronicBandGap(variables=[], spin_channel=0),
-                    ElectronicBandGap(variables=[], spin_channel=1),
+                    ElectronicBandGap(spin_channel=0),
+                    ElectronicBandGap(spin_channel=1),
                 ],
             ),
         ],
@@ -92,7 +95,7 @@ class TestOutputs:
         outputs = Outputs()
 
         for i, band_gap in enumerate(band_gaps):
-            band_gap.value = values[i]
+            band_gap.value = [values[i]]
             outputs.electronic_band_gaps.append(band_gap)
         gaps = outputs.extract_spin_polarized_property(
             property_name='electronic_band_gaps'
@@ -100,7 +103,7 @@ class TestOutputs:
         assert len(gaps) == result_length
         if len(result) > 0:
             for i, result_gap in enumerate(result):
-                result_gap.value = values[i]
+                result_gap.value = [values[i]]
                 # ? comparing the sections does not work
                 assert gaps[i].value == result_gap.value
         else:
@@ -199,7 +202,13 @@ class TestSCFOutputs:
             # length of `scf_last_steps` is different from 2
             ([Outputs()], 0, None, None, []),
             # no property matching `'electronic_band_gaps'` stored under the `scf_last_steps`
-            ([Outputs(), Outputs()], 0, None, None, []),
+            (
+                [Outputs(), Outputs()],
+                0,
+                None,
+                None,
+                [],
+            ),
             # `i_property` is out of range
             (
                 [
@@ -222,7 +231,7 @@ class TestSCFOutputs:
                 None,
                 [],
             ),
-            # no `SelfConsistency` section and `threshold_change_unit` defined and macthing units for property `value` (`'joule'`)
+            # no `SelfConsistency` section and `threshold_change_unit` defined and matching units for property `value` (`'joule'`)
             (
                 [
                     Outputs(electronic_band_gaps=[ElectronicBandGap()]),
@@ -258,7 +267,7 @@ class TestSCFOutputs:
         for i, scf_step in enumerate(scf_last_steps):
             property_section = getattr(scf_step, 'electronic_band_gaps')
             if property_section is not None and values is not None:
-                property_section[i_property].value = values[i]
+                property_section[i_property].value = [values[i]]
         scf_values = scf_outputs.get_last_scf_steps_value(
             scf_last_steps=scf_last_steps,
             property_name='electronic_band_gaps',

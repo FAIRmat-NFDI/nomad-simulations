@@ -39,8 +39,7 @@ class HoppingMatrix(PhysicalProperty):
         unit='joule',
         description="""
         Value of the hopping matrix in joules. The elements are complex numbers defined for each Wigner-Seitz point and
-        each pair of orbitals; thus, `rank = [n_orbitals, n_orbitals]`. Note this contains also the onsite values, i.e.,
-        it includes the Wigner-Seitz point (0, 0, 0), hence the `CrystalFieldSplitting` values.
+        each pair of orbitals. Note this contains also the onsite values, i.e., it includes the Wigner-Seitz point (0, 0, 0), hence the `CrystalFieldSplitting` values.
         """,
     )
 
@@ -48,8 +47,6 @@ class HoppingMatrix(PhysicalProperty):
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        # ! n_orbitals need to be set up during initialization of the class
-        self.rank = [int(kwargs.get('n_orbitals')), int(kwargs.get('n_orbitals'))]
         self.name = self.m_def.name
 
     # TODO add normalization to extract DOS, band structure, etc, properties from `HoppingMatrix`
@@ -83,6 +80,4 @@ class CrystalFieldSplitting(PhysicalProperty):
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        # ! `n_orbitals` need to be set up during initialization of the class
-        self.rank = [int(kwargs.get('n_orbitals'))]
         self.name = self.m_def.name

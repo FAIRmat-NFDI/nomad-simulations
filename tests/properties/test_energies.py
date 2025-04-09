@@ -19,7 +19,6 @@ class TestFermiLevel:
         fermi_level = FermiLevel()
         assert fermi_level.iri == 'http://fairmat-nfdi.eu/taxonomy/FermiLevel'
         assert fermi_level.name == 'FermiLevel'
-        assert fermi_level.rank == []
 
 
 class TestTotalEnergy:
@@ -35,7 +34,6 @@ class TestTotalEnergy:
         total_energy = TotalEnergy()
         # assert total_energy.iri == 'http://fairmat-nfdi.eu/taxonomy/TotalEnergy'
         assert total_energy.name == 'TotalEnergy'
-        assert total_energy.rank == []
 
 
 class TestKineticEnergy:
@@ -51,7 +49,6 @@ class TestKineticEnergy:
         kinetic_energy = KineticEnergy()
         # assert kinetic_energy.iri == 'http://fairmat-nfdi.eu/taxonomy/KineticEnergy'
         assert kinetic_energy.name == 'KineticEnergy'
-        assert kinetic_energy.rank == []
 
 
 class TestPotentialEnergy:
@@ -67,4 +64,3 @@ class TestPotentialEnergy:
         potential_energy = PotentialEnergy()
         # assert potential_energy.iri == 'http://fairmat-nfdi.eu/taxonomy/PotentialEnergy'
         assert potential_energy.name == 'PotentialEnergy'
-        assert potential_energy.rank == []
