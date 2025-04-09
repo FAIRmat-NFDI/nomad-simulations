@@ -17,17 +17,14 @@ Read more in the [official documentation](https://nomad-coe.github.io/nomad-simu
 
 `nomad-simulations` can be installed as a PyPI package using `pip`:
 
-> [!WARNING]
-> Unfortunately, the current plugin mechanism is not supported by the latest nomad-lab version on PyPI and therefore an index url pointing to the NOMAD Gitlab registry needs to be added.
-
 ```sh
-pip install nomad-simulations --index-url https://gitlab.mpcdf.mpg.de/api/v4/projects/2187/packages/pypi/simple
+pip install nomad-simulations
 ```
 
 
 ## Development
 
-If you want to develop locally this package, clone the project and in the workspace folder, create a virtual environment (you can use Python 3.9, 3.10, or 3.11):
+If you want to develop locally this package, clone the project and in the workspace folder, create a virtual environment (you can use Python 3.10, 3.11, or 3.12):
 ```sh
 git clone https://github.com/nomad-coe/nomad-simulations.git
 cd nomad-simulations
@@ -54,12 +51,6 @@ The plugin is still under development. If you would like to contribute, install 
 ```sh
 uv pip install -e '.[dev]'
 ```
-
-**Note:** If you do not use `uv`, you need to add the `--index-url` flag as in the PyPI command for installing the package:
-```sh
-pip install -e '.[dev]' --index-url https://gitlab.mpcdf.mpg.de/api/v4/projects/2187/packages/pypi/simple
-```
-
 
 ### Run the tests
 
