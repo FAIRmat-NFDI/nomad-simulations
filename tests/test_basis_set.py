@@ -8,7 +8,7 @@ import pytest
 from nomad.datamodel.datamodel import EntryArchive
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.atoms_state import AtomsState, AtomDefn
 from nomad_simulations.schema_packages.basis_set import (
     APWBaseOrbital,
     APWLocalOrbital,
@@ -139,7 +139,10 @@ def test_full_apw(
         data=Simulation(
             model_system=[
                 ModelSystem(
-                    cell=[AtomicCell(atoms_state=[AtomsState(chemical_symbol='H')])]
+                    cell=[AtomicCell()],
+                    particle_states=[
+                        AtomsState(atom_definition_ref=AtomDefn(chemical_symbol='H'))
+                    ]
                 )
             ],
             model_method=[ModelMethod(numerical_settings=[])],
