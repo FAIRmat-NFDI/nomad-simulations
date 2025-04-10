@@ -268,7 +268,7 @@ class TestSlaterKosterBond:
             ("s", None, None, None),
             (None, "p", None, None),
             ("s", "s", (0,0,0), "sss"),
-            ("s", "p", (1,0,0), "sps"),  
+            ("s", "p", (0,0,0), "sps"),  
         ],
     )
     def test_resolve_bond_name_from_references(

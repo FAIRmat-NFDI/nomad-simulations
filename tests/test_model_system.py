@@ -66,7 +66,8 @@ class TestChemicalFormula:
         # Possibly you do model_system=ModelSystem(...), model_system.cell.append(acell), etc.
         chem.normalize(EntryArchive(), logger)
         # Check if it sets formulas to H2O
-        # Only if your code links them as siblings. If not, adapt accordingly.
+        if chem.descriptive is not None:
+            assert chem.descriptive == "H2O"
 
 class TestModelSystem:
     """
@@ -105,14 +106,25 @@ class TestModelSystem:
         """
         Test that from_ase_atoms sets positions, cell, particle_states, etc.
         """
-        ase_atoms = ase.Atoms("CO", positions=[[0,0,0],[0,0,1.1]], cell=[4,4,4], pbc=[True,True,True])
+        ase_atoms = ase.Atoms("CO", positions=[[0,0,0],[0,0,1.1]], cell=np.eye(3) * 4.0, pbc=[True,True,True])
         sys = ModelSystem()
+        sys.cell.append(Cell(
+            lattice_vectors=(np.eye(3) * 4.0 * ureg.angstrom),
+            periodic_boundary_conditions=[True, True, True]
+        ))
         sys.from_ase_atoms(ase_atoms, logger=logger)
 
         assert sys.n_particles == 2
         assert sys.positions.shape == (2,3)
-        assert np.allclose(sys.cell[0].lattice_vectors.magnitude, np.eye(3)*4)
-        assert sys.cell[0].periodic_boundary_conditions == [True, True, True]
+        # Check that the first cell has its lattice_vectors updated; using complete_cell from ASE
+        expected_cell = ase.geometry.complete_cell(ase_atoms.get_cell()) * ureg.angstrom
+        assert np.allclose(sys.cell[0].lattice_vectors.to('angstrom').magnitude,
+                           expected_cell.to('angstrom').magnitude)
+        # Check PBC
+        assert np.array_equal(
+            np.array(sys.cell[0].periodic_boundary_conditions),
+            np.array(ase_atoms.get_pbc())
+        )
         # Check particle_states references
         assert len(sys.particle_states) == 2
         syms = [st.atom_definition_ref.chemical_symbol for st in sys.particle_states]
@@ -175,21 +187,24 @@ class TestModelSystem:
         # Normalize
         sys.normalize(EntryArchive(), logger=logger)
         # Check basic results
-        assert sys.type in ["molecule / cluster","bulk"]  # or whichever your logic sets
+        assert sys.type in ["molecule / cluster","bulk"]  
         assert sys.dimensionality is not None
         if sys.chemical_formula is not None:
             # If the formula is expected "H2O," check that:
             assert sys.chemical_formula.descriptive == "H2O"
-        # If your code appends cells (primitive, conventional), check that:
-        if len(sys.cell) >= 2:
-            assert sys.cell[1].type in ["primitive","conventional"]
-
+        # Extra cells (primitive/conventional) are added only if there is a parent ModelSystem.
+        # For a top-level ModelSystem (with no parent), we expect only the originally appended cell.
+        if sys.m_parent is not None:
+            if len(sys.cell) >= 2:
+                assert sys.cell[1].type in ["primitive", "conventional"]
+        else:
+            # Top-level system: expect only one cell.
+            assert len(sys.cell) == 1
 
 @pytest.mark.parametrize("branching", [True, False])
 def test_branch_depth_if_needed(branching):
     """
-    Example test verifying branch_depth logic 
-    if your code sets it for a nested set of sub_systems.
+    Simplistic test verifying branch_depth logic 
     """
     parent = ModelSystem(is_representative=True, branch_label="Parent")
     child = ModelSystem(branch_label="Child")

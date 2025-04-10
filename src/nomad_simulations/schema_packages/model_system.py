@@ -566,7 +566,7 @@ class Symmetry(ArchiveSection):
         """
         symmetry = {}
         try:
-            ase_atoms = original_atomic_cell.to_ase_atoms(logger=logger)
+            ase_atoms = self.m_parent.to_ase_atoms(logger=logger)
             symmetry_analyzer = SymmetryAnalyzer(
                 ase_atoms, symmetry_tol=configuration.symmetry_tolerance
             )
@@ -610,14 +610,12 @@ class Symmetry(ArchiveSection):
 
         # Getting prototype_formula, prototype_aflow_id, and strukturbericht designation from
         # standarized Wyckoff numbers and the space group number
-        if (
-            symmetry.get('space_group_number')
-            and conventional_atomic_cell.atoms_state is not None
-        ):
-            # Resolve atomic_numbers and wyckoff letters from the conventional cell
+        # --- NEW BLOCK: Use parent's particle_states since AtomicCell no longer stores atoms_state ---
+        # Instead of conventional_atomic_cell.atoms_state, use self.m_parent.particle_states.
+        if symmetry.get('space_group_number') and self.m_parent.particle_states:
             conventional_num = [
-                atom_state.atomic_number
-                for atom_state in conventional_atomic_cell.atoms_state
+                state.atom_definition_ref.atomic_number
+                for state in self.m_parent.particle_states
             ]
             conventional_wyckoff = conventional_atomic_cell.wyckoff_letters
             # Normalize wyckoff letters
@@ -740,17 +738,21 @@ class ChemicalFormula(ArchiveSection):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        atomic_cell = get_sibling_section(
-            section=self, sibling_section_name='cell', logger=logger
-        )
-        if atomic_cell is None:
-            logger.warning('Could not resolve the sibling `AtomicCell` section.')
+        # Instead of retrieving a sibling "cell", get the parent ModelSystem
+        model_system = self.m_parent
+        if model_system is None:
+            logger.warning('Could not resolve parent ModelSystem for ChemicalFormula.')
             return
-        ase_atoms = atomic_cell.to_ase_atoms(logger=logger)
+
+        # Get the ASE Atoms using the ModelSystem.to_ase_atoms() method (which now gathers positions, cell, etc.)
+        ase_atoms = model_system.to_ase_atoms(logger=logger)
+        if ase_atoms is None:
+            logger.error('Could not generate ASE Atoms from the ModelSystem.')
+            return
+
         formula = None
         try:
             formula = Formula(formula=ase_atoms.get_chemical_formula())
-            # self.chemical_composition = ase_atoms.get_chemical_formula(mode="all")
         except ValueError as e:
             logger.warning(
                 'Could not extract the chemical formulas information.',
@@ -759,7 +761,8 @@ class ChemicalFormula(ArchiveSection):
             )
         if formula:
             self.resolve_chemical_formulas(formula=formula)
-            self.m_cache['elemental_composition'] = formula.elemental_composition()
+            self.m_cache['elemental_composition'] = formula.elemental_composition
+
 
 
 class ModelSystem(System):
@@ -1167,9 +1170,6 @@ class ModelSystem(System):
             self.elemental_composition = sec_chemical_formula.m_cache.get(
                 'elemental_composition', []
             )
-
-        # populate unique atom definitions
-        self.populate_atom_types(logger)
 
     def _generate_comparer(self):
         if self.positions is None:
