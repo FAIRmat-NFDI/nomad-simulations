@@ -509,10 +509,10 @@ class TB(ModelMethodElectronic):
         if is_not_representative(model_system=model_system, logger=logger):
             return None
 
-        # 3) Check for at least one cell if that is your design’s requirement
-        if not model_system.cell:
-            logger.warning("No AtomicCell found, skipping orbital references resolution.")
-            return None
+        # # 3) NOT NEEDED ANYMORE: Check for at least one cell if that is your design’s requirement
+        # if not model_system.cell:
+        #     logger.warning("No AtomicCell found, skipping orbital references resolution.")
+        #     return None
 
         # 4) If no child ModelSystem sections exist, skip
         if not model_system.sub_systems:
