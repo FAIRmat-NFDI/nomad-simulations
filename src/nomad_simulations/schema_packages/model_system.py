@@ -1055,7 +1055,12 @@ class ModelSystem(System):
         else:
             logger.warning('No cell section available in ModelSystem.')
 
-        ase_atoms.set_positions(self.positions.to('angstrom').magnitude)
+        # Check that positions have been set on the ModelSystem
+        if self.positions is None:
+            logger.error('ModelSystem.positions is not defined.')
+            return None
+        else:
+            ase_atoms.set_positions(self.positions.to('angstrom').magnitude)
         return ase_atoms
 
     def from_ase_atoms(self, ase_atoms: ase.Atoms, logger: 'BoundLogger') -> None:

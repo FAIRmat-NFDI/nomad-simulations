@@ -191,15 +191,15 @@ def generate_simulation_electronic_dos(
     outputs.electronic_dos.append(electronic_dos)
     orbital_s_Ga_pdos = DOSProfile(
         energies=variables_energy,
-        entity_ref=model_system.cell[0].atoms_state[0].orbitals_state[0],
+        entity_ref=model_system.particle_states[0].orbitals_state[0],
     )
     orbital_px_As_pdos = DOSProfile(
         energies=variables_energy,
-        entity_ref=model_system.cell[0].atoms_state[1].orbitals_state[0],
+        entity_ref=model_system.particle_states[1].orbitals_state[0],
     )
     orbital_py_As_pdos = DOSProfile(
         energies=variables_energy,
-        entity_ref=model_system.cell[0].atoms_state[1].orbitals_state[1],
+        entity_ref=model_system.particle_states[1].orbitals_state[1],
     )
     orbital_s_Ga_pdos.value = [0.2, 0.5, 0, 0, 0, 0.0, 0.0] * ureg('1/joule')
     orbital_px_As_pdos.value = [1.0, 0.2, 0, 0, 0, 0.3, 0.0] * ureg('1/joule')

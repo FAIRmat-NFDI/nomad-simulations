@@ -236,8 +236,8 @@ class KSpaceFunctionalities:
                     'Could not find the primitive `AtomicCell` under `ModelSystem.cell`.'
                 )
                 continue
-            # function defined in AtomicCell
-            atoms = prim_atomic_cell.to_ase_atoms(logger=logger)
+            # function defined in ModelSystem
+            atoms = model_system.to_ase_atoms(logger=logger)
             cell = atoms.get_cell()
             lattice = cell.get_bravais_lattice(eps=eps)
             break  # only cover the first representative `ModelSystem`
@@ -819,7 +819,7 @@ class KSpace(NumericalSettings):
                 continue
 
             # Set the `reciprocal_lattice_vectors` using ASE
-            ase_atoms = atomic_cell[0].to_ase_atoms(logger=logger)
+            ase_atoms = model_system.to_ase_atoms(logger=logger)
             return 2 * np.pi * ase_atoms.get_reciprocal_cell() / ureg.angstrom
         return None
 
