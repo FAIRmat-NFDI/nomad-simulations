@@ -345,7 +345,6 @@ class ElectronicDensityOfStates(DOSProfile):
         Returns:
             (Optional[float]): The normalization factor.
         """
-        # Get the `ModelSystem` as referenced in the `Outputs.model_system_ref`
         model_system = get_sibling_section(
             section=self, sibling_section_name='model_system_ref', logger=logger
         )
@@ -355,18 +354,19 @@ class ElectronicDensityOfStates(DOSProfile):
             )
             return None
 
-        # get particle_states
+        # Instead of self.m_parent, use model_system for particle_states
         if (
-            self.m_parent.particle_states is None
-            or len(self.m_parent.particle_states) == 0
+            model_system.particle_states is None
+            or len(model_system.particle_states) == 0
         ):
             logger.warning(
-                'Could not resolve the `particle_states` from the ModelSystem.'
+                'Could not resolve the `particle_states` from the referenced ModelSystem.'
             )
             return None
+
         atomic_numbers = [atom.atomic_number for atom in model_system.particle_states]
 
-        # Return `normalization_factor` depending if the calculation is spin polarized or not
+        # Compute normalization_factor. If spin_channel is set, assume spin-polarized system.
         if self.spin_channel is not None:
             normalization_factor = 1 / (2 * sum(atomic_numbers))
         else:
