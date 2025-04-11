@@ -32,7 +32,7 @@ class TestTB:
     )
     def test_resolve_type(self, tb_section: TB, result: Optional[str]):
         """
-        Test the `resolve_type` method of `TB`. 
+        Test the `resolve_type` method of `TB`.
         E.g., Wannier => "Wannier", SlaterKoster => "SlaterKoster", TB => None.
         """
         assert tb_section.resolve_type() == result
@@ -52,36 +52,55 @@ class TestTB:
             ([ModelSystem(is_representative=True, cell=[AtomicCell()])], 0, None),
             # (6) no child systems in `model_system`
             (
-                [ModelSystem(is_representative=True,
-                             cell=[AtomicCell()],
-                             # no sub_systems, so can't find an 'active_atom' child
-                             )],
+                [
+                    ModelSystem(
+                        is_representative=True,
+                        cell=[AtomicCell()],
+                        # no sub_systems, so can't find an 'active_atom' child
+                    )
+                ],
                 0,
                 None,
             ),
             # (7) child system type != 'active_atom'
             (
-                [ModelSystem(is_representative=True,
-                             cell=[AtomicCell()],
-                             sub_systems=[ModelSystem(type='bulk')])],
+                [
+                    ModelSystem(
+                        is_representative=True,
+                        cell=[AtomicCell()],
+                        sub_systems=[ModelSystem(type='bulk')],
+                    )
+                ],
                 0,
                 None,
             ),
             # (8) child system is 'active_atom' but references a missing index in particle_states
             (
-                [ModelSystem(is_representative=True,
-                             cell=[AtomicCell()],
-                             sub_systems=[ModelSystem(type='active_atom', particle_indices=[2])],
-                             particle_states=[AtomsState()])],
+                [
+                    ModelSystem(
+                        is_representative=True,
+                        cell=[AtomicCell()],
+                        sub_systems=[
+                            ModelSystem(type='active_atom', particle_indices=[2])
+                        ],
+                        particle_states=[AtomsState()],
+                    )
+                ],
                 0,
                 [],
             ),
             # (9) child system is 'active_atom' but that index has no orbitals_state
             (
-                [ModelSystem(is_representative=True,
-                             cell=[AtomicCell()],
-                             particle_states=[AtomsState(orbitals_state=[])],
-                             sub_systems=[ModelSystem(type='active_atom', particle_indices=[0])])],
+                [
+                    ModelSystem(
+                        is_representative=True,
+                        cell=[AtomicCell()],
+                        particle_states=[AtomsState(orbitals_state=[])],
+                        sub_systems=[
+                            ModelSystem(type='active_atom', particle_indices=[0])
+                        ],
+                    )
+                ],
                 0,
                 [],
             ),
@@ -110,7 +129,7 @@ class TestTB:
         result: Optional[list[OrbitalsState]],
     ):
         """
-        Test the `resolve_orbital_references` method of TB to find OrbitalsState objects 
+        Test the `resolve_orbital_references` method of TB to find OrbitalsState objects
         from a model_system child typed 'active_atom'.
         """
         tb_method = TB()
@@ -146,45 +165,59 @@ class TestTB:
                 Wannier(),
                 'Wannier',
                 [ModelSystem(is_representative=True, cell=[AtomicCell()])],
-                None
+                None,
             ),
             # (6) sub_system with type != 'active_atom'
             (
                 Wannier(),
                 'Wannier',
-                [ModelSystem(is_representative=True,
-                             cell=[AtomicCell()],
-                             sub_systems=[ModelSystem(type='bulk')])],
-                None
+                [
+                    ModelSystem(
+                        is_representative=True,
+                        cell=[AtomicCell()],
+                        sub_systems=[ModelSystem(type='bulk')],
+                    )
+                ],
+                None,
             ),
             # (7) child system is 'active_atom' but references missing index
             (
                 Wannier(),
                 'Wannier',
-                [ModelSystem(is_representative=True,
-                             cell=[AtomicCell()],
-                             sub_systems=[ModelSystem(type='active_atom', particle_indices=[99])],
-                             particle_states=[AtomsState(orbitals_state=[OrbitalsState()])]
-                )],
-                None
+                [
+                    ModelSystem(
+                        is_representative=True,
+                        cell=[AtomicCell()],
+                        sub_systems=[
+                            ModelSystem(type='active_atom', particle_indices=[99])
+                        ],
+                        particle_states=[AtomsState(orbitals_state=[OrbitalsState()])],
+                    )
+                ],
+                None,
             ),
             # (8) child system is 'active_atom' but that index has no orbitals
             (
                 Wannier(),
                 'Wannier',
-                [ModelSystem(is_representative=True,
-                             cell=[AtomicCell()],
-                             sub_systems=[ModelSystem(type='active_atom', particle_indices=[0])],
-                             particle_states=[AtomsState(orbitals_state=[])]
-                )],
-                None
+                [
+                    ModelSystem(
+                        is_representative=True,
+                        cell=[AtomicCell()],
+                        sub_systems=[
+                            ModelSystem(type='active_atom', particle_indices=[0])
+                        ],
+                        particle_states=[AtomsState(orbitals_state=[])],
+                    )
+                ],
+                None,
             ),
             # (9) user gave Wannier.orbitals_ref => skip resolution
             (
                 Wannier(orbitals_ref=[OrbitalsState(l_quantum_symbol='p')]),
                 'Wannier',
                 [ModelSystem(is_representative=True, cell=[AtomicCell()])],
-                [OrbitalsState(l_quantum_symbol='p')]
+                [OrbitalsState(l_quantum_symbol='p')],
             ),
             # Commented out for now.
             # (10) fully valid => single orbital
@@ -209,7 +242,7 @@ class TestTB:
         expected_orbitals: Optional[list[OrbitalsState]],
     ):
         """
-        Test TB.normalize() [including Wannier or SlaterKoster], 
+        Test TB.normalize() [including Wannier or SlaterKoster],
         checking that it sets .type and .orbitals_ref as needed.
         """
         # Attach the TB (or Wannier, or SlaterKoster) to a simulation
@@ -224,7 +257,9 @@ class TestTB:
             # Compare the first orbitals
             assert len(tb_section.orbitals_ref) == len(expected_orbitals)
             for i, orb in enumerate(expected_orbitals):
-                assert tb_section.orbitals_ref[i].l_quantum_symbol == orb.l_quantum_symbol
+                assert (
+                    tb_section.orbitals_ref[i].l_quantum_symbol == orb.l_quantum_symbol
+                )
 
 
 class TestWannier:
@@ -251,7 +286,10 @@ class TestWannier:
         Test that Wannier.normalize() sets the correct localization_type
         from is_maximally_localized if needed.
         """
-        w = Wannier(localization_type=localization_type, is_maximally_localized=is_maximally_localized)
+        w = Wannier(
+            localization_type=localization_type,
+            is_maximally_localized=is_maximally_localized,
+        )
         w.normalize(EntryArchive(), logger=logger)
         assert w.localization_type == expected_type
 
@@ -265,10 +303,10 @@ class TestSlaterKosterBond:
         'orb1_symbol, orb2_symbol, bravais_vector, expected_name',
         [
             (None, None, None, None),
-            ("s", None, None, None),
-            (None, "p", None, None),
-            ("s", "s", (0,0,0), "sss"),
-            ("s", "p", (0,0,0), "sps"),  
+            ('s', None, None, None),
+            (None, 'p', None, None),
+            ('s', 's', (0, 0, 0), 'sss'),
+            ('s', 'p', (0, 0, 0), 'sps'),
         ],
     )
     def test_resolve_bond_name_from_references(
@@ -297,8 +335,8 @@ class TestSlaterKosterBond:
         'orb1_symbol, orb2_symbol, bravais_vector, expected',
         [
             (None, None, None, None),
-            ("s", None, None, None),
-            ("s", "p", (0,0,0), "sps"),
+            ('s', None, None, None),
+            ('s', 'p', (0, 0, 0), 'sps'),
         ],
     )
     def test_normalize(
@@ -313,7 +351,7 @@ class TestSlaterKosterBond:
         """
         # Prepare a model scenario
         bond = SlaterKosterBond()
-        # We'll create a single AtomsState that can hold orbitals
+        # Create a single AtomsState that can hold orbitals
         state = AtomsState()
         orbitals = []
         if orb1_symbol:
@@ -326,8 +364,5 @@ class TestSlaterKosterBond:
         if bravais_vector is not None:
             bond.bravais_vector = bravais_vector
 
-        # We won't push this to a real ModelSystem unless your code requires it. 
-        # We'll just call bond.normalize.
         bond.normalize(EntryArchive(), logger=logger)
         assert bond.name == expected
-

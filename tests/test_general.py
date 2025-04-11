@@ -2,14 +2,14 @@ import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
 
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomDefn,
+    AtomsState,
+)
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
     ModelSystem,
-)
-from nomad_simulations.schema_packages.atoms_state import (
-    AtomDefn,
-    AtomsState,
 )
 
 from . import logger
@@ -28,7 +28,6 @@ class TestSimulation:
                 [
                     ModelSystem(
                         name='depth 0',
-                        # model_system=[
                         sub_systems=[
                             ModelSystem(name='depth 1'),
                             ModelSystem(name='depth 1'),
@@ -41,11 +40,9 @@ class TestSimulation:
                 [
                     ModelSystem(
                         name='depth 0',
-                        # model_system=[
                         sub_systems=[
                             ModelSystem(
                                 name='depth 1',
-                                # model_system=[ModelSystem(name='depth 2')],
                                 sub_systems=[ModelSystem(name='depth 2')],
                             ),
                             ModelSystem(name='depth 1'),
@@ -91,7 +88,6 @@ class TestSimulation:
             value=[0],
         )
         assert value == result
-        
 
     @pytest.mark.parametrize(
         'is_representative, has_atom_indices, mol_label_list, n_mol_list, atom_labels_list, composition_formula_list, custom_formulas',
@@ -201,7 +197,7 @@ class TestSimulation:
             which follows each branch to its deepest level before moving to the next branch, i.e.,
         """
 
-        ### Generate the system hierarchy ###
+        ### Generate the system hierarchy
         simulation = Simulation()
         model_system = ModelSystem(is_representative=True)
         simulation.model_system.append(model_system)
@@ -240,7 +236,9 @@ class TestSimulation:
                 for atom_label in atom_labels:
                     if atom_label is not None:
                         model_system.particle_states.append(
-                            AtomsState(atom_definition_ref=AtomDefn(chemical_symbol=atom_label))
+                            AtomsState(
+                                atom_definition_ref=AtomDefn(chemical_symbol=atom_label)
+                            )
                         )
                 n_atoms = len(model_system.particle_states)
                 particle_indices = np.arange(n_atoms - len(atom_labels), n_atoms)
@@ -261,7 +259,7 @@ class TestSimulation:
 
         simulation.normalize(EntryArchive(), logger)
 
-        ### Traverse the hierarchy recursively and check the results ###
+        ### Traverse the hierarchy recursively and check the results 
         assert model_system.composition_formula == composition_formula_list[0]
         ctr_comp = 1
 

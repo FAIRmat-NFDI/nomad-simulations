@@ -83,8 +83,8 @@ class TestElectronicDensityOfStates:
         outputs.model_system_ref = simulation.model_system[0]
         assert electronic_dos.resolve_normalization_factor(logger) is None
 
-        # model_system_ref has a cell but no particle_states 
-        atomic_cell = AtomicCell(type="original")
+        # model_system_ref has a cell but no particle_states
+        atomic_cell = AtomicCell(type='original')
         model_system.cell.append(atomic_cell)
         # Do not set particle_states (or leave it empty)
         assert electronic_dos.resolve_normalization_factor(logger) is None
@@ -92,12 +92,14 @@ class TestElectronicDensityOfStates:
         # Cadd required particle_states into the ModelSystem
         # Instead of setting atoms_state on the cell, we now add the states to the parent ModelSystem.
         particle_states = [
-            AtomsState(atom_definition_ref=None)  # dummy; the test below only reads atomic_number
+            AtomsState(
+                atom_definition_ref=None
+            )  # dummy; the test below only reads atomic_number
             for _ in range(2)
         ]
         # We now manually set the atomic numbers for testing
-        particle_states[0].__dict__["atomic_number"] = 31  # Ga
-        particle_states[1].__dict__["atomic_number"] = 33  # As
+        particle_states[0].__dict__['atomic_number'] = 31  # Ga
+        particle_states[1].__dict__['atomic_number'] = 33  # As
         # Set the parent ModelSystem’s particle_states
         model_system.particle_states = particle_states
 
@@ -152,14 +154,23 @@ class TestElectronicDensityOfStates:
             'orbital px As',
             'orbital py As',
         ]
-        assert orbital_projected[0].entity_ref == outputs.model_system_ref.particle_states[0].orbitals_state[0]
-        assert orbital_projected[1].entity_ref == outputs.model_system_ref.particle_states[1].orbitals_state[0]
+        assert (
+            orbital_projected[0].entity_ref
+            == outputs.model_system_ref.particle_states[0].orbitals_state[0]
+        )
+        assert (
+            orbital_projected[1].entity_ref
+            == outputs.model_system_ref.particle_states[1].orbitals_state[0]
+        )
         # For the third orbital, assume it comes from the second particle as well (e.g. As atom has two orbitals)
-        assert orbital_projected[2].entity_ref == outputs.model_system_ref.particle_states[1].orbitals_state[1]
+        assert (
+            orbital_projected[2].entity_ref
+            == outputs.model_system_ref.particle_states[1].orbitals_state[1]
+        )
 
         # Run extraction again to verify repeatability
-        orbital_projected = electronic_dos.extract_projected_dos("orbital", logger)
-        atom_projected = electronic_dos.extract_projected_dos("atom", logger)
+        orbital_projected = electronic_dos.extract_projected_dos('orbital', logger)
+        atom_projected = electronic_dos.extract_projected_dos('atom', logger)
         assert len(orbital_projected) == 3 and len(atom_projected) == 0
 
     @pytest.mark.parametrize(
@@ -189,17 +200,20 @@ class TestElectronicDensityOfStates:
         val = electronic_dos.generate_from_projected_dos(logger)
         assert (val.magnitude == result).all()
 
-
         # Testing both orbital and atom projected DOS: expect 5 entries (3 orbitals + 2 atoms)
         assert len(electronic_dos.projected_dos) == 5
-        orbital_projected = electronic_dos.extract_projected_dos("orbital", logger)
-        atom_projected = electronic_dos.extract_projected_dos("atom", logger)
+        orbital_projected = electronic_dos.extract_projected_dos('orbital', logger)
+        atom_projected = electronic_dos.extract_projected_dos('atom', logger)
         assert len(orbital_projected) == 3 and len(atom_projected) == 2
         atom_projected_names = [ap.name for ap in atom_projected]
-        assert atom_projected_names == ["atom Ga", "atom As"]
+        assert atom_projected_names == ['atom Ga', 'atom As']
         # Check that the entity_ref of the atom PDOS corresponds to the particle state in the referenced ModelSystem
-        assert atom_projected[0].entity_ref == outputs.model_system_ref.particle_states[0]
-        assert atom_projected[1].entity_ref == outputs.model_system_ref.particle_states[1]
+        assert (
+            atom_projected[0].entity_ref == outputs.model_system_ref.particle_states[0]
+        )
+        assert (
+            atom_projected[1].entity_ref == outputs.model_system_ref.particle_states[1]
+        )
 
     def test_normalize(self):
         """

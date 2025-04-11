@@ -258,8 +258,12 @@ class Simulation(BaseSimulation, Schema):
                     get_composition_recurs(system=subsystem, atom_labels=atom_labels)
 
         atom_labels = (
-            [atom.atom_definition_ref.chemical_symbol for atom in system_parent.particle_states]
-            if system_parent.particle_states else []
+            [
+                atom.atom_definition_ref.chemical_symbol
+                for atom in system_parent.particle_states
+            ]
+            if system_parent.particle_states
+            else []
         )
         get_composition_recurs(system=system_parent, atom_labels=atom_labels)
 

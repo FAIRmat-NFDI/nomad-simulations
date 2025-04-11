@@ -104,23 +104,40 @@ class DOSProfile(SpectralProfile):
         name = None
         # If the reference is to an AtomsState, use its atom_definition_ref
         if isinstance(self.entity_ref, AtomsState):
-            if self.entity_ref.atom_definition_ref and self.entity_ref.atom_definition_ref.chemical_symbol:
+            if (
+                self.entity_ref.atom_definition_ref
+                and self.entity_ref.atom_definition_ref.chemical_symbol
+            ):
                 name = f'atom {self.entity_ref.atom_definition_ref.chemical_symbol}'
             else:
-                logger.warning("AtomsState missing atom_definition_ref or chemical_symbol.")
+                logger.warning(
+                    'AtomsState missing atom_definition_ref or chemical_symbol.'
+                )
                 return None
         # If the reference is to an OrbitalsState, try to use its parent's chemical symbol.
         elif isinstance(self.entity_ref, OrbitalsState):
             parent_symbol = None
-            if hasattr(self.entity_ref, 'm_parent') and self.entity_ref.m_parent is not None:
+            if (
+                hasattr(self.entity_ref, 'm_parent')
+                and self.entity_ref.m_parent is not None
+            ):
                 # Try to extract chemical symbol from parent's atom_definition_ref
-                if hasattr(self.entity_ref.m_parent, 'atom_definition_ref') and self.entity_ref.m_parent.atom_definition_ref:
-                    parent_symbol = self.entity_ref.m_parent.atom_definition_ref.chemical_symbol
+                if (
+                    hasattr(self.entity_ref.m_parent, 'atom_definition_ref')
+                    and self.entity_ref.m_parent.atom_definition_ref
+                ):
+                    parent_symbol = (
+                        self.entity_ref.m_parent.atom_definition_ref.chemical_symbol
+                    )
             # Fallback: if the OrbitalsState itself has an atom_definition_ref (if defined), use it.
-            if parent_symbol is None and hasattr(self.entity_ref, 'atom_definition_ref'):
+            if parent_symbol is None and hasattr(
+                self.entity_ref, 'atom_definition_ref'
+            ):
                 parent_symbol = self.entity_ref.atom_definition_ref.chemical_symbol
             if parent_symbol is None:
-                logger.warning("Could not resolve chemical symbol for OrbitalsState reference.")
+                logger.warning(
+                    'Could not resolve chemical symbol for OrbitalsState reference.'
+                )
                 return None
             name = f'orbital {self.entity_ref.l_quantum_symbol}{self.entity_ref.ml_quantum_symbol} {parent_symbol}'
         return name
@@ -338,9 +355,14 @@ class ElectronicDensityOfStates(DOSProfile):
             )
             return None
 
-       # get particle_states
-        if self.m_parent.particle_states is None or len(self.m_parent.particle_states) == 0:
-            logger.warning('Could not resolve the `particle_states` from the ModelSystem.')
+        # get particle_states
+        if (
+            self.m_parent.particle_states is None
+            or len(self.m_parent.particle_states) == 0
+        ):
+            logger.warning(
+                'Could not resolve the `particle_states` from the ModelSystem.'
+            )
             return None
         atomic_numbers = [atom.atomic_number for atom in model_system.particle_states]
 
@@ -392,10 +414,7 @@ class ElectronicDensityOfStates(DOSProfile):
             pdos.normalize(None, logger)
 
             # Initial check for `name` and `entity_ref`
-            if (
-                pdos.name is None
-                or pdos.entity_ref is None
-            ):
+            if pdos.name is None or pdos.entity_ref is None:
                 logger.warning(
                     '`name` or `entity_ref` are not set for `projected_dos` and they are required for normalization to work.'
                 )
@@ -426,14 +445,17 @@ class ElectronicDensityOfStates(DOSProfile):
         atom_projected = self.extract_projected_dos('atom', logger)
 
         # Distinguish orbital and atom projected DOS
-        orbital_projected = self.extract_projected_dos("orbital", logger)
-        atom_projected = self.extract_projected_dos("atom", logger)
+        orbital_projected = self.extract_projected_dos('orbital', logger)
+        atom_projected = self.extract_projected_dos('atom', logger)
         if len(atom_projected) == 0:
             # Group orbital PDOS by their parent AtomsState (from ModelSystem.particle_states)
             atom_data: dict[AtomsState, list[DOSProfile]] = {}
             for orb_pdos in orbital_projected:
                 # entity_ref is expected to be an OrbitalsState; get its parent AtomsState
-                if hasattr(orb_pdos.entity_ref, "m_parent") and orb_pdos.entity_ref.m_parent is not None:
+                if (
+                    hasattr(orb_pdos.entity_ref, 'm_parent')
+                    and orb_pdos.entity_ref.m_parent is not None
+                ):
                     entity_ref = orb_pdos.entity_ref.m_parent
                 else:
                     entity_ref = None
@@ -445,7 +467,9 @@ class ElectronicDensityOfStates(DOSProfile):
                     atom_data[entity_ref] = [orb_pdos]
             for ref, data in atom_data.items():
                 atom_dos = DOSProfile(
-                    name=f'atom {ref.atom_definition_ref.chemical_symbol}' if ref.atom_definition_ref else None,
+                    name=f'atom {ref.atom_definition_ref.chemical_symbol}'
+                    if ref.atom_definition_ref
+                    else None,
                     entity_ref=ref,
                     energies=self.energies,
                 )

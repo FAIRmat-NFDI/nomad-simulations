@@ -36,8 +36,6 @@ from matid.classification.classifications import (
 from nomad.atomutils import Formula, get_normalized_wyckoff, search_aflow_prototype
 from nomad.config import config
 from nomad.datamodel.data import ArchiveSection
-
-# from nomad.datamodel.metainfo.basesections import Entity, System
 from nomad.datamodel.metainfo.basesections.v2 import Entity, System
 from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
@@ -199,7 +197,7 @@ class GeometricSpace(Entity):
         Args:
             logger (BoundLogger): The logger to log messages.
         """
-        atoms = self.to_ase_atoms(logger=logger)  # FIX: not in AtomicCell anymore
+        atoms = self.to_ase_atoms(logger=logger)
         cell = atoms.get_cell()
         self.length_vector_a, self.length_vector_b, self.length_vector_c = (
             cell.lengths() * ureg.angstrom
@@ -354,7 +352,9 @@ class AtomicCell(Cell):
     equivalent_atoms = Quantity(
         type=np.int32,
         # shape=['n_atoms'],
-        shape=['*'],  # temporarily
+        # TODO : the shape check is removed due to removing n_atoms from AtomicCell.
+        # @ndaelman: Please adjust according to AtomicCell's needs
+        shape=['*'],
         description="""
         List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
         then the list is simply the index of each element, e.g.:
@@ -367,7 +367,7 @@ class AtomicCell(Cell):
     wyckoff_letters = Quantity(
         type=str,
         # shape=['n_atoms'],
-        shape=['*'],  # temporarily
+        shape=['*'],  # TODO
         description="""
         Wyckoff letters associated with each atom.
         """,
@@ -539,7 +539,7 @@ class Symmetry(ArchiveSection):
         # Create the cell (or atomic cell) for geometry only
         atomic_cell = Cell(type=cell_type)
         atomic_cell.lattice_vectors = cell * ureg.angstrom
-        # Note: positions are no longer stored in the cell in the new design.
+        # ! Positions are stored directly under model_system in nomad-simulations>=0.4.
         atomic_cell.wyckoff_letters = wyckoff
         atomic_cell.equivalent_atoms = equivalent_atoms
         try:
@@ -764,12 +764,11 @@ class ChemicalFormula(ArchiveSection):
             self.m_cache['elemental_composition'] = formula.elemental_composition
 
 
-
 class ModelSystem(System):
     """
     Model system used as an input for simulating the material.
 
-    This version stores the atomic positions at the top level in the quantity “positions”
+    Atom positions at the top level in the quantity “positions”
     and the per‐atom state (including electronic state information) in a new subsection “particle_states”.
     Downstream subsystems refer to atoms via particle_indices.
 

@@ -7,9 +7,10 @@ from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import (
-    AtomsState, 
+    AtomDefn,
+    AtomsState,
     OrbitalsState,
-    AtomDefn)
+)
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
@@ -100,16 +101,17 @@ def generate_model_system(
         for orbital in orbitals:
             orbitals_state.append(
                 OrbitalsState(
-                    l_quantum_symbol=orbital[0], 
-                    ml_quantum_symbol=orbital[1:]
+                    l_quantum_symbol=orbital[0], ml_quantum_symbol=orbital[1:]
                 )
             )  # TODO add this split setter as part of the `OrbitalsState` methods
         atom_def = AtomDefn(chemical_symbol=element)
-        atom_state = AtomsState(atom_definition_ref=atom_def, orbitals_state=orbitals_state)
+        atom_state = AtomsState(
+            atom_definition_ref=atom_def, orbitals_state=orbitals_state
+        )
         # and obtain the atomic number for each AtomsState
         atom_state.normalize(EntryArchive(), logger)
         atoms_state.append(atom_state)
-    
+
     for state in atoms_state:
         model_system.particle_states.append(state)
     return model_system
@@ -129,9 +131,9 @@ def generate_atomic_cell(
     atomic_cell = AtomicCell(periodic_boundary_conditions=periodic_boundary_conditions)
     if lattice_vectors:
         atomic_cell.lattice_vectors = np.array(lattice_vectors) * ureg('angstrom')
-    # Removed assignment of positions to atomic_cell as per new design.
+    # Removed assignment of positions to atomic_cell as of nomad-simulations>=0.4.
     # Also, the atoms_state information is now part of ModelSystem (particle_states) instead.
-    
+
     return atomic_cell
 
 

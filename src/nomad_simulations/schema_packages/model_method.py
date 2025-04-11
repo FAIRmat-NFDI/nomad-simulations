@@ -502,7 +502,7 @@ class TB(ModelMethodElectronic):
         try:
             model_system = model_systems[model_index]
         except IndexError:
-            logger.warning(f"No ModelSystem at index {model_index}.")
+            logger.warning(f'No ModelSystem at index {model_index}.')
             return None
 
         # 2) If the system is not representative, skip
@@ -516,12 +516,14 @@ class TB(ModelMethodElectronic):
 
         # 4) If no child ModelSystem sections exist, skip
         if not model_system.sub_systems:
-            logger.warning("No child ModelSystem found; cannot find active_atom references.")
+            logger.warning(
+                'No child ModelSystem found; cannot find active_atom references.'
+            )
             return None
 
         # 5) If no particle_states are present at the top level, we have no orbitals
         if not model_system.particle_states:
-            logger.warning("No particle_states in the parent ModelSystem.")
+            logger.warning('No particle_states in the parent ModelSystem.')
             return None
 
         orbitals_ref: list[OrbitalsState] = []
@@ -532,19 +534,23 @@ class TB(ModelMethodElectronic):
                 continue
             # if no particle_indices => skip
             if not child_sys.particle_indices:
-                logger.warning("Child system is active_atom but no particle_indices.")
+                logger.warning('Child system is active_atom but no particle_indices.')
                 continue
 
             # For each index in child_sys.particle_indices => fetch from parent’s particle_states
             for idx in child_sys.particle_indices:
                 if idx < 0 or idx >= len(model_system.particle_states):
-                    logger.warning(f"Particle index {idx} out of range for particle_states.")
+                    logger.warning(
+                        f'Particle index {idx} out of range for particle_states.'
+                    )
                     continue
                 active_atom_state = model_system.particle_states[idx]
 
                 # If no orbitals_state => skip
                 if not active_atom_state.orbitals_state:
-                    logger.warning(f"No orbitals_state found in particle_states[{idx}].")
+                    logger.warning(
+                        f'No orbitals_state found in particle_states[{idx}].'
+                    )
                     continue
 
                 # Append them

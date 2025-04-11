@@ -4,7 +4,6 @@ import ase
 import numpy as np
 import pint
 from nomad.datamodel.data import ArchiveSection
-
 from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import MEnum, Quantity, SubSection
 from nomad.units import ureg
@@ -549,7 +548,7 @@ class HubbardInteractions(ArchiveSection):
 class SpinDefn(Entity):
     """
     Defines spin properties for a single atomic species.
-    @ EBB : This definition will be enriched in a seperate PR.
+    TODO @ EBB : This definition will be enriched in a seperate PR.
     """
 
     is_collinear = Quantity(
