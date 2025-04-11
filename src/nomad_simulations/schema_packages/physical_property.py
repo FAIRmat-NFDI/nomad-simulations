@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 from nomad import utils
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.basesections import Entity
+from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy, SubSection
 
 if TYPE_CHECKING:
