@@ -189,9 +189,9 @@ class TestModelSystem:
         chem = ChemicalFormula()
         sys.chemical_formula = chem
         # Add 3 AtomsState entries for H,H,O
-        for s in ['H', 'H', 'O']:
+        for s, num in zip(['H', 'H', 'O'], [1, 1, 8]):
             sys.particle_states.append(
-                AtomsState(atom_definition_ref=AtomDefn(chemical_symbol=s))
+                AtomsState(atom_definition_ref=AtomDefn(chemical_symbol=s, atomic_number=num))
             )
 
         # Normalize

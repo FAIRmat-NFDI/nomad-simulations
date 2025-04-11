@@ -482,7 +482,7 @@ class Symmetry(ArchiveSection):
     )
 
     atomic_cell_ref = Quantity(
-        type=AtomicCell,
+        type=Cell,
         description="""
         Reference to the AtomicCell section that the symmetry refers to.
         """,
@@ -612,13 +612,12 @@ class Symmetry(ArchiveSection):
         # standarized Wyckoff numbers and the space group number
         # --- NEW BLOCK: Use parent's particle_states since AtomicCell no longer stores atoms_state ---
         # Instead of conventional_atomic_cell.atoms_state, use self.m_parent.particle_states.
-        if symmetry.get('space_group_number') and self.m_parent.particle_states:
-            conventional_num = [
-                state.atom_definition_ref.atomic_number
-                for state in self.m_parent.particle_states
-            ]
+        if symmetry.get('space_group_number'):
+            # Retrieve the expanded conventional system (an ASE.Atoms object) from the analyzer.
+            conventional_system = symmetry_analyzer.get_conventional_system()
+            # Use the conventional system to get the expanded atomic numbers.
+            conventional_num = conventional_system.get_atomic_numbers()
             conventional_wyckoff = conventional_atomic_cell.wyckoff_letters
-            # Normalize wyckoff letters
             norm_wyckoff = get_normalized_wyckoff(
                 atomic_numbers=conventional_num, wyckoff_letters=conventional_wyckoff
             )
@@ -635,7 +634,6 @@ class Symmetry(ArchiveSection):
                 )
                 prototype_aflow_id = aflow_prototype.get('aflow_prototype_id')
                 prototype_formula = aflow_prototype.get('Prototype')
-                # Adding these to the symmetry dictionary for later assignement
                 symmetry['strukturbericht_designation'] = strukturbericht
                 symmetry['prototype_aflow_id'] = prototype_aflow_id
                 symmetry['prototype_formula'] = prototype_formula
@@ -652,7 +650,9 @@ class Symmetry(ArchiveSection):
         atomic_cell = get_sibling_section(
             section=self, sibling_section_name='cell', logger=logger
         )
-        if self.m_parent.type == 'bulk':
+        # TODO : the following is a temporary fix, and it might break again
+        # when there are systems with deeper hierarchies.
+        if self.m_parent.m_parent is not None and self.m_parent.type == 'bulk':
             # Adding the newly calculated primitive and conventional cells to the ModelSystem
             (
                 primitive_atomic_cell,
@@ -925,7 +925,6 @@ class ModelSystem(System):
         """,
     )
 
-    # New quantity to store all atom positions (Cartesian coordinates)
     positions = Quantity(
         type=np.float64,
         shape=['n_particles', 3],
@@ -936,7 +935,7 @@ class ModelSystem(System):
         """,
     )
 
-    # TODO improve description and add an example using the case in atom_indices
+    # TODO improve description and add an example
     bond_list = Quantity(
         type=np.int32,
         shape=['*', 2],
