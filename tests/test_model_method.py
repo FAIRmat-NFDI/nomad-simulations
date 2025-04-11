@@ -351,8 +351,6 @@ class TestSlaterKosterBond:
         """
         # Prepare a model scenario
         bond = SlaterKosterBond()
-        # Create a single AtomsState that can hold orbitals
-        state = AtomsState()
         orbitals = []
         if orb1_symbol:
             orbitals.append(OrbitalsState(l_quantum_symbol=orb1_symbol))

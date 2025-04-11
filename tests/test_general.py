@@ -259,7 +259,7 @@ class TestSimulation:
 
         simulation.normalize(EntryArchive(), logger)
 
-        ### Traverse the hierarchy recursively and check the results 
+        ### Traverse the hierarchy recursively and check the results
         assert model_system.composition_formula == composition_formula_list[0]
         ctr_comp = 1
 

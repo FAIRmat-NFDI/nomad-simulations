@@ -89,7 +89,7 @@ def generate_model_system(
     model_system = ModelSystem(type=system_type, is_representative=is_representative)
 
     model_system.positions = np.array(positions) * ureg.angstrom
-    
+
     atomic_cell = AtomicCell(
         type=type,
         lattice_vectors=lattice_vectors * ureg.angstrom,

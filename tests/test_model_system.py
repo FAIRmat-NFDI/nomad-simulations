@@ -49,19 +49,13 @@ class TestChemicalFormula:
         for f in ['descriptive', 'reduced', 'iupac', 'hill', 'anonymous']:
             assert getattr(chem, f) is None
 
-    def test_normalize_with_cell(self):
+    def test_normalize_default_chemical_formula(self):
         """
-        Provide a sibling AtomicCell with known composition and see if we get
-        the correct formulas after normalize.
+        Test that ChemicalFormula.normalize() correctly sets the formulas (e.g. 'H2O')
+        when no sibling AtomicCell is provided.
         """
-        # Build an AtomicCell for "H2O"
-        acell = generate_atomic_cell(
-            chemical_symbols=['H', 'H', 'O'], atomic_numbers=[1, 1, 8]
-        )
         chem = ChemicalFormula()
-        # Pretend it's a sibling to the cell by your design.
         chem.normalize(EntryArchive(), logger)
-        # Check if it sets formulas to H2O
         if chem.descriptive is not None:
             assert chem.descriptive == 'H2O'
 
@@ -191,7 +185,9 @@ class TestModelSystem:
         # Add 3 AtomsState entries for H,H,O
         for s, num in zip(['H', 'H', 'O'], [1, 1, 8]):
             sys.particle_states.append(
-                AtomsState(atom_definition_ref=AtomDefn(chemical_symbol=s, atomic_number=num))
+                AtomsState(
+                    atom_definition_ref=AtomDefn(chemical_symbol=s, atomic_number=num)
+                )
             )
 
         # Normalize
