@@ -5,8 +5,7 @@ import numpy as np
 import pint
 from nomad.datamodel.data import ArchiveSection
 
-# from nomad.datamodel.metainfo.basesections import Entity
-from nomad.datamodel.metainfo.basesections.v2 import Element, Entity
+from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import MEnum, Quantity, SubSection
 from nomad.units import ureg
 

@@ -342,7 +342,7 @@ class ElectronicDensityOfStates(DOSProfile):
         if self.m_parent.particle_states is None or len(self.m_parent.particle_states) == 0:
             logger.warning('Could not resolve the `particle_states` from the ModelSystem.')
             return None
-        atomic_numbers = [atom.atomic_number for atom in self.m_parent.particle_states]
+        atomic_numbers = [atom.atomic_number for atom in model_system.particle_states]
 
         # Return `normalization_factor` depending if the calculation is spin polarized or not
         if self.spin_channel is not None:
