@@ -351,9 +351,6 @@ class AtomicCell(Cell):
 
     equivalent_atoms = Quantity(
         type=np.int32,
-        # shape=['n_atoms'],
-        # TODO : the shape check is removed due to removing n_atoms from AtomicCell.
-        # @ndaelman: Please adjust according to AtomicCell's needs
         shape=['*'],
         description="""
         List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
@@ -787,7 +784,7 @@ class ModelSystem(System):
         - `ChemicalFormula` containing the information of the chemical formulas in different
         formats.
 
-    This class nest over itself (with the section proxy in `sub_systems`) to define different
+    This class nests over itself (with the section proxy in `sub_systems`) to define different
     parent-child system trees. The quantities `branch_label`, `branch_depth`, `particle_indices`,
     and `bond_list` are used to define the parent-child tree.
 
@@ -979,8 +976,10 @@ class ModelSystem(System):
     total_spin = Quantity(
         type=np.int32,
         description="""
-        Total spin state of the system.
-        Not to be confused with the spin multiplicity 2S + 1.
+        Total spin quantum number **S** of the system (so Ŝ² ψ = S(S+1) ħ² ψ).
+        Stored as an integer or half-integer represented in doubled form
+        (e.g. singlet → 0, doublet → 1, triplet → 2).
+        Not to be confused with the spin multiplicity 2S+1.
         """,
     )
 

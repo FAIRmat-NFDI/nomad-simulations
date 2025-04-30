@@ -557,7 +557,7 @@ class TB(ModelMethodElectronic):
                 orbitals_ref.extend(active_atom_state.orbitals_state)
 
         # 7) Return the collected orbitals
-        return orbitals_ref if orbitals_ref else []
+        return orbitals_ref
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
