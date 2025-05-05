@@ -7,7 +7,6 @@ from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import (
-    AtomDefn,
     AtomsState,
     OrbitalsState,
 )
@@ -100,18 +99,14 @@ def generate_model_system(
     # Add atoms_state to the model_system
     atoms_state = []
     for element, orbitals in zip(chemical_symbols, orbitals_symbols):
-        orbitals_state = []
-        for orbital in orbitals:
-            orbitals_state.append(
-                OrbitalsState(
-                    l_quantum_symbol=orbital[0], ml_quantum_symbol=orbital[1:]
-                )
-            )  # TODO add this split setter as part of the `OrbitalsState` methods
-        atom_def = AtomDefn(chemical_symbol=element)
-        atom_state = AtomsState(
-            atom_definition_ref=atom_def, orbitals_state=orbitals_state
-        )
-        # and obtain the atomic number for each AtomsState
+        # build each OrbitalsState exactly as before
+        orbitals_state = [
+            OrbitalsState(l_quantum_symbol=o[0], ml_quantum_symbol=o[1:])
+            for o in orbitals
+        ]
+        # instantiate AtomsState directly with the chemical_symbol
+        atom_state = AtomsState(chemical_symbol=element, orbitals_state=orbitals_state)
+        # normalize() will resolve atomic_number from the symbol
         atom_state.normalize(EntryArchive(), logger)
         atoms_state.append(atom_state)
 
