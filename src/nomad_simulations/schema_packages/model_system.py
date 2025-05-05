@@ -1001,18 +1001,11 @@ class ModelSystem(System):
         chemical_symbols = []
         for particle_state in self.particle_states:
             if isinstance(particle_state, AtomsState):
-                # only collect symbols from particle entries that are instances of AtomsState
-                if (
-                    not particle_state.atom_definition_ref
-                    or not particle_state.atom_definition_ref.chemical_symbol
-                ):
-                    logger.warning(
-                        'Could not find `chemical_symbol` in an AtomsState entry.'
-                    )
+                # Read directly from AtomsState.chemical_symbol
+                if particle_state.chemical_symbol is None:
+                    logger.warning('AtomsState has no `chemical_symbol` set.')
                     return []
-                chemical_symbols.append(
-                    particle_state.atom_definition_ref.chemical_symbol
-                )
+                chemical_symbols.append(particle_state.chemical_symbol)
         return chemical_symbols
 
     def to_ase_atoms(self, logger: 'BoundLogger') -> 'Optional[ase.Atoms]':
