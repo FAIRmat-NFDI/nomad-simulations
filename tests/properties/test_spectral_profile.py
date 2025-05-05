@@ -89,14 +89,8 @@ class TestElectronicDensityOfStates:
         # Do not set particle_states (or leave it empty)
         assert electronic_dos.resolve_normalization_factor(logger) is None
 
-        # Cadd required particle_states into the ModelSystem
-        # Instead of setting atoms_state on the cell, we now add the states to the parent ModelSystem.
-        particle_states = [
-            AtomsState(
-                atom_definition_ref=None
-            )  # dummy; the test below only reads atomic_number
-            for _ in range(2)
-        ]
+        # add required particle_states into the ModelSystem
+        particle_states = [AtomsState() for _ in range(2)]
         # We now manually set the atomic numbers for testing
         particle_states[0].__dict__['atomic_number'] = 31  # Ga
         particle_states[1].__dict__['atomic_number'] = 33  # As

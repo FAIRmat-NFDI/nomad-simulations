@@ -101,46 +101,37 @@ class DOSProfile(SpectralProfile):
             )
             return None
 
-        name = None
-        # If the reference is to an AtomsState, use its atom_definition_ref
+        if self.entity_ref is None:
+            logger.warning('No entity_ref on DOSProfile; cannot name it.')
+            return None
+
+        # Atom‐projected DOS
         if isinstance(self.entity_ref, AtomsState):
-            if (
-                self.entity_ref.atom_definition_ref
-                and self.entity_ref.atom_definition_ref.chemical_symbol
-            ):
-                name = f'atom {self.entity_ref.atom_definition_ref.chemical_symbol}'
+            elem = self.entity_ref.chemical_symbol
+            if elem:
+                return f'atom {elem}'
             else:
-                logger.warning(
-                    'AtomsState missing atom_definition_ref or chemical_symbol.'
-                )
+                logger.warning('AtomsState missing chemical_symbol.')
                 return None
-        # If the reference is to an OrbitalsState, try to use its parent's chemical symbol.
-        elif isinstance(self.entity_ref, OrbitalsState):
-            parent_symbol = None
-            if (
-                hasattr(self.entity_ref, 'm_parent')
-                and self.entity_ref.m_parent is not None
-            ):
-                # Try to extract chemical symbol from parent's atom_definition_ref
-                if (
-                    hasattr(self.entity_ref.m_parent, 'atom_definition_ref')
-                    and self.entity_ref.m_parent.atom_definition_ref
-                ):
-                    parent_symbol = (
-                        self.entity_ref.m_parent.atom_definition_ref.chemical_symbol
-                    )
-            # Fallback: if the OrbitalsState itself has an atom_definition_ref (if defined), use it.
-            if parent_symbol is None and hasattr(
-                self.entity_ref, 'atom_definition_ref'
-            ):
-                parent_symbol = self.entity_ref.atom_definition_ref.chemical_symbol
-            if parent_symbol is None:
-                logger.warning(
-                    'Could not resolve chemical symbol for OrbitalsState reference.'
-                )
+
+        # Orbital‐projected DOS
+        if isinstance(self.entity_ref, OrbitalsState):
+            # navigate up to the parent AtomsState
+            parent = getattr(self.entity_ref, 'm_parent', None)
+            if not isinstance(parent, AtomsState) or not parent.chemical_symbol:
+                logger.warning('Could not find parent AtomsState with chemical_symbol.')
                 return None
-            name = f'orbital {self.entity_ref.l_quantum_symbol}{self.entity_ref.ml_quantum_symbol} {parent_symbol}'
-        return name
+
+            l_label = (
+                f'{self.entity_ref.l_quantum_symbol}{self.entity_ref.ml_quantum_symbol}'
+            )
+            return f'orbital {l_label} {parent.chemical_symbol}'
+
+        # other cases
+        logger.warning(
+            f'Unknown entity_ref type {type(self.entity_ref)}; cannot name PDOS.'
+        )
+        return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -444,47 +435,40 @@ class ElectronicDensityOfStates(DOSProfile):
         orbital_projected = self.extract_projected_dos('orbital', logger)
         atom_projected = self.extract_projected_dos('atom', logger)
 
-        # Distinguish orbital and atom projected DOS
+        # if we only have orbital entries, build atom entries
         orbital_projected = self.extract_projected_dos('orbital', logger)
         atom_projected = self.extract_projected_dos('atom', logger)
-        if len(atom_projected) == 0:
-            # Group orbital PDOS by their parent AtomsState (from ModelSystem.particle_states)
-            atom_data: dict[AtomsState, list[DOSProfile]] = {}
-            for orb_pdos in orbital_projected:
-                # entity_ref is expected to be an OrbitalsState; get its parent AtomsState
-                if (
-                    hasattr(orb_pdos.entity_ref, 'm_parent')
-                    and orb_pdos.entity_ref.m_parent is not None
-                ):
-                    entity_ref = orb_pdos.entity_ref.m_parent
-                else:
-                    entity_ref = None
-                if entity_ref is None:
-                    continue
-                if entity_ref in atom_data:
-                    atom_data[entity_ref].append(orb_pdos)
-                else:
-                    atom_data[entity_ref] = [orb_pdos]
-            for ref, data in atom_data.items():
-                atom_dos = DOSProfile(
-                    name=f'atom {ref.atom_definition_ref.chemical_symbol}'
-                    if ref.atom_definition_ref
-                    else None,
-                    entity_ref=ref,
+
+        if not atom_projected:
+            # group orbitals by their AtomsState parent
+            atom_orbital_map: dict[AtomsState, list[DOSProfile]] = {}
+            for orb in orbital_projected:
+                parent = getattr(orb.entity_ref, 'm_parent', None)
+                if isinstance(parent, AtomsState):
+                    atom_orbital_map.setdefault(parent, []).append(orb)
+
+            for atom_state, orbs in atom_orbital_map.items():
+                # sum their values
+                vals = [o.value.magnitude for o in orbs]
+                unit = orbs[0].value.u
+                pd = DOSProfile(
+                    entity_ref=atom_state,
                     energies=self.energies,
                 )
-                orbital_values = [dos.value.magnitude for dos in data]
-                orbital_unit = data[0].value.u
-                atom_dos.value = np.sum(orbital_values, axis=0) * orbital_unit
-                atom_projected.append(atom_dos)
+                pd.name = f'atom {atom_state.chemical_symbol}'
+                pd.value = np.sum(vals, axis=0) * unit
+                atom_projected.append(pd)
+
+            # now store the full projected list
             self.projected_dos = orbital_projected + atom_projected
 
-        value = self.value
-        if value is None:
-            atom_values = [dos.value.magnitude for dos in atom_projected]
-            atom_unit = atom_projected[0].value.u
-            value = np.sum(atom_values, axis=0) * atom_unit
-        return value
+        # finally compute or reuse self.value
+        if self.value is None:
+            vals = [pd.value.magnitude for pd in atom_projected]
+            unit = atom_projected[0].value.u
+            self.value = np.sum(vals, axis=0) * unit
+
+        return self.value
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
