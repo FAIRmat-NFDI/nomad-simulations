@@ -1056,7 +1056,7 @@ class ModelSystem(System):
         """
         Populates ModelSystem from an ASE Atoms object.
         Replaces the atom_states subsection with new entries based on the ASE chemical symbols,
-        using AtomDefn to store elemental data, and assigns ASE positions to the top-level positions quantity.
+        and assigns ASE positions to the top-level positions quantity.
         """
         # Iterate over chemical symbols and atomic numbers from the ASE Atoms object
         for symbol, atomic_number in zip(
