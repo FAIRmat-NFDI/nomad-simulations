@@ -92,3 +92,14 @@ group_H2O:        composition_formula = "H2O(3)"
 H2O (leaf):       composition_formula = "H(1)O(2)"
 Cu   (leaf):      composition_formula = "Cu(1)"
 ```
+
+### Normalization Workflow
+
+When you call `model.normalize(archive, logger)` on a **representative** ModelSystem, the following happen in order:
+
+1. **to_ase_atoms** ➔ build ASE `Atoms`  
+2. **resolve_system_type_and_dimensionality** via MatID  
+3. **Symmetry.normalize** (bulk only) ➔ fills `bravais_lattice`, Wyckoff, appends primitive/conventional cells  
+4. **ChemicalFormula.normalize** ➔ fills `descriptive`, `reduced`, `iupac`, `hill`, `anonymous`  
+5. caches `elemental_composition` in `m_cache`  
+6. sets `type`, `dimensionality`, `composition_formula`, etc.

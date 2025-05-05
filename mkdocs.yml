@@ -10,8 +10,7 @@ nav:
     - ModelSystem: user-guide/model_system.md
     - ModelMethod: user-guide/model_method.md
     - Outputs: user-guide/outputs.md
-  - API Reference:
-    - API: reference/api.md
+  - Tutorials: tutorials/tutorial.md
   - Contact: contact.md
 theme:
   name: material
