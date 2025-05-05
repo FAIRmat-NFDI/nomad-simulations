@@ -71,3 +71,24 @@ from nomad.datamodel import EntryArchive
 archive = EntryArchive()
 model.normalize(archive, logger)
 ```
+
+## Hierarchical ModelSystems
+
+You can nest systems to represent subgroups:
+
+```python
+ModelSystem (root)
+├── sub_systems[0]: ModelSystem(branch_label="group_H2O", particle_indices=[0,1,2])
+│    └── sub_systems[0]: ModelSystem(branch_label="H2O", particle_indices=[0,1,2])
+└── sub_systems[1]: ModelSystem(branch_label="Cu")
+     └── …
+```
+
+After normalization, each branch gets a branch_depth, and its composition_formula is set:
+
+```python
+root:             composition_formula = "group_H2O(1)Cu(1)"
+group_H2O:        composition_formula = "H2O(3)"
+H2O (leaf):       composition_formula = "H(1)O(2)"
+Cu   (leaf):      composition_formula = "Cu(1)"
+```
