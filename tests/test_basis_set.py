@@ -140,9 +140,7 @@ def test_full_apw(
             model_system=[
                 ModelSystem(
                     cell=[AtomicCell()],
-                    particle_states=[
-                        AtomsState(chemical_symbol='H')
-                    ],
+                    particle_states=[AtomsState(chemical_symbol='H')],
                 )
             ],
             model_method=[ModelMethod(numerical_settings=[])],

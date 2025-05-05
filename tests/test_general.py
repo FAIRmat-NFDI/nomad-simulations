@@ -2,10 +2,7 @@ import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
 
-from nomad_simulations.schema_packages.atoms_state import (
-    AtomDefn,
-    AtomsState,
-)
+from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
@@ -235,10 +232,9 @@ class TestSimulation:
                 # Add the corresponding atoms to the global atom list (particle_states)
                 for atom_label in atom_labels:
                     if atom_label is not None:
+                        # Instantiate directly with the chemical symbol
                         model_system.particle_states.append(
-                            AtomsState(
-                                atom_definition_ref=AtomDefn(chemical_symbol=atom_label)
-                            )
+                            AtomsState(chemical_symbol=atom_label)
                         )
                 n_atoms = len(model_system.particle_states)
                 particle_indices = np.arange(n_atoms - len(atom_labels), n_atoms)
