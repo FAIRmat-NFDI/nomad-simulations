@@ -1069,8 +1069,7 @@ class ModelSystem(System):
         for symbol, atomic_number in zip(
             ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers()
         ):
-            atom_def = AtomDefn(chemical_symbol=symbol, atomic_number=atomic_number)
-            state = AtomsState(atom_definition_ref=atom_def)
+            state = AtomsState(chemical_symbol=symbol, atomic_number=atomic_number)
             self.particle_states.append(state)
 
         positions = ase_atoms.get_positions()
