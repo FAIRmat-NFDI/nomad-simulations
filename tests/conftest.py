@@ -403,7 +403,7 @@ refs_apw = [
             },
             {
                 'm_def': 'nomad_simulations.schema_packages.basis_set.MuffinTinRegion',
-                'species_scope': ['/data/model_system/0/cell/0/atoms_state/0'],
+                'species_scope': ['/data/model_system/0/particle_states/0'],
                 'radius': 1.0,
                 'l_max': 2,
                 'l_channels': [
