@@ -2,10 +2,10 @@ import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
 
+from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
-    AtomsState,
     ModelSystem,
 )
 
@@ -25,7 +25,7 @@ class TestSimulation:
                 [
                     ModelSystem(
                         name='depth 0',
-                        model_system=[
+                        sub_systems=[
                             ModelSystem(name='depth 1'),
                             ModelSystem(name='depth 1'),
                         ],
@@ -37,10 +37,10 @@ class TestSimulation:
                 [
                     ModelSystem(
                         name='depth 0',
-                        model_system=[
+                        sub_systems=[
                             ModelSystem(
                                 name='depth 1',
-                                model_system=[ModelSystem(name='depth 2')],
+                                sub_systems=[ModelSystem(name='depth 2')],
                             ),
                             ModelSystem(name='depth 1'),
                         ],
@@ -63,7 +63,7 @@ class TestSimulation:
         simulation = Simulation(model_system=system)
         for system_parent in simulation.model_system:
             system_parent.branch_depth = 0
-            if len(system_parent.model_system) == 0:
+            if len(system_parent.sub_systems) == 0:
                 continue
             simulation._set_system_branch_depth(system_parent=system_parent)
 
@@ -71,7 +71,7 @@ class TestSimulation:
         def get_flat_depths(
             system_parent: ModelSystem, quantity_name: str, value: list = []
         ):
-            for system_child in system_parent.model_system:
+            for system_child in system_parent.sub_systems:
                 val = getattr(system_child, quantity_name)
                 value.append(val)
                 get_flat_depths(
@@ -192,17 +192,9 @@ class TestSimulation:
             composition_formula_list (list[str]): Resulting composition formulas after normalization. The
             ordering is dictated by the recursive traversing of the hierarchy in get_system_recurs(),
             which follows each branch to its deepest level before moving to the next branch, i.e.,
-                [model_system.composition_formula,
-                model_system.model_system[0].composition_formula],
-                model_system.model_system[0].model_system[0].composition_formula,
-                model_system.model_system[0].model_system[1].composition_formula, ...,
-                model_system.model_system[1].composition_formula, ...]
-            custom_formulas (list[str]): Custom composition formulas that can be set in the generation
-            of the hierarchy, which will cause the normalize to ignore (i.e., not overwrite) these formula entries.
-            The ordering is as described above.
         """
 
-        ### Generate the system hierarchy ###
+        ### Generate the system hierarchy
         simulation = Simulation()
         model_system = ModelSystem(is_representative=True)
         simulation.model_system.append(model_system)
@@ -210,50 +202,60 @@ class TestSimulation:
         model_system.is_representative = is_representative
         model_system.composition_formula = custom_formulas[0]
         ctr_comp = 1
+        # Create an AtomicCell (cell geometry only)
         atomic_cell = AtomicCell()
         model_system.cell.append(atomic_cell)
         if has_atom_indices:
-            model_system.atom_indices = []
+            model_system.particle_indices = []
+
+        # add the atoms to the ModelSystem's particle_states.
         for mol_label, n_mol, atom_labels in zip(
             mol_label_list, n_mol_list, atom_labels_list
         ):
-            # Create a branch in the hierarchy for this molecule type
+            # Create a branch (group) for this molecule type.
             model_system_mol_group = ModelSystem()
             if has_atom_indices:
-                model_system_mol_group.atom_indices = []
+                model_system_mol_group.particle_indices = []
             model_system_mol_group.branch_label = (
                 f'group_{mol_label}' if mol_label is not None else None
             )
             model_system_mol_group.composition_formula = custom_formulas[ctr_comp]
             ctr_comp += 1
-            model_system.model_system.append(model_system_mol_group)
+            model_system.sub_systems.append(model_system_mol_group)
             for _ in range(n_mol):
-                # Create a branch in the hierarchy for this molecule
+                # Create a branch for an individual molecule.
                 model_system_mol = ModelSystem(branch_label=mol_label)
                 model_system_mol.branch_label = mol_label
                 model_system_mol.composition_formula = custom_formulas[ctr_comp]
                 ctr_comp += 1
-                model_system_mol_group.model_system.append(model_system_mol)
-                # add the corresponding atoms to the global atom list
+                model_system_mol_group.sub_systems.append(model_system_mol)
+                # Add the corresponding atoms to the global atom list (particle_states)
                 for atom_label in atom_labels:
                     if atom_label is not None:
-                        atomic_cell.atoms_state.append(
+                        # Instantiate directly with the chemical symbol
+                        model_system.particle_states.append(
                             AtomsState(chemical_symbol=atom_label)
                         )
-                n_atoms = len(atomic_cell.atoms_state)
-                atom_indices = np.arange(n_atoms - len(atom_labels), n_atoms)
+                n_atoms = len(model_system.particle_states)
+                particle_indices = np.arange(n_atoms - len(atom_labels), n_atoms)
                 if has_atom_indices:
-                    model_system_mol.atom_indices = atom_indices
-                    model_system_mol_group.atom_indices = np.append(
-                        model_system_mol_group.atom_indices, atom_indices
-                    )
-                    model_system.atom_indices = np.append(
-                        model_system.atom_indices, atom_indices
-                    )
+                    model_system_mol.particle_indices = particle_indices
+                    if model_system_mol_group.particle_indices is None:
+                        model_system_mol_group.particle_indices = particle_indices
+                    else:
+                        model_system_mol_group.particle_indices = np.append(
+                            model_system_mol_group.particle_indices, particle_indices
+                        )
+                    if model_system.particle_indices is None:
+                        model_system.particle_indices = particle_indices
+                    else:
+                        model_system.particle_indices = np.append(
+                            model_system.particle_indices, particle_indices
+                        )
 
         simulation.normalize(EntryArchive(), logger)
 
-        ### Traverse the hierarchy recursively and check the results ###
+        ### Traverse the hierarchy recursively and check the results
         assert model_system.composition_formula == composition_formula_list[0]
         ctr_comp = 1
 
@@ -262,9 +264,9 @@ class TestSimulation:
             for sys in systems:
                 assert sys.composition_formula == composition_formula_list[ctr_comp]
                 ctr_comp += 1
-                subsystems = sys.model_system
+                subsystems = sys.sub_systems
                 if subsystems:
                     ctr_comp = get_system_recurs(subsystems, ctr_comp)
             return ctr_comp
 
-        _ = get_system_recurs(systems=model_system.model_system, ctr_comp=ctr_comp)
+        _ = get_system_recurs(systems=model_system.sub_systems, ctr_comp=ctr_comp)

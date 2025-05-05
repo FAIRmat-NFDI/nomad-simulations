@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
-from nomad_simulations.schema_packages.utils import get_sibling_section, get_variables
+from nomad_simulations.schema_packages.utils import get_sibling_section
 from nomad_simulations.schema_packages.variables import Energy2 as Energy
 
 configuration = config.get_plugin_entry_point(
@@ -28,16 +28,15 @@ class SpectralProfile(PhysicalProperty):
 
     value = Quantity(
         type=np.float64,
+        shape=['*'],
         description="""
         The value of the intensities of a spectral profile in arbitrary units.
         """,
-    )  # TODO check units and normalization_factor of DOS and Spectras and see whether they can be merged
+    )  # TODO check units and normalization_factor of DOS and Spectra and see whether they can be merged
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.rank = []
+    energies = SubSection(sub_section=Energy.m_def)
+
+    frequencies = SubSection(sub_section=Energy.m_def)
 
     def is_valid_spectral_profile(self) -> bool:
         """
@@ -46,9 +45,7 @@ class SpectralProfile(PhysicalProperty):
         Returns:
             (bool): True if the spectral profile is valid, False otherwise.
         """
-        if (self.value < 0.0).any():
-            return False
-        return True
+        return False if np.any(np.array(self.value) < 0.0) else True
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -71,6 +68,13 @@ class DOSProfile(SpectralProfile):
         unit='1/joule',
         description="""
         The value of the electronic DOS.
+        """,
+    )
+
+    energies = SubSection(
+        sub_section=Energy.m_def,
+        description="""
+        Energy grid points of the projected electronic DOS.
         """,
     )
 
@@ -97,13 +101,37 @@ class DOSProfile(SpectralProfile):
             )
             return None
 
-        # Resolve the `name` from the `entity_ref`
-        name = None
+        if self.entity_ref is None:
+            logger.warning('No entity_ref on DOSProfile; cannot name it.')
+            return None
+
+        # Atom‐projected DOS
         if isinstance(self.entity_ref, AtomsState):
-            name = f'atom {self.entity_ref.chemical_symbol}'
-        elif isinstance(self.entity_ref, OrbitalsState):
-            name = f'orbital {self.entity_ref.l_quantum_symbol}{self.entity_ref.ml_quantum_symbol} {self.entity_ref.m_parent.chemical_symbol}'
-        return name
+            elem = self.entity_ref.chemical_symbol
+            if elem:
+                return f'atom {elem}'
+            else:
+                logger.warning('AtomsState missing chemical_symbol.')
+                return None
+
+        # Orbital‐projected DOS
+        if isinstance(self.entity_ref, OrbitalsState):
+            # navigate up to the parent AtomsState
+            parent = getattr(self.entity_ref, 'm_parent', None)
+            if not isinstance(parent, AtomsState) or not parent.chemical_symbol:
+                logger.warning('Could not find parent AtomsState with chemical_symbol.')
+                return None
+
+            l_label = (
+                f'{self.entity_ref.l_quantum_symbol}{self.entity_ref.ml_quantum_symbol}'
+            )
+            return f'orbital {l_label} {parent.chemical_symbol}'
+
+        # other cases
+        logger.warning(
+            f'Unknown entity_ref type {type(self.entity_ref)}; cannot name PDOS.'
+        )
+        return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -117,7 +145,6 @@ class ElectronicDensityOfStates(DOSProfile):
     Number of electronic states accessible for the charges per energy and per volume.
     """
 
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicDensityOfStates'
 
     spin_channel = Quantity(
@@ -154,6 +181,13 @@ class ElectronicDensityOfStates(DOSProfile):
     #     """,
     # )
 
+    energies = SubSection(
+        sub_section=Energy.m_def,
+        description="""
+        Energy grid points of the electronic DOS.
+        """,
+    )  # ? convert to `Quantity`
+
     projected_dos = SubSection(
         sub_section=DOSProfile.m_def,
         repeats=True,
@@ -178,7 +212,7 @@ class ElectronicDensityOfStates(DOSProfile):
 
     def resolve_energies_origin(
         self,
-        energies: pint.Quantity,
+        energies_points: pint.Quantity,
         fermi_level: Optional[pint.Quantity],
         logger: 'BoundLogger',
     ) -> Optional[pint.Quantity]:
@@ -188,19 +222,12 @@ class ElectronicDensityOfStates(DOSProfile):
 
         Args:
             fermi_level (Optional[pint.Quantity]): The resolved Fermi level.
-            energies (pint.Quantity): The grid points of the `Energy` variable.
+            energies_points (pint.Quantity): The grid points of the `Energy` variable.
             logger (BoundLogger): The logger to log messages.
 
         Returns:
             (Optional[pint.Quantity]): The resolved origin of reference for the energies.
         """
-        # Check if the variables contain more than one variable (different than Energy)
-        # ? Is this correct or should be use the index of energies to extract the proper shape element in `self.value` being used for `dos_values`?
-        if len(self.variables) > 1:
-            logger.warning(
-                'The ElectronicDensityOfStates section contains more than one variable. We cannot extract the energy reference.'
-            )
-            return None
 
         # Extract the `ElectronicEigenvalues` section to get the `highest_occupied` and `lowest_unoccupied` energies
         # TODO implement once `ElectronicEigenvalues` is in the schema
@@ -223,8 +250,8 @@ class ElectronicDensityOfStates(DOSProfile):
         # If it is very far away, normalization may be very inaccurate and we do not report it.
         dos_values = self.value.magnitude
         eref = highest_occupied_energy if fermi_level is None else fermi_level
-        fermi_idx = (np.abs(energies - eref)).argmin()
-        fermi_energy_closest = energies[fermi_idx]
+        fermi_idx = (np.abs(energies_points - eref)).argmin()
+        fermi_energy_closest = energies_points[fermi_idx]
         distance = np.abs(fermi_energy_closest - eref)
         single_peak_fermi = False
         if distance.magnitude <= configuration.dos_energy_tolerance:
@@ -234,7 +261,7 @@ class ElectronicDensityOfStates(DOSProfile):
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies[idx])
+                    energy_distance = np.abs(eref - energies_points[idx])
                 except IndexError:
                     break
                 if energy_distance.magnitude > configuration.dos_energy_tolerance:
@@ -250,7 +277,7 @@ class ElectronicDensityOfStates(DOSProfile):
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies[idx])
+                    energy_distance = np.abs(eref - energies_points[idx])
                 except IndexError:
                     break
                 if energy_distance.magnitude > configuration.dos_energy_tolerance:
@@ -277,7 +304,7 @@ class ElectronicDensityOfStates(DOSProfile):
                         break
                     if value > configuration.dos_intensities_threshold:
                         idx = idx if idx == idx_descend else idx + 1
-                        self.m_cache['highest_occupied_energy'] = energies[idx]
+                        self.m_cache['highest_occupied_energy'] = energies_points[idx]
                         break
                     idx -= 1
                 # Look for lowest unoccupied energy above idx_ascend
@@ -289,7 +316,7 @@ class ElectronicDensityOfStates(DOSProfile):
                         break
                     if value > configuration.dos_intensities_threshold:
                         idx = idx if idx == idx_ascend else idx - 1
-                        self.m_cache['highest_occupied_energy'] = energies[idx]
+                        self.m_cache['highest_occupied_energy'] = energies_points[idx]
                         break
                     idx += 1
 
@@ -309,7 +336,6 @@ class ElectronicDensityOfStates(DOSProfile):
         Returns:
             (Optional[float]): The normalization factor.
         """
-        # Get the `ModelSystem` as referenced in the `Outputs.model_system_ref`
         model_system = get_sibling_section(
             section=self, sibling_section_name='model_system_ref', logger=logger
         )
@@ -319,25 +345,19 @@ class ElectronicDensityOfStates(DOSProfile):
             )
             return None
 
-        # Get the originally parsed `AtomicCell`, which is the first element stored in `ModelSystem.cell` of name `'AtomicCell'`
-        atomic_cell = None
-        for cell in model_system.cell:
-            if cell.name == 'AtomicCell':  # we get the originally parsed `AtomicCell`
-                atomic_cell = cell
-                break
-        if atomic_cell is None:
+        # Instead of self.m_parent, use model_system for particle_states
+        if (
+            model_system.particle_states is None
+            or len(model_system.particle_states) == 0
+        ):
             logger.warning(
-                'Could not resolve the `AtomicCell` from the referenced `ModelSystem`.'
+                'Could not resolve the `particle_states` from the referenced ModelSystem.'
             )
             return None
 
-        # Get the `atoms_state` and their `atomic_number` from the `AtomicCell`
-        if atomic_cell.atoms_state is None or len(atomic_cell.atoms_state) == 0:
-            logger.warning('Could not resolve the `atoms_state` from the `AtomicCell`.')
-            return None
-        atomic_numbers = [atom.atomic_number for atom in atomic_cell.atoms_state]
+        atomic_numbers = [atom.atomic_number for atom in model_system.particle_states]
 
-        # Return `normalization_factor` depending if the calculation is spin polarized or not
+        # Compute normalization_factor. If spin_channel is set, assume spin-polarized system.
         if self.spin_channel is not None:
             normalization_factor = 1 / (2 * sum(atomic_numbers))
         else:
@@ -385,11 +405,7 @@ class ElectronicDensityOfStates(DOSProfile):
             pdos.normalize(None, logger)
 
             # Initial check for `name` and `entity_ref`
-            if (
-                pdos.name is None
-                or pdos.entity_ref is None
-                or len(pdos.entity_ref) == 0
-            ):
+            if pdos.name is None or pdos.entity_ref is None:
                 logger.warning(
                     '`name` or `entity_ref` are not set for `projected_dos` and they are required for normalization to work.'
                 )
@@ -415,61 +431,51 @@ class ElectronicDensityOfStates(DOSProfile):
         if self.projected_dos is None or len(self.projected_dos) == 0:
             return None
 
-        # Extract `Energy` variables
-        energies = get_variables(self.variables, Energy)
-        if len(energies) != 1:
-            logger.warning(
-                'The `ElectronicDensityOfStates` does not contain an `Energy` variable to extract the DOS.'
-            )
-            return None
-
         # We distinguish between orbital and atom `projected_dos`
         orbital_projected = self.extract_projected_dos('orbital', logger)
         atom_projected = self.extract_projected_dos('atom', logger)
 
-        # Extract `atom_projected` from `orbital_projected` by summing up the `orbital_projected` contributions for each atom
-        if len(atom_projected) == 0:
-            atom_data: dict[AtomsState, list[DOSProfile]] = {}
-            for orb_pdos in orbital_projected:
-                # `entity_ref` is the `OrbitalsState` section, whose parent is `AtomsState`
-                entity_ref = orb_pdos.entity_ref.m_parent
-                if entity_ref in atom_data:
-                    atom_data[entity_ref].append(orb_pdos)
-                else:
-                    atom_data[entity_ref] = [orb_pdos]
-            for ref, data in atom_data.items():
-                atom_dos = DOSProfile(
-                    name=f'atom {ref.chemical_symbol}',
-                    entity_ref=ref,
-                    variables=energies,
+        # if we only have orbital entries, build atom entries
+        orbital_projected = self.extract_projected_dos('orbital', logger)
+        atom_projected = self.extract_projected_dos('atom', logger)
+
+        if not atom_projected:
+            # group orbitals by their AtomsState parent
+            atom_orbital_map: dict[AtomsState, list[DOSProfile]] = {}
+            for orb in orbital_projected:
+                parent = getattr(orb.entity_ref, 'm_parent', None)
+                if isinstance(parent, AtomsState):
+                    atom_orbital_map.setdefault(parent, []).append(orb)
+
+            for atom_state, orbs in atom_orbital_map.items():
+                # sum their values
+                vals = [o.value.magnitude for o in orbs]
+                unit = orbs[0].value.u
+                pd = DOSProfile(
+                    entity_ref=atom_state,
+                    energies=self.energies,
                 )
-                orbital_values = [
-                    dos.value.magnitude for dos in data
-                ]  # to avoid warnings from pint
-                orbital_unit = data[0].value.u
-                atom_dos.value = np.sum(orbital_values, axis=0) * orbital_unit
-                atom_projected.append(atom_dos)
-            # We concatenate the `atom_projected` to the `projected_dos`
+                pd.name = f'atom {atom_state.chemical_symbol}'
+                pd.value = np.sum(vals, axis=0) * unit
+                atom_projected.append(pd)
+
+            # now store the full projected list
             self.projected_dos = orbital_projected + atom_projected
 
-        # Extract `value` from `atom_projected` by summing up the `atom_projected` contributions
-        value = self.value
-        if value is None:
-            atom_values = [
-                dos.value.magnitude for dos in atom_projected
-            ]  # to avoid warnings from pint
-            atom_unit = atom_projected[0].value.u
-            value = np.sum(atom_values, axis=0) * atom_unit
-        return value
+        # finally compute or reuse self.value
+        if self.value is None:
+            vals = [pd.value.magnitude for pd in atom_projected]
+            unit = atom_projected[0].value.u
+            self.value = np.sum(vals, axis=0) * unit
+
+        return self.value
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Initial check to see if `variables` contains the required `Energy` variable
-        energies = get_variables(self.variables, Energy)
-        if len(energies) != 0:
+        # Initial check to see whether `energies` is defined
+        if self.energies is None:
             return
-        energies = energies[0].points
 
         # Resolve `fermi_level` from a sibling section with respect to `ElectronicDensityOfStates`
         fermi_level = get_sibling_section(
@@ -479,7 +485,7 @@ class ElectronicDensityOfStates(DOSProfile):
             fermi_level = fermi_level.value
         # and the `energies_origin` from the sibling `ElectronicEigenvalues` section
         self.energies_origin = self.resolve_energies_origin(
-            energies, fermi_level, logger
+            self.energies.points, fermi_level, logger
         )
         if self.energies_origin is None:
             logger.info('Could not resolve the `energies_origin` for the DOS')
@@ -505,8 +511,6 @@ class ElectronicDensityOfStates(DOSProfile):
 class AbsorptionSpectrum(SpectralProfile):
     """ """
 
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
-
     axis = Quantity(
         type=MEnum('xx', 'yy', 'zz'),
         description="""
@@ -527,8 +531,6 @@ class XASSpectrum(AbsorptionSpectrum):
     """
     X-ray Absorption Spectrum (XAS).
     """
-
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
 
     xanes_spectrum = SubSection(
         sub_section=AbsorptionSpectrum.m_def,
@@ -564,24 +566,24 @@ class XASSpectrum(AbsorptionSpectrum):
         # TODO check if this method is general enough
         if self.xanes_spectrum is not None and self.exafs_spectrum is not None:
             # Concatenate XANE and EXAFS `Energy` grid points
-            xanes_variables = get_variables(self.xanes_spectrum.variables, Energy)
-            exafs_variables = get_variables(self.exafs_spectrum.variables, Energy)
+            xanes_variables = self.xanes_spectrum.energies
+            exafs_variables = self.exafs_spectrum.energies
             if len(xanes_variables) == 0 or len(exafs_variables) == 0:
                 logger.warning(
                     'Could not extract the `Energy` grid points from XANES or EXAFS.'
                 )
                 return
-            xanes_energies = xanes_variables[0].points
-            exafs_energies = exafs_variables[0].points
+            xanes_energies = xanes_variables.points
+            exafs_energies = exafs_variables.points
             if xanes_energies.max() > exafs_energies.min():
                 logger.warning(
                     'The XANES `Energy` grid points are not below the EXAFS `Energy` grid points.'
                 )
                 return
-            self.variables = [
-                Energy(points=np.concatenate([xanes_energies, exafs_energies]))
-            ]
-            # Concatenate XANES and EXAFS `value` if they have the same shape ['n_energies']
+            self.energies = Energy(
+                points=np.concatenate([xanes_energies, exafs_energies])
+            )
+            # Concatenate XANES and EXAFS `value` if they have the same shape ['n_energies']  # ? what about the variables
             try:
                 self.value = np.concatenate(
                     [self.xanes_spectrum.value, self.exafs_spectrum.value]

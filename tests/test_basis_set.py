@@ -120,7 +120,7 @@ def test_cutoff_failure(
         (
             2,
             {
-                '/data/model_system/0/cell/0/atoms_state/0': {
+                '/data/model_system/0/particle_states/0': {
                     'r': 1,
                     'l_max': 2,
                     'orb_d_o': [[0]],
@@ -139,7 +139,8 @@ def test_full_apw(
         data=Simulation(
             model_system=[
                 ModelSystem(
-                    cell=[AtomicCell(atoms_state=[AtomsState(chemical_symbol='H')])]
+                    cell=[AtomicCell()],
+                    particle_states=[AtomsState(chemical_symbol='H')],
                 )
             ],
             model_method=[ModelMethod(numerical_settings=[])],

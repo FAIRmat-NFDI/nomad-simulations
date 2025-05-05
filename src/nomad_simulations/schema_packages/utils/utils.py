@@ -122,29 +122,6 @@ def is_not_representative(model_system, logger: 'BoundLogger'):
     return False
 
 
-# cannot define typing with `Variables` due to circular import issue
-def get_variables(
-    variables: 'Optional[list[ArchiveSection]]', variable_cls: 'ArchiveSection'
-) -> 'list[ArchiveSection]':
-    """
-    Get the list of variables which are of type `variable_cls` and appear under `variables`.
-
-    Args:
-        variables (Optional[list[Variables]]): The list of variables to check.
-        variable_cls (Variables): The class of the variables to get.
-
-    Returns:
-        (list[Variables]): The list of variables which are of type `variable_cls`.
-    """
-    if variables is None:
-        return []
-    result = []
-    for var in variables:
-        if isinstance(var, variable_cls):
-            result.append(var)
-    return result
-
-
 # TODO remove function in nomad.atomutils
 def get_composition(children_names: 'list[str]') -> str:
     """

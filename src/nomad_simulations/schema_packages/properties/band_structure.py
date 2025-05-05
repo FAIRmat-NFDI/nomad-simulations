@@ -5,6 +5,8 @@ import pint
 from nomad.config import config
 from nomad.metainfo import Quantity, SubSection
 
+from nomad_simulations.schema_packages.variables import KLinePath
+
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from nomad.metainfo import Context, Section
@@ -42,17 +44,11 @@ class BaseElectronicEigenvalues(PhysicalProperty):
     value = Quantity(
         type=np.float64,
         unit='joule',
+        shape=['*', '*'],
         description="""
         Value of the electronic eigenvalues.
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        # ! `n_bands` need to be set up during initialization of the class
-        self.rank = [int(kwargs.get('n_bands'))]
 
 
 class ElectronicEigenvalues(BaseElectronicEigenvalues):
@@ -257,7 +253,6 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
             is_derived=True,
             physical_property_ref=self,
         )
-        fermi_surface.variables = self.variables
         fermi_surface.value = fermi_values
         return fermi_surface
 
@@ -311,6 +306,8 @@ class ElectronicBandStructure(ElectronicEigenvalues):
     """
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandStructure'
+
+    k_path = SubSection(sub_section=KLinePath.m_def)
 
     def __init__(
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs

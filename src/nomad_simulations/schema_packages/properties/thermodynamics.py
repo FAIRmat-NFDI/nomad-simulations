@@ -132,15 +132,12 @@ class ChemicalPotential(BaseEnergy):
     Free energy cost of adding or extracting a particle from a thermodynamic system.
     """
 
-    # ! implement `iri` and `rank` as part of `m_def = Section()`
-
     iri = 'http://fairmat-nfdi.eu/taxonomy/ChemicalPotential'
 
     def __init__(
         self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
-        self.rank = []
         self.name = self.m_def.name
 
 

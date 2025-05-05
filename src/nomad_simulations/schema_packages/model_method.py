@@ -483,59 +483,80 @@ class TB(ModelMethodElectronic):
         model_index: int = -1,
     ) -> Optional[list[OrbitalsState]]:
         """
-        Resolves the references to the `OrbitalsState` sections from the child `ModelSystem` section.
+        Resolves references to the `OrbitalsState` sections from the top-level `ModelSystem`
+        that has child system(s) typed 'active_atom'. This uses the new design:
+
+        - The parent ModelSystem stores per-atom data in `particle_states`.
+        - The child system(s) typed 'active_atom' list indices in `particle_indices`.
+        - We gather OrbitalsState from each relevant particle_states entry.
 
         Args:
             model_systems (list[ModelSystem]): The list of `ModelSystem` sections.
             logger (BoundLogger): The logger to log messages.
-            model_index (int, optional): The `ModelSystem` section index from which resolve the references. Defaults to -1.
+            model_index (int, optional): The ModelSystem index to use. Defaults to -1 (the last).
 
         Returns:
-            Optional[list[OrbitalsState]]: The resolved references to the `OrbitalsState` sections.
+            Optional[list[OrbitalsState]]: The resolved references to the OrbitalsState sections.
         """
+        # 1) Check that the requested ModelSystem exists
         try:
             model_system = model_systems[model_index]
         except IndexError:
-            logger.warning(
-                f'The `ModelSystem` section with index {model_index} was not found.'
-            )
+            logger.warning(f'No ModelSystem at index {model_index}.')
             return None
 
-        # If `ModelSystem` is not representative, the normalization will not run
+        # 2) If the system is not representative, skip
         if is_not_representative(model_system=model_system, logger=logger):
             return None
 
-        # If `AtomicCell` is not found, the normalization will not run
-        if not model_system.cell:
-            logger.warning('`AtomicCell` section was not found.')
-            return None
-        atomic_cell = model_system.cell[0]
+        # # 3) NOT NEEDED ANYMORE: Check for at least one cell if that is your design’s requirement
+        # if not model_system.cell:
+        #     logger.warning("No AtomicCell found, skipping orbital references resolution.")
+        #     return None
 
-        # If there is no child `ModelSystem`, the normalization will not run
-        atoms_state = atomic_cell.atoms_state
-        model_system_child = model_system.model_system
-        if not atoms_state or not model_system_child:
-            logger.warning('No `AtomsState` or child `ModelSystem` section were found.')
+        # 4) If no child ModelSystem sections exist, skip
+        if not model_system.sub_systems:
+            logger.warning(
+                'No child ModelSystem found; cannot find active_atom references.'
+            )
             return None
 
-        # We flatten the `OrbitalsState` sections from the `ModelSystem` section
-        orbitals_ref = []
-        for active_atom in model_system_child:
-            # If the child is not an "active_atom", the normalization will not run
-            if active_atom.type != 'active_atom':
+        # 5) If no particle_states are present at the top level, we have no orbitals
+        if not model_system.particle_states:
+            logger.warning('No particle_states in the parent ModelSystem.')
+            return None
+
+        orbitals_ref: list[OrbitalsState] = []
+
+        # 6) For each child in sub_systems, if type='active_atom', gather orbitals
+        for child_sys in model_system.sub_systems:
+            if child_sys.type != 'active_atom':
                 continue
-            indices = active_atom.atom_indices
-            for index in indices:
-                try:
-                    active_atoms_state = atoms_state[index]
-                except IndexError:
+            # if no particle_indices => skip
+            if not child_sys.particle_indices:
+                logger.warning('Child system is active_atom but no particle_indices.')
+                continue
+
+            # For each index in child_sys.particle_indices => fetch from parent’s particle_states
+            for idx in child_sys.particle_indices:
+                if idx < 0 or idx >= len(model_system.particle_states):
                     logger.warning(
-                        f'The `AtomsState` section with index {index} was not found.'
+                        f'Particle index {idx} out of range for particle_states.'
                     )
                     continue
-                orbitals_state = active_atoms_state.orbitals_state
-                for orbital in orbitals_state:
-                    orbitals_ref.append(orbital)
+                active_atom_state = model_system.particle_states[idx]
+
+                # If no orbitals_state => skip
+                if not active_atom_state.orbitals_state:
+                    logger.warning(
+                        f'No orbitals_state found in particle_states[{idx}].'
+                    )
+                    continue
+
+                # Append them
+                orbitals_ref.extend(active_atom_state.orbitals_state)
+
+        # 7) Return the collected orbitals
         return orbitals_ref
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:

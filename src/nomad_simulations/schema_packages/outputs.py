@@ -37,8 +37,10 @@ from nomad_simulations.schema_packages.properties import (
     XASSpectrum,
 )
 
+from .common import Time
 
-class Outputs(ArchiveSection):
+
+class Outputs(Time):
     """
     Output properties of a simulation. This base class can be used for inheritance in any of the output properties
     defined in this schema.
@@ -65,10 +67,6 @@ class Outputs(ArchiveSection):
         model with which the output physical properties were calculated.
         """,
     )
-
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-    # List of properties
-    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     fermi_levels = SubSection(sub_section=FermiLevel.m_def, repeats=True)
 
@@ -213,7 +211,7 @@ class SCFOutputs(Outputs):
         """,
     )
 
-    def get_last_scf_steps_value(
+    def get_last_scf_steps_value(  # TODO: redo
         self,
         scf_last_steps: list[Outputs],
         property_name: str,
@@ -222,7 +220,7 @@ class SCFOutputs(Outputs):
         logger: 'BoundLogger',
     ) -> Optional[list]:
         """
-        Get the last two SCF values' magnitudes of a physical property and appends then in a list.
+        Get the last two SCF values' magnitudes of a physical property and appends them in a list.
 
         Args:
             scf_last_steps (list[Outputs]): The list of SCF steps. This must be of length 2 in order to the method to work.

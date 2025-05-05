@@ -10,8 +10,8 @@ from nomad_simulations.schema_packages.physical_property import (
     PhysicalProperty,
     validate_quantity_wrt_value,
 )
-from nomad_simulations.schema_packages.variables import Variables
 
+# from nomad_simulations.schema_packages.variables import Variables
 from . import logger
 
 
@@ -19,6 +19,7 @@ class DummyPhysicalProperty(PhysicalProperty):
     value = Quantity(
         type=np.float64,
         unit='eV',
+        shape=['*', '*', '*', '*'],
         description="""
         This value is defined in order to test the `__setattr__` method in `PhysicalProperty`.
         """,
@@ -30,102 +31,19 @@ class TestPhysicalProperty:
     Test the `PhysicalProperty` class defined in `physical_property.py`.
     """
 
-    @pytest.mark.parametrize(
-        'rank, variables, result_variables_shape, result_full_shape',
-        [
-            ([], [], [], []),
-            ([3], [], [], [3]),
-            ([3, 3], [], [], [3, 3]),
-            ([], [Variables(n_points=4)], [4], [4]),
-            ([3], [Variables(n_points=4)], [4], [4, 3]),
-            ([3, 3], [Variables(n_points=4)], [4], [4, 3, 3]),
-            (
-                [],
-                [Variables(n_points=4), Variables(n_points=10)],
-                [4, 10],
-                [4, 10],
-            ),
-            (
-                [3],
-                [Variables(n_points=4), Variables(n_points=10)],
-                [4, 10],
-                [4, 10, 3],
-            ),
-            (
-                [3, 3],
-                [Variables(n_points=4), Variables(n_points=10)],
-                [4, 10],
-                [4, 10, 3, 3],
-            ),
-        ],
-    )
-    def test_static_properties(
-        self,
-        rank: list,
-        variables: list,
-        result_variables_shape: list,
-        result_full_shape: list,
-    ):
-        """
-        Test the static properties of the `PhysicalProperty` class, `variables_shape` and `full_shape`.
-        """
-        physical_property = PhysicalProperty(
-            source='simulation',
-            rank=rank,
-            variables=variables,
-        )
-        assert physical_property.variables_shape == result_variables_shape
-        assert physical_property.full_shape == result_full_shape
-
     def test_setattr_value(self):
         """
         Test the `__setattr__` method when setting the `value` quantity of a physical property.
         """
         physical_property = DummyPhysicalProperty(
             source='simulation',
-            rank=[3, 3],
-            variables=[Variables(n_points=4), Variables(n_points=10)],
+            # variables=[Variables(n_points=4), Variables(n_points=10)],
         )
         # `physical_property.value` must have full_shape=[4, 10, 3, 3]
         value = np.ones((4, 10, 3, 3)) * ureg.eV
-        assert physical_property.full_shape == list(value.shape)
+        # assert physical_property.full_shape == list(value.shape)
         physical_property.value = value
         assert np.all(physical_property.value == value)
-
-    def test_setattr_value_wrong_shape(self):
-        """
-        Test the `__setattr__` method when the `value` has a wrong shape.
-        """
-        physical_property = PhysicalProperty(
-            source='simulation',
-            rank=[],
-            variables=[],
-        )
-        # `physical_property.value` must have shape=[]
-        value = np.ones((3, 3))
-        wrong_shape = list(value.shape)
-        with pytest.raises(ValueError) as exc_info:
-            physical_property.value = value
-        assert (
-            str(exc_info.value)
-            == f'The shape of the stored `value` {wrong_shape} does not match the full shape {physical_property.full_shape} extracted from the variables `n_points` and the `shape` defined in `PhysicalProperty`.'
-        )
-
-    def test_setattr_none(self):
-        """
-        Test the `__setattr__` method when setting the `value` to `None`.
-        """
-        physical_property = PhysicalProperty(
-            source='simulation',
-            rank=[],
-            variables=[],
-        )
-        with pytest.raises(ValueError) as exc_info:
-            physical_property.value = None
-        assert (
-            str(exc_info.value)
-            == f'The value of the physical property {physical_property.name} is None. Please provide a finite valid value.'
-        )
 
     def test_is_derived(self):
         """
