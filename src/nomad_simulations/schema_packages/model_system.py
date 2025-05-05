@@ -50,7 +50,6 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import (
-    AtomDefn,
     AtomsState,
     ParticleState,
 )
