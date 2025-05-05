@@ -12,6 +12,7 @@ from nomad.datamodel.data import Schema
 from nomad.datamodel.metainfo.basesections import Activity, Entity
 from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection
 
+from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
@@ -257,14 +258,17 @@ class Simulation(BaseSimulation, Schema):
                 for subsystem in subsystems:
                     get_composition_recurs(system=subsystem, atom_labels=atom_labels)
 
+        # Pull chemical symbols straight from AtomsState.chemical_symbol
         atom_labels = (
             [
-                atom.atom_definition_ref.chemical_symbol
+                atom.chemical_symbol
                 for atom in system_parent.particle_states
+                if isinstance(atom, AtomsState) and atom.chemical_symbol is not None
             ]
             if system_parent.particle_states
             else []
         )
+
         get_composition_recurs(system=system_parent, atom_labels=atom_labels)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
