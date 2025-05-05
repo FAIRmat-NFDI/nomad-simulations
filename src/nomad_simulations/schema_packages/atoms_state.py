@@ -545,45 +545,20 @@ class HubbardInteractions(ArchiveSection):
                 )
 
 
-class SpinDefn(Entity):
+class ParticleState(Entity):
     """
-    Defines spin properties for a single atomic species.
-    TODO @ EBB : This definition will be enriched in a seperate PR.
-    """
-
-    is_collinear = Quantity(
-        type=bool,
-        default=True,
-        description='Specifies whether the spin is treated as a scalar (collinear) or vector (non-collinear).',
-    )
-
-    atom_spin_vector = Quantity(
-        type=np.float64,
-        shape=['3'],
-        unit='bohr_magneton',
-        description="""
-        3D spin vector per atom.
-        For collinear calculations, only the z-component should be non-zero.
-        For non-collinear calculations, all components may be used.
-        """,
-    )
-
-
-class AtomDefn(Entity):
-    """
-    Defines a single atomic species or element, to be referenced
-    by `AtomsState` or other sections. It stores the essential properties of an
-    element (symbol, atomic number and charge), ensures consistency between them, and can
-    resolve one from the other if only one is provided.
-
-    Typical usage:
-      - Create one `AtomDefn` for each unique element (or pseudo-atom).
-      - In simulation data, multiple `AtomsState` sections can then reference the
-        same `AtomDefn`, thus avoiding repeated `chemical_symbol` or
-        `atomic_number` in every single atom entry.
+    Generic base section representing the state of a particle in a simulation.
+    This can be extended to include any common quantities in the future.
     """
 
-    # TODO check what happens with ghost atoms that can have `chemical_symbol='X'`
+    pass
+
+
+class AtomsState(ParticleState):
+    """
+    A base section to define each atom state information.
+    """
+
     chemical_symbol = Quantity(
         type=MEnum(ase.data.chemical_symbols[1:]),
         description="""
@@ -610,6 +585,22 @@ class AtomDefn(Entity):
         Note: for `CoreHole` systems we do not consider the charge of the atom even if
         we do not store the final `OrbitalsState` where the electron was excited to.
         """,
+    )
+
+    spin = Quantity(
+        type=np.int32,
+        default=0,
+        description="""
+        Total spin quantum number, S.
+        """,
+    )
+
+    orbitals_state = SubSection(sub_section=OrbitalsState.m_def, repeats=True)
+
+    core_hole = SubSection(sub_section=CoreHole.m_def, repeats=False)
+
+    hubbard_interactions = SubSection(
+        sub_section=HubbardInteractions.m_def, repeats=False
     )
 
     def resolve_chemical_symbol(self, logger: 'BoundLogger') -> Optional[str]:
@@ -658,43 +649,6 @@ class AtomDefn(Entity):
             self.chemical_symbol = self.resolve_chemical_symbol(logger=logger)
         if self.atomic_number is None:
             self.atomic_number = self.resolve_atomic_number(logger=logger)
-
-
-class ParticleState(Entity):
-    """
-    Generic base section representing the state of a particle in a simulation.
-    This can be extended to include any common quantities in the future.
-    """
-
-    pass
-
-
-class AtomsState(ParticleState):
-    """
-    A base section to define each atom state information.
-    """
-
-    atom_definition_ref = Quantity(
-        type=AtomDefn,
-        description="""
-        A reference to the `AtomDefn` section that describes this atom's species. This
-        reference avoids storing repeated elemental data (e.g., `chemical_symbol` and
-        `atomic_number`) in every atom, ensuring that all atoms of the same type link back
-        to a single shared definition.
-        """,
-    )
-
-    spin_definition_ref = Quantity(
-        type=SpinDefn, description='Reference to the spin definition for this atom.'
-    )
-
-    orbitals_state = SubSection(sub_section=OrbitalsState.m_def, repeats=True)
-
-    core_hole = SubSection(sub_section=CoreHole.m_def, repeats=False)
-
-    hubbard_interactions = SubSection(
-        sub_section=HubbardInteractions.m_def, repeats=False
-    )
 
 
 class CoarseGrainedState(ParticleState):
