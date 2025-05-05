@@ -6,7 +6,7 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.atoms_state import AtomDefn, AtomsState
+from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
@@ -83,8 +83,8 @@ class TestModelSystem:
         )
         sys.cell.append(c)
         # Add AtomsState entries for 2 atoms
-        a1 = AtomsState(atom_definition_ref=AtomDefn(chemical_symbol='Na'))
-        a2 = AtomsState(atom_definition_ref=AtomDefn(chemical_symbol='Cl'))
+        a1 = AtomsState(chemical_symbol='Na')
+        a2 = AtomsState(chemical_symbol='Cl')
         sys.particle_states.extend([a1, a2])
 
         ase_atoms = sys.to_ase_atoms(logger=logger)
@@ -127,7 +127,7 @@ class TestModelSystem:
         )
         # Check particle_states references
         assert len(sys.particle_states) == 2
-        syms = [st.atom_definition_ref.chemical_symbol for st in sys.particle_states]
+        syms = [st.chemical_symbol for st in sys.particle_states]
         assert syms == ['C', 'O']
 
     @pytest.mark.parametrize(
@@ -151,10 +151,8 @@ class TestModelSystem:
         )
         sys.cell.append(c)
         # Add enough AtomsState entries to match len(positions)
-        for i in range(len(positions)):
-            sys.particle_states.append(
-                AtomsState(atom_definition_ref=AtomDefn(chemical_symbol='H'))
-            )
+        for _ in range(len(positions)):
+            sys.particle_states.append(AtomsState(chemical_symbol='H'))
         ase_atoms = sys.to_ase_atoms(logger=logger)
         stype, dim = sys.resolve_system_type_and_dimensionality(
             ase_atoms, logger=logger
@@ -184,11 +182,7 @@ class TestModelSystem:
         sys.chemical_formula = chem
         # Add 3 AtomsState entries for H,H,O
         for s, num in zip(['H', 'H', 'O'], [1, 1, 8]):
-            sys.particle_states.append(
-                AtomsState(
-                    atom_definition_ref=AtomDefn(chemical_symbol=s, atomic_number=num)
-                )
-            )
+            sys.particle_states.append(AtomsState(chemical_symbol=s, atomic_number=num))
 
         # Normalize
         sys.normalize(EntryArchive(), logger=logger)
