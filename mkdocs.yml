@@ -5,13 +5,13 @@ site_author: FAIRmat consortium
 repo_url: https://github.com/nomad-coe/nomad-simulations
 nav:
   - Home: index.md
-  - Simulation schema:
-    - Overview: general.md
-    - Program: program/program.md
-    - ModelSystem: model_system/model_system.md
-    - ModelMethod: model_method/model_method.md
-    - Outputs: outputs/outputs.md
-  - The normalize function: normalize.md
+  - Simulation Schema:
+    - Program: user-guide/program.md
+    - ModelSystem: user-guide/model_system.md
+    - ModelMethod: user-guide/model_method.md
+    - Outputs: user-guide/outputs.md
+  - API Reference:
+    - API: reference/api.md
   - Contact: contact.md
 theme:
   name: material
