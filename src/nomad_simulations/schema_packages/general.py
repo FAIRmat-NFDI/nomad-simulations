@@ -12,6 +12,7 @@ from nomad.datamodel.data import Schema
 from nomad.datamodel.metainfo.basesections import Activity, Entity
 from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection
 
+from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
@@ -195,7 +196,7 @@ class Simulation(BaseSimulation, Schema):
     def _set_system_branch_depth(
         self, system_parent: ModelSystem, branch_depth: int = 0
     ):
-        for system_child in system_parent.model_system:
+        for system_child in system_parent.sub_systems:
             system_child.branch_depth = branch_depth + 1
             self._set_system_branch_depth(
                 system_parent=system_child, branch_depth=branch_depth + 1
@@ -222,10 +223,10 @@ class Simulation(BaseSimulation, Schema):
                 to the atom indices stored in system.
             """
             if not subsystems:
-                if system.atom_indices is not None and atom_labels:
-                    subsystem_labels = [atom_labels[i] for i in system.atom_indices]
-                elif system.atom_indices is not None:
-                    subsystem_labels = ['Unknown'] * len(system.atom_indices)
+                if system.particle_indices is not None and atom_labels:
+                    subsystem_labels = [atom_labels[i] for i in system.particle_indices]
+                elif system.particle_indices is not None:
+                    subsystem_labels = ['Unknown'] * len(system.particle_indices)
                 else:
                     subsystem_labels = []
             else:
@@ -249,7 +250,7 @@ class Simulation(BaseSimulation, Schema):
                 atom_labels (list[str]): The global list of atom labels corresponding
                 to the atom indices stored in system.
             """
-            subsystems = system.model_system
+            subsystems = system.sub_systems
             set_composition_formula(
                 system=system, subsystems=subsystems, atom_labels=atom_labels
             )
@@ -257,14 +258,17 @@ class Simulation(BaseSimulation, Schema):
                 for subsystem in subsystems:
                     get_composition_recurs(system=subsystem, atom_labels=atom_labels)
 
-        atoms_state = (
-            system_parent.cell[0].atoms_state if system_parent.cell is not None else []
-        )
+        # Pull chemical symbols straight from AtomsState.chemical_symbol
         atom_labels = (
-            [atom.chemical_symbol for atom in atoms_state]
-            if atoms_state is not None
+            [
+                atom.chemical_symbol
+                for atom in system_parent.particle_states
+                if isinstance(atom, AtomsState) and atom.chemical_symbol is not None
+            ]
+            if system_parent.particle_states
             else []
         )
+
         get_composition_recurs(system=system_parent, atom_labels=atom_labels)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
@@ -284,7 +288,7 @@ class Simulation(BaseSimulation, Schema):
         # Setting up the `branch_depth` in the parent-child tree
         for system_parent in self.model_system:
             system_parent.branch_depth = 0
-            if len(system_parent.model_system) == 0:
+            if len(system_parent.sub_systems) == 0:
                 continue
             self._set_system_branch_depth(system_parent=system_parent)
 

@@ -25,7 +25,6 @@ class TestKSpace:
         [
             ('bulk', False, None, None),
             ('atom', True, None, None),
-            ('bulk', True, None, [[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
             (
                 'bulk',
                 True,

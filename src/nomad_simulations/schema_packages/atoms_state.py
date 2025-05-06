@@ -4,7 +4,7 @@ import ase
 import numpy as np
 import pint
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.basesections import Entity
+from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import MEnum, Quantity, SubSection
 from nomad.units import ureg
 
@@ -545,12 +545,20 @@ class HubbardInteractions(ArchiveSection):
                 )
 
 
-class AtomsState(Entity):
+class ParticleState(Entity):
+    """
+    Generic base section representing the state of a particle in a simulation.
+    This can be extended to include any common quantities in the future.
+    """
+
+    pass
+
+
+class AtomsState(ParticleState):
     """
     A base section to define each atom state information.
     """
 
-    # TODO check what happens with ghost atoms that can have `chemical_symbol='X'`
     chemical_symbol = Quantity(
         type=MEnum(ase.data.chemical_symbols[1:]),
         description="""
@@ -565,8 +573,6 @@ class AtomsState(Entity):
         """,
     )
 
-    orbitals_state = SubSection(sub_section=OrbitalsState.m_def, repeats=True)
-
     charge = Quantity(
         type=np.int32,
         default=0,
@@ -580,6 +586,16 @@ class AtomsState(Entity):
         we do not store the final `OrbitalsState` where the electron was excited to.
         """,
     )
+
+    spin = Quantity(
+        type=np.int32,
+        default=0,
+        description="""
+        Total spin quantum number, S.
+        """,
+    )
+
+    orbitals_state = SubSection(sub_section=OrbitalsState.m_def, repeats=True)
 
     core_hole = SubSection(sub_section=CoreHole.m_def, repeats=False)
 
@@ -633,3 +649,7 @@ class AtomsState(Entity):
             self.chemical_symbol = self.resolve_chemical_symbol(logger=logger)
         if self.atomic_number is None:
             self.atomic_number = self.resolve_atomic_number(logger=logger)
+
+
+class CoarseGrainedState(ParticleState):
+    pass

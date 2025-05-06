@@ -101,13 +101,37 @@ class DOSProfile(SpectralProfile):
             )
             return None
 
-        # Resolve the `name` from the `entity_ref`
-        name = None
+        if self.entity_ref is None:
+            logger.warning('No entity_ref on DOSProfile; cannot name it.')
+            return None
+
+        # Atom‐projected DOS
         if isinstance(self.entity_ref, AtomsState):
-            name = f'atom {self.entity_ref.chemical_symbol}'
-        elif isinstance(self.entity_ref, OrbitalsState):
-            name = f'orbital {self.entity_ref.l_quantum_symbol}{self.entity_ref.ml_quantum_symbol} {self.entity_ref.m_parent.chemical_symbol}'
-        return name
+            elem = self.entity_ref.chemical_symbol
+            if elem:
+                return f'atom {elem}'
+            else:
+                logger.warning('AtomsState missing chemical_symbol.')
+                return None
+
+        # Orbital‐projected DOS
+        if isinstance(self.entity_ref, OrbitalsState):
+            # navigate up to the parent AtomsState
+            parent = getattr(self.entity_ref, 'm_parent', None)
+            if not isinstance(parent, AtomsState) or not parent.chemical_symbol:
+                logger.warning('Could not find parent AtomsState with chemical_symbol.')
+                return None
+
+            l_label = (
+                f'{self.entity_ref.l_quantum_symbol}{self.entity_ref.ml_quantum_symbol}'
+            )
+            return f'orbital {l_label} {parent.chemical_symbol}'
+
+        # other cases
+        logger.warning(
+            f'Unknown entity_ref type {type(self.entity_ref)}; cannot name PDOS.'
+        )
+        return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -312,7 +336,6 @@ class ElectronicDensityOfStates(DOSProfile):
         Returns:
             (Optional[float]): The normalization factor.
         """
-        # Get the `ModelSystem` as referenced in the `Outputs.model_system_ref`
         model_system = get_sibling_section(
             section=self, sibling_section_name='model_system_ref', logger=logger
         )
@@ -322,25 +345,19 @@ class ElectronicDensityOfStates(DOSProfile):
             )
             return None
 
-        # Get the originally parsed `AtomicCell`, which is the first element stored in `ModelSystem.cell` of name `'AtomicCell'`
-        atomic_cell = None
-        for cell in model_system.cell:
-            if cell.name == 'AtomicCell':  # we get the originally parsed `AtomicCell`
-                atomic_cell = cell
-                break
-        if atomic_cell is None:
+        # Instead of self.m_parent, use model_system for particle_states
+        if (
+            model_system.particle_states is None
+            or len(model_system.particle_states) == 0
+        ):
             logger.warning(
-                'Could not resolve the `AtomicCell` from the referenced `ModelSystem`.'
+                'Could not resolve the `particle_states` from the referenced ModelSystem.'
             )
             return None
 
-        # Get the `atoms_state` and their `atomic_number` from the `AtomicCell`
-        if atomic_cell.atoms_state is None or len(atomic_cell.atoms_state) == 0:
-            logger.warning('Could not resolve the `atoms_state` from the `AtomicCell`.')
-            return None
-        atomic_numbers = [atom.atomic_number for atom in atomic_cell.atoms_state]
+        atomic_numbers = [atom.atomic_number for atom in model_system.particle_states]
 
-        # Return `normalization_factor` depending if the calculation is spin polarized or not
+        # Compute normalization_factor. If spin_channel is set, assume spin-polarized system.
         if self.spin_channel is not None:
             normalization_factor = 1 / (2 * sum(atomic_numbers))
         else:
@@ -388,11 +405,7 @@ class ElectronicDensityOfStates(DOSProfile):
             pdos.normalize(None, logger)
 
             # Initial check for `name` and `entity_ref`
-            if (
-                pdos.name is None
-                or pdos.entity_ref is None
-                or len(pdos.entity_ref) == 0
-            ):
+            if pdos.name is None or pdos.entity_ref is None:
                 logger.warning(
                     '`name` or `entity_ref` are not set for `projected_dos` and they are required for normalization to work.'
                 )
@@ -422,40 +435,40 @@ class ElectronicDensityOfStates(DOSProfile):
         orbital_projected = self.extract_projected_dos('orbital', logger)
         atom_projected = self.extract_projected_dos('atom', logger)
 
-        # Extract `atom_projected` from `orbital_projected` by summing up the `orbital_projected` contributions for each atom
-        if len(atom_projected) == 0:
-            atom_data: dict[AtomsState, list[DOSProfile]] = {}
-            for orb_pdos in orbital_projected:
-                # `entity_ref` is the `OrbitalsState` section, whose parent is `AtomsState`
-                entity_ref = orb_pdos.entity_ref.m_parent
-                if entity_ref in atom_data:
-                    atom_data[entity_ref].append(orb_pdos)
-                else:
-                    atom_data[entity_ref] = [orb_pdos]
-            for ref, data in atom_data.items():
-                atom_dos = DOSProfile(
-                    name=f'atom {ref.chemical_symbol}',
-                    entity_ref=ref,
-                    energies=self.energies,  #! centralize energy axis
+        # if we only have orbital entries, build atom entries
+        orbital_projected = self.extract_projected_dos('orbital', logger)
+        atom_projected = self.extract_projected_dos('atom', logger)
+
+        if not atom_projected:
+            # group orbitals by their AtomsState
+            atom_orbital_map: dict[AtomsState, list[DOSProfile]] = {}
+            for orb in orbital_projected:
+                parent = getattr(orb.entity_ref, 'm_parent', None)
+                if isinstance(parent, AtomsState):
+                    atom_orbital_map.setdefault(parent, []).append(orb)
+
+            for atom_state, orbs in atom_orbital_map.items():
+                # sum their values
+                vals = [o.value.magnitude for o in orbs]
+                unit = orbs[0].value.u
+                pd = DOSProfile(
+                    entity_ref=atom_state,
+                    energies=self.energies,
                 )
-                orbital_values = [
-                    dos.value.magnitude for dos in data
-                ]  # to avoid warnings from pint
-                orbital_unit = data[0].value.u
-                atom_dos.value = np.sum(orbital_values, axis=0) * orbital_unit
-                atom_projected.append(atom_dos)
-            # We concatenate the `atom_projected` to the `projected_dos`
+                pd.name = f'atom {atom_state.chemical_symbol}'
+                pd.value = np.sum(vals, axis=0) * unit
+                atom_projected.append(pd)
+
+            # now store the full projected list
             self.projected_dos = orbital_projected + atom_projected
 
-        # Extract `value` from `atom_projected` by summing up the `atom_projected` contributions
-        value = self.value
-        if value is None:
-            atom_values = [
-                dos.value.magnitude for dos in atom_projected
-            ]  # to avoid warnings from pint
-            atom_unit = atom_projected[0].value.u
-            value = np.sum(atom_values, axis=0) * atom_unit
-        return value
+        # finally compute or reuse self.value
+        if self.value is None:
+            vals = [pd.value.magnitude for pd in atom_projected]
+            unit = atom_projected[0].value.u
+            self.value = np.sum(vals, axis=0) * unit
+
+        return self.value
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)

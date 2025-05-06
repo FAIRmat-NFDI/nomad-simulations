@@ -374,19 +374,27 @@ class TestAtomsState:
             ('O', 8),
         ],
     )
-    def test_chemical_symbol_and_atomic_number(
-        self, chemical_symbol: str, atomic_number: int
-    ):
+    def test_symbol_to_atomic_number(self, chemical_symbol: str, atomic_number: int):
         """
-        Test the `chemical_symbol` and `atomic_number` resolution for the `AtomsState` section.
-
-        Args:
-            chemical_symbol (str): The chemical symbol of the atom.
-            atomic_number (int): The atomic number of the atom.
+        Test that providing a chemical_symbol sets the correct atomic_number after normalization.
         """
-        # Testing `chemical_symbol`
         atom_state = AtomsState(chemical_symbol=chemical_symbol)
-        assert atom_state.resolve_atomic_number(logger=logger) == atomic_number
-        # Testing `atomic_number`
-        atom_state.atomic_number = atomic_number
-        assert atom_state.resolve_chemical_symbol(logger=logger) == chemical_symbol
+        atom_state.normalize(EntryArchive(), logger)
+        assert atom_state.atomic_number == atomic_number
+
+    @pytest.mark.parametrize(
+        'atomic_number, chemical_symbol',
+        [
+            (26, 'Fe'),
+            (1, 'H'),
+            (29, 'Cu'),
+            (8, 'O'),
+        ],
+    )
+    def test_atomic_number_to_symbol(self, atomic_number: int, chemical_symbol: str):
+        """
+        Test that providing an atomic_number sets the correct chemical_symbol after normalization.
+        """
+        atom_state = AtomsState(atomic_number=atomic_number)
+        atom_state.normalize(EntryArchive(), logger)
+        assert atom_state.chemical_symbol == chemical_symbol

@@ -36,7 +36,7 @@ from matid.classification.classifications import (
 from nomad.atomutils import Formula, get_normalized_wyckoff, search_aflow_prototype
 from nomad.config import config
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.basesections import Entity, System
+from nomad.datamodel.metainfo.basesections.v2 import Entity, System
 from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
@@ -49,7 +49,10 @@ if TYPE_CHECKING:
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomsState,
+    ParticleState,
+)
 from nomad_simulations.schema_packages.utils import (
     catch_not_implemented,
     get_sibling_section,
@@ -193,25 +196,25 @@ class GeometricSpace(Entity):
         Args:
             logger (BoundLogger): The logger to log messages.
         """
-        atoms = self.to_ase_atoms(logger=logger)  # function defined in AtomicCell
-        cell = atoms.get_cell()
-        self.length_vector_a, self.length_vector_b, self.length_vector_c = (
-            cell.lengths() * ureg.angstrom
-        )
-        self.angle_vectors_b_c, self.angle_vectors_a_c, self.angle_vectors_a_b = (
-            cell.angles() * ureg.degree
-        )
-        self.volume = cell.volume * ureg.angstrom**3
+        try:
+            atoms = self.to_ase_atoms(logger=logger)
+            cell = atoms.get_cell()
+            self.length_vector_a, self.length_vector_b, self.length_vector_c = (
+                cell.lengths() * ureg.angstrom
+            )
+            self.angle_vectors_b_c, self.angle_vectors_a_c, self.angle_vectors_a_b = (
+                cell.angles() * ureg.degree
+            )
+            self.volume = cell.volume * ureg.angstrom**3
+        except Exception as e:
+            logger.warning(
+                'Could not extract geometric space information from ASE Atoms object.',
+                exc_info=e,
+            )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        # Skip normalization for `Entity`
-        try:
-            self.get_geometric_space_for_atomic_cell(logger=logger)
-        except Exception:
-            logger.warning(
-                'Could not extract the geometric space information from ASE Atoms object.',
-            )
-            return
+        # extract all the geometric‐space quantities; errors are logged inside
+        self.get_geometric_space_for_atomic_cell(logger=logger)
 
 
 def _check_implemented(func: 'Callable'):
@@ -310,25 +313,6 @@ class Cell(GeometricSpace):
         """,
     )
 
-    positions = Quantity(
-        type=np.float64,
-        shape=['n_cell_points', 3],
-        unit='meter',
-        description="""
-        Positions of all the atoms in Cartesian coordinates.
-        """,
-    )
-
-    velocities = Quantity(
-        type=np.float64,
-        shape=['n_cell_points', 3],
-        unit='meter / second',
-        description="""
-        Velocities of the atoms. It is the change in cartesian coordinates of the atom position
-        with time.
-        """,
-    )
-
     lattice_vectors = Quantity(
         type=np.float64,
         shape=[3, 3],
@@ -358,55 +342,15 @@ class Cell(GeometricSpace):
         """,
     )
 
-    @staticmethod
-    def _generate_comparer(obj: 'Cell') -> 'Generator[Any, None, None]':
-        try:
-            return ((HashedPositions(pos)) for pos in obj.positions)
-        except AttributeError:
-            raise NotImplementedError
-
-    @catch_not_implemented
-    def is_lt_cell(self, other) -> bool:
-        return set(self._generate_comparer(self)) < set(self._generate_comparer(other))
-
-    @catch_not_implemented
-    def is_gt_cell(self, other) -> bool:
-        return set(self._generate_comparer(self)) > set(self._generate_comparer(other))
-
-    @catch_not_implemented
-    def is_le_cell(self, other) -> bool:
-        return set(self._generate_comparer(self)) <= set(self._generate_comparer(other))
-
-    @catch_not_implemented
-    def is_ge_cell(self, other) -> bool:
-        return set(self._generate_comparer(self)) >= set(self._generate_comparer(other))
-
-    @catch_not_implemented
-    def is_equal_cell(self, other) -> bool:  # TODO: improve naming
-        return set(self._generate_comparer(self)) == set(self._generate_comparer(other))
-
-    def is_ne_cell(self, other) -> bool:
-        # this does not hold in general, but here we use finite sets
-        return not self.is_equal_cell(other)
-
 
 class AtomicCell(Cell):
     """
     A base section used to specify the atomic cell information of a system.
     """
 
-    atoms_state = SubSection(sub_section=AtomsState.m_def, repeats=True)
-
-    n_atoms = Quantity(
-        type=np.int32,
-        description="""
-        Number of atoms in the atomic cell.
-        """,
-    )
-
     equivalent_atoms = Quantity(
         type=np.int32,
-        shape=['n_atoms'],
+        shape=['*'],
         description="""
         List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
         then the list is simply the index of each element, e.g.:
@@ -418,120 +362,11 @@ class AtomicCell(Cell):
     # ! improve description and clarify whether this belongs to `Symmetry` with @lauri-codes
     wyckoff_letters = Quantity(
         type=str,
-        shape=['n_atoms'],
+        shape=['*'],
         description="""
         Wyckoff letters associated with each atom.
         """,
     )
-
-    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
-        super().__init__(m_def, m_context, **kwargs)
-        # Set the name of the section
-        self.name = self.m_def.name
-
-    @staticmethod
-    def _generate_comparer(obj: 'AtomicCell') -> 'Generator[Any, None, None]':
-        # presumes `atoms_state` mapping 1-to-1 with `positions` and conserves the order
-        try:
-            return (
-                (HashedPositions(pos), PartialOrderElement(st.chemical_symbol))
-                for pos, st in zip(obj.positions, obj.atoms_state)
-            )
-        except AttributeError:
-            raise NotImplementedError
-
-    def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
-        """
-        Get the chemical symbols of the atoms in the atomic cell. These are defined on `atoms_state[*].chemical_symbol`.
-        Args:
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            list: The list of chemical symbols of the atoms in the atomic cell.
-        """
-        if not self.atoms_state:
-            return []
-
-        chemical_symbols = []
-        for atom_state in self.atoms_state:
-            if not atom_state.chemical_symbol:
-                logger.warning('Could not find `AtomsState[*].chemical_symbol`.')
-                return []
-            chemical_symbols.append(atom_state.chemical_symbol)
-        return chemical_symbols
-
-    def to_ase_atoms(self, logger: 'BoundLogger') -> 'Optional[ase.Atoms]':
-        """
-        Generates an ASE Atoms object with the most basic information from the parsed `AtomicCell`
-        section (labels, periodic_boundary_conditions, positions, and lattice_vectors).
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[ase.Atoms]): The ASE Atoms object with the basic information from the `AtomicCell`.
-        """
-        # Initialize ase.Atoms object with labels
-        atoms_labels = self.get_chemical_symbols(logger=logger)
-        ase_atoms = ase.Atoms(symbols=atoms_labels)
-
-        # PBC
-        if self.periodic_boundary_conditions is None:
-            logger.info(
-                'Could not find `AtomicCell.periodic_boundary_conditions`. They will be set to [False, False, False].'
-            )
-            self.periodic_boundary_conditions = [False, False, False]
-        ase_atoms.set_pbc(pbc=self.periodic_boundary_conditions)
-
-        # Lattice vectors
-        if self.lattice_vectors is not None:
-            ase_atoms.set_cell(cell=self.lattice_vectors.to('angstrom').magnitude)
-        else:
-            logger.info('Could not find `AtomicCell.lattice_vectors`.')
-
-        # Positions
-        if self.positions is not None:
-            if len(self.positions) != len(self.atoms_state):
-                logger.error(
-                    'Length of `AtomicCell.positions` does not coincide with the length of the `AtomicCell.atoms_state`.'
-                )
-                return None
-            ase_atoms.set_positions(
-                newpositions=self.positions.to('angstrom').magnitude
-            )
-        else:
-            logger.warning('Could not find `AtomicCell.positions`.')
-            return None
-
-        return ase_atoms
-
-    def from_ase_atoms(self, ase_atoms: ase.Atoms, logger: 'BoundLogger') -> None:
-        """
-        Parses the information from an ASE Atoms object to the `AtomicCell` section.
-
-        Args:
-            ase_atoms (ase.Atoms): The ASE Atoms object to parse.
-            logger (BoundLogger): The logger to log messages.
-        """
-        # `AtomsState[*].chemical_symbol`
-        for symbol in ase_atoms.get_chemical_symbols():
-            atom_state = AtomsState(chemical_symbol=symbol)
-            self.atoms_state.append(atom_state)
-
-        # `periodic_boundary_conditions`
-        self.periodic_boundary_conditions = ase_atoms.get_pbc()
-
-        # `lattice_vectors`
-        cell = ase_atoms.get_cell()
-        self.lattice_vectors = ase.geometry.complete_cell(cell) * ureg('angstrom')
-
-        # `positions`
-        positions = ase_atoms.get_positions()
-        if (
-            not positions.tolist()
-        ):  # ASE assigns a shape=(0, 3) array if no positions are found
-            return None
-        self.positions = positions * ureg('angstrom')
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -642,7 +477,7 @@ class Symmetry(ArchiveSection):
     )
 
     atomic_cell_ref = Quantity(
-        type=AtomicCell,
+        type=Cell,
         description="""
         Reference to the AtomicCell section that the symmetry refers to.
         """,
@@ -653,7 +488,7 @@ class Symmetry(ArchiveSection):
         symmetry_analyzer: 'SymmetryAnalyzer',
         cell_type: str,
         logger: 'BoundLogger',
-    ) -> 'Optional[AtomicCell]':
+    ) -> 'Optional[Cell]':
         """
         Resolves the `AtomicCell` section from the `SymmetryAnalyzer` object and the cell_type
         (primitive or conventional).
@@ -667,30 +502,39 @@ class Symmetry(ArchiveSection):
             (Optional[AtomicCell]): The resolved `AtomicCell` section or None if the cell_type
             is not recognized.
         """
-        if cell_type not in ['primitive', 'conventional']:
-            logger.error(
-                "Cell type not recognized, only 'primitive' and 'conventional' are allowed."
-            )
+        # Define a mapping for each supported cell type
+        cell_type_map = {
+            'primitive': {
+                'wyckoff': symmetry_analyzer.get_wyckoff_letters_primitive,
+                'equivalent': symmetry_analyzer.get_equivalent_atoms_primitive,
+                'system': symmetry_analyzer.get_primitive_system,
+            },
+            'conventional': {
+                'wyckoff': symmetry_analyzer.get_wyckoff_letters_conventional,
+                'equivalent': symmetry_analyzer.get_equivalent_atoms_conventional,
+                'system': symmetry_analyzer.get_conventional_system,
+            },
+        }
+
+        mapping = cell_type_map.get(cell_type)
+        if mapping is None:
+            logger.error(f'Cell type {cell_type} is not supported.')
             return None
-        wyckoff = getattr(symmetry_analyzer, f'get_wyckoff_letters_{cell_type}')()
-        equivalent_atoms = getattr(
-            symmetry_analyzer, f'get_equivalent_atoms_{cell_type}'
-        )()
-        system = getattr(symmetry_analyzer, f'get_{cell_type}_system')()
 
-        positions = system.get_scaled_positions()
+        try:
+            wyckoff = mapping['wyckoff']()
+            equivalent_atoms = mapping['equivalent']()
+            system = mapping['system']()
+        except Exception as e:
+            logger.error('Error extracting symmetry data', exc_info=e)
+            return None
+
         cell = system.get_cell()
-        atomic_numbers = system.get_atomic_numbers()
-        labels = system.get_chemical_symbols()
 
-        atomic_cell = AtomicCell(type=cell_type)
+        # Create the cell (or atomic cell) for geometry only
+        atomic_cell = Cell(type=cell_type)
         atomic_cell.lattice_vectors = cell * ureg.angstrom
-        for label, atomic_number in zip(labels, atomic_numbers):
-            atom_state = AtomsState(chemical_symbol=label, atomic_number=atomic_number)
-            atomic_cell.m_add_sub_section(AtomicCell.atoms_state, atom_state)
-        atomic_cell.positions = (
-            positions * ureg.angstrom
-        )  # ? why do we need to pass units
+        # ! Positions are stored directly under model_system in nomad-simulations>=0.4.
         atomic_cell.wyckoff_letters = wyckoff
         atomic_cell.equivalent_atoms = equivalent_atoms
         atomic_cell.get_geometric_space_for_atomic_cell(logger=logger)
@@ -714,7 +558,7 @@ class Symmetry(ArchiveSection):
         """
         symmetry = {}
         try:
-            ase_atoms = original_atomic_cell.to_ase_atoms(logger=logger)
+            ase_atoms = self.m_parent.to_ase_atoms(logger=logger)
             symmetry_analyzer = SymmetryAnalyzer(
                 ase_atoms, symmetry_tol=configuration.symmetry_tolerance
             )
@@ -758,17 +602,12 @@ class Symmetry(ArchiveSection):
 
         # Getting prototype_formula, prototype_aflow_id, and strukturbericht designation from
         # standarized Wyckoff numbers and the space group number
-        if (
-            symmetry.get('space_group_number')
-            and conventional_atomic_cell.atoms_state is not None
-        ):
-            # Resolve atomic_numbers and wyckoff letters from the conventional cell
-            conventional_num = [
-                atom_state.atomic_number
-                for atom_state in conventional_atomic_cell.atoms_state
-            ]
+        if symmetry.get('space_group_number'):
+            # Retrieve the expanded conventional system (an ASE.Atoms object) from the analyzer.
+            conventional_system = symmetry_analyzer.get_conventional_system()
+            # Use the conventional system to get the expanded atomic numbers.
+            conventional_num = conventional_system.get_atomic_numbers()
             conventional_wyckoff = conventional_atomic_cell.wyckoff_letters
-            # Normalize wyckoff letters
             norm_wyckoff = get_normalized_wyckoff(
                 atomic_numbers=conventional_num, wyckoff_letters=conventional_wyckoff
             )
@@ -785,7 +624,6 @@ class Symmetry(ArchiveSection):
                 )
                 prototype_aflow_id = aflow_prototype.get('aflow_prototype_id')
                 prototype_formula = aflow_prototype.get('Prototype')
-                # Adding these to the symmetry dictionary for later assignement
                 symmetry['strukturbericht_designation'] = strukturbericht
                 symmetry['prototype_aflow_id'] = prototype_aflow_id
                 symmetry['prototype_formula'] = prototype_formula
@@ -802,7 +640,9 @@ class Symmetry(ArchiveSection):
         atomic_cell = get_sibling_section(
             section=self, sibling_section_name='cell', logger=logger
         )
-        if self.m_parent.type == 'bulk':
+        # TODO : the following is a temporary fix, and it might break again
+        # when there are systems with deeper hierarchies.
+        if self.m_parent.m_parent is not None and self.m_parent.type == 'bulk':
             # Adding the newly calculated primitive and conventional cells to the ModelSystem
             (
                 primitive_atomic_cell,
@@ -888,17 +728,21 @@ class ChemicalFormula(ArchiveSection):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        atomic_cell = get_sibling_section(
-            section=self, sibling_section_name='cell', logger=logger
-        )
-        if atomic_cell is None:
-            logger.warning('Could not resolve the sibling `AtomicCell` section.')
+        # Instead of retrieving a sibling "cell", get the parent ModelSystem
+        model_system = self.m_parent
+        if model_system is None:
+            logger.warning('Could not resolve parent ModelSystem for ChemicalFormula.')
             return
-        ase_atoms = atomic_cell.to_ase_atoms(logger=logger)
+
+        # Get the ASE Atoms using the ModelSystem.to_ase_atoms() method (which now gathers positions, cell, etc.)
+        ase_atoms = model_system.to_ase_atoms(logger=logger)
+        if ase_atoms is None:
+            logger.error('Could not generate ASE Atoms from the ModelSystem.')
+            return
+
         formula = None
         try:
             formula = Formula(formula=ase_atoms.get_chemical_formula())
-            # self.chemical_composition = ase_atoms.get_chemical_formula(mode="all")
         except ValueError as e:
             logger.warning(
                 'Could not extract the chemical formulas information.',
@@ -907,12 +751,16 @@ class ChemicalFormula(ArchiveSection):
             )
         if formula:
             self.resolve_chemical_formulas(formula=formula)
-            self.m_cache['elemental_composition'] = formula.elemental_composition()
+            self.m_cache['elemental_composition'] = formula.elemental_composition
 
 
 class ModelSystem(System):
     """
     Model system used as an input for simulating the material.
+
+    Atom positions at the top level in the quantity “positions”
+    and the per‐atom state (including electronic state information) in the subsection “particle_states”.
+    Downstream subsystems refer to atoms via particle_indices.
 
     Definitions:
         - `name` refers to all the verbose and user-dependent naming in ModelSystem,
@@ -924,19 +772,18 @@ class ModelSystem(System):
     `time_step` can be defined.
 
     It is composed of the sub-sections:
-        - `AtomicCell` containing the information of the atomic structure,
         - `Symmetry` containing the information of the (conventional) atomic cell symmetry
         in bulk ModelSystem,
         - `ChemicalFormula` containing the information of the chemical formulas in different
         formats.
 
-    This class nest over itself (with the section proxy in `model_system`) to define different
-    parent-child system trees. The quantities `branch_label`, `branch_depth`, `atom_indices`,
+    This class nests over itself (with the section proxy in `sub_systems`) to define different
+    parent-child system trees. The quantities `branch_label`, `branch_depth`, `particle_indices`,
     and `bond_list` are used to define the parent-child tree.
 
     The normalization is ran in the following order:
         1. `OrbitalsState.normalize()` in atoms_state.py under `AtomsState`
-        2. `CoreHoleState.normalize()` in atoms_state.py under `AtomsState`
+        2. `CoreHole.normalize()` in atoms_state.py under `AtomsState`
         3. `HubbardInteractions.normalize()` in atoms_state.py under `AtomsState`
         4. `AtomsState.normalize()` in atoms_state.py
         5. `AtomicCell.normalize()` in atomic_cell.py
@@ -1049,19 +896,36 @@ class ModelSystem(System):
         """,
     )
 
-    atom_indices = Quantity(
+    particle_indices = Quantity(
         type=np.int32,
         shape=['*'],
         description="""
-        Indices of the atoms in the child with respect to its parent. Example:
+        Indices of the particles/atoms in the child with respect to its parent. Example:
             - We have SrTiO3, where `AtomicCell.labels = ['Sr', 'Ti', 'O', 'O', 'O']`. If
             we create a `model_system` child for the `'Ti'` atom only, then in that child
-            `ModelSystem.model_system.atom_indices = [1]`. If now we want to refer both to
-            the `'Ti'` and the last `'O'` atoms, `ModelSystem.model_system.atom_indices = [1, 4]`.
+            `ModelSystem.sub_systems[0].particle_indices = [1]`. If now we want to refer both to
+            the `'Ti'` and the last `'O'` atoms, `ModelSystem.sub_systems[0].particle_indices = [1, 4]`.
         """,
     )
 
-    # TODO improve description and add an example using the case in atom_indices
+    n_particles = Quantity(
+        type=np.int32,
+        description="""
+        Number of particles/atoms in the simulation.
+        """,
+    )
+
+    positions = Quantity(
+        type=np.float64,
+        shape=['n_particles', 3],
+        unit='meter',
+        description="""
+            Cartesian coordinates of all atoms in the top-level system.
+            All subsystems will reference these positions via particle_indices.
+        """,
+    )
+
+    # TODO improve description and add an example
     bond_list = Quantity(
         type=np.int32,
         shape=['*', 2],
@@ -1095,7 +959,120 @@ class ModelSystem(System):
         """,
     )
 
-    model_system = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
+    total_charge = Quantity(
+        type=np.int32,
+        description="""
+        Total charge of the system.
+        """,
+    )
+
+    total_spin = Quantity(
+        type=np.int32,
+        description="""
+        Total spin quantum number **S** of the system (so Ŝ² ψ = S(S+1) ħ² ψ).
+        Stored as an integer or half-integer represented in doubled form
+        (e.g. singlet → 0, doublet → 1, triplet → 2).
+        Not to be confused with the spin multiplicity 2S+1.
+        """,
+    )
+
+    particle_states = SubSection(
+        section_def=ParticleState.m_def,
+        repeats=True,
+        description='Particle states',
+    )
+
+    sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
+
+    def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
+        """
+        Gets the chemical symbols from the particle_states that are AtomsState instances.
+        Args:
+            logger (BoundLogger): The logger to log messages.
+        Returns:
+            list: The list of chemical symbols of the atoms.
+        """
+        chemical_symbols = []
+        for particle_state in self.particle_states:
+            if isinstance(particle_state, AtomsState):
+                # Read directly from AtomsState.chemical_symbol
+                if particle_state.chemical_symbol is None:
+                    logger.warning('AtomsState has no `chemical_symbol` set.')
+                    return []
+                chemical_symbols.append(particle_state.chemical_symbol)
+        return chemical_symbols
+
+    def to_ase_atoms(self, logger: 'BoundLogger') -> 'Optional[ase.Atoms]':
+        """
+        Generates an ASE Atoms object from ModelSystem data.
+        Uses:
+          - atom_states to obtain chemical symbols,
+          - positions from the top-level positions quantity,
+          - periodic boundary conditions and lattice vectors from the first cell.
+        """
+        symbols = self.get_chemical_symbols(logger)
+        if not symbols:
+            logger.error('Cannot generate ASE Atoms without chemical symbols.')
+            return None
+
+        ase_atoms = ase.Atoms(symbols=symbols)
+
+        # Use cell data (from the first cell) for periodic boundary conditions and lattice
+        if self.cell and len(self.cell) > 0:
+            cell_section = self.cell[0]
+            if cell_section.periodic_boundary_conditions is None:
+                logger.info(
+                    'Cell periodic_boundary_conditions not found; using default [False, False, False].'
+                )
+                pbc = [False, False, False]
+            else:
+                pbc = cell_section.periodic_boundary_conditions
+            ase_atoms.set_pbc(pbc=pbc)
+
+            if cell_section.lattice_vectors is not None:
+                ase_atoms.set_cell(
+                    cell_section.lattice_vectors.to('angstrom').magnitude
+                )
+            else:
+                logger.warning('No lattice_vectors found in cell[0].')
+        else:
+            logger.warning('No cell section available in ModelSystem.')
+
+        # Check that positions have been set on the ModelSystem
+        if self.positions is None:
+            logger.error('ModelSystem.positions is not defined.')
+            return None
+        else:
+            ase_atoms.set_positions(self.positions.to('angstrom').magnitude)
+        return ase_atoms
+
+    def from_ase_atoms(self, ase_atoms: ase.Atoms, logger: 'BoundLogger') -> None:
+        """
+        Populates ModelSystem from an ASE Atoms object.
+        Replaces the atom_states subsection with new entries based on the ASE chemical symbols,
+        and assigns ASE positions to the top-level positions quantity.
+        """
+        # Iterate over chemical symbols and atomic numbers from the ASE Atoms object
+        for symbol, atomic_number in zip(
+            ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers()
+        ):
+            state = AtomsState(chemical_symbol=symbol, atomic_number=atomic_number)
+            self.particle_states.append(state)
+
+        positions = ase_atoms.get_positions()
+        if not positions.tolist():
+            logger.error('ASE Atoms has no positions.')
+            return
+        self.positions = positions * ureg('angstrom')
+        self.n_particles = len(self.positions)
+
+        # Update cell information from ASE
+        if self.cell and len(self.cell) > 0:
+            cell = ase_atoms.get_cell()
+            self.cell[0].lattice_vectors = ase.geometry.complete_cell(cell) * ureg(
+                'angstrom'
+            )
+            self.cell[0].periodic_boundary_conditions = ase_atoms.get_pbc()
 
     def resolve_system_type_and_dimensionality(
         self, ase_atoms: ase.Atoms, logger: 'BoundLogger'
@@ -1157,39 +1134,50 @@ class ModelSystem(System):
         if is_not_representative(model_system=self, logger=logger):
             return
 
-        # Extracting ASE Atoms object from the originally parsed AtomicCell section
-        if self.cell is None or len(self.cell) == 0:
-            logger.warning(
-                'Could not find the originally parsed atomic system. `Symmetry` and `ChemicalFormula` extraction is thus not run.'
-            )
+        # Generate ASE Atoms object from top-level ModelSystem data
+        ase_atoms = self.to_ase_atoms(logger)
+        if ase_atoms is None:
+            logger.error('Could not generate ASE Atoms from ModelSystem.')
             return
-        if self.cell[0].name == 'AtomicCell':
-            self.cell[0].type = 'original'
-            ase_atoms = self.cell[0].to_ase_atoms(logger=logger)
-            if not ase_atoms:
-                return
 
-            # Resolving system `type`, `dimensionality`, and Symmetry section (if this last
-            # one does not exists already)
-            original_atom_positions = self.cell[0].positions
-            if original_atom_positions is not None:
-                self.type = 'unavailable' if not self.type else self.type
-                (
-                    self.type,
-                    self.dimensionality,
-                ) = self.resolve_system_type_and_dimensionality(
-                    ase_atoms=ase_atoms, logger=logger
-                )
-                # Creating and normalizing Symmetry section
-                if self.type == 'bulk' and self.symmetry is not None:
-                    sec_symmetry = self.m_create(Symmetry)
-                    sec_symmetry.normalize(archive, logger)
+        # Resolve system type and dimensionality using ASE atoms
+        self.type, self.dimensionality = self.resolve_system_type_and_dimensionality(
+            ase_atoms, logger
+        )
 
-        # Creating and normalizing ChemicalFormula section
-        # TODO add support for fractional formulas (possibly add `AtomicCell.concentrations` for each species)
+        # Create and normalize Symmetry section if applicable
+        if self.type == 'bulk' and self.symmetry is not None:
+            sec_symmetry = self.m_create(Symmetry)
+            sec_symmetry.normalize(archive, logger)
+
+        # Create and normalize ChemicalFormula section
         sec_chemical_formula = self.m_create(ChemicalFormula)
         sec_chemical_formula.normalize(archive, logger)
         if sec_chemical_formula.m_cache:
             self.elemental_composition = sec_chemical_formula.m_cache.get(
                 'elemental_composition', []
             )
+
+    def _generate_comparer(self):
+        if self.positions is None:
+            return []
+        # Create a list of HashedPositions for each atom's coordinates
+        return [HashedPositions(pos) for pos in self.positions]
+
+    def is_equal_structure(self, other: 'ModelSystem') -> bool:
+        return set(self._generate_comparer()) == set(other._generate_comparer())
+
+    def is_lt_structure(self, other: 'ModelSystem') -> bool:
+        return set(self._generate_comparer()) < set(other._generate_comparer())
+
+    def is_le_structure(self, other: 'ModelSystem') -> bool:
+        return set(self._generate_comparer()) <= set(other._generate_comparer())
+
+    def is_gt_structure(self, other: 'ModelSystem') -> bool:
+        return set(self._generate_comparer()) > set(other._generate_comparer())
+
+    def is_ge_structure(self, other: 'ModelSystem') -> bool:
+        return set(self._generate_comparer()) >= set(other._generate_comparer())
+
+    def is_ne_structure(self, other: 'ModelSystem') -> bool:
+        return not self.is_equal_structure(other)
