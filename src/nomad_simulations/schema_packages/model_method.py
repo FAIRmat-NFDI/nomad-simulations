@@ -498,37 +498,32 @@ class TB(ModelMethodElectronic):
         Returns:
             Optional[list[OrbitalsState]]: The resolved references to the OrbitalsState sections.
         """
-        # 1) Check that the requested ModelSystem exists
+        # Check that the requested ModelSystem exists
         try:
             model_system = model_systems[model_index]
         except IndexError:
             logger.warning(f'No ModelSystem at index {model_index}.')
             return None
 
-        # 2) If the system is not representative, skip
+        # If the system is not representative, bail out of normalization
         if is_not_representative(model_system=model_system, logger=logger):
             return None
 
-        # # 3) NOT NEEDED ANYMORE: Check for at least one cell if that is your design’s requirement
-        # if not model_system.cell:
-        #     logger.warning("No AtomicCell found, skipping orbital references resolution.")
-        #     return None
-
-        # 4) If no child ModelSystem sections exist, skip
+        # If no child ModelSystem sections exist, bail out of normalization
         if not model_system.sub_systems:
             logger.warning(
                 'No child ModelSystem found; cannot find active_atom references.'
             )
             return None
 
-        # 5) If no particle_states are present at the top level, we have no orbitals
+        #  If no particle_states are present at the top level, we have no orbitals
         if not model_system.particle_states:
             logger.warning('No particle_states in the parent ModelSystem.')
             return None
 
         orbitals_ref: list[OrbitalsState] = []
 
-        # 6) For each child in sub_systems, if type='active_atom', gather orbitals
+        # For each child in sub_systems, if type='active_atom', gather orbitals
         for child_sys in model_system.sub_systems:
             if child_sys.type != 'active_atom':
                 continue
@@ -553,10 +548,9 @@ class TB(ModelMethodElectronic):
                     )
                     continue
 
-                # Append them
                 orbitals_ref.extend(active_atom_state.orbitals_state)
 
-        # 7) Return the collected orbitals
+        # Return the collected orbitals
         return orbitals_ref
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:

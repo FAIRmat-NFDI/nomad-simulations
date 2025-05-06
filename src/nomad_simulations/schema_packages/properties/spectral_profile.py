@@ -440,7 +440,7 @@ class ElectronicDensityOfStates(DOSProfile):
         atom_projected = self.extract_projected_dos('atom', logger)
 
         if not atom_projected:
-            # group orbitals by their AtomsState parent
+            # group orbitals by their AtomsState
             atom_orbital_map: dict[AtomsState, list[DOSProfile]] = {}
             for orb in orbital_projected:
                 parent = getattr(orb.entity_ref, 'm_parent', None)

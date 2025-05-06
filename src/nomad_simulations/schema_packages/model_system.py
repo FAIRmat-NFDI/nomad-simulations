@@ -362,8 +362,7 @@ class AtomicCell(Cell):
     # ! improve description and clarify whether this belongs to `Symmetry` with @lauri-codes
     wyckoff_letters = Quantity(
         type=str,
-        # shape=['n_atoms'],
-        shape=['*'],  # TODO
+        shape=['*'],
         description="""
         Wyckoff letters associated with each atom.
         """,
@@ -765,7 +764,7 @@ class ModelSystem(System):
     Model system used as an input for simulating the material.
 
     Atom positions at the top level in the quantity “positions”
-    and the per‐atom state (including electronic state information) in a new subsection “particle_states”.
+    and the per‐atom state (including electronic state information) in the subsection “particle_states”.
     Downstream subsystems refer to atoms via particle_indices.
 
     Definitions:
