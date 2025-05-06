@@ -602,8 +602,6 @@ class Symmetry(ArchiveSection):
 
         # Getting prototype_formula, prototype_aflow_id, and strukturbericht designation from
         # standarized Wyckoff numbers and the space group number
-        # --- NEW BLOCK: Use parent's particle_states since AtomicCell no longer stores atoms_state ---
-        # Instead of conventional_atomic_cell.atoms_state, use self.m_parent.particle_states.
         if symmetry.get('space_group_number'):
             # Retrieve the expanded conventional system (an ASE.Atoms object) from the analyzer.
             conventional_system = symmetry_analyzer.get_conventional_system()
