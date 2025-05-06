@@ -219,3 +219,84 @@ def test_branch_depth_if_needed(branching):
     else:
         # no child
         pass
+
+
+def make_water_cu_system(n_h2o: int) -> ModelSystem:
+    """
+    Build a root ModelSystem with:
+      - one group_H2O branch containing n_h2o leaves (each H2O),
+      - one Cu leaf,
+    and with proper particle_states and particle_indices.
+    """
+    root = ModelSystem(is_representative=True)
+    # Add a trivial AtomicCell so normalization doesn't bail out
+    ac = AtomicCell(periodic_boundary_conditions=[False, False, False])
+    ac.positions = np.zeros((0, 3)) * ureg.angstrom
+    root.cell.append(ac)
+
+    # group_H2O branch
+    group = ModelSystem(branch_label='group_H2O', is_representative=False)
+    root.sub_systems.append(group)
+
+    group_indices = []
+    # for each water molecule
+    for _ in range(n_h2o):
+        leaf = ModelSystem(branch_label='H2O', is_representative=False)
+        mol_indices = []
+        # H, H, O
+        for sym, Z in (('H', 1), ('H', 1), ('O', 8)):
+            st = AtomsState(chemical_symbol=sym, atomic_number=Z)
+            root.particle_states.append(st)
+            idx = len(root.particle_states) - 1
+            mol_indices.append(idx)
+            group_indices.append(idx)
+        leaf.particle_indices = mol_indices
+        group.sub_systems.append(leaf)
+    group.particle_indices = group_indices
+
+    # Cu leaf
+    cu_leaf = ModelSystem(branch_label='Cu', is_representative=False)
+    root.sub_systems.append(cu_leaf)
+    st_cu = AtomsState(chemical_symbol='Cu', atomic_number=29)
+    root.particle_states.append(st_cu)
+    cu_leaf.particle_indices = [len(root.particle_states) - 1]
+
+    return root
+
+
+@pytest.mark.parametrize('n_h2o', [1, 3])
+def test_hierarchical_composition_and_branch_depth(n_h2o):
+    root = make_water_cu_system(n_h2o)
+
+    # Wrap in a Simulation so that .normalize() will set branch_depth & composition_formula
+    sim = Simulation(model_system=[root])
+
+    # Before normalize, branch_depth and composition_formula are unset
+    assert root.branch_depth is None
+    assert root.composition_formula is None
+
+    # Run the full tree normalization
+    sim.normalize(EntryArchive(), logger=logger)
+
+    # Now the root should be depth 0
+    assert root.branch_depth == 0
+    # Its first child (group_H2O) is depth 1
+    group = root.sub_systems[0]
+    assert group.branch_depth == 1
+    # And each water leaf is depth 2
+    for leaf in group.sub_systems:
+        assert leaf.branch_depth == 2
+    # The Cu leaf is also at depth 1
+    cu = root.sub_systems[1]
+    assert cu.branch_depth == 1
+
+    # composition_formula checks
+    # root should read "Cu(1)group_H2O(1)" (children are sorted alphabetically)
+    assert root.composition_formula == 'Cu(1)group_H2O(1)'
+    # group_H2O should read "H2O(n_h2o)"
+    assert group.composition_formula == f'H2O({n_h2o})'
+    # each H2O leaf should read "H(2)O(1)"
+    for leaf in group.sub_systems:
+        assert leaf.composition_formula == 'H(2)O(1)'
+    # Cu leaf should read "Cu(1)"
+    assert cu.composition_formula == 'Cu(1)'
