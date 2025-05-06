@@ -196,25 +196,25 @@ class GeometricSpace(Entity):
         Args:
             logger (BoundLogger): The logger to log messages.
         """
-        atoms = self.to_ase_atoms(logger=logger)
-        cell = atoms.get_cell()
-        self.length_vector_a, self.length_vector_b, self.length_vector_c = (
-            cell.lengths() * ureg.angstrom
-        )
-        self.angle_vectors_b_c, self.angle_vectors_a_c, self.angle_vectors_a_b = (
-            cell.angles() * ureg.degree
-        )
-        self.volume = cell.volume * ureg.angstrom**3
+        try:
+            atoms = self.to_ase_atoms(logger=logger)
+            cell = atoms.get_cell()
+            self.length_vector_a, self.length_vector_b, self.length_vector_c = (
+                cell.lengths() * ureg.angstrom
+            )
+            self.angle_vectors_b_c, self.angle_vectors_a_c, self.angle_vectors_a_b = (
+                cell.angles() * ureg.degree
+            )
+            self.volume = cell.volume * ureg.angstrom**3
+        except Exception as e:
+            logger.warning(
+                'Could not extract geometric space information from ASE Atoms object.',
+                exc_info=e,
+            )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        # Skip normalization for `Entity`
-        try:
-            self.get_geometric_space_for_atomic_cell(logger=logger)
-        except Exception:
-            logger.warning(
-                'Could not extract the geometric space information from ASE Atoms object.',
-            )
-            return
+        # extract all the geometric‐space quantities; errors are logged inside
+        self.get_geometric_space_for_atomic_cell(logger=logger)
 
 
 def _check_implemented(func: 'Callable'):
@@ -537,10 +537,7 @@ class Symmetry(ArchiveSection):
         # ! Positions are stored directly under model_system in nomad-simulations>=0.4.
         atomic_cell.wyckoff_letters = wyckoff
         atomic_cell.equivalent_atoms = equivalent_atoms
-        try:
-            atomic_cell.get_geometric_space_for_atomic_cell(logger=logger)
-        except Exception as e:
-            logger.warning('Could not extract geometric space from cell', exc_info=e)
+        atomic_cell.get_geometric_space_for_atomic_cell(logger=logger)
         return atomic_cell
 
     def resolve_bulk_symmetry(
