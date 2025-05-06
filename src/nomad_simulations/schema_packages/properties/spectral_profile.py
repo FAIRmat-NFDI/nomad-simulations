@@ -66,6 +66,7 @@ class DOSProfile(SpectralProfile):
     value = Quantity(
         type=np.float64,
         unit='1/joule',
+        shape=['*'],
         description="""
         The value of the electronic DOS.
         """,

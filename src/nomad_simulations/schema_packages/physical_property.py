@@ -251,4 +251,4 @@ class PropertyContribution(PhysicalProperty):
     def normalize(self, archive, logger) -> None:
         super().normalize(archive, logger)
         if not self.name:
-            self.name = self.get('model_method_ref').get('name')
+            self.name = self.get('model_method_ref', {}).get('name')
