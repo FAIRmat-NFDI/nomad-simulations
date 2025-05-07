@@ -917,7 +917,7 @@ class ModelSystem(System):
 
     positions = Quantity(
         type=np.float64,
-        shape=['n_particles', 3],
+        shape=['*', 3],
         unit='meter',
         description="""
             Cartesian coordinates of all atoms in the top-level system.
