@@ -491,6 +491,52 @@ class AtomCenteredBasisSet(BasisSetComponent):
         """,
     )
 
+    ao_ordering_convention = Quantity(
+        type=MEnum(
+            # the most frequently encountered conventions
+            'Gaussian',  # (px, py, pz)  5D,7F,9G… as in Gaussian FChk
+            'Molden',  # (pz, px, py)  and separate order for spherical
+            'QChem',  # same as Gaussian for Cartesian; spherical ≠
+            'TREXIO',  # explicit via ao.cartesian + see trexio docs
+            'CP2K',  # CP2K/QuickStep (pz, px, py) by default
+            'PySCF',  # follows libcint (px, py, pz) Cartesian
+            'Custom',  # user‑defined; see `ao_custom_order`
+        ),
+        default='Gaussian',
+        description="""
+        **Ordering convention for the magnetic sub-functions** (Cartesian
+        polynomials or spherical harmonics) within each angular-momentum shell.
+
+        Examples for a *p* shell:
+
+        | Convention | Cartesian order | Spherical order (m=0,+1,-1) |
+        |------------|-----------------|------------------------------|
+        | Gaussian   | (px, py, pz)    | (p₀, p₊₁, p₋₁)              |
+        | Molden     | (pz, px, py)    | (p₀, p₊₁, p₋₁)              |
+        | CP2K       | (pz, px, py)    | (p₀, p₊₁, p₋₁)              |
+
+        If you select `'Custom'`, specify the explicit order for each ℓ ≥ 1
+        in the optional field `ao_custom_order` below.  Otherwise parsers and
+        writers will assume the canonical order embedded in the named
+        convention.
+        """,
+    )
+
+    ao_custom_order = Quantity(
+        type=str,  # mapping: int ℓ  -> list[str] names
+        description="""
+        JSON-encoded mapping *ℓ → list-of-labels* that defines a user-specific
+        AO ordering.  Only used when `ao_ordering_convention == "Custom"`.
+
+        Example value::
+
+            {"1": ["pz", "px", "py"],
+            "2": ["d0", "d+1", "d-1", "d+2", "d-2"]}
+
+        Parsers/writers should `json.loads(...)` this string.
+        """,
+    )
+
     total_number_of_basis_functions = Quantity(
         type=np.int32,
         description="""

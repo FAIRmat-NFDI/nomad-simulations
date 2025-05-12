@@ -3,6 +3,8 @@ from typing import TYPE_CHECKING, Any, Optional
 if TYPE_CHECKING:
     import pint
 
+import json
+
 import numpy as np
 import pytest
 from nomad.datamodel.datamodel import EntryArchive
@@ -462,3 +464,29 @@ def test_atom_centered_basis_set_roundtrip():
     # functional_composition now serialises as list of reference paths
     # until the archive is fully normalised – just check we round‑trip
     assert 'functional_composition' in d
+
+
+def test_ao_ordering_default() -> None:
+    """
+    When nothing is specified, an AtomCenteredBasisSet must default to the
+    'Gaussian' ordering convention.
+    """
+    basis = AtomCenteredBasisSet()
+    assert basis.ao_ordering_convention == 'Gaussian'
+    # custom order should be absent / None
+    assert basis.ao_custom_order is None
+
+
+def test_ao_ordering_custom() -> None:
+    custom_dict = {1: ['pz', 'px', 'py'], 2: ['d0', 'd+1', 'd-1', 'd+2', 'd-2']}
+    basis = AtomCenteredBasisSet(
+        ao_ordering_convention='Custom',
+        ao_custom_order=json.dumps(custom_dict),  # store as JSON string
+    )
+
+    d = basis.m_to_dict()
+    assert d['ao_ordering_convention'] == 'Custom'
+    # round‑trip
+    assert json.loads(d['ao_custom_order']) == {
+        str(k): v for k, v in custom_dict.items()
+    }
