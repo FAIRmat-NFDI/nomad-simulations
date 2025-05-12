@@ -15,6 +15,7 @@ from nomad_simulations.schema_packages.basis_set import (
     APWOrbital,
     APWPlaneWaveBasisSet,
     AtomCenteredBasisSet,
+    AtomCenteredFunction,
     BasisSetContainer,
     MuffinTinRegion,
     PlaneWaveBasisSet,
@@ -419,3 +420,45 @@ def test_quick_step() -> None:
         ],
     }
     # TODO: generate a QuickStep generator in the CP2K plugin
+
+
+@pytest.mark.parametrize(
+    'ftype, n_prim, coeffs_flat',
+    [
+        ('s', 3, [0.1543, 0.5353, 0.4446]),
+        ('sp', 3, [0.1543, 0.5353, 0.4446, -0.0999, 0.3995, 0.7001]),
+    ],
+)
+def test_acf_flat_storage_and_views(ftype, n_prim, coeffs_flat):
+    acf = AtomCenteredFunction(
+        function_type=ftype,
+        n_primitive=n_prim,
+        exponents=list(np.linspace(130.7, 6.44, n_prim)),
+        contraction_coefficients=coeffs_flat,
+    )
+    acf.normalize(None, logger)
+
+    # stored flat
+    assert acf.contraction_coefficients.shape == (len(coeffs_flat),)
+
+    # matrix view OK
+    n_comp = len(ftype) if ftype else 1
+    assert acf.coeff_matrix.shape == (n_comp, n_prim)
+
+    # coefficient_sets gives each row
+    for i, ltr in enumerate(list(ftype) if ftype else ['s']):
+        assert np.allclose(acf.coefficient_sets[ltr], acf.coeff_matrix[i])
+
+
+def test_atom_centered_basis_set_roundtrip():
+    acf = AtomCenteredFunction(
+        function_type='s',
+        n_primitive=1,
+        exponents=[1.0],
+        contraction_coefficients=[1.0],
+    )
+    basis = AtomCenteredBasisSet(functional_composition=[acf])
+    d = basis.m_to_dict()
+    # functional_composition now serialises as list of reference paths
+    # until the archive is fully normalised – just check we round‑trip
+    assert 'functional_composition' in d

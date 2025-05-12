@@ -202,6 +202,9 @@ class AtomCenteredFunction(ArchiveSection):
       - T. Helgaker, P. Jørgensen, J. Olsen, *Molecular Electronic-Structure Theory*, Wiley (2000).
       - F. Jensen, *Introduction to Computational Chemistry*, 2nd ed., Wiley (2007).
       - J. B. Foresman, Æ. Frisch, *Exploring Chemistry with Electronic Structure Methods*, Gaussian Inc.
+
+
+
     """
 
     harmonic_type = Quantity(
@@ -263,6 +266,20 @@ class AtomCenteredFunction(ArchiveSection):
         """,
     )
 
+    n_components = Quantity(type=np.int32)
+
+    contraction_coefficients = Quantity(
+        type=np.float32,
+        shape=['*'],
+        description="""
+        The **contraction coefficients** associated with each primitive exponent. 
+        In the simplest case (pure s- or p-function), this array has length 
+        equal to `n_primitive`. For combined shells (like 'sp'), the length 
+        might be `2 * n_primitive`, because you have separate coefficients 
+        for the s-part and the p-part.
+        """,
+    )
+
     exponents = Quantity(
         type=np.float32,
         shape=['n_primitive'],
@@ -274,15 +291,71 @@ class AtomCenteredFunction(ArchiveSection):
         """,
     )
 
-    contraction_coefficients = Quantity(
-        type=np.float32,
-        shape=['*'],  # Flexible shape to handle combined types (e.g. SP, SPD..)
+    primitive_normalization = Quantity(
+        type=MEnum('L2', 'none', 'contracted', 'custom'),
+        default='L2',
         description="""
-        The **contraction coefficients** associated with each primitive exponent. 
-        In the simplest case (pure s- or p-function), this array has length 
-        equal to `n_primitive`. For combined shells (like 'sp'), the length 
-        might be `2 * n_primitive`, because you have separate coefficients 
-        for the s-part and the p-part.
+        Convention used for contraction coefficients:
+        • 'L2' - coefficients multiply L²-normalised primitives (Gaussian/BSE style).  
+        • 'none' - coefficients multiply unnormalised primitives (rare).  
+        • 'contracted' - primitives normalised, contracted function renormalised (GAMESS-style).  
+        • 'custom' - explicit factors are stored in `primitive_factor` / `shell_factor`.
+        """,
+    )
+
+    primitive_factor = Quantity(
+        type=np.float64,
+        shape=['n_primitive'],
+        description="""
+        **Extra scaling factors for each primitive** (dimensionless).
+
+        - Let ϕₖ(r) be the *analytic* primitive basis function (Gaussian or
+          Slater) with its standard L² normalisation constant **N_k**.
+        - Many libraries store coefficients **cₖ** that *already* include N_k
+          (Gaussian convention).  Others store raw cₖ and rely on the program
+          to multiply by N_k at run time.
+        - `primitive_factor[k]` captures *any* additional multiplier applied
+          to ϕₖ beyond its analytic normalisation—e.g. if the published
+          coefficients correspond to **unnormalised** primitives,
+          `primitive_factor[:] = 1 / N_k`.
+
+        Typical values:
+
+        | Scenario (source)                               | primitive_factor |
+        |-------------------------------------------------|------------------|
+        | BSE / Gaussian input (“coeffs x L²-norm prim”)  | 1.0              |
+        | Raw CRYSTAL deck (“coeffs for unnorm prim”)     | 1 / N_k          |
+        | Custom numeric STOs with internal scaling       | arbitrary        |
+
+        If omitted or a value of 1.0 is supplied, the primitives follow the
+        convention implied by `primitive_normalization`.  Only set a custom
+        factor when `primitive_normalization == 'custom'`.
+        """,
+    )
+
+    shell_normalization = Quantity(
+        type=np.float64,
+        description="""
+        **Global normalisation constant for the contracted shell** χ(r).
+
+        After primitives (and their `primitive_factor`s) are combined with the
+        contraction coefficients, one may optionally rescale the entire
+        contracted function so that
+
+        \\[
+            \\int_{\\mathbb{R}^3} |χ(r)|^2 \\,dr = 1.
+        \\]
+
+        - Many codes (Gaussian, ORCA, Q‑Chem) leave the contracted shell
+          *unnormalised* (value = 1.0).
+        - Other codes (GAMESS default) renormalise χ, in which case
+          `shell_normalization` equals the computed factor **1/√⟨χ|χ⟩**.
+        - Storing it makes the representation **loss‑free**: regardless of the
+          original convention, another program can reproduce exactly the same
+          contracted AOs by multiplying the linear combination *and then*
+          this scalar.
+
+        Leave at 1.0 (or None) if no extra shell‑level scaling is present.
         """,
     )
 
@@ -298,53 +371,52 @@ class AtomCenteredFunction(ArchiveSection):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         """
-        Validates the input data
-        and resolves combined types like SP, SPD, SPDF, etc.
+        Canonicalise sizes and rebuild helper attributes.
 
-        Raises ValueError: If the data is inconsistent (e.g., mismatch in exponents and coefficients).
+        * ``contraction_coefficients`` stays *flat* to satisfy the declared
+          1‑D shape, but the property ``coeff_matrix`` (added below) provides
+          a reshaped **view** for convenience.
+        * ``coefficient_sets`` maps each angular‑momentum letter ('s','p',…)
+          to its slice in the flat list.
         """
         super().normalize(archive, logger)
 
-        # Validate number of primitives
-        if self.n_primitive is not None:
-            if self.exponents is not None and len(self.exponents) != self.n_primitive:
-                raise ValueError(
-                    f'Mismatch in number of exponents: expected {self.n_primitive}, '
-                    f'found {len(self.exponents)}.'
-                )
+        # ---------------- infer component / primitive counts -------------
+        self.n_components = len(self.function_type) if self.function_type else 1
+        if self.n_primitive is None and self.exponents is not None:
+            self.n_primitive = len(self.exponents)
 
-        # For combined shells (like 'sp', 'spd', etc.), ensure the coefficient array is large enough
-        if self.function_type and len(self.function_type) > 1:
-            num_types = len(self.function_type)  # For SP: 2, SPD: 3, etc.
-            if self.contraction_coefficients is not None:
-                expected_coeffs = num_types * self.n_primitive
-                if len(self.contraction_coefficients) != expected_coeffs:
-                    raise ValueError(
-                        f'Mismatch in contraction coefficients for {self.function_type} type: '
-                        f'expected {expected_coeffs}, found {len(self.contraction_coefficients)}.'
-                    )
+        # ---------------- shape & size checks ----------------------------
+        if self.exponents is not None and len(self.exponents) != self.n_primitive:
+            raise ValueError('Length of exponents != n_primitive.')
 
-                # Split coefficients into separate lists for each type
-                self.coefficient_sets = {
-                    t: self.contraction_coefficients[i::num_types]
-                    for i, t in enumerate(self.function_type)
-                }
+        if self.contraction_coefficients is None:
+            raise ValueError('contraction_coefficients must be provided.')
 
-                # Debug: Log split coefficients
-                for t, coeffs in self.coefficient_sets.items():
-                    logger.info(f'{t}-type coefficients: {coeffs}')
-            else:
-                logger.warning(
-                    f'No contraction coefficients provided for {self.function_type} type.'
-                )
+        flat = np.asarray(self.contraction_coefficients, dtype=np.float32).ravel()
+        expected = self.n_components * self.n_primitive
+        if flat.size != expected:
+            raise ValueError(
+                f'{flat.size} coefficients given; need {expected} '
+                f'({self.n_components}×{self.n_primitive}).'
+            )
+        # store back as flat 1‑D array (Nomad‑valid)
+        self.contraction_coefficients = flat
 
-        # For single types, ensure coefficients match primitives
-        elif self.contraction_coefficients is not None:
-            if len(self.contraction_coefficients) != self.n_primitive:
-                raise ValueError(
-                    f'Mismatch in contraction coefficients: expected {self.n_primitive}, '
-                    f'found {len(self.contraction_coefficients)}.'
-                )
+        # ---------------- helper views -----------------------------------
+        letters = list(self.function_type) if self.function_type else ['s']
+        step = self.n_primitive
+        self.coefficient_sets = {
+            ltr: flat[i * step : (i + 1) * step] for i, ltr in enumerate(letters)
+        }
+
+    # ---------------- property: matrix view (read‑only) ------------------
+    @property
+    def coeff_matrix(self) -> np.ndarray:
+        """Return coefficients as an (n_components × n_primitive) array."""
+        return self.contraction_coefficients.reshape(
+            self.n_components, self.n_primitive
+        )
 
 
 class AtomCenteredBasisSet(BasisSetComponent):
