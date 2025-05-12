@@ -19,6 +19,7 @@ from nomad_simulations.schema_packages.basis_set import (
     AtomCenteredBasisSet,
     AtomCenteredFunction,
     BasisSetContainer,
+    EffectiveCorePotential,
     MuffinTinRegion,
     PlaneWaveBasisSet,
     generate_apw,
@@ -490,3 +491,103 @@ def test_ao_ordering_custom() -> None:
     assert json.loads(d['ao_custom_order']) == {
         str(k): v for k, v in custom_dict.items()
     }
+
+
+@pytest.mark.parametrize(
+    'n_terms, am, r_exp, g_exp, coeffs, expect_error',
+    [
+        (1, [0], [2], [0.5], [-1.23], False),
+        (2, [0, 1], [0, 2], [0.1, 0.2], [1.0, -2.0], False),
+        (2, [0], [0, 2], [0.1, 0.2], [1.0, -2.0], True),  # am too short
+        (1, [0], [0], [0.1], [1.0, 2.0], True),  # coeffs too long
+    ],
+)
+def test_ecp_shape_and_naming(n_terms, am, r_exp, g_exp, coeffs, expect_error):
+    at = AtomsState(chemical_symbol='Xe')
+    ecp = EffectiveCorePotential(
+        species_scope=[at],
+        n_core_electrons=54,
+        n_terms=n_terms,
+        angular_momentum=am,
+        r_exponents=r_exp,
+        gaussian_exponents=g_exp,
+        coefficients=coeffs,
+    )
+    if expect_error:
+        with pytest.raises(ValueError):
+            ecp.normalize(None, logger)
+    else:
+        ecp.normalize(None, logger)
+        # name must be derived from species_scope
+        assert ecp.name == 'ECP-Xe'
+        # integer fields
+        assert ecp.n_core_electrons == 54
+        assert ecp.n_terms == n_terms
+        assert list(ecp.angular_momentum) == am
+        assert list(ecp.r_exponents) == r_exp
+        # compare gaussian_exponents by magnitude in the defined unit
+        mags = np.array(ecp.gaussian_exponents.magnitude)
+        assert mags == pytest.approx(np.array(g_exp))
+        # coefficients are unitless floats
+        assert list(ecp.coefficients) == pytest.approx(coeffs)
+
+
+def test_ecp_in_atom_centered_basis_set():
+    """
+    An AtomCenteredBasisSet can carry an ECP in its `ecps` SubSection.
+    We assert the `ecps` key appears and the dict has the correct parameters.
+    """
+    at_H = AtomsState(chemical_symbol='H')
+
+    # build and normalize ECP
+    ecp = EffectiveCorePotential(
+        species_scope=[at_H],
+        n_core_electrons=0,
+        n_terms=1,
+        angular_momentum=[0],
+        r_exponents=[0],
+        gaussian_exponents=[0.1],
+        coefficients=[-0.5],
+    )
+    ecp.normalize(None, logger)
+
+    # build and normalize one simple shell
+    acf = AtomCenteredFunction(
+        function_type='s',
+        n_primitive=1,
+        exponents=[1.0],
+        contraction_coefficients=[1.0],
+    )
+    acf.normalize(None, logger)
+
+    basis = AtomCenteredBasisSet(
+        functional_composition=[acf],
+        ecps=[ecp],
+    )
+    d = basis.m_to_dict()
+
+    # ecps must be a list with one dict
+    assert 'ecps' in d and isinstance(d['ecps'], list) and len(d['ecps']) == 1
+    ecp_dict = d['ecps'][0]
+    assert isinstance(ecp_dict, dict)
+
+    # Check that all ECP parameter fields are present and correct
+    expected_keys = {
+        'n_core_electrons',
+        'n_terms',
+        'angular_momentum',
+        'r_exponents',
+        'gaussian_exponents',
+        'coefficients',
+    }
+    assert expected_keys.issubset(set(ecp_dict.keys()))
+
+    assert ecp_dict['n_core_electrons'] == 0
+    assert ecp_dict['n_terms'] == 1
+    assert ecp_dict['angular_momentum'] == [0]
+    assert ecp_dict['r_exponents'] == [0]
+    assert pytest.approx(ecp_dict['gaussian_exponents']) == [0.1]
+    assert pytest.approx(ecp_dict['coefficients']) == [-0.5]
+
+    # And the orbital shell remains
+    assert 'functional_composition' in d and len(d['functional_composition']) == 1

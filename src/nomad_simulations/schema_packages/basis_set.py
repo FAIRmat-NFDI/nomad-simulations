@@ -419,6 +419,78 @@ class AtomCenteredFunction(ArchiveSection):
         )
 
 
+class EffectiveCorePotential(BasisSetComponent):
+    """
+    Effective‐core potential (ECP) replacing a given atom's core electrons
+    with a non-local projector potential.
+    """
+
+    ecp_name = Quantity(
+        type=str,
+        description="""
+        Code-specific ECP identifier or filename—for example “LANL2DZ-Fe”
+        or “SDD_Mo”.  This is purely descriptive;
+        the actual species is still driven by `species_scope`.
+        """,
+    )
+    n_core_electrons = Quantity(
+        type=np.int32, description='Number of core electrons replaced by this ECP.'
+    )
+    n_terms = Quantity(
+        type=np.int32, description='Number of Gaussian terms in this ECP channel.'
+    )
+    angular_momentum = Quantity(
+        type=np.int32,
+        shape=['n_terms'],
+        description='Angular momentum ℓ for each projector term.',
+    )
+    r_exponents = Quantity(
+        type=np.int32,
+        shape=['n_terms'],
+        description='Power of r in each term: V_ℓ(r) ∼ r^{n_exponent} e^{-α r^2}.',
+    )
+    gaussian_exponents = Quantity(
+        type=np.float64,
+        unit='1/(meter**2)',
+        shape=['n_terms'],
+        description='Gaussian exponent α in exp(-α r²) for each projector term.',
+    )
+    coefficients = Quantity(
+        type=np.float64,
+        shape=['n_terms'],
+        description='Coefficient c_{i,ℓ} for each term in the non-local ECP potential.',
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        1) Enforce that each length-`n_terms` array matches `n_terms`.
+        2) Set self.name = "ECP-<symbol>" using the first species_scope entry.
+        """
+        super().normalize(archive, logger)
+
+        # shape checks
+        for attr in (
+            'angular_momentum',
+            'r_exponents',
+            'gaussian_exponents',
+            'coefficients',
+        ):
+            arr = getattr(self, attr)
+            if arr is None:
+                raise ValueError(f'{attr} must be provided for ECP.')
+            if len(arr) != self.n_terms:
+                raise ValueError(
+                    f'{attr!r} has length {len(arr)}, expected {self.n_terms}.'
+                )
+
+        # derive a human-readable name from species_scope
+        if self.species_scope:
+            symbol = self.species_scope[0].chemical_symbol
+            self.name = f'ECP-{symbol}'
+        else:
+            logger.warning('ECP has no species_scope; leaving name unset.')
+
+
 class AtomCenteredBasisSet(BasisSetComponent):
     """
     Defines an **atom-centered basis set** for quantum chemistry calculations.
@@ -459,7 +531,6 @@ class AtomCenteredBasisSet(BasisSetComponent):
             'STO',  # Slater-type orbitals
             'GTO',  # Gaussian-type orbitals
             'NAO',  # Numerical atomic orbitals
-            'cECP',  # Capped effective core potentials
             'PC',  # Point charges
         ),
         description="""
@@ -467,7 +538,6 @@ class AtomCenteredBasisSet(BasisSetComponent):
           - 'STO': Slater-type orbitals
           - 'GTO': Gaussian-type orbitals
           - 'NAO': Numerical atomic orbitals
-          - 'cECP': Some variant of a "capped" or shape-consistent ECP 
           - 'PC': Point charges (or ghost basis centers)
 
         If a code uses a mixture (e.g., GTO + ECP), it might either store them 
@@ -548,6 +618,12 @@ class AtomCenteredBasisSet(BasisSetComponent):
 
     functional_composition = SubSection(
         sub_section=AtomCenteredFunction.m_def, repeats=True
+    )
+
+    ecps = SubSection(
+        sub_section=EffectiveCorePotential.m_def,
+        repeats=True,
+        description='Zero or more ECP definitions replacing core electrons.',
     )
 
 
