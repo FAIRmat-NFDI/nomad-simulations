@@ -1431,14 +1431,13 @@ class LocalCorrelation(BaseModelMethod):
         """,
     )
 
-    ansatz = Quantity(
+    parent_correlation_method = Quantity(
         type=MEnum('MP2', 'CC', 'DH-DFT'),
         description="""
-        The underlying ansatz for the local correlation treatment.
-        LMP2
-        LCC
-        DH-DFT: double-hybrid DFT
-        ...
+        The underlying electron-correlation ansatz upon which the local treatment is built:
+      - 'MP2'      : local MP2
+      - 'CC'       : local CC
+      - 'DHDFT'    : local double-hybrid DFT
         """,
     )
 
