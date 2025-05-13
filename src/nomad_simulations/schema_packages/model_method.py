@@ -1623,7 +1623,7 @@ class ConfigurationInteraction(MolecularModelMethod):
     """
 
     type = Quantity(
-        type=MEnum('CIS', 'CID', 'CISD', 'CISDT', 'CISDTQ', 'FCI'),
+        type=MEnum('CIS', 'CID', 'CISD', 'CISDT', 'CISDTQ', 'FCI', 'QCISD', 'QCISD(T)'),
         description='CI variant to employ',
     )
 
@@ -1645,6 +1645,8 @@ class ConfigurationInteraction(MolecularModelMethod):
             'CISD': [1, 2],
             'CISDT': [1, 2, 3],
             'CISDTQ': [1, 2, 3, 4],
+            'QCISD': [1, 2],
+            'QCISD(T)': [1, 2],
             'FCI': None,  # full space; leave excitation_order unset
         }
         if self.excitation_order is None:
