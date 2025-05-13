@@ -1194,6 +1194,106 @@ class DMFT(ModelMethodElectronic):
     )
 
 
+from typing import TYPE_CHECKING, Optional
+
+import numpy as np
+from nomad.datamodel.data import ArchiveSection
+from nomad.metainfo import Quantity
+
+if TYPE_CHECKING:
+    from nomad.metainfo import Context, Section
+    from structlog.stdlib import BoundLogger
+
+from nomad_simulations.schema_packages.atoms_state import OrbitalsState
+
+
+class FrozenCore(ArchiveSection):
+    """
+    Section defining the frozen-core approximation settings for molecular electronic-structure methods.
+
+    In a frozen-core approximation, selected inner-shell (core) orbitals are excluded from
+    the orbital optimization or post-SCF correlation treatment, retaining them at their
+    reference-determinant (e.g., Hartree-Fock or Kohn-Sham) values. This significantly
+    reduces the number of active orbitals, lowering computational cost for large systems.
+
+    The frozen-core scheme can be specified either by enumerating the exact orbitals to
+    freeze or by using simple threshold rules based on quantum numbers or atomic numbers.
+
+    Attributes:
+        n_frozen_core_orbitals (int):
+            The number of atomic orbitals designated as frozen-core.
+
+        core_orbitals_ref (list of OrbitalsState):
+            References to the OrbitalsState sections representing each frozen orbital
+            (e.g., the 1s shell, 2s shell, etc.).
+
+        principal_quantum_number_threshold (Optional[int]):
+            If set, all atomic orbitals with principal quantum number n ≤ this value
+            will be automatically frozen.
+
+        atomic_number_threshold (Optional[int]):
+            If set, all core orbitals on atoms with atomic number Z ≤ this value
+            will be automatically frozen.
+
+    Example:
+        FrozenCore(
+            core_orbitals_ref=[OrbitalsState(n_quantum_number=1, l_quantum_number=0),
+                                OrbitalsState(n_quantum_number=1, l_quantum_number=0)],
+            principal_quantum_number_threshold=1,
+            comment='Frozen all 1s shells on light atoms'
+        )
+    """
+
+    n_frozen_core_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        The number of atomic orbitals designated as frozen-core.
+        """,
+    )
+
+    core_orbitals_ref = Quantity(
+        type=OrbitalsState,
+        shape=['n_frozen_core_orbitals'],
+        description="""
+        References to the atomic OrbitalsState sections to keep frozen.
+        """,
+    )
+
+    principal_quantum_number_threshold = Quantity(
+        type=np.int32,
+        description="""
+        Optional: freeze all orbitals with principal quantum number n ≤ this value.
+        """,
+    )
+
+    atomic_number_threshold = Quantity(
+        type=np.int32,
+        description="""
+        Optional: freeze core orbitals on all atoms with atomic number Z ≤ this value.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        # Automatically set n_frozen_core_orbitals if missing but refs are provided
+        if self.n_frozen_core_orbitals is None and self.core_orbitals_ref is not None:
+            try:
+                self.n_frozen_core_orbitals = np.int32(len(self.core_orbitals_ref))
+            except Exception:
+                logger.warning(
+                    'Could not infer n_frozen_core_orbitals from core_orbitals_ref.'
+                )
+        # Warn if neither explicit refs nor threshold rules are set
+        if (
+            not self.core_orbitals_ref
+            and self.principal_quantum_number_threshold is None
+            and self.atomic_number_threshold is None
+        ):
+            logger.warning(
+                'FrozenCore defined with no orbitals or thresholds. No cores will be frozen.'
+            )
+
+
 class IntegralDecomposition(BaseModelMethod):
     """
     A general class for integral decomposition techniques that approximate
@@ -1376,6 +1476,15 @@ class MolecularModelMethod(ModelMethodElectronic):
         sub_section=IntegralDecomposition.m_def, repeats=True
     )
 
+    frozen_core = SubSection(
+        sub_section=FrozenCore.m_def,
+        repeats=False,
+        description="""
+        Frozen-core approximation: specify which inner shells to keep frozen
+        (either by explicit orbital refs or by quantum-number thresholds).
+        """,
+    )
+
 
 class HartreeFock(MolecularModelMethod):
     """
@@ -1498,15 +1607,5 @@ class CoupledCluster(MolecularModelMethod):
         These methods introduce the interelectronic distance coordinate
         directly into the wavefunction to treat dynamical electron correlation.
         It can be added linearly (R12) or exponentially (F12).
-        """,
-    )
-
-    is_frozencore = Quantity(
-        type=bool,
-        description="""
-        Flag for frozencore approximation.
-        In post-HF calculation only the valence electrons are typically correlated.
-        The others are kept frozen.
-        FC approximations differ between quantum chemistry codes.
         """,
     )
