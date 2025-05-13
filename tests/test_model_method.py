@@ -1,17 +1,29 @@
 from typing import Optional
 
+import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
+from nomad_simulations.schema_packages.basis_set import (
+    AtomCenteredBasisSet,
+    AtomCenteredFunction,
+    BasisSetContainer,
+)
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import (
     TB,
+    CoupledCluster,
+    FrozenCore,
+    IntegralDecomposition,
+    LocalCorrelation,
+    PerturbationMethod,
     SlaterKoster,
     SlaterKosterBond,
     Wannier,
 )
 from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
+from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 
 from . import logger
 from .conftest import generate_simulation
@@ -364,3 +376,109 @@ class TestSlaterKosterBond:
 
         bond.normalize(EntryArchive(), logger=logger)
         assert bond.name == expected
+
+
+def test_coupled_cluster_full_workflow():
+    # 1) instantiate the CoupledCluster method
+    cc = CoupledCluster(reference_determinant='UKS')
+
+    # 2) add one local‐correlation block (DLPNO‐CC)
+    lc = LocalCorrelation(type='DLPNO', ansatz='CC')
+    cc.local_correlation = [lc]
+
+    # 3) add one integral‐decomposition block (RIJK)
+    idc = IntegralDecomposition(approximation_type='RIJK', approximated_term='mp2')
+    cc.integral_decomposition = [idc]
+
+    # 4) perturbative correction (T) & F12
+    pm = PerturbationMethod(
+        type='RS', order=2, density='relaxed', spin_component_scaling='SCS'
+    )
+    cc.perturbation_method = pm
+    cc.perturbative_correction = '(T)'
+    cc.explicit_correlation = 'F12'
+
+    # 5) frozen‐core: freeze a single 1s orbital
+    orb = OrbitalsState(n_quantum_number=1, l_quantum_number=0)
+    fc = FrozenCore(core_orbitals_ref=[orb])
+    cc.frozen_core = fc
+
+    # 6) numerical_settings → SCF convergence
+    sc = SelfConsistency(
+        n_max_iterations=50, threshold_change=1e-6, threshold_change_unit='hartree'
+    )
+
+    # 7) numerical_settings → an atom‐centered basis set
+    #    build a little "sp" shell (2 primitives, 2 components)
+    bf = AtomCenteredFunction(
+        function_type='sp',
+        n_primitive=2,
+        exponents=[1.0, 0.5],
+        contraction_coefficients=[1.0, 0.5, 0.4, 0.2],
+    )
+    bs = AtomCenteredBasisSet(
+        species_scope=[AtomsState(chemical_symbol='H', atomic_number=1)],
+        hamiltonian_scope=[cc],
+        basis_set='cc-pVTZ',
+        type='GTO',
+        role='orbital',
+        functional_composition=[bf],
+    )
+    cont = BasisSetContainer(native_tier='high', basis_set_components=[bs])
+
+    cc.numerical_settings = [sc, cont]
+
+    # run normalize
+    cc.normalize(None, logger)
+
+    # --- now assert everything stuck around ---
+
+    # reference determinant
+    assert cc.reference_determinant == 'UKS'
+
+    # local‐correlation
+    assert len(cc.local_correlation) == 1
+    assert cc.local_correlation[0].type == 'DLPNO'
+
+    # integral‐decomposition
+    assert len(cc.integral_decomposition) == 1
+    assert cc.integral_decomposition[0].approximation_type == 'RIJK'
+
+    # perturbative corrections
+    assert cc.perturbative_correction == '(T)'
+    assert cc.explicit_correlation == 'F12'
+    assert cc.perturbation_method.order == 2
+    assert cc.perturbation_method.spin_component_scaling == 'SCS'
+
+    # we always expect the explicit ref to survive
+    assert cc.frozen_core.core_orbitals_ref is not None
+    assert len(cc.frozen_core.core_orbitals_ref) == 1
+    first_orb = cc.frozen_core.core_orbitals_ref[0]
+    assert first_orb.n_quantum_number == 1
+    # if the normalization inferred n_frozen_core_orbitals, it must match
+    if cc.frozen_core.n_frozen_core_orbitals is not None:
+        assert cc.frozen_core.n_frozen_core_orbitals == 1
+
+    # SCF convergence settings
+    sc_out = cc.numerical_settings[0]
+    assert isinstance(sc_out, SelfConsistency)
+    assert sc_out.n_max_iterations == 50
+    assert pytest.approx(sc_out.threshold_change) == 1e-6
+
+    # basis‐set container
+    cont_out = cc.numerical_settings[1]
+    assert isinstance(cont_out, BasisSetContainer)
+    assert len(cont_out.basis_set_components) == 1
+
+    # atom‐centered basis‐set
+    comp = cont_out.basis_set_components[0]
+    assert comp.basis_set == 'cc-pVTZ'
+    assert comp.role == 'orbital'
+    assert len(comp.functional_composition) == 1
+
+    # the primitive shell
+    func = comp.functional_composition[0]
+    assert func.function_type == 'sp'
+    assert func.n_primitive == 2
+    # exponents survive normalization
+    assert np.allclose(func.exponents, [1.0, 0.5])

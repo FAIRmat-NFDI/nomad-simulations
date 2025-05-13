@@ -1537,34 +1537,6 @@ class HartreeFock(MolecularModelMethod):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        """
-        Perform minimal consistency checks between the HF reference determinant
-        and the final molecular orbitals spin array (if available).NumericalIntegration
-        """
-        super().normalize(archive, logger)
-
-        # if self.molecular_orbitals is not None:
-        #     # If the user is storing a spin array for MOs, check for consistency with the determinant
-        #     mo_spin = self.molecular_orbitals.spin
-        #     if mo_spin is not None and len(mo_spin) > 0:
-        #         unique_spins = np.unique(mo_spin)
-        #         if self.reference_determinant == 'RHF':
-        #             # For RHF, we typically expect spin=0 (alpha) only
-        #             if not np.all(mo_spin == 0):
-        #                 logger.warning(
-        #                     'RHF reference used, but molecular_orbitals.spin contains non-zero spin indices.'
-        #                 )
-        #         elif self.reference_determinant == 'UHF':
-        #             # UHF often has spin=0 for alpha and spin=1 for beta
-        #             # If we only see spin=0, that's effectively no spin polarization
-        #             if len(unique_spins) == 1 and unique_spins[0] == 0:
-        #                 logger.info(
-        #                     'UHF reference chosen, but only alpha spin found in MOs (spin=0). '
-        #                     'This might still be valid if spin polarization is zero.'
-        #                 )
-        #         # For ROHF, spin indexing can vary across codes, so no strict check here.
-
 
 class CoupledCluster(MolecularModelMethod):
     """

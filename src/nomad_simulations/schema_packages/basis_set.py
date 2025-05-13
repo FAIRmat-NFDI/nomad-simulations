@@ -202,9 +202,6 @@ class AtomCenteredFunction(ArchiveSection):
       - T. Helgaker, P. Jørgensen, J. Olsen, *Molecular Electronic-Structure Theory*, Wiley (2000).
       - F. Jensen, *Introduction to Computational Chemistry*, 2nd ed., Wiley (2007).
       - J. B. Foresman, Æ. Frisch, *Exploring Chemistry with Electronic Structure Methods*, Gaussian Inc.
-
-
-
     """
 
     harmonic_type = Quantity(
@@ -374,7 +371,7 @@ class AtomCenteredFunction(ArchiveSection):
         Canonicalise sizes and rebuild helper attributes.
 
         * ``contraction_coefficients`` stays *flat* to satisfy the declared
-          1‑D shape, but the property ``coeff_matrix`` (added below) provides
+          1-D shape, but the property ``coeff_matrix`` (added below) provides
           a reshaped **view** for convenience.
         * ``coefficient_sets`` maps each angular‑momentum letter ('s','p',…)
           to its slice in the flat list.
@@ -540,8 +537,8 @@ class AtomCenteredBasisSet(BasisSetComponent):
           - 'NAO': Numerical atomic orbitals
           - 'PC': Point charges (or ghost basis centers)
 
-        If a code uses a mixture (e.g., GTO + ECP), it might either store them 
-        as separate `AtomCenteredBasisSet` sections or unify them if the code does so internally.
+        If a code uses a mixture (e.g., GTO + ECP), store them as separate `AtomCenteredBasisSet` sections, 
+        while referring to the relevant AtomsState.
         """,
     )
 
