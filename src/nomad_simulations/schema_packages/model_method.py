@@ -1607,3 +1607,47 @@ class CoupledCluster(MolecularModelMethod):
         It can be added linearly (R12) or exponentially (F12).
         """,
     )
+
+
+class ConfigurationInteraction(MolecularModelMethod):
+    """
+    Single‐reference Configuration Interaction (CI) methods using atom-centered basis sets.
+
+    Variants include:
+      - CIS    : Configuration Interaction Singles
+      - CID    : Configuration Interaction Doubles
+      - CISD   : Configuration Interaction Singles and Doubles
+      - CISDT  : Configuration Interaction Singles, Doubles and Triples
+      - CISDTQ : Configuration Interaction Singles, Doubles, Triples and Quadruples
+      - FCI    : Full Configuration Interaction
+    """
+
+    type = Quantity(
+        type=MEnum('CIS', 'CID', 'CISD', 'CISDT', 'CISDTQ', 'FCI'),
+        description='CI variant to employ',
+    )
+
+    excitation_order = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description=(
+            'List of excitation orders included in the CI expansion '
+            '(1=singles, 2=doubles, 3=triples, 4=quadruples, …).'
+        ),
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        # If excitation_order isn’t explicitly set, infer it from the chosen variant:
+        default_orders = {
+            'CIS': [1],
+            'CID': [2],
+            'CISD': [1, 2],
+            'CISDT': [1, 2, 3],
+            'CISDTQ': [1, 2, 3, 4],
+            'FCI': None,  # full space; leave excitation_order unset
+        }
+        if self.excitation_order is None:
+            orders = default_orders.get(self.type)
+            if orders is not None:
+                self.excitation_order = np.array(orders, dtype=np.int32)
