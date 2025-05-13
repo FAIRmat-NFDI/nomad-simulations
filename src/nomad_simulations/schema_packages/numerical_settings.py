@@ -162,7 +162,7 @@ class NumericalIntegration(NumericalSettings):
     )
 
     integration_rule = Quantity(
-        type=str,  # ? extend to MEnum?
+        type=str,
         description="""
         Integration rule used. This can be any 1D Gaussian quadrature rule or multi-dimensional `angular` rules,
         e.g., Lebedev quadrature rule (see e.g., Becke, Chem. Phys. 88, 2547 (1988)).

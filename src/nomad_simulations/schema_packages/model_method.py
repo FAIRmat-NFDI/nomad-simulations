@@ -1201,7 +1201,7 @@ class FrozenCore(ArchiveSection):
     In a frozen-core approximation, selected inner-shell (core) orbitals are excluded from
     the orbital optimization or post-SCF correlation treatment, retaining them at their
     reference-determinant (e.g., Hartree-Fock or Kohn-Sham) values. This significantly
-    reduces the number of active orbitals, lowering computational cost for large systems.
+    reduces the number of 'active' orbitals, lowering computational cost for large systems.
 
     The frozen-core scheme can be specified either by enumerating the exact orbitals to
     freeze or by using simple threshold rules based on quantum numbers or atomic numbers.
@@ -1480,7 +1480,7 @@ class MolecularModelMethod(ModelMethodElectronic):
             SectionProxy(
                 'nomad_simulations.schema_packages.physical_property.MolecularOrbitals'
             )
-        ),
+        ),  # todo @ EBB : do not
         description="""
         Reference to the final converged molecular orbitals produced by this calculation.
         Includes orbital energies, coefficients, occupations, symmetry labels and spin channels.
@@ -1636,7 +1636,7 @@ class CoupledCluster(MolecularModelMethod):
 
 class ConfigurationInteraction(MolecularModelMethod):
     """
-    Single‐reference Configuration Interaction (CI) methods using atom-centered basis sets.
+    Single-reference Configuration Interaction (CI) methods using atom-centered basis sets.
 
     Variants include:
       - CIS    : Configuration Interaction Singles
@@ -1648,17 +1648,26 @@ class ConfigurationInteraction(MolecularModelMethod):
     """
 
     type = Quantity(
-        type=MEnum('CIS', 'CID', 'CISD', 'CISDT', 'CISDTQ', 'FCI', 'QCISD', 'QCISD(T)'),
+        type=MEnum(
+            'CIS',
+            'CID',
+            'CISD',
+            'CISDT',
+            'CISDTQ',
+            'FCI',
+            'QCISD',
+            'QCISD(T)',
+        ),
         description='CI variant to employ',
     )
 
     excitation_order = Quantity(
         type=np.int32,
         shape=['*'],
-        description=(
-            'List of excitation orders included in the CI expansion '
-            '(1=singles, 2=doubles, 3=triples, 4=quadruples, …).'
-        ),
+        description="""
+            List of excitation orders included in the CI expansion 
+            (1=singles, 2=doubles, 3=triples, 4=quadruples, …).
+            """,
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
