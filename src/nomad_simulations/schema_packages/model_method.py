@@ -1194,19 +1194,6 @@ class DMFT(ModelMethodElectronic):
     )
 
 
-from typing import TYPE_CHECKING, Optional
-
-import numpy as np
-from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import Quantity
-
-if TYPE_CHECKING:
-    from nomad.metainfo import Context, Section
-    from structlog.stdlib import BoundLogger
-
-from nomad_simulations.schema_packages.atoms_state import OrbitalsState
-
-
 class FrozenCore(ArchiveSection):
     """
     Section defining the frozen-core approximation settings for molecular electronic-structure methods.
