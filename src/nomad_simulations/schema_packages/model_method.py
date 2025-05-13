@@ -1426,9 +1426,7 @@ class MolecularModelMethod(ModelMethodElectronic):
     approaches:
 
       - **molecular_orbitals**
-        A reference to the final converged MolecularOrbitals section (orbital energies,
-        coefficients, occupations, symmetry labels, and spin channels), allowing a single
-        object to contain both α and β spin components when present.
+        A reference to the final converged MolecularOrbitals section.
 
       - **reference_determinant**
         Enumerates the underlying reference determinant:
@@ -1444,6 +1442,9 @@ class MolecularModelMethod(ModelMethodElectronic):
         Zero or more IntegralDecomposition subsections (RI-J, RI-K, COSX, SENEX, etc.),
         capturing density-fitting or exchange-decomposition techniques used in Coulomb
         and/or exchange integrals.
+
+      - **frozen_core**
+        One FrozenCore subsection, capturing details about frozen core approximation.
 
     All molecular electronic-structure methods should inherit from MolecularModelMethod to
     ensure consistent handling of orbitals, spin conventions, and shared post-SCF options.
