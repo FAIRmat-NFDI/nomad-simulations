@@ -49,50 +49,8 @@ class Smearing(NumericalSettings):
 
 class Mesh(ArchiveSection):
     """
-    A base section used to specify the settings of a sampling mesh.
-    It supports uniformly-spaced meshes and symmetry-reduced representations.
+    A base section used to define the mesh or space partitioning over which a discrete numerical integration is performed.
     """
-
-    spacing = Quantity(
-        type=MEnum('Equidistant', 'Logarithmic', 'Tan'),
-        shape=['dimensionality'],
-        description="""
-        Identifier for the spacing of the Mesh. Defaults to 'Equidistant' if not defined. It can take the values:
-
-        | Name      | Description                      |
-        | --------- | -------------------------------- |
-        | `'Equidistant'`  | Equidistant grid (also known as 'Newton-Cotes') |
-        | `'Logarithmic'`  | log distance grid |
-        | `'Tan'`  | Non-uniform tan mesh for grids. More dense at low abs values of the points, while less dense for higher values |
-        """,
-    )
-
-    quadrature = Quantity(
-        type=MEnum(
-            'Gauss-Legendre',
-            'Gauss-Laguerre',
-            'Clenshaw-Curtis',
-            'Newton-Cotes',
-            'Gauss-Hermite',
-        ),
-        description="""
-        Quadrature rule used for integration of the Mesh. This quantity is relevant for 1D meshes:
-
-        | Name      | Description                      |
-        | --------- | -------------------------------- |
-        | `'Gauss-Legendre'` | Quadrature rule for integration using Legendre polynomials |
-        | `'Gauss-Laguerre'` | Quadrature rule for integration using Laguerre polynomials |
-        | `'Clenshaw-Curtis'`  | Quadrature rule for integration using Chebyshev polynomials using discrete cosine transformations |
-        | `'Gauss-Hermite'`  | Quadrature rule for integration using Hermite polynomials |
-        """,
-    )  # ! @JosePizarro3 I think that this is separate from the spacing
-
-    n_points = Quantity(
-        type=np.int32,
-        description="""
-        Number of points in the mesh.
-        """,
-    )
 
     dimensionality = Quantity(
         type=np.int32,
@@ -102,13 +60,41 @@ class Mesh(ArchiveSection):
         """,
     )
 
+    mesh_type = Quantity(
+        type=MEnum('equidistant', 'logarithmic', 'tan'),
+        shape=['dimensionality'],
+        description="""
+        Kind of mesh identifying the spacing in each of the dimensions specified by `dimensionality`. It can take the values:
+
+        | Name      | Description                      |
+        | --------- | -------------------------------- |
+        | `'equidistant'`  | Equidistant grid (also known as 'Newton-Cotes') |
+        | `'logarithmic'`  | log distance grid |
+        | `'Tan'`  | Non-uniform tan mesh for grids. More dense at low abs values of the points, while less dense for higher values |
+        """,
+    )
+
     grid = Quantity(
         type=np.int32,
         shape=['dimensionality'],
         description="""
-        Amount of mesh point sampling along each axis. See `type` for the axes definition.
+        Number of points sampled along each axis of the mesh.
         """,
-    )  # ? @JosePizzaro3: should the mesh also contain its boundary information
+    )
+
+    n_points = Quantity(
+        type=np.int32,
+        description="""
+        Total number of points in the mesh.
+        """,
+    )
+
+    spacing = Quantity(
+        type=np.float64,
+        shape=['dimensionality'],
+        description="""Grid spacing for equidistant meshes. Ignored for other kinds.
+        """,
+    )
 
     points = Quantity(
         type=np.complex128,
@@ -123,25 +109,102 @@ class Mesh(ArchiveSection):
         shape=['n_points'],
         description="""
         The amount of times the same point reappears. A value larger than 1, typically indicates
-        a symmetry operation that was applied to the `Mesh`. This quantity is equivalent to `weights`:
-
-            multiplicities = n_points * weights
+        a symmetry operation that was applied to the `Mesh`.
         """,
     )
 
-    weights = Quantity(
-        type=np.float64,
-        shape=['n_points'],
+    pruning = Quantity(
+        type=MEnum('fixed', 'adaptive'),
         description="""
-        Weight of each point. A value smaller than 1, typically indicates a symmetry operation that was
-        applied to the mesh. This quantity is equivalent to `multiplicities`:
-
-            weights = multiplicities / n_points
+        Pruning method applied for reducing the amount of points in the Mesh. This is typically
+        used for numerical integration near the core levels in atoms.
+        In the fixed grid methods, the number of angular grid points is predetermined for
+        ranges of radial grid points, while in the adaptive methods, the angular grid is adjusted
+        on-the-fly for each radial point according to some accuracy criterion.
         """,
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+        if self.dimensionality not in [1, 2, 3]:
+            logger.error(
+                '`dimensionality` meshes different than 1, 2, or 3 are not supported.'
+            )
+
+
+class NumericalIntegration(NumericalSettings):
+    """
+    Numerical integration settings used to resolve the following type of integrals by discrete
+    numerical integration:
+
+    ```math
+    \int_{\vec{r}_a}^{\vec{r}_b} d^3 \vec{r} F(\vec{r}) \approx \sum_{n=a}^{b} w(\vec{r}_n) F(\vec{r}_n)
+    ```
+
+    Here, $F$ can be any type of function which would define the type of rules that can be applied
+    to solve such integral (e.g., 1D Gaussian quadrature rule or multi-dimensional `angular` rules like the
+    Lebedev quadrature rule).
+
+    These multidimensional integral has a `Mesh` defined over which the integration is performed, i.e., the
+    $\vec{r}_n$ points.
+    """
+
+    mesh = SubSection(sub_section=Mesh.m_def)
+
+    coordinate = Quantity(
+        type=MEnum('full', 'radial', 'angular'),
+        description="""
+        Coordinate over which the integration is performed. `full` means the integration is performed in
+        entire space. `radial` and `angular` describe cases where the integration is performed for
+        functions which can be splitted into radial and angular distributions (e.g., orbital wavefunctions).
+        """,
+    )
+
+    integration_rule = Quantity(
+        type=str,  # ? extend to MEnum?
+        description="""
+        Integration rule used. This can be any 1D Gaussian quadrature rule or multi-dimensional `angular` rules,
+        e.g., Lebedev quadrature rule (see e.g., Becke, Chem. Phys. 88, 2547 (1988)).
+        """,
+    )
+
+    integration_thresh = Quantity(
+        type=np.float64,
+        description="""
+        An accuracy threshold for the integration grid, controlling how fine the 
+        discretization is. Some programs label it "integral accuracy" or "grid accuracy".
+        For instance, GRIDTHR in Molpro or BFCut in ORCA.
+        """,
+    )
+
+    weight_approximation = Quantity(
+        type=str,
+        description="""
+        Approximation applied to the weight when doing the numerical integration.
+        See e.g., C. W. Murray, N. C. Handy
+        and G. J. Laming, Mol. Phys. 78, 997 (1993).
+        """,
+    )
+
+    weight_cutoff = Quantity(
+        type=np.float64,
+        description="""
+        Threshold for discarding small weights during integration.
+        Grid points very close to the nucleus can have very small grid weights.
+        WEIGHT_CUT in Molpro.
+        Wcut in ORCA.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        valid_coordinates = ['full', 'radial', 'angular', None]
+        if self.coordinate not in valid_coordinates:
+            logger.warning(
+                f'Invalid coordinate value: {self.coordinate}. Resetting to None.'
+            )
+            self.coordinate = None
 
 
 class KSpaceFunctionalities:
