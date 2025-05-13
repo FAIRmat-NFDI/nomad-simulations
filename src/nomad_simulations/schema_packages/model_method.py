@@ -1302,12 +1302,14 @@ class IntegralDecomposition(BaseModelMethod):
     """
 
     approximation_type = Quantity(
-        type=MEnum('RIJ', 'RIJK', 'RIK', 'SENEX', 'RIJCOSX'),
+        type=MEnum('RIJ', 'RIJK', 'RIK', 'SENEX', 'RIJCOSX', 'CD', 'CD_F12'),
         description="""
         RIJ     : also known as RIJONX, where only Coulomb integrals are approximated.
         RIJK    : both Coulomb and exchange integrals.
         RIJCOSX : RIJ for Coulomb and COSX for HF exchange.
         SENEX   : Similar to COSX, relevant for Turbomole.
+        CD      : Cholesky decomposition of the two-electron integral tensor
+        CD_F12  : Cholesky decomposition specialized for F12/explicit-correlation integrals
         """,
     )
 
@@ -1322,6 +1324,43 @@ class IntegralDecomposition(BaseModelMethod):
           - 'explicit_correlation': e.g. R12, F12 integrals
         """,
     )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # if the user didn’t explicitly say what term is approximated, pick a sensible default
+        default_map = {
+            'RIJ': 'coulomb',
+            'RIJK': 'mp2',  # both J and K: often used for MP2
+            'RIJCOSX': 'exchange',  # COSX only touches K
+            'RIK': 'exchange',
+            'SENEX': 'exchange',
+            'CD': 'coulomb',  # CD is typically on J integrals
+            'CD_F12': 'explicit_correlation',
+        }
+        if self.approximated_term is None and self.approximation_type in default_map:
+            self.approximated_term = default_map[self.approximation_type]
+
+        # sanity check: approximation_type vs approximated_term
+        if self.approximation_type in ('RIJ', 'CD') and self.approximated_term not in (
+            'coulomb',
+            'mp2',
+            'other',
+        ):
+            logger.warning(
+                f'{self.approximation_type} normally only approximates Coulomb; '
+                f"but approximated_term='{self.approximated_term}'."
+            )
+        if self.approximation_type in (
+            'RIJK',
+            'RIJCOSX',
+            'RIK',
+            'SENEX',
+        ) and self.approximated_term not in ('exchange', 'mp2', 'other'):
+            logger.warning(
+                f'{self.approximation_type} normally approximates exchange as well; '
+                f"but approximated_term='{self.approximated_term}'."
+            )
 
 
 class PerturbationMethod(ModelMethodElectronic):
