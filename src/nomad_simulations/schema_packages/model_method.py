@@ -3,7 +3,15 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import URL, MEnum, Quantity, Section, SubSection
+from nomad.metainfo import (
+    URL,
+    MEnum,
+    Quantity,
+    Reference,
+    Section,
+    SectionProxy,
+    SubSection,
+)
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -1229,68 +1237,6 @@ class IntegralDecomposition(BaseModelMethod):
     )
 
 
-class HartreeFock(ModelMethodElectronic):
-    """
-    Defines a Hartree–Fock (HF) calculation using a specified reference determinant
-    (RHF, UHF, or ROHF).
-
-    In HF theory:
-      - RHF  = Restricted Hartree–Fock, for closed-shell systems.
-      - UHF  = Unrestricted Hartree–Fock, allows different orbitals for alpha/beta spin.
-      - ROHF = Restricted Open-Shell Hartree–Fock, a partially restricted approach for
-               open-shell systems.
-
-    **References**:
-      - Roothaan, C. C. J. (1951). "New Developments in Molecular Orbital Theory."
-        Rev. Mod. Phys. 23, 69.
-      - Szabo, A., & Ostlund, N. S. (1989). *Modern Quantum Chemistry*. McGraw-Hill.
-      - Jensen, F. (2007). *Introduction to Computational Chemistry*. 2nd ed., Wiley.
-    """
-
-    reference_determinant = Quantity(
-        type=MEnum('UHF', 'RHF', 'ROHF'),
-        description="""
-        Type of reference determinant.
-        """,
-    )
-
-    # molecular_orbitals_ref = Quantity(
-    #     type=MolecularOrbitals,
-    #     description="""
-    #     Final, converged molecular orbitals from the Hartree–Fock SCF procedure. This includes
-    #     orbital energies, occupations, symmetry labels, and spin channels if applicable.
-    #     """,
-    # )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        """
-        Perform minimal consistency checks between the HF reference determinant
-        and the final molecular orbitals spin array (if available).NumericalIntegration
-        """
-        super().normalize(archive, logger)
-
-        if self.molecular_orbitals is not None:
-            # If the user is storing a spin array for MOs, check for consistency with the determinant
-            mo_spin = self.molecular_orbitals.spin
-            if mo_spin is not None and len(mo_spin) > 0:
-                unique_spins = np.unique(mo_spin)
-                if self.reference_determinant == 'RHF':
-                    # For RHF, we typically expect spin=0 (alpha) only
-                    if not np.all(mo_spin == 0):
-                        logger.warning(
-                            'RHF reference used, but molecular_orbitals.spin contains non-zero spin indices.'
-                        )
-                elif self.reference_determinant == 'UHF':
-                    # UHF often has spin=0 for alpha and spin=1 for beta
-                    # If we only see spin=0, that's effectively no spin polarization
-                    if len(unique_spins) == 1 and unique_spins[0] == 0:
-                        logger.info(
-                            'UHF reference chosen, but only alpha spin found in MOs (spin=0). '
-                            'This might still be valid if spin polarization is zero.'
-                        )
-                # For ROHF, spin indexing can vary across codes, so no strict check here.
-
-
 class PerturbationMethod(ModelMethodElectronic):
     type = Quantity(
         type=MEnum('MP', 'RS', 'BW'),
@@ -1334,7 +1280,7 @@ class PerturbationMethod(ModelMethodElectronic):
     )
 
 
-class LocalCorrelation(ArchiveSection):
+class LocalCorrelation(BaseModelMethod):
     """
     A base section used to define the parameters of a local correlation method for
     post-HF calculations, e.g. LMP2, LCC, or domain-based local pair natural orbitals
@@ -1371,7 +1317,121 @@ class LocalCorrelation(ArchiveSection):
     )
 
 
-class CoupledCluster(ModelMethodElectronic):
+class MolecularModelMethod(ModelMethodElectronic):
+    """
+    Base section for any self-consistent molecular electronic structure method
+    (e.g., Hartree-Fock, Kohn-Sham DFT, post-SCF coupled-cluster, etc.).
+
+    This class unifies shared concepts across closed- and open-shell quantum-chemistry
+    approaches:
+
+      - **molecular_orbitals**
+        A reference to the final converged MolecularOrbitals section (orbital energies,
+        coefficients, occupations, symmetry labels, and spin channels), allowing a single
+        object to contain both α and β spin components when present.
+
+      - **reference_determinant**
+        Enumerates the underlying reference determinant:
+          - RHF / RKS   - closed-shell restricted
+          - UHF / UKS   - unrestricted α/β
+          - ROHF / ROKS - restricted open-shell
+
+      - **local_correlation**
+        Zero or more LocalCorrelation subsections (LPNO, DLPNO, LMP2, PNO, etc.), capturing
+        post-SCF local-orbital correlation flavors.
+
+      - **integral_decomposition**
+        Zero or more IntegralDecomposition subsections (RI-J, RI-K, COSX, SENEX, etc.),
+        capturing density-fitting or exchange-decomposition techniques used in Coulomb
+        and/or exchange integrals.
+
+    All molecular electronic-structure methods should inherit from MolecularModelMethod to
+    ensure consistent handling of orbitals, spin conventions, and shared post-SCF options.
+    """
+
+    molecular_orbitals = Quantity(
+        type=Reference(
+            SectionProxy(
+                'nomad_simulations.schema_packages.physical_property.MolecularOrbitals'
+            )
+        ),
+        description="""
+        Reference to the final converged molecular orbitals produced by this calculation.
+        Includes orbital energies, coefficients, occupations, symmetry labels and spin channels.
+        """,
+    )
+
+    reference_determinant = Quantity(
+        type=MEnum('UHF', 'RHF', 'ROHF', 'UKS', 'RKS', 'ROKS'),
+        description="""
+        The type of reference determinant on which the Coupled Cluster expansion is built.
+          - UHF / RHF / ROHF : common for wavefunction-based reference
+          - UKS / RKS / ROKS : if a KS-DFT reference is used (rare but possible).        
+        """,
+    )
+
+    local_correlation = SubSection(sub_section=LocalCorrelation.m_def, repeats=True)
+
+    integral_decomposition = SubSection(
+        sub_section=IntegralDecomposition.m_def, repeats=True
+    )
+
+
+class HartreeFock(MolecularModelMethod):
+    """
+    Defines a Hartree-Fock (HF) calculation using a specified reference determinant
+    (RHF, UHF, or ROHF).
+
+    In HF theory:
+      - RHF  = Restricted Hartree-Fock, for closed-shell systems.
+      - UHF  = Unrestricted Hartree-Fock, allows different orbitals for alpha/beta spin.
+      - ROHF = Restricted Open-Shell Hartree-Fock, a partially restricted approach for
+               open-shell systems.
+
+    **References**:
+      - Roothaan, C. C. J. (1951). "New Developments in Molecular Orbital Theory."
+        Rev. Mod. Phys. 23, 69.
+      - Szabo, A., & Ostlund, N. S. (1989). *Modern Quantum Chemistry*. McGraw-Hill.
+      - Jensen, F. (2007). *Introduction to Computational Chemistry*. 2nd ed., Wiley.
+    """
+
+    placeholder_quantity = Quantity(
+        type=MEnum('MP2', 'CC', 'DH-DFT'),
+        description="""
+        something
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        Perform minimal consistency checks between the HF reference determinant
+        and the final molecular orbitals spin array (if available).NumericalIntegration
+        """
+        super().normalize(archive, logger)
+
+        # if self.molecular_orbitals is not None:
+        #     # If the user is storing a spin array for MOs, check for consistency with the determinant
+        #     mo_spin = self.molecular_orbitals.spin
+        #     if mo_spin is not None and len(mo_spin) > 0:
+        #         unique_spins = np.unique(mo_spin)
+        #         if self.reference_determinant == 'RHF':
+        #             # For RHF, we typically expect spin=0 (alpha) only
+        #             if not np.all(mo_spin == 0):
+        #                 logger.warning(
+        #                     'RHF reference used, but molecular_orbitals.spin contains non-zero spin indices.'
+        #                 )
+        #         elif self.reference_determinant == 'UHF':
+        #             # UHF often has spin=0 for alpha and spin=1 for beta
+        #             # If we only see spin=0, that's effectively no spin polarization
+        #             if len(unique_spins) == 1 and unique_spins[0] == 0:
+        #                 logger.info(
+        #                     'UHF reference chosen, but only alpha spin found in MOs (spin=0). '
+        #                     'This might still be valid if spin polarization is zero.'
+        #                 )
+        #         # For ROHF, spin indexing can vary across codes, so no strict check here.
+
+
+class CoupledCluster(MolecularModelMethod):
     """
     A base section used to define the parameters of a Coupled Cluster calculation.
     A standard schema is defined, though the most common cases can be summarized in the `type` quantity.
@@ -1388,15 +1448,6 @@ class CoupledCluster(ModelMethodElectronic):
           - CCSDT     : Singles, Doubles, and Triples
           - CCSDTQ    : Singles, Doubles, Triples, and Quadruples
         By default, the "perturbative corrections" like (T) are not included in this string.
-        """,
-    )
-
-    reference_determinant = Quantity(
-        type=MEnum('UHF', 'RHF', 'ROHF', 'UKS', 'RKS', 'ROKS'),
-        description="""
-        The type of reference determinant on which the Coupled Cluster expansion is built.
-          - UHF / RHF / ROHF : common for wavefunction-based reference
-          - UKS / RKS / ROKS : if a KS-DFT reference is used (rare but possible).        
         """,
     )
 
@@ -1438,12 +1489,6 @@ class CoupledCluster(ModelMethodElectronic):
     )
 
     perturbation_method = SubSection(sub_section=PerturbationMethod.m_def)
-
-    local_correlation = SubSection(sub_section=LocalCorrelation.m_def, repeats=True)
-
-    integral_decomposition = SubSection(
-        sub_section=IntegralDecomposition.m_def, repeats=True
-    )
 
     explicit_correlation = Quantity(
         type=MEnum('F12', 'F12a', 'F12b', 'F12c', 'R12', ''),
