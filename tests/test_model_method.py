@@ -383,7 +383,7 @@ def test_coupled_cluster_full_workflow():
     cc = CoupledCluster(reference_determinant='UKS')
 
     # 2) add one local‐correlation block (DLPNO‐CC)
-    lc = LocalCorrelation(type='DLPNO', ansatz='CC')
+    lc = LocalCorrelation(type='DLPNO', parent_correlation_method='CC')
     cc.local_correlation = [lc]
 
     # 3) add one integral‐decomposition block (RIJK)
