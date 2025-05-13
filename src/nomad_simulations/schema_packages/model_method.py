@@ -1514,8 +1514,7 @@ class MolecularModelMethod(ModelMethodElectronic):
 
 class HartreeFock(MolecularModelMethod):
     """
-    Defines a Hartree-Fock (HF) calculation using a specified reference determinant
-    (RHF, UHF, or ROHF).
+    Defines a Hartree-Fock (HF) calculation.
 
     In HF theory:
       - RHF  = Restricted Hartree-Fock, for closed-shell systems.
@@ -1530,12 +1529,38 @@ class HartreeFock(MolecularModelMethod):
       - Jensen, F. (2007). *Introduction to Computational Chemistry*. 2nd ed., Wiley.
     """
 
-    placeholder_quantity = Quantity(
-        type=MEnum('MP2', 'CC', 'DH-DFT'),
+    type = Quantity(
+        type=MEnum('RHF', 'UHF', 'ROHF'),
         description="""
-        something
+        The type of HF determinant.
         """,
     )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        Ensures spin-channel count matches the chosen HF type.
+        """
+        super().normalize(archive, logger)
+
+        # Spin-channel consistency check
+        # Expect 1 channel for RHF, 2 for UHF/ROHF
+        if self.molecular_orbitals is not None:
+            mos = self.molecular_orbitals
+            spin_channels = getattr(mos, 'spin_channels', None)
+            if spin_channels is None:
+                logger.warning(
+                    'Cannot find "spin_channels" in MolecularOrbitals to verify spin consistency.'
+                )
+            else:
+                n_spins = len(spin_channels)
+                if self.type == 'RHF' and n_spins != 1:
+                    logger.warning(
+                        f'RHF calculation should have 1 spin channel, but found {n_spins}.'
+                    )
+                elif self.type in ('UHF', 'ROHF') and n_spins != 2:
+                    logger.warning(
+                        f'{self.type} calculation should have 2 spin channels, but found {n_spins}.'
+                    )
 
 
 class CoupledCluster(MolecularModelMethod):
