@@ -1198,7 +1198,7 @@ class FrozenCore(ArchiveSection):
     """
     Section defining the frozen-core approximation settings for molecular electronic-structure methods.
 
-    In a frozen-core approximation, selected inner-shell (core) orbitals are excluded from
+    In the frozen-core approximation, selected inner-shell (core) orbitals are excluded from
     the orbital optimization or post-SCF correlation treatment, retaining them at their
     reference-determinant (e.g., Hartree-Fock or Kohn-Sham) values. This significantly
     reduces the number of 'active' orbitals, lowering computational cost for large systems.
@@ -1227,7 +1227,6 @@ class FrozenCore(ArchiveSection):
             core_orbitals_ref=[OrbitalsState(n_quantum_number=1, l_quantum_number=0),
                                 OrbitalsState(n_quantum_number=1, l_quantum_number=0)],
             principal_quantum_number_threshold=1,
-            comment='Frozen all 1s shells on light atoms'
         )
     """
 
