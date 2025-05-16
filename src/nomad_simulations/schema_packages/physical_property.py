@@ -156,22 +156,6 @@ class PhysicalProperty(ArchiveSection):
         """,
     )
 
-    # @property
-    # def variables_shape(self) -> Optional[list]:
-    #    """
-    #    Shape of the variables over which the physical property varies. This is extracted from
-    #    `Variables.n_points` and appended in a list.
-    #
-    #    Example, a physical property which varies with `Temperature` and `ElectricField` will
-    #    return `variables_shape = [n_temperatures, n_electric_fields]`.
-    #
-    #    Returns:
-    #        (list): The shape of the variables over which the physical property varies.
-    #    """
-    #    if self.variables is not None:
-    #        return [v.get_n_points(logger) for v in self.variables]
-    #    return []
-
     @property
     def full_shape(self) -> list[int]:
         """
