@@ -202,7 +202,6 @@ class SCFOutputs(Outputs):
     `Simulation` entry in NOMAD contains the final output properties and all the SCF steps.
     """
 
-
     def resolve_is_scf_converged(
         self,
         property_name: str,

@@ -865,6 +865,7 @@ class SelfConsistency(NumericalSettings):
         """,
     )
 
+
 class EnergySelfConsistency(SelfConsistency):
     differential_threshold = SelfConsistency.m_def.differential_threshold.m_copy()
     differential_threshold.unit = 'J'

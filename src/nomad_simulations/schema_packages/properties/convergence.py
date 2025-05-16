@@ -5,10 +5,10 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 import numpy as np
+from nomad.metainfo import Quantity, Reference, Section
 
-from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
-from nomad.metainfo import Section, Quantity, Reference
+from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 
 class ConvergenceMetric(PhysicalProperty):
@@ -73,7 +73,7 @@ class ConvergenceMetric(PhysicalProperty):
     )
 
     diff_value = Quantity(
-        type=np.dtype(np.float64),   #? absolute value
+        type=np.dtype(np.float64),  # ? absolute value
         # guideline: specialize the unit
         shape=['*'],
         description="""
@@ -93,17 +93,21 @@ class ConvergenceMetric(PhysicalProperty):
         """
         Normalize the convergence metric by setting the iteration cycles and diff_value.
         `settings` should receive its data via `after_normalize`.
-        """  #? is `after_normalize` appropriate here
+        """  # ? is `after_normalize` appropriate here
         super().normalize(archive, logger)
         if not self.iteration_cycles:
             self.iteration_cycles = list(range(len(self.value)))
         if not self.diff_value:
             self.diff_value = np.abs(np.diff(self.value.magnitude)) * self.value.unit
         if not self.is_converged:
-            self.is_scf_converged = np.all(self.diff_value < self.settings.differential_threshold)
+            self.is_scf_converged = np.all(
+                self.diff_value < self.settings.differential_threshold
+            )
 
 
 class EnergyConvergence(ConvergenceMetric):
+    # TODO: generate enum for `name`
+
     value = ConvergenceMetric.m_def.value.m_copy()
     value.unit = 'J'
 
