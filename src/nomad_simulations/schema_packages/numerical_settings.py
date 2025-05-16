@@ -837,12 +837,6 @@ class KSpace(NumericalSettings):
 class SelfConsistency(NumericalSettings):
     """
     A base section used to define the convergence settings of self-consistent field (SCF) calculation.
-    It determines the conditions for `is_scf_converged` in `SCFOutputs` (see outputs.py). The convergence
-    criteria covered are:
-
-        1. The number of iterations is smaller than or equal to `n_max_iterations`.
-        2. The total change between two subsequent self-consistent iterations for an output property is below
-        `threshold_change`.
     """
 
     # TODO add examples or MEnum?
@@ -863,9 +857,19 @@ class SelfConsistency(NumericalSettings):
 
     differential_threshold = Quantity(
         type=np.float64,
+        # guideline: specialize the unit
         description="""
         Specifies the threshold for the change between two subsequent self-consistent iterations on
         a given output property. The simulation `is_scf_converged` if this total change is below
         this threshold.
         """,
     )
+
+class EnergySelfConsistency(SelfConsistency):
+    differential_threshold = SelfConsistency.m_def.differential_threshold.m_copy()
+    differential_threshold.unit = 'J'
+
+
+class ForceSelfConsistency(SelfConsistency):
+    differential_threshold = SelfConsistency.m_def.differential_threshold.m_copy()
+    differential_threshold.unit = 'N'

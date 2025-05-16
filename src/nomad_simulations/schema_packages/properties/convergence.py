@@ -73,7 +73,7 @@ class ConvergenceMetric(PhysicalProperty):
     )
 
     diff_value = Quantity(
-        type=np.dtype(np.float64),
+        type=np.dtype(np.float64),   #? absolute value
         # guideline: specialize the unit
         shape=['*'],
         description="""
@@ -82,9 +82,38 @@ class ConvergenceMetric(PhysicalProperty):
         """,
     )
 
+    is_scf_converged = Quantity(
+        type=bool,
+        description="""
+        Boolean value indicating whether the convergence is reached or not, according to the `settings`.
+        """,
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        Normalize the convergence metric by setting the iteration cycles and diff_value.
+        `settings` should receive its data via `after_normalize`.
+        """  #? is `after_normalize` appropriate here
         super().normalize(archive, logger)
         if not self.iteration_cycles:
             self.iteration_cycles = list(range(len(self.value)))
         if not self.diff_value:
-            self.diff_value = np.diff(self.value.magnitude) * self.value.unit
+            self.diff_value = np.abs(np.diff(self.value.magnitude)) * self.value.unit
+        if not self.is_converged:
+            self.is_scf_converged = np.all(self.diff_value < self.settings.differential_threshold)
+
+
+class EnergyConvergence(ConvergenceMetric):
+    value = ConvergenceMetric.m_def.value.m_copy()
+    value.unit = 'J'
+
+    diff_value = ConvergenceMetric.m_def.diff_value.m_copy()
+    diff_value.unit = 'J'
+
+
+class ForceConvergence(ConvergenceMetric):
+    value = ConvergenceMetric.m_def.value.m_copy()
+    value.unit = 'N'
+
+    diff_value = ConvergenceMetric.m_def.diff_value.m_copy()
+    diff_value.unit = 'N'
