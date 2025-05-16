@@ -861,7 +861,7 @@ class SelfConsistency(NumericalSettings):
         """,
     )
 
-    threshold_change = Quantity(
+    differential_threshold = Quantity(
         type=np.float64,
         description="""
         Specifies the threshold for the change between two subsequent self-consistent iterations on
@@ -869,15 +869,3 @@ class SelfConsistency(NumericalSettings):
         this threshold.
         """,
     )
-
-    threshold_change_unit = Quantity(
-        type=str,
-        description="""
-        Unit using the pint UnitRegistry() notation for the `threshold_change`.
-        """,
-    )
-
-    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
-        super().__init__(m_def, m_context, **kwargs)
-        # Set the name of the section
-        self.name = self.m_def.name

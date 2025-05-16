@@ -140,22 +140,6 @@ class PhysicalProperty(ArchiveSection):
         """,
     )
 
-    is_scf_converged = Quantity(
-        type=bool,
-        description="""
-        Flag indicating whether the physical property is converged or not after a SCF process. This quantity is connected
-        with `SelfConsistency` defined in the `numerical_settings.py` module.
-        """,
-    )
-
-    self_consistency_ref = Quantity(
-        type=SelfConsistency,
-        description="""
-        Reference to the `SelfConsistency` section that defines the numerical settings to converge the
-        physical property (see numerical_settings.py).
-        """,
-    )
-
     @property
     def full_shape(self) -> list[int]:
         """
