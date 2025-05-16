@@ -110,12 +110,6 @@ class PhysicalProperty(ArchiveSection):
         # ! add more examples in the description to improve the understanding of this quantity
     )
 
-    # variables = SubSection(sub_section=Variables.m_def, repeats=True)
-
-    # * `value` must be overwritten in the derived classes defining its type, unit, and description
-    # TODO use abstract to enforce policy?
-    value: Quantity = None
-
     entity_ref = Quantity(
         type=Entity,
         description="""
