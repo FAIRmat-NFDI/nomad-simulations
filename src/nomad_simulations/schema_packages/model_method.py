@@ -88,6 +88,13 @@ class ModelMethodElectronic(ModelMethod):
     calculations (TB, DFT, GW, BSE, DMFT, etc).
     """
 
+    is_scf_calculation = Quantity(
+        type=bool,
+        description="""
+        Denotes whether the calculation is run self-consistently or not.
+        """,
+    )
+
     # ? Is this necessary or will it be defined in another way?
     is_spin_polarized = Quantity(
         type=bool,
