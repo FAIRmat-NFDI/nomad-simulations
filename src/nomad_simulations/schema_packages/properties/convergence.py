@@ -99,7 +99,7 @@ class ConvergenceMetric(PhysicalProperty):
             self.iteration_cycles = list(range(len(self.value)))
         if not self.diff_value:
             self.diff_value = np.abs(np.diff(self.value.magnitude)) * self.value.unit
-        if not self.is_converged:
+        if not self.is_scf_converged:
             self.is_scf_converged = np.all(
                 self.diff_value < self.settings.differential_threshold
             )
