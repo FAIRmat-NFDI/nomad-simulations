@@ -855,7 +855,7 @@ class SelfConsistency(NumericalSettings):
         """,
     )
 
-    differential_threshold = Quantity(
+    convergence_tolerance = Quantity(
         type=np.float64,
         # guideline: specialize the unit
         description="""
@@ -867,10 +867,10 @@ class SelfConsistency(NumericalSettings):
 
 
 class EnergySelfConsistency(SelfConsistency):
-    differential_threshold = SelfConsistency.m_def.differential_threshold.m_copy()
-    differential_threshold.unit = 'J'
+    convergence_tolerance = SelfConsistency.convergence_tolerance.m_copy()
+    convergence_tolerance.unit = 'J'
 
 
 class ForceSelfConsistency(SelfConsistency):
-    differential_threshold = SelfConsistency.m_def.differential_threshold.m_copy()
-    differential_threshold.unit = 'N'
+    convergence_tolerance = SelfConsistency.convergence_tolerance.m_copy()
+    convergence_tolerance.unit = 'N'
