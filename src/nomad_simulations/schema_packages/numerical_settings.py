@@ -30,7 +30,7 @@ class NumericalSettings(ArchiveSection):
         `NumericalSettings` section. Possible values: "KMesh", "FrequencyMesh", "TimeMesh",
         "SelfConsistency", "BasisSet".
         """,
-    )
+    )  # ? to be removed
 
 
 class Smearing(NumericalSettings):
@@ -838,6 +838,27 @@ class SelfConsistency(NumericalSettings):
     """
     A base section used to define the convergence settings of self-consistent field (SCF) calculation.
     """
+
+    comparison_mode = Quantity(
+        type=MEnum('absolute', 'relative', 'maximum', 'rms', 'residuum'),
+        description="""
+            Specifies the mathematical method used to evaluate convergence between successive self-consistent field (SCF) iterations. 
+    This determines how differences between iterations are calculated and compared against the convergence threshold.
+    
+    The available comparison modes are:
+    
+    | Mode | Description |
+    | --------- | -------------------------------- |
+    | `'absolute'` | Measures the straightforward absolute difference between two subsequent iterations (e.g., |E_n - E_{n-1}|). Most common for energy convergence. |
+    | `'relative'` | Calculates the relative difference as a fraction of the total property value (e.g., |E_n - E_{n-1}|/|E_n|). Useful when the magnitude of the property varies widely across systems. |
+    | `'residuum'` | Computes the absolute difference between the current value and the value estimated from the wavefunction at the start of the step. Often used for evaluating convergence of the electron density. |
+    | `'maximum'` | Reports the maximum absolute difference across all components of a multi-component property (e.g., max|F_i,n - F_i,{n-1}| for forces). Suitable for vector quantities like forces or stress tensor elements. |
+    | `'rms'` | Calculates the root mean square of differences across all components (e.g., √(∑|F_i,n - F_i,{n-1}|²/N)). Provides a statistical measure of overall convergence for multi-component properties. |
+    
+    The mode used affects both convergence behavior and computational efficiency. Different codes may default to different comparison modes for the same physical property.
+        """,
+    )
+        
 
     # TODO add examples or MEnum?
     scf_minimization_algorithm = Quantity(
