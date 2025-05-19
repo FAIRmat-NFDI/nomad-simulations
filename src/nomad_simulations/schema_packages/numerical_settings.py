@@ -886,6 +886,15 @@ class SelfConsistency(NumericalSettings):
         """,
     )
 
+    is_required = Quantity(
+        type=bool,
+        description="""
+        Indicates whether the metric specified is required for the calculation to be considered convergence.
+        If unset (i.e. `None`), the role of the metric is unknown.
+        """,
+    )
+    # Extend to groups for general case of `(... && ...) || (... && ...) || ...`
+
 
 class EnergySelfConsistency(SelfConsistency):
     convergence_tolerance = SelfConsistency.convergence_tolerance.m_copy()
