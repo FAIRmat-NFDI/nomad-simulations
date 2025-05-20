@@ -595,6 +595,15 @@ class AtomsState(ParticleState):
         """,
     )
 
+    label = Quantity(
+        type=str,
+        description="""
+        User- or program-package-defined identifier for this atomic site.
+        e.g. 'H1', 'H1a', 'C_eq'.
+        It doesn't replace `chemical_symbol`, but merely gives users a more specialized token for the unique site name.
+        """,
+    )
+
     orbitals_state = SubSection(sub_section=OrbitalsState.m_def, repeats=True)
 
     core_hole = SubSection(sub_section=CoreHole.m_def, repeats=False)
