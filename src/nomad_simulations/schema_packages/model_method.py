@@ -1555,8 +1555,7 @@ class HartreeFock(ModelMethodMolecular):
         # Spin-channel consistency check
         # Expect 1 channel for RHF, 2 for UHF/ROHF
         if self.molecular_orbitals is not None:
-            mos = self.molecular_orbitals
-            spin_channels = getattr(mos, 'spin_channels', None)
+            spin_channels = self.molecular_orbitals.spin_channels
             if spin_channels is None:
                 logger.warning(
                     'Cannot find "spin_channels" in MolecularOrbitals to verify spin consistency.'
