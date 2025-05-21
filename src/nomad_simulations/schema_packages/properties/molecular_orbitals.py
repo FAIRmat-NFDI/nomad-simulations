@@ -7,58 +7,32 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 import numpy as np
+from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import URL, MEnum, Quantity, SectionProxy, SubSection
 
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
-from nomad_simulations.schema_packages.variables import Variables
-
-
-class MOIndex(Variables):
-    """
-    Discrete index for molecular orbitals (0-based).
-    """
-
-    points = Quantity(
-        type=np.int32,
-        shape=['n_points'],
-        description="""
-        Orbital indices from 0 to n_mo-1.
-        """,
-    )
-
-    def __init__(self, m_def=None, m_context=None, **kwargs):
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-
-class AOIndex(Variables):
-    """
-    Discrete index for atomic orbitals (0-based) matching the AO basis.
-    """
-
-    points = Quantity(
-        type=np.int32,
-        shape=['n_points'],
-        description="""
-        Atomic-orbital indices from 0 to n_ao-1, in the order of `basis_set_ref`.
-        """,
-    )
-
-    def __init__(self, m_def=None, m_context=None, **kwargs):
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
 
 
 class MolecularOrbitals(PhysicalProperty):
     """
     Molecular-orbital eigenstates expressed in an atomic-orbital basis,
     using the standard α/β spin-channel convention from MolSSI QCSchema
-    and TREXIO.
+    and TREXIO:
 
-    Variables:
-      - MOIndex: index over molecular orbitals
-      - AOIndex: index over atomic orbitals
+    • One instance per spin channel:
+      - spin_channel = 0 : α-spin orbitals
+      - spin_channel = 1 : β-spin orbitals
+    • RHF/RKS (closed-shell): instantiate once with spin_channel=0
+    • UHF/UKS (unrestricted): instantiate two objects, α then β
+    • Shape conventions (per instance):
+      - energies:      array of length n_mo (orbital energies εᵢ)
+      - occupations:  array of length n_mo (occupations nᵢ: 0,1 or 2)
+      - coefficients: matrix shape [n_mo x n_ao] (AO→MO expansion Cᵢμ)
+
+    References for this pattern:
+      — MolSSI QCSchema Wavefunction: separate orbitals_a, orbitals_b arrays
+      — TREXIO mo_coeff_up / mo_coeff_dn groups
 
     Quantities:
       spin_channel    (int): 0=α, 1=β
@@ -68,9 +42,6 @@ class MolecularOrbitals(PhysicalProperty):
       mo_coefficients (float[n_mo, n_ao])
       mo_type         (enum): canonical, natural, localized, …
     """
-
-    # attach two variables: MOIndex then AOIndex
-    variables = SubSection(sub_section=Variables.m_def, repeats=True)
 
     # reference to the AO basis in which these MOs are expressed
     basis_set_ref = Quantity(
@@ -89,35 +60,44 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
-    # main coefficient matrix: C[i, mu]
-    value = Quantity(
-        type=np.float64,
-        shape=['*', '*'],
-        description='AO→MO coefficients matrix, dims [n_mo, n_ao].',
+    n_mo = Quantity(
+        type=np.int32,
+        description='Number of molecular orbitals stored.',
+    )
+
+    n_ao = Quantity(
+        type=np.int32,
+        description='Number of atomic orbitals (size of AO basis).',
     )
 
     mo_energies = Quantity(
         type=np.float64,
         unit='joule',
-        shape=['*'],
-        description='Orbital energies ε_i matching MOIndex dimension.',
+        shape=['n_mo'],
+        description="""
+        Orbital energies for each MO.  In a canonical SCF these are the eigenvalues 
+        of the (Fock) Hamiltonian; in post-processing they may be natural-orbital energies.
+        """,
     )
 
     mo_occupations = Quantity(
         type=np.float64,
-        shape=['*'],
-        description='Occupation numbers n_i matching MOIndex dimension.',
+        shape=['n_mo'],
+        description="""
+        Occupation numbers for each MO.  Closed-shell codes will typically give 2.0 
+        for occupied and 0.0 for virtual orbitals; unrestricted codes use two channels.
+        """,
     )
 
-    # mo_coefficients = Quantity(
-    #     type=np.float64,
-    #     shape=['n_mo', 'n_ao'],
-    #     description="""
-    #     The AO→MO coefficient matrix **C**, such that
-    #     ψ_i(r) = ∑_μ C[i,μ] φ_μ(r).
-    #     Row index i runs over MOs, column index μ runs over AOs in `basis_set_ref`.
-    #     """,
-    # )
+    mo_coefficients = Quantity(
+        type=np.float64,
+        shape=['n_mo', 'n_ao'],
+        description="""
+        The AO→MO coefficient matrix **C**, such that 
+        ψ_i(r) = ∑_μ C[i,μ] φ_μ(r).  
+        Row index i runs over MOs, column index μ runs over AOs in `basis_set_ref`.
+        """,
+    )
 
     mo_type = Quantity(
         type=MEnum('canonical', 'natural', 'localized', 'hybrid'),
@@ -134,28 +114,24 @@ class MolecularOrbitals(PhysicalProperty):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Expect exactly two variables in order: MOIndex, AOIndex
-        if not self.variables or len(self.variables) != 2:
-            logger.warning(
-                'MolecularOrbitals.variables must contain MOIndex and AOIndex'
-            )
+        # infer sizes
+        if self.mo_energies is not None:
+            self.n_mo = len(self.mo_energies)
+        if self.mo_coefficients is not None:
+            # ensure consistent dimensions
+            nm, na = self.mo_coefficients.shape
+            if self.n_mo is None:
+                self.n_mo = nm
+            if self.n_ao is None:
+                self.n_ao = na
+            if (nm != self.n_mo) or (na != self.n_ao):
+                raise ValueError(
+                    f'Inconsistent MO coefficient shape: '
+                    f'got {nm}×{na}, expected {self.n_mo}×{self.n_ao}.'
+                )
 
-        mo_var, ao_var = self.variables
-        n_mo = mo_var.get_n_points(logger)
-        n_ao = ao_var.get_n_points(logger)
-
-        # Check coefficient matrix shape
-        if self.value is not None and self.value.shape != (n_mo, n_ao):
-            logger.warning(
-                f'Coefficient matrix shape {self.value.shape} does not match [n_mo={n_mo}, n_ao={n_ao}].'
-            )
-
-        # Check energies and occupations
-        if self.mo_energies is not None and len(self.mo_energies) != n_mo:
-            logger.warning(
-                f'Length of mo_energies ({len(self.mo_energies)}) != n_mo ({n_mo}).'
-            )
-        if self.mo_occupations is not None and len(self.mo_occupations) != n_mo:
-            logger.warning(
-                f'Length of mo_occupations ({len(self.mo_occupations)}) != n_mo ({n_mo}).'
-            )
+        # shape‐check energies & occupations
+        if self.mo_energies is not None and len(self.mo_energies) != self.n_mo:
+            raise ValueError('Length of `mo_energies` must equal `n_mo`.')
+        if self.mo_occupations is not None and len(self.mo_occupations) != self.n_mo:
+            raise ValueError('Length of `mo_occupations` must equal `n_mo`.')
