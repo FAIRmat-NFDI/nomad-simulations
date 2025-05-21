@@ -162,7 +162,28 @@ class NumericalIntegration(NumericalSettings):
     )
 
     integration_rule = Quantity(
-        type=str,
+        type=MEnum(
+            # radial Gaussian rules
+            'Gauss-Legendre',  # 1-D
+            'Gauss-Chebyshev',
+            'Gauss-Lobatto',
+            'Gauss-Hermite',
+            'Gauss-Laguerre',  # for STO/Slater codes
+            'Euler-Maclaurin',  # Murray–Handy–Laming ’93
+            'Logarithmic-Log3',  # Mura–Knowles ’96
+            'Treutler-Ahlrichs',  # Turbomole M4 mapping
+            'Becke-Radial',  # Gauss-Chebyshev (Becke ’88)
+            'MultiExp',  # Chien-Gill ’06 (SG-0 parent)
+            'Double-Exponential',  # tanh-sinh (SG-2 / SG-3)
+            # angular grids
+            'Lebedev',  # any (N,θ,φ) order
+            'Lebedev-Laikov',  # re-optimisation by Laikov enabling very high orders
+            'Product-Legendre',  # Gauss-Legendre θ × uniform φ
+            'Becke',  # Becke multicentre partitioning
+            'SG-1',  # Gill–Head-Gordon Smolyak grids
+            'SG-2',
+            'SG-3',
+        ),
         description="""
         Integration rule used. This can be any 1D Gaussian quadrature rule or multi-dimensional `angular` rules,
         e.g., Lebedev quadrature rule (see e.g., Becke, Chem. Phys. 88, 2547 (1988)).
