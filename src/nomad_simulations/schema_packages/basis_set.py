@@ -385,15 +385,15 @@ class AtomCenteredFunction(ArchiveSection):
 
         # ---------------- shape & size checks ----------------------------
         if self.exponents is not None and len(self.exponents) != self.n_primitive:
-            raise ValueError('Length of exponents != n_primitive.')
+            logger.error('Length of exponents != n_primitive.')
 
         if self.contraction_coefficients is None:
-            raise ValueError('contraction_coefficients must be provided.')
+            logger.error('contraction_coefficients must be provided.')
 
         flat = np.asarray(self.contraction_coefficients, dtype=np.float32).ravel()
         expected = self.n_components * self.n_primitive
         if flat.size != expected:
-            raise ValueError(
+            logger.error(
                 f'{flat.size} coefficients given; need {expected} '
                 f'({self.n_components}×{self.n_primitive}).'
             )
@@ -474,9 +474,9 @@ class EffectiveCorePotential(BasisSetComponent):
         ):
             arr = getattr(self, attr)
             if arr is None:
-                raise ValueError(f'{attr} must be provided for ECP.')
+                logger.error(f'{attr} must be provided for ECP.')
             if len(arr) != self.n_terms:
-                raise ValueError(
+                logger.error(
                     f'{attr!r} has length {len(arr)}, expected {self.n_terms}.'
                 )
 

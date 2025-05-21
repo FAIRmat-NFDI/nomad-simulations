@@ -1313,7 +1313,7 @@ class IntegralDecomposition(BaseModelMethod):
     )
 
     approximated_term = Quantity(
-        type=MEnum('coulomb', 'exchange', 'mp2', 'cc', 'explicit_correlation', 'other'),
+        type=MEnum('coulomb', 'exchange', 'mp2', 'cc', 'explicit_correlation'),
         description="""
         Which terms are approximated by this method:
           - 'coulomb': only the J integrals
@@ -1441,7 +1441,7 @@ class LocalCorrelation(BaseModelMethod):
     )
 
 
-class MolecularModelMethod(ModelMethodElectronic):
+class ModelMethodMolecular(ModelMethodElectronic):
     """
     Base section for any self-consistent molecular electronic structure method
     (e.g., Hartree-Fock, Kohn-Sham DFT, post-SCF coupled-cluster, etc.).
@@ -1511,7 +1511,7 @@ class MolecularModelMethod(ModelMethodElectronic):
     )
 
 
-class HartreeFock(MolecularModelMethod):
+class HartreeFock(ModelMethodMolecular):
     """
     Defines a Hartree-Fock (HF) calculation.
 
@@ -1562,7 +1562,7 @@ class HartreeFock(MolecularModelMethod):
                     )
 
 
-class CoupledCluster(MolecularModelMethod):
+class CoupledCluster(ModelMethodMolecular):
     """
     A base section used to define the parameters of a Coupled Cluster calculation.
     A standard schema is defined, though the most common cases can be summarized in the `type` quantity.
@@ -1622,7 +1622,7 @@ class CoupledCluster(MolecularModelMethod):
     perturbation_method = SubSection(sub_section=PerturbationMethod.m_def)
 
     explicit_correlation = Quantity(
-        type=MEnum('F12', 'F12a', 'F12b', 'F12c', 'R12', ''),
+        type=MEnum('F12', 'F12a', 'F12b', 'F12c', 'R12'),
         default='',
         description="""
         Explicit correlation treatment.
@@ -1633,7 +1633,7 @@ class CoupledCluster(MolecularModelMethod):
     )
 
 
-class ConfigurationInteraction(MolecularModelMethod):
+class ConfigurationInteraction(ModelMethodMolecular):
     """
     Single-reference Configuration Interaction (CI) methods using atom-centered basis sets.
 

@@ -192,19 +192,10 @@ class NumericalIntegration(NumericalSettings):
         description="""
         Threshold for discarding small weights during integration.
         Grid points very close to the nucleus can have very small grid weights.
-        WEIGHT_CUT in Molpro.
+        e.g. WEIGHT_CUT in Molpro.
         Wcut in ORCA.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-        valid_coordinates = ['full', 'radial', 'angular', None]
-        if self.coordinate not in valid_coordinates:
-            logger.warning(
-                f'Invalid coordinate value: {self.coordinate}. Resetting to None.'
-            )
-            self.coordinate = None
 
 
 class KSpaceFunctionalities:
