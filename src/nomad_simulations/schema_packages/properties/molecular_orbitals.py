@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import URL, MEnum, Quantity, SectionProxy, SubSection
+from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy
 
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
@@ -45,7 +45,7 @@ class MolecularOrbitals(PhysicalProperty):
 
     # reference to the AO basis in which these MOs are expressed
     basis_set_ref = Quantity(
-        type=SectionProxy('AtomCenteredBasisSet'),
+        type=Reference(SectionProxy('AtomCenteredBasisSet')),
         description="""
         The atom-centered basis set used for these molecular orbitals.
         """,
@@ -126,8 +126,9 @@ class MolecularOrbitals(PhysicalProperty):
                 self.n_ao = na
             if (nm != self.n_mo) or (na != self.n_ao):
                 logger.error(
-                    f'Inconsistent MO coefficient shape: '
-                    f'got {nm}×{na}, expected {self.n_mo}×{self.n_ao}.'
+                    'MO-coefficient matrix shape mismatch',
+                    given_shape=(int(nm), int(na)),
+                    expected_shape=(int(self.n_mo), int(self.n_ao)),
                 )
 
         # shape‐check energies & occupations

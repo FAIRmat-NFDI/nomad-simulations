@@ -394,9 +394,13 @@ class AtomCenteredFunction(ArchiveSection):
         expected = self.n_components * self.n_primitive
         if flat.size != expected:
             logger.error(
-                f'{flat.size} coefficients given; need {expected} '
-                f'({self.n_components}×{self.n_primitive}).'
+                'Contraction-coefficient count mismatch',
+                coeffs_given=int(flat.size),
+                coeffs_expected=int(expected),
+                n_components=int(self.n_components),
+                n_primitive=int(self.n_primitive),
             )
+
         # store back as flat 1‑D array (Nomad‑valid)
         self.contraction_coefficients = flat
 
@@ -474,10 +478,15 @@ class EffectiveCorePotential(BasisSetComponent):
         ):
             arr = getattr(self, attr)
             if arr is None:
-                logger.error(f'{attr} must be provided for ECP.')
+                logger.error('Required ECP array is missing', array_name=attr)
+                continue
+
             if len(arr) != self.n_terms:
                 logger.error(
-                    f'{attr!r} has length {len(arr)}, expected {self.n_terms}.'
+                    'Length of ECP array does not match n_terms',
+                    array_name=attr,
+                    length=len(arr),
+                    expected=self.n_terms,
                 )
 
         # derive a human-readable name from species_scope

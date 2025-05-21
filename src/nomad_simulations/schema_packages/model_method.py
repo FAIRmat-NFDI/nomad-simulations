@@ -510,7 +510,10 @@ class TB(ModelMethodElectronic):
         try:
             model_system = model_systems[model_index]
         except IndexError:
-            logger.warning(f'No ModelSystem at index {model_index}.')
+            logger.warning(
+                'Missing ModelSystem at requested index',
+                requested_index=model_index,
+            )
             return None
 
         # If the system is not representative, bail out of normalization
@@ -544,7 +547,8 @@ class TB(ModelMethodElectronic):
             for idx in child_sys.particle_indices:
                 if idx < 0 or idx >= len(model_system.particle_states):
                     logger.warning(
-                        f'Particle index {idx} out of range for particle_states.'
+                        'Particle index out of bounds in particle_states',
+                        particle_index=idx,
                     )
                     continue
                 active_atom_state = model_system.particle_states[idx]
@@ -552,7 +556,8 @@ class TB(ModelMethodElectronic):
                 # If no orbitals_state => skip
                 if not active_atom_state.orbitals_state:
                     logger.warning(
-                        f'No orbitals_state found in particle_states[{idx}].'
+                        'No orbitals_state found for particle_state index',
+                        particle_index=idx,
                     )
                     continue
 
@@ -1347,8 +1352,11 @@ class IntegralDecomposition(BaseModelMethod):
             'other',
         ):
             logger.warning(
-                f'{self.approximation_type} normally only approximates Coulomb; '
-                f"but approximated_term='{self.approximated_term}'."
+                'Integral-decomposition type normally approximates only Coulomb, '
+                "but received an incompatible 'approximated_term'",
+                approximation_type=self.approximation_type,
+                approximated_term=self.approximated_term,
+                allowed_terms='coulomb / mp2 / other',
             )
         if self.approximation_type in (
             'RIJK',
@@ -1357,8 +1365,11 @@ class IntegralDecomposition(BaseModelMethod):
             'SENEX',
         ) and self.approximated_term not in ('exchange', 'mp2', 'other'):
             logger.warning(
-                f'{self.approximation_type} normally approximates exchange as well; '
-                f"but approximated_term='{self.approximated_term}'."
+                'Integral-decomposition type normally approximates exchange as well, '
+                "but received an incompatible 'approximated_term'",
+                approximation_type=self.approximation_type,
+                approximated_term=self.approximated_term,
+                allowed_terms='exchange / mp2 / other',
             )
 
 
@@ -1554,11 +1565,18 @@ class HartreeFock(ModelMethodMolecular):
                 n_spins = len(spin_channels)
                 if self.type == 'RHF' and n_spins != 1:
                     logger.warning(
-                        f'RHF calculation should have 1 spin channel, but found {n_spins}.'
+                        'Spin-channel count does not match Hartree-Fock determinant type',
+                        hf_type='RHF',
+                        expected_spins=1,
+                        found_spins=n_spins,
                     )
+
                 elif self.type in ('UHF', 'ROHF') and n_spins != 2:
                     logger.warning(
-                        f'{self.type} calculation should have 2 spin channels, but found {n_spins}.'
+                        'Spin-channel count does not match Hartree-Fock determinant type',
+                        hf_type=self.type,
+                        expected=2,
+                        found=n_spins,
                     )
 
 
