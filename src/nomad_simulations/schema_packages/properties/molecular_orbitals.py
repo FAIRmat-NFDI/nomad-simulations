@@ -125,13 +125,13 @@ class MolecularOrbitals(PhysicalProperty):
             if self.n_ao is None:
                 self.n_ao = na
             if (nm != self.n_mo) or (na != self.n_ao):
-                raise ValueError(
+                logger.error(
                     f'Inconsistent MO coefficient shape: '
                     f'got {nm}×{na}, expected {self.n_mo}×{self.n_ao}.'
                 )
 
         # shape‐check energies & occupations
         if self.mo_energies is not None and len(self.mo_energies) != self.n_mo:
-            raise ValueError('Length of `mo_energies` must equal `n_mo`.')
+            logger.error('Length of `mo_energies` must equal `n_mo`.')
         if self.mo_occupations is not None and len(self.mo_occupations) != self.n_mo:
-            raise ValueError('Length of `mo_occupations` must equal `n_mo`.')
+            logger.error('Length of `mo_occupations` must equal `n_mo`.')

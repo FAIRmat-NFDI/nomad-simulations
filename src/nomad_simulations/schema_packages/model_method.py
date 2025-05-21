@@ -1479,7 +1479,7 @@ class MolecularModelMethod(ModelMethodElectronic):
             SectionProxy(
                 'nomad_simulations.schema_packages.physical_property.MolecularOrbitals'
             )
-        ),  # todo @ EBB : do not
+        ),
         description="""
         Reference to the final converged molecular orbitals produced by this calculation.
         Includes orbital energies, coefficients, occupations, symmetry labels and spin channels.
