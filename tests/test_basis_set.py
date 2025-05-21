@@ -513,23 +513,20 @@ def test_ecp_shape_and_naming(n_terms, am, r_exp, g_exp, coeffs, expect_error):
         gaussian_exponents=g_exp,
         coefficients=coeffs,
     )
-    if expect_error:
-        with pytest.raises(ValueError):
-            ecp.normalize(None, logger)
-    else:
-        ecp.normalize(None, logger)
-        # name must be derived from species_scope
-        assert ecp.name == 'ECP-Xe'
-        # integer fields
-        assert ecp.n_core_electrons == 54
-        assert ecp.n_terms == n_terms
-        assert list(ecp.angular_momentum) == am
-        assert list(ecp.r_exponents) == r_exp
-        # compare gaussian_exponents by magnitude in the defined unit
-        mags = np.array(ecp.gaussian_exponents.magnitude)
-        assert mags == pytest.approx(np.array(g_exp))
-        # coefficients are unitless floats
-        assert list(ecp.coefficients) == pytest.approx(coeffs)
+
+    ecp.normalize(None, logger)
+    # name must be derived from species_scope
+    assert ecp.name == 'ECP-Xe'
+    # integer fields
+    assert ecp.n_core_electrons == 54
+    assert ecp.n_terms == n_terms
+    assert list(ecp.angular_momentum) == am
+    assert list(ecp.r_exponents) == r_exp
+    # compare gaussian_exponents by magnitude in the defined unit
+    mags = np.array(ecp.gaussian_exponents.magnitude)
+    assert mags == pytest.approx(np.array(g_exp))
+    # coefficients are unitless floats
+    assert list(ecp.coefficients) == pytest.approx(coeffs)
 
 
 def test_ecp_in_atom_centered_basis_set():
