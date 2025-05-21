@@ -378,7 +378,7 @@ class TestSlaterKosterBond:
         assert bond.name == expected
 
 
-def test_coupled_cluster_full_workflow():
+def test_coupled_cluster():
     # 1) instantiate the CoupledCluster method
     cc = CoupledCluster(reference_determinant='UKS')
 
@@ -422,7 +422,7 @@ def test_coupled_cluster_full_workflow():
         basis_set='cc-pVTZ',
         type='GTO',
         role='orbital',
-        functional_composition=[bf],
+        functional_compositions=[bf],
     )
     cont = BasisSetContainer(native_tier='high', basis_set_components=[bs])
 
@@ -474,10 +474,10 @@ def test_coupled_cluster_full_workflow():
     comp = cont_out.basis_set_components[0]
     assert comp.basis_set == 'cc-pVTZ'
     assert comp.role == 'orbital'
-    assert len(comp.functional_composition) == 1
+    assert len(comp.functional_compositions) == 1
 
     # the primitive shell
-    func = comp.functional_composition[0]
+    func = comp.functional_compositions[0]
     assert func.function_type == 'sp'
     assert func.n_primitive == 2
     # exponents survive normalization

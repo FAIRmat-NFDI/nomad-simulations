@@ -622,7 +622,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
         """,
     )
 
-    functional_composition = SubSection(
+    functional_compositions = SubSection(
         sub_section=AtomCenteredFunction.m_def, repeats=True
     )
 

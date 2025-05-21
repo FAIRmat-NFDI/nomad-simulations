@@ -460,11 +460,11 @@ def test_atom_centered_basis_set_roundtrip():
         exponents=[1.0],
         contraction_coefficients=[1.0],
     )
-    basis = AtomCenteredBasisSet(functional_composition=[acf])
+    basis = AtomCenteredBasisSet(functional_compositions=[acf])
     d = basis.m_to_dict()
-    # functional_composition now serialises as list of reference paths
+    # functional_compositions now serialises as list of reference paths
     # until the archive is fully normalised – just check we round‑trip
-    assert 'functional_composition' in d
+    assert 'functional_compositions' in d
 
 
 def test_ao_ordering_default() -> None:
@@ -558,7 +558,7 @@ def test_ecp_in_atom_centered_basis_set():
     acf.normalize(None, logger)
 
     basis = AtomCenteredBasisSet(
-        functional_composition=[acf],
+        functional_compositions=[acf],
         ecps=[ecp],
     )
     d = basis.m_to_dict()
@@ -587,4 +587,4 @@ def test_ecp_in_atom_centered_basis_set():
     assert pytest.approx(ecp_dict['coefficients']) == [-0.5]
 
     # And the orbital shell remains
-    assert 'functional_composition' in d and len(d['functional_composition']) == 1
+    assert 'functional_compositions' in d and len(d['functional_compositions']) == 1
