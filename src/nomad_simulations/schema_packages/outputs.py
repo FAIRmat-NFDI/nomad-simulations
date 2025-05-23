@@ -163,8 +163,9 @@ class Outputs(Time):
         """
         if self.m_parent is not None:
             model_systems = self.m_parent.model_system
-            if model_systems is not None and len(model_systems) == 1:
-                return model_systems[-1]
+            outputs = self.m_parent.outputs
+            if isinstance(model_systems, list) and isinstance(outputs, list) and len(model_systems) == len(outputs):
+                return model_systems[self.m_parent_index]
         return None
 
     def set_model_method_ref(self) -> Optional[ModelMethod]:
