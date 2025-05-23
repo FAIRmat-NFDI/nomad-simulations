@@ -164,7 +164,11 @@ class Outputs(Time):
         if self.m_parent is not None:
             model_systems = self.m_parent.model_system
             outputs = self.m_parent.outputs
-            if isinstance(model_systems, list) and isinstance(outputs, list) and len(model_systems) == len(outputs):
+            if (
+                isinstance(model_systems, list)
+                and isinstance(outputs, list)
+                and len(model_systems) == len(outputs)
+            ):
                 return model_systems[self.m_parent_index]
         return None
 
