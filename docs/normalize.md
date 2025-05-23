@@ -69,6 +69,8 @@ Sections like `model_system` tend to follow a similar structure as `outputs`.
 Our schema highlights this structure by providing references in each section to its counterpart.
 These sections cannot be directly populated by the `MappingAnnotation` parsing technique, but should connected afterwards at the parsing or normalization level.
 
+If the schema allows for a reference, NOMAD will perform the conversion to and from its underlying section automatically.
+
 ### How To
 
 - **between sections at the same level:** use `self.m_parent` to go one node up in the schema hiearchy. Then climb the schema ladder from any of the connecting sections using up till the first common node.
