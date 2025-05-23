@@ -61,7 +61,7 @@ By checking on the `normalize()` functions and **rule 3**, we can establish whet
 
 The `normalize` interface accepts an optional `logger` variable, via which it can store _info_, _warning_, or _error_ messages. <!-- add link to other docs -->
 When `logger` is left `None`, NOMAD will provide its own logger.
-The advantage of providing you own `logger` comes from customization and labelling of code portions.
+The advantage of providing your own `logger` comes from customization and labelling of code portions.
 
 ## Cross-referencing between Sections
 
@@ -73,5 +73,5 @@ If the schema allows for a reference, NOMAD will perform the conversion to and f
 
 ### How To
 
-- **between sections at the same level:** use `self.m_parent` to go one node up in the schema hiearchy. Then climb the schema ladder from any of the connecting sections using up till the first common node.
+- **between sections at the same level:** use `self.m_parent` to go one node up in the schema hierarchy. Then climb the schema ladder from any of the connecting sections using up till the first common node.
 - **between repeating sections:** obtain any subsection's index via `self.m_parent_index`. If they are not `repeating`, the index defaults to `-1`.
