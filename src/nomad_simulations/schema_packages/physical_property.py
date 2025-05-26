@@ -20,7 +20,7 @@ from nomad_simulations.schema_packages.variables import Variables
 logger = utils.get_logger(__name__)
 
 
-def same_shapes(quantities: dict[str, int] = {}):  # ? logger
+def same_shapes(quantities: dict[str, int] = {}, **kwargs):
     """
     Decorator for validating whether the shapes of the quantities in a class are the same.
     Only flags mismatching shapes as a warning. If a shape is not defined or populated, it is ignored.
@@ -30,6 +30,9 @@ def same_shapes(quantities: dict[str, int] = {}):  # ? logger
     """
 
     def decorator(cls):
+        if (logger := kwargs.get('logger')) is None:
+            logger = utils.get_logger(__name__)
+
         full_shapes = [getattr(cls, name, '') for name in quantities]
         try:
             proj_shapes = [np.size(val, i) for val, i in zip(full_shapes, quantities.values()) if val]
@@ -44,10 +47,16 @@ def same_shapes(quantities: dict[str, int] = {}):  # ? logger
             )
             return cls
 
-        if len(set(proj_shapes)) > 1:
+        if isinstance((target := kwargs.get('target')), int):
+            if proj_shapes != [target] * len(proj_shapes):
+                logger.warning(
+                    f'The shapes of the requested quantities in {cls.__name__} do not match the target shape {target}. '
+                    f'Expected shape of {target}, but got: {proj_shapes}.'
+                )
+        elif len(set(proj_shapes)) > 1:
             logger.warning(
                 f'The shapes of the requested quantities in {cls.__name__} do not match. '
-                f'Expected shapes: {quantities.values()}, but got: {proj_shapes}'
+                f'Expected shapes: {quantities.values()}, but got: {proj_shapes}.'
             )
 
         return cls
