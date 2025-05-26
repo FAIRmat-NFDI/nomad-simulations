@@ -168,6 +168,7 @@ class Outputs(Time):
                 isinstance(model_systems, list)
                 and isinstance(outputs, list)
                 and len(model_systems) == len(outputs)
+                and len(model_systems) > 0
             ):
                 return model_systems[self.m_parent_index]
         return None
