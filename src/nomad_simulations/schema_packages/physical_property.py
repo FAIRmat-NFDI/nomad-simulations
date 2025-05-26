@@ -20,39 +20,37 @@ from nomad_simulations.schema_packages.variables import Variables
 logger = utils.get_logger(__name__)
 
 
-def validate_quantity_wrt_value(name: str = ''):
+def same_shapes(quantities: dict[str, int] = {}):  # ? logger
     """
-    Decorator to validate the existence of a quantity and its shape with respect to the `PhysicalProperty.value`
-    before calling a method. An example can be found in the module `properties/band_structure.py` for the method
-    `ElectronicEigenvalues.order_eigenvalues()`.
-
+    Decorator for validating whether the shapes of the quantities in a class are the same.
+    Only flags mismatching shapes as a warning. If a shape is not defined or populated, it is ignored.
+    
     Args:
-        name (str, optional): The name of the `quantity` to validate. Defaults to ''.
+        quantities (dict[str, int]): `keys` determine the quantity names, while `values` .
     """
 
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            # Checks if `quantity` is defined
-            quantity = getattr(self, name, None)
-            if quantity is None or len(quantity) == 0:
-                logger.warning(f'The quantity `{name}` is not defined.')
-                return False
+    def decorator(cls):
+        full_shapes = [getattr(cls, name, '') for name in quantities]
+        try:
+            proj_shapes = [np.size(val, i) for val, i in zip(full_shapes, quantities.values()) if val]
+        except AttributeError:
+            logger.warning(
+                f'Some quantities in {cls.__name__} are not array-like.'
+            )
+            return cls
+        except IndexError:
+            logger.warning(
+                f'Some quantities in {cls.__name__} do not have valid ranks.'
+            )
+            return cls
 
-            # Checks if `value` exists and has the same shape as `quantity`
-            value = getattr(self, 'value', None)
-            if value is None:
-                logger.warning('The quantity `value` is not defined.')
-                return False
-            if value is not None and value.shape != quantity.shape:
-                logger.warning(
-                    f'The shape of the quantity `{name}` does not match the shape of the `value`.'
-                )
-                return False
+        if len(set(proj_shapes)) > 1:
+            logger.warning(
+                f'The shapes of the requested quantities in {cls.__name__} do not match. '
+                f'Expected shapes: {quantities.values()}, but got: {proj_shapes}'
+            )
 
-            return func(self, *args, **kwargs)
-
-        return wrapper
+        return cls
 
     return decorator
 
