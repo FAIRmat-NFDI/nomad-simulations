@@ -22,7 +22,7 @@ logger = utils.get_logger(__name__)
 
 def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
     """
-    Decorator for validating whether the shapes of the quantities in a class are the same.
+    Decorator that defers shape validation until normalization.
     Only flags mismatching shapes as a warning. If a shape is not defined or populated, it is ignored.
     
     Args:
@@ -33,45 +33,59 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
             logger (BoundLogger, optional): Logger instance for warnings. If not provided, uses module logger.
     """
 
-    #? Add support for target as a quantity
-
     def decorator(cls):
-        # Set up logger
-        if (logger := kwargs.get('logger')) is None:
-            logger = utils.get_logger(__name__)
-
-        # Extract all shapes along the specified axes of the quantities
-        try:
-            proj_shapes = [
-                np.asarray(val).shape[dim_idx]
-                for name, dim_indices in quantities.items()
-                if (val := getattr(cls, name, ''))
-                for dim_idx in dim_indices
-            ]
-        except AttributeError:
-            logger.warning(
-                f'Some quantities in {cls.__name__} are not array-like.'
-            )
-            return cls
-        except IndexError:
-            logger.warning(
-                f'Some quantities in {cls.__name__} do not have valid ranks.'
-            )
-            return cls
-
-        # Test the shapes
-        if isinstance((target := kwargs.get('target')), int):
-            if proj_shapes != [target] * len(proj_shapes):
+        # Store shape requirements on the class for later use
+        cls._shape_requirements = quantities
+        cls._shape_kwargs = kwargs
+        
+        # Wrap the existing normalize method
+        original_normalize = getattr(cls, 'normalize', None)
+        
+        def normalize_with_shape_check(self, archive, logger):
+            if original_normalize:
+                original_normalize(self, archive, logger)
+            self._validate_shapes(logger)
+        
+        def _validate_shapes(self, logger):
+            shape_requirements = getattr(self.__class__, '_shape_requirements', {})
+            shape_kwargs = getattr(self.__class__, '_shape_kwargs', {})
+            
+            if not shape_requirements:
+                return
+                
+            try:
+                proj_shapes = [
+                    np.asarray(val).shape[dim_idx]
+                    for name, dim_indices in shape_requirements.items()
+                    if (val := getattr(self, name, None)) is not None
+                    for dim_idx in dim_indices
+                ]
+            except AttributeError:
                 logger.warning(
-                    f'The shapes of the requested quantities in {cls.__name__} do not match the target shape {target}. '
-                    f'Expected shape of {target}, but got: {proj_shapes}.'
+                    f'Some quantities in {self.__class__.__name__} are not array-like.'
                 )
-        elif len(set(proj_shapes)) > 1:
-            logger.warning(
-                f'The shapes of the requested quantities in {cls.__name__} do not match. '
-                f'Expected shapes: {quantities.values()}, but got: {proj_shapes}.'
-            )
-
+                return
+            except IndexError:
+                logger.warning(
+                    f'Some quantities in {self.__class__.__name__} do not have valid ranks.'
+                )
+                return
+                
+            # Validation logic
+            if isinstance((target := shape_kwargs.get('target')), int):
+                if proj_shapes != [target] * len(proj_shapes):
+                    logger.warning(
+                        f'The shapes of the requested quantities in {self.__class__.__name__} do not match the target shape {target}. '
+                        f'Expected shape of {target}, but got: {proj_shapes}.'
+                    )
+            elif len(set(proj_shapes)) > 1:
+                logger.warning(
+                    f'The shapes of the requested quantities in {self.__class__.__name__} do not match. '
+                    f'Expected shapes: {shape_requirements.values()}, but got: {proj_shapes}.'
+                )
+        
+        cls.normalize = normalize_with_shape_check
+        cls._validate_shapes = _validate_shapes
         return cls
 
     return decorator
