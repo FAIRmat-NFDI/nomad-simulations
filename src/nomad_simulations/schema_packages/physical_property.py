@@ -34,9 +34,18 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
     """
 
     def decorator(cls):
-        # Store shape requirements on the class for later use
-        cls._shape_requirements = quantities
-        cls._shape_kwargs = kwargs
+        # Accumulate and merge shape requirements along inheritance hierarchy
+        parent_requirements = {}
+        parent_kwargs = {}
+        
+        for base in reversed(cls.__mro__[1:]):  # Skip self, reverse for proper precedence
+            if hasattr(base, '_shape_requirements'):
+                parent_requirements.update(base._shape_requirements)
+            if hasattr(base, '_shape_kwargs'):
+                parent_kwargs.update(base._shape_kwargs)
+        
+        cls._shape_requirements = {**parent_requirements, **quantities}
+        cls._shape_kwargs = {**parent_kwargs, **kwargs}
         
         # Wrap the existing normalize method
         original_normalize = getattr(cls, 'normalize', None)
@@ -52,7 +61,8 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
             
             if not shape_requirements:
                 return
-                
+
+            # Extract shapes of the quantities based on the requirements
             try:
                 proj_shapes = [
                     np.asarray(val).shape[dim_idx]
