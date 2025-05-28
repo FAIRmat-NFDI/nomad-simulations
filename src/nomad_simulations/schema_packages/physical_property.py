@@ -93,7 +93,8 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
     """
     Decorator that defers shape validation until normalization.
     Only flags mismatching shapes as a warning. If a shape is not defined or populated, it is ignored.
-    
+    Any modifications are inherited by the child classes.
+
     Args:
         quantities (dict[str, set[int]]): `keys` determine the quantity names, while `values` are sets of dimension indices to check.
             Multiple axes indicates squareness along that slice of the quantity.
@@ -144,6 +145,45 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
         cls._validate_shapes = _validate_shapes
         return cls
 
+    return decorator
+
+
+def remove_shape_checks(quantities: dict[str, set[int]] = None):
+    """
+    Decorator to selectively remove shape validation for specific quantities/axes.
+    Any modifications are inherited by the child classes.
+    
+    Args:
+        quantities (dict[str, set[int]], optional): Mapping of quantity names to sets of dimension indices to remove.
+            `None` and empty set `{}` will remove all shape validation, both at the class and quantitiy level.
+
+    Examples:
+        @remove_shape_checks()  # Remove all shape validation
+        @remove_shape_checks({'positions': {}})  # Remove all positions dim checks
+        @remove_shape_checks({'energy': {0}})  # Remove only energy dim 0 check
+        @remove_shape_checks({'forces': {0, 1}})  # Remove forces dims 0,1 checks
+    """
+    def decorator(cls):
+        if quantities is None or quantities == {}:
+            cls._shape_requirements = {}
+            cls._shape_kwargs = {}
+        else:
+            current_requirements = accumulate_class_attributes(cls, '_shape_requirements', {})
+            current_kwargs = accumulate_class_attributes(cls, '_shape_kwargs', {})
+            
+            # Remove specified quantities/axes
+            for quantity_name, axes_to_remove in quantities.items():
+                if quantity_name in current_requirements:
+                    if axes_to_remove is None or axes_to_remove == {}:
+                        del current_requirements[quantity_name]
+                    elif isinstance(current_requirements[quantity_name], set):
+                        current_requirements[quantity_name].difference_update(axes_to_remove)
+            
+            cls._shape_requirements = current_requirements
+            cls._shape_kwargs = current_kwargs
+        
+        return cls
+    
     return decorator
 
 
