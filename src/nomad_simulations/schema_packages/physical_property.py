@@ -20,6 +20,75 @@ from nomad_simulations.schema_packages.variables import Variables
 logger = utils.get_logger(__name__)
 
 
+def accumulate_class_attributes(cls, attr_name: str, new_data: dict) -> dict:
+    """
+    Accumulate attributes from parent classes in MRO order.
+    Newer additions to the attributes take precedence over inherited ones.
+    
+    Args:
+        cls: The class to process
+        attr_name: Name of the attribute to accumulate
+        new_data: New data to merge with inherited data
+        
+    Returns:
+        dict: Accumulated data with child classes taking precedence
+    """
+    accumulated = {}
+
+    for base in reversed(cls.__mro__[1:]):
+        if hasattr(base, attr_name):
+            accumulated.update(getattr(base, attr_name))
+    
+    accumulated.update(new_data)
+    return accumulated
+
+
+def extract_shapes(instance, shape_requirements: dict) -> list[int]:
+    """
+    Extract shape values from instance quantities based on requirements.
+    
+    Args:
+        instance: Object instance to extract shapes from
+        shape_requirements: Dict mapping quantity names to dimension sets
+        
+    Returns:
+        list[int]: List of shape values for specified dimensions
+        
+    Raises:
+        AttributeError: If quantities are not array-like
+        IndexError: If dimension indices are invalid
+    """
+    return [
+        np.asarray(val).shape[dim_idx]
+        for name, dim_indices in shape_requirements.items()
+        if (val := getattr(instance, name, None)) is not None
+        for dim_idx in dim_indices
+    ]
+
+
+def validate_shape_consistency(proj_shapes: list[int], shape_kwargs: dict, class_name: str, logger) -> None:
+    """
+    Validate that extracted shapes meet consistency requirements.
+    
+    Args:
+        proj_shapes: List of shape values to validate
+        shape_kwargs: Validation parameters (target, etc.)
+        class_name: Name of class being validated (for logging)
+        logger: Logger for warnings
+    """
+    if isinstance((target := shape_kwargs.get('target')), int):
+        if proj_shapes != [target] * len(proj_shapes):
+            logger.warning(
+                f'The shapes of the requested quantities in {class_name} do not match the target shape {target}. '
+                f'Expected shape of {target}, but got: {proj_shapes}.'
+            )
+    elif len(set(proj_shapes)) > 1:
+        logger.warning(
+            f'The shapes of the requested quantities in {class_name} do not match. '
+            f'Got: {proj_shapes}.'
+        )
+
+
 def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
     """
     Decorator that defers shape validation until normalization.
@@ -34,26 +103,20 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
     """
 
     def decorator(cls):
-        # Accumulate and merge shape requirements along inheritance hierarchy
-        parent_requirements = {}
-        parent_kwargs = {}
-        
-        for base in reversed(cls.__mro__[1:]):  # Skip self, reverse for proper precedence
-            if hasattr(base, '_shape_requirements'):
-                parent_requirements.update(base._shape_requirements)
-            if hasattr(base, '_shape_kwargs'):
-                parent_kwargs.update(base._shape_kwargs)
-        
-        cls._shape_requirements = {**parent_requirements, **quantities}
-        cls._shape_kwargs = {**parent_kwargs, **kwargs}
+        # Always accumulate requirements
+        cls._shape_requirements = accumulate_class_attributes(cls, '_shape_requirements', quantities)
+        cls._shape_kwargs = accumulate_class_attributes(cls, '_shape_kwargs', kwargs)
         
         # Wrap the existing normalize method
         original_normalize = getattr(cls, 'normalize', None)
         
-        def normalize_with_shape_check(self, archive, logger):
+        def normalize_with_validation(self, archive, logger):
             if original_normalize:
                 original_normalize(self, archive, logger)
-            self._validate_shapes(logger)
+            
+            # Only validate if this is the actual instance type (leaf class)
+            if type(self) is cls:
+                self._validate_shapes(logger)
         
         def _validate_shapes(self, logger):
             shape_requirements = getattr(self.__class__, '_shape_requirements', {})
@@ -62,14 +125,8 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
             if not shape_requirements:
                 return
 
-            # Extract shapes of the quantities based on the requirements
             try:
-                proj_shapes = [
-                    np.asarray(val).shape[dim_idx]
-                    for name, dim_indices in shape_requirements.items()
-                    if (val := getattr(self, name, None)) is not None
-                    for dim_idx in dim_indices
-                ]
+                proj_shapes = extract_shapes(self, shape_requirements)
             except AttributeError:
                 logger.warning(
                     f'Some quantities in {self.__class__.__name__} are not array-like.'
@@ -81,20 +138,9 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
                 )
                 return
                 
-            # Validation logic
-            if isinstance((target := shape_kwargs.get('target')), int):
-                if proj_shapes != [target] * len(proj_shapes):
-                    logger.warning(
-                        f'The shapes of the requested quantities in {self.__class__.__name__} do not match the target shape {target}. '
-                        f'Expected shape of {target}, but got: {proj_shapes}.'
-                    )
-            elif len(set(proj_shapes)) > 1:
-                logger.warning(
-                    f'The shapes of the requested quantities in {self.__class__.__name__} do not match. '
-                    f'Expected shapes: {shape_requirements.values()}, but got: {proj_shapes}.'
-                )
+            validate_shape_consistency(proj_shapes, shape_kwargs, self.__class__.__name__, logger)
         
-        cls.normalize = normalize_with_shape_check
+        cls.normalize = normalize_with_validation
         cls._validate_shapes = _validate_shapes
         return cls
 
