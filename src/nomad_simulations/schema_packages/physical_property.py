@@ -55,7 +55,7 @@ def extract_shapes(instance, shape_requirements: dict) -> list[int]:
         list[int]: List of shape values for specified dimensions
         
     Raises:
-        AttributeError: If quantities are not array-like
+        TypeError: If quantities are not array-like and cannot be converted to arrays
         IndexError: If dimension indices are invalid
     """
     return [
