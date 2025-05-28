@@ -128,7 +128,7 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
 
             try:
                 proj_shapes = extract_shapes(self, shape_requirements)
-            except AttributeError:
+            except TypeError:
                 logger.warning(
                     f'Some quantities in {self.__class__.__name__} are not array-like.'
                 )
