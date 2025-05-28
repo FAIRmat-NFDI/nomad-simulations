@@ -20,13 +20,13 @@ from nomad_simulations.schema_packages.variables import Variables
 logger = utils.get_logger(__name__)
 
 
-def same_shapes(quantities: dict[str, int] = {}, **kwargs):
+def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
     """
     Decorator for validating whether the shapes of the quantities in a class are the same.
     Only flags mismatching shapes as a warning. If a shape is not defined or populated, it is ignored.
     
     Args:
-        quantities (dict[str, int]): `keys` determine the quantity names, while `values` .
+        quantities (dict[str, set[int]]): `keys` determine the quantity names, while `values` are sets of dimension indices to check.
     """
 
     def decorator(cls):
@@ -36,8 +36,9 @@ def same_shapes(quantities: dict[str, int] = {}, **kwargs):
         try:
             proj_shapes = [
                 np.asarray(val).shape[dim_idx]
-                for name, dim_idx in quantities.items() 
+                for name, dim_indices in quantities.items()
                 if (val := getattr(cls, name, ''))
+                for dim_idx in dim_indices
             ]
         except AttributeError:
             logger.warning(
