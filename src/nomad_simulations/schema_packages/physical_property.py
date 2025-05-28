@@ -148,23 +148,26 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
     return decorator
 
 
-def remove_shape_checks(quantities: dict[str, set[int]] = None):
+def remove_shape_checks(quantities: dict[str, set[int]], **kwargs):
     """
     Decorator to selectively remove shape validation for specific quantities/axes.
     Any modifications are inherited by the child classes.
     
     Args:
-        quantities (dict[str, set[int]], optional): Mapping of quantity names to sets of dimension indices to remove.
-            `None` and empty set `{}` will remove all shape validation, both at the class and quantitiy level.
+        quantities (dict[str, set[int]]): Mapping of quantity names to sets of dimension indices to remove.
+            Empty set `{}` will remove all shape validation, either at the class or quantity level.
 
     Examples:
-        @remove_shape_checks()  # Remove all shape validation
+        @remove_shape_checks({})  # Remove all shape validation
         @remove_shape_checks({'positions': {}})  # Remove all positions dim checks
         @remove_shape_checks({'energy': {0}})  # Remove only energy dim 0 check
         @remove_shape_checks({'forces': {0, 1}})  # Remove forces dims 0,1 checks
     """
     def decorator(cls):
-        if quantities is None or quantities == {}:
+        if (logger := kwargs.get('logger')) is None:
+            logger = utils.get_logger(__name__)
+
+        if quantities == {}:
             cls._shape_requirements = {}
             cls._shape_kwargs = {}
         else:
@@ -174,10 +177,16 @@ def remove_shape_checks(quantities: dict[str, set[int]] = None):
             # Remove specified quantities/axes
             for quantity_name, axes_to_remove in quantities.items():
                 if quantity_name in current_requirements:
-                    if axes_to_remove is None or axes_to_remove == {}:
+                    if axes_to_remove == {}:
                         del current_requirements[quantity_name]
                     elif isinstance(current_requirements[quantity_name], set):
                         current_requirements[quantity_name].difference_update(axes_to_remove)
+                    else:
+                        logger.warning(
+                            f'Invalid type for quantity {quantity_name} in {cls.__name__}. '
+                            f'Expected set, got {type(current_requirements[quantity_name])}.'
+                        )
+                        return cls  # Invalid type, return original class
             
             cls._shape_requirements = current_requirements
             cls._shape_kwargs = current_kwargs
