@@ -27,6 +27,10 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
     
     Args:
         quantities (dict[str, set[int]]): `keys` determine the quantity names, while `values` are sets of dimension indices to check.
+            Multiple axes indicates squareness along that slice of the quantity.
+        **kwargs: Optional keyword arguments:
+            target (int, optional): Expected shape value that all dimensions should match. If left unspecified, checks for uniformity across all dimensions.
+            logger (BoundLogger, optional): Logger instance for warnings. If not provided, uses module logger.
     """
 
     def decorator(cls):
