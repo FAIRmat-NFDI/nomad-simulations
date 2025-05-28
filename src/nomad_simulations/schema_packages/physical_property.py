@@ -35,7 +35,7 @@ def same_shapes(quantities: dict[str, int] = {}, **kwargs):
 
         try:
             proj_shapes = [
-                np.size(val, dim_idx) 
+                np.asarray(val).shape[dim_idx]
                 for name, dim_idx in quantities.items() 
                 if (val := getattr(cls, name, ''))
             ]
