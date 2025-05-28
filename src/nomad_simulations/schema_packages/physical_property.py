@@ -33,9 +33,12 @@ def same_shapes(quantities: dict[str, int] = {}, **kwargs):
         if (logger := kwargs.get('logger')) is None:
             logger = utils.get_logger(__name__)
 
-        full_shapes = [getattr(cls, name, '') for name in quantities]
         try:
-            proj_shapes = [np.size(val, i) for val, i in zip(full_shapes, quantities.values()) if val]
+            proj_shapes = [
+                np.size(val, dim_idx) 
+                for name, dim_idx in quantities.items() 
+                if (val := getattr(cls, name, ''))
+            ]
         except AttributeError:
             logger.warning(
                 f'Some quantities in {cls.__name__} are not array-like.'
