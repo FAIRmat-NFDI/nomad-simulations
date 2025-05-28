@@ -33,10 +33,14 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
             logger (BoundLogger, optional): Logger instance for warnings. If not provided, uses module logger.
     """
 
+    #? Add support for target as a quantity
+
     def decorator(cls):
+        # Set up logger
         if (logger := kwargs.get('logger')) is None:
             logger = utils.get_logger(__name__)
 
+        # Extract all shapes along the specified axes of the quantities
         try:
             proj_shapes = [
                 np.asarray(val).shape[dim_idx]
@@ -55,6 +59,7 @@ def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
             )
             return cls
 
+        # Test the shapes
         if isinstance((target := kwargs.get('target')), int):
             if proj_shapes != [target] * len(proj_shapes):
                 logger.warning(
