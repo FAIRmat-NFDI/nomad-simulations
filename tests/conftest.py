@@ -50,23 +50,18 @@ if os.getenv('_PYTEST_RAISE', '0') != '0':
 
 
 def generate_simulation(
-    model_system: Optional[ModelSystem] = None,
-    model_method: Optional[ModelMethod] = None,
-    outputs: Optional[Outputs] = None,
+    model_system: list[ModelSystem] = [],
+    model_method: list[ModelMethod] = [],
+    outputs: list[Outputs] = [],
 ) -> Simulation:
     """
-    Generate a `Simulation` section with the main sub-sections, `ModelSystem`, `ModelMethod`, and `Outputs`. If `ModelSystem`
-    and `Outputs` are set, then it adds `ModelSystem` as a reference in `Outputs`.
+    Generate a `Simulation` section with the main sub-sections, `ModelSystem`, `ModelMethod`, and `Outputs`.
     """
-    simulation = Simulation()
-    if model_method is not None:
-        simulation.model_method.append(model_method)
-    if model_system is not None:
-        simulation.model_system.append(model_system)
-    if outputs is not None:
-        simulation.outputs.append(outputs)
-        outputs.model_system_ref = model_system
-    return simulation
+    return Simulation(
+        model_method=model_method,
+        model_system=model_system,
+        outputs=outputs,
+    )
 
 
 def generate_model_system(
@@ -166,7 +161,9 @@ def generate_scf_electronic_band_gap_template(
                 )
             ]
         )
-        simulation = generate_simulation(model_method=model_method, outputs=scf_outputs)
+        simulation = generate_simulation(
+            model_method=[model_method], outputs=[scf_outputs]
+        )
         scf_outputs.electronic_band_gaps[
             0
         ].self_consistency_ref = simulation.model_method[0].numerical_settings[0]
@@ -183,7 +180,9 @@ def generate_simulation_electronic_dos(
     # Create the `Simulation` section to make refs work
     model_system = generate_model_system()
     outputs = Outputs()
-    simulation = generate_simulation(model_system=model_system, outputs=outputs)
+    simulation = generate_simulation(model_system=[model_system], outputs=[outputs])
+
+    outputs.normalize(EntryArchive(), logger)
 
     # Populating the `ElectronicDensityOfStates` section
     variables_energy = Energy(points=energy_points * ureg.joule)
@@ -279,7 +278,7 @@ def generate_k_space_simulation(
     # appending `KSpace` to `ModelMethod.numerical_settings`
     model_method = ModelMethod()
     model_method.numerical_settings.append(k_space)
-    return generate_simulation(model_method=model_method, model_system=model_system)
+    return generate_simulation(model_method=[model_method], model_system=[model_system])
 
 
 def generate_electronic_eigenvalues(
@@ -333,9 +332,9 @@ def generate_electronic_eigenvalues(
     if reciprocal_lattice_vectors:
         k_space.reciprocal_lattice_vectors = reciprocal_lattice_vectors
     _ = generate_simulation(
-        model_system=generate_model_system(),
-        model_method=model_method,
-        outputs=outputs,
+        model_system=[generate_model_system()],
+        model_method=[model_method],
+        outputs=[outputs],
     )
     electronic_eigenvalues = ElectronicEigenvalues(n_bands=2)
     outputs.electronic_eigenvalues = [electronic_eigenvalues]

@@ -1,4 +1,6 @@
-# The `normalize()` function
+# Normalization
+
+## The `normalize()` function
 
 Each base section defined using the NOMAD schema has a set of public functions which can be used at any moment when reading and parsing files in NOMAD. The `normalize(archive, logger)` function is a special case of such functions, which warrants an in-depth description.
 
@@ -54,3 +56,22 @@ In case we do not assign a value to `Section1.normalizer_level` and `Section2.no
 3. `ParentSection.normalize()`
 
 By checking on the `normalize()` functions and **rule 3**, we can establish whether `ArchiveSection.normalize()` will be run or not. In `Section1.normalize()`, it will not, while in the other sections, `Section2` and `ParentSection`, it will.
+
+### Logging Messages
+
+The `normalize` interface accepts an optional `logger` variable, via which it can store _info_, _warning_, or _error_ messages. <!-- add link to other docs -->
+When `logger` is left `None`, NOMAD will provide its own logger.
+The advantage of providing your own `logger` comes from customization and labelling of code portions.
+
+## Cross-referencing between Sections
+
+Sections like `model_system` tend to follow a similar structure as `outputs`.
+Our schema highlights this structure by providing references in each section to its counterpart.
+These sections cannot be directly populated by the `MappingAnnotation` parsing technique, but should connected afterwards at the parsing or normalization level.
+
+If the schema allows for a reference, NOMAD will perform the conversion to and from its underlying section automatically.
+
+### How To
+
+- **between sections at the same level:** use `self.m_parent` to go one node up in the schema hierarchy. Then climb the schema ladder from any of the connecting sections using up till the first common node.
+- **between repeating sections:** obtain any subsection's index via `self.m_parent_index`. If they are not `repeating`, the index defaults to `-1`.

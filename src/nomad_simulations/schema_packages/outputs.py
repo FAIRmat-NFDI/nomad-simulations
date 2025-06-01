@@ -155,16 +155,21 @@ class Outputs(Time):
 
     def set_model_system_ref(self) -> Optional[ModelSystem]:
         """
-        Set the reference to the last `ModelSystem` if this is not set in the output. This is only
-        valid if there is only one `ModelSystem` in the parent section.
+        Provide a suggested `ModelSystem` that corresponds to the output collection.
 
         Returns:
-            (Optional[ModelSystem]): The reference to the last `ModelSystem`.
+            (Optional[ModelSystem]): corresponding `ModelSystem`. `None` if there is no such section.
         """
         if self.m_parent is not None:
             model_systems = self.m_parent.model_system
-            if model_systems is not None and len(model_systems) == 1:
-                return model_systems[-1]
+            outputs = self.m_parent.outputs
+            if (
+                isinstance(model_systems, list)
+                and isinstance(outputs, list)
+                and len(model_systems) == len(outputs)
+                and len(model_systems) > 0
+            ):
+                return model_systems[self.m_parent_index]
         return None
 
     def set_model_method_ref(self) -> Optional[ModelMethod]:
