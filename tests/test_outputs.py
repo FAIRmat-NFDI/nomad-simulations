@@ -132,7 +132,7 @@ class TestOutputs:
             model_systems (list[ModelSystem]): List of `ModelSystem` objects to be tested.
             outputs_list (list[Outputs]): List of `Outputs` objects to be tested.
         """
-        simulation = generate_simulation(model_system=None, outputs=None)
+        simulation = generate_simulation()
         simulation.model_system = model_systems
         simulation.outputs = outputs_list
 
@@ -161,7 +161,7 @@ class TestOutputs:
             stored in `Outputs`.
         """
         outputs = Outputs()
-        simulation = generate_simulation(model_method=model_method, outputs=outputs)
+        simulation = generate_simulation(model_method=[model_method] if model_method else [], outputs=[outputs])
         model_method_ref = outputs.set_model_method_ref()
         if model_method is not None:
             assert model_method_ref == simulation.model_method[-1]
@@ -192,7 +192,9 @@ class TestOutputs:
         """
         outputs = Outputs()
         simulation = generate_simulation(
-            model_system=model_system, model_method=model_method, outputs=outputs
+            model_system=[model_system] if model_system else [],
+            model_method=[model_method] if model_method else [],
+            outputs=[outputs]
         )
         outputs.normalize(archive=EntryArchive(), logger=logger)
         if model_system is not None:

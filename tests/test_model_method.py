@@ -133,7 +133,7 @@ class TestTB:
         from a model_system child typed 'active_atom'.
         """
         tb_method = TB()
-        simulation = generate_simulation(model_method=tb_method)
+        simulation = generate_simulation(model_method=[tb_method])
         simulation.model_system = model_systems
         orbitals_ref = tb_method.resolve_orbital_references(
             model_systems=model_systems,
@@ -246,7 +246,7 @@ class TestTB:
         checking that it sets .type and .orbitals_ref as needed.
         """
         # Attach the TB (or Wannier, or SlaterKoster) to a simulation
-        sim = generate_simulation(model_method=tb_section)
+        sim = generate_simulation(model_method=[tb_section])
         sim.model_system = model_systems
         tb_section.normalize(EntryArchive(), logger=logger)
         # Check the recognized type
