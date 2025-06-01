@@ -57,16 +57,11 @@ def generate_simulation(
     """
     Generate a `Simulation` section with the main sub-sections, `ModelSystem`, `ModelMethod`, and `Outputs`.
     """
-    simulation = Simulation()
-    simulation.model_method = model_method
-    simulation.model_system = model_system
-    simulation.outputs = outputs
-
-    # Set up parent relationships for the 1-1 mapping
-    for i, output in enumerate(outputs):
-        output.m_parent = simulation
-        output.m_parent_index = i
-    return simulation
+    return Simulation(
+        model_method=model_method,
+        model_system=model_system,
+        outputs=outputs,
+    )
 
 
 def generate_model_system(
@@ -186,6 +181,8 @@ def generate_simulation_electronic_dos(
     model_system = generate_model_system()
     outputs = Outputs()
     simulation = generate_simulation(model_system=[model_system], outputs=[outputs])
+
+    outputs.normalize(EntryArchive(), logger)
 
     # Populating the `ElectronicDensityOfStates` section
     variables_energy = Energy(points=energy_points * ureg.joule)
