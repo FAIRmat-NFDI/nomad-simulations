@@ -177,7 +177,7 @@ def remove_shape_checks(quantities: dict[str, set[int]], **kwargs):
             # Remove specified quantities/axes
             for quantity_name, axes_to_remove in quantities.items():
                 if quantity_name in current_requirements:
-                    if axes_to_remove == {}:
+                    if not axes_to_remove:
                         del current_requirements[quantity_name]
                     elif isinstance(current_requirements[quantity_name], set):
                         current_requirements[quantity_name].difference_update(axes_to_remove)
