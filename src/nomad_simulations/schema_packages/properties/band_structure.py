@@ -15,8 +15,7 @@ if TYPE_CHECKING:
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
 from nomad_simulations.schema_packages.numerical_settings import KSpace
 from nomad_simulations.schema_packages.physical_property import (
-    PhysicalProperty,
-    validate_quantity_wrt_value,
+    PhysicalProperty, same_shapes
 )
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
 from nomad_simulations.schema_packages.properties.fermi_surface import FermiSurface
@@ -34,13 +33,6 @@ class BaseElectronicEigenvalues(PhysicalProperty):
 
     iri = ''
 
-    n_bands = Quantity(
-        type=np.int32,
-        description="""
-        Number of bands / eigenvalues.
-        """,
-    )
-
     value = Quantity(
         type=np.float64,
         unit='joule',
@@ -51,6 +43,7 @@ class BaseElectronicEigenvalues(PhysicalProperty):
     )
 
 
+@same_shapes({'value': {1}, 'occupation': {1}})
 class ElectronicEigenvalues(BaseElectronicEigenvalues):
     """ """
 
@@ -65,7 +58,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
 
     occupation = Quantity(
         type=np.float64,
-        shape=['*', 'n_bands'],
+        shape=['*', '*'],
         description="""
         Occupation of the electronic eigenvalues. This is a number depending whether the `spin_channel` has been set or not.
         If `spin_channel` is set, then this number is between 0 and 1, where 0 means that the state is unoccupied and 1 means
@@ -124,7 +117,6 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
 
-    @validate_quantity_wrt_value(name='occupation')
     def order_eigenvalues(self) -> Union[bool, tuple[pint.Quantity, np.ndarray]]:
         """
         Order the eigenvalues based on the `value` and `occupation`. The return `value` and
@@ -299,7 +291,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         # Resolve `reciprocal_cell` from the `KSpace` numerical settings section
         self.reciprocal_cell = self.resolve_reciprocal_cell()
 
-
+@same_shapes({'k_path': {0}, 'value': {0}, 'occupation': {0}})
 class ElectronicBandStructure(ElectronicEigenvalues):
     """
     Accessible energies by the charges (electrons and holes) in the reciprocal space.
