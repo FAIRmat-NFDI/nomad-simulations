@@ -117,14 +117,22 @@ class TestOutputs:
             # single element
             ([ModelSystem(name='system_0')], [Outputs()]),
             # 3 elements
-            ([ModelSystem(name='system_0'), ModelSystem(name='system_1'), ModelSystem(name='system_2')], 
-             [Outputs(), Outputs(), Outputs()]),
+            (
+                [
+                    ModelSystem(name='system_0'),
+                    ModelSystem(name='system_1'),
+                    ModelSystem(name='system_2'),
+                ],
+                [Outputs(), Outputs(), Outputs()],
+            ),
             # mismatched lengths
             ([ModelSystem(name='system_0')], [Outputs(), Outputs()]),
             ([ModelSystem(name='system_0'), ModelSystem(name='system_1')], [Outputs()]),
         ],
     )
-    def test_set_model_system_ref(self, model_systems: list[ModelSystem], outputs_list: list[Outputs]):
+    def test_set_model_system_ref(
+        self, model_systems: list[ModelSystem], outputs_list: list[Outputs]
+    ):
         """
         Test the `set_model_system_ref` method with 1-1 mapping between model_system and outputs.
 
@@ -139,9 +147,9 @@ class TestOutputs:
         for i, output in enumerate(outputs_list):
             output.m_parent = simulation
             output.m_parent_index = i
-            
+
             model_system_ref = output.set_model_system_ref()
-            
+
             if len(model_systems) == len(outputs_list) and len(model_systems) > 0:
                 assert model_system_ref == model_systems[i]
                 assert model_system_ref.name == f'system_{i}'
@@ -161,7 +169,9 @@ class TestOutputs:
             stored in `Outputs`.
         """
         outputs = Outputs()
-        simulation = generate_simulation(model_method=[model_method] if model_method else [], outputs=[outputs])
+        simulation = generate_simulation(
+            model_method=[model_method] if model_method else [], outputs=[outputs]
+        )
         model_method_ref = outputs.set_model_method_ref()
         if model_method is not None:
             assert model_method_ref == simulation.model_method[-1]
@@ -194,7 +204,7 @@ class TestOutputs:
         simulation = generate_simulation(
             model_system=[model_system] if model_system else [],
             model_method=[model_method] if model_method else [],
-            outputs=[outputs]
+            outputs=[outputs],
         )
         outputs.normalize(archive=EntryArchive(), logger=logger)
         if model_system is not None:

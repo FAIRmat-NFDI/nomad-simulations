@@ -61,7 +61,7 @@ def generate_simulation(
     simulation.model_method = model_method
     simulation.model_system = model_system
     simulation.outputs = outputs
-    
+
     # Set up parent relationships for the 1-1 mapping
     for i, output in enumerate(outputs):
         output.m_parent = simulation
@@ -166,7 +166,9 @@ def generate_scf_electronic_band_gap_template(
                 )
             ]
         )
-        simulation = generate_simulation(model_method=[model_method], outputs=[scf_outputs])
+        simulation = generate_simulation(
+            model_method=[model_method], outputs=[scf_outputs]
+        )
         scf_outputs.electronic_band_gaps[
             0
         ].self_consistency_ref = simulation.model_method[0].numerical_settings[0]
