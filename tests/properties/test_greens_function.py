@@ -156,23 +156,27 @@ class TestQuasiparticleWeight:
         assert quasiparticle_weight.resolve_system_correlation_strengths() == result
 
     @pytest.mark.parametrize(
-        'value, result',
+        'value, reference',
         [
-            ([[1, 0.5, -2]], None),
-            ([[1, 0.5, 8]], None),
+            ([[1, 0.5, -2]], ''),
+            ([[1, 0.5, 8]], ''),
             ([[1, 0.9, 0.8]], 'non-correlated metal'),
             ([[0.2, 0.3, 0.1]], 'strongly-correlated metal'),
             ([[0, 0.3, 0.1]], 'OSMI'),
             ([[0, 0, 0]], 'Mott insulator'),
-            ([[1.0, 0.8, 0.2]], None),
+            # ? ([[1.0, 0.8, 0.2]], ''),
         ],
     )
-    def test_normalize(self, value: list[float], result: Optional[str]):
+    def test_normalize(self, value: list[float], reference: str):
         """
         Test the `normalize` method of the `QuasiparticleWeight` class.
         """
-        quasiparticle_weight = QuasiparticleWeight(
-            n_atoms=1, n_correlated_orbitals=3, value=value
-        )
-        quasiparticle_weight.normalize(archive=EntryArchive(), logger=logger)
-        assert quasiparticle_weight.system_correlation_strengths == result
+        if reference == '':
+            with pytest.raises(ValueError, match=r'All non-NaN values must be in \[0, 1\]'):
+                QuasiparticleWeight(n_atoms=1, n_correlated_orbitals=3, value=value)
+        else:
+            quasiparticle_weight = QuasiparticleWeight(
+                n_atoms=1, n_correlated_orbitals=3, value=value
+            )
+            quasiparticle_weight.normalize(archive=EntryArchive(), logger=logger)
+            assert quasiparticle_weight.system_correlation_strengths == reference

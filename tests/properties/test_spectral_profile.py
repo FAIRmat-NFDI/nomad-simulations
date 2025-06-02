@@ -262,4 +262,4 @@ class TestXASSpectrum:
         if xas_spectrum.value is None:
             assert xas_values is None
         else:
-            assert (xas_spectrum.value == xas_values).any()
+            assert np.array_equal(xas_spectrum.value, xas_values)

@@ -71,25 +71,43 @@ class BoundedInt(ExactNumber):
         if normalized_value is None:
             return normalized_value
 
-        # Handle arrays
+        # Handle arrays (including nested)
         if isinstance(normalized_value, (list, np.ndarray)):
             if isinstance(normalized_value, np.ndarray):
-                if not np.all(self._is_in_bounds_vectorized(normalized_value)):
-                    min_val = np.min(normalized_value)
-                    max_val = np.max(normalized_value)
+                # Flatten array for validation
+                flat_values = normalized_value.flatten()
+                if not np.all(self._is_in_bounds_vectorized(flat_values)):
+                    min_val = np.min(flat_values)
+                    max_val = np.max(flat_values)
                     bounds = self._get_bounds_str()
                     raise ValueError(
                         f'All values must be in {bounds}, got range [{min_val}, {max_val}]'
                     )
-            else:  # list
-                for v in normalized_value:
-                    if not self._is_in_bounds(v):
-                        min_val = min(normalized_value)
-                        max_val = max(normalized_value)
-                        bounds = self._get_bounds_str()
-                        raise ValueError(
-                            f'All values must be in {bounds}, got range [{min_val}, {max_val}]'
-                        )
+            else:  # list (potentially nested)
+                def validate_nested_list(lst):
+                    for v in lst:
+                        if isinstance(v, list):
+                            validate_nested_list(v)  # Recursive for nested lists
+                        else:
+                            if not self._is_in_bounds(v):
+                                # Flatten the original list to get min/max
+                                def flatten_list(nested_list):
+                                    result = []
+                                    for item in nested_list:
+                                        if isinstance(item, list):
+                                            result.extend(flatten_list(item))
+                                        else:
+                                            result.append(item)
+                                    return result
+                                
+                                flat_list = flatten_list(normalized_value)
+                                min_val = min(flat_list)
+                                max_val = max(flat_list)
+                                bounds = self._get_bounds_str()
+                                raise ValueError(
+                                    f'All values must be in {bounds}, got range [{min_val}, {max_val}]'
+                                )
+                validate_nested_list(normalized_value)
         else:
             # Handle scalars
             if not self._is_in_bounds(normalized_value):
@@ -203,13 +221,14 @@ class BoundedFloat(InexactNumber):
         if normalized_value is None:
             return normalized_value
 
-        # Handle arrays
+        # Handle arrays (including nested)
         if isinstance(normalized_value, (list, np.ndarray)):
             if isinstance(normalized_value, np.ndarray):
                 # Check for NaN values and values outside bounds
-                valid_mask = ~np.isnan(normalized_value)
+                flat_values = normalized_value.flatten()
+                valid_mask = ~np.isnan(flat_values)
                 if np.any(valid_mask):
-                    valid_values = normalized_value[valid_mask]
+                    valid_values = flat_values[valid_mask]
                     if not np.all(self._is_in_bounds_vectorized(valid_values)):
                         min_val = np.min(valid_values)
                         max_val = np.max(valid_values)
@@ -217,21 +236,35 @@ class BoundedFloat(InexactNumber):
                         raise ValueError(
                             f'All non-NaN values must be in {bounds}, got range [{min_val}, {max_val}]'
                         )
-            else:  # list
-                valid_values = [
-                    v
-                    for v in normalized_value
-                    if not (isinstance(v, float) and np.isnan(v))
-                ]
-                if valid_values:
-                    for v in valid_values:
-                        if not self._is_in_bounds(v):
-                            min_val = min(valid_values)
-                            max_val = max(valid_values)
-                            bounds = self._get_bounds_str()
-                            raise ValueError(
-                                f'All non-NaN values must be in {bounds}, got range [{min_val}, {max_val}]'
-                            )
+            else:  # list (potentially nested)
+                def validate_nested_list(lst):
+                    for v in lst:
+                        if isinstance(v, list):
+                            validate_nested_list(v)  # Recursive for nested lists
+                        else:
+                            # Skip NaN values
+                            if not (isinstance(v, float) and np.isnan(v)):
+                                if not self._is_in_bounds(v):
+                                    # Flatten the original list to get min/max
+                                    def flatten_list(nested_list):
+                                        result = []
+                                        for item in nested_list:
+                                            if isinstance(item, list):
+                                                result.extend(flatten_list(item))
+                                            else:
+                                                result.append(item)
+                                        return result
+                                    
+                                    flat_list = flatten_list(normalized_value)
+                                    valid_values = [x for x in flat_list if not (isinstance(x, float) and np.isnan(x))]
+                                    if valid_values:
+                                        min_val = min(valid_values)
+                                        max_val = max(valid_values)
+                                        bounds = self._get_bounds_str()
+                                        raise ValueError(
+                                            f'All non-NaN values must be in {bounds}, got range [{min_val}, {max_val}]'
+                                        )
+                validate_nested_list(normalized_value)
         else:
             # Handle scalars
             if not (isinstance(normalized_value, float) and np.isnan(normalized_value)):
