@@ -113,3 +113,57 @@ class PositiveFloat(InexactNumber):
                 raise ValueError(f"Value must be positive, got {normalized_value}")
 
         return normalized_value
+
+
+class UnitFloat(InexactNumber):
+    """
+    Float data type that only allows values between 0 and 1 (inclusive).
+    """
+
+    __slots__ = ()
+
+    def __init__(self, *, dtype: type[float | np.float64] = float):
+        if isinstance(dtype, np.dtype):
+            dtype = dtype.type
+
+        if dtype not in (float, np.float64, np.float32):
+            raise ValueError(f'Invalid dtype for {self.__class__.__name__}.')
+
+        super().__init__(dtype)
+        self._np_base = np.inexact
+
+    def convertible_from(self, other):
+        if other in (float, np.float64, np.float32, np.float16):
+            return True
+        return False
+
+    def normalize(self, value, **kwargs):
+        normalized_value = super().normalize(value, **kwargs)
+        
+        if normalized_value is None:
+            return normalized_value
+
+        # Handle arrays
+        if isinstance(normalized_value, (list, np.ndarray)):
+            if isinstance(normalized_value, np.ndarray):
+                # Check for NaN values and values outside [0, 1] range
+                valid_mask = ~np.isnan(normalized_value)
+                if np.any(valid_mask):
+                    valid_values = normalized_value[valid_mask]
+                    if np.any(valid_values < 0) or np.any(valid_values > 1):
+                        min_val = np.min(valid_values)
+                        max_val = np.max(valid_values)
+                        raise ValueError(f"All non-NaN values must be between 0 and 1, got range [{min_val}, {max_val}]")
+            else:  # list
+                valid_values = [v for v in normalized_value if not (isinstance(v, float) and np.isnan(v))]
+                if valid_values and (any(v < 0 for v in valid_values) or any(v > 1 for v in valid_values)):
+                    min_val = min(valid_values)
+                    max_val = max(valid_values)
+                    raise ValueError(f"All non-NaN values must be between 0 and 1, got range [{min_val}, {max_val}]")
+        else:
+            # Handle scalars
+            if not (isinstance(normalized_value, float) and np.isnan(normalized_value)):
+                if normalized_value < 0 or normalized_value > 1:
+                    raise ValueError(f"Value must be between 0 and 1, got {normalized_value}")
+
+        return normalized_value
