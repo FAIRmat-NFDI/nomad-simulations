@@ -1488,7 +1488,7 @@ class ModelMethodMolecular(ModelMethodElectronic):
     molecular_orbitals = Quantity(
         type=Reference(
             SectionProxy(
-                'nomad_simulations.schema_packages.physical_property.MolecularOrbitals'
+                'nomad_simulations.schema_packages.properties.molecular_orbitals.MolecularOrbitals'
             )
         ),
         description="""
