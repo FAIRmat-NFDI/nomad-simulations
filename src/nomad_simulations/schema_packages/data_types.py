@@ -22,7 +22,8 @@ from nomad.metainfo.data_type import ExactNumber, InexactNumber
 
 class BoundedInt(ExactNumber):
     """
-    Integer data type with configurable bounds that can include +/- infinity.
+    Integer data type with configurable bounds, i.e. bound value and inclusion.
+    Bounds are by default +/- infinity (`float('inf')`, `float('-inf')` respectively).
 
     Examples:
         BoundedInt().min(1)                    # >= 1 (positive integers)
@@ -152,8 +153,9 @@ class BoundedInt(ExactNumber):
 
 class BoundedFloat(InexactNumber):
     """
-    Float data type with configurable bounds that can include +/- infinity.
-    Handles NaN values appropriately.
+    Float data type with configurable bounds, i.e. bound value and inclusion.
+    Bounds are by default +/- infinity (`float('inf')`, `float('-inf')` respectively).
+    NaN values (`float('nan')`) are allowed and are not subject to any validity check.
 
     Examples:
         BoundedFloat().min(0)                          # >= 0 (non-negative)
