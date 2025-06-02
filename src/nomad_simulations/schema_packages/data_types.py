@@ -35,7 +35,6 @@ class PositiveInt(ExactNumber):
             raise ValueError(f'Invalid dtype for {self.__class__.__name__}.')
 
         super().__init__(dtype)
-        self._np_base = np.integer
 
     def convertible_from(self, other):
         if other in (int, np.int64, np.int32, np.int16, np.int8):
@@ -84,7 +83,6 @@ class PositiveFloat(InexactNumber):
             raise ValueError(f'Invalid dtype for {self.__class__.__name__}.')
 
         super().__init__(dtype)
-        self._np_base = np.inexact
 
     def convertible_from(self, other):
         if other in (float, np.float64, np.float32, np.float16):
@@ -145,7 +143,6 @@ class UnitFloat(InexactNumber):
             raise ValueError(f'Invalid dtype for {self.__class__.__name__}.')
 
         super().__init__(dtype)
-        self._np_base = np.inexact
         self._min_inclusive = True
         self._max_inclusive = True
 
