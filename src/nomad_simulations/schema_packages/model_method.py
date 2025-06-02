@@ -1485,17 +1485,17 @@ class ModelMethodMolecular(ModelMethodElectronic):
     ensure consistent handling of orbitals, spin conventions, and shared post-SCF options.
     """
 
-    molecular_orbitals = Quantity(
-        type=Reference(
-            SectionProxy(
-                'nomad_simulations.schema_packages.properties.molecular_orbitals.MolecularOrbitals'
-            )
-        ),
-        description="""
-        Reference to the final converged molecular orbitals produced by this calculation.
-        Includes orbital energies, coefficients, occupations, symmetry labels and spin channels.
-        """,
-    )
+    # molecular_orbitals = Quantity(
+    #     type=Reference(
+    #         SectionProxy(
+    #             'MolecularOrbitals'
+    #         )
+    #     ),
+    #     description="""
+    #     Reference to the final converged molecular orbitals produced by this calculation.
+    #     Includes orbital energies, coefficients, occupations, symmetry labels and spin channels.
+    #     """,
+    # )
 
     reference_determinant = Quantity(
         type=MEnum('UHF', 'RHF', 'ROHF', 'UKS', 'RKS', 'ROKS'),
