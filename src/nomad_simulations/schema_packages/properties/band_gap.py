@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.data_types import PositiveFloat
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 
@@ -50,11 +51,10 @@ class ElectronicBandGap(PhysicalProperty):
     )
 
     value = Quantity(
-        type=np.float64,
+        type=PositiveFloat(),
         unit='joule',
         description="""
-        The value of the electronic band gap. This value has to be positive, otherwise it will
-        prop an error and be set to None by the `normalize()` function.
+        The value of the electronic band gap. This value must be positive.
         """,
     )
 
@@ -64,19 +64,6 @@ class ElectronicBandGap(PhysicalProperty):
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
 
-    def validate_values(self, logger: 'BoundLogger') -> Optional[pint.Quantity]:
-        """
-        Validate the electronic band gap `value` by checking if they are negative and sets them to None if they are.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-        """
-        # Set the value to 0 when it is negative
-        if (self.value < 0).any():
-            logger.error('The electronic band gap cannot be defined negative.')
-            return None
-
-        return self.value
 
     def resolve_type(self, logger: 'BoundLogger') -> Optional[str]:
         """
@@ -115,12 +102,6 @@ class ElectronicBandGap(PhysicalProperty):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Checks if the `value` is negative and sets it to None if it is.
-        self.value = self.validate_values(logger)
-        if self.value is None:
-            # ? What about deleting the class if `value` is None?
-            logger.error('The `value` of the electronic band gap is not stored.')
-            return
-
         # Resolve the `type` of the electronic band gap from `momentum_transfer`, ONLY for scalar `value`
-        self.type = self.resolve_type(logger)
+        if self.value is not None:
+            self.type = self.resolve_type(logger)

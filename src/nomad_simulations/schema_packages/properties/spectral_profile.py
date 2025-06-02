@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
+from nomad_simulations.schema_packages.data_types import PositiveFloat
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
 from nomad_simulations.schema_packages.utils import get_sibling_section
@@ -27,10 +28,10 @@ class SpectralProfile(PhysicalProperty):
     """
 
     value = Quantity(
-        type=np.float64,
+        type=PositiveFloat(),
         shape=['*'],
         description="""
-        The value of the intensities of a spectral profile in arbitrary units.
+        The value of the intensities of a spectral profile. Must be positive.
         """,
     )  # TODO check units and normalization_factor of DOS and Spectra and see whether they can be merged
 
@@ -38,23 +39,9 @@ class SpectralProfile(PhysicalProperty):
 
     frequencies = SubSection(sub_section=Energy.m_def)
 
-    def is_valid_spectral_profile(self) -> bool:
-        """
-        Check if the spectral profile is valid, i.e., if all `value` are defined positive.
-
-        Returns:
-            (bool): True if the spectral profile is valid, False otherwise.
-        """
-        return False if np.any(np.array(self.value) < 0.0) else True
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-
-        if self.is_valid_spectral_profile() is False:
-            logger.error(
-                'Invalid negative intensities found: could not validate spectral profile.'
-            )
-            return
 
 
 class DOSProfile(SpectralProfile):
@@ -64,11 +51,11 @@ class DOSProfile(SpectralProfile):
     """
 
     value = Quantity(
-        type=np.float64,
+        type=PositiveFloat(),
         unit='1/joule',
         shape=['*'],
         description="""
-        The value of the electronic DOS.
+        The value of the electronic DOS. Must be positive.
         """,
     )
 
