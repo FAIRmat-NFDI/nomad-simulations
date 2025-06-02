@@ -137,22 +137,6 @@ class TestQuasiparticleWeight:
     @pytest.mark.parametrize(
         'value, result',
         [
-            ([[1, 0.5, -2]], False),
-            ([[1, 0.5, 8]], False),
-            ([[1, 0.5, 0.8]], True),
-        ],
-    )
-    def test_is_valid_quasiparticle_weight(self, value: list[float], result: bool):
-        """
-        Test the `is_valid_quasiparticle_weight` method of the `QuasiparticleWeight` class.
-        """
-        quasiparticle_weight = QuasiparticleWeight(n_atoms=1, n_correlated_orbitals=3)
-        quasiparticle_weight.value = value
-        assert quasiparticle_weight.is_valid_quasiparticle_weight() == result
-
-    @pytest.mark.parametrize(
-        'value, result',
-        [
             ([[1, 0.9, 0.8]], 'non-correlated metal'),
             ([[0.2, 0.3, 0.1]], 'strongly-correlated metal'),
             ([[0, 0.3, 0.1]], 'OSMI'),

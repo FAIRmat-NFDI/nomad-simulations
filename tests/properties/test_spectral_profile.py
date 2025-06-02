@@ -12,30 +12,11 @@ from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import (
     AbsorptionSpectrum,
     ElectronicDensityOfStates,
-    SpectralProfile,
     XASSpectrum,
 )
 from nomad_simulations.schema_packages.variables import Energy2 as Energy
 
 from . import logger
-
-
-class TestSpectralProfile:
-    """
-    Test the `SpectralProfile` class defined in `properties/spectral_profile.py`.
-    """
-
-    def test_is_valid_spectral_profile(self):
-        """
-        Test the `is_valid_spectral_profile` method.
-        """
-        spectral_profile = SpectralProfile(
-            energies=Energy(points=[-1, 0, 1] * ureg.joule)
-        )
-        spectral_profile.value = [1.5, 0, 0.8]
-        assert spectral_profile.is_valid_spectral_profile()
-        spectral_profile.value = [2, 0, -4]
-        assert not spectral_profile.is_valid_spectral_profile()
 
 
 class TestElectronicDensityOfStates:
