@@ -327,7 +327,6 @@ class QuasiparticleWeight(PhysicalProperty):
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
 
-
     def resolve_system_correlation_strengths(self) -> str:
         """
         Resolves the `system_correlation_strengths` of the quasiparticle weight based on the stored `value` values.

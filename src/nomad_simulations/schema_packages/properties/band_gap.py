@@ -64,7 +64,6 @@ class ElectronicBandGap(PhysicalProperty):
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
 
-
     def resolve_type(self, logger: 'BoundLogger') -> Optional[str]:
         """
         Resolves the `type` of the electronic band gap based on the stored `momentum_transfer` values.

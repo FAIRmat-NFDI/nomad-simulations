@@ -17,7 +17,6 @@
 #
 
 import numpy as np
-
 from nomad.metainfo.data_type import ExactNumber, InexactNumber
 
 
@@ -45,7 +44,7 @@ class PositiveInt(ExactNumber):
 
     def normalize(self, value, **kwargs):
         normalized_value = super().normalize(value, **kwargs)
-        
+
         if normalized_value is None:
             return normalized_value
 
@@ -53,15 +52,19 @@ class PositiveInt(ExactNumber):
         if isinstance(normalized_value, (list, np.ndarray)):
             if isinstance(normalized_value, np.ndarray):
                 if np.any(normalized_value <= 0):
-                    raise ValueError(f"All values must be positive, got array with min value {np.min(normalized_value)}")
+                    raise ValueError(
+                        f'All values must be positive, got array with min value {np.min(normalized_value)}'
+                    )
             else:  # list
                 if any(v <= 0 for v in normalized_value):
                     min_val = min(normalized_value)
-                    raise ValueError(f"All values must be positive, got list with min value {min_val}")
+                    raise ValueError(
+                        f'All values must be positive, got list with min value {min_val}'
+                    )
         else:
             # Handle scalars
             if normalized_value <= 0:
-                raise ValueError(f"Value must be positive, got {normalized_value}")
+                raise ValueError(f'Value must be positive, got {normalized_value}')
 
         return normalized_value
 
@@ -90,7 +93,7 @@ class PositiveFloat(InexactNumber):
 
     def normalize(self, value, **kwargs):
         normalized_value = super().normalize(value, **kwargs)
-        
+
         if normalized_value is None:
             return normalized_value
 
@@ -101,16 +104,27 @@ class PositiveFloat(InexactNumber):
                 valid_mask = ~np.isnan(normalized_value)
                 if np.any(valid_mask) and np.any(normalized_value[valid_mask] <= 0):
                     min_val = np.min(normalized_value[valid_mask])
-                    raise ValueError(f"All non-NaN values must be positive, got array with min value {min_val}")
+                    raise ValueError(
+                        f'All non-NaN values must be positive, got array with min value {min_val}'
+                    )
             else:  # list
-                valid_values = [v for v in normalized_value if not (isinstance(v, float) and np.isnan(v))]
+                valid_values = [
+                    v
+                    for v in normalized_value
+                    if not (isinstance(v, float) and np.isnan(v))
+                ]
                 if valid_values and any(v <= 0 for v in valid_values):
                     min_val = min(valid_values)
-                    raise ValueError(f"All non-NaN values must be positive, got list with min value {min_val}")
+                    raise ValueError(
+                        f'All non-NaN values must be positive, got list with min value {min_val}'
+                    )
         else:
             # Handle scalars
-            if not (isinstance(normalized_value, float) and np.isnan(normalized_value)) and normalized_value <= 0:
-                raise ValueError(f"Value must be positive, got {normalized_value}")
+            if (
+                not (isinstance(normalized_value, float) and np.isnan(normalized_value))
+                and normalized_value <= 0
+            ):
+                raise ValueError(f'Value must be positive, got {normalized_value}')
 
         return normalized_value
 
@@ -152,7 +166,7 @@ class UnitFloat(InexactNumber):
 
     def normalize(self, value, **kwargs):
         normalized_value = super().normalize(value, **kwargs)
-        
+
         if normalized_value is None:
             return normalized_value
 
@@ -163,28 +177,46 @@ class UnitFloat(InexactNumber):
                 valid_mask = ~np.isnan(normalized_value)
                 if np.any(valid_mask):
                     valid_values = normalized_value[valid_mask]
-                    min_check = valid_values > 0 if not self._min_inclusive else valid_values >= 0
-                    max_check = valid_values < 1 if not self._max_inclusive else valid_values <= 1
+                    min_check = (
+                        valid_values > 0
+                        if not self._min_inclusive
+                        else valid_values >= 0
+                    )
+                    max_check = (
+                        valid_values < 1
+                        if not self._max_inclusive
+                        else valid_values <= 1
+                    )
                     if not np.all(min_check & max_check):
                         min_val = np.min(valid_values)
                         max_val = np.max(valid_values)
                         bounds = self._get_bounds_str()
-                        raise ValueError(f"All non-NaN values must be in {bounds}, got range [{min_val}, {max_val}]")
+                        raise ValueError(
+                            f'All non-NaN values must be in {bounds}, got range [{min_val}, {max_val}]'
+                        )
             else:  # list
-                valid_values = [v for v in normalized_value if not (isinstance(v, float) and np.isnan(v))]
+                valid_values = [
+                    v
+                    for v in normalized_value
+                    if not (isinstance(v, float) and np.isnan(v))
+                ]
                 if valid_values:
                     for v in valid_values:
                         if not self._is_in_bounds(v):
                             min_val = min(valid_values)
                             max_val = max(valid_values)
                             bounds = self._get_bounds_str()
-                            raise ValueError(f"All non-NaN values must be in {bounds}, got range [{min_val}, {max_val}]")
+                            raise ValueError(
+                                f'All non-NaN values must be in {bounds}, got range [{min_val}, {max_val}]'
+                            )
         else:
             # Handle scalars
             if not (isinstance(normalized_value, float) and np.isnan(normalized_value)):
                 if not self._is_in_bounds(normalized_value):
                     bounds = self._get_bounds_str()
-                    raise ValueError(f"Value must be in {bounds}, got {normalized_value}")
+                    raise ValueError(
+                        f'Value must be in {bounds}, got {normalized_value}'
+                    )
 
         return normalized_value
 
@@ -198,4 +230,4 @@ class UnitFloat(InexactNumber):
         """Get string representation of bounds."""
         left = '(' if not self._min_inclusive else '['
         right = ')' if not self._max_inclusive else ']'
-        return f"{left}0, 1{right}"
+        return f'{left}0, 1{right}'
