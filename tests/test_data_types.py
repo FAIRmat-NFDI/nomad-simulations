@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
+from unittest.mock import Mock
 
 from nomad_simulations.schema_packages.data_types import (
     PositiveFloat,
@@ -9,6 +10,16 @@ from nomad_simulations.schema_packages.data_types import (
 )
 
 from . import logger
+
+
+def setup_datatype_for_testing(datatype_instance, shape=None):
+    """Helper function to set up a datatype instance for testing."""
+    mock_definition = Mock()
+    mock_definition.shape = shape
+    mock_definition.unit = None
+    mock_definition.flexible_unit = False
+    datatype_instance.attach_definition(mock_definition)
+    return datatype_instance
 
 
 class TestPositiveInt:
@@ -29,7 +40,7 @@ class TestPositiveInt:
 
     def test_valid_positive_scalar(self):
         """Test normalization of valid positive scalar values."""
-        pos_int = PositiveInt()
+        pos_int = setup_datatype_for_testing(PositiveInt(), shape=None)
         
         # Test various positive values
         assert pos_int.normalize(1) == 1
@@ -38,7 +49,7 @@ class TestPositiveInt:
 
     def test_invalid_zero_and_negative_scalar(self):
         """Test that zero and negative values raise ValueError."""
-        pos_int = PositiveInt()
+        pos_int = setup_datatype_for_testing(PositiveInt(), shape=None)
         
         with pytest.raises(ValueError, match="Value must be positive"):
             pos_int.normalize(0)
@@ -51,7 +62,7 @@ class TestPositiveInt:
 
     def test_valid_positive_array(self):
         """Test normalization of valid positive arrays."""
-        pos_int = PositiveInt()
+        pos_int = setup_datatype_for_testing(PositiveInt(), shape=['*'])
         
         # Test list
         result = pos_int.normalize([1, 2, 3, 10])
@@ -64,7 +75,7 @@ class TestPositiveInt:
 
     def test_invalid_array_with_non_positive(self):
         """Test that arrays containing zero or negative values raise ValueError."""
-        pos_int = PositiveInt()
+        pos_int = setup_datatype_for_testing(PositiveInt(), shape=['*'])
         
         # Test list with zero
         with pytest.raises(ValueError, match="All values must be positive"):
@@ -80,7 +91,7 @@ class TestPositiveInt:
 
     def test_none_value(self):
         """Test that None values are handled correctly."""
-        pos_int = PositiveInt()
+        pos_int = setup_datatype_for_testing(PositiveInt(), shape=None)
         assert pos_int.normalize(None) is None
 
 
@@ -97,7 +108,7 @@ class TestPositiveFloat:
 
     def test_valid_positive_scalar(self):
         """Test normalization of valid positive scalar values."""
-        pos_float = PositiveFloat()
+        pos_float = setup_datatype_for_testing(PositiveFloat(), shape=None)
         
         # Test various positive values
         assert pos_float.normalize(1.0) == 1.0
@@ -107,7 +118,7 @@ class TestPositiveFloat:
 
     def test_invalid_zero_and_negative_scalar(self):
         """Test that zero and negative values raise ValueError."""
-        pos_float = PositiveFloat()
+        pos_float = setup_datatype_for_testing(PositiveFloat(), shape=None)
         
         with pytest.raises(ValueError, match="Value must be positive"):
             pos_float.normalize(0.0)
@@ -120,14 +131,14 @@ class TestPositiveFloat:
 
     def test_nan_handling(self):
         """Test that NaN values are allowed."""
-        pos_float = PositiveFloat()
+        pos_float = setup_datatype_for_testing(PositiveFloat(), shape=None)
         
         result = pos_float.normalize(float('nan'))
         assert np.isnan(result)
 
     def test_valid_positive_array(self):
         """Test normalization of valid positive arrays."""
-        pos_float = PositiveFloat()
+        pos_float = setup_datatype_for_testing(PositiveFloat(), shape=['*'])
         
         # Test list
         result = pos_float.normalize([1.0, 2.5, 3.7])
@@ -140,7 +151,7 @@ class TestPositiveFloat:
 
     def test_array_with_nan(self):
         """Test arrays containing NaN values."""
-        pos_float = PositiveFloat()
+        pos_float = setup_datatype_for_testing(PositiveFloat(), shape=['*'])
         
         # List with NaN should work
         result = pos_float.normalize([1.0, float('nan'), 3.0])
@@ -150,7 +161,7 @@ class TestPositiveFloat:
 
     def test_invalid_array_with_non_positive(self):
         """Test that arrays containing zero or negative values raise ValueError."""
-        pos_float = PositiveFloat()
+        pos_float = setup_datatype_for_testing(PositiveFloat(), shape=['*'])
         
         # Test array with mixed NaN and negative (should fail)
         with pytest.raises(ValueError, match="All non-NaN values must be positive"):
@@ -189,7 +200,7 @@ class TestUnitFloat:
 
     def test_valid_values_inclusive_bounds(self):
         """Test valid values with default inclusive bounds [0, 1]."""
-        unit_float = UnitFloat()
+        unit_float = setup_datatype_for_testing(UnitFloat(), shape=None)
         
         # Test boundary values
         assert unit_float.normalize(0.0) == 0.0
@@ -202,7 +213,7 @@ class TestUnitFloat:
 
     def test_invalid_values_inclusive_bounds(self):
         """Test invalid values with default inclusive bounds [0, 1]."""
-        unit_float = UnitFloat()
+        unit_float = setup_datatype_for_testing(UnitFloat(), shape=None)
         
         with pytest.raises(ValueError, match=r"Value must be in \[0, 1\]"):
             unit_float.normalize(-0.1)
@@ -215,7 +226,7 @@ class TestUnitFloat:
 
     def test_exclusive_min_bound(self):
         """Test exclusive minimum bound (0, 1]."""
-        unit_float = UnitFloat().exclude_min()
+        unit_float = setup_datatype_for_testing(UnitFloat().exclude_min(), shape=None)
         
         # 0 should now be invalid
         with pytest.raises(ValueError, match=r"Value must be in \(0, 1\]"):
@@ -229,7 +240,7 @@ class TestUnitFloat:
 
     def test_exclusive_max_bound(self):
         """Test exclusive maximum bound [0, 1)."""
-        unit_float = UnitFloat().exclude_max()
+        unit_float = setup_datatype_for_testing(UnitFloat().exclude_max(), shape=None)
         
         # 1 should now be invalid
         with pytest.raises(ValueError, match=r"Value must be in \[0, 1\)"):
@@ -243,7 +254,7 @@ class TestUnitFloat:
 
     def test_exclusive_both_bounds(self):
         """Test exclusive both bounds (0, 1)."""
-        unit_float = UnitFloat().exclude_min().exclude_max()
+        unit_float = setup_datatype_for_testing(UnitFloat().exclude_min().exclude_max(), shape=None)
         
         # Both 0 and 1 should be invalid
         with pytest.raises(ValueError, match=r"Value must be in \(0, 1\)"):
@@ -258,7 +269,7 @@ class TestUnitFloat:
     def test_valid_arrays(self):
         """Test valid arrays with different bound configurations."""
         # Default inclusive bounds
-        unit_float = UnitFloat()
+        unit_float = setup_datatype_for_testing(UnitFloat(), shape=['*'])
         result = unit_float.normalize([0.0, 0.5, 1.0])
         assert result == [0.0, 0.5, 1.0]
         
@@ -269,7 +280,7 @@ class TestUnitFloat:
 
     def test_invalid_arrays(self):
         """Test invalid arrays."""
-        unit_float = UnitFloat()
+        unit_float = setup_datatype_for_testing(UnitFloat(), shape=['*'])
         
         # Array with value outside bounds
         with pytest.raises(ValueError, match=r"All non-NaN values must be in \[0, 1\]"):
@@ -280,7 +291,7 @@ class TestUnitFloat:
 
     def test_arrays_with_nan(self):
         """Test arrays containing NaN values."""
-        unit_float = UnitFloat()
+        unit_float = setup_datatype_for_testing(UnitFloat(), shape=['*'])
         
         # NaN should be allowed
         result = unit_float.normalize([0.5, float('nan'), 0.8])
@@ -308,5 +319,5 @@ class TestUnitFloat:
 
     def test_none_value(self):
         """Test that None values are handled correctly."""
-        unit_float = UnitFloat()
+        unit_float = setup_datatype_for_testing(UnitFloat(), shape=None)
         assert unit_float.normalize(None) is None

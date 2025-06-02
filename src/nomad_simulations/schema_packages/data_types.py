@@ -186,6 +186,8 @@ class UnitFloat(InexactNumber):
                     bounds = self._get_bounds_str()
                     raise ValueError(f"Value must be in {bounds}, got {normalized_value}")
 
+        return normalized_value
+
     def _is_in_bounds(self, value):
         """Check if a single value is within bounds."""
         min_check = value > 0 if not self._min_inclusive else value >= 0
