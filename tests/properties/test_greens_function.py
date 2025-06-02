@@ -172,7 +172,9 @@ class TestQuasiparticleWeight:
         Test the `normalize` method of the `QuasiparticleWeight` class.
         """
         if reference == '':
-            with pytest.raises(ValueError, match=r'All non-NaN values must be in \[0, 1\]'):
+            with pytest.raises(
+                ValueError, match=r'All non-NaN values must be in \[0, 1\]'
+            ):
                 QuasiparticleWeight(n_atoms=1, n_correlated_orbitals=3, value=value)
         else:
             quasiparticle_weight = QuasiparticleWeight(
