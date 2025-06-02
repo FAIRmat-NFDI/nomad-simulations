@@ -85,14 +85,12 @@ def _get_bounds_str(
 class BoundedDataType(ABC):
     """
     Abstract base class for bounded data types with configurable bounds.
-    
+
     Provides common functionality for setting bounds and validation logic.
     Bounds are by default +/- infinity (`float('inf')`, `float('-inf')` respectively).
     """
 
-    __slots__ = ('_min_value', '_max_value', '_min_inclusive', '_max_inclusive')
     _error_message_prefix: str = 'All values'
-    _additional_convertible_types: set = {}
 
     def __init__(self) -> None:
         self._min_value = float('-inf')
@@ -112,12 +110,6 @@ class BoundedDataType(ABC):
         self._max_inclusive = inclusive
         return self
 
-    def convertible_from(self, other: Any) -> bool:
-        """Check if this data type can convert from another type."""
-        base_types = {np.int64, np.int32, np.int16, np.int8, 
-                     np.float64, np.float32, np.float16}
-        return other in self._additional_convertible_types + base_types
-
     @abstractmethod
     def _filter_values_for_validation(self, flat_values: list[Any]) -> list[Any]:
         """Filter values for validation (e.g., remove NaN for floats)."""
@@ -127,22 +119,28 @@ class BoundedDataType(ABC):
         """Common bounds validation logic."""
         flat_values = list(_flatten_values(normalized_value))
         valid_values = self._filter_values_for_validation(flat_values)
-        
+
         if valid_values:
             invalid_values = [
-                v for v in valid_values 
+                v
+                for v in valid_values
                 if not _check_bounds(
-                    v, self._min_value, self._max_value, 
-                    self._min_inclusive, self._max_inclusive
+                    v,
+                    self._min_value,
+                    self._max_value,
+                    self._min_inclusive,
+                    self._max_inclusive,
                 )
             ]
-            
+
             if invalid_values:
                 min_val = min(valid_values)
                 max_val = max(valid_values)
                 bounds = _get_bounds_str(
-                    self._min_value, self._max_value, 
-                    self._min_inclusive, self._max_inclusive
+                    self._min_value,
+                    self._max_value,
+                    self._min_inclusive,
+                    self._max_inclusive,
                 )
                 raise ValueError(
                     f'{self._error_message_prefix} must be in {bounds}, got range [{min_val}, {max_val}]'
@@ -151,8 +149,11 @@ class BoundedDataType(ABC):
 
 class BoundedInt(BoundedDataType, ExactNumber):
     """
-    Integer data type with configurable bounds, i.e. bound value and inclusion.
+    32-bit integer data type with configurable bounds (bound value and inclusion).
     Bounds are by default +/- infinity (`float('inf')`, `float('-inf')` respectively).
+
+    Precision: 32-bit signed integer (range: -2,147,483,648 to 2,147,483,647)
+    Convertible from: Python int, np.int32, np.int16, np.int8
 
     Examples:
         BoundedInt().min(1)                    # >= 1 (positive integers)
@@ -161,19 +162,25 @@ class BoundedInt(BoundedDataType, ExactNumber):
         BoundedInt().max(10)                   # <= 10
         BoundedInt().min(1).max(10)            # 1 <= value <= 10
     """
-    
-    _error_message_prefix = 'All values'
-    _additional_convertible_types = {int}
 
-    def __init__(self, *, dtype: type[int | np.int32] = int):
+    __slots__ = ('_min_value', '_max_value', '_min_inclusive', '_max_inclusive')
+    _error_message_prefix = 'All values'
+
+    def __init__(self, *, dtype: type[int | np.int32] = np.int32):
         if isinstance(dtype, np.dtype):
             dtype = dtype.type
 
-        if dtype not in (int, np.int32, np.int64):
-            raise ValueError(f'Invalid dtype for {self.__class__.__name__}.')
+        if dtype not in (int, np.int32):
+            raise ValueError(
+                f'Invalid dtype for {self.__class__.__name__}. Only int and np.int32 are supported.'
+            )
 
         ExactNumber.__init__(self, dtype)
         BoundedDataType.__init__(self)
+
+    def convertible_from(self, other: Any) -> bool:
+        """Check if this data type can convert from another type."""
+        return other in {int, np.int32, np.int16, np.int8}
 
     def _filter_values_for_validation(self, flat_values: list[Any]) -> list[Any]:
         """No filtering needed for integers - all values are valid for bounds checking."""
@@ -191,9 +198,12 @@ class BoundedInt(BoundedDataType, ExactNumber):
 
 class BoundedFloat(BoundedDataType, InexactNumber):
     """
-    Float data type with configurable bounds, i.e. bound value and inclusion.
+    64-bit floating point data type with configurable bounds (bound value and inclusion).
     Bounds are by default +/- infinity (`float('inf')`, `float('-inf')` respectively).
     NaN values (`float('nan')`) are allowed and are not subject to any validity check.
+
+    Precision: 64-bit IEEE 754 double precision (15-17 decimal digits)
+    Convertible from: Python float, np.float64, np.float32, np.float16
 
     Examples:
         BoundedFloat().min(0)                          # >= 0 (non-negative)
@@ -202,19 +212,25 @@ class BoundedFloat(BoundedDataType, InexactNumber):
         BoundedFloat().min(0).max(1, inclusive=False)  # [0, 1)
         BoundedFloat().max(0)                          # <= 0 (non-positive)
     """
-    
+
+    __slots__ = ('_min_value', '_max_value', '_min_inclusive', '_max_inclusive')
     _error_message_prefix = 'All non-NaN values'
-    _additional_convertible_types = {float}
 
     def __init__(self, *, dtype: type[float | np.float64] = float):
         if isinstance(dtype, np.dtype):
             dtype = dtype.type
 
         if dtype not in (float, np.float64, np.float32):
-            raise ValueError(f'Invalid dtype for {self.__class__.__name__}.')
+            raise ValueError(
+                f'Invalid dtype for {self.__class__.__name__}. Only float, np.float64, and np.float32 are supported.'
+            )
 
         InexactNumber.__init__(self, dtype)
         BoundedDataType.__init__(self)
+
+    def convertible_from(self, other: Any) -> bool:
+        """Check if this data type can convert from another type."""
+        return other in {float, np.float64, np.float32, np.float16}
 
     def _filter_values_for_validation(self, flat_values: list[Any]) -> list[Any]:
         """Filter out NaN values for float bounds checking."""
@@ -230,9 +246,9 @@ class BoundedFloat(BoundedDataType, InexactNumber):
         return normalized_value
 
 
-# aliases for common use cases
+# Convenience aliases for common use cases
 StrictlyPositiveInt = lambda: BoundedInt().min(1)  # >= 1 integers
-PositiveInt = lambda: BoundedInt().min(0)  # >= 0 integers (non-negative)
+PositiveInt = lambda: BoundedInt().min(0)  # >= 0 integers
 StrictlyPositiveFloat = lambda: BoundedFloat().min(0, inclusive=False)  # > 0 floats
-PositiveFloat = lambda: BoundedFloat().min(0)  # >= 0 floats (non-negative)
+PositiveFloat = lambda: BoundedFloat().min(0)  # >= 0 floats
 UnitFloat = lambda: BoundedFloat().min(0).max(1)  # [0, 1] floats
