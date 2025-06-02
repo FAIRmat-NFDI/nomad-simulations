@@ -16,8 +16,67 @@
 # limitations under the License.
 #
 
+from collections.abc import Generator
+from typing import Any, Union
+
 import numpy as np
 from nomad.metainfo.data_type import ExactNumber, InexactNumber
+
+
+def _flatten_values(data: Any) -> Generator[Any, None, None]:
+    """Generator that yields all scalar values from nested list/array structure."""
+    if isinstance(data, np.ndarray):
+        yield from data.flatten()
+    elif isinstance(data, list):
+        for item in data:
+            if isinstance(item, list):
+                yield from _flatten_values(item)
+            else:
+                yield item
+    else:
+        yield data
+
+
+def _check_bounds(
+    value: Union[int, float],
+    min_value: float,
+    max_value: float,
+    min_inclusive: bool,
+    max_inclusive: bool,
+) -> bool:
+    """Check if a single value is within the specified bounds."""
+    # lower bound
+    if np.isfinite(min_value):
+        if min_inclusive:
+            if value < min_value:
+                return False
+        else:
+            if value <= min_value:
+                return False
+
+    # upper bound
+    if np.isfinite(max_value):
+        if max_inclusive:
+            if value > max_value:
+                return False
+        else:
+            if value >= max_value:
+                return False
+
+    return True
+
+
+def _get_bounds_str(
+    min_value: float, max_value: float, min_inclusive: bool, max_inclusive: bool
+) -> str:
+    """Get string representation of bounds."""
+    left = '[' if min_inclusive else '('
+    right = ']' if max_inclusive else ')'
+
+    min_str = str(min_value) if np.isfinite(min_value) else '-∞'
+    max_str = str(max_value) if np.isfinite(max_value) else '∞'
+
+    return f'{left}{min_str}, {max_str}{right}'
 
 
 class BoundedInt(ExactNumber):
@@ -48,104 +107,57 @@ class BoundedInt(ExactNumber):
         self._min_inclusive = True
         self._max_inclusive = True
 
-    def min(self, value, *, inclusive: bool = True):
+    def min(self, value: Union[int, float], *, inclusive: bool = True) -> 'BoundedInt':
         """Set minimum bound. Supports +/- infinity."""
         self._min_value = value
         self._min_inclusive = inclusive
         return self
 
-    def max(self, value, *, inclusive: bool = True):
+    def max(self, value: Union[int, float], *, inclusive: bool = True) -> 'BoundedInt':
         """Set maximum bound. Supports +/- infinity."""
         self._max_value = value
         self._max_inclusive = inclusive
         return self
 
-    def convertible_from(self, other):
+    def convertible_from(self, other: Any) -> bool:
         if other in (int, np.int64, np.int32, np.int16, np.int8):
             return True
         return False
 
-    def normalize(self, value, **kwargs):
+    def normalize(self, value: Any, **kwargs: Any) -> Any:
         normalized_value = super().normalize(value, **kwargs)
 
         if normalized_value is None:
-            return normalized_value
+            return None
 
-        # Handle arrays (including nested)
-        if isinstance(normalized_value, (list, np.ndarray)):
-            # Convert to numpy array for consistent validation (temporary, for checking only)
-            try:
-                array_for_validation = np.asarray(normalized_value)
-                flat_values = array_for_validation.flatten()
-                if not np.all(self._is_in_bounds_vectorized(flat_values)):
-                    min_val = np.min(flat_values)
-                    max_val = np.max(flat_values)
-                    bounds = self._get_bounds_str()
-                    raise ValueError(
-                        f'All values must be in {bounds}, got range [{min_val}, {max_val}]'
-                    )
-            except (ValueError, TypeError) as e:
-                # Fallback for irregular nested structures that can't be converted to array
-                raise ValueError(f'Invalid array structure: {e}')
-        else:
-            # Handle scalars
-            if not self._is_in_bounds(normalized_value):
-                bounds = self._get_bounds_str()
-                raise ValueError(f'Value must be in {bounds}, got {normalized_value}')
+        # Validate all values using generator approach
+        flat_values = list(_flatten_values(normalized_value))
+        invalid_values = [
+            v
+            for v in flat_values
+            if not _check_bounds(
+                v,
+                self._min_value,
+                self._max_value,
+                self._min_inclusive,
+                self._max_inclusive,
+            )
+        ]
+
+        if invalid_values:
+            min_val = min(flat_values)
+            max_val = max(flat_values)
+            bounds = _get_bounds_str(
+                self._min_value,
+                self._max_value,
+                self._min_inclusive,
+                self._max_inclusive,
+            )
+            raise ValueError(
+                f'All values must be in {bounds}, got range [{min_val}, {max_val}]'
+            )
 
         return normalized_value
-
-    def _is_in_bounds(self, value):
-        """Check if a single value is within bounds."""
-        # Check minimum bound
-        if np.isfinite(self._min_value):
-            if self._min_inclusive:
-                if value < self._min_value:
-                    return False
-            else:
-                if value <= self._min_value:
-                    return False
-
-        # Check maximum bound
-        if np.isfinite(self._max_value):
-            if self._max_inclusive:
-                if value > self._max_value:
-                    return False
-            else:
-                if value >= self._max_value:
-                    return False
-
-        return True
-
-    def _is_in_bounds_vectorized(self, values):
-        """Vectorized bounds checking for numpy arrays."""
-        result = np.ones(values.shape, dtype=bool)
-
-        # Check minimum bound
-        if np.isfinite(self._min_value):
-            if self._min_inclusive:
-                result &= values >= self._min_value
-            else:
-                result &= values > self._min_value
-
-        # Check maximum bound
-        if np.isfinite(self._max_value):
-            if self._max_inclusive:
-                result &= values <= self._max_value
-            else:
-                result &= values < self._max_value
-
-        return result
-
-    def _get_bounds_str(self):
-        """Get string representation of bounds."""
-        left = '[' if self._min_inclusive else '('
-        right = ']' if self._max_inclusive else ')'
-
-        min_str = str(self._min_value) if np.isfinite(self._min_value) else '-∞'
-        max_str = str(self._max_value) if np.isfinite(self._max_value) else '∞'
-
-        return f'{left}{min_str}, {max_str}{right}'
 
 
 class BoundedFloat(InexactNumber):
@@ -177,114 +189,69 @@ class BoundedFloat(InexactNumber):
         self._min_inclusive = True
         self._max_inclusive = True
 
-    def min(self, value, *, inclusive: bool = True):
+    def min(
+        self, value: Union[int, float], *, inclusive: bool = True
+    ) -> 'BoundedFloat':
         """Set minimum bound. Supports +/- infinity."""
         self._min_value = value
         self._min_inclusive = inclusive
         return self
 
-    def max(self, value, *, inclusive: bool = True):
+    def max(
+        self, value: Union[int, float], *, inclusive: bool = True
+    ) -> 'BoundedFloat':
         """Set maximum bound. Supports +/- infinity."""
         self._max_value = value
         self._max_inclusive = inclusive
         return self
 
-    def convertible_from(self, other):
+    def convertible_from(self, other: Any) -> bool:
         if other in (float, np.float64, np.float32, np.float16):
             return True
         return False
 
-    def normalize(self, value, **kwargs):
+    def normalize(self, value: Any, **kwargs: Any) -> Any:
         normalized_value = super().normalize(value, **kwargs)
 
         if normalized_value is None:
-            return normalized_value
+            return None
 
-        # Handle arrays (including nested)
-        if isinstance(normalized_value, (list, np.ndarray)):
-            # Convert to numpy array for consistent validation (temporary, for checking only)
-            try:
-                array_for_validation = np.asarray(normalized_value)
-                flat_values = array_for_validation.flatten()
-                # Filter out NaN values for bounds checking
-                valid_mask = ~np.isnan(flat_values)
-                if np.any(valid_mask):
-                    valid_values = flat_values[valid_mask]
-                    if not np.all(self._is_in_bounds_vectorized(valid_values)):
-                        min_val = np.min(valid_values)
-                        max_val = np.max(valid_values)
-                        bounds = self._get_bounds_str()
-                        raise ValueError(
-                            f'All non-NaN values must be in {bounds}, got range [{min_val}, {max_val}]'
-                        )
-            except (ValueError, TypeError) as e:
-                # Fallback for irregular nested structures that can't be converted to array
-                raise ValueError(f'Invalid array structure: {e}')
-        else:
-            # Handle scalars
-            if not (isinstance(normalized_value, float) and np.isnan(normalized_value)):
-                if not self._is_in_bounds(normalized_value):
-                    bounds = self._get_bounds_str()
-                    raise ValueError(
-                        f'Value must be in {bounds}, got {normalized_value}'
-                    )
+        # Validate all values using generator approach, filtering out NaN values
+        flat_values = list(_flatten_values(normalized_value))
+        valid_values = [
+            v for v in flat_values if not (isinstance(v, float) and np.isnan(v))
+        ]
+
+        if valid_values:
+            invalid_values = [
+                v
+                for v in valid_values
+                if not _check_bounds(
+                    v,
+                    self._min_value,
+                    self._max_value,
+                    self._min_inclusive,
+                    self._max_inclusive,
+                )
+            ]
+
+            if invalid_values:
+                min_val = min(valid_values)
+                max_val = max(valid_values)
+                bounds = _get_bounds_str(
+                    self._min_value,
+                    self._max_value,
+                    self._min_inclusive,
+                    self._max_inclusive,
+                )
+                raise ValueError(
+                    f'All non-NaN values must be in {bounds}, got range [{min_val}, {max_val}]'
+                )
 
         return normalized_value
 
-    def _is_in_bounds(self, value):
-        """Check if a single value is within bounds."""
-        # Check minimum bound
-        if np.isfinite(self._min_value):
-            if self._min_inclusive:
-                if value < self._min_value:
-                    return False
-            else:
-                if value <= self._min_value:
-                    return False
 
-        # Check maximum bound
-        if np.isfinite(self._max_value):
-            if self._max_inclusive:
-                if value > self._max_value:
-                    return False
-            else:
-                if value >= self._max_value:
-                    return False
-
-        return True
-
-    def _is_in_bounds_vectorized(self, values):
-        """Vectorized bounds checking for numpy arrays."""
-        result = np.ones(values.shape, dtype=bool)
-
-        # Check minimum bound
-        if np.isfinite(self._min_value):
-            if self._min_inclusive:
-                result &= values >= self._min_value
-            else:
-                result &= values > self._min_value
-
-        # Check maximum bound
-        if np.isfinite(self._max_value):
-            if self._max_inclusive:
-                result &= values <= self._max_value
-            else:
-                result &= values < self._max_value
-
-        return result
-
-    def _get_bounds_str(self):
-        """Get string representation of bounds."""
-        left = '[' if self._min_inclusive else '('
-        right = ']' if self._max_inclusive else ')'
-
-        min_str = str(self._min_value) if np.isfinite(self._min_value) else '-∞'
-        max_str = str(self._max_value) if np.isfinite(self._max_value) else '∞'
-
-        return f'{left}{min_str}, {max_str}{right}'
-
-
-# Convenience aliases for common use cases
+# aliases for common use cases
 StrictlyPositiveInt = lambda: BoundedInt().min(1)  # >= 1 integers
 PositiveInt = lambda: BoundedInt().min(0)  # >= 0 integers (non-negative)
 StrictlyPositiveFloat = lambda: BoundedFloat().min(0, inclusive=False)  # > 0 floats
