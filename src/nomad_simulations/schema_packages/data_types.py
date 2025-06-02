@@ -18,7 +18,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Generator
-from typing import Any, TypeVar, Union
+from typing import Any, Callable, TypeVar, Union
 
 import numpy as np
 from nomad.metainfo.data_type import ExactNumber, InexactNumber
@@ -98,13 +98,13 @@ class BoundedDataType(ABC):
         self._min_inclusive = True
         self._max_inclusive = True
 
-    def min(self, value: Union[int, float], *, inclusive: bool = True) -> T:
+    def min(self: T, value: Union[int, float], *, inclusive: bool = True) -> T:
         """Set minimum bound. Supports +/- infinity."""
         self._min_value = value
         self._min_inclusive = inclusive
         return self
 
-    def max(self, value: Union[int, float], *, inclusive: bool = True) -> T:
+    def max(self: T, value: Union[int, float], *, inclusive: bool = True) -> T:
         """Set maximum bound. Supports +/- infinity."""
         self._max_value = value
         self._max_inclusive = inclusive
@@ -247,8 +247,14 @@ class BoundedFloat(BoundedDataType, InexactNumber):
 
 
 # Convenience aliases for common use cases
-StrictlyPositiveInt = lambda: BoundedInt().min(1)  # >= 1 integers
-PositiveInt = lambda: BoundedInt().min(0)  # >= 0 integers
-StrictlyPositiveFloat = lambda: BoundedFloat().min(0, inclusive=False)  # > 0 floats
-PositiveFloat = lambda: BoundedFloat().min(0)  # >= 0 floats
-UnitFloat = lambda: BoundedFloat().min(0).max(1)  # [0, 1] floats
+StrictlyPositiveInt: Callable[[], BoundedInt] = lambda: BoundedInt().min(
+    1
+)  # >= 1 integers
+PositiveInt: Callable[[], BoundedInt] = lambda: BoundedInt().min(0)  # >= 0 integers
+StrictlyPositiveFloat: Callable[[], BoundedFloat] = lambda: BoundedFloat().min(
+    0, inclusive=False
+)  # > 0 floats
+PositiveFloat: Callable[[], BoundedFloat] = lambda: BoundedFloat().min(0)  # >= 0 floats
+UnitFloat: Callable[[], BoundedFloat] = (
+    lambda: BoundedFloat().min(0).max(1)
+)  # [0, 1] floats
