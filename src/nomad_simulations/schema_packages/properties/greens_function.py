@@ -314,7 +314,7 @@ class QuasiparticleWeight(PhysicalProperty):
     )
 
     value = Quantity(
-        type=UnitFloat().no_shape_check(),
+        type=UnitFloat(),
         shape=['*'],
         description="""
         Value of the quasi-particle weight matrices. Must be between 0 and 1.
