@@ -248,7 +248,7 @@ class QuasiparticleWeight(PhysicalProperty):
 
         Z = 1 - ∂Σ/∂ω|ω=0
 
-    where Σ is the `ElectronicSelfEnergy`. The quasiparticle weight is a measure of the strength of the
+    where Σ is the `ElectronicSelfEnergy`. The quasi-particle weight is a measure of the strength of the
     electron-electron interactions and takes values between 0 and 1, with Z = 1 representing a non-correlated
     system, and Z = 0 the Mott state.
     """
