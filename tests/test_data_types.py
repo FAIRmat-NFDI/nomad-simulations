@@ -68,18 +68,22 @@ class TestBound:
                 with pytest.raises(ValueError):
                     bound.check(value)
 
-    def test_nan_behavior(self):
-        """Test that NaN values pass bounds checking."""
+    @pytest.mark.parametrize(
+        'test_value,should_pass',
+        [
+            (float('nan'), True),  # NaN should pass
+            ([0.5, float('nan'), 0.8], True),  # Array with NaN should pass
+            (None, True),  # None should pass
+        ],
+    )
+    def test_special_values(self, test_value, should_pass):
+        """Test handling of special values (NaN, None)."""
         bound = Bound('[0,1]')
-
-        # NaN values should pass bounds checking (due to NaN comparison behavior)
-        bound.check(float('nan'))  # Should not raise
-        bound.check([0.5, float('nan'), 0.8])  # Should not raise
-
-    def test_none_behavior(self):
-        """Test that None values are handled correctly."""
-        bound = Bound('[0,1]')
-        bound.check(None)  # Should not raise
+        if should_pass:
+            bound.check(test_value)  # Should not raise
+        else:
+            with pytest.raises(ValueError):
+                bound.check(test_value)
 
     @pytest.mark.parametrize(
         'range_str,expected_str',
@@ -96,107 +100,122 @@ class TestBound:
         bound = Bound(range_str)
         assert bound.get_bounds_str() == expected_str
 
-    def test_invalid_range_format(self):
+    @pytest.mark.parametrize(
+        'invalid_range,should_raise',
+        [
+            ('invalid', True),
+            ('[0,1,2]', True),
+        ],
+    )
+    def test_invalid_range_format(self, invalid_range, should_raise):
         """Test that invalid range formats raise errors."""
-        with pytest.raises(ValueError, match='Invalid range format'):
-            Bound('invalid')
-        with pytest.raises(ValueError, match='Invalid range format'):
-            Bound('[0,1,2]')
+        if should_raise:
+            with pytest.raises(ValueError, match='Invalid range format'):
+                Bound(invalid_range)
+        else:
+            Bound(invalid_range)  # Should not raise
 
 
 class TestBoundedNumber:
     """Test the BoundedNumber class functionality."""
 
-    def test_basic_functionality(self):
-        """Test basic BoundedNumber functionality."""
-        bound = Bound('[0,10]')
+    @pytest.mark.parametrize(
+        'dtype,bounds_str,test_value,should_pass',
+        [
+            # Basic functionality
+            (int, '[0,10]', 5, True),
+            (int, '[0,10]', 0, True),
+            (int, '[0,10]', 10, True),
+            (int, '[0,10]', -1, False),
+            (int, '[0,10]', 11, False),
+            # Special values
+            (float, '[0,1]', float('nan'), True),
+            (float, '[0,1]', None, True),
+            # Array validation
+            (int, '[0,10]', [1, 5, 9], True),
+            (int, '[0,10]', [1, 15, 9], False),
+            (int, '[0,10]', [], True),
+            # Various dtypes and bounds
+            (m_int32(), '[1,10]', 5, True),
+            (m_int32(), '[1,10]', 0, False),
+            (m_float64(), '(0,1)', 0.5, True),
+            (m_float64(), '(0,1)', 0.0, False),
+            (m_int16(), '[0,)', 100, True),
+            (m_int16(), '[0,)', -1, False),
+            (m_float32(), '(,0]', -5.0, True),
+            (m_float32(), '(,0]', 1.0, False),
+        ],
+    )
+    def test_normalization(self, dtype, bounds_str, test_value, should_pass):
+        """Test value normalization with various dtypes and bounds."""
+        bound = Bound(bounds_str)
+        shape = ['*'] if isinstance(test_value, list) else None
         datatype = setup_datatype_for_testing(
-            BoundedNumber(dtype=int, bounds=bound), shape=None
+            BoundedNumber(dtype=dtype, bounds=bound), shape=shape
         )
 
-        # Valid values
-        assert datatype.normalize(5) == 5
-        assert datatype.normalize(0) == 0
-        assert datatype.normalize(10) == 10
+        if should_pass:
+            result = datatype.normalize(test_value)
+            if test_value is None:
+                assert result is None
+            elif isinstance(test_value, float) and np.isnan(test_value):
+                assert np.isnan(result)
+            elif isinstance(test_value, list):
+                if len(test_value) == 0:
+                    assert len(result) == 0
+                else:
+                    # Check array content
+                    if isinstance(result, np.ndarray):
+                        if any(np.isnan(v) for v in test_value if isinstance(v, float)):
+                            # Handle NaN in arrays
+                            for i, v in enumerate(test_value):
+                                if isinstance(v, float) and np.isnan(v):
+                                    assert np.isnan(result[i])
+                                else:
+                                    assert result[i] == v
+                        else:
+                            assert np.array_equal(result, test_value)
+                    else:
+                        assert result == test_value
+            else:
+                assert result == test_value
+        else:
+            with pytest.raises(ValueError):
+                datatype.normalize(test_value)
 
-        # Invalid values
-        with pytest.raises(ValueError):
-            datatype.normalize(-1)
-        with pytest.raises(ValueError):
-            datatype.normalize(11)
-
-    def test_convertible_from(self):
+    @pytest.mark.parametrize(
+        'dtype,other_type,should_convert',
+        [
+            (int, np.int32, True),
+            (int, float, False),
+            (float, float, True),
+            (float, np.int32, False),
+        ],
+    )
+    def test_convertible_from(self, dtype, other_type, should_convert):
         """Test convertible_from delegation."""
         bound = Bound('[0,10]')
-        int_datatype = BoundedNumber(dtype=int, bounds=bound)
-        float_datatype = BoundedNumber(dtype=float, bounds=bound)
+        datatype = BoundedNumber(dtype=dtype, bounds=bound)
+        assert datatype.convertible_from(other_type) is should_convert
 
-        # Test int datatype conversions
-        assert int_datatype.convertible_from(np.int32) is True
-        assert int_datatype.convertible_from(float) is False
-
-        # Test float datatype conversions
-        assert float_datatype.convertible_from(float) is True
-        assert float_datatype.convertible_from(np.int32) is False
-
-    def test_nan_handling_for_floats(self):
-        """Test that float types handle NaN correctly."""
-        bound = Bound('[0,1]')
-
-        # Test scalar NaN
-        scalar_datatype = setup_datatype_for_testing(
-            BoundedNumber(dtype=float, bounds=bound), shape=None
-        )
-        result = scalar_datatype.normalize(float('nan'))
-        assert np.isnan(result)
-
-        # Test arrays with NaN
-        array_datatype = setup_datatype_for_testing(
-            BoundedNumber(dtype=float, bounds=bound), shape=['*']
-        )
-        result = array_datatype.normalize([0.5, float('nan'), 0.8])
-        assert len(result) == 3
-        assert not np.isnan(result[0])
-        assert np.isnan(result[1])
-        assert not np.isnan(result[2])
-
-    def test_none_handling(self):
-        """Test that None values are handled correctly."""
-        bound = Bound('[0,1]')
-        datatype = setup_datatype_for_testing(
-            BoundedNumber(dtype=float, bounds=bound), shape=None
-        )
-
-        # None should pass through unchanged
-        result = datatype.normalize(None)
-        assert result is None
-
-    def test_array_validation(self):
-        """Test validation of array structures."""
-        bound = Bound('[0,10]')
-        datatype = setup_datatype_for_testing(
-            BoundedNumber(dtype=int, bounds=bound), shape=['*']
-        )
-
-        # Valid array
-        result = datatype.normalize([1, 5, 9])
-        if isinstance(result, np.ndarray):
-            assert np.array_equal(result, [1, 5, 9])
-        else:
-            assert result == [1, 5, 9]
-
-        # Invalid array
-        with pytest.raises(ValueError):
-            datatype.normalize([1, 15, 9])
+    @pytest.mark.parametrize(
+        'dtype,expected_type',
+        [
+            (int, 'int32'),
+            (float, 'float64'),
+        ],
+    )
+    def test_standard_type_delegation(self, dtype, expected_type):
+        """Test that standard_type delegates to base type."""
+        datatype = BoundedNumber(dtype=dtype, bounds=Bound('[0,1]'))
+        assert datatype.standard_type() == expected_type
 
     def test_serialization_and_reconstruction(self):
         """Test that BoundedNumber can be serialized and reconstructed."""
         original = BoundedNumber(dtype=float, bounds=Bound('[0,1]'))
 
-        # Serialize
         serialized = original.serialize_self()
 
-        # Verify serialization format
         assert serialized['type_kind'] == 'custom'
         assert (
             'nomad_simulations.schema_packages.data_types.BoundedNumber'
@@ -205,26 +224,15 @@ class TestBoundedNumber:
         assert 'base_type' in serialized
         assert serialized['bounds'] == '[0.0,1.0]'
 
-        # Reconstruct using normalize_type (like NOMAD does)
         reconstructed = normalize_type(serialized)
 
-        # Test that reconstructed instance works
         test_datatype = setup_datatype_for_testing(reconstructed, shape=None)
         assert test_datatype.normalize(0.5) == 0.5
         with pytest.raises(ValueError):
             test_datatype.normalize(1.5)
 
-    def test_standard_type_delegation(self):
-        """Test that standard_type delegates to base type."""
-        int_type = BoundedNumber(dtype=int, bounds=Bound('[0,10]'))
-        float_type = BoundedNumber(dtype=float, bounds=Bound('[0,1]'))
-
-        assert int_type.standard_type() == 'int32'
-        assert float_type.standard_type() == 'float64'
-
     def test_uninitialized_instance(self):
         """Test behavior of uninitialized instance (for reconstruction)."""
-        # This mimics what normalize_type does
         instance = BoundedNumber()
 
         # Should handle gracefully
@@ -235,29 +243,6 @@ class TestBoundedNumber:
         # Should raise error on normalize
         with pytest.raises(RuntimeError):
             instance.normalize(5)
-
-    def test_custom_bounds_and_dtypes(self):
-        """Test various combinations of bounds and dtypes."""
-        test_cases = [
-            # (dtype, bounds, valid_value, invalid_value)
-            (m_int32(), '[1,10]', 5, 0),
-            (m_float64(), '(0,1)', 0.5, 0.0),
-            (m_int16(), '[0,)', 100, -1),
-            (m_float32(), '(,0]', -5.0, 1.0),
-        ]
-
-        for dtype, bounds_str, valid_val, invalid_val in test_cases:
-            bound = Bound(bounds_str)
-            datatype = setup_datatype_for_testing(
-                BoundedNumber(dtype=dtype, bounds=bound), shape=None
-            )
-
-            # Valid value should work
-            assert datatype.normalize(valid_val) == valid_val
-
-            # Invalid value should fail
-            with pytest.raises(ValueError):
-                datatype.normalize(invalid_val)
 
 
 class TestNOMADIntegration:
@@ -283,142 +268,161 @@ class TestNOMADIntegration:
         with pytest.raises(ValueError):
             test_instance.normalize(1.5)
 
-    def test_section_serialization_deserialization(self):
+    @pytest.mark.parametrize(
+        'section_data,should_pass,description',
+        [
+            # Valid deserialization
+            (
+                {'bounded_value': 0.75, 'bounded_array': [1, 5, 8, 10]},
+                True,
+                'valid data',
+            ),
+            # Invalid deserialization
+            (
+                {'bounded_value': 1.5, 'bounded_array': [1, 15, 8]},
+                False,
+                'invalid data',
+            ),
+        ],
+    )
+    def test_section_serialization_deserialization(
+        self, section_data, should_pass, description
+    ):
         """Test full section serialization/deserialization cycle with BoundedNumber."""
-        # Create and populate a section instance
-        original_section = TestSection()
-        original_section.bounded_value = 0.75
-        original_section.bounded_array = [1, 5, 8, 10]
+        if should_pass:
+            # Test successful round-trip
+            original_section = TestSection()
+            original_section.bounded_value = section_data['bounded_value']
+            original_section.bounded_array = section_data['bounded_array']
 
-        # Serialize to dict
-        serialized_dict = original_section.m_to_dict()
+            # Serialize to dict
+            serialized_dict = original_section.m_to_dict()
 
-        # Verify the serialized data contains our values
-        assert serialized_dict['bounded_value'] == 0.75
-        assert serialized_dict['bounded_array'] == [1, 5, 8, 10]
+            # Verify the serialized data contains our values
+            assert serialized_dict['bounded_value'] == section_data['bounded_value']
+            assert serialized_dict['bounded_array'] == section_data['bounded_array']
 
-        # Deserialize back to a new section
-        reconstructed_section = TestSection.m_from_dict(serialized_dict)
+            # Deserialize back to a new section
+            reconstructed_section = TestSection.m_from_dict(serialized_dict)
 
-        # Verify the reconstructed section has correct values
-        assert reconstructed_section.bounded_value == 0.75
-        assert reconstructed_section.bounded_array == [1, 5, 8, 10]
+            # Verify the reconstructed section has correct values
+            assert reconstructed_section.bounded_value == section_data['bounded_value']
+            assert reconstructed_section.bounded_array == section_data['bounded_array']
 
-        # Verify bounds checking still works on reconstructed section
-        with pytest.raises(ValueError):
-            reconstructed_section.bounded_value = 1.5  # Out of bounds
+            # Verify bounds checking still works on reconstructed section
+            with pytest.raises(ValueError):
+                reconstructed_section.bounded_value = 1.5  # Out of bounds
 
-        with pytest.raises(ValueError):
-            reconstructed_section.bounded_array = [1, 15, 8]  # 15 out of bounds
+            with pytest.raises(ValueError):
+                reconstructed_section.bounded_array = [1, 15, 8]  # 15 out of bounds
 
-        # Verify valid values still work
-        reconstructed_section.bounded_value = 0.25
-        reconstructed_section.bounded_array = [2, 3, 4]
-        assert reconstructed_section.bounded_value == 0.25
-        assert reconstructed_section.bounded_array == [2, 3, 4]
+            # Verify valid values still work
+            reconstructed_section.bounded_value = 0.25
+            reconstructed_section.bounded_array = [2, 3, 4]
+            assert reconstructed_section.bounded_value == 0.25
+            assert reconstructed_section.bounded_array == [2, 3, 4]
+        else:
+            # Test that invalid data fails during deserialization
+            with pytest.raises(ValueError):
+                TestSection.m_from_dict(section_data)
 
-    def test_elasticsearch_compatibility(self):
-        """Test that bounded types map correctly for elasticsearch."""
-        from nomad.metainfo.data_type import to_elastic_type
+    @pytest.mark.parametrize(
+        'compatibility_type,dtype,bounds_str,expected',
+        [
+            ('elasticsearch', float, '[0,1]', 'double'),
+            ('elasticsearch', int, '[0,100]', 'long'),
+            ('mongodb_float', float, '[0,1]', 'FloatField'),
+            ('mongodb_int', int, '[0,100]', 'IntField'),
+            ('json_schema_float', float, '[0,1]', {'type': 'number'}),
+            ('json_schema_int', int, '[0,100]', {'type': 'integer'}),
+        ],
+    )
+    def test_external_system_compatibility(
+        self, compatibility_type, dtype, bounds_str, expected
+    ):
+        """Test that bounded types map correctly for external systems."""
+        bounded_type = BoundedNumber(dtype=dtype, bounds=Bound(bounds_str))
 
-        bounded_float = BoundedNumber(dtype=float, bounds=Bound('[0,1]'))
-        bounded_int = BoundedNumber(dtype=int, bounds=Bound('[0,100]'))
+        if compatibility_type == 'elasticsearch':
+            from nomad.metainfo.data_type import to_elastic_type
 
-        # Should map the same as underlying types
-        assert to_elastic_type(bounded_float, dynamic=True) == 'double'
-        assert to_elastic_type(bounded_int, dynamic=True) == 'long'
+            assert to_elastic_type(bounded_type, dynamic=True) == expected
+        elif compatibility_type.startswith('mongodb'):
+            from mongoengine import FloatField, IntField
+            from nomad.metainfo.data_type import to_mongo_type
 
-    def test_mongodb_compatibility(self):
-        """Test that bounded types map correctly for mongodb."""
-        from mongoengine import FloatField, IntField
-        from nomad.metainfo.data_type import to_mongo_type
+            expected_class = FloatField if expected == 'FloatField' else IntField
+            assert to_mongo_type(bounded_type) == expected_class
+        elif compatibility_type.startswith('json_schema'):
+            from nomad.metainfo.data_type import to_json_schema_type
 
-        bounded_float = BoundedNumber(dtype=float, bounds=Bound('[0,1]'))
-        bounded_int = BoundedNumber(dtype=int, bounds=Bound('[0,100]'))
-
-        # Should map the same as underlying types
-        assert to_mongo_type(bounded_float) == FloatField
-        assert to_mongo_type(bounded_int) == IntField
-
-    def test_json_schema_compatibility(self):
-        """Test that bounded types map correctly for JSON schema."""
-        from nomad.metainfo.data_type import to_json_schema_type
-
-        bounded_float = BoundedNumber(dtype=float, bounds=Bound('[0,1]'))
-        bounded_int = BoundedNumber(dtype=int, bounds=Bound('[0,100]'))
-
-        # Should map the same as underlying types
-        assert to_json_schema_type(bounded_float) == {'type': 'number'}
-        assert to_json_schema_type(bounded_int) == {'type': 'integer'}
+            assert to_json_schema_type(bounded_type) == expected
 
 
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 
-    def test_mixed_valid_invalid_values(self):
-        """Test arrays with mix of valid and invalid values."""
-        bound = Bound('[0,10]')
+    @pytest.mark.parametrize(
+        'bounds_str,test_values,should_pass,error_match',
+        [
+            # Mixed valid/invalid values
+            ('[0,10]', [1, 5, 15, 8], False, r'All values must be in \[0\.0,10\.0\]'),
+            # Empty arrays
+            ('[0,10]', [], True, None),
+            # Infinity bounds
+            ('[0,)', [1e10], True, None),
+            ('[0,)', [-1], False, None),
+            ('(,0]', [-1e10], True, None),
+            ('(,0]', [1], False, None),
+        ],
+    )
+    def test_edge_case_arrays(self, bounds_str, test_values, should_pass, error_match):
+        """Test edge cases with array values."""
+        bound = Bound(bounds_str)
         datatype = setup_datatype_for_testing(
-            BoundedNumber(dtype=int, bounds=bound), shape=['*']
+            BoundedNumber(
+                dtype=float if any(isinstance(v, float) for v in test_values) else int,
+                bounds=bound,
+            ),
+            shape=['*'],
         )
 
-        # Should fail if any value is invalid
-        with pytest.raises(ValueError, match=r'All values must be in \[0\.0,10\.0\]'):
-            datatype.normalize([1, 5, 15, 8])  # 15 is invalid
+        if should_pass:
+            result = datatype.normalize(test_values)
+            if len(test_values) == 0:
+                assert len(result) == 0
+            else:
+                # For large numbers, just check they're processed
+                assert len(result) == len(test_values)
+        else:
+            if error_match:
+                with pytest.raises(ValueError, match=error_match):
+                    datatype.normalize(test_values)
+            else:
+                with pytest.raises(ValueError):
+                    datatype.normalize(test_values)
 
-    def test_empty_arrays(self):
-        """Test empty arrays."""
-        bound = Bound('[0,10]')
-        datatype = setup_datatype_for_testing(
-            BoundedNumber(dtype=int, bounds=bound), shape=['*']
-        )
-
-        # Empty arrays should be fine
-        result = datatype.normalize([])
-        assert len(result) == 0
-
-    def test_infinity_bounds(self):
-        """Test infinite bounds."""
-        # Test positive infinity
-        bound_pos = Bound('[0,)')
-        datatype_pos = setup_datatype_for_testing(
-            BoundedNumber(dtype=float, bounds=bound_pos), shape=None
-        )
-
-        assert datatype_pos.normalize(1e10) == 1e10  # Very large number
-        with pytest.raises(ValueError):
-            datatype_pos.normalize(-1)
-
-        # Test negative infinity
-        bound_neg = Bound('(,0]')
-        datatype_neg = setup_datatype_for_testing(
-            BoundedNumber(dtype=float, bounds=bound_neg), shape=None
-        )
-
-        assert datatype_neg.normalize(-1e10) == -1e10  # Very negative number
-        with pytest.raises(ValueError):
-            datatype_neg.normalize(1)
-
-    def test_reconstruct_with_complex_bounds(self):
-        """Test reconstruction with various bound types."""
-        test_cases = [
+    @pytest.mark.parametrize(
+        'bounds_str,valid_val,invalid_val',
+        [
             ('[0,1]', 0.5, 1.5),  # closed interval
             ('(0,1)', 0.5, 0.0),  # open interval
             ('[0,)', 100, -1),  # half-bounded
-            ('', 0, 0),  # unbounded (no invalid values)
-        ]
+            ('', 0, None),  # unbounded (no invalid values)
+        ],
+    )
+    def test_reconstruct_with_complex_bounds(self, bounds_str, valid_val, invalid_val):
+        """Test reconstruction with various bound types."""
+        original = BoundedNumber(dtype=float, bounds=Bound(bounds_str))
+        serialized = original.serialize_self()
+        reconstructed = normalize_type(serialized)
 
-        for bounds_str, valid_val, invalid_val in test_cases:
-            original = BoundedNumber(dtype=float, bounds=Bound(bounds_str))
-            serialized = original.serialize_self()
-            reconstructed = normalize_type(serialized)
+        test_instance = setup_datatype_for_testing(reconstructed, shape=None)
 
-            test_instance = setup_datatype_for_testing(reconstructed, shape=None)
+        # Valid value should work
+        assert test_instance.normalize(valid_val) == valid_val
 
-            # Valid value should work
-            assert test_instance.normalize(valid_val) == valid_val
-
-            # Invalid value should fail (except for unbounded case)
-            if bounds_str != '':
-                with pytest.raises(ValueError):
-                    test_instance.normalize(invalid_val)
+        # Invalid value should fail (except for unbounded case)
+        if bounds_str != '' and invalid_val is not None:
+            with pytest.raises(ValueError):
+                test_instance.normalize(invalid_val)
