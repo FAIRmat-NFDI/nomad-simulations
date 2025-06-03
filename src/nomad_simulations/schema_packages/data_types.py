@@ -18,7 +18,7 @@
 
 from abc import ABC, abstractmethod
 from collections.abc import Generator
-from typing import Any, Callable, TypeVar, Union
+from typing import Any, Callable, TypeVar
 
 import numpy as np
 from nomad.metainfo.data_type import ExactNumber, InexactNumber
@@ -41,7 +41,7 @@ def _flatten_values(data: Any) -> Generator[Any, None, None]:
 
 
 def _check_bounds(
-    value: Union[int, float],
+    value: int | float,
     min_value: float,
     max_value: float,
     min_inclusive: bool,
@@ -98,13 +98,13 @@ class BoundedDataType(ABC):
         self._min_inclusive = True
         self._max_inclusive = True
 
-    def min(self: T, value: Union[int, float], *, inclusive: bool = True) -> T:
+    def min(self: T, value: int | float, *, inclusive: bool = True) -> T:
         """Set minimum bound. Supports +/- infinity."""
         self._min_value = value
         self._min_inclusive = inclusive
         return self
 
-    def max(self: T, value: Union[int, float], *, inclusive: bool = True) -> T:
+    def max(self: T, value: int | float, *, inclusive: bool = True) -> T:
         """Set maximum bound. Supports +/- infinity."""
         self._max_value = value
         self._max_inclusive = inclusive
