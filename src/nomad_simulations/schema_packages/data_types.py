@@ -16,9 +16,9 @@
 # limitations under the License.
 #
 
+import re
 from collections.abc import Generator
 from typing import Any, Callable
-import re
 
 import numpy as np
 from nomad.metainfo.data_type import Datatype, normalize_type
@@ -26,37 +26,37 @@ from nomad.metainfo.data_type import Datatype, normalize_type
 
 def _parse_range(range_str: str) -> tuple[float, float, bool, bool]:
     """Parse range string like '[0,3)' into (min_val, max_val, min_inc, max_inc).
-    
+
     Args:
         range_str: Range specification like '[0,3)', '(0,5]', '[1,)', '(,10)', etc.
                   Empty string means unbounded (-∞, ∞)
-    
+
     Returns:
         Tuple of (min_value, max_value, min_inclusive, max_inclusive)
     """
     if not range_str.strip():
         return float('-inf'), float('inf'), False, False
-    
+
     # Match patterns like '[0,3)', '(0,5]', '[1,)', '(,10)', etc.
     pattern = r'^([\[\(])(-?\d*\.?\d*|),\s*(-?\d*\.?\d*|)([\]\)])$'
     match = re.match(pattern, range_str.strip())
-    
+
     if not match:
         raise ValueError(
             f"Invalid range format: '{range_str}'. "
             f"Expected format like '[0,3)', '(0,5]', '[1,)', '(,10)', etc."
         )
-    
+
     left_bracket, min_str, max_str, right_bracket = match.groups()
-    
+
     # Parse bounds (empty means infinity)
     min_val = float('-inf') if not min_str else float(min_str)
     max_val = float('inf') if not max_str else float(max_str)
-    
+
     # Parse inclusivity
-    min_inclusive = left_bracket == '[' and min_str
-    max_inclusive = right_bracket == ']' and max_str
-    
+    min_inclusive = left_bracket == '[' and bool(min_str)
+    max_inclusive = right_bracket == ']' and bool(max_str)
+
     return min_val, max_val, min_inclusive, max_inclusive
 
 
@@ -119,27 +119,34 @@ def _get_bounds_str(
 class BoundedNumber:
     """
     Bounded numeric data type with configurable ranges using NOMAD's type system.
-    
+
     Delegates to NOMAD's existing data types (m_int32, m_float64, etc.) for normalization
     and conversion, adding bounds validation on top.
-    
+
     Range specification:
         - '[0,1]': Closed interval, 0 ≤ x ≤ 1
-        - '(0,1)': Open interval, 0 < x < 1  
+        - '(0,1)': Open interval, 0 < x < 1
         - '[0,1)': Half-open interval, 0 ≤ x < 1
         - '[1,)': Lower bounded, x ≥ 1
         - '(,10]': Upper bounded, x ≤ 10
         - '': Unbounded (-∞, ∞) with non-inclusive bounds
-    
+
     Example:
         BoundedNumber(dtype='m_int32', range='[1,10]')    # 1 ≤ x ≤ 10 (32-bit integers)
     """
-    
-    __slots__ = ('_min_value', '_max_value', '_min_inclusive', '_max_inclusive', '_base_datatype', '_error_message_prefix')
+
+    __slots__ = (
+        '_min_value',
+        '_max_value',
+        '_min_inclusive',
+        '_max_inclusive',
+        '_base_datatype',
+        '_error_message_prefix',
+    )
 
     def __init__(self, *, dtype: str | type | Datatype, range: str = ''):
         """Initialize bounded number with NOMAD dtype and optional range.
-        
+
         Args:
             dtype: NOMAD data type (e.g., 'm_int32', 'm_float64', int, float) or Datatype instance
             range: Range specification like '[0,1]', '(0,)', etc. Empty means unbounded.
@@ -149,14 +156,14 @@ class BoundedNumber:
             self._base_datatype = dtype
         else:
             self._base_datatype = normalize_type(dtype)
-        
+
         # Determine error message prefix based on datatype
         datatype_name = self._base_datatype.__class__.__name__.lower()
         if 'float' in datatype_name or 'inexact' in datatype_name:
             self._error_message_prefix = 'All non-NaN values'
         else:
             self._error_message_prefix = 'All values'
-        
+
         # Initialize bounds
         min_val, max_val, min_inc, max_inc = _parse_range(range)
         self._min_value = min_val
@@ -172,17 +179,20 @@ class BoundedNumber:
         """Filter values for validation (removes NaN for floats, no filtering for integers)."""
         datatype_name = self._base_datatype.__class__.__name__.lower()
         if 'float' in datatype_name or 'inexact' in datatype_name:
-            # Filter out NaN values for float bounds checking
-            return [v for v in flat_values if not (isinstance(v, float) and np.isnan(v))]
+            return [
+                v for v in flat_values if not (isinstance(v, float) and np.isnan(v))
+            ]
         else:
-            # No filtering needed for integers - all values are valid for bounds checking
             return flat_values
 
-    def _validate_bounds(self, normalized_value: Any) -> None:
-        """Common bounds validation logic."""
+    def _validate_bounds(self, normalized_value: Any) -> Any:
+        """Validate bounds and return the value on success, raise on failure."""
+        if normalized_value is None:
+            return None
+
         flat_values = list(_flatten_values(normalized_value))
         valid_values = self._filter_values_for_validation(flat_values)
-        
+
         if valid_values:
             invalid_values = [
                 v
@@ -195,7 +205,7 @@ class BoundedNumber:
                     self._max_inclusive,
                 )
             ]
-            
+
             if invalid_values:
                 min_val = min(valid_values)
                 max_val = max(valid_values)
@@ -209,15 +219,11 @@ class BoundedNumber:
                     f'{self._error_message_prefix} must be in {bounds}, got range [{min_val}, {max_val}]'
                 )
 
+        return normalized_value
+
     def normalize(self, value: Any, **kwargs: Any) -> Any:
         """Normalize value using base datatype and validate bounds."""
-        normalized_value = self._base_datatype.normalize(value, **kwargs)
-
-        if normalized_value is None:
-            return None
-
-        self._validate_bounds(normalized_value)
-        return normalized_value
+        return self._validate_bounds(self._base_datatype.normalize(value, **kwargs))
 
     def serialize_self(self):
         """Serialize the datatype configuration."""
@@ -230,8 +236,7 @@ class BoundedNumber:
 
     def __repr__(self):
         range_str = _get_bounds_str(
-            self._min_value, self._max_value, 
-            self._min_inclusive, self._max_inclusive
+            self._min_value, self._max_value, self._min_inclusive, self._max_inclusive
         )
         dtype_name = self._base_datatype.__class__.__name__
         return f'{self.__class__.__name__}(dtype="{dtype_name}", range="{range_str}")'
@@ -251,11 +256,21 @@ class BoundedNumber:
 
 
 # Convenience aliases for common use cases
-StrictlyPositiveInt: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype='m_int32', range='[1,)')  # x ≥ 1 integers
-PositiveInt: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype='m_int32', range='[0,)')  # x ≥ 0 integers
-StrictlyPositiveFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype='m_float64', range='(0,)')  # x > 0 floats
-PositiveFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype='m_float64', range='[0,)')  # x ≥ 0 floats
-UnitFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype='m_float64', range='[0,1]')  # [0, 1] floats
+StrictlyPositiveInt: Callable[[], BoundedNumber] = lambda: BoundedNumber(
+    dtype='m_int32', range='[1,)'
+)  # x ≥ 1 integers
+PositiveInt: Callable[[], BoundedNumber] = lambda: BoundedNumber(
+    dtype='m_int32', range='[0,)'
+)  # x ≥ 0 integers
+StrictlyPositiveFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(
+    dtype='m_float64', range='(0,)'
+)  # x > 0 floats
+PositiveFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(
+    dtype='m_float64', range='[0,)'
+)  # x ≥ 0 floats
+UnitFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(
+    dtype='m_float64', range='[0,1]'
+)  # [0, 1] floats
 
 # Backwards compatibility aliases
 BoundedInt = BoundedNumber
