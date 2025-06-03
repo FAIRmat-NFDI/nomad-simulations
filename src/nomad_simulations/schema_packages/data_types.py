@@ -185,7 +185,7 @@ class BoundedNumber(Datatype):
                 self._base_datatype = dtype
             else:
                 self._base_datatype = normalize_type(dtype)
-            
+
             self._bounds = bounds if bounds is not None else Bound()
 
     def convertible_from(self, other: Any) -> bool:
@@ -197,7 +197,7 @@ class BoundedNumber(Datatype):
     def normalize(self, value: Any, **kwargs: Any) -> Any:
         """Normalize value using base datatype and validate bounds."""
         if self._base_datatype is None:
-            raise RuntimeError("BoundedNumber not properly initialized")
+            raise RuntimeError('BoundedNumber not properly initialized')
         normalized_value = self._base_datatype.normalize(value, **kwargs)
         if self._bounds is not None:
             self._bounds.check(normalized_value)
@@ -206,7 +206,7 @@ class BoundedNumber(Datatype):
     def serialize(self, value: Any, **kwargs: Any) -> Any:
         """Serialize value using base datatype."""
         if self._base_datatype is None:
-            raise RuntimeError("BoundedNumber not properly initialized")
+            raise RuntimeError('BoundedNumber not properly initialized')
         return self._base_datatype.serialize(value, **kwargs)
 
     def serialize_self(self):
@@ -223,19 +223,19 @@ class BoundedNumber(Datatype):
         # Extract our custom data
         base_type_data = flags.get('base_type', {})
         bounds_str = flags.get('bounds', '')
-        
+
         # Reconstruct base datatype
         if base_type_data:
             self._base_datatype = normalize_type(base_type_data)
-        
+
         # Reconstruct bounds
         if bounds_str:
             self._bounds = Bound(bounds_str)
-        
+
         # Apply any flags to base datatype
         if hasattr(self._base_datatype, 'normalize_flags'):
             self._base_datatype.normalize_flags(flags)
-        
+
         return self
 
     def standard_type(self):
@@ -264,13 +264,13 @@ class BoundedNumber(Datatype):
             return f'{self.__class__.__name__}(uninitialized)'
         dtype_name = self._base_datatype.__class__.__name__
         bounds_repr = self._bounds.get_bounds_str() if self._bounds else 'unbounded'
-        return f'{self.__class__.__name__}(dtype="{dtype_name}", bounds="{bounds_repr}")'
+        return (
+            f'{self.__class__.__name__}(dtype="{dtype_name}", bounds="{bounds_repr}")'
+        )
 
 
 # Convenience factory functions for common use cases
-def bounded_int(
-    *, dtype: str | type | Datatype = int, bounds: Bound
-) -> BoundedNumber:
+def bounded_int(*, dtype: str | type | Datatype = int, bounds: Bound) -> BoundedNumber:
     """Create a bounded integer datatype."""
     return BoundedNumber(dtype=dtype, bounds=bounds)
 
@@ -292,9 +292,7 @@ def positive_int(*, dtype: str | type | Datatype = int) -> BoundedNumber:
     return BoundedNumber(dtype=dtype, bounds=Bound('[0,)'))
 
 
-def strictly_positive_float(
-    *, dtype: str | type | Datatype = float
-) -> BoundedNumber:
+def strictly_positive_float(*, dtype: str | type | Datatype = float) -> BoundedNumber:
     """Create strictly positive float type (x > 0)."""
     return BoundedNumber(dtype=dtype, bounds=Bound('(0,)'))
 
