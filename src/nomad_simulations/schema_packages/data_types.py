@@ -21,7 +21,7 @@ from collections.abc import Generator
 from typing import Any
 
 import numpy as np
-from nomad.metainfo.data_type import Datatype, normalize_type
+from nomad.metainfo.data_type import Datatype, Number, normalize_type
 
 # Match patterns like '[0,3)', '(0,5]', '[1,)', '(,10)', etc.
 bounds_patt = re.compile(r'^([\[\(])(-?\d*\.?\d*|),\s*(-?\d*\.?\d*|)([\]\)])$')
@@ -165,7 +165,7 @@ class Bound:
         return f'Bound({self.get_bounds_str()!r})'
 
 
-class BoundedNumber(Datatype):
+class BoundedNumber(Number):
     """
     Bounded numeric data type that coordinates between NOMAD's dtype system and bounds checking.
 
@@ -185,19 +185,22 @@ class BoundedNumber(Datatype):
             dtype: NOMAD data type (e.g., 'm_int32', 'm_float64', int, float) or Datatype instance
             bounds: Bound instance specifying the valid range
         """
-        super().__init__()
         # Support reconstruction from serialized data (called by normalize_type)
         if dtype is None:
-            # Will be populated by normalize_flags
+            # Will be populated by normalize_flags - use a placeholder dtype
+            super().__init__(float)
             self._base_datatype = None
             self._bounds = None
         else:
             # Normal initialization
             if isinstance(dtype, Datatype):
                 self._base_datatype = dtype
+                underlying_dtype = getattr(dtype, '_dtype', dtype)
             else:
                 self._base_datatype = normalize_type(dtype)
+                underlying_dtype = dtype
 
+            super().__init__(underlying_dtype)
             self._bounds = bounds if bounds is not None else Bound()
 
     def convertible_from(self, other: Any) -> bool:
@@ -263,13 +266,6 @@ class BoundedNumber(Datatype):
         if self._base_datatype is not None:
             self._base_datatype.attach_definition(definition)
         return self
-
-    @property
-    def _dtype(self):
-        """Get the underlying dtype."""
-        if self._base_datatype is None:
-            return None
-        return getattr(self._base_datatype, '_dtype', None)
 
     def __repr__(self):
         if self._base_datatype is None:
