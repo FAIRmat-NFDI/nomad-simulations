@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
-from nomad_simulations.schema_packages.data_types import PositiveFloat
+from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
 from nomad_simulations.schema_packages.utils import get_sibling_section
@@ -28,7 +28,7 @@ class SpectralProfile(PhysicalProperty):
     """
 
     value = Quantity(
-        type=PositiveFloat(),
+        type=positive_float(),
         shape=['*'],
         description="""
         The value of the intensities of a spectral profile. Must be positive.
@@ -50,7 +50,7 @@ class DOSProfile(SpectralProfile):
     """
 
     value = Quantity(
-        type=PositiveFloat(),
+        type=positive_float(),
         unit='1/joule',
         shape=['*'],
         description="""

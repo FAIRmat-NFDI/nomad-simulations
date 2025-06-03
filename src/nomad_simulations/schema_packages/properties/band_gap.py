@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
-import pint
 from nomad.metainfo import MEnum, Quantity
 
 if TYPE_CHECKING:
@@ -9,7 +8,7 @@ if TYPE_CHECKING:
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.data_types import PositiveFloat
+from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 
@@ -51,7 +50,7 @@ class ElectronicBandGap(PhysicalProperty):
     )
 
     value = Quantity(
-        type=PositiveFloat(),
+        type=positive_float(),
         unit='joule',
         description="""
         The value of the electronic band gap. This value must be positive.

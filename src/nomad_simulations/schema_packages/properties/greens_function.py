@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from nomad.metainfo import MEnum, Quantity, SubSection
-from nomad.metainfo.data_type import m_float64
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -11,7 +10,7 @@ if TYPE_CHECKING:
 
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
-from nomad_simulations.schema_packages.data_types import UnitFloat
+from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.variables import (
     Frequency,
@@ -314,7 +313,7 @@ class QuasiparticleWeight(PhysicalProperty):
     )
 
     value = Quantity(
-        type=UnitFloat(),
+        type=unit_float(),
         shape=['*'],
         description="""
         Value of the quasi-particle weight matrices. Must be between 0 and 1.
