@@ -144,16 +144,16 @@ class Bound:
         left = '[' if self._min_inclusive else '('
         right = ']' if self._max_inclusive else ')'
 
-        min_str = str(self._min_value) if np.isfinite(self._min_value) else '-∞'
-        max_str = str(self._max_value) if np.isfinite(self._max_value) else '∞'
+        min_str = str(self._min_value) if np.isfinite(self._min_value) else ''
+        max_str = str(self._max_value) if np.isfinite(self._max_value) else ''
 
-        return f'{left}{min_str}, {max_str}{right}'
+        return f'{left}{min_str},{max_str}{right}'
 
     def __repr__(self) -> str:
         return f'Bound({self.get_bounds_str()!r})'
 
 
-class BoundedNumber:
+class BoundedNumber(Datatype):
     """
     Bounded numeric data type that coordinates between NOMAD's dtype system and bounds checking.
 
@@ -166,84 +166,144 @@ class BoundedNumber:
 
     __slots__ = ('_base_datatype', '_bounds')
 
-    def __init__(self, *, dtype: str | type | Datatype, bounds: Bound):
+    def __init__(self, *, dtype: str | type | Datatype = None, bounds: Bound = None):
         """Initialize bounded number with NOMAD dtype and bounds.
 
         Args:
             dtype: NOMAD data type (e.g., 'm_int32', 'm_float64', int, float) or Datatype instance
             bounds: Bound instance specifying the valid range
         """
-        # Normalize the dtype using NOMAD's system
-        if isinstance(dtype, Datatype):
-            self._base_datatype = dtype
+        super().__init__()
+        # Support reconstruction from serialized data (called by normalize_type)
+        if dtype is None:
+            # Will be populated by normalize_flags
+            self._base_datatype = None
+            self._bounds = None
         else:
-            self._base_datatype = normalize_type(dtype)
-
-        self._bounds = bounds
+            # Normal initialization
+            if isinstance(dtype, Datatype):
+                self._base_datatype = dtype
+            else:
+                self._base_datatype = normalize_type(dtype)
+            
+            self._bounds = bounds if bounds is not None else Bound()
 
     def convertible_from(self, other: Any) -> bool:
         """Check if this data type can convert from another type."""
+        if self._base_datatype is None:
+            return False
         return self._base_datatype.convertible_from(other)
 
     def normalize(self, value: Any, **kwargs: Any) -> Any:
         """Normalize value using base datatype and validate bounds."""
+        if self._base_datatype is None:
+            raise RuntimeError("BoundedNumber not properly initialized")
         normalized_value = self._base_datatype.normalize(value, **kwargs)
-        self._bounds.check(normalized_value)
+        if self._bounds is not None:
+            self._bounds.check(normalized_value)
         return normalized_value
 
+    def serialize(self, value: Any, **kwargs: Any) -> Any:
+        """Serialize value using base datatype."""
+        if self._base_datatype is None:
+            raise RuntimeError("BoundedNumber not properly initialized")
+        return self._base_datatype.serialize(value, **kwargs)
+
     def serialize_self(self):
-        """Serialize the datatype configuration."""
-        return self._base_datatype.serialize_self()
+        """Serialize the datatype configuration for NOMAD's indexing system."""
+        return {
+            'type_kind': 'custom',
+            'type_data': f'{self.__class__.__module__}.{self.__class__.__name__}',
+            'base_type': self._base_datatype.serialize_self(),
+            'bounds': self._bounds.get_bounds_str(),
+        } | getattr(self._base_datatype, 'flags', {})
+
+    def normalize_flags(self, flags: dict):
+        """Reconstruct from serialized data."""
+        # Extract our custom data
+        base_type_data = flags.get('base_type', {})
+        bounds_str = flags.get('bounds', '')
+        
+        # Reconstruct base datatype
+        if base_type_data:
+            self._base_datatype = normalize_type(base_type_data)
+        
+        # Reconstruct bounds
+        if bounds_str:
+            self._bounds = Bound(bounds_str)
+        
+        # Apply any flags to base datatype
+        if hasattr(self._base_datatype, 'normalize_flags'):
+            self._base_datatype.normalize_flags(flags)
+        
+        return self
+
+    def standard_type(self):
+        """Return the equivalent python type for indexing."""
+        # Delegate to the base datatype for indexing compatibility
+        if self._base_datatype is None:
+            return 'bounded_number'  # Fallback for uninitialized instances
+        return self._base_datatype.standard_type()
+
+    def attach_definition(self, definition):
+        """Attach definition to both this type and the underlying base datatype."""
+        super().attach_definition(definition)
+        if self._base_datatype is not None:
+            self._base_datatype.attach_definition(definition)
+        return self
 
     @property
     def _dtype(self):
         """Get the underlying dtype."""
+        if self._base_datatype is None:
+            return None
         return getattr(self._base_datatype, '_dtype', None)
 
     def __repr__(self):
+        if self._base_datatype is None:
+            return f'{self.__class__.__name__}(uninitialized)'
         dtype_name = self._base_datatype.__class__.__name__
-        return (
-            f'{self.__class__.__name__}(dtype="{dtype_name}", bounds={self._bounds!r})'
-        )
+        bounds_repr = self._bounds.get_bounds_str() if self._bounds else 'unbounded'
+        return f'{self.__class__.__name__}(dtype="{dtype_name}", bounds="{bounds_repr}")'
 
 
 # Convenience factory functions for common use cases
 def bounded_int(
-    *, dtype: str | type | Datatype = 'm_int32', bounds: Bound
+    *, dtype: str | type | Datatype = int, bounds: Bound
 ) -> BoundedNumber:
     """Create a bounded integer datatype."""
     return BoundedNumber(dtype=dtype, bounds=bounds)
 
 
 def bounded_float(
-    *, dtype: str | type | Datatype = 'm_float64', bounds: Bound
+    *, dtype: str | type | Datatype = float, bounds: Bound
 ) -> BoundedNumber:
     """Create a bounded float datatype."""
     return BoundedNumber(dtype=dtype, bounds=bounds)
 
 
-def strictly_positive_int(*, dtype: str | type | Datatype = 'm_int32') -> BoundedNumber:
+def strictly_positive_int(*, dtype: str | type | Datatype = int) -> BoundedNumber:
     """Create strictly positive integer type (x ≥ 1)."""
     return BoundedNumber(dtype=dtype, bounds=Bound('[1,)'))
 
 
-def positive_int(*, dtype: str | type | Datatype = 'm_int32') -> BoundedNumber:
+def positive_int(*, dtype: str | type | Datatype = int) -> BoundedNumber:
     """Create positive integer type (x ≥ 0)."""
     return BoundedNumber(dtype=dtype, bounds=Bound('[0,)'))
 
 
 def strictly_positive_float(
-    *, dtype: str | type | Datatype = 'm_float64'
+    *, dtype: str | type | Datatype = float
 ) -> BoundedNumber:
     """Create strictly positive float type (x > 0)."""
     return BoundedNumber(dtype=dtype, bounds=Bound('(0,)'))
 
 
-def positive_float(*, dtype: str | type | Datatype = 'm_float64') -> BoundedNumber:
+def positive_float(*, dtype: str | type | Datatype = float) -> BoundedNumber:
     """Create positive float type (x ≥ 0)."""
     return BoundedNumber(dtype=dtype, bounds=Bound('[0,)'))
 
 
-def unit_float(*, dtype: str | type | Datatype = 'm_float64') -> BoundedNumber:
+def unit_float(*, dtype: str | type | Datatype = float) -> BoundedNumber:
     """Create unit interval float type (0 ≤ x ≤ 1)."""
     return BoundedNumber(dtype=dtype, bounds=Bound('[0,1]'))
