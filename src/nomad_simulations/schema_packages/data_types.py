@@ -41,6 +41,7 @@ def _flatten_values(data: Any) -> Generator[Any, None, None]:
 class Bound:
     """
     Bounds checker for numeric values using mathematical interval notation.
+    `None` and `NaN` values are allowed and will simply pass the checks.
 
     Range specification:
         - '[0,1]': Closed interval, 0 ≤ x ≤ 1
@@ -114,38 +115,28 @@ class Bound:
 
         return True
 
-    def check(self, value: Any, *, filter_nan: bool = False) -> None:
+    def check(self, value: Any) -> None:
         """Check if value(s) are within bounds. Raise ValueError if not.
+
+        Note: NaN values will pass bounds checking since NaN comparisons always return False.
 
         Args:
             value: Value or array to check
-            filter_nan: If True, ignore NaN values in validation
         """
         if value is None:
             return
 
         flat_values = list(_flatten_values(value))
 
-        # Filter NaN values if requested
-        if filter_nan:
-            valid_values = [
-                v for v in flat_values if not (isinstance(v, float) and np.isnan(v))
-            ]
-        else:
-            valid_values = flat_values
-
-        if valid_values:
-            invalid_values = [
-                v for v in valid_values if not self._check_single_value(v)
-            ]
+        if flat_values:
+            invalid_values = [v for v in flat_values if not self._check_single_value(v)]
 
             if invalid_values:
-                min_val = min(valid_values)
-                max_val = max(valid_values)
+                min_val = min(flat_values)
+                max_val = max(flat_values)
                 bounds_str = self.get_bounds_str()
-                error_prefix = 'All non-NaN values' if filter_nan else 'All values'
                 raise ValueError(
-                    f'{error_prefix} must be in {bounds_str}, got range [{min_val}, {max_val}]'
+                    f'All values must be in {bounds_str}, got range [{min_val}, {max_val}]'
                 )
 
     def get_bounds_str(self) -> str:
@@ -197,12 +188,7 @@ class BoundedNumber:
     def normalize(self, value: Any, **kwargs: Any) -> Any:
         """Normalize value using base datatype and validate bounds."""
         normalized_value = self._base_datatype.normalize(value, **kwargs)
-
-        # Check if this is a float type for NaN filtering
-        datatype_name = self._base_datatype.__class__.__name__.lower()
-        filter_nan = 'float' in datatype_name or 'inexact' in datatype_name
-
-        self._bounds.check(normalized_value, filter_nan=filter_nan)
+        self._bounds.check(normalized_value)
         return normalized_value
 
     def serialize_self(self):
