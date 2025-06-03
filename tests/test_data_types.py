@@ -86,19 +86,45 @@ class TestBound:
                 bound.check(test_value)
 
     @pytest.mark.parametrize(
-        'range_str,expected_str',
+        'range_str,expected_str,should_pass',
         [
-            ('', '(,)'),
-            ('[0,10]', '[0.0,10.0]'),
-            ('(0,10)', '(0.0,10.0)'),
-            ('[5,)', '[5.0,)'),
-            ('(,10]', '(,10.0]'),
+            # Empty bounds
+            ('', '(,)', True),
+            # Integer bounds
+            ('[0,10]', '[0,10]', True),
+            ('(0,10)', '(0,10)', True),
+            ('[5,)', '[5,)', True),
+            ('(,10]', '(,10]', True),
+            # Float bounds with different precisions
+            ('[0.0,1.0]', '[0.0,1.0]', True),
+            ('(0.5,1.5)', '(0.5,1.5)', True),
+            ('[0.25,0.75]', '[0.25,0.75]', True),
+            # High precision floats
+            ('[0.123456,0.987654]', '[0.123456,0.987654]', True),
+            ('(3.14159,2.71828)', '(3.14159,2.71828)', True),
+            # Mixed integer and float
+            ('[0,1.5]', '[0,1.5]', True),
+            ('(1.0,10)', '(1.0,10)', True),
+            # Negative values
+            ('[-10.5,10.5]', '[-10.5,10.5]', True),
+            ('(-1.23,1.23)', '(-1.23,1.23)', True),
+            # Single-sided with floats
+            ('[3.14,)', '[3.14,)', True),
+            ('(,-2.718]', '(,-2.718]', True),
+            # Scientific notation should fail
+            ('[1e-3,1e3]', '', False),
+            ('(1E-5,1E5)', '', False),
+            ('[2.5e10,3.0E-2]', '', False),
         ],
     )
-    def test_string_representation(self, range_str, expected_str):
-        """Test string representation of bounds."""
-        bound = Bound(range_str)
-        assert bound.get_bounds_str() == expected_str
+    def test_string_representation(self, range_str, expected_str, should_pass):
+        """Test string representation of bounds and verify scientific notation fails."""
+        if should_pass:
+            bound = Bound(range_str)
+            assert bound.get_bounds_str() == expected_str
+        else:
+            with pytest.raises(ValueError, match='Invalid range format'):
+                Bound(range_str)
 
     @pytest.mark.parametrize(
         'invalid_range,should_raise',
@@ -222,7 +248,7 @@ class TestBoundedNumber:
             in serialized['type_data']
         )
         assert 'base_type' in serialized
-        assert serialized['bounds'] == '[0.0,1.0]'
+        assert serialized['bounds'] == '[0,1]'
 
         reconstructed = normalize_type(serialized)
 
@@ -366,7 +392,7 @@ class TestEdgeCases:
         'bounds_str,test_values,should_pass,error_match',
         [
             # Mixed valid/invalid values
-            ('[0,10]', [1, 5, 15, 8], False, r'All values must be in \[0\.0,10\.0\]'),
+            ('[0,10]', [1, 5, 15, 8], False, r'All values must be in \[0,10\]'),
             # Empty arrays
             ('[0,10]', [], True, None),
             # Infinity bounds

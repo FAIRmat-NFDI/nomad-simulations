@@ -23,6 +23,9 @@ from typing import Any
 import numpy as np
 from nomad.metainfo.data_type import Datatype, normalize_type
 
+# Match patterns like '[0,3)', '(0,5]', '[1,)', '(,10)', etc.
+bounds_patt = re.compile(r'^([\[\(])(-?\d*\.?\d*|),\s*(-?\d*\.?\d*|)([\]\)])$')
+
 
 def _flatten_values(data: Any) -> Generator[Any, None, None]:
     """Generator that yields all scalar values from nested list/array structure."""
@@ -52,7 +55,14 @@ class Bound:
         - '': Unbounded (-∞, ∞)
     """
 
-    __slots__ = ('_min_value', '_max_value', '_min_inclusive', '_max_inclusive')
+    __slots__ = (
+        '_min_value',
+        '_max_value',
+        '_min_inclusive',
+        '_max_inclusive',
+        '_original_min_str',
+        '_original_max_str',
+    )
 
     def __init__(self, range_str: str = ''):
         """Initialize bounds from range string.
@@ -60,20 +70,22 @@ class Bound:
         Args:
             range_str: Range specification like '[0,1]', '(0,)', etc. Empty means unbounded.
         """
-        min_val, max_val, min_inc, max_inc = self._parse_range(range_str)
+        min_val, max_val, min_inc, max_inc, min_str, max_str = self._parse_range(
+            range_str
+        )
         self._min_value = min_val
         self._max_value = max_val
         self._min_inclusive = min_inc
         self._max_inclusive = max_inc
+        self._original_min_str = min_str
+        self._original_max_str = max_str
 
-    def _parse_range(self, range_str: str) -> tuple[float, float, bool, bool]:
-        """Parse range string like '[0,3)' into (min_val, max_val, min_inc, max_inc)."""
+    def _parse_range(self, range_str: str) -> tuple[float, float, bool, bool, str, str]:
+        """Parse range string like '[0,3)' into (min_val, max_val, min_inc, max_inc, min_str, max_str)."""
         if not range_str.strip():
-            return float('-inf'), float('inf'), False, False
+            return float('-inf'), float('inf'), False, False, '', ''
 
-        # Match patterns like '[0,3)', '(0,5]', '[1,)', '(,10)', etc.
-        pattern = r'^([\[\(])(-?\d*\.?\d*|),\s*(-?\d*\.?\d*|)([\]\)])$'
-        match = re.match(pattern, range_str.strip())
+        match = bounds_patt.match(range_str.strip())
 
         if not match:
             raise ValueError(
@@ -91,7 +103,7 @@ class Bound:
         min_inclusive = left_bracket == '[' and bool(min_str)
         max_inclusive = right_bracket == ']' and bool(max_str)
 
-        return min_val, max_val, min_inclusive, max_inclusive
+        return min_val, max_val, min_inclusive, max_inclusive, min_str, max_str
 
     def _check_single_value(self, value: int | float) -> bool:
         """Check if a single value is within the specified bounds."""
@@ -140,12 +152,12 @@ class Bound:
                 )
 
     def get_bounds_str(self) -> str:
-        """Get string representation of bounds."""
+        """Get string representation of bounds using original format."""
         left = '[' if self._min_inclusive else '('
         right = ']' if self._max_inclusive else ')'
 
-        min_str = str(self._min_value) if np.isfinite(self._min_value) else ''
-        max_str = str(self._max_value) if np.isfinite(self._max_value) else ''
+        min_str = self._original_min_str if np.isfinite(self._min_value) else ''
+        max_str = self._original_max_str if np.isfinite(self._max_value) else ''
 
         return f'{left}{min_str},{max_str}{right}'
 
