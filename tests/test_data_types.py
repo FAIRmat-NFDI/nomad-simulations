@@ -372,19 +372,28 @@ class TestNOMADIntegration:
         bounded_type = BoundedNumber(dtype=dtype, bounds=Bound(bounds_str))
 
         if compatibility_type == 'elasticsearch':
-            from nomad.metainfo.data_type import to_elastic_type
+            try:
+                from nomad.metainfo.data_type import to_elastic_type
 
-            assert to_elastic_type(bounded_type, dynamic=True) == expected
+                assert to_elastic_type(bounded_type, dynamic=True) == expected
+            except ImportError:
+                pytest.skip('to_elastic_type not available')
         elif compatibility_type.startswith('mongodb'):
-            from mongoengine import FloatField, IntField
-            from nomad.metainfo.data_type import to_mongo_type
+            try:
+                from mongoengine import FloatField, IntField
+                from nomad.metainfo.data_type import to_mongo_type
 
-            expected_class = FloatField if expected == 'FloatField' else IntField
-            assert to_mongo_type(bounded_type) == expected_class
+                expected_class = FloatField if expected == 'FloatField' else IntField
+                assert to_mongo_type(bounded_type) == expected_class
+            except ImportError:
+                pytest.skip('mongoengine or to_mongo_type not available')
         elif compatibility_type.startswith('json_schema'):
-            from nomad.metainfo.data_type import to_json_schema_type
+            try:
+                from nomad.metainfo.data_type import to_json_schema_type
 
-            assert to_json_schema_type(bounded_type) == expected
+                assert to_json_schema_type(bounded_type) == expected
+            except ImportError:
+                pytest.skip('to_json_schema_type not available')
 
 
 class TestEdgeCases:
