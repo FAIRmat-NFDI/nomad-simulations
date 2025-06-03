@@ -21,7 +21,7 @@ from typing import Any, Callable
 import re
 
 import numpy as np
-from nomad.metainfo.data_type import ExactNumber, InexactNumber
+from nomad.metainfo.data_type import Datatype, normalize_type
 
 
 def _parse_range(range_str: str) -> tuple[float, float, bool, bool]:
@@ -118,10 +118,10 @@ def _get_bounds_str(
 
 class BoundedNumber:
     """
-    Bounded numeric data type supporting both integers and floats with configurable ranges.
+    Bounded numeric data type with configurable ranges using NOMAD's type system.
     
-    The dtype parameter determines whether this behaves as an integer or float type,
-    leveraging NOMAD's existing ExactNumber and InexactNumber implementations.
+    Delegates to NOMAD's existing data types (m_int32, m_float64, etc.) for normalization
+    and conversion, adding bounds validation on top.
     
     Range specification:
         - '[0,1]': Closed interval, 0 ≤ x ≤ 1
@@ -131,58 +131,31 @@ class BoundedNumber:
         - '(,10]': Upper bounded, x ≤ 10
         - '': Unbounded (-∞, ∞) with non-inclusive bounds
     
-    For integer dtypes:
-        - Precision: 32-bit signed integer (default: np.int32)
-        - Range: -2,147,483,648 to 2,147,483,647
-        - Convertible from: int, np.int32, np.int16, np.int8
-    
-    For float dtypes:
-        - Precision: 64-bit IEEE 754 double precision (default: float)
-        - Decimal digits: 15-17 significant digits
-        - Convertible from: float, np.float64, np.float32, np.float16
-        - NaN values are allowed and bypass bounds checking
-    
-    Examples:
-        BoundedNumber(dtype=int, range='[1,10]')      # 1 ≤ x ≤ 10 (integers)
-        BoundedNumber(dtype=float, range='(0,1)')     # 0 < x < 1 (floats)
-        BoundedNumber(dtype=int, range='[0,)')        # x ≥ 0 (non-negative integers)
-        BoundedNumber(dtype=float, range='(,0]')      # x ≤ 0 (non-positive floats)
-        BoundedNumber(dtype=float)                    # Unbounded floats
+    Example:
+        BoundedNumber(dtype='m_int32', range='[1,10]')    # 1 ≤ x ≤ 10 (32-bit integers)
     """
     
     __slots__ = ('_min_value', '_max_value', '_min_inclusive', '_max_inclusive', '_base_datatype', '_error_message_prefix')
 
-    def __init__(self, *, dtype: type[int | float | np.int32 | np.float64] = float, range: str = ''):
-        """Initialize bounded number with dtype and optional range.
+    def __init__(self, *, dtype: str | type | Datatype, range: str = ''):
+        """Initialize bounded number with NOMAD dtype and optional range.
         
         Args:
-            dtype: Numeric type (int, float, np.int32, np.float64, np.float32)
+            dtype: NOMAD data type (e.g., 'm_int32', 'm_float64', int, float) or Datatype instance
             range: Range specification like '[0,1]', '(0,)', etc. Empty means unbounded.
         """
-        if isinstance(dtype, np.dtype):
-            dtype = dtype.type
-
-        # Determine if this is an integer or float type
-        if dtype in (int, np.int32, np.int16, np.int8, np.int64):
-            if dtype not in (int, np.int32):
-                raise ValueError(
-                    f'Invalid integer dtype for {self.__class__.__name__}. '
-                    f'Only int and np.int32 are supported.'
-                )
-            self._base_datatype = ExactNumber(dtype if dtype != int else np.int32)
-            self._error_message_prefix = 'All values'
-        elif dtype in (float, np.float64, np.float32, np.float16):
-            if dtype not in (float, np.float64, np.float32):
-                raise ValueError(
-                    f'Invalid float dtype for {self.__class__.__name__}. '
-                    f'Only float, np.float64, and np.float32 are supported.'
-                )
-            self._base_datatype = InexactNumber(dtype)
+        # Normalize the dtype using NOMAD's system
+        if isinstance(dtype, Datatype):
+            self._base_datatype = dtype
+        else:
+            self._base_datatype = normalize_type(dtype)
+        
+        # Determine error message prefix based on datatype
+        datatype_name = self._base_datatype.__class__.__name__.lower()
+        if 'float' in datatype_name or 'inexact' in datatype_name:
             self._error_message_prefix = 'All non-NaN values'
         else:
-            raise ValueError(
-                f'Unsupported dtype: {dtype}. Must be int, float, or numpy numeric type.'
-            )
+            self._error_message_prefix = 'All values'
         
         # Initialize bounds
         min_val, max_val, min_inc, max_inc = _parse_range(range)
@@ -197,7 +170,8 @@ class BoundedNumber:
 
     def _filter_values_for_validation(self, flat_values: list[Any]) -> list[Any]:
         """Filter values for validation (removes NaN for floats, no filtering for integers)."""
-        if isinstance(self._base_datatype, InexactNumber):
+        datatype_name = self._base_datatype.__class__.__name__.lower()
+        if 'float' in datatype_name or 'inexact' in datatype_name:
             # Filter out NaN values for float bounds checking
             return [v for v in flat_values if not (isinstance(v, float) and np.isnan(v))]
         else:
@@ -252,14 +226,15 @@ class BoundedNumber:
     @property
     def _dtype(self):
         """Get the underlying dtype."""
-        return self._base_datatype._dtype
+        return getattr(self._base_datatype, '_dtype', None)
 
     def __repr__(self):
         range_str = _get_bounds_str(
             self._min_value, self._max_value, 
             self._min_inclusive, self._max_inclusive
         )
-        return f'{self.__class__.__name__}(dtype={self._dtype.__name__}, range="{range_str}")'
+        dtype_name = self._base_datatype.__class__.__name__
+        return f'{self.__class__.__name__}(dtype="{dtype_name}", range="{range_str}")'
 
     # Keep chainable methods for backwards compatibility
     def min(self, value: int | float, *, inclusive: bool = True) -> 'BoundedNumber':
@@ -276,11 +251,11 @@ class BoundedNumber:
 
 
 # Convenience aliases for common use cases
-StrictlyPositiveInt: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype=int, range='[1,)')  # x ≥ 1 integers
-PositiveInt: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype=int, range='[0,)')  # x ≥ 0 integers
-StrictlyPositiveFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype=float, range='(0,)')  # x > 0 floats
-PositiveFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype=float, range='[0,)')  # x ≥ 0 floats
-UnitFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype=float, range='[0,1]')  # [0, 1] floats
+StrictlyPositiveInt: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype='m_int32', range='[1,)')  # x ≥ 1 integers
+PositiveInt: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype='m_int32', range='[0,)')  # x ≥ 0 integers
+StrictlyPositiveFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype='m_float64', range='(0,)')  # x > 0 floats
+PositiveFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype='m_float64', range='[0,)')  # x ≥ 0 floats
+UnitFloat: Callable[[], BoundedNumber] = lambda: BoundedNumber(dtype='m_float64', range='[0,1]')  # [0, 1] floats
 
 # Backwards compatibility aliases
 BoundedInt = BoundedNumber
