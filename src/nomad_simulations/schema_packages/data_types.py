@@ -60,6 +60,8 @@ class Bound:
         '_max_value',
         '_min_inclusive',
         '_max_inclusive',
+        '_original_min_str',
+        '_original_max_str',
     )
 
     def __init__(self, range_str: str = ''):
@@ -68,16 +70,18 @@ class Bound:
         Args:
             range_str: Range specification like '[0,1]', '(0,)', etc. Empty means unbounded.
         """
-        min_val, max_val, min_inc, max_inc = self._parse_range(range_str)
+        min_val, max_val, min_inc, max_inc, min_str, max_str = self._parse_range(range_str)
         self._min_value = min_val
         self._max_value = max_val
         self._min_inclusive = min_inc
         self._max_inclusive = max_inc
+        self._original_min_str = min_str
+        self._original_max_str = max_str
 
-    def _parse_range(self, range_str: str) -> tuple[float, float, bool, bool]:
-        """Parse range string like '[0,3)' into (min_val, max_val, min_inc, max_inc)."""
+    def _parse_range(self, range_str: str) -> tuple[float, float, bool, bool, str, str]:
+        """Parse range string like '[0,3)' into (min_val, max_val, min_inc, max_inc, min_str, max_str)."""
         if not range_str.strip():
-            return float('-inf'), float('inf'), False, False
+            return float('-inf'), float('inf'), False, False, '', ''
 
         match = bounds_patt.match(range_str.strip())
 
@@ -97,7 +101,7 @@ class Bound:
         min_inclusive = left_bracket == '[' and bool(min_str)
         max_inclusive = right_bracket == ']' and bool(max_str)
 
-        return min_val, max_val, min_inclusive, max_inclusive
+        return min_val, max_val, min_inclusive, max_inclusive, min_str, max_str
 
     def _check_single_value(self, value: int | float) -> bool:
         """Check if a single value is within the specified bounds."""
@@ -147,25 +151,21 @@ class Bound:
             if invalid_values:
                 min_val = min(flat_values)
                 max_val = max(flat_values)
-                bounds_str = self.get_bounds_str()
                 raise ValueError(
-                    f'All values must be in {bounds_str}, got range [{min_val}, {max_val}]'
+                    f'All values must be in {self}, got range [{min_val}, {max_val}]'
                 )
 
         return value
 
-    def get_bounds_str(self) -> str:
+    def __repr__(self) -> str:
         """Get string representation of bounds."""
         left = '[' if self._min_inclusive else '('
         right = ']' if self._max_inclusive else ')'
 
-        min_str = str(self._min_value) if np.isfinite(self._min_value) else ''
-        max_str = str(self._max_value) if np.isfinite(self._max_value) else ''
+        min_str = self._original_min_str if np.isfinite(self._min_value) else ''
+        max_str = self._original_max_str if np.isfinite(self._max_value) else ''
 
         return f'{left}{min_str},{max_str}{right}'
-
-    def __repr__(self) -> str:
-        return self.get_bounds_str()
 
 
 class m_int_bounded(ExactNumber):
@@ -204,7 +204,17 @@ class m_int_bounded(ExactNumber):
 
     def serialize_self(self):
         """Serialize the datatype configuration."""
-        return super().serialize_self() | {'type_bound': self.bound}
+        return super().serialize_self() | {'type_bound': str(self.bound)}
+
+    def normalize_flags(self, flags: dict):
+        """Reconstruct from serialized data."""
+        bounds_str = flags.get('type_bound', '')
+        if bounds_str:
+            self.bound = Bound(bounds_str)
+        # Apply any flags to base datatype
+        if hasattr(super(), 'normalize_flags'):
+            super().normalize_flags(flags)
+        return self
 
     def normalize(self, value, **kwargs):
         """Normalize value and validate bounds."""
@@ -250,7 +260,17 @@ class m_float_bounded(InexactNumber):
 
     def serialize_self(self):
         """Serialize the datatype configuration."""
-        return super().serialize_self() | {'type_bound': self.bound}
+        return super().serialize_self() | {'type_bound': str(self.bound)}
+
+    def normalize_flags(self, flags: dict):
+        """Reconstruct from serialized data."""
+        bounds_str = flags.get('type_bound', '')
+        if bounds_str:
+            self.bound = Bound(bounds_str)
+        # Apply any flags to base datatype
+        if hasattr(super(), 'normalize_flags'):
+            super().normalize_flags(flags)
+        return self
 
     def normalize(self, value, **kwargs):
         """Normalize value and validate bounds."""
