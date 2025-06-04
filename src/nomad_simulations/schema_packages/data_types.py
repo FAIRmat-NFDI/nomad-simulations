@@ -21,7 +21,7 @@ from collections.abc import Generator
 from typing import Any
 
 import numpy as np
-from nomad.metainfo.data_type import Datatype, Number, normalize_type
+from nomad.metainfo.data_type import ExactNumber, InexactNumber
 
 # Match patterns like '[0,3)', '(0,5]', '[1,)', '(,10)', etc.
 bounds_patt = re.compile(r'^([\[\(])(-?\d*\.?\d*|),\s*(-?\d*\.?\d*|)([\]\)])$')
@@ -60,8 +60,6 @@ class Bound:
         '_max_value',
         '_min_inclusive',
         '_max_inclusive',
-        '_original_min_str',
-        '_original_max_str',
     )
 
     def __init__(self, range_str: str = ''):
@@ -70,20 +68,16 @@ class Bound:
         Args:
             range_str: Range specification like '[0,1]', '(0,)', etc. Empty means unbounded.
         """
-        min_val, max_val, min_inc, max_inc, min_str, max_str = self._parse_range(
-            range_str
-        )
+        min_val, max_val, min_inc, max_inc = self._parse_range(range_str)
         self._min_value = min_val
         self._max_value = max_val
         self._min_inclusive = min_inc
         self._max_inclusive = max_inc
-        self._original_min_str = min_str
-        self._original_max_str = max_str
 
-    def _parse_range(self, range_str: str) -> tuple[float, float, bool, bool, str, str]:
-        """Parse range string like '[0,3)' into (min_val, max_val, min_inc, max_inc, min_str, max_str)."""
+    def _parse_range(self, range_str: str) -> tuple[float, float, bool, bool]:
+        """Parse range string like '[0,3)' into (min_val, max_val, min_inc, max_inc)."""
         if not range_str.strip():
-            return float('-inf'), float('inf'), False, False, '', ''
+            return float('-inf'), float('inf'), False, False
 
         match = bounds_patt.match(range_str.strip())
 
@@ -103,7 +97,7 @@ class Bound:
         min_inclusive = left_bracket == '[' and bool(min_str)
         max_inclusive = right_bracket == ']' and bool(max_str)
 
-        return min_val, max_val, min_inclusive, max_inclusive, min_str, max_str
+        return min_val, max_val, min_inclusive, max_inclusive
 
     def _check_single_value(self, value: int | float) -> bool:
         """Check if a single value is within the specified bounds."""
@@ -127,16 +121,23 @@ class Bound:
 
         return True
 
-    def check(self, value: Any) -> None:
-        """Check if value(s) are within bounds. Raise ValueError if not.
+    def check(self, value: Any, **kwargs) -> Any:
+        """Check if value(s) are within bounds. Handles both scalar and array values.
 
         Note: NaN values will pass bounds checking since NaN comparisons always return False.
 
         Args:
             value: Value or array to check
+            **kwargs: Additional arguments (for compatibility)
+
+        Returns:
+            The input value if valid
+
+        Raises:
+            ValueError: If any values are outside the bounds
         """
         if value is None:
-            return
+            return value
 
         flat_values = list(_flatten_values(value))
 
@@ -151,165 +152,131 @@ class Bound:
                     f'All values must be in {bounds_str}, got range [{min_val}, {max_val}]'
                 )
 
+        return value
+
     def get_bounds_str(self) -> str:
-        """Get string representation of bounds using original format."""
+        """Get string representation of bounds."""
         left = '[' if self._min_inclusive else '('
         right = ']' if self._max_inclusive else ')'
 
-        min_str = self._original_min_str if np.isfinite(self._min_value) else ''
-        max_str = self._original_max_str if np.isfinite(self._max_value) else ''
+        min_str = str(self._min_value) if np.isfinite(self._min_value) else ''
+        max_str = str(self._max_value) if np.isfinite(self._max_value) else ''
 
         return f'{left}{min_str},{max_str}{right}'
 
     def __repr__(self) -> str:
-        return f'Bound({self.get_bounds_str()!r})'
+        return self.get_bounds_str()
 
 
-class BoundedNumber(Number):
+class m_int_bounded(ExactNumber):
     """
-    Bounded numeric data type that coordinates between NOMAD's dtype system and bounds checking.
-
-    Delegates type normalization to NOMAD's existing data types (m_int32, m_float64, etc.)
-    and bounds validation to a Bound instance.
-
+    Bounded integer data type.
+    
     Example:
-        BoundedNumber(dtype='m_int32', bounds=Bound('[1,10]'))    # 1 ≤ x ≤ 10 (32-bit integers)
+        m_int_bounded(dtype=int, bound=Bound('[1,10]'))    # 1 ≤ x ≤ 10 (integers)
     """
 
-    __slots__ = ('_base_datatype', '_bounds')
+    __slots__ = ('bound',)
 
-    def __init__(self, *, dtype: str | type | Datatype = None, bounds: Bound = None):
-        """Initialize bounded number with NOMAD dtype and bounds.
+    def __init__(self, dtype=int, bound=None):
+        """Initialize bounded integer with dtype and bounds.
 
         Args:
-            dtype: NOMAD data type (e.g., 'm_int32', 'm_float64', int, float) or Datatype instance
-            bounds: Bound instance specifying the valid range
+            dtype: Integer data type (int, np.int32, etc.)
+            bound: Bound instance specifying the valid range
         """
-        # Support reconstruction from serialized data (called by normalize_type)
-        if dtype is None:
-            # Will be populated by normalize_flags - use a placeholder dtype
-            super().__init__(float)
-            self._base_datatype = None
-            self._bounds = None
-        else:
-            # Normal initialization
-            if isinstance(dtype, Datatype):
-                self._base_datatype = dtype
-                underlying_dtype = getattr(dtype, '_dtype', dtype)
-            else:
-                self._base_datatype = normalize_type(dtype)
-                underlying_dtype = dtype
+        super().__init__(dtype)
+        self.bound = bound or Bound()
 
-            super().__init__(underlying_dtype)
-            self._bounds = bounds if bounds is not None else Bound()
-
-    def convertible_from(self, other: Any) -> bool:
+    def convertible_from(self, other):
         """Check if this data type can convert from another type."""
-        if self._base_datatype is None:
-            return False
-        return self._base_datatype.convertible_from(other)
-
-    def normalize(self, value: Any, **kwargs: Any) -> Any:
-        """Normalize value using base datatype and validate bounds."""
-        if self._base_datatype is None:
-            raise RuntimeError('BoundedNumber not properly initialized')
-        normalized_value = self._base_datatype.normalize(value, **kwargs)
-        if self._bounds is not None:
-            self._bounds.check(normalized_value)
-        return normalized_value
-
-    def serialize(self, value: Any, **kwargs: Any) -> Any:
-        """Serialize value using base datatype."""
-        if self._base_datatype is None:
-            raise RuntimeError('BoundedNumber not properly initialized')
-        return self._base_datatype.serialize(value, **kwargs)
+        # TODO: need more work
+        return True
 
     def serialize_self(self):
-        """Serialize the datatype configuration for NOMAD's indexing system."""
-        return {
-            'type_kind': 'custom',
-            'type_data': f'{self.__class__.__module__}.{self.__class__.__name__}',
-            'base_type': self._base_datatype.serialize_self(),
-            'bounds': self._bounds.get_bounds_str(),
-        } | getattr(self._base_datatype, 'flags', {})
+        """Serialize the datatype configuration."""
+        return super().serialize_self() | {'type_bound': self.bound}
 
-    def normalize_flags(self, flags: dict):
-        """Reconstruct from serialized data."""
-        # Extract our custom data
-        base_type_data = flags.get('base_type', {})
-        bounds_str = flags.get('bounds', '')
-
-        # Reconstruct base datatype
-        if base_type_data:
-            self._base_datatype = normalize_type(base_type_data)
-
-        # Reconstruct bounds
-        if bounds_str:
-            self._bounds = Bound(bounds_str)
-
-        # Apply any flags to base datatype
-        if hasattr(self._base_datatype, 'normalize_flags'):
-            self._base_datatype.normalize_flags(flags)
-
-        return self
+    def normalize(self, value, **kwargs):
+        """Normalize value and validate bounds."""
+        normalized_value = super().normalize(value, **kwargs)
+        return self.bound.check(normalized_value, **kwargs)
 
     def standard_type(self):
         """Return the equivalent python type for indexing."""
-        # Delegate to the base datatype for indexing compatibility
-        if self._base_datatype is None:
-            return 'bounded_number'  # Fallback for uninitialized instances
-        return self._base_datatype.standard_type()
+        return 'int'
 
-    def attach_definition(self, definition):
-        """Attach definition to both this type and the underlying base datatype."""
-        super().attach_definition(definition)
-        if self._base_datatype is not None:
-            self._base_datatype.attach_definition(definition)
-        return self
 
-    def __repr__(self):
-        if self._base_datatype is None:
-            return f'{self.__class__.__name__}(uninitialized)'
-        dtype_name = self._base_datatype.__class__.__name__
-        bounds_repr = self._bounds.get_bounds_str() if self._bounds else 'unbounded'
-        return (
-            f'{self.__class__.__name__}(dtype="{dtype_name}", bounds="{bounds_repr}")'
-        )
+class m_float_bounded(InexactNumber):
+    """
+    Bounded float data type.
+    
+    Example:
+        m_float_bounded(dtype=float, bound=Bound('[0.0,1.0]'))    # 0.0 ≤ x ≤ 1.0 (floats)
+    """
+
+    __slots__ = ('bound',)
+
+    def __init__(self, dtype=float, bound=None):
+        """Initialize bounded float with dtype and bounds.
+
+        Args:
+            dtype: Float data type (float, np.float64, etc.)
+            bound: Bound instance specifying the valid range
+        """
+        super().__init__(dtype)
+        self.bound = bound or Bound()
+
+    def convertible_from(self, other):
+        """Check if this data type can convert from another type."""
+        # TODO: need more work
+        return True
+
+    def serialize_self(self):
+        """Serialize the datatype configuration."""
+        return super().serialize_self() | {'type_bound': self.bound}
+
+    def normalize(self, value, **kwargs):
+        """Normalize value and validate bounds."""
+        normalized_value = super().normalize(value, **kwargs)
+        return self.bound.check(normalized_value, **kwargs)
+
+    def standard_type(self):
+        """Return the equivalent python type for indexing."""
+        return 'float'
 
 
 # Convenience factory functions for common use cases
-def bounded_int(*, dtype: str | type | Datatype = int, bounds: Bound) -> BoundedNumber:
+def bounded_int(*, dtype=int, bounds: Bound) -> m_int_bounded:
     """Create a bounded integer datatype."""
-    return BoundedNumber(dtype=dtype, bounds=bounds)
+    return m_int_bounded(dtype=dtype, bound=bounds)
 
 
-def bounded_float(
-    *, dtype: str | type | Datatype = float, bounds: Bound
-) -> BoundedNumber:
+def bounded_float(*, dtype=float, bounds: Bound) -> m_float_bounded:
     """Create a bounded float datatype."""
-    return BoundedNumber(dtype=dtype, bounds=bounds)
+    return m_float_bounded(dtype=dtype, bound=bounds)
 
 
-def strictly_positive_int(*, dtype: str | type | Datatype = int) -> BoundedNumber:
+def strictly_positive_int(*, dtype=int) -> m_int_bounded:
     """Create strictly positive integer type (x ≥ 1)."""
-    return BoundedNumber(dtype=dtype, bounds=Bound('[1,)'))
+    return m_int_bounded(dtype=dtype, bound=Bound('[1,)'))
 
 
-def positive_int(*, dtype: str | type | Datatype = int) -> BoundedNumber:
+def positive_int(*, dtype=int) -> m_int_bounded:
     """Create positive integer type (x ≥ 0)."""
-    return BoundedNumber(dtype=dtype, bounds=Bound('[0,)'))
+    return m_int_bounded(dtype=dtype, bound=Bound('[0,)'))
 
 
-def strictly_positive_float(*, dtype: str | type | Datatype = float) -> BoundedNumber:
+def strictly_positive_float(*, dtype=float) -> m_float_bounded:
     """Create strictly positive float type (x > 0)."""
-    return BoundedNumber(dtype=dtype, bounds=Bound('(0,)'))
+    return m_float_bounded(dtype=dtype, bound=Bound('(0,)'))
 
 
-def positive_float(*, dtype: str | type | Datatype = float) -> BoundedNumber:
+def positive_float(*, dtype=float) -> m_float_bounded:
     """Create positive float type (x ≥ 0)."""
-    return BoundedNumber(dtype=dtype, bounds=Bound('[0,)'))
+    return m_float_bounded(dtype=dtype, bound=Bound('[0,)'))
 
 
-def unit_float(*, dtype: str | type | Datatype = float) -> BoundedNumber:
+def unit_float(*, dtype=float) -> m_float_bounded:
     """Create unit interval float type (0 ≤ x ≤ 1)."""
-    return BoundedNumber(dtype=dtype, bounds=Bound('[0,1]'))
+    return m_float_bounded(dtype=dtype, bound=Bound('[0,1]'))
