@@ -182,7 +182,7 @@ class m_int_bounded(ExactNumber):
         """Initialize bounded integer with dtype and bounds.
 
         Args:
-            dtype: Integer data type (int, np.int32, etc.)
+            dtype: Integer data type, mostly used to specify framework and accuracy (int, np.int32, etc.)
             bound: Bound instance specifying the valid range
         """
         super().__init__(dtype)
@@ -230,7 +230,7 @@ class m_float_bounded(InexactNumber):
         """Initialize bounded float with dtype and bounds.
 
         Args:
-            dtype: Float data type (float, np.float64, etc.)
+            dtype: Float data type, mostly used to specify framework and accuracy (float, np.float64, etc.)
             bound: Bound instance specifying the valid range
         """
         super().__init__(dtype)
