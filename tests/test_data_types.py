@@ -14,18 +14,19 @@ from nomad.units import ureg
 
 from nomad_simulations.schema_packages.data_types import (
     Bound,
-    BoundedNumber,
+    m_float_bounded,
+    m_int_bounded,
 )
 
 
 # Test section class for serialization tests
 class TestSection(Section):
     bounded_value = Quantity(
-        type=BoundedNumber(dtype=float, bounds=Bound('[0,1]')),
+        type=m_float_bounded(dtype=float, bound=Bound('[0,1]')),
         description='A bounded float value',
     )
     bounded_array = Quantity(
-        type=BoundedNumber(dtype=int, bounds=Bound('[1,10]')),
+        type=m_int_bounded(dtype=int, bound=Bound('[1,10]')),
         shape=['*'],
         description='An array of bounded integers',
     )
@@ -34,7 +35,7 @@ class TestSection(Section):
 # Unit test section class for serialization tests
 class TestUnitSerializationSection(Section):
     bounded_quantity = Quantity(
-        type=BoundedNumber(dtype=float, bounds=Bound('[0,10]')), unit='joule'
+        type=m_float_bounded(dtype=float, bound=Bound('[0,10]')), unit='joule'
     )
 
 
@@ -129,7 +130,7 @@ class TestBound:
         """Test string representation of bounds and verify scientific notation fails."""
         if should_pass:
             bound = Bound(range_str)
-            assert bound.get_bounds_str() == expected_str
+            assert str(bound) == expected_str
         else:
             with pytest.raises(ValueError, match='Invalid range format'):
                 Bound(range_str)
@@ -150,8 +151,8 @@ class TestBound:
             Bound(invalid_range)  # Should not raise
 
 
-class TestBoundedNumber:
-    """Test the BoundedNumber class functionality."""
+class TestBoundedTypes:
+    """Test the m_int_bounded and m_float_bounded class functionality."""
 
     @pytest.mark.parametrize(
         'dtype,bounds_str,test_value,should_pass',
@@ -184,9 +185,23 @@ class TestBoundedNumber:
         """Test value normalization with various dtypes and bounds."""
         bound = Bound(bounds_str)
         shape = ['*'] if isinstance(test_value, list) else None
-        datatype = setup_datatype_for_testing(
-            BoundedNumber(dtype=dtype, bounds=bound), shape=shape
+
+        # Extract the underlying dtype if it's a datatype instance
+        if hasattr(dtype, '_dtype'):
+            underlying_dtype = dtype._dtype
+        else:
+            underlying_dtype = dtype
+
+        # Choose appropriate bounded type based on dtype
+        dtype_name = (
+            str(type(dtype).__name__) if not isinstance(dtype, type) else dtype.__name__
         )
+        if underlying_dtype == int or 'int' in dtype_name.lower():
+            bounded_type = m_int_bounded(dtype=underlying_dtype, bound=bound)
+        else:
+            bounded_type = m_float_bounded(dtype=underlying_dtype, bound=bound)
+
+        datatype = setup_datatype_for_testing(bounded_type, shape=shape)
 
         if should_pass:
             result = datatype.normalize(test_value)
@@ -218,45 +233,46 @@ class TestBoundedNumber:
                 datatype.normalize(test_value)
 
     @pytest.mark.parametrize(
-        'dtype,other_type,should_convert',
+        'bounded_class,dtype,other_type,should_convert',
         [
-            (int, np.int32, True),
-            (int, float, False),
-            (float, float, True),
-            (float, np.int32, False),
+            (m_int_bounded, int, np.int32, True),
+            (m_int_bounded, int, float, False),
+            (m_float_bounded, float, float, True),
+            (m_float_bounded, float, np.int32, False),
+            (m_int_bounded, np.int32, np.int16, True),
+            (m_float_bounded, np.float64, np.float32, True),
         ],
     )
-    def test_convertible_from(self, dtype, other_type, should_convert):
-        """Test convertible_from delegation."""
+    def test_convertible_from(self, bounded_class, dtype, other_type, should_convert):
+        """Test convertible_from for bounded types."""
         bound = Bound('[0,10]')
-        datatype = BoundedNumber(dtype=dtype, bounds=bound)
+        datatype = bounded_class(dtype=dtype, bound=bound)
         assert datatype.convertible_from(other_type) is should_convert
 
     @pytest.mark.parametrize(
-        'dtype,expected_type',
+        'bounded_class,dtype,expected_type',
         [
-            (int, 'int32'),
-            (float, 'float64'),
+            (m_int_bounded, int, 'int'),
+            (m_float_bounded, float, 'float'),
         ],
     )
-    def test_standard_type_delegation(self, dtype, expected_type):
-        """Test that standard_type delegates to base type."""
-        datatype = BoundedNumber(dtype=dtype, bounds=Bound('[0,1]'))
+    def test_standard_type_delegation(self, bounded_class, dtype, expected_type):
+        """Test that standard_type returns correct type."""
+        datatype = bounded_class(dtype=dtype, bound=Bound('[0,1]'))
         assert datatype.standard_type() == expected_type
 
     def test_serialization_and_reconstruction(self):
-        """Test that BoundedNumber can be serialized and reconstructed."""
-        original = BoundedNumber(dtype=float, bounds=Bound('[0,1]'))
+        """Test that bounded types can be serialized and reconstructed."""
+        original = m_float_bounded(dtype=float, bound=Bound('[0,1]'))
 
         serialized = original.serialize_self()
 
         assert serialized['type_kind'] == 'custom'
         assert (
-            'nomad_simulations.schema_packages.data_types.BoundedNumber'
+            'nomad_simulations.schema_packages.data_types.m_float_bounded'
             in serialized['type_data']
         )
-        assert 'base_type' in serialized
-        assert serialized['bounds'] == '[0,1]'
+        assert serialized['type_bound'] == '[0,1]'
 
         reconstructed = normalize_type(serialized)
 
@@ -265,18 +281,18 @@ class TestBoundedNumber:
         with pytest.raises(ValueError):
             test_datatype.normalize(1.5)
 
-    def test_uninitialized_instance(self):
-        """Test behavior of uninitialized instance (for reconstruction)."""
-        instance = BoundedNumber()
+    def test_basic_functionality(self):
+        """Test basic functionality of bounded types."""
+        int_bounded = m_int_bounded(dtype=int, bound=Bound('[0,10]'))
+        float_bounded = m_float_bounded(dtype=float, bound=Bound('[0.0,1.0]'))
 
-        # Should handle gracefully
-        assert instance.convertible_from(int) is False
-        assert instance.standard_type() == 'bounded_number'
-        assert instance._dtype is float
+        # Test basic functionality
+        assert int_bounded.standard_type() == 'int'
+        assert float_bounded.standard_type() == 'float'
 
-        # Should raise error on normalize
-        with pytest.raises(RuntimeError):
-            instance.normalize(5)
+        # Test convertibility
+        assert int_bounded.convertible_from(np.int32) is True
+        assert float_bounded.convertible_from(np.float32) is True
 
 
 class TestNOMADIntegration:
@@ -287,14 +303,13 @@ class TestNOMADIntegration:
         # This tests the full NOMAD integration
         serialized_data = {
             'type_kind': 'custom',
-            'type_data': 'nomad_simulations.schema_packages.data_types.BoundedNumber',
-            'base_type': {'type_kind': 'python', 'type_data': 'float'},
-            'bounds': '[0,1]',
+            'type_data': 'nomad_simulations.schema_packages.data_types.m_float_bounded',
+            'type_bound': '[0,1]',
         }
 
         # This is what NOMAD does internally
         datatype = normalize_type(serialized_data)
-        assert isinstance(datatype, BoundedNumber)
+        assert isinstance(datatype, m_float_bounded)
 
         # Test it works
         test_instance = setup_datatype_for_testing(datatype, shape=None)
@@ -369,7 +384,20 @@ class TestNOMADIntegration:
         self, compatibility_type, dtype, bounds_str, expected
     ):
         """Test that bounded types map correctly for external systems."""
-        bounded_type = BoundedNumber(dtype=dtype, bounds=Bound(bounds_str))
+        # Extract the underlying dtype if it's a datatype instance
+        if hasattr(dtype, '_dtype'):
+            underlying_dtype = dtype._dtype
+        else:
+            underlying_dtype = dtype
+
+        if underlying_dtype == int:
+            bounded_type = m_int_bounded(
+                dtype=underlying_dtype, bound=Bound(bounds_str)
+            )
+        else:
+            bounded_type = m_float_bounded(
+                dtype=underlying_dtype, bound=Bound(bounds_str)
+            )
 
         if compatibility_type == 'elasticsearch':
             try:
@@ -416,13 +444,12 @@ class TestEdgeCases:
     def test_edge_case_arrays(self, bounds_str, test_values, should_pass, error_match):
         """Test edge cases with array values."""
         bound = Bound(bounds_str)
-        datatype = setup_datatype_for_testing(
-            BoundedNumber(
-                dtype=float if any(isinstance(v, float) for v in test_values) else int,
-                bounds=bound,
-            ),
-            shape=['*'],
-        )
+        dtype = float if any(isinstance(v, float) for v in test_values) else int
+        if dtype == int:
+            bounded_type = m_int_bounded(dtype=dtype, bound=bound)
+        else:
+            bounded_type = m_float_bounded(dtype=dtype, bound=bound)
+        datatype = setup_datatype_for_testing(bounded_type, shape=['*'])
 
         if should_pass:
             result = datatype.normalize(test_values)
@@ -450,7 +477,7 @@ class TestEdgeCases:
     )
     def test_reconstruct_with_complex_bounds(self, bounds_str, valid_val, invalid_val):
         """Test reconstruction with various bound types."""
-        original = BoundedNumber(dtype=float, bounds=Bound(bounds_str))
+        original = m_float_bounded(dtype=float, bound=Bound(bounds_str))
         serialized = original.serialize_self()
         reconstructed = normalize_type(serialized)
 
@@ -474,10 +501,31 @@ class TestUnitHandling:
     def test_unit_preservation_scalar(self, dtype, bounds_str, unit_str):
         """Test that units are preserved for scalar values."""
 
-        class TestUnitSection(Section):
-            bounded_quantity = Quantity(
-                type=BoundedNumber(dtype=dtype, bounds=Bound(bounds_str)), unit=unit_str
-            )
+        # Extract the underlying dtype if it's a datatype instance
+        if hasattr(dtype, '_dtype'):
+            underlying_dtype = dtype._dtype
+        else:
+            underlying_dtype = dtype
+
+        dtype_name = (
+            str(type(dtype).__name__) if not isinstance(dtype, type) else dtype.__name__
+        )
+        if underlying_dtype == int or 'int' in dtype_name.lower():
+
+            class TestUnitSection(Section):
+                bounded_quantity = Quantity(
+                    type=m_int_bounded(dtype=underlying_dtype, bound=Bound(bounds_str)),
+                    unit=unit_str,
+                )
+        else:
+
+            class TestUnitSection(Section):
+                bounded_quantity = Quantity(
+                    type=m_float_bounded(
+                        dtype=underlying_dtype, bound=Bound(bounds_str)
+                    ),
+                    unit=unit_str,
+                )
 
         section = TestUnitSection()
 
@@ -507,12 +555,22 @@ class TestUnitHandling:
     def test_unit_preservation_array(self, dtype, unit_str):
         """Test that units are preserved for array values."""
 
-        class TestUnitSection(Section):
-            bounded_array = Quantity(
-                type=BoundedNumber(dtype=dtype, bounds=Bound('[0,10]')),
-                shape=['*'],
-                unit=unit_str,
-            )
+        if dtype == int:
+
+            class TestUnitSection(Section):
+                bounded_array = Quantity(
+                    type=m_int_bounded(dtype=dtype, bound=Bound('[0,10]')),
+                    shape=['*'],
+                    unit=unit_str,
+                )
+        else:
+
+            class TestUnitSection(Section):
+                bounded_array = Quantity(
+                    type=m_float_bounded(dtype=dtype, bound=Bound('[0,10]')),
+                    shape=['*'],
+                    unit=unit_str,
+                )
 
         section = TestUnitSection()
         test_values = [1.0, 5.0, 9.0]
@@ -544,10 +602,16 @@ class TestUnitHandling:
             pytest.skip('Cannot convert non-integer to int type')
 
         class TestUnitSection(Section):
-            bounded_quantity = Quantity(
-                type=BoundedNumber(dtype=dtype, bounds=Bound(bounds_str)),
-                unit=to_unit,  # Target unit
-            )
+            if dtype == int:
+                bounded_quantity = Quantity(
+                    type=m_int_bounded(dtype=dtype, bound=Bound(bounds_str)),
+                    unit=to_unit,  # Target unit
+                )
+            else:
+                bounded_quantity = Quantity(
+                    type=m_float_bounded(dtype=dtype, bound=Bound(bounds_str)),
+                    unit=to_unit,  # Target unit
+                )
 
         section = TestUnitSection()
 
@@ -575,9 +639,16 @@ class TestUnitHandling:
             pytest.skip('Cannot convert 0.5 to integer type')
 
         class TestUnitSection(Section):
-            bounded_quantity = Quantity(
-                type=BoundedNumber(dtype=dtype, bounds=Bound(bounds_str)), unit='joule'
-            )
+            if dtype == int:
+                bounded_quantity = Quantity(
+                    type=m_int_bounded(dtype=dtype, bound=Bound(bounds_str)),
+                    unit='joule',
+                )
+            else:
+                bounded_quantity = Quantity(
+                    type=m_float_bounded(dtype=dtype, bound=Bound(bounds_str)),
+                    unit='joule',
+                )
 
         section = TestUnitSection()
 
@@ -591,7 +662,7 @@ class TestUnitHandling:
 
     def test_unit_stripping_during_normalization(self):
         """Test that units are properly handled during the normalization process."""
-        bounded_type = BoundedNumber(dtype=float, bounds=Bound('[0,10]'))
+        bounded_type = m_float_bounded(dtype=float, bound=Bound('[0,10]'))
         bounded_type = setup_datatype_for_testing(bounded_type, shape=None)
         quantity_value = 5.0 * ureg.joule
 
@@ -603,7 +674,7 @@ class TestUnitHandling:
         # in a Quantity with unit, NOMAD should wrap it back
         class TestUnitSection(Section):
             test_quantity = Quantity(
-                type=BoundedNumber(dtype=float, bounds=Bound('[0,10]')), unit='joule'
+                type=m_float_bounded(dtype=float, bound=Bound('[0,10]')), unit='joule'
             )
 
         section = TestUnitSection()

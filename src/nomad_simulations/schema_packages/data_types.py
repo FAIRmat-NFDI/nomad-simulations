@@ -70,7 +70,9 @@ class Bound:
         Args:
             range_str: Range specification like '[0,1]', '(0,)', etc. Empty means unbounded.
         """
-        min_val, max_val, min_inc, max_inc, min_str, max_str = self._parse_range(range_str)
+        min_val, max_val, min_inc, max_inc, min_str, max_str = self._parse_range(
+            range_str
+        )
         self._min_value = min_val
         self._max_value = max_val
         self._min_inclusive = min_inc
@@ -204,13 +206,16 @@ class m_int_bounded(ExactNumber):
 
     def serialize_self(self):
         """Serialize the datatype configuration."""
-        return super().serialize_self() | {'type_bound': str(self.bound)}
+        return {
+            'type_kind': 'custom',
+            'type_data': f'{self.__class__.__module__}.{self.__class__.__name__}',
+            'type_bound': str(self.bound),
+        } | self.flags
 
     def normalize_flags(self, flags: dict):
         """Reconstruct from serialized data."""
         bounds_str = flags.get('type_bound', '')
-        if bounds_str:
-            self.bound = Bound(bounds_str)
+        self.bound = Bound(bounds_str)
         # Apply any flags to base datatype
         if hasattr(super(), 'normalize_flags'):
             super().normalize_flags(flags)
@@ -260,13 +265,16 @@ class m_float_bounded(InexactNumber):
 
     def serialize_self(self):
         """Serialize the datatype configuration."""
-        return super().serialize_self() | {'type_bound': str(self.bound)}
+        return {
+            'type_kind': 'custom',
+            'type_data': f'{self.__class__.__module__}.{self.__class__.__name__}',
+            'type_bound': str(self.bound),
+        } | self.flags
 
     def normalize_flags(self, flags: dict):
         """Reconstruct from serialized data."""
         bounds_str = flags.get('type_bound', '')
-        if bounds_str:
-            self.bound = Bound(bounds_str)
+        self.bound = Bound(bounds_str)
         # Apply any flags to base datatype
         if hasattr(super(), 'normalize_flags'):
             super().normalize_flags(flags)
