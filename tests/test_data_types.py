@@ -196,7 +196,7 @@ class TestBoundedTypes:
         dtype_name = (
             str(type(dtype).__name__) if not isinstance(dtype, type) else dtype.__name__
         )
-        if underlying_dtype == int or 'int' in dtype_name.lower():
+        if underlying_dtype is int or 'int' in dtype_name.lower():
             bounded_type = m_int_bounded(dtype=underlying_dtype, bound=bound)
         else:
             bounded_type = m_float_bounded(dtype=underlying_dtype, bound=bound)
@@ -390,7 +390,7 @@ class TestNOMADIntegration:
         else:
             underlying_dtype = dtype
 
-        if underlying_dtype == int:
+        if underlying_dtype is int:
             bounded_type = m_int_bounded(
                 dtype=underlying_dtype, bound=Bound(bounds_str)
             )
@@ -445,7 +445,7 @@ class TestEdgeCases:
         """Test edge cases with array values."""
         bound = Bound(bounds_str)
         dtype = float if any(isinstance(v, float) for v in test_values) else int
-        if dtype == int:
+        if dtype is int:
             bounded_type = m_int_bounded(dtype=dtype, bound=bound)
         else:
             bounded_type = m_float_bounded(dtype=dtype, bound=bound)
@@ -510,7 +510,7 @@ class TestUnitHandling:
         dtype_name = (
             str(type(dtype).__name__) if not isinstance(dtype, type) else dtype.__name__
         )
-        if underlying_dtype == int or 'int' in dtype_name.lower():
+        if underlying_dtype is int or 'int' in dtype_name.lower():
 
             class TestUnitSection(Section):
                 bounded_quantity = Quantity(
@@ -555,7 +555,7 @@ class TestUnitHandling:
     def test_unit_preservation_array(self, dtype, unit_str):
         """Test that units are preserved for array values."""
 
-        if dtype == int:
+        if dtype is int:
 
             class TestUnitSection(Section):
                 bounded_array = Quantity(
@@ -602,7 +602,7 @@ class TestUnitHandling:
             pytest.skip('Cannot convert non-integer to int type')
 
         class TestUnitSection(Section):
-            if dtype == int:
+            if dtype is int:
                 bounded_quantity = Quantity(
                     type=m_int_bounded(dtype=dtype, bound=Bound(bounds_str)),
                     unit=to_unit,  # Target unit
@@ -639,7 +639,7 @@ class TestUnitHandling:
             pytest.skip('Cannot convert 0.5 to integer type')
 
         class TestUnitSection(Section):
-            if dtype == int:
+            if dtype is int:
                 bounded_quantity = Quantity(
                     type=m_int_bounded(dtype=dtype, bound=Bound(bounds_str)),
                     unit='joule',
