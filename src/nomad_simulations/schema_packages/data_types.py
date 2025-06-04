@@ -171,7 +171,7 @@ class Bound:
 class m_int_bounded(ExactNumber):
     """
     Bounded integer data type.
-    
+
     Example:
         m_int_bounded(dtype=int, bound=Bound('[1,10]'))    # 1 ≤ x ≤ 10 (integers)
     """
@@ -190,8 +190,17 @@ class m_int_bounded(ExactNumber):
 
     def convertible_from(self, other):
         """Check if this data type can convert from another type."""
-        # TODO: need more work
-        return True
+        # Follow the same convertibility rules as the base dtype
+        if self._dtype in {int, np.int64}:
+            return other in (int, np.int64, np.int32, np.int16, np.int8)
+        elif self._dtype is np.int32:
+            return other in (np.int32, np.int16, np.int8)
+        elif self._dtype is np.int16:
+            return other in (np.int16, np.int8)
+        elif self._dtype is np.int8:
+            return other is np.int8
+        else:
+            return False
 
     def serialize_self(self):
         """Serialize the datatype configuration."""
@@ -210,7 +219,7 @@ class m_int_bounded(ExactNumber):
 class m_float_bounded(InexactNumber):
     """
     Bounded float data type.
-    
+
     Example:
         m_float_bounded(dtype=float, bound=Bound('[0.0,1.0]'))    # 0.0 ≤ x ≤ 1.0 (floats)
     """
@@ -229,8 +238,15 @@ class m_float_bounded(InexactNumber):
 
     def convertible_from(self, other):
         """Check if this data type can convert from another type."""
-        # TODO: need more work
-        return True
+        # Follow the same convertibility rules as the base dtype
+        if self._dtype in {float, np.float64}:
+            return other in (float, np.float64, np.float32, np.float16)
+        elif self._dtype is np.float32:
+            return other in (np.float32, np.float16)
+        elif self._dtype is np.float16:
+            return other is np.float16
+        else:
+            return False
 
     def serialize_self(self):
         """Serialize the datatype configuration."""
@@ -247,16 +263,6 @@ class m_float_bounded(InexactNumber):
 
 
 # Convenience factory functions for common use cases
-def bounded_int(*, dtype=int, bounds: Bound) -> m_int_bounded:
-    """Create a bounded integer datatype."""
-    return m_int_bounded(dtype=dtype, bound=bounds)
-
-
-def bounded_float(*, dtype=float, bounds: Bound) -> m_float_bounded:
-    """Create a bounded float datatype."""
-    return m_float_bounded(dtype=dtype, bound=bounds)
-
-
 def strictly_positive_int(*, dtype=int) -> m_int_bounded:
     """Create strictly positive integer type (x ≥ 1)."""
     return m_int_bounded(dtype=dtype, bound=Bound('[1,)'))
