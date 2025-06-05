@@ -17,7 +17,6 @@
 #
 
 import re
-from collections.abc import Generator
 from typing import Any
 
 import numpy as np
@@ -27,18 +26,20 @@ from nomad.metainfo.data_type import ExactNumber, InexactNumber
 bounds_patt = re.compile(r'^([\[\(])(-?\d*\.?\d*|),\s*(-?\d*\.?\d*|)([\]\)])$')
 
 
-def _flatten_values(data: Any) -> Generator[Any, None, None]:
-    """Generator that yields all scalar values from nested list/array structure."""
+def _flatten_values(data: Any) -> list[Any]:
+    """Returns a list of all scalar values from nested list/array structure."""
     if isinstance(data, np.ndarray):
-        yield from data.flatten()
+        return data.flatten().tolist()
     elif isinstance(data, list):
+        result = []
         for item in data:
             if isinstance(item, list):
-                yield from _flatten_values(item)
+                result.extend(_flatten_values(item))
             else:
-                yield item
+                result.append(item)
+        return result
     else:
-        yield data
+        return [data]
 
 
 class Bound:
@@ -145,9 +146,7 @@ class Bound:
         if value is None:
             return value
 
-        flat_values = list(_flatten_values(value))
-
-        if flat_values:
+        if flat_values := _flatten_values(value):
             invalid_values = [v for v in flat_values if not self._check_single_value(v)]
 
             if invalid_values:
