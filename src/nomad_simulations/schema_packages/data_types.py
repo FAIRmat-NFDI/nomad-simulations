@@ -217,8 +217,7 @@ class m_int_bounded(ExactNumber):
         bounds_str = flags.get('type_bound', '')
         self.bound = Bound(bounds_str)
         # Apply any flags to base datatype
-        if hasattr(super(), 'normalize_flags'):
-            super().normalize_flags(flags)
+        super().normalize_flags(flags)
         return self
 
     def normalize(self, value, **kwargs):
