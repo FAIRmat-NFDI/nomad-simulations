@@ -206,7 +206,7 @@ class m_int_bounded(ExactNumber):
 
     def serialize_self(self):
         """Serialize the datatype configuration."""
-        return super().serialize_self() | {'type_bound': self.bound}
+        return super().serialize_self() | {'type_bound': str(self.bound)}
 
     def normalize_flags(self, flags: dict):
         """Reconstruct from serialized data."""
@@ -260,7 +260,7 @@ class m_float_bounded(InexactNumber):
 
     def serialize_self(self):
         """Serialize the datatype configuration."""
-        return return super().serialize_self() | {'type_bound': self.bound}
+        return super().serialize_self() | {'type_bound': str(self.bound)}
 
     def normalize_flags(self, flags: dict):
         """Reconstruct from serialized data."""
