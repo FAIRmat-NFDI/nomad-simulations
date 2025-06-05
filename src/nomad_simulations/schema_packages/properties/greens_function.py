@@ -2,7 +2,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from nomad.metainfo import MEnum, Quantity, SubSection
-from nomad.metainfo.data_type import m_float64
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -11,6 +10,7 @@ if TYPE_CHECKING:
 
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
+from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.variables import (
     Frequency,
@@ -247,7 +247,7 @@ class QuasiparticleWeight(PhysicalProperty):
 
         Z = 1 - ∂Σ/∂ω|ω=0
 
-    where Σ is the `ElectronicSelfEnergy`. The quasiparticle weight is a measure of the strength of the
+    where Σ is the `ElectronicSelfEnergy`. The quasi-particle weight is a measure of the strength of the
     electron-electron interactions and takes values between 0 and 1, with Z = 1 representing a non-correlated
     system, and Z = 0 the Mott state.
     """
@@ -313,10 +313,10 @@ class QuasiparticleWeight(PhysicalProperty):
     )
 
     value = Quantity(
-        type=m_float64().no_shape_check(),
+        type=unit_float(),
         shape=['*'],
         description="""
-        Value of the quasi-particle weight matrices.
+        Value of the quasi-particle weight matrices. Must be between 0 and 1.
         """,
     )
 
@@ -325,18 +325,6 @@ class QuasiparticleWeight(PhysicalProperty):
     ) -> None:
         super().__init__(m_def, m_context, **kwargs)
         self.name = self.m_def.name
-
-    def is_valid_quasiparticle_weight(self) -> bool:
-        """
-        Check if the quasiparticle weight values are valid, i.e., if all `value` are defined between
-        0 and 1.
-
-        Returns:
-            (bool): True if the quasiparticle weight is valid, False otherwise.
-        """
-        if np.any(np.array(self.value) < 0.0) or np.any(np.array(self.value) > 1.0):
-            return False
-        return True
 
     def resolve_system_correlation_strengths(self) -> str:
         """
@@ -359,18 +347,13 @@ class QuasiparticleWeight(PhysicalProperty):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        if self.is_valid_quasiparticle_weight() is False:
-            logger.error(
-                'Invalid negative quasiparticle weights found: could not validate them.'
-            )
-            return
-
-        system_correlation_strengths = self.resolve_system_correlation_strengths()
-        if (
-            self.system_correlation_strengths is not None
-            and self.system_correlation_strengths != system_correlation_strengths
-        ):
-            logger.warning(
-                f'The stored `system_correlation_strengths`, {self.system_correlation_strengths}, does not coincide with the resolved one, {system_correlation_strengths}. We will update it.'
-            )
-        self.system_correlation_strengths = system_correlation_strengths
+        if self.value is not None:
+            system_correlation_strengths = self.resolve_system_correlation_strengths()
+            if (
+                self.system_correlation_strengths is not None
+                and self.system_correlation_strengths != system_correlation_strengths
+            ):
+                logger.warning(
+                    f'The stored `system_correlation_strengths`, {self.system_correlation_strengths}, does not coincide with the resolved one, {system_correlation_strengths}. We will update it.'
+                )
+            self.system_correlation_strengths = system_correlation_strengths

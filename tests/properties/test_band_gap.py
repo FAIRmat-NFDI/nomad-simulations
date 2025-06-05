@@ -29,26 +29,6 @@ class TestElectronicBandGap:
         assert electronic_band_gap.name == 'ElectronicBandGap'
 
     @pytest.mark.parametrize(
-        'value, result',
-        [
-            (0.0, 0.0),
-            (1.0, 1.0),
-            (-1.0, None),
-        ],
-    )
-    def test_validate_values(self, value: Union[list[float], float], result: float):
-        """
-        Test the `validate_values` method.
-        """
-        electronic_band_gap = ElectronicBandGap()
-        electronic_band_gap.value = value * ureg.joule
-        validated_value = electronic_band_gap.validate_values(logger)
-        if validated_value is not None:
-            assert np.isclose(validated_value.magnitude, result)
-        else:
-            assert validated_value == result
-
-    @pytest.mark.parametrize(
         'momentum_transfer, type, result',
         [
             (None, None, None),
