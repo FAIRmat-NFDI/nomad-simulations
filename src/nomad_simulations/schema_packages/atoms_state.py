@@ -551,7 +551,12 @@ class ParticleState(Entity):
     This can be extended to include any common quantities in the future.
     """
 
-    pass
+    label = Quantity(
+        type=str,
+        description="""
+        User- or program-package-defined identifier for this particle.
+        """,
+    )
 
 
 class AtomsState(ParticleState):

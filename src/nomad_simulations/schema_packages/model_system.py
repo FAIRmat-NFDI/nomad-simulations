@@ -938,6 +938,16 @@ class ModelSystem(System):
         """,
     )
 
+    velocities = Quantity(
+        type=np.float64,
+        shape=['*', 3],
+        unit='meter / second',
+        description="""
+            Velocities of the particles: I.e., the change in cartesian coordinates of the
+        particle position with time.
+        """,
+    )
+
     # TODO improve description and add an example
     bond_list = Quantity(
         type=np.int32,
