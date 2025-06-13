@@ -22,6 +22,7 @@ from hashlib import sha1
 from typing import TYPE_CHECKING
 
 import ase
+from ase.symbols import symbols2numbers
 import numpy as np
 from matid import Classifier, SymmetryAnalyzer  # pylint: disable=import-error
 from matid.classification.classifications import (
@@ -51,6 +52,7 @@ if TYPE_CHECKING:
 
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
+    CGBeadState,
     ParticleState,
 )
 from nomad_simulations.schema_packages.utils import (
@@ -1037,6 +1039,55 @@ class ModelSystem(System):
                     return []
                 chemical_symbols.append(particle_state.chemical_symbol)
         return chemical_symbols
+
+    # TODO: symbols should be a property right?
+    # ? To replace get_chemical_symbols
+    def get_symbols(self, logger: 'BoundLogger') -> list[str]:
+        """
+        Gets the symbols from the particle_states.
+        Args:
+            logger (BoundLogger): The logger to log messages.
+        Returns:
+            list: The list of symbols of the particles.
+        """
+        symbols = []
+        for particle_state in self.particle_states:
+            symbol = None
+            if isinstance(particle_state, AtomsState):
+                symbol = particle_state.chemical_symbol
+            elif isinstance(particle_state, CGBeadState):
+                symbol = particle_state.bead_symbol
+            if not symbol:
+                logger.warning('missing symbol in ParticleState.')
+            symbols.append(symbol)
+        return symbols
+
+    # ! Check for chemical elements
+    def are_valid_chemical_symbols(self, logger: 'BoundLogger') -> bool:
+        """
+        Checks if the chemical symbols in the particle_states are valid chemical symbols.
+        Args:
+            logger (BoundLogger): The logger to log messages.
+        Returns:
+            bool: True if all chemical symbols are valid, False otherwise.
+        """
+        symbols = self.get_chemical_symbols(logger)
+        if not symbols:
+            return False
+
+        try:
+            symbols2numbers(symbols)
+        except KeyError as e:
+            logger.error(f'Invalid chemical symbol found: {e}')
+            return False
+        return True
+
+    # atom_labels = self.traj_parser.get_atom_labels(n)
+    # if atom_labels is not None:
+    #     try:
+    #         symbols2numbers(atom_labels)
+    #     except KeyError:
+    #         atom_labels = ['X'] * len(atom_labels)
 
     def to_ase_atoms(self, logger: 'BoundLogger') -> 'Optional[ase.Atoms]':
         """

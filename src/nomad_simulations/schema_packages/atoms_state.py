@@ -665,5 +665,83 @@ class AtomsState(ParticleState):
             self.atomic_number = self.resolve_atomic_number(logger=logger)
 
 
-class CoarseGrainedState(ParticleState):
-    pass
+class CGBeadState(ParticleState):
+    """
+    A section to define coarse-grained bead state information.
+    """
+
+    # ? What do we want to qualify as type identifier? What safety checks do we need?
+    bead_symbol = Quantity(
+        type=str,
+        description="""
+        Symbol(s) describing the (base) CG particle type. Equivalent to chemical_symbol
+        for atomic elements.
+        """,
+    )
+
+    label = Quantity(
+        type=str,
+        description="""
+        User- or program-package-defined identifier for this bead site.
+        This could be used to store primary FF labels in cases where only a
+        secondary specification is required. Otherwise, `alt_labels` are
+        used to document more complex bead identifiers, e.g., bead interactions based
+        on connectivity.
+        """,
+    )
+
+    alt_labels = Quantity(
+        type=str,
+        shape=['*'],
+        description="""
+        A list of bead labels for multifaceted bead characterization.
+        """,
+    )
+
+    mass = Quantity(
+        type=np.float64,
+        unit='kg',
+        description="""
+        Total mass of the particle.
+        """,
+    )
+
+    charge = Quantity(
+        type=np.float64,
+        unit='coulomb',
+        description="""
+        Total charge of the particle.
+        """,
+    )
+
+    # Other possible quantities
+    #     diameter: float
+    #         The diameter of each particle.
+    #         Default: 1.0
+    #     body: int
+    #         The composite body associated with each particle. The value -1
+    #         indicates no body.
+    #         Default: -1
+    #     moment_inertia: float
+    #         The moment_inertia of each particle (I_xx, I_yy, I_zz).
+    #         This inertia tensor is diagonal in the body frame of the particle.
+    #         The default value is for point particles.
+    #         Default: 0, 0, 0
+    #     scaled_positions: list of scaled-positions #! for cell if relevant
+    #         Like positions, but given in units of the unit cell.
+    #         Can not be set at the same time as positions.
+    #         Default: 0, 0, 0
+    #     orientation: float
+    #         The orientation of each particle. In scalar + vector notation,
+    #         this is (r, a_x, a_y, a_z), where the quaternion is q = r + a_xi + a_yj + a_zk.
+    #         A unit quaternion has the property: sqrt(r^2 + a_x^2 + a_y^2 + a_z^2) = 1.
+    #         Default: 0, 0, 0, 0
+    #     angmom: float #? for cell or here?
+    #         The angular momentum of each particle as a quaternion.
+    #         Default: 0, 0, 0, 0
+    #     image: int #! advance PBC stuff would go in cell I guess
+    #         The number of times each particle has wrapped around the box (i_x, i_y, i_z).
+    #         Default: 0, 0, 0
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
