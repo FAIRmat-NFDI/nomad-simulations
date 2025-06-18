@@ -227,8 +227,10 @@ class PhysicalProperty(ArchiveSection):
             return True
         return False
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+    def normalize(self, *args, **kwargs) -> None:
         self.is_derived = self._is_derived()
+        if self.m_def.name is not None:
+            self.name = self.m_def.name
 
 
 class PropertyContribution(PhysicalProperty):
