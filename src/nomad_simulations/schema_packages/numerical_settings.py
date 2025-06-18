@@ -331,6 +331,15 @@ class KMesh(Mesh):
         """,
     )
 
+    symmetrized_points = Quantity(
+        type=np.float64,
+        shape=['*', 3],
+        description="""
+        List of the mesh points after applying symmetry operations in units of the `reciprocal_lattice_vectors`. This quantity
+        is typically smaller than `all_points` and contains only the unique points in the Brillouin zone.
+        """,
+    )
+
     high_symmetry_points = Quantity(
         type=JSON,
         description="""

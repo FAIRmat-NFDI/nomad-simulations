@@ -1,11 +1,11 @@
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 import pint
 from nomad.config import config
 from nomad.metainfo import Quantity, SubSection
 
-from nomad_simulations.schema_packages.variables import KLinePath
+from nomad_simulations.schema_packages.numerical_settings import KMesh
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -13,14 +13,9 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
+from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.numerical_settings import KSpace
-from nomad_simulations.schema_packages.physical_property import (
-    PhysicalProperty,
-    validate_quantity_wrt_value,
-)
-from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
-from nomad_simulations.schema_packages.properties.fermi_surface import FermiSurface
-from nomad_simulations.schema_packages.utils import get_sibling_section
+from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -39,7 +34,7 @@ class BaseElectronicEigenvalues(PhysicalProperty):
         description="""
         Number of bands / eigenvalues.
         """,
-    )
+    )  # TODO: remove
 
     value = Quantity(
         type=np.float64,
@@ -64,17 +59,12 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
     )
 
     occupation = Quantity(
-        type=np.float64,
-        shape=['*', 'n_bands'],
+        type=unit_float(),
+        shape=['*'],
         description="""
-        Occupation of the electronic eigenvalues. This is a number depending whether the `spin_channel` has been set or not.
-        If `spin_channel` is set, then this number is between 0 and 1, where 0 means that the state is unoccupied and 1 means
-        that the state is fully occupied; if `spin_channel` is not set, then this number is between 0 and 2. The shape of
-        this quantity is defined as `[K.n_points, K.dimensionality, n_bands]`, where `K` is a `variable` which can
-        be `KMesh` or `KLinePath`, depending whether the simulation mapped the whole Brillouin zone or just a specific
-        path.
+        Occupation of the electronic eigenvalues. 
         """,
-    )
+    )  # restructure spin for plotting?
 
     highest_occupied = Quantity(
         type=np.float64,
@@ -94,9 +84,6 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         """,
     )
 
-    # ? Should we add functionalities to handle min/max of the `value` in some specific cases, .e.g, bands around the Fermi level,
-    # ? core bands separated by gaps, and equivalently, higher-energy valence bands separated by gaps?
-
     value_contributions = SubSection(
         sub_section=BaseElectronicEigenvalues.m_def,
         repeats=True,
@@ -111,150 +98,15 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         """,
     )
 
-    reciprocal_cell = Quantity(
-        type=KSpace.reciprocal_lattice_vectors,
-        description="""
-        Reference to the reciprocal lattice vectors stored under `KSpace`.
-        """,
-    )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
+class ElectronicBandStructure(ElectronicEigenvalues):
+    """
+    Accessible energies by the charges (electrons and holes) in the reciprocal space.
+    """
 
-    @validate_quantity_wrt_value(name='occupation')
-    def order_eigenvalues(self) -> Union[bool, tuple[pint.Quantity, np.ndarray]]:
-        """
-        Order the eigenvalues based on the `value` and `occupation`. The return `value` and
-        `occupation` are flattened.
+    iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandStructure'
 
-        Returns:
-            (Union[bool, tuple[pint.Quantity, np.ndarray]]): The flattened and sorted `value` and `occupation`. If validation
-            fails, then it returns `False`.
-        """
-        total_shape = np.prod(self.value.shape)
-
-        # Order the indices in the flattened list of `value`
-        flattened_value = self.value.reshape(total_shape)
-        flattened_occupation = self.occupation.reshape(total_shape)
-        sorted_indices = np.argsort(flattened_value, axis=0)
-
-        sorted_value = (
-            np.take_along_axis(flattened_value.magnitude, sorted_indices, axis=0)
-            * flattened_value.u
-        )
-        sorted_occupation = np.take_along_axis(
-            flattened_occupation, sorted_indices, axis=0
-        )
-        self.m_cache['sorted_eigenvalues'] = True
-        return sorted_value, sorted_occupation
-
-    def resolve_homo_lumo_eigenvalues(
-        self,
-    ) -> tuple[Optional[pint.Quantity], Optional[pint.Quantity]]:
-        """
-        Resolve the `highest_occupied` and `lowest_unoccupied` eigenvalues by performing a binary search on the
-        flattened and sorted `value` and `occupation`. If these quantities already exist, overwrite them or return
-        them if it is not possible to resolve from `value` and `occupation`.
-
-        Returns:
-            (tuple[Optional[pint.Quantity], Optional[pint.Quantity]]): The `highest_occupied` and
-            `lowest_unoccupied` eigenvalues.
-        """
-        # Sorting `value` and `occupation`
-        if not self.order_eigenvalues():  # validation fails
-            if self.highest_occupied is not None and self.lowest_unoccupied is not None:
-                return self.highest_occupied, self.lowest_unoccupied
-            return None, None
-        sorted_value, sorted_occupation = self.order_eigenvalues()
-        sorted_value_unit = sorted_value.u
-        sorted_value = sorted_value.magnitude
-
-        # Binary search ot find the transition point between `occupation = 2` and `occupation = 0`
-        homo = self.highest_occupied
-        lumo = self.lowest_unoccupied
-        mid = (
-            np.searchsorted(
-                sorted_occupation <= configuration.occupation_tolerance, True
-            )
-            - 1
-        )
-        if mid >= 0 and mid < len(sorted_occupation) - 1:
-            if sorted_occupation[mid] > 0 and (
-                sorted_occupation[mid + 1] >= -configuration.occupation_tolerance
-                and sorted_occupation[mid + 1] <= configuration.occupation_tolerance
-            ):
-                homo = sorted_value[mid] * sorted_value_unit
-                lumo = sorted_value[mid + 1] * sorted_value_unit
-
-        return homo, lumo
-
-    def extract_band_gap(self) -> Optional[ElectronicBandGap]:
-        """
-        Extract the electronic band gap from the `highest_occupied` and `lowest_unoccupied` eigenvalues.
-        If the difference of `highest_occupied` and `lowest_unoccupied` is negative, the band gap `value` is set to 0.0.
-
-        Returns:
-            (Optional[ElectronicBandGap]): The extracted electronic band gap section to be stored in `Outputs`.
-        """
-        band_gap = None
-        homo, lumo = self.resolve_homo_lumo_eigenvalues()
-        if homo and lumo:
-            band_gap = ElectronicBandGap(is_derived=True, physical_property_ref=self)
-
-            if (lumo - homo).magnitude < 0:
-                band_gap.value = 0.0
-            else:
-                band_gap.value = lumo - homo
-        return band_gap
-
-    # TODO fix this method once `FermiSurface` property is implemented
-    def extract_fermi_surface(self, logger: 'BoundLogger') -> Optional[FermiSurface]:
-        """
-        Extract the Fermi surface for metal systems and using the `FermiLevel.value`.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[FermiSurface]): The extracted Fermi surface section to be stored in `Outputs`.
-        """
-        # Check if the system has a finite band gap
-        homo, lumo = self.resolve_homo_lumo_eigenvalues()
-        if (homo and lumo) and (lumo - homo).magnitude > 0:
-            return None
-
-        # Get the `fermi_level.value`
-        fermi_level = get_sibling_section(
-            section=self, sibling_section_name='fermi_level', logger=logger
-        )
-        if fermi_level is None:
-            logger.warning(
-                'Could not extract the `FermiSurface`, because `FermiLevel` is not stored.'
-            )
-            return None
-        fermi_level_value = fermi_level.value.magnitude
-
-        # Extract values close to the `fermi_level.value`
-        fermi_indices = np.logical_and(
-            self.value.magnitude
-            >= (fermi_level_value - configuration.fermi_surface_tolerance),
-            self.value.magnitude
-            <= (fermi_level_value + configuration.fermi_surface_tolerance),
-        )
-        fermi_values = self.value[fermi_indices]
-
-        # Store `FermiSurface` values
-        # ! This is wrong (!) the `value` should be the `KMesh.points`, not the `ElectronicEigenvalues.value`
-        fermi_surface = FermiSurface(
-            n_bands=self.n_bands,
-            is_derived=True,
-            physical_property_ref=self,
-        )
-        fermi_surface.value = fermi_values
-        return fermi_surface
+    k_path = SubSection(sub_section=KMesh.m_def)
 
     def resolve_reciprocal_cell(self) -> Optional[pint.Quantity]:
         """
@@ -279,43 +131,10 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-
-        # Resolve `highest_occupied` and `lowest_unoccupied` eigenvalues
-        self.highest_occupied, self.lowest_unoccupied = (
-            self.resolve_homo_lumo_eigenvalues()
-        )
-
-        # `ElectronicBandGap` extraction
-        band_gap = self.extract_band_gap()
-        if band_gap is not None:
-            self.m_parent.electronic_band_gaps.append(band_gap)
-
-        # TODO uncomment once `FermiSurface` property is implemented
-        # `FermiSurface` extraction
-        # fermi_surface = self.extract_fermi_surface(logger)
-        # if fermi_surface is not None:
-        #     self.m_parent.fermi_surfaces.append(fermi_surface)
-
-        # Resolve `reciprocal_cell` from the `KSpace` numerical settings section
         self.reciprocal_cell = self.resolve_reciprocal_cell()
 
 
-class ElectronicBandStructure(ElectronicEigenvalues):
-    """
-    Accessible energies by the charges (electrons and holes) in the reciprocal space.
-    """
-
-    iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandStructure'
-
-    k_path = SubSection(sub_section=KLinePath.m_def)
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-
+# defunct
 class Occupancy(PhysicalProperty):
     """
     Electrons occupancy of an atom per orbital and spin. This is a number defined between 0 and 1 for
@@ -356,11 +175,3 @@ class Occupancy(PhysicalProperty):
         fully occupied; if `spin_channel` is not set, then this number is between 0 and 2.
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    # TODO add extraction from `ElectronicEigenvalues.occupation`
