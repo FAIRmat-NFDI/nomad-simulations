@@ -77,6 +77,7 @@ class PhysicalProperty(ArchiveSection):
 
     iri = Quantity(
         type=URL,
+        default='',
         description="""
         Internationalized Resource Identifier (IRI) of the physical property defined in the FAIRmat
         taxonomy, https://fairmat-nfdi.github.io/fairmat-taxonomy/.
