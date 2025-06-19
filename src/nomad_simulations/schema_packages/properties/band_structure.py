@@ -16,7 +16,7 @@ from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.numerical_settings import KSpace
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.utils.utils import check_not_none
-from nomad_simulations.schema_packages.utils.electronic import quicksearch_first_value, inner_copy
+from nomad_simulations.schema_packages.utils.electronic import inner_copy
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -45,19 +45,19 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
     value = Quantity(
         type=np.float64,
         unit='joule',
-        shape=['level', 'spin'],
+        shape=['spin', 'level'],
         description="""
         Value of the electronic eigenvalues.
-        Rows correspond to the energy levels, and columns correspond to the spin channels.
+        Dimensions: [spin channel, energy level].
         """,
     )
 
     occupation = Quantity(
-        type=unit_float(),
-        shape=['level', 'spin'],
+        type=unit_float(dtype=np.float64),
+        shape=['spin', 'level'],
         description="""
         Occupation of the electronic eigenvalues, ranging from 0 to 1.
-        Rows correspond to the energy levels, and columns correspond to the spin channels.
+        Dimensions: [spin channel, energy level].
         """,
     )  # restructure spin for plotting?
 
@@ -100,20 +100,23 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         """
         Resolve HOMO and LUMO eigenvalues using binary search on sorted eigenvalues.
         """        
-        def process_spin_channel(spin_data):
+        def process_spin_channel(data: np.ndarray) -> list:
             """Process a single spin channel to find HOMO/LUMO."""
-            spin_values, spin_occupations = spin_data
-            lumo_idx = quicksearch_first_value(
-                spin_occupations, 0.0, tolerance=1e-6
-            )
+            mid = int(len(data) / 2)  # ? extra check
+            values, occupations = data[:mid], data[mid:]
+            lumo_region = np.where(occupations <= 1e-6)
 
-            return [
-                spin_values[lumo_idx] if lumo_idx is not None and lumo_idx >= 0 else None,
-                spin_values[lumo_idx + 1] if lumo_idx is not None and lumo_idx > 0 else None
-            ]
+            if lumo_region[0].size > 0:
+                lumo_idx = np.min(lumo_region)
+                if lumo_idx > 0:
+                    return [values[lumo_idx], values[lumo_idx - 1]]
+                else:
+                    return [values[lumo_idx], np.nan]
+            else:
+                return [np.nan, np.nan]
 
         # Stack value and occupation arrays along last axis for apply_along_axis
-        combined_data = np.stack([self.value, self.occupation.magnitude], axis=-1)
+        combined_data = np.stack([self.value.magnitude, self.occupation], axis=-1)
         results = np.apply_along_axis(process_spin_channel, axis=0, arr=combined_data.T)
         
         self.highest_occupied = results[:, 0] * self.value.u
@@ -123,7 +126,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         """
         Pad out the value and occupation arrays along the spin channel dimension.
         """
-        spin_index = 2
+        spin_index = 0  # Spin is now first dimension
         if np.array(self.value).shape[spin_index] == 1:  # TODO: add model_method spin_polarized
             self.value = inner_copy(self.value, 0)  # TODO: dynamically set repetition
         if np.array(self.occupation).shape[spin_index] == 1:  # TODO: add model_method spin_polarized
@@ -147,25 +150,25 @@ class ElectronicBandStructure(BaseElectronicEigenvalues):
     value = Quantity(
         type=np.float64,
         unit='joule',
-        shape=['level', 'kpoint', 'spin'],
+        shape=['spin', 'kpoint', 'level'],
         description="""
         Value of the electronic eigenvalues in the reciprocal space.
-        Dimensions: [energy level, k-point, spin channel].
+        Dimensions: [spin channel, k-point, energy level].
         """,
     )
 
     occupation = Quantity(
-        type=unit_float(),
-        shape=['level', 'kpoint', 'spin'],
+        type=unit_float(dtype=np.float64),
+        shape=['spin', 'kpoint', 'level'],
         description="""
         Occupation of the electronic eigenvalues, ranging from 0 to 1.
-        Dimensions: [energy level, k-point, spin channel].
+        Dimensions: [spin channel, k-point, energy level].
         """,
     )
 
     highest_occupied = Quantity(
         type=np.float64,
-        shape=['kpoint', 'spin'],
+        shape=['spin', 'kpoint'],
         unit='joule',
         description="""
         Highest occupied electronic eigenvalue for each k-point and spin channel. Together with `lowest_unoccupied`, it defines the
@@ -175,7 +178,7 @@ class ElectronicBandStructure(BaseElectronicEigenvalues):
 
     lowest_unoccupied = Quantity(
         type=np.float64,
-        shape=['kpoint', 'spin'],
+        shape=['spin', 'kpoint'],
         unit='joule',
         description="""
         Lowest unoccupied electronic eigenvalue for each k-point and spin channel. Together with `highest_occupied`, it defines the
@@ -188,28 +191,31 @@ class ElectronicBandStructure(BaseElectronicEigenvalues):
         """
         Resolve HOMO and LUMO eigenvalues using binary search on sorted eigenvalues for band structure.
         """        
-        def process_kpoint_spin(kpoint_spin_data):
+        def process_spin_kpoint(data: np.ndarray) -> list:
             """Process a single k-point and spin channel to find HOMO/LUMO."""
-            spin_values, spin_occupations = kpoint_spin_data
-            lumo_idx = quicksearch_first_value(
-                spin_occupations, 0.0, tolerance=1e-6
-            )
+            mid = int(len(data) / 2)  # ? extra check
+            values, occupations = data[:mid], data[mid:]
+            lumo_region = np.where(occupations <= 1e-6)
 
-            return [
-                spin_values[lumo_idx] if lumo_idx is not None and lumo_idx >= 0 else None,
-                spin_values[lumo_idx + 1] if lumo_idx is not None and lumo_idx > 0 else None
-            ]
+            if lumo_region[0].size > 0:
+                lumo_idx = np.min(lumo_region)
+                if lumo_idx > 0:
+                    return [values[lumo_idx], values[lumo_idx - 1]]
+                else:
+                    return [values[lumo_idx], np.nan]
+            else:
+                return [np.nan, np.nan]
 
-        # Stack value and occupation arrays - shape: [level, kpoint, spin, 2]
-        # Apply along level axis (axis=0) for each k-point and spin combination
-        # Reshape to combine kpoint and spin dimensions for processing
-        combined_data = np.stack([self.value, self.occupation.magnitude], axis=-1)
-        n_levels, n_kpoints, n_spins, _ = combined_data.shape
-        reshaped_data = combined_data.transpose(1, 2, 0, 3).reshape(n_kpoints * n_spins, n_levels, 2)
-        results = np.apply_along_axis(process_kpoint_spin, axis=1, arr=reshaped_data)
+
+        n_spins, n_kpoints, n_levels = self.value.shape
         
-        # Reshape back to [kpoint, spin, 2] then extract homo/lumo
-        results = results.reshape(n_kpoints, n_spins, 2)
+        # Stack along last axis to get [n_spins, n_kpoints, n_levels, 2]
+        combined_data = np.stack([self.value.magnitude, self.occupation], axis=2)
+        reshaped_data = combined_data.reshape(n_spins * n_kpoints, n_levels * 2)
+
+        results = np.apply_along_axis(process_spin_kpoint, axis=1, arr=reshaped_data)
+        results = results.reshape(n_spins, n_kpoints, 2)
+
         self.highest_occupied = results[:, :, 0] * self.value.u
         self.lowest_unoccupied = results[:, :, 1] * self.value.u
 
@@ -217,10 +223,10 @@ class ElectronicBandStructure(BaseElectronicEigenvalues):
         """
         Pad out the value and occupation arrays along the spin channel dimension.
         """
-        spin_index = 2
-        if np.array(self.value).shape[spin_index] == 1:  # TODO: add model_method spin_polarized
+        spin_index = 0
+        if self.value.shape[spin_index] == 1:  # TODO: add model_method spin_polarized
             self.value = inner_copy(self.value, 0)  # TODO: dynamically set repetition
-        if np.array(self.occupation).shape[spin_index] == 1:  # TODO: add model_method spin_polarized
+        if self.occupation.shape[spin_index] == 1:  # TODO: add model_method spin_polarized
             self.occupation = inner_copy(self.occupation, 0)  # TODO: dynamically set repetition
 
     def resolve_reciprocal_cell(self) -> pint.Quantity | None:  # ? remove
