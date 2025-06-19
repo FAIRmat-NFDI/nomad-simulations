@@ -147,3 +147,40 @@ def catch_not_implemented(func: 'Callable') -> 'Callable':
             return False
 
     return wrapper
+
+
+def check_not_none(*attributes: str) -> 'Callable':
+    """
+    Decorator that checks if specified object or class attributes are not `None`.
+    Returns `None` if any of the specified attributes are `None`, otherwise executes the function.
+    
+    Args:
+        *attributes: Names of attributes to check for None values
+            Use 'input.<attribute>' for input attributes
+            Use 'self.<attribute>' for object attributes
+            Use 'class.<attribute>' for class attributes
+            Use '<attribute>' for global attributes
+    """
+    def decorator(func: 'Callable') -> 'Callable':
+        def wrapper(self, *args, **kwargs):
+            for attr in attributes:
+                # Remove prefix and set source
+                if attr.startswith('input.'):
+                    attr_name = attr[6:]
+                    source = args[0]
+                elif attr.startswith('self.'):
+                    attr_name = attr[5:]
+                    source = self
+                elif attr.startswith('class.'):
+                    attr_name = attr[6:]
+                    source = self.__class__
+                else:
+                    attr_name = attr
+                    source = globals()
+                if not hasattr(source, attr_name) or getattr(source, attr_name) is None:
+                    return None
+
+            return func(self, *args, **kwargs)
+        
+        return wrapper
+    return decorator
