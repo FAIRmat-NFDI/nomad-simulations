@@ -20,40 +20,179 @@ from nomad_simulations.schema_packages.variables import Variables
 logger = utils.get_logger(__name__)
 
 
-def validate_quantity_wrt_value(name: str = ''):
+def accumulate_class_attributes(cls, attr_name: str, new_data: dict) -> dict:
     """
-    Decorator to validate the existence of a quantity and its shape with respect to the `PhysicalProperty.value`
-    before calling a method. An example can be found in the module `properties/band_structure.py` for the method
-    `ElectronicEigenvalues.order_eigenvalues()`.
+    Accumulate attributes from parent classes in MRO order.
+    Newer additions to the attributes take precedence over inherited ones.
+    
+    Args:
+        cls: The class to process
+        attr_name: Name of the attribute to accumulate
+        new_data: New data to merge with inherited data
+        
+    Returns:
+        dict: Accumulated data with child classes taking precedence
+    """
+    accumulated = {}
+
+    for base in reversed(cls.__mro__[1:]):
+        if hasattr(base, attr_name):
+            accumulated.update(getattr(base, attr_name))
+    
+    accumulated.update(new_data)
+    return accumulated
+
+
+def extract_shapes(instance, shape_requirements: dict) -> list[int]:
+    """
+    Extract shape values from instance quantities based on requirements.
+    
+    Args:
+        instance: Object instance to extract shapes from
+        shape_requirements: Dict mapping quantity names to dimension sets
+        
+    Returns:
+        list[int]: List of shape values for specified dimensions
+        
+    Raises:
+        TypeError: If quantities are not array-like and cannot be converted to arrays
+        IndexError: If dimension indices are invalid
+    """
+    return [
+        np.asarray(val).shape[dim_idx]
+        for name, dim_indices in shape_requirements.items()
+        if (val := getattr(instance, name, None)) is not None
+        for dim_idx in dim_indices
+    ]
+
+
+def validate_shape_consistency(proj_shapes: list[int], shape_kwargs: dict, class_name: str, logger) -> None:
+    """
+    Validate that extracted shapes meet consistency requirements.
+    
+    Args:
+        proj_shapes: List of shape values to validate
+        shape_kwargs: Validation parameters (target, etc.)
+        class_name: Name of class being validated (for logging)
+        logger: Logger for warnings
+    """
+    if isinstance((target := shape_kwargs.get('target')), int):
+        if proj_shapes != [target] * len(proj_shapes):
+            logger.warning(
+                f'The shapes of the requested quantities in {class_name} do not match the target shape {target}. '
+                f'Expected shape of {target}, but got: {proj_shapes}.'
+            )
+    elif len(set(proj_shapes)) > 1:
+        logger.warning(
+            f'The shapes of the requested quantities in {class_name} do not match. '
+            f'Got: {proj_shapes}.'
+        )
+
+
+def same_shapes(quantities: dict[str, set[int]] = {}, **kwargs):
+    """
+    Decorator that defers shape validation until normalization.
+    Only flags mismatching shapes as a warning. If a shape is not defined or populated, it is ignored.
+    Any modifications are inherited by the child classes.
 
     Args:
-        name (str, optional): The name of the `quantity` to validate. Defaults to ''.
+        quantities (dict[str, set[int]]): `keys` determine the quantity names, while `values` are sets of dimension indices to check.
+            Multiple axes indicates squareness along that slice of the quantity.
+        **kwargs: Optional keyword arguments:
+            target (int, optional): Expected shape value that all dimensions should match. If left unspecified, checks for uniformity across all dimensions.
+            logger (BoundLogger, optional): Logger instance for warnings. If not provided, uses module logger.
     """
 
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            # Checks if `quantity` is defined
-            quantity = getattr(self, name, None)
-            if quantity is None or len(quantity) == 0:
-                logger.warning(f'The quantity `{name}` is not defined.')
-                return False
+    def decorator(cls):
+        # Always accumulate requirements
+        cls._shape_requirements = accumulate_class_attributes(cls, '_shape_requirements', quantities)
+        cls._shape_kwargs = accumulate_class_attributes(cls, '_shape_kwargs', kwargs)
+        
+        # Wrap the existing normalize method
+        original_normalize = getattr(cls, 'normalize', None)
+        
+        def normalize_with_validation(self, archive, logger):
+            if original_normalize:
+                original_normalize(self, archive, logger)
+            
+            # Only validate if this is the actual instance type (leaf class)
+            if type(self) is cls:
+                self._validate_shapes(logger)
+        
+        def _validate_shapes(self, logger):
+            shape_requirements = getattr(self.__class__, '_shape_requirements', {})
+            shape_kwargs = getattr(self.__class__, '_shape_kwargs', {})
+            
+            if not shape_requirements:
+                return
 
-            # Checks if `value` exists and has the same shape as `quantity`
-            value = getattr(self, 'value', None)
-            if value is None:
-                logger.warning('The quantity `value` is not defined.')
-                return False
-            if value is not None and value.shape != quantity.shape:
+            try:
+                proj_shapes = extract_shapes(self, shape_requirements)
+            except TypeError:
                 logger.warning(
-                    f'The shape of the quantity `{name}` does not match the shape of the `value`.'
+                    f'Some quantities in {self.__class__.__name__} are not array-like.'
                 )
-                return False
+                return
+            except IndexError:
+                logger.warning(
+                    f'Some quantities in {self.__class__.__name__} do not have valid ranks.'
+                )
+                return
+                
+            validate_shape_consistency(proj_shapes, shape_kwargs, self.__class__.__name__, logger)
+        
+        cls.normalize = normalize_with_validation
+        cls._validate_shapes = _validate_shapes
+        return cls
 
-            return func(self, *args, **kwargs)
+    return decorator
 
-        return wrapper
 
+def remove_shape_checks(quantities: dict[str, set[int]], **kwargs):
+    """
+    Decorator to selectively remove shape validation for specific quantities/axes.
+    Any modifications are inherited by the child classes.
+    
+    Args:
+        quantities (dict[str, set[int]]): Mapping of quantity names to sets of dimension indices to remove.
+            Empty set `{}` will remove all shape validation, either at the class or quantity level.
+
+    Examples:
+        @remove_shape_checks({})  # Remove all shape validation
+        @remove_shape_checks({'positions': {}})  # Remove all positions dim checks
+        @remove_shape_checks({'energy': {0}})  # Remove only energy dim 0 check
+        @remove_shape_checks({'forces': {0, 1}})  # Remove forces dims 0,1 checks
+    """
+    def decorator(cls):
+        if (logger := kwargs.get('logger')) is None:
+            logger = utils.get_logger(__name__)
+
+        if quantities == {}:
+            cls._shape_requirements = {}
+            cls._shape_kwargs = {}
+        else:
+            current_requirements = accumulate_class_attributes(cls, '_shape_requirements', {})
+            current_kwargs = accumulate_class_attributes(cls, '_shape_kwargs', {})
+            
+            # Remove specified quantities/axes
+            for quantity_name, axes_to_remove in quantities.items():
+                if quantity_name in current_requirements:
+                    if not axes_to_remove:
+                        del current_requirements[quantity_name]
+                    elif isinstance(current_requirements[quantity_name], set):
+                        current_requirements[quantity_name].difference_update(axes_to_remove)
+                    else:
+                        logger.warning(
+                            f'Invalid type for quantity {quantity_name} in {cls.__name__}. '
+                            f'Expected set, got {type(current_requirements[quantity_name])}.'
+                        )
+                        return cls  # Invalid type, return original class
+            
+            cls._shape_requirements = current_requirements
+            cls._shape_kwargs = current_kwargs
+        
+        return cls
+    
     return decorator
 
 

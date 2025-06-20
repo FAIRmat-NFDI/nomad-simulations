@@ -2,13 +2,14 @@ from typing import Optional, Union
 
 import numpy as np
 import pytest
+from _pytest.logging import LoggingPlugin
 from nomad.datamodel import EntryArchive
 from nomad.metainfo import Quantity
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.physical_property import (
     PhysicalProperty,
-    validate_quantity_wrt_value,
+    same_shapes,
 )
 
 # from nomad_simulations.schema_packages.variables import Variables
@@ -64,47 +65,103 @@ class TestPhysicalProperty:
         assert derived_physical_property.is_derived is True
 
 
-# testing `validate_quantity_wrt_value` decorator
-class ValidatingClass:
-    def __init__(self, value=None, occupation=None):
-        self.value = value
-        self.occupation = occupation
-
-    @validate_quantity_wrt_value('occupation')
-    def validate_occupation(self) -> Union[bool, np.ndarray]:
-        return self.occupation
-
-
 @pytest.mark.parametrize(
-    'value, occupation, result',
+    'quantities, class_attrs, target, warning_text',
     [
-        (None, None, False),  # Both value and occupation are None
-        (np.array([[1, 2], [3, 4]]), None, False),  # occupation is None
-        (None, np.array([[0.5, 1], [0, 0.5]]), False),  # value is None
-        (np.array([[1, 2], [3, 4]]), np.array([]), False),  # occupation is empty
+        # Matching shapes - no warning
         (
-            np.array([[1, 2], [3, 4]]),
-            np.array([[0.5, 1]]),
-            False,
-        ),  # Shapes do not match
+            {'arr1': {0}, 'arr2': {0}},
+            {'arr1': np.array([[1, 2], [3, 4]]), 'arr2': np.array([[5, 6], [7, 8]])},
+            None,
+            '',
+        ),
+        # Mismatched shapes - warning
         (
-            np.array([[1, 2], [3, 4]]),
-            np.array([[0.5, 1], [0, 0.5]]),
-            np.array([[0.5, 1], [0, 0.5]]),
-        ),  # Valid case (return `occupation`)
+            {'arr1': {0}, 'arr2': {0}},
+            {'arr1': np.array([[1, 2], [3, 4]]), 'arr2': np.array([[[1, 2]], [[3, 4]], [[5, 6]]])},
+            None,
+            "do not match",
+        ),
+        # Target shape matching - no warning
+        (
+            {'arr1': {0}, 'arr2': {1}},
+            {'arr1': np.array([[1, 2], [3, 4], [5, 6]]), 'arr2': np.array([[1, 2, 3], [4, 5, 6]])},
+            3,
+            '',
+        ),
+        # Target shape mismatch - warning
+        (
+            {'arr1': {0}},
+            {'arr1': np.array([[1, 2], [3, 4]])},
+            5,
+            "target shape 5",
+        ),
+        # Multiple dimensions matching - no warning
+        (
+            {'arr1': {0, 1}},
+            {'arr1': np.array([[1, 2], [3, 4]])},
+            None,
+            '',
+        ),
+        # Multiple dimensions mismatch - warning
+        (
+            {'arr1': {0, 1}},
+            {'arr1': np.array([[1, 2, 3], [4, 5, 6]])},
+            None,
+            "do not match",
+        ),
+        # Empty quantities - no warning
+        (
+            {},
+            {'arr1': np.array([1, 2, 3])},
+            None,
+            '',
+        ),
+        # Missing attributes - no warning (ignored)
+        (
+            {'nonexistent': {0}},
+            {'arr1': np.array([1, 2, 3])},
+            None,
+            '',
+        ),
+        # Non-array attribute - warning
+        (
+            {'not_array': {0}},
+            {'not_array': "string"},
+            None,
+            "not array-like",
+        ),
+        # Invalid dimension index - warning
+        (
+            {'arr1': {5}},
+            {'arr1': np.array([1, 2, 3])},
+            None,
+            "valid ranks",
+        ),
     ],
 )
-def test_validate_quantity_wrt_value(
-    value: Optional[np.ndarray],
-    occupation: Optional[np.ndarray],
-    result: Union[bool, np.ndarray],
+def test_same_shapes(
+    quantities: dict[str, set[int]], 
+    class_attrs: dict[str, Union[np.ndarray, str]], 
+    target: Optional[int], 
+    warning_text: str, 
+    caplog: LoggingPlugin
 ):
-    """
-    Test the `validate_quantity_wrt_value` decorator.
-    """
-    obj = ValidatingClass(value=value, occupation=occupation)
-    validation = obj.validate_occupation()
-    if isinstance(validation, bool):
-        assert validation == result
+    """Test the same_shapes decorator with various scenarios."""
+    kwargs = {}
+    if target is not None:
+        kwargs['target'] = target
+    
+    @same_shapes(quantities, **kwargs)
+    class TestClass:
+        pass
+    
+    # Set attributes on the class
+    for attr_name, attr_value in class_attrs.items():
+        setattr(TestClass, attr_name, attr_value)
+    
+    if warning_text:
+        assert len(caplog.records) == 1
+        assert warning_text in caplog.records[0].message
     else:
-        assert np.allclose(validation, result)
+        assert len(caplog.records) == 0
