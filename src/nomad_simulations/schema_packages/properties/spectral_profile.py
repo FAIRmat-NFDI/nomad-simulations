@@ -35,12 +35,23 @@ class SpectralProfile(PhysicalProperty):
         """,
     )  # TODO check units and normalization_factor of DOS and Spectra and see whether they can be merged
 
-    energies = SubSection(sub_section=Energy.m_def)
+    energies = Quantity(
+        type=np.float64,
+        unit='joule',
+        shape=['*'],
+        description="""
+        Energy sampling.
+        """,
+    )
 
-    frequencies = SubSection(sub_section=Energy.m_def)
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
+    frequencies = Quantity(
+        type=np.float64,
+        unit='hertz',
+        shape=['*'],
+        description="""
+        Frequency sampling.
+        """,
+    )
 
 
 class DOSProfile(SpectralProfile):
@@ -54,21 +65,9 @@ class DOSProfile(SpectralProfile):
         unit='1/joule',
         shape=['*'],
         description="""
-        The value of the electronic DOS. Must be positive.
+        The value of the electronic DOS.
         """,
     )
-
-    energies = SubSection(
-        sub_section=Energy.m_def,
-        description="""
-        Energy grid points of the projected electronic DOS.
-        """,
-    )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
 
     def resolve_pdos_name(self, logger: 'BoundLogger') -> Optional[str]:
         """
@@ -122,8 +121,6 @@ class DOSProfile(SpectralProfile):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-
-        # We resolve
         self.name = self.resolve_pdos_name(logger)
 
 
@@ -167,13 +164,6 @@ class ElectronicDensityOfStates(DOSProfile):
     #     The cumulative intensities integrated from from the lowest (most negative) energy to the Fermi level.
     #     """,
     # )
-
-    energies = SubSection(
-        sub_section=Energy.m_def,
-        description="""
-        Energy grid points of the electronic DOS.
-        """,
-    )  # ? convert to `Quantity`
 
     projected_dos = SubSection(
         sub_section=DOSProfile.m_def,
@@ -236,10 +226,12 @@ class ElectronicDensityOfStates(DOSProfile):
         # Check that the closest `energies` to the energy reference is not too far away.
         # If it is very far away, normalization may be very inaccurate and we do not report it.
         dos_values = self.value.magnitude
-        eref = highest_occupied_energy if fermi_level is None else fermi_level
-        fermi_idx = (np.abs(energies_points - eref)).argmin()
+        if highest_occupied_energy is None:  # handle Fermi level separately
+            return None
+
+        fermi_idx = (np.abs(energies_points - highest_occupied_energy)).argmin()
         fermi_energy_closest = energies_points[fermi_idx]
-        distance = np.abs(fermi_energy_closest - eref)
+        distance = np.abs(fermi_energy_closest - highest_occupied_energy)
         single_peak_fermi = False
         if distance.magnitude <= configuration.dos_energy_tolerance:
             # See if there are zero values close below the energy reference.
@@ -248,7 +240,7 @@ class ElectronicDensityOfStates(DOSProfile):
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies_points[idx])
+                    energy_distance = np.abs(highest_occupied_energy - energies_points[idx])
                 except IndexError:
                     break
                 if energy_distance.magnitude > configuration.dos_energy_tolerance:
@@ -264,7 +256,7 @@ class ElectronicDensityOfStates(DOSProfile):
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies_points[idx])
+                    energy_distance = np.abs(highest_occupied_energy - energies_points[idx])
                 except IndexError:
                     break
                 if energy_distance.magnitude > configuration.dos_energy_tolerance:
@@ -472,7 +464,7 @@ class ElectronicDensityOfStates(DOSProfile):
             fermi_level = fermi_level.value
         # and the `energies_origin` from the sibling `ElectronicEigenvalues` section
         self.energies_origin = self.resolve_energies_origin(
-            self.energies.points, fermi_level, logger
+            self.energies, fermi_level, logger
         )
         if self.energies_origin is None:
             logger.info('Could not resolve the `energies_origin` for the DOS')
@@ -484,7 +476,7 @@ class ElectronicDensityOfStates(DOSProfile):
         # `ElectronicBandGap` extraction
         band_gap = self.extract_band_gap()
         if band_gap is not None:
-            self.m_parent.electronic_band_gap.append(band_gap)
+            self.m_parent.electronic_band_gaps.append(band_gap)
 
         # Total `value` extraction from `projected_dos`
         value_from_pdos = self.generate_from_projected_dos(logger)
@@ -545,26 +537,26 @@ class XASSpectrum(AbsorptionSpectrum):
     def generate_from_contributions(self, logger: 'BoundLogger') -> None:
         """
         Generate the `value` of the XAS spectrum by concatenating the XANES and EXAFS contributions. It also concatenates
-        the `Energy` grid points of the XANES and EXAFS parts.
+        the `Energy` grid of the XANES and EXAFS parts.
 
         Args:
             logger (BoundLogger): The logger to log messages.
         """
         # TODO check if this method is general enough
         if self.xanes_spectrum is not None and self.exafs_spectrum is not None:
-            # Concatenate XANE and EXAFS `Energy` grid points
+            # Concatenate XANE and EXAFS `Energy` grid
             xanes_variables = self.xanes_spectrum.energies
             exafs_variables = self.exafs_spectrum.energies
             if len(xanes_variables) == 0 or len(exafs_variables) == 0:
                 logger.warning(
-                    'Could not extract the `Energy` grid points from XANES or EXAFS.'
+                    'Could not extract the `Energy` grid from XANES or EXAFS.'
                 )
                 return
-            xanes_energies = xanes_variables.points
-            exafs_energies = exafs_variables.points
+            xanes_energies = xanes_variables
+            exafs_energies = exafs_variables
             if xanes_energies.max() > exafs_energies.min():
                 logger.warning(
-                    'The XANES `Energy` grid points are not below the EXAFS `Energy` grid points.'
+                    'The XANES `Energy` grid is not below the EXAFS `Energy` grid.'
                 )
                 return
             self.energies = Energy(
