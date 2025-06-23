@@ -15,8 +15,7 @@ from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsSt
 from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.numerical_settings import KSpace
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
-from nomad_simulations.schema_packages.utils.utils import check_not_none
-from nomad_simulations.schema_packages.utils.electronic import inner_copy
+from nomad_simulations.schema_packages.utils.utils import check_not_none, inner_copy
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -34,6 +33,7 @@ class BaseElectronicEigenvalues(PhysicalProperty):
         Number of bands / eigenvalues.
         """,
     )  # TODO: remove
+
 
 class ElectronicEigenvalues(BaseElectronicEigenvalues):
     """ """
@@ -99,7 +99,8 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
     def resolve_homo_lumo(self) -> None:
         """
         Resolve HOMO and LUMO eigenvalues using binary search on sorted eigenvalues.
-        """        
+        """
+
         def process_spin_channel(data: np.ndarray) -> list:
             """Process a single spin channel to find HOMO/LUMO."""
             mid = int(len(data) / 2)  # ? extra check
@@ -109,16 +110,16 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
             if lumo_region[0].size > 0:
                 lumo_idx = np.min(lumo_region)
                 if lumo_idx > 0:
-                    return [values[lumo_idx], values[lumo_idx - 1]]
+                    return [values[lumo_idx - 1], values[lumo_idx]]  # [HOMO, LUMO]
                 else:
-                    return [values[lumo_idx], np.nan]
+                    return [np.nan, values[lumo_idx]]
             else:
                 return [np.nan, np.nan]
 
         # Stack value and occupation arrays along last axis for apply_along_axis
         combined_data = np.stack([self.value.magnitude, self.occupation], axis=-1)
         results = np.apply_along_axis(process_spin_channel, axis=0, arr=combined_data.T)
-        
+
         self.highest_occupied = results[:, 0] * self.value.u
         self.lowest_unoccupied = results[:, 1] * self.value.u
 
@@ -127,10 +128,16 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         Pad out the value and occupation arrays along the spin channel dimension.
         """
         spin_index = 0  # Spin is now first dimension
-        if np.array(self.value).shape[spin_index] == 1:  # TODO: add model_method spin_polarized
+        if (
+            np.array(self.value).shape[spin_index] == 1
+        ):  # TODO: add model_method spin_polarized
             self.value = inner_copy(self.value, 0)  # TODO: dynamically set repetition
-        if np.array(self.occupation).shape[spin_index] == 1:  # TODO: add model_method spin_polarized
-            self.occupation = inner_copy(self.occupation, 0)  # TODO: dynamically set repetition
+        if (
+            np.array(self.occupation).shape[spin_index] == 1
+        ):  # TODO: add model_method spin_polarized
+            self.occupation = inner_copy(
+                self.occupation, 0
+            )  # TODO: dynamically set repetition
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -190,7 +197,8 @@ class ElectronicBandStructure(BaseElectronicEigenvalues):
     def resolve_homo_lumo(self) -> None:
         """
         Resolve HOMO and LUMO eigenvalues using binary search on sorted eigenvalues for band structure.
-        """        
+        """
+
         def process_spin_kpoint(data: np.ndarray) -> list:
             """Process a single k-point and spin channel to find HOMO/LUMO."""
             mid = int(len(data) / 2)  # ? extra check
@@ -200,15 +208,14 @@ class ElectronicBandStructure(BaseElectronicEigenvalues):
             if lumo_region[0].size > 0:
                 lumo_idx = np.min(lumo_region)
                 if lumo_idx > 0:
-                    return [values[lumo_idx], values[lumo_idx - 1]]
+                    return [values[lumo_idx - 1], values[lumo_idx]]  # [HOMO, LUMO]
                 else:
-                    return [values[lumo_idx], np.nan]
+                    return [np.nan, values[lumo_idx]]
             else:
                 return [np.nan, np.nan]
 
-
         n_spins, n_kpoints, n_levels = self.value.shape
-        
+
         # Stack along last axis to get [n_spins, n_kpoints, n_levels, 2]
         combined_data = np.stack([self.value.magnitude, self.occupation], axis=2)
         reshaped_data = combined_data.reshape(n_spins * n_kpoints, n_levels * 2)
@@ -226,8 +233,12 @@ class ElectronicBandStructure(BaseElectronicEigenvalues):
         spin_index = 0
         if self.value.shape[spin_index] == 1:  # TODO: add model_method spin_polarized
             self.value = inner_copy(self.value, 0)  # TODO: dynamically set repetition
-        if self.occupation.shape[spin_index] == 1:  # TODO: add model_method spin_polarized
-            self.occupation = inner_copy(self.occupation, 0)  # TODO: dynamically set repetition
+        if (
+            self.occupation.shape[spin_index] == 1
+        ):  # TODO: add model_method spin_polarized
+            self.occupation = inner_copy(
+                self.occupation, 0
+            )  # TODO: dynamically set repetition
 
     def resolve_reciprocal_cell(self) -> pint.Quantity | None:  # ? remove
         """

@@ -3,34 +3,76 @@ Electronic structure utility functions.
 """
 
 import numpy as np
+from nomad_simulations.schema_packages.properties import (
+    ElectronicBandStructure,
+    ElectronicDensityOfStates,
+    ElectronicBandGap,
+)
+from nomad_simulations.schema_packages.utils.utils import check_not_none
 
-def inner_copy(
-    tensor: np.ndarray, rank_selection: int | tuple[int] | slice, repeat: int = 0
-) -> np.ndarray:
+
+@check_not_none('input.bandstructure.highest_occupied', 'input.bandstructure.lowest_unoccupied')
+def bandstructure_to_bandgap(
+    bandstructure: 'ElectronicBandStructure',
+) -> 'ElectronicBandGap | None':
     """
-    Take a chunk of a high-ranked array and extend it with exact copies of the selection.
+    Convert an `ElectronicBandStructure` to an `ElectronicBandGap`
+    based on the highest occupied and lowest unoccupied energies within the k-space.
+    """
+    band_gap = ElectronicBandGap(is_derived=True)
+    homo_k, lumo_k = None, None
+    
+    homo_idx = np.unravel_index(np.argmax(bandstructure.highest_occupied), bandstructure.highest_occupied.shape)
+    homo = bandstructure.highest_occupied[homo_idx]
+    if hasattr(bandstructure, 'kpoint') and hasattr(bandstructure.kpoint, 'all_points'):
+        homo_k = bandstructure.kpoint.all_points[homo_idx[-1]]
 
-    This function selects a portion of a tensor along its first axis and repeats it
-    the specified number of times, effectively extending the tensor.
+    lumo_idx = np.unravel_index(np.argmin(bandstructure.lowest_unoccupied), bandstructure.lowest_unoccupied.shape)
+    lumo = bandstructure.lowest_unoccupied[lumo_idx]
+    if hasattr(bandstructure, 'kpoint') and hasattr(bandstructure.kpoint, 'all_points'):
+        lumo_k = bandstructure.kpoint.all_points[lumo_idx[-1]]
 
+    band_gap.value = lumo - homo
+    if homo_k is not None and lumo_k is not None:
+        band_gap.momentum_transfer = np.linalg.norm(lumo_k - homo_k)
+
+    return band_gap
+
+@check_not_none('input.bandstructure.value', 'input.bandstructure.occupation')
+def bandstructure_to_dos(
+    bandstructure: 'ElectronicBandStructure',
+    energy_bins: int = 1000,
+) -> 'ElectronicDensityOfStates':
+    """
+    Convert an `ElectronicBandStructure` to an `ElectronicDensityOfStates` by binning occupations along k-points.
+    
     Args:
-        tensor: Input `numpy` array to copy from
-        rank_selection: `int`, `tuple`, `slice` specifying which elements to select
-        repeat: Number of times to repeat the selection. Counting starts from 0 (default: 0)
+        bandstructure: The electronic band structure to convert.
+        energy_bins: Number of energy bins for the DOS histogram.
 
-    Example:
-        >>> arr = np.array([[1, 2], [3, 4], [5, 6]])
-        >>> inner_copy(arr, slice(0, None), repeat=2)
-        array([[1, 2], [1, 2], [1, 2]])
+    Returns:
+        An `ElectronicDensityOfStates` object derived from the band structure.
     """
-    if tensor.size == 0:
-        return tensor
+    dos = ElectronicDensityOfStates(is_derived=True)
+    
+    # Process each spin channel separately
+    n_spins = bandstructure.value.shape[0]
+    all_energies = bandstructure.value.magnitude.flatten()
+    e_min, e_max = np.min(all_energies), np.max(all_energies)
+    energy_bin_edges = np.linspace(e_min, e_max, energy_bins + 1)
+    energy_centers = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
+    
+    dos_values = []
+    for spin in range(n_spins):
+        # Flatten k-point and band dimensions, keep spin separate
+        energies_spin = bandstructure.value.magnitude[spin].flatten()
+        occupations_spin = bandstructure.occupation[spin].flatten()
+        
+        dos_hist, _ = np.histogram(energies_spin, bins=energy_bin_edges, weights=occupations_spin)
+        dos_values.append(dos_hist)
+    
+    bin_width = energy_bin_edges[1] - energy_bin_edges[0]
+    dos.energies = energy_centers * bandstructure.value.u
+    dos.value = (np.array(dos_values) / bin_width) * (1 / bandstructure.value.u)
 
-    selected_chunk = tensor[rank_selection]
-
-    # If selection results in 1D array, ensure it maintains proper shape
-    if selected_chunk.ndim == tensor.ndim - 1:
-        selected_chunk = np.expand_dims(selected_chunk, axis=0)
-
-    repeated_chunks = np.tile(selected_chunk, (repeat + 1, *([1] * (tensor.ndim - 1))))
-    return np.concatenate([tensor, repeated_chunks], axis=0)
+    return dos

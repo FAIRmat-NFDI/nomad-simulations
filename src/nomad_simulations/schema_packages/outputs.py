@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 
+from nomad_simulations.schema_packages.utils.electronic import bandstructure_to_bandgap, bandstructure_to_dos
 import numpy as np
-from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import Quantity, SubSection
 
 if TYPE_CHECKING:
@@ -27,7 +27,6 @@ from nomad_simulations.schema_packages.properties import (
     HoppingMatrix,
     HybridizationFunction,
     KineticEnergy,
-    Occupancy,
     Permittivity,
     PotentialEnergy,
     QuasiparticleWeight,
@@ -78,23 +77,23 @@ class Outputs(Time):
 
     hopping_matrices = SubSection(sub_section=HoppingMatrix.m_def, repeats=True)
 
-    electronic_eigenvalues = SubSection(
-        sub_section=ElectronicEigenvalues.m_def, repeats=True
+    electronic_band_structures = SubSection(
+        sub_section=ElectronicBandStructure.m_def,  # repeats=True
     )
 
-    electronic_band_gaps = SubSection(sub_section=ElectronicBandGap.m_def, repeats=True)
+    electronic_eigenvalues = SubSection(
+        sub_section=ElectronicEigenvalues.m_def, repeats=True
+    )  # TODO: @EBB2675 should we remove these?
 
     electronic_dos = SubSection(
-        sub_section=ElectronicDensityOfStates.m_def, repeats=True
+        sub_section=ElectronicDensityOfStates.m_def,  # repeats=True
+    )
+
+    electronic_band_gaps = SubSection(
+        sub_section=ElectronicBandGap.m_def,  # repeats=True
     )
 
     fermi_surfaces = SubSection(sub_section=FermiSurface.m_def, repeats=True)
-
-    electronic_band_structures = SubSection(
-        sub_section=ElectronicBandStructure.m_def, repeats=True
-    )
-
-    occupancies = SubSection(sub_section=Occupancy.m_def, repeats=True)
 
     electronic_greens_functions = SubSection(
         sub_section=ElectronicGreensFunction.m_def, repeats=True
@@ -196,6 +195,12 @@ class Outputs(Time):
         # Set ref to the last `ModelMethod` if this is not set in the output
         if self.model_method_ref is None:
             self.model_method_ref = self.set_model_method_ref()
+
+        # build up derived electronic structures
+        if not self.electronic_band_gaps:
+            self.electronic_band_gaps = bandstructure_to_bandgap(self.electronic_band_structures)
+        if not self.electronic_dos:
+            self.electronic_dos = bandstructure_to_dos(self.electronic_band_structures)
 
 
 class SCFOutputs(Outputs):

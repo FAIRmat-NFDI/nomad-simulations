@@ -1,11 +1,10 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
-from nomad.metainfo import MEnum, Quantity
+from nomad.metainfo import Quantity
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.data_types import positive_float
@@ -19,87 +18,47 @@ class ElectronicBandGap(PhysicalProperty):
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandGap'
 
-    type = Quantity(
-        type=MEnum('direct', 'indirect'),
-        description="""
-        Type categorization of the electronic band gap. This quantity is directly related with `momentum_transfer` as by
-        definition, the electronic band gap is `'direct'` for zero momentum transfer (or if `momentum_transfer` is `None`) and `'indirect'`
-        for finite momentum transfer.
-        """,
-    )
-
-    momentum_transfer = Quantity(
-        type=np.float64,
-        shape=[2, 3],
-        description="""
-        If the electronic band gap is `'indirect'`, the reciprocal momentum transfer for which the band gap is defined
-        in units of the `reciprocal_lattice_vectors`. The initial and final momentum 3D vectors are given in the first
-        and second element. Example, the momentum transfer in bulk Si2 happens between the Γ and the (approximately)
-        X points in the Brillouin zone; thus:
-            `momentum_transfer = [[0, 0, 0], [0.5, 0.5, 0]]`.
-
-        Note: this quantity only refers to scalar `value`, not to arrays of `value`.
-        """,
-    )
-
-    spin_channel = Quantity(
-        type=np.int32,
-        description="""
-        Spin channel of the corresponding electronic band gap. It can take values of 0 or 1.
-        """,
-    )
-
     value = Quantity(
         type=positive_float(),
         unit='joule',
         description="""
         The value of the electronic band gap. This value must be positive.
+        `None` indicates that no band gap could be determined, e.g., if the system is metallic.
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
+    momentum_transfer = Quantity(
+        type=np.float64,
+        unit='1/meter',
+        description="""
+        The length of the difference in reciprocal space between the initial and final momentum transfer
+        along which the electronic band gap is defined.
+        
+        Example, the momentum transfer in bulk Si2 happens between the Γ and (approximately) X points, thus:
+            `momentum_transfer = ||[0, 0, 0] - [0.5, 0.5, 0]|| ~= 0.612`.
+        """,
+    )
 
-    def resolve_type(self, logger: 'BoundLogger') -> Optional[str]:
+    # TODO: give it a place
+    def extract_band_gap(self) -> 'ElectronicBandGap | None':
         """
-        Resolves the `type` of the electronic band gap based on the stored `momentum_transfer` values.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
+        Extract the electronic band gap from the `highest_occupied_energy` and `lowest_unoccupied_energy` stored
+        in `m_cache` from `resolve_energies_origin()`. If the difference of `highest_occupied_energy` and
+        `lowest_unoccupied_energy` is negative, the band gap `value` is set to 0.0.
 
         Returns:
-            (Optional[str]): The resolved `type` of the electronic band gap.
+            (Optional[ElectronicBandGap]): The extracted electronic band gap section to be stored in `Outputs`.
         """
-        mtr = self.momentum_transfer if self.momentum_transfer is not None else []
+        band_gap = None
+        homo = self.m_cache.get('highest_occupied_energy')
+        lumo = self.m_cache.get('lowest_unoccupied_energy')
+        if homo and lumo:
+            band_gap = ElectronicBandGap()
+            band_gap.is_derived = True
+            band_gap.physical_property_ref = self
 
-        # Check if the `momentum_transfer` is [], and return the type and a warning in the log for `indirect` band gaps
-        if len(mtr) == 0:
-            if self.type == 'indirect':
-                logger.warning(
-                    'The `momentum_transfer` is not stored for an `indirect` band gap.'
-                )
-            return self.type
-
-        # Check if the `momentum_transfer` has at least two elements, and return None if it does not
-        if len(mtr) == 1:
-            logger.warning(
-                'The `momentum_transfer` should have at least two elements so that the difference can be calculated and the type of electronic band gap can be resolved.'
-            )
-            return None
-
-        # Resolve `type` from the difference between the initial and final momentum transfer
-        momentum_difference = np.diff(mtr, axis=0)
-        if (np.isclose(momentum_difference, np.zeros(3))).all():
-            return 'direct'
-        else:
-            return 'indirect'
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        # Resolve the `type` of the electronic band gap from `momentum_transfer`, ONLY for scalar `value`
-        if self.value is not None:
-            self.type = self.resolve_type(logger)
+            if (homo - lumo).magnitude < 0:
+                band_gap.value = 0.0
+            else:
+                band_gap.value = homo - lumo
+        return band_gap
