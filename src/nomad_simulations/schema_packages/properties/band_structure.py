@@ -257,10 +257,34 @@ class ElectronicBandStructure(BaseElectronicEigenvalues):
             if isinstance(setting, KSpace):
                 return setting
 
+    def resolve_kpoints_from_kspace(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        Search for KSpace in archive.data.model_methods[..].numerical_settings[..] 
+        and set it to ElectronicBandStructure.kpoints using xpath.
+        """
+        # Search for KSpace objects in all model_methods numerical_settings
+        kspace_objects = archive.m_xpath(
+            'data.model_method[*].numerical_settings[*].k_mesh', dict=False
+        )
+        
+        if kspace_objects is None:
+            logger.warning(
+                'No KSpace object found in numerical_settings, cannot resolve `ElectronicBandStructure.kpoint`.'
+            )
+            return
+        elif len(kspace_objects) > 1:
+            logger.warning(
+                'Multiple KSpace objects found in numerical_settings, cannot resolve `ElectronicBandStructure.kpoint`.'
+            )
+            return
+
+        self.kpoint = kspace_objects[0][0][0]
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
         self.pad_out()
         self.resolve_homo_lumo()
+        self.resolve_kpoints_from_kspace(archive, logger)
 
 
 # defunct
