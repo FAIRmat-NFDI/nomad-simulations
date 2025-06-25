@@ -794,11 +794,6 @@ class KSpace(NumericalSettings):
 
     k_line_path = SubSection(sub_section=KLinePath.m_def)
 
-    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
-        super().__init__(m_def, m_context, **kwargs)
-        # Set the name of the section
-        self.name = self.m_def.name
-
     def resolve_reciprocal_lattice_vectors(
         self, model_systems: list[ModelSystem], logger: 'BoundLogger'
     ) -> Optional[pint.Quantity]:
