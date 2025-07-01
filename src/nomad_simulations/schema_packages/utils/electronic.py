@@ -3,6 +3,8 @@ Electronic structure utility functions.
 """
 
 import numpy as np
+from pymatgen.electronic_structure.dos import Dos
+from pymatgen.electronic_structure.core import Spin
 from nomad_simulations.schema_packages.properties import (
     ElectronicBandStructure,
     ElectronicDensityOfStates,
@@ -24,12 +26,14 @@ def bandstructure_to_bandgap(
     
     homo_idx = np.unravel_index(np.argmax(bandstructure.highest_occupied), bandstructure.highest_occupied.shape)
     homo = bandstructure.highest_occupied[homo_idx]
-    if hasattr(bandstructure, 'kpoint') and hasattr(bandstructure.kpoint, 'all_points'):
+    if (hasattr(bandstructure, 'kpoint') and bandstructure.kpoint is not None and 
+        hasattr(bandstructure.kpoint, 'all_points') and bandstructure.kpoint.all_points is not None):
         homo_k = bandstructure.kpoint.all_points[homo_idx[-1]]
 
     lumo_idx = np.unravel_index(np.argmin(bandstructure.lowest_unoccupied), bandstructure.lowest_unoccupied.shape)
     lumo = bandstructure.lowest_unoccupied[lumo_idx]
-    if hasattr(bandstructure, 'kpoint') and hasattr(bandstructure.kpoint, 'all_points'):
+    if (hasattr(bandstructure, 'kpoint') and bandstructure.kpoint is not None and 
+        hasattr(bandstructure.kpoint, 'all_points') and bandstructure.kpoint.all_points is not None):
         lumo_k = bandstructure.kpoint.all_points[lumo_idx[-1]]
 
     band_gap.value = lumo - homo
@@ -42,37 +46,64 @@ def bandstructure_to_bandgap(
 def bandstructure_to_dos(
     bandstructure: 'ElectronicBandStructure',
     energy_bins: int = 1000,
+    sigma: float = 0.1,
 ) -> 'ElectronicDensityOfStates':
     """
-    Convert an `ElectronicBandStructure` to an `ElectronicDensityOfStates` by binning occupations along k-points.
+    Convert an `ElectronicBandStructure` to an `ElectronicDensityOfStates` using pymatgen's
+    Gaussian smearing for smooth DOS curves.
     
     Args:
         bandstructure: The electronic band structure to convert.
         energy_bins: Number of energy bins for the DOS histogram.
+        sigma: Gaussian smearing width in eV for DOS broadening.
 
     Returns:
         An `ElectronicDensityOfStates` object derived from the band structure.
     """
     dos = ElectronicDensityOfStates(is_derived=True)
     
-    # Process each spin channel separately
     n_spins = bandstructure.value.shape[0]
     all_energies = bandstructure.value.magnitude.flatten()
     e_min, e_max = np.min(all_energies), np.max(all_energies)
-    energy_bin_edges = np.linspace(e_min, e_max, energy_bins + 1)
-    energy_centers = (energy_bin_edges[:-1] + energy_bin_edges[1:]) / 2
+    energies = np.linspace(e_min, e_max, energy_bins)
     
-    dos_values = []
-    for spin in range(n_spins):
-        # Flatten k-point and band dimensions, keep spin separate
-        energies_spin = bandstructure.value.magnitude[spin].flatten()
-        occupations_spin = bandstructure.occupation[spin].flatten()
+    # Create histogram-based DOS for each spin channel
+    dos_dict = {}
+    for spin_idx in range(n_spins):
+        spin = Spin.up if spin_idx == 0 else Spin.down
+        energies_spin = bandstructure.value.magnitude[spin_idx].flatten()
+        occupations_spin = bandstructure.occupation[spin_idx].flatten()
         
-        dos_hist, _ = np.histogram(energies_spin, bins=energy_bin_edges, weights=occupations_spin)
-        dos_values.append(dos_hist)
+        dos_hist, _ = np.histogram(energies_spin, bins=energy_bins, 
+                                 range=(e_min, e_max), weights=occupations_spin)
+        dos_dict[spin] = dos_hist
     
-    bin_width = energy_bin_edges[1] - energy_bin_edges[0]
-    dos.energies = energy_centers * bandstructure.value.u
-    dos.value = (np.array(dos_values) / bin_width) * (1 / bandstructure.value.u)
+    # Estimate Fermi level from occupied states
+    occupied_energies = all_energies[bandstructure.occupation.flatten() > 0.5]
+    efermi = np.max(occupied_energies) if len(occupied_energies) > 0 else 0.0
+    
+    pymatgen_dos = Dos(efermi=efermi, energies=energies, densities=dos_dict)
+    
+    # Apply Gaussian smearing with bounds checking
+    energy_spacing = (e_max - e_min) / energy_bins
+    safe_sigma = max(sigma, energy_spacing * 2)
+    
+    try:
+        smeared_densities = pymatgen_dos.get_smeared_densities(safe_sigma)
+    except ValueError as e:
+        if "Maximum allowed size exceeded" in str(e):
+            smeared_densities = pymatgen_dos.densities
+        else:
+            raise
+    
+    dos.energies = energies * bandstructure.value.u
+    
+    if n_spins == 1:
+        dos.value = np.array([smeared_densities[Spin.up]]) * (1 / bandstructure.value.u)
+    else:
+        dos.value = np.array([
+            smeared_densities[Spin.up],
+            smeared_densities[Spin.down]
+        ]) * (1 / bandstructure.value.u)
 
     return dos
