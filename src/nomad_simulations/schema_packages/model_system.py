@@ -900,7 +900,8 @@ class ModelSystem(System):
         type=np.int32,
         shape=['*'],
         description="""
-        Denotes the selection of the particles/atoms in the child with respect to the top-level parent.
+        Denotes the selection of the particles/atoms in the child with respect to the **top-level system**.
+        A sub-system may not contain indices that are excluded from any of its parent systems.
         Example:
             - The SrTiO3 unit cell is represented by `AtomicCell.labels = ['Sr', 'Ti', 'O', 'O', 'O']`.
             - Sub-system `'Ti'`, referring to all `'Ti'` atoms only, is represented by
