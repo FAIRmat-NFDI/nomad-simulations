@@ -911,6 +911,15 @@ class ModelSystem(System):
         """,  # TODO: improve example
     )
 
+    particle_mapping = Quantity(
+        type=np.int32,
+        shape=['sub_system_indices'],  # TODO: enforce check
+        description="""
+        Mapping of the top-level `particle_states` to the current sub-system.
+        The length of this list is equal to `sub_system_indices`.
+        """,
+    )
+
     n_particles = Quantity(
         type=np.int32,
         description="""
@@ -982,7 +991,10 @@ class ModelSystem(System):
     particle_states = SubSection(
         section_def=ParticleState.m_def,
         repeats=True,
-        description='Particle states',
+        description="""
+        Definition of the particles/atoms. Should only be populated for the **top-level** ModelSystem.
+        Sub-systems refer to these states via `particle_mapping`.
+        """,
     )
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
