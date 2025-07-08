@@ -1,8 +1,12 @@
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
+import plotly.express as px
+import plotly.graph_objects as go
 from nomad.config import config
+from nomad.datamodel.metainfo.plot import PlotlyFigure
 from nomad.metainfo import MEnum, Quantity, SubSection
+from nomad.units import ureg
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -189,13 +193,67 @@ class ElectronicDensityOfStates(SpectralProfile):
         if np.array(self.value).shape[spin_index] == 1:
             self.value = inner_copy(self.value, 0)
 
+    @check_not_none('self.value', 'self.energies')
+    def plot(self, *args, **kwargs) -> list['PlotlyFigure']:
+        """
+        Plot the electronic density of states.
+        
+        Returns:
+            list['PlotlyFigure']: A list containing the DOS plot figure(s).
+        """
+        fig = go.Figure()
+        energies_ev = self.energies.to('eV').magnitude
+        dos_values = self.value.to('1/eV').magnitude
+
+        # Spin up (positive)
+        fig.add_trace(go.Scatter(
+            x=energies_ev,
+            y=dos_values[0],
+            mode='lines',
+            name='Spin up',
+            line=dict(color='blue')
+        ))
+        
+        # Spin down (negative for traditional representation)
+        fig.add_trace(go.Scatter(
+            x=energies_ev,
+            y=-dos_values[1],
+            mode='lines',
+            name='Spin down',
+            line=dict(color='red')
+        ))
+        
+        fig.update_layout(
+            title=f"Electronic Density of States{' - ' + self.name if self.name else ''}",
+            xaxis_title='Energy (eV)',
+            yaxis_title='DOS (states/eV)',
+            showlegend=True,
+            hovermode='x'
+        )
+        
+        # Add horizontal line at y=0
+        fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
+        
+        # Add vertical line at Fermi level if available
+        # Note: You might want to get Fermi energy from model_method or similar
+        # fig.add_vline(x=fermi_energy, line_dash="dash", line_color="green", 
+        #               annotation_text="E_F")
+        
+        return [
+            PlotlyFigure(
+                label=f'DOS{" - " + self.name if self.name else ""}',
+                figure=fig.to_plotly_json()
+            )
+        ]
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
         # self.name = self.resolve_pdos_name(logger)
         self.pad_out()
 
         if self.normalization_factor is None:
             self.normalization_factor = self.resolve_normalization_factor(logger)
+
+        super().normalize(archive, logger)
 
 
 class AbsorptionSpectrum(SpectralProfile):
@@ -208,13 +266,6 @@ class AbsorptionSpectrum(SpectralProfile):
         principal term in the tensor `Permittivity.value` (see permittivity.py module).
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        # Set the name of the section
-        self.name = self.m_def.name
 
 
 class XASSpectrum(AbsorptionSpectrum):

@@ -1,11 +1,11 @@
 from functools import wraps
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 from nomad import utils
-from nomad.datamodel.data import ArchiveSection
+from nomad.datamodel.metainfo.plot import PlotSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy, SubSection
+from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -57,7 +57,7 @@ def validate_quantity_wrt_value(name: str = ''):
     return decorator
 
 
-class PhysicalProperty(ArchiveSection):
+class PhysicalProperty(PlotSection):
     """
     A base section used to define the physical properties obtained in a simulation, experiment, or in a post-processing
     analysis. The main quantity of the `PhysicalProperty` is `value`, whose instantiation has to be overwritten in the derived classes
@@ -227,9 +227,23 @@ class PhysicalProperty(ArchiveSection):
         if self.physical_property_ref is not None:
             return True
         return False
+    
+    def plot(self, *args, **kwargs) -> list:
+        """
+        Placeholder for a method to plot the physical property. This method should be overridden in derived classes
+        to provide specific plotting functionality.
+
+        Returns:
+            (list): A list of figures (`PlotlyFigure`) representing the physical property.
+        """
+        return []
 
     def normalize(self, *args, **kwargs) -> None:
         self.is_derived = self._is_derived()
+        super(PlotSection, self).normalize(*args, **kwargs)
+        plot_figures = self.plot(*args, **kwargs)
+        if plot_figures:
+            self.figures.extend(plot_figures)
         if self.m_def.name is not None:
             self.name = self.m_def.name
 
