@@ -199,8 +199,12 @@ class Outputs(Time):
         # build up derived electronic structures
         if not self.electronic_band_gaps:
             self.electronic_band_gaps = bandstructure_to_bandgap(self.electronic_band_structures)
+            if self.electronic_band_gaps:
+                self.electronic_band_gaps.normalize(archive, logger)
         if not self.electronic_dos:
             self.electronic_dos = bandstructure_to_dos(self.electronic_band_structures)
+            if self.electronic_dos:
+                self.electronic_dos.normalize(archive, logger)
 
 
 class SCFOutputs(Outputs):
