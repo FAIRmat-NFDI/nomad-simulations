@@ -812,7 +812,7 @@ class ModelSystem(System):
 
         - Example 5, a passivated heterostructure Si/(GaAs-CO2) has: 1 parent ModelSystem
         section (for Si/(GaAs-CO2)), 2 child ModelSystem sections (for Si and GaAs-CO2),
-        and 2 additional children sections in one of the childs (for GaAs and CO2). The number
+        and 2 additional children sections in one of the children (for GaAs and CO2). The number
         of AtomicCell and Symmetry sections can be inferred using a combination of example
         2 and 3.
     """
@@ -896,15 +896,27 @@ class ModelSystem(System):
         """,
     )
 
-    particle_indices = Quantity(
+    sub_system_indices = Quantity(
         type=np.int32,
         shape=['*'],
         description="""
-        Indices of the particles/atoms in the child with respect to its parent. Example:
-            - We have SrTiO3, where `AtomicCell.labels = ['Sr', 'Ti', 'O', 'O', 'O']`. If
-            we create a `model_system` child for the `'Ti'` atom only, then in that child
-            `ModelSystem.sub_systems[0].particle_indices = [1]`. If now we want to refer both to
-            the `'Ti'` and the last `'O'` atoms, `ModelSystem.sub_systems[0].particle_indices = [1, 4]`.
+        Denotes the selection of the particles/atoms in the child with respect to the **top-level system**.
+        A sub-system may not contain indices that are excluded from any of its parent systems.
+        Example:
+            - The SrTiO3 unit cell is represented by `AtomicCell.labels = ['Sr', 'Ti', 'O', 'O', 'O']`.
+            - Sub-system `'Ti'`, referring to all `'Ti'` atoms only, is represented by
+            `ModelSystem.sub_systems[*].sub_system_indices = [1]`.
+            - Sub-system of `'Ti'` and the last `'O'` atom, is represented by
+            `ModelSystem.sub_systems[*].sub_system_indices = [1, 4]`.
+        """,  # TODO: improve example
+    )
+
+    particle_mapping = Quantity(
+        type=np.int32,
+        shape=['sub_system_indices'],  # TODO: enforce check
+        description="""
+        Mapping of the top-level `particle_states` to the current sub-system.
+        The length of this list is equal to `sub_system_indices`.
         """,
     )
 
@@ -920,8 +932,8 @@ class ModelSystem(System):
         shape=['*', 3],
         unit='meter',
         description="""
-            Cartesian coordinates of all atoms in the top-level system.
-            All subsystems will reference these positions via particle_indices.
+        Cartesian coordinates of all atoms in the top-level system.
+        All subsystems will reference these positions via particle_indices.
         """,
     )
 
@@ -979,7 +991,10 @@ class ModelSystem(System):
     particle_states = SubSection(
         section_def=ParticleState.m_def,
         repeats=True,
-        description='Particle states',
+        description="""
+        Definition of the particles/atoms. Should only be populated for the **top-level** ModelSystem.
+        Sub-systems refer to these states via `particle_mapping`.
+        """,
     )
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
