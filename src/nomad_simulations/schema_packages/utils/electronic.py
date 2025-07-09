@@ -3,6 +3,7 @@ Electronic structure utility functions.
 """
 
 import numpy as np
+from scipy.interpolate import interp1d
 from pymatgen.electronic_structure.dos import Dos
 from pymatgen.electronic_structure.core import Spin
 from nomad_simulations.schema_packages.properties import (
@@ -45,8 +46,8 @@ def bandstructure_to_bandgap(
 @check_not_none('input.bandstructure.value', 'input.bandstructure.occupation')
 def bandstructure_to_dos(
     bandstructure: 'ElectronicBandStructure',
-    energy_bins: int = 1000,
-    sigma: float = 0.1,
+    energy_bins: int = None,
+    sigma: float = 0.2,
 ) -> 'ElectronicDensityOfStates':
     """
     Convert an `ElectronicBandStructure` to an `ElectronicDensityOfStates` using pymatgen's
@@ -54,17 +55,34 @@ def bandstructure_to_dos(
     
     Args:
         bandstructure: The electronic band structure to convert.
-        energy_bins: Number of energy bins for the DOS histogram.
+        energy_bins: Number of energy bins. If None, calculated dynamically.
         sigma: Gaussian smearing width in eV for DOS broadening.
 
     Returns:
         An `ElectronicDensityOfStates` object derived from the band structure.
     """
     dos = ElectronicDensityOfStates(is_derived=True)
-    
     n_spins = bandstructure.value.shape[0]
     all_energies = bandstructure.value.magnitude.flatten()
     e_min, e_max = np.min(all_energies), np.max(all_energies)
+    
+    # Calculate dynamic energy bins if not provided
+    if energy_bins is None:
+        energy_range = e_max - e_min
+        n_bands = bandstructure.value.shape[1] if len(bandstructure.value.shape) > 1 else 1
+        n_kpoints = bandstructure.value.shape[2] if len(bandstructure.value.shape) > 2 else 1
+        
+        # Base bins on energy range with minimum resolution of sigma/4
+        min_bins = int(energy_range / (sigma / 4))
+        
+        # Scale with data density: more data points = more bins
+        data_factor = np.sqrt(n_bands * n_kpoints)
+        data_bins = int(data_factor * 50)  # 50 bins per sqrt(data_points)
+        
+        # Use the larger of the two, but cap at reasonable limits
+        energy_bins = max(min_bins, data_bins)
+        energy_bins = min(max(energy_bins, 500), 5000)  # Between 500-5000 bins
+    
     energies = np.linspace(e_min, e_max, energy_bins)
     
     # Create histogram-based DOS for each spin channel
@@ -81,7 +99,6 @@ def bandstructure_to_dos(
     # Estimate Fermi level from occupied states
     occupied_energies = all_energies[bandstructure.occupation.flatten() > 0.5]
     efermi = np.max(occupied_energies) if len(occupied_energies) > 0 else 0.0
-    
     pymatgen_dos = Dos(efermi=efermi, energies=energies, densities=dos_dict)
     
     # Apply Gaussian smearing with bounds checking
