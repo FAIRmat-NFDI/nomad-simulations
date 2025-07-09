@@ -224,10 +224,8 @@ class PhysicalProperty(PlotSection):
         Returns:
             (bool): The flag indicating whether the physical property is derived or not.
         """
-        if self.physical_property_ref is not None:
-            return True
-        return False
-    
+        return self.physical_property_ref is not None
+ 
     def plot(self, *args, **kwargs) -> list:
         """
         Placeholder for a method to plot the physical property. This method should be overridden in derived classes
@@ -241,8 +239,7 @@ class PhysicalProperty(PlotSection):
     def normalize(self, *args, **kwargs) -> None:
         self.is_derived = self._is_derived()
         super(PlotSection, self).normalize(*args, **kwargs)
-        plot_figures = self.plot(*args, **kwargs)
-        if plot_figures:
+        if (plot_figures := self.plot(*args, **kwargs)):
             self.figures.extend(plot_figures)
         if self.m_def.name is not None:
             self.name = self.m_def.name
