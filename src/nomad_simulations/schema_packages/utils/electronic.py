@@ -3,8 +3,7 @@ Electronic structure utility functions.
 """
 
 import numpy as np
-from scipy.interpolate import interp1d
-from pymatgen.electronic_structure.dos import Dos
+from scipy.stats import gaussian_kde
 from pymatgen.electronic_structure.core import Spin
 from nomad_simulations.schema_packages.properties import (
     ElectronicBandStructure,
@@ -12,6 +11,7 @@ from nomad_simulations.schema_packages.properties import (
     ElectronicBandGap,
 )
 from nomad_simulations.schema_packages.utils.utils import check_not_none
+from nomad.units import ureg
 
 
 @check_not_none('input.bandstructure.highest_occupied', 'input.bandstructure.lowest_unoccupied')
@@ -47,7 +47,7 @@ def bandstructure_to_bandgap(
 def bandstructure_to_dos(
     bandstructure: 'ElectronicBandStructure',
     energy_bins: int = None,
-    sigma: float = 0.2,
+    sigma: float = 0.05,
 ) -> 'ElectronicDensityOfStates':
     """
     Convert an `ElectronicBandStructure` to an `ElectronicDensityOfStates` using pymatgen's
@@ -85,42 +85,81 @@ def bandstructure_to_dos(
     
     energies = np.linspace(e_min, e_max, energy_bins)
     
-    # Create histogram-based DOS for each spin channel
+    # Create smooth DOS using kernel density estimation
     dos_dict = {}
     for spin_idx in range(n_spins):
         spin = Spin.up if spin_idx == 0 else Spin.down
         energies_spin = bandstructure.value.magnitude[spin_idx].flatten()
         occupations_spin = bandstructure.occupation[spin_idx].flatten()
         
-        dos_hist, _ = np.histogram(energies_spin, bins=energy_bins, 
-                                 range=(e_min, e_max), weights=occupations_spin)
-        dos_dict[spin] = dos_hist
-    
-    # Estimate Fermi level from occupied states
-    occupied_energies = all_energies[bandstructure.occupation.flatten() > 0.5]
-    efermi = np.max(occupied_energies) if len(occupied_energies) > 0 else 0.0
-    pymatgen_dos = Dos(efermi=efermi, energies=energies, densities=dos_dict)
-    
-    # Apply Gaussian smearing with bounds checking
-    energy_spacing = (e_max - e_min) / energy_bins
-    safe_sigma = max(sigma, energy_spacing * 2)
-    
-    try:
-        smeared_densities = pymatgen_dos.get_smeared_densities(safe_sigma)
-    except ValueError as e:
-        if "Maximum allowed size exceeded" in str(e):
-            smeared_densities = pymatgen_dos.densities
+        # Only use occupied states for KDE
+        occupied_mask = occupations_spin > 0.01  # Small threshold to avoid numerical issues
+        if np.sum(occupied_mask) > 1:  # Need at least 2 points for KDE
+            occupied_energies = energies_spin[occupied_mask]
+            occupied_weights = occupations_spin[occupied_mask]
+            
+            # Use weighted KDE - repeat energies based on occupation
+            weighted_energies = []
+            # Scale weights to have better dynamic range
+            max_weight = np.max(occupied_weights)
+            for e, w in zip(occupied_energies, occupied_weights):
+                # Nonlinear scaling to emphasize variations in occupation
+                normalized_w = w / max_weight
+                n_reps = max(1, int(normalized_w ** 0.7 * 300))  # Power scaling + higher base
+                weighted_energies.extend([e] * n_reps)
+            
+            if len(weighted_energies) > 1:
+                # Create KDE and evaluate on energy grid
+                kde = gaussian_kde(weighted_energies)
+                
+                # Smart bandwidth selection based on data characteristics
+                energy_range = e_max - e_min
+                data_density = len(weighted_energies) / energy_range
+                
+                # Calculate local energy spacing to assess clustering
+                sorted_energies = np.sort(occupied_energies)
+                energy_spacings = np.diff(sorted_energies)
+                median_spacing = np.median(energy_spacings) if len(energy_spacings) > 0 else energy_range / len(occupied_energies)
+                
+                # Advanced adaptive bandwidth for better substructure preservation
+                base_bandwidth = kde.factor
+                
+                # Data density factor: logarithmic scaling for better dynamic range
+                log_density = np.log10(data_density + 1)
+                density_factor = np.clip(0.3 + log_density / 5, 0.15, 1.8)
+                
+                # Spacing factor: more sensitive to local structure
+                relative_spacing = median_spacing / (energy_range / 200)  # Finer resolution
+                spacing_factor = np.clip(relative_spacing ** 0.8, 0.2, 1.2)  # Nonlinear response
+                
+                # Size factor: reduced influence for better detail preservation
+                size_factor = (len(weighted_energies) / 2000) ** 0.08  # Much gentler scaling
+                
+                # Combine factors with emphasis on preserving structure
+                adaptive_bandwidth = base_bandwidth * density_factor * spacing_factor * size_factor
+                kde.set_bandwidth(adaptive_bandwidth)
+                
+                dos_values = kde(energies)
+                
+                # Normalize to conserve total electron count
+                total_electrons = np.sum(occupations_spin)
+                dos_values = dos_values * total_electrons / np.trapz(dos_values, energies)
+                
+                dos_dict[spin] = dos_values
+            else:
+                dos_dict[spin] = np.zeros(energy_bins)
         else:
-            raise
+            dos_dict[spin] = np.zeros(energy_bins)
     
-    dos.energies = energies * bandstructure.value.u
+    # Use the energies and densities directly from KDE
+    dos.energies = energies
     
     if n_spins == 1:
-        dos.value = np.array([smeared_densities[Spin.up]]) * (1 / bandstructure.value.u)
+        dos.value = np.array([dos_dict[Spin.up]])
     else:
         dos.value = np.array([
-            smeared_densities[Spin.up],
-            smeared_densities[Spin.down]
-        ]) * (1 / bandstructure.value.u)
+            dos_dict[Spin.up],
+            dos_dict[Spin.down]
+        ])
 
     return dos
