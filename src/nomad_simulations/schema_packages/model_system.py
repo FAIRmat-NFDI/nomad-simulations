@@ -982,7 +982,27 @@ class ModelSystem(System):
     particle_states = SubSection(
         section_def=ParticleState.m_def,
         repeats=True,
-        description='Particle states',
+        description="""
+            Per-particle state information.
+
+            - Ordering: In the representative (top-level) `ModelSystem` this list
+            has exactly `n_particles` entries and the order matches
+            `positions[i]`.
+
+            - Normalisation behavior: If parsers fill the list only in child
+            subsystems, the normalizer pulls those states up so the root is always
+            complete. 
+
+            Example
+            -------
+            A water molecule (H₂O):
+
+                positions       : [[…], […], […]]      # 3 atoms
+                particle_states :
+                    [0] AtomsState(H)
+                    [1] AtomsState(H)
+                    [2] AtomsState(O)
+            """,
     )
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
