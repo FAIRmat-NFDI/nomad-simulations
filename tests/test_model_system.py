@@ -300,3 +300,42 @@ def test_hierarchical_composition_and_branch_depth(n_h2o):
         assert leaf.composition_formula == 'H(2)O(1)'
     # Cu leaf should read "Cu(1)"
     assert cu.composition_formula == 'Cu(1)'
+
+
+def test_consolidate_particle_states_from_children():
+    """
+    Case: the parser populates ParticleState objects only in a child
+    subsystem and leaves the top-level list empty.  After running
+    normalisation on both the Simulation and the representative
+    ModelSystem, the root must own a complete and correctly ordered
+    particle_states list.
+    """
+    # ── build hierarchy ──────────────────────────────────────────────
+    root = ModelSystem(is_representative=True)
+    root.positions = np.zeros((3, 3)) * ureg.angstrom  # three atoms
+    root.n_particles = 3
+    root.cell.append(Cell())  # minimal cell
+
+    leaf = ModelSystem(branch_label='leaf', is_representative=False)
+    root.sub_systems.append(leaf)
+
+    # Child holds all three states, indices [0, 1, 2]
+    leaf.particle_indices = [0, 1, 2]
+    leaf_states = [AtomsState(chemical_symbol='H', atomic_number=1) for _ in range(3)]
+    leaf.particle_states.extend(leaf_states)
+
+    assert not root.particle_states  # root intentionally empty
+
+    # ── run normalisation ───────────────────────────────────────────
+    sim = Simulation(model_system=[root])
+    sim.normalize(EntryArchive(), logger=logger)  # sets branch depth, etc.
+    root.normalize(EntryArchive(), logger=logger)  # triggers consolidation
+
+    # ── assertions ──────────────────────────────────────────────────
+    # root now has a full, ordered list
+    assert len(root.particle_states) == 3
+    for i in range(3):
+        assert root.particle_states[i] is leaf_states[i]
+
+    # leaf still keeps its original list
+    assert leaf.particle_states == leaf_states

@@ -1130,8 +1130,77 @@ class ModelSystem(System):
 
         return system_type, dimensionality
 
+    def _walk_depth_first(self):
+        """Yield self and every descendant ModelSystem (depth-first)."""
+        yield self
+        for sub in self.sub_systems:
+            yield from sub._walk_depth_first()
+
+    def _consolidate_particle_states(self, logger):
+        """
+        Make sure the representative (top-level) ModelSystem owns a complete,
+        ordered ``particle_states`` list, even if only descendants populated it.
+        """
+        if not self.is_representative:
+            return  # run only on the root
+
+        # 1. Determine how many atoms we expect
+        n_atoms = self.n_particles
+        if n_atoms is None:
+            max_idx = -1
+            for ms in self._walk_depth_first():
+                if ms.particle_indices:
+                    max_idx = max(max_idx, *ms.particle_indices)
+            n_atoms = max_idx + 1
+
+        if n_atoms <= 0:
+            logger.debug('No particles detected; nothing to consolidate.')
+            return
+
+        # 2. Ensure self.particle_states has the right length
+        if not self.particle_states:
+            self.particle_states = [None] * n_atoms
+        elif len(self.particle_states) < n_atoms:
+            self.particle_states.extend([None] * (n_atoms - len(self.particle_states)))
+
+        # 3. Walk the tree and pull states up
+        for ms in self._walk_depth_first():
+            if not ms.particle_states:
+                continue
+            has_indices = (
+                ms.particle_indices is not None and len(ms.particle_indices) > 0
+            )
+            abs_indices = (
+                list(ms.particle_indices)
+                if has_indices
+                else list(range(len(ms.particle_states)))
+            )
+
+            for local_i, abs_i in enumerate(abs_indices):
+                state = ms.particle_states[local_i]
+                if state is None:
+                    continue
+                if self.particle_states[abs_i] is None:
+                    self.particle_states[abs_i] = state
+                elif self.particle_states[abs_i] is not state:
+                    logger.warning(
+                        'Conflicting ParticleState at absolute index %d; '
+                        'keeping the first encountered instance.',
+                        abs_i,
+                    )
+
+        # 4. Sanity check
+        if any(st is None for st in self.particle_states):
+            logger.error(
+                'Consolidation failed: some particle_states remain unresolved.'
+            )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+        # Check particle_states
+        if self.is_representative:
+            self._consolidate_particle_states(logger)
 
         # We don't need to normalize if the system is not representative
         if is_not_representative(model_system=self, logger=logger):
