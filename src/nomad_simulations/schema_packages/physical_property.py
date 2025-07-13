@@ -6,6 +6,7 @@ from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 
 logger = utils.get_logger(__name__)
 
+
 class PhysicalProperty(PlotSection):
     """
     A base section for computational output properties,
@@ -37,7 +38,7 @@ class PhysicalProperty(PlotSection):
         Source of the physical property. This quantity is related with the `Activity` performed to obtain the physical
         property. Example: an `ElectronicBandGap` can be obtained from a `'simulation'` or in a `'measurement'`.
         """,
-    )  # ? similarly 
+    )  # ? useful
 
     type = Quantity(
         type=str,
@@ -107,10 +108,13 @@ class PhysicalProperty(PlotSection):
         section_def='PhysicalProperty.m_def',
         repeats=True,
         description="""
-        Contributions to the physical property. This is useful for visualizing different components of the physical property.
-        Example: an `ElectronicBandGap` can have contributions from different spin channels.
+        Shallow list of contributions to the physical property.
+        This is useful for visualizing different components of the physical property.
         """,
     )
+    # TODO: would be wishful to have `section_def` be a stripped down version of PhysicalProperty
+    # that gets automatically updated when extending PhysicalProperty
+    # should be discussed with @TLCFEM
 
     def _is_derived(self) -> bool:
         """
@@ -120,7 +124,7 @@ class PhysicalProperty(PlotSection):
             (bool): The flag indicating whether the physical property is derived or not.
         """
         return self.physical_property_ref is not None
- 
+
     def plot(self, *args, **kwargs) -> list:
         """
         Placeholder for a method to plot the physical property. This method should be overridden in derived classes
@@ -131,12 +135,28 @@ class PhysicalProperty(PlotSection):
         """
         return []
 
+    def sub_plots(self, *args, **kwargs) -> None:
+        """
+        Collects sub-plots from `self.contributions`,
+        and adds them as sub-plots to the last figure in `self.figures`.
+
+        Keyword Args:
+        - target_indices (int): The index of the target figure to which the sub-figures
+          should be added. Defaults to -1, which refers to the last figure in `self.figures`.
+        """
+        target_indices = kwargs.get('target_indices', -1)
+
+        for contribution in self.contributions:
+            if sub_figure := contribution.plot(*args, **kwargs):
+                self.figures[target_indices].sub_figures.extend(sub_figure)
+
     def normalize(self, *args, **kwargs) -> None:
         self.is_derived = self._is_derived()
 
         super().normalize(*args, **kwargs)
-        if (plot_figures := self.plot(*args, **kwargs)):
+        if plot_figures := self.plot():
             self.figures.extend(plot_figures)
+        self.sub_plots()
 
         if self.m_def.name is not None:
             self.name = self.m_def.name
