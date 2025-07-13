@@ -65,11 +65,6 @@ class DOSProfile(SpectralProfile):
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-
     def resolve_pdos_name(self, logger: 'BoundLogger') -> Optional[str]:
         """
         Resolve the `name` of the projected `DOSProfile` from the `entity_ref` section. This is resolved as:
@@ -190,12 +185,6 @@ class ElectronicDensityOfStates(DOSProfile):
             These can be extracted from `entity_ref`.
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
 
     def resolve_energies_origin(
         self,
@@ -506,13 +495,6 @@ class AbsorptionSpectrum(SpectralProfile):
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        # Set the name of the section
-        self.name = self.m_def.name
-
 
 class XASSpectrum(AbsorptionSpectrum):
     """
@@ -534,13 +516,6 @@ class XASSpectrum(AbsorptionSpectrum):
         """,
         repeats=False,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        # Set the name of the section
-        self.name = self.m_def.name
 
     def generate_from_contributions(self, logger: 'BoundLogger') -> None:
         """
