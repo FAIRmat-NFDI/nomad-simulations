@@ -139,7 +139,7 @@ class TestElectronicEigenvalues:
         )
         order_result = electronic_eigenvalues.order_eigenvalues()
         if not order_result:
-            assert order_result == result_validation
+            assert not result_validation  # Empty tuple means validation failed
         else:
             sorted_value, sorted_occupation = order_result
             assert electronic_eigenvalues.m_cache['sorted_eigenvalues']

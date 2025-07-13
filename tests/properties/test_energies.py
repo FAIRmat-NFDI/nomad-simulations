@@ -1,24 +1,8 @@
 from nomad_simulations.schema_packages.properties import (
-    FermiLevel,
     KineticEnergy,
     PotentialEnergy,
     TotalEnergy,
 )
-
-
-class TestFermiLevel:
-    """
-    Test the `FermiLevel` class defined in `properties/energies.py`.
-    """
-
-    # ! Include this initial `test_default_quantities` method when testing your PhysicalProperty classes
-    def test_default_quantities(self):
-        """
-        Test the default quantities assigned when creating an instance of the `FermiLevel` class.
-        """
-        fermi_level = FermiLevel()
-        assert fermi_level.iri == 'http://fairmat-nfdi.eu/taxonomy/FermiLevel'
-        assert fermi_level.name == 'FermiLevel'
 
 
 class TestTotalEnergy:

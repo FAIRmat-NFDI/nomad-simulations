@@ -1,17 +1,11 @@
-from typing import Optional, Union
-
 import numpy as np
-import pytest
 from nomad.datamodel import EntryArchive
+from nomad.datamodel.metainfo.plot import PlotlyFigure
 from nomad.metainfo import Quantity
-from nomad.units import ureg
+from plotly.graph_objects import Figure
 
-from nomad_simulations.schema_packages.physical_property import (
-    PhysicalProperty,
-    validate_quantity_wrt_value,
-)
+from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
-# from nomad_simulations.schema_packages.variables import Variables
 from . import logger
 
 
@@ -21,29 +15,22 @@ class DummyPhysicalProperty(PhysicalProperty):
         unit='eV',
         shape=['*', '*', '*', '*'],
         description="""
-        This value is defined in order to test the `__setattr__` method in `PhysicalProperty`.
+        This value is defined in order to test the functionality in `PhysicalProperty`.
         """,
     )
+
+    def plot(self, **kwargs) -> list[PlotlyFigure]:
+        """Test implementation of plot method."""
+        fig = Figure()
+        fig.add_scatter(x=[1, 2, 3], y=[1, 4, 2], name='test')
+        plotly_figure = PlotlyFigure(label='test', figure=fig.to_plotly_json())
+        return [plotly_figure]
 
 
 class TestPhysicalProperty:
     """
     Test the `PhysicalProperty` class defined in `physical_property.py`.
     """
-
-    def test_setattr_value(self):
-        """
-        Test the `__setattr__` method when setting the `value` quantity of a physical property.
-        """
-        physical_property = DummyPhysicalProperty(
-            source='simulation',
-            # variables=[Variables(n_points=4), Variables(n_points=10)],
-        )
-        # `physical_property.value` must have full_shape=[4, 10, 3, 3]
-        value = np.ones((4, 10, 3, 3)) * ureg.eV
-        # assert physical_property.full_shape == list(value.shape)
-        physical_property.value = value
-        assert np.all(physical_property.value == value)
 
     def test_is_derived(self):
         """
@@ -63,48 +50,44 @@ class TestPhysicalProperty:
         derived_physical_property.normalize(EntryArchive(), logger)
         assert derived_physical_property.is_derived is True
 
+    def test_normalization_flag(self):
+        """
+        Test that the normalization flag prevents duplicate normalization.
+        """
+        property_obj = DummyPhysicalProperty(source='simulation')
 
-# testing `validate_quantity_wrt_value` decorator
-class ValidatingClass:
-    def __init__(self, value=None, occupation=None):
-        self.value = value
-        self.occupation = occupation
+        # First normalization
+        property_obj.normalize(EntryArchive(), logger)
+        assert property_obj.m_cache.get('_is_normalized', False) is True
 
-    @validate_quantity_wrt_value('occupation')
-    def validate_occupation(self) -> Union[bool, np.ndarray]:
-        return self.occupation
+        # Store original figures count
+        original_figures_count = len(property_obj.figures)
 
+        # Second normalization should not duplicate work
+        property_obj.normalize(EntryArchive(), logger)
 
-@pytest.mark.parametrize(
-    'value, occupation, result',
-    [
-        (None, None, False),  # Both value and occupation are None
-        (np.array([[1, 2], [3, 4]]), None, False),  # occupation is None
-        (None, np.array([[0.5, 1], [0, 0.5]]), False),  # value is None
-        (np.array([[1, 2], [3, 4]]), np.array([]), False),  # occupation is empty
-        (
-            np.array([[1, 2], [3, 4]]),
-            np.array([[0.5, 1]]),
-            False,
-        ),  # Shapes do not match
-        (
-            np.array([[1, 2], [3, 4]]),
-            np.array([[0.5, 1], [0, 0.5]]),
-            np.array([[0.5, 1], [0, 0.5]]),
-        ),  # Valid case (return `occupation`)
-    ],
-)
-def test_validate_quantity_wrt_value(
-    value: Optional[np.ndarray],
-    occupation: Optional[np.ndarray],
-    result: Union[bool, np.ndarray],
-):
-    """
-    Test the `validate_quantity_wrt_value` decorator.
-    """
-    obj = ValidatingClass(value=value, occupation=occupation)
-    validation = obj.validate_occupation()
-    if isinstance(validation, bool):
-        assert validation == result
-    else:
-        assert np.allclose(validation, result)
+        # Should still be marked as normalized
+        assert property_obj.m_cache.get('_is_normalized', False) is True
+        # Should not have duplicated figures
+        assert len(property_obj.figures) == original_figures_count
+
+    def test_plotting_and_contributions(self):
+        """
+        Test plotting integration and contributions normalization.
+        """
+        # Test main property plotting
+        property_obj = DummyPhysicalProperty(source='simulation')
+        property_obj.normalize(EntryArchive(), logger)
+
+        assert len(property_obj.figures) > 0
+        assert isinstance(property_obj.figures[0], PlotlyFigure)
+
+        # Test contributions
+        main_property = DummyPhysicalProperty(source='simulation')
+        contribution = DummyPhysicalProperty(source='analysis', name='contribution')
+        main_property.contributions = [contribution]
+        main_property.normalize(EntryArchive(), logger)
+
+        # Both should be normalized
+        assert main_property.m_cache.get('_is_normalized', False) is True
+        assert contribution.m_cache.get('_is_normalized', False) is True

@@ -1,17 +1,7 @@
-from typing import TYPE_CHECKING
-
 import numpy as np
-from nomad.metainfo import Context, Quantity, Section, SubSection
+from nomad.metainfo import Quantity, SubSection, SectionProxy
 
-if TYPE_CHECKING:
-    from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
-    from structlog.stdlib import BoundLogger
-
-from nomad_simulations.schema_packages.physical_property import (
-    PhysicalProperty,
-    PropertyContribution,
-)
+from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 ##################
 # Abstract classes
@@ -33,40 +23,9 @@ class BaseEnergy(PhysicalProperty):
     )
 
 
-class EnergyContribution(BaseEnergy, PropertyContribution):
-    """
-    Abstract class for incorporating specific energy contributions to the `TotalEnergy`.
-    The inheritance from `PropertyContribution` allows to link this contribution to a
-    specific component (of class `BaseModelMethod`) of the over `ModelMethod` using the
-    `model_method_ref` quantity.
-
-    For example, for a force field calculation, the `model_method_ref` may point to a
-    particular potential type (e.g., a Lennard-Jones potential between atom types X and Y),
-    while for a DFT calculation, it may point to a particular electronic interaction term
-    (e.g., 'XC' for the exchange-correlation term, or 'Hartree' for the Hartree term).
-    Then, the contribution will be named according to this model component and the `value`
-    quantity will contain the energy contribution from this component evaluated over all
-    relevant atoms or electrons or as a function of them.
-    """
-
-
 ####################################
 # List of specific energy properties
 ####################################
-
-
-class FermiLevel(BaseEnergy):
-    """
-    Energy required to add or extract a charge from a material at zero temperature. It can be also defined as the chemical potential at zero temperature.
-    """
-
-    iri = 'http://fairmat-nfdi.eu/taxonomy/FermiLevel'
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
 
 
 #! The only issue with this structure is that total energy will never be a sum of its contributions,
@@ -78,13 +37,7 @@ class TotalEnergy(BaseEnergy):
     """
 
     # ? add a generic contributions quantity to PhysicalProperty
-    contributions = SubSection(sub_section=EnergyContribution.m_def, repeats=True)
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
+    contributions = SubSection(sub_section=SectionProxy('TotalEnergy'), repeats=True)
 
 
 # ? Separate quantities for nuclear and electronic KEs?
@@ -93,20 +46,8 @@ class KineticEnergy(BaseEnergy):
     Physical property section describing the kinetic energy of a (sub)system.
     """
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
 
 class PotentialEnergy(BaseEnergy):
     """
     Physical property section describing the potential energy of a (sub)system.
     """
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name

@@ -1,7 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
-from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import Quantity, SubSection
 
 if TYPE_CHECKING:
@@ -22,7 +21,6 @@ from nomad_simulations.schema_packages.properties import (
     ElectronicEigenvalues,
     ElectronicGreensFunction,
     ElectronicSelfEnergy,
-    FermiLevel,
     FermiSurface,
     HoppingMatrix,
     HybridizationFunction,
@@ -67,8 +65,6 @@ class Outputs(Time):
         model with which the output physical properties were calculated.
         """,
     )
-
-    fermi_levels = SubSection(sub_section=FermiLevel.m_def, repeats=True)
 
     chemical_potentials = SubSection(sub_section=ChemicalPotential.m_def, repeats=True)
 
