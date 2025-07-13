@@ -1,9 +1,7 @@
 from nomad import utils
 from nomad.datamodel.metainfo.plot import PlotSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy
-
-from nomad_simulations.schema_packages.model_method import BaseModelMethod
+from nomad.metainfo import URL, MEnum, Quantity, SubSection, Reference, SectionProxy
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 
 logger = utils.get_logger(__name__)
@@ -39,7 +37,7 @@ class PhysicalProperty(PlotSection):
         Source of the physical property. This quantity is related with the `Activity` performed to obtain the physical
         property. Example: an `ElectronicBandGap` can be obtained from a `'simulation'` or in a `'measurement'`.
         """,
-    )  # ? unused
+    )  # ? similarly 
 
     type = Quantity(
         type=str,
@@ -55,7 +53,7 @@ class PhysicalProperty(PlotSection):
         Label for additional classification of the physical property. Example: an `ElectronicBandGap`
         can be labeled as `'DFT'` or `'GW'` depending on the methodology used to calculate it.
         """,
-    )
+    )  # TODO: specify use better
 
     value: Quantity = None
 
@@ -69,14 +67,6 @@ class PhysicalProperty(PlotSection):
         """,
     )  # TODO: only used for electronic states, remove
 
-    physical_property_ref = Quantity(
-        type=Reference(SectionProxy('PhysicalProperty')),
-        description="""
-        Reference to the `PhysicalProperty` section from which the physical property was derived. If `physical_property_ref`
-        is populated, the quantity `is_derived` is set to True via normalization.
-        """,
-    )
-
     is_derived = Quantity(
         type=bool,
         default=False,
@@ -89,13 +79,21 @@ class PhysicalProperty(PlotSection):
         """,
     )
 
+    physical_property_ref = Quantity(
+        type=Reference(SectionProxy('PhysicalProperty')),
+        description="""
+        Reference to the `PhysicalProperty` section from which the physical property was derived. If `physical_property_ref`
+        is populated, the quantity `is_derived` is set to True via normalization.
+        """,
+    )
+
     is_scf_converged = Quantity(
         type=bool,
         description="""
         Flag indicating whether the physical property is converged or not after a SCF process. This quantity is connected
         with `SelfConsistency` defined in the `numerical_settings.py` module.
         """,
-    )  # ? remove
+    )  # ? tie to calculation, not individual property
 
     self_consistency_ref = Quantity(
         type=SelfConsistency,
@@ -104,6 +102,15 @@ class PhysicalProperty(PlotSection):
         physical property (see numerical_settings.py).
         """,
     )  # ? remove
+
+    contributions = SubSection(
+        section_def='PhysicalProperty.m_def',
+        repeats=True,
+        description="""
+        Contributions to the physical property. This is useful for visualizing different components of the physical property.
+        Example: an `ElectronicBandGap` can have contributions from different spin channels.
+        """,
+    )
 
     def _is_derived(self) -> bool:
         """
@@ -126,31 +133,10 @@ class PhysicalProperty(PlotSection):
 
     def normalize(self, *args, **kwargs) -> None:
         self.is_derived = self._is_derived()
-        super(PlotSection, self).normalize(*args, **kwargs)
+
+        super().normalize(*args, **kwargs)
         if (plot_figures := self.plot(*args, **kwargs)):
             self.figures.extend(plot_figures)
+
         if self.m_def.name is not None:
             self.name = self.m_def.name
-
-
-class PropertyContribution(PhysicalProperty):
-    """
-    Abstract physical property section linking a property contribution to a contribution
-    from some method.
-
-    Abstract class for incorporating specific contributions of a physical property, while
-    linking this contribution to a specific component (of class `BaseModelMethod`) of the
-    over `ModelMethod` using the `model_method_ref` quantity.
-    """
-
-    model_method_ref = Quantity(
-        type=BaseModelMethod,
-        description="""
-        Reference to the `ModelMethod` section to which the property is linked to.
-        """,
-    )
-
-    def normalize(self, archive, logger) -> None:
-        super().normalize(archive, logger)
-        if not self.name:
-            self.name = self.get('model_method_ref', {}).get('name')
