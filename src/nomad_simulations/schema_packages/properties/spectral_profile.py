@@ -66,6 +66,26 @@ class ElectronicDensityOfStates(SpectralProfile):
         """,
     )
 
+    highest_occupied = Quantity(
+        type=np.float64,
+        shape=['spin', 'kpoint'],
+        unit='joule',
+        description="""
+        Highest occupied electronic density per spin channel. Together with `lowest_unoccupied`, it defines the
+        electronic band gap. Automatically resolved using binary search on sorted eigenvalues.
+        """,
+    )
+
+    lowest_unoccupied = Quantity(
+        type=np.float64,
+        shape=['spin', 'kpoint'],
+        unit='joule',
+        description="""
+        Lowest unoccupied electronic density per spin channel. Together with `highest_occupied`, it defines the
+        electronic band gap. Automatically resolved using binary search on sorted eigenvalues.
+        """,
+    )
+
     normalization_factor = Quantity(
         type=np.float64,
         description="""
@@ -230,14 +250,11 @@ class ElectronicDensityOfStates(SpectralProfile):
             showlegend=True,
             hovermode='x'
         )
-        
-        # Add horizontal line at y=0
+
+        # Add horizontal and vertical line at y=0
         fig.add_hline(y=0, line_dash="dash", line_color="gray", opacity=0.5)
         
-        # Add vertical line at Fermi level if available
-        # Note: You might want to get Fermi energy from model_method or similar
-        # fig.add_vline(x=fermi_energy, line_dash="dash", line_color="green", 
-        #               annotation_text="E_F")
+        fig.add_vline(x=max(self.highest_occupied), line_dash="dash", line_color="gray", annotation_text="E_F")
         
         return [
             PlotlyFigure(
