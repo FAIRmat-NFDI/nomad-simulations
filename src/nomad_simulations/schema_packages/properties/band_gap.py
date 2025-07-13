@@ -57,11 +57,6 @@ class ElectronicBandGap(PhysicalProperty):
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
 
     def resolve_type(self, logger: 'BoundLogger') -> Optional[str]:
         """

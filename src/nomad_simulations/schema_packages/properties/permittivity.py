@@ -25,6 +25,10 @@ class Permittivity(PhysicalProperty):
     """
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/Permittivity'
+    
+    # Class-level constants
+    rank = [3, 3]
+    _axes_map = ['xx', 'yy', 'zz']
 
     type = Quantity(
         type=MEnum('static', 'dynamic'),
@@ -51,13 +55,6 @@ class Permittivity(PhysicalProperty):
     # ? We need use cases to understand if we need to define contributions to the permittivity tensor.
     # ? `ionic` and `electronic` contributions are common in the literature.
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.rank = [3, 3]
-        self.name = self.m_def.name
-        self._axes_map = ['xx', 'yy', 'zz']
 
     def resolve_type(self) -> str:
         return 'static' if self.frequencies is None else 'dynamic'

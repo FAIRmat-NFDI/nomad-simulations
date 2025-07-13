@@ -134,11 +134,6 @@ class ChemicalPotential(BaseEnergy):
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/ChemicalPotential'
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
 
 
 class HeatCapacity(PhysicalProperty):
@@ -167,13 +162,8 @@ class VirialTensor(BaseEnergy):
     The `VirialTensor` can be related to the non-ideal pressure of the system through
     the virial theorem.
     """
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.rank = [3, 3]
-        self.name = self.m_def.name
+    
+    rank = [3, 3]
 
 
 class MassDensity(PhysicalProperty):
@@ -195,6 +185,8 @@ class Hessian(PhysicalProperty):
     A square matrix of second-order partial derivatives of a potential energy function,
     describing the local curvature of the energy surface.
     """
+    
+    rank = [3, 3]
 
     value = Quantity(
         type=np.float64,
@@ -202,10 +194,3 @@ class Hessian(PhysicalProperty):
         description="""
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.rank = [3, 3]
-        self.name = self.m_def.name
