@@ -91,3 +91,11 @@ class TestPhysicalProperty:
         # Both should be normalized
         assert main_property.m_cache.get('_is_normalized', False) is True
         assert contribution.m_cache.get('_is_normalized', False) is True
+
+    def test_name_setting_during_normalization(self):
+        """
+        Test that the name is set during normalization for PhysicalProperty.
+        """
+        property_obj = PhysicalProperty()
+        property_obj.normalize(EntryArchive(), logger)
+        assert property_obj.name == 'PhysicalProperty'

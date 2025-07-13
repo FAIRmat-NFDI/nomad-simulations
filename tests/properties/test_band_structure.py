@@ -33,7 +33,6 @@ class TestElectronicEigenvalues:
             electronic_eigenvalues.iri
             == 'http://fairmat-nfdi.eu/taxonomy/ElectronicEigenvalues'
         )
-        assert electronic_eigenvalues.name == 'ElectronicEigenvalues'
 
     # @pytest.mark.parametrize(
     #     'occupation, result',
