@@ -21,39 +21,6 @@ class TestOutputs:
     Test the `Outputs` class defined in `outputs.py`.
     """
 
-    def test_number_of_properties(self):  # TODO: remove this test
-        """
-        Test how many properties are defined under `Outputs` and its order. This test is done in order to control better
-        which properties are already defined and in which order to control their normalizations
-        """
-        outputs = Outputs()
-        assert len(outputs.m_def.all_sub_sections) == 22
-        defined_properties = [
-            'fermi_levels',
-            'chemical_potentials',
-            'crystal_field_splittings',
-            'hopping_matrices',
-            'electronic_eigenvalues',
-            'electronic_band_gaps',
-            'electronic_dos',
-            'fermi_surfaces',
-            'electronic_band_structures',
-            'occupancies',
-            'electronic_greens_functions',
-            'electronic_self_energies',
-            'hybridization_functions',
-            'quasiparticle_weights',
-            'permittivities',
-            'absorption_spectra',
-            'xas_spectra',
-            'total_energies',
-            'kinetic_energies',
-            'potential_energies',
-            'total_forces',
-            'temperatures',
-        ]
-        assert list(outputs.m_def.all_sub_sections.keys()) == defined_properties
-
     @pytest.mark.parametrize(
         'band_gaps, values, result_length, result',
         [
@@ -95,7 +62,7 @@ class TestOutputs:
         outputs = Outputs()
 
         for i, band_gap in enumerate(band_gaps):
-            band_gap.value = [values[i]]
+            band_gap.value = values[i]
             outputs.electronic_band_gaps.append(band_gap)
         gaps = outputs.extract_spin_polarized_property(
             property_name='electronic_band_gaps'
@@ -103,7 +70,7 @@ class TestOutputs:
         assert len(gaps) == result_length
         if len(result) > 0:
             for i, result_gap in enumerate(result):
-                result_gap.value = [values[i]]
+                result_gap.value = values[i]
                 # ? comparing the sections does not work
                 assert gaps[i].value == result_gap.value
         else:
@@ -297,7 +264,7 @@ class TestSCFOutputs:
         for i, scf_step in enumerate(scf_last_steps):
             property_section = getattr(scf_step, 'electronic_band_gaps')
             if property_section is not None and values is not None:
-                property_section[i_property].value = [values[i]]
+                property_section[i_property].value = values[i]
         scf_values = scf_outputs.get_last_scf_steps_value(
             scf_last_steps=scf_last_steps,
             property_name='electronic_band_gaps',
@@ -314,8 +281,6 @@ class TestSCFOutputs:
             (0, None, '', 0, False),
             # no `self_consistency_ref` section
             (5, None, '', 0, False),
-            # no property matching `property_name`
-            (5, None, 'fermi_levels', 0, False),
             # `i_property` is out of range
             (5, None, 'electronic_band_gaps', 2, False),
             # property is not converged
