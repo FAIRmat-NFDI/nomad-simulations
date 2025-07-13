@@ -91,7 +91,6 @@ class Temperature(Variables):
         """,
     )
 
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
@@ -108,7 +107,6 @@ class Energy2(Variables):
         Points in which the energy is discretized.
         """,
     )
-
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -128,7 +126,6 @@ class WignerSeitz(Variables):
         """,
     )
 
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
@@ -144,7 +141,6 @@ class Frequency(Variables):
         Points in which the frequency is discretized, in joules.
         """,
     )
-
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -162,7 +158,6 @@ class MatsubaraFrequency(Variables):
         """,
     )
 
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
@@ -179,7 +174,6 @@ class Time(Variables):
         """,
     )
 
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
@@ -195,7 +189,6 @@ class ImaginaryTime(Variables):
         Points in which the imaginary time is discretized, in seconds.
         """,
     )
-
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -214,7 +207,6 @@ class KMesh(Variables):
         """,
     )
 
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
@@ -228,7 +220,6 @@ class KLinePath(Variables):
         Reference to the `KLinePath.points` in which the physical property is calculated. These are 3D arrays stored in fractional coordinates.
         """,
     )
-
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)

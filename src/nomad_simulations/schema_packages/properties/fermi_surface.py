@@ -28,6 +28,5 @@ class FermiSurface(PhysicalProperty):
         """,
     )
 
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)

@@ -1,10 +1,9 @@
 from nomad import utils
-from nomad.datamodel.metainfo.plot import PlotSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import URL, MEnum, Quantity, SubSection, Reference, SectionProxy
-from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
+from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
+from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy, SubSection
 
-from nomad.datamodel.metainfo.plot import PlotlyFigure
+from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 
 logger = utils.get_logger(__name__)
 

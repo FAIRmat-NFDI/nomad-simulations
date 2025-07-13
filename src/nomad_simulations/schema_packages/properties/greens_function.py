@@ -190,7 +190,6 @@ class ElectronicGreensFunction(BaseGreensFunction):
     )
 
 
-
 class ElectronicSelfEnergy(BaseGreensFunction):
     """
     Corrections to the energy of an electron due to its interactions with its environment.
@@ -207,7 +206,6 @@ class ElectronicSelfEnergy(BaseGreensFunction):
     )
 
 
-
 class HybridizationFunction(BaseGreensFunction):
     """
     Dynamical hopping of the electrons in a lattice in and out of the reservoir or bath.
@@ -222,7 +220,6 @@ class HybridizationFunction(BaseGreensFunction):
         Value of the electronic hybridization function.
         """,
     )
-
 
 
 class QuasiparticleWeight(PhysicalProperty):
@@ -304,7 +301,6 @@ class QuasiparticleWeight(PhysicalProperty):
         Value of the quasi-particle weight matrices. Must be between 0 and 1.
         """,
     )
-
 
     def resolve_system_correlation_strengths(self) -> str:
         """
