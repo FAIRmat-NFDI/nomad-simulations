@@ -135,7 +135,6 @@ class ChemicalPotential(BaseEnergy):
     iri = 'http://fairmat-nfdi.eu/taxonomy/ChemicalPotential'
 
 
-
 class HeatCapacity(PhysicalProperty):
     """
     Amount of heat to be supplied to a material to produce a unit change in its temperature.
@@ -162,7 +161,7 @@ class VirialTensor(BaseEnergy):
     The `VirialTensor` can be related to the non-ideal pressure of the system through
     the virial theorem.
     """
-    
+
     rank = [3, 3]
 
 
@@ -185,7 +184,7 @@ class Hessian(PhysicalProperty):
     A square matrix of second-order partial derivatives of a potential energy function,
     describing the local curvature of the energy surface.
     """
-    
+
     rank = [3, 3]
 
     value = Quantity(

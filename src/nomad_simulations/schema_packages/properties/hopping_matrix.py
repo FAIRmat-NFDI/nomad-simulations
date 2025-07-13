@@ -43,7 +43,6 @@ class HoppingMatrix(PhysicalProperty):
         """,
     )
 
-
     # TODO add normalization to extract DOS, band structure, etc, properties from `HoppingMatrix`
 
 
@@ -70,4 +69,3 @@ class CrystalFieldSplitting(PhysicalProperty):
         at the same Wigner-Seitz point (0, 0, 0).
         """,
     )
-
