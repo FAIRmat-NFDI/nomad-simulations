@@ -4,6 +4,8 @@ from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import URL, MEnum, Quantity, SubSection, Reference, SectionProxy
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 
+from plotly.graph_objects import Figure
+
 logger = utils.get_logger(__name__)
 
 
@@ -125,7 +127,7 @@ class PhysicalProperty(PlotSection):
         """
         return self.physical_property_ref is not None
 
-    def plot(self, *args, **kwargs) -> list:
+    def plot(self, **kwargs) -> 'list[Figure]':
         """
         Placeholder for a method to plot the physical property. This method should be overridden in derived classes
         to provide specific plotting functionality.
@@ -135,7 +137,7 @@ class PhysicalProperty(PlotSection):
         """
         return []
 
-    def sub_plots(self, *args, **kwargs) -> None:
+    def sub_plots(self, **kwargs) -> None:
         """
         Collects sub-plots from `self.contributions`,
         and adds them as sub-plots to the last figure in `self.figures`.
@@ -144,19 +146,35 @@ class PhysicalProperty(PlotSection):
         - target_indices (int): The index of the target figure to which the sub-figures
           should be added. Defaults to -1, which refers to the last figure in `self.figures`.
         """
+        if not self.contributions or not self.figures:
+            return
+
         target_indices = kwargs.get('target_indices', -1)
 
         for contribution in self.contributions:
-            if sub_figure := contribution.plot(*args, **kwargs):
+            if sub_figure := contribution.plot(**kwargs):
                 self.figures[target_indices].sub_figures.extend(sub_figure)
 
     def normalize(self, *args, **kwargs) -> None:
+        # check whether already normalized
+        if self.m_cache.get('_is_normalized', False):
+            return
+        else:
+            self.m_cache['_is_normalized'] = True
+
+        # perform own normalization
+        super().normalize(*args, **kwargs)
+
         self.is_derived = self._is_derived()
 
-        super().normalize(*args, **kwargs)
-        if plot_figures := self.plot():
-            self.figures.extend(plot_figures)
-        self.sub_plots()
+        for contribution in self.contributions:
+            if hasattr(contribution, 'normalize'):
+                contribution.normalize(*args, **kwargs)
 
+        if plot_figures := self.plot(**kwargs):
+            self.figures.extend(plot_figures)
+        self.sub_plots(**kwargs)
+
+        # set names last, they may depend other normalized properties
         if self.m_def.name is not None:
             self.name = self.m_def.name
