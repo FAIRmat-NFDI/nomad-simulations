@@ -9,15 +9,11 @@ from nomad_simulations.schema_packages.variables import KLinePath
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
 from nomad_simulations.schema_packages.numerical_settings import KSpace
-from nomad_simulations.schema_packages.physical_property import (
-    PhysicalProperty,
-    validate_quantity_wrt_value,
-)
+from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
 from nomad_simulations.schema_packages.properties.fermi_surface import FermiSurface
 from nomad_simulations.schema_packages.utils import get_sibling_section
@@ -31,8 +27,6 @@ class BaseElectronicEigenvalues(PhysicalProperty):
     """
     A base section used to define basic quantities for the `ElectronicEigenvalues`  and `ElectronicBandStructure` properties.
     """
-
-    iri = ''
 
     n_bands = Quantity(
         type=np.int32,
@@ -118,22 +112,21 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         """,
     )
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
-    @validate_quantity_wrt_value(name='occupation')
-    def order_eigenvalues(self) -> Union[bool, tuple[pint.Quantity, np.ndarray]]:
+    def order_eigenvalues(self) -> tuple[pint.Quantity, np.ndarray] | tuple[()]:
         """
         Order the eigenvalues based on the `value` and `occupation`. The return `value` and
         `occupation` are flattened.
 
         Returns:
-            (Union[bool, tuple[pint.Quantity, np.ndarray]]): The flattened and sorted `value` and `occupation`. If validation
-            fails, then it returns `False`.
+            (tuple[pint.Quantity, np.ndarray] | tuple[()]): The flattened and sorted `value` and `occupation`. If validation
+            fails, then it returns an empty tuple.
         """
+        # Validation: check if both value and occupation exist and have same shape
+        if self.value is None or self.occupation is None:
+            return ()
+        if self.value.shape != self.occupation.shape:
+            return ()
+
         total_shape = np.prod(self.value.shape)
 
         # Order the indices in the flattened list of `value`
@@ -164,13 +157,14 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
             `lowest_unoccupied` eigenvalues.
         """
         # Sorting `value` and `occupation`
-        if not self.order_eigenvalues():  # validation fails
+        if ordered_results := self.order_eigenvalues():
+            sorted_value, sorted_occupation = ordered_results
+            sorted_value_unit = sorted_value.u
+            sorted_value = sorted_value.magnitude
+        else:
             if self.highest_occupied is not None and self.lowest_unoccupied is not None:
                 return self.highest_occupied, self.lowest_unoccupied
             return None, None
-        sorted_value, sorted_occupation = self.order_eigenvalues()
-        sorted_value_unit = sorted_value.u
-        sorted_value = sorted_value.magnitude
 
         # Binary search ot find the transition point between `occupation = 2` and `occupation = 0`
         homo = self.highest_occupied
@@ -309,12 +303,6 @@ class ElectronicBandStructure(ElectronicEigenvalues):
 
     k_path = SubSection(sub_section=KLinePath.m_def)
 
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
-
 
 class Occupancy(PhysicalProperty):
     """
@@ -356,11 +344,5 @@ class Occupancy(PhysicalProperty):
         fully occupied; if `spin_channel` is not set, then this number is between 0 and 2.
         """,
     )
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
 
     # TODO add extraction from `ElectronicEigenvalues.occupation`

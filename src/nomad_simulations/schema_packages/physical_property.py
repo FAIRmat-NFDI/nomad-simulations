@@ -4,7 +4,7 @@ from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import URL, MEnum, Quantity, SubSection, Reference, SectionProxy
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 
-from plotly.graph_objects import Figure
+from nomad.datamodel.metainfo.plot import PlotlyFigure
 
 logger = utils.get_logger(__name__)
 
@@ -107,7 +107,7 @@ class PhysicalProperty(PlotSection):
     )  # ? remove
 
     contributions = SubSection(
-        section_def='PhysicalProperty.m_def',
+        section_def=SectionProxy('PhysicalProperty'),
         repeats=True,
         description="""
         Shallow list of contributions to the physical property.
@@ -127,33 +127,47 @@ class PhysicalProperty(PlotSection):
         """
         return self.physical_property_ref is not None
 
-    def plot(self, **kwargs) -> 'list[Figure]':
+    def plot(self, **kwargs) -> list[PlotlyFigure]:
         """
         Placeholder for a method to plot the physical property. This method should be overridden in derived classes
         to provide specific plotting functionality.
 
         Returns:
-            (list): A list of figures (`PlotlyFigure`) representing the physical property.
+            (list[PlotlyFigure]): A list of PlotlyFigure objects representing the physical property.
         """
         return []
 
     def sub_plots(self, **kwargs) -> None:
         """
-        Collects sub-plots from `self.contributions`,
-        and adds them as sub-plots to the last figure in `self.figures`.
-
-        Keyword Args:
-        - target_indices (int): The index of the target figure to which the sub-figures
-          should be added. Defaults to -1, which refers to the last figure in `self.figures`.
+        Collects plots from `self.contributions` and overlays them onto the target figure.
         """
         if not self.contributions or not self.figures:
             return
 
         target_indices = kwargs.get('target_indices', -1)
+        target_figure = self.figures[target_indices]
+
+        if target_figure.figure:
+            figure_dict = target_figure.figure.copy()
+        else:
+            figure_dict = {'data': [], 'layout': {}}
 
         for contribution in self.contributions:
-            if sub_figure := contribution.plot(**kwargs):
-                self.figures[target_indices].sub_figures.extend(sub_figure)
+            # Use existing figures if already normalized, otherwise call plot()
+            plots = (
+                contribution.figures
+                if contribution.figures
+                else contribution.plot(**kwargs)
+            )
+
+            if plots:
+                for plot in plots:
+                    if hasattr(plot, 'figure') and plot.figure:
+                        plot_data = plot.figure.get('data', [])
+                        for trace in plot_data:
+                            figure_dict['data'].append(trace)
+
+        target_figure.figure = figure_dict
 
     def normalize(self, *args, **kwargs) -> None:
         # check whether already normalized
