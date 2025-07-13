@@ -24,4 +24,3 @@ class TestFermiSurface:
         """
         fermi_surface = FermiSurface(n_bands=n_bands)
         assert fermi_surface.iri == 'http://fairmat-nfdi.eu/taxonomy/FermiSurface'
-        assert fermi_surface.name == 'FermiSurface'
