@@ -1373,6 +1373,155 @@ class IntegralDecomposition(ArchiveSection):
             )
 
 
+class SolvationModel(BaseModelMethod):
+    """Implicit-solvent or polarizable continuum treatments.
+
+    Examples include PCM and its variants (IEF-PCM, CPCM), COSMO, COSMO-RS,
+    SMD, GBSA, and Poisson-Boltzmann (PB) models.  The essential parameters
+    are the dielectric constant **ε** of the solvent, a description of how
+    the molecular cavity is constructed, and optional surface-charge or
+    dispersion terms used by the model.
+
+    References
+    ----------
+    •  J. Tomasi, B. Mennucci, R. Cammi, *Chem. Rev.* **105**, 2999 (2005) — PCM overview
+    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) — COSMO
+    •  A. V. Marenich *et al.*, *J. Chem. Phys. B* **113**, 6378 (2009) — SMD
+    """
+
+    model = Quantity(
+        type=MEnum(
+            'PCM',
+            'IEF-PCM',
+            'CPCM',
+            'SMD',
+            'COSMO',
+            'COSMO-RS',
+            'GBSA',
+            'PB',
+        ),
+        description="""
+        The implicit-solvent flavour employed.
+
+        | Abbrev. | Full name                              |
+        |---------|----------------------------------------|
+        | PCM     | Polarizable Continuum Model            |
+        | IEF-PCM | Integral Equation Formalism PCM        |
+        | CPCM    | Conductor-like PCM                     |
+        | SMD     | Solvation Model based on Density       |
+        | COSMO   | COnductor-like Screening MOdel         |
+        | COSMO-RS| COSMO for Real Solvents                |
+        | GBSA    | Generalised Born Surface Area          |
+        | PB      | Poisson-Boltzmann                      |
+        """,
+    )
+
+    solvent = Quantity(
+        type=str,
+        description="""
+        Common name or formula of the solvent (e.g. *water*, *acetonitrile*).
+        """,
+    )
+
+    dielectric_constant = Quantity(
+        type=np.float64,
+        description="""
+        Static relative permittivity (ε) of the bulk solvent.  Required for
+        PCM/COSMO/GBSA; may be implicit in SMD parameter sets.
+        """,
+    )
+
+    refractive_index = Quantity(
+        type=np.float64,
+        description="""
+        Optical-frequency refractive index *n* of the solvent.  Needed when a
+        frequency-dependent dielectric is used (e.g. in TDDFT PCM).
+        """,
+    )
+
+    cavity_construction = Quantity(
+        type=MEnum('UFF', 'VdW', 'ISOSURFACE', 'SAS', 'FIXED_RADIUS', 'other'),
+        description="""
+        How the solute cavity surface is defined.
+          • *UFF* / *VdW* : scaled van-der-Waals radii (default for PCM)
+          • *ISOSURFACE*  : electron-density isosurface (IEFPCM/SMD)
+          • *SAS*         : solvent-accessible surface
+          • *FIXED_RADIUS*: single-sphere (GBSA)
+        """,
+    )
+
+    surface_tessellation = Quantity(
+        type=np.int32,
+        description="""
+        Number of Lebedev/Geodesic points per atom used in the cavity
+        discretisation (relevant for surface-integral PCM codes).
+        """,
+    )
+
+
+class DispersionModel(BaseModelMethod):
+    """Empirical or non-local dispersion corrections added to *ab initio* methods.
+
+    The *type* reflects the popular "DFT-D" family by Grimme (D2, D3, D3(BJ),
+    D4), Tkatchenko-Scheffler (TS, TS-MBD), many-body dispersion (MBD), and
+    non-local vdW density functionals (VV10, rVV10, XDM, etc.).  Key numerical
+    factors such as the global *s6* scaling constant or the Becke-Johnson
+    damping parameters (*a1*, *a2*) can be explicitly stored.
+
+    References
+    ----------
+    •  S. Grimme, *J. Comp. Chem.* **27**, 1787 (2006) — DFT-D2
+    •  S. Grimme *et al.*, *J. Chem. Phys.* **132**, 154104 (2010) — DFT-D3
+    •  S. Grimme *et al.*, *J. Chem. Phys.* **136**, 154105 (2012) — DFT-D3(BJ)
+    •  C. Steinmann, *WIREs Comput. Mol. Sci.* **10**, e1438 (2020) — overview
+    """
+
+    model = Quantity(
+        type=MEnum(
+            'D2',
+            'D3',
+            'D3BJ',
+            'D4',
+            'TS',
+            'TS-MBD',
+            'MBD',
+            'XDM',
+            'VV10',
+            'rVV10',
+            'NL',
+            'other',
+        ),
+        description="""Dispersion-correction flavour.""",
+    )
+
+    damping_function = Quantity(
+        type=MEnum('zero', 'BJ', 'SR', 'none'),
+        description="""
+        Damping variant.  For D3 this is typically *BJ* (Becke-Johnson) or *zero*-damping.
+        """,
+    )
+
+    s6 = Quantity(
+        type=np.float64,
+        description="""Global *s₆* scaling factor multiplying the C₆/R⁶ term.""",
+    )
+
+    s8 = Quantity(
+        type=np.float64,
+        description="""Global *s₈* scaling when an R⁸ term is present (D3, D4).""",
+    )
+
+    a1 = Quantity(
+        type=np.float64,
+        description="""Becke-Johnson *a₁* damping parameter (D3BJ/D4).""",
+    )
+
+    a2 = Quantity(
+        type=np.float64,
+        description="""Becke-Johnson *a₂* damping parameter (D3BJ/D4).""",
+    )
+
+
 class PerturbationMethod(ModelMethodElectronic):
     type = Quantity(
         type=MEnum('MP', 'RS', 'BW'),
