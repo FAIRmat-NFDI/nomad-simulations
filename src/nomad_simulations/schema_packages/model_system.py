@@ -994,7 +994,7 @@ class ModelSystem(System):
                     [0] AtomsState(H)
                     [1] AtomsState(H)
                     [2] AtomsState(O)
-        """,    
+        """,
     )
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
