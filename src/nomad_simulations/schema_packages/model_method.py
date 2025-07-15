@@ -1285,7 +1285,7 @@ class FrozenCore(ArchiveSection):
             )
 
 
-class IntegralDecomposition(BaseModelMethod):
+class IntegralDecomposition(ArchiveSection):
     """
     A general class for integral decomposition techniques that approximate
     Coulomb and/or exchange integrals to reduce computational cost in quantum
