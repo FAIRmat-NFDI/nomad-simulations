@@ -812,7 +812,7 @@ class ModelSystem(System):
 
         - Example 5, a passivated heterostructure Si/(GaAs-CO2) has: 1 parent ModelSystem
         section (for Si/(GaAs-CO2)), 2 child ModelSystem sections (for Si and GaAs-CO2),
-        and 2 additional children sections in one of the childs (for GaAs and CO2). The number
+        and 2 additional children sections in one of the children (for GaAs and CO2). The number
         of AtomicCell and Symmetry sections can be inferred using a combination of example
         2 and 3.
     """
@@ -900,11 +900,13 @@ class ModelSystem(System):
         type=np.int32,
         shape=['*'],
         description="""
-        Indices of the particles/atoms in the child with respect to its parent. Example:
-            - We have SrTiO3, where `AtomicCell.labels = ['Sr', 'Ti', 'O', 'O', 'O']`. If
-            we create a `model_system` child for the `'Ti'` atom only, then in that child
-            `ModelSystem.sub_systems[0].particle_indices = [1]`. If now we want to refer both to
-            the `'Ti'` and the last `'O'` atoms, `ModelSystem.sub_systems[0].particle_indices = [1, 4]`.
+        Global indices of the particles that belong to this subsystem, 
+        counted from the representative (top-level) ModelSystem.
+
+        **Example (SrTiO_3 primitive cell)**
+        parent particle_states   : ['Sr', 'Ti', 'O', 'O', 'O']  # → indices 0-4
+        Ti-only subsystem      : particle_indices = [1]
+        Ti + apical-O subsystem: particle_indices = [1, 4]
         """,
     )
 
@@ -979,7 +981,20 @@ class ModelSystem(System):
     particle_states = SubSection(
         section_def=ParticleState.m_def,
         repeats=True,
-        description='Particle states',
+        description="""
+        Particle state of each of the particles conforming the ModelSystem. 
+        This is a list of `n_particles` elements and the order matches that of `positions`.
+
+            Example
+            -------
+            A water molecule (H₂O):
+
+                positions       : [[…], […], […]]      # 3 atoms
+                particle_states :
+                    [0] AtomsState(H)
+                    [1] AtomsState(H)
+                    [2] AtomsState(O)
+        """,    
     )
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
