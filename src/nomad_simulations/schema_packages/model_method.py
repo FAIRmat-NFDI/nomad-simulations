@@ -1565,7 +1565,7 @@ class PerturbationMethod(ModelMethodElectronic):
     )
 
 
-class LocalCorrelation(BaseModelMethod):
+class LocalCorrelation(ArchiveSection):
     """
     A base section used to define the parameters of a local correlation method for
     post-HF calculations, e.g. LMP2, LCC, or domain-based local pair natural orbitals
