@@ -1373,6 +1373,54 @@ class IntegralDecomposition(ArchiveSection):
             )
 
 
+class OrbitalLocalization(BaseModelMethod):
+    """Transforming canonical MOs into a localized representation.
+
+    Localized orbitals are used by local correlation methods such as
+    LMP2, DLPNO-CCSD(T), fragment charge analyses, and qualitative bonding pictures.
+    The transformation is (near) unitary and does not change the total energy by itself,
+    it merely changes the representation.
+
+    ++++++++++ Add some refs here maybe
+
+    """
+
+    method = Quantity(
+        type=MEnum(
+            'Boys',
+            'Pipek-Mezey',
+            'Edmiston-Ruedenberg',
+            'Foster-Boys',
+            'IBO',
+            'Cholesky_MO',
+            'PM-NBO',
+        ),
+        description="""Localization criterion / algorithm.""",
+    )
+
+    n_localized_orbitals = Quantity(
+        type=np.int32,
+        description='Number of orbitals actually subjected to the localization (can differ from the full occupied space).',
+    )
+
+    # # Reference to the output MolecularOrbitals block with the localized coefficients
+    # localized_orbitals_ref = Quantity(
+    #     type=Reference(SectionProxy("MolecularOrbitals")),
+    #     description="Pointer to the MolecularOrbitals section that contains the localized coefficients.",
+    # )
+
+    # --- may be needed later, i will keep here for now
+
+    # _alias_map = {
+    #     "boys": "Boys",
+    #     "foster": "Foster‑Boys",
+    #     "pipek": "Pipek‑Mezey",
+    #     "pm": "Pipek‑Mezey",
+    #     "er": "Edmiston‑Ruedenberg",
+    #     "ibo": "IBO",
+    # }
+
+
 class SolvationModel(BaseModelMethod):
     """Implicit-solvent or polarizable continuum treatments.
 
@@ -1419,7 +1467,7 @@ class SolvationModel(BaseModelMethod):
     solvent = Quantity(
         type=str,
         description="""
-        Common name or formula of the solvent (e.g. *water*, *acetonitrile*).
+        Common name or formula of the solvent (e.g. water, acetonitrile).
         """,
     )
 
@@ -1460,7 +1508,7 @@ class SolvationModel(BaseModelMethod):
 
 
 class DispersionModel(BaseModelMethod):
-    """Empirical or non-local dispersion corrections added to *ab initio* methods.
+    """Empirical or non-local dispersion corrections added to ab-initio methods.
 
     The *type* reflects the popular "DFT-D" family by Grimme (D2, D3, D3(BJ),
     D4), Tkatchenko-Scheffler (TS, TS-MBD), many-body dispersion (MBD), and
@@ -1489,7 +1537,6 @@ class DispersionModel(BaseModelMethod):
             'VV10',
             'rVV10',
             'NL',
-            'other',
         ),
         description="""Dispersion-correction flavour.""",
     )
