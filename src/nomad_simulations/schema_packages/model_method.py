@@ -1758,12 +1758,12 @@ class HartreeFock(ModelMethodMolecular):
       - Jensen, F. (2007). *Introduction to Computational Chemistry*. 2nd ed., Wiley.
     """
 
-    type = Quantity(
-        type=MEnum('RHF', 'UHF', 'ROHF'),
-        description="""
-        The type of HF determinant.
-        """,
-    )
+    # type = Quantity(
+    #     type=MEnum('RHF', 'UHF', 'ROHF'),
+    #     description="""
+    #     The type of HF determinant.
+    #     """,
+    # )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         """
