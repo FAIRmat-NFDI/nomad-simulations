@@ -37,7 +37,7 @@ class MolecularOrbitals(PhysicalProperty):
     Quantities:
       spin_channel    (int): 0=α, 1=β
       n_mo            (int): number of MOs
-      mo_energies     (float[joule][n_mo])
+      mo_energies     (float[electron_volt][n_mo])
       mo_occupations  (float[n_mo])
       mo_coefficients (float[n_mo, n_ao])
       mo_type         (enum): canonical, natural, localized, …
@@ -72,7 +72,7 @@ class MolecularOrbitals(PhysicalProperty):
 
     mo_energies = Quantity(
         type=np.float64,
-        unit='joule',
+        unit='electron_volt',
         shape=['n_mo'],
         description="""
         Orbital energies for each MO.  In a canonical SCF these are the eigenvalues 
