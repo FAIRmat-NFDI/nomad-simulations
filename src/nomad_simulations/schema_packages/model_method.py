@@ -1219,14 +1219,6 @@ class FrozenCore(ArchiveSection):
             References to the OrbitalsState sections representing each frozen orbital
             (e.g., the 1s shell, 2s shell, etc.).
 
-        principal_quantum_number_threshold (Optional[int]):
-            If set, all atomic orbitals with principal quantum number n ≤ this value
-            will be automatically frozen.
-
-        atomic_number_threshold (Optional[int]):
-            If set, all core orbitals on atoms with atomic number Z ≤ this value
-            will be automatically frozen.
-
     Example:
         FrozenCore(
             core_orbitals_ref=[OrbitalsState(n_quantum_number=1, l_quantum_number=0),
@@ -1250,38 +1242,38 @@ class FrozenCore(ArchiveSection):
         """,
     )
 
-    principal_quantum_number_threshold = Quantity(
+    per_atom_n_threshold = Quantity(
         type=np.int32,
+        shape=['*'],
         description="""
-        Optional: freeze all orbitals with principal quantum number n ≤ this value.
+        For each atom (in input order), maximum principal quantum number *n*
+        that will be **frozen**.  -1 means “no freezing for that atom”.
         """,
     )
 
-    atomic_number_threshold = Quantity(
+    per_atom_z_threshold = Quantity(
         type=np.int32,
+        shape=['*'],
         description="""
-        Optional: freeze core orbitals on all atoms with atomic number Z ≤ this value.
+        Alternative per-atom rule: freeze all core shells with atomic number Z ≤ value.
+        Entries of 0 disable the rule for that atom.
         """,
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-        # Automatically set n_frozen_core_orbitals if missing but refs are provided
-        if self.n_frozen_core_orbitals is None and self.core_orbitals_ref is not None:
-            try:
-                self.n_frozen_core_orbitals = np.int32(len(self.core_orbitals_ref))
-            except Exception:
-                logger.warning(
-                    'Could not infer n_frozen_core_orbitals from core_orbitals_ref.'
-                )
-        # Warn if neither explicit refs nor threshold rules are set
+
+        if self.n_frozen_core_orbitals is None and self.core_orbitals_ref:
+            self.n_frozen_core_orbitals = len(self.core_orbitals_ref)
+
         if (
             not self.core_orbitals_ref
-            and self.principal_quantum_number_threshold is None
-            and self.atomic_number_threshold is None
+            and self.per_atom_n_threshold is None
+            and self.per_atom_z_threshold is None
         ):
             logger.warning(
-                'FrozenCore defined with no orbitals or thresholds. No cores will be frozen.'
+                'FrozenCore defined with no explicit orbitals or threshold rules; '
+                'no cores will be frozen.'
             )
 
 
@@ -1306,7 +1298,7 @@ class IntegralDecomposition(ArchiveSection):
     """
 
     approximation_type = Quantity(
-        type=MEnum('RIJ', 'RIJK', 'RIK', 'SENEX', 'RIJCOSX', 'CD', 'CD_F12'),
+        type=MEnum('RIJ', 'RIJK', 'RIK', 'SENEX', 'RIJCOSX', 'CD', 'CD_F12', 'other'),
         description="""
         RIJ     : also known as RIJONX, where only Coulomb integrals are approximated.
         RIJK    : both Coulomb and exchange integrals.
@@ -1612,6 +1604,64 @@ class PerturbationMethod(ModelMethodElectronic):
     )
 
 
+class RelativityModel(BaseModelMethod):
+    """
+    Relativistic treatment applied to the one-electron Hamiltonian
+    (scalar or spin-orbit).
+
+    Typical options
+    --------------
+    * Four-component Dirac-Coulomb (DC)
+    * Two-component X2C / DKH / ZORA
+    * Spin-orbit mean-field (SOMF) for post-HF/BSE
+    """
+
+    level = Quantity(
+        type=MEnum(
+            'non_relativistic',
+            'scalar',
+            'two_component',
+            'four_component',
+        ),
+        default='non_relativistic',
+        description="""
+        Non-relativistic (Schrödinger), scalar (spin-free),
+        two-component (spin-orbit couple removed variationally, e.g. X2C),
+        or four-component Dirac treatment.
+        """,
+    )
+
+    approximation = Quantity(
+        type=MEnum(
+            'DKH',
+            'ZORA',
+            'X2C',
+            'BSS',
+            'Pauli',
+            'SOMF',
+            'none',
+        ),
+        default='none',
+        description="""
+        Specific approximation or decoupling scheme.
+          • DKH  : Douglas-Kroll-Hess (all orders)  
+          • ZORA : Zeroth-order regular approximation  
+          • X2C  : Exact two-component  
+          • BSS  : Barysz-Sadlej-Snijders  
+          • Pauli: Pauli spin-orbit correction  
+          • SOMF : Spin-orbit mean-field added after SCF  
+        """,
+    )
+
+    spin_orbit_included = Quantity(
+        type=bool,
+        description="""
+        Whether the Hamiltonian used **during SCF** already included spin-orbit coupling.
+        If False, spin-orbit may still be added perturbatively later (e.g. SOMF).
+        """,
+    )
+
+
 class LocalCorrelation(ArchiveSection):
     """
     A base section used to define the parameters of a local correlation method for
@@ -1643,7 +1693,7 @@ class LocalCorrelation(ArchiveSection):
         The underlying electron-correlation ansatz upon which the local treatment is built:
       - 'MP2'      : local MP2
       - 'CC'       : local CC
-      - 'DHDFT'    : local double-hybrid DFT
+      - 'DH-DFT'    : local double-hybrid DFT
         """,
     )
 
@@ -1662,7 +1712,7 @@ class ModelMethodMolecular(ModelMethodElectronic):
       - **reference_determinant**
         Enumerates the underlying reference determinant:
           - RHF / RKS   - closed-shell restricted
-          - UHF / UKS   - unrestricted α/β
+          - UHF / UKS   - unrestricted alpha/beta
           - ROHF / ROKS - restricted open-shell
 
       - **local_correlation**
@@ -1700,7 +1750,7 @@ class ModelMethodMolecular(ModelMethodElectronic):
     reference_determinant = Quantity(
         type=MEnum('UHF', 'RHF', 'ROHF', 'UKS', 'RKS', 'ROKS'),
         description="""
-        The type of reference determinant on which the Coupled Cluster expansion is built.
+        The type of reference determinant on which the post-HF method is built.
           - UHF / RHF / ROHF : common for wavefunction-based reference
           - UKS / RKS / ROKS : if a KS-DFT reference is used (rare but possible).        
         """,
@@ -1740,6 +1790,14 @@ class ModelMethodMolecular(ModelMethodElectronic):
         """,
     )
 
+    relativistic_correction = SubSection(
+        sub_section=RelativityModel.m_def,
+        repeats=False,
+        description="""
+        Relativistic treatment details.
+        """,
+    )
+
 
 class HartreeFock(ModelMethodMolecular):
     """
@@ -1767,35 +1825,36 @@ class HartreeFock(ModelMethodMolecular):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         """
-        Ensures spin-channel count matches the chosen HF type.
+        • Ensures the determinant is RHF / UHF / ROHF (no KS flavours).
+        • Checks that the spin-channel count of MolecularOrbitals matches that determinant.
         """
         super().normalize(archive, logger)
 
-        # Spin-channel consistency check
-        # Expect 1 channel for RHF, 2 for UHF/ROHF
-        if self.molecular_orbitals is not None:
-            spin_channels = self.molecular_orbitals.spin_channels
-            if spin_channels is None:
-                logger.warning(
-                    'Cannot find "spin_channels" in MolecularOrbitals to verify spin consistency.'
-                )
-            else:
-                n_spins = len(spin_channels)
-                if self.type == 'RHF' and n_spins != 1:
-                    logger.warning(
-                        'Spin-channel count does not match Hartree-Fock determinant type',
-                        hf_type='RHF',
-                        expected_spins=1,
-                        found_spins=n_spins,
-                    )
+        det = self.reference_determinant
+        if det in ('RKS', 'UKS', 'ROKS'):
+            logger.error(
+                'Kohn-Sham determinant given for a pure Hartree-Fock section; '
+                'resetting to None',
+                supplied=det,
+            )
+            self.reference_determinant = None
+            return
 
-                elif self.type in ('UHF', 'ROHF') and n_spins != 2:
-                    logger.warning(
-                        'Spin-channel count does not match Hartree-Fock determinant type',
-                        hf_type=self.type,
-                        expected=2,
-                        found=n_spins,
-                    )
+        # --- spin‑channel consistency ------------------------------------
+        if self.molecular_orbitals is None:
+            return
+
+        spin_channels = self.molecular_orbitals.spin_channels or ()
+        n_spins = len(spin_channels)
+
+        expected = {None: None, 'RHF': 1, 'UHF': 2, 'ROHF': 2}.get(det)
+        if expected is not None and n_spins != expected:
+            logger.warning(
+                'Spin-channel count does not match Hartree-Fock determinant',
+                determinant=det,
+                expected_spins=expected,
+                found_spins=n_spins,
+            )
 
 
 class CoupledCluster(ModelMethodMolecular):
