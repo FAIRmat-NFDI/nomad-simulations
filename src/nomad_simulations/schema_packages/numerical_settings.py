@@ -121,6 +121,7 @@ class Mesh(ArchiveSection):
         In the fixed grid methods, the number of angular grid points is predetermined for
         ranges of radial grid points, while in the adaptive methods, the angular grid is adjusted
         on-the-fly for each radial point according to some accuracy criterion.
+        Pruning is evaluated on the symmetrised grid.
         """,
     )
 

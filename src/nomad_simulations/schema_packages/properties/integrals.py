@@ -16,6 +16,9 @@ class OneElectronIntegral(PhysicalProperty):
     One-electron matrices **⟨χᵢ| Ô |χⱼ⟩** expressed in either an atomic-orbital (AO)
     or molecular-orbital (MO) basis.  A single instance of this section represents
     *one* operator kind *and* *one* tensor component (real or imaginary).
+
+    This section mirrors the TREXIO format:
+    Posenitsky et al., J. Chem. Phys. 158, 174801 (2023)
     """
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/OneElectronIntegral'
@@ -88,6 +91,9 @@ class TwoElectronIntegral(PhysicalProperty):
     """
     Electron-electron repulsion integrals (ij|kl).
     One section instance = **one basis (AO/MO) + one component (real/imag)**.
+
+    This section mirrors the TREXIO format:
+    Posenitsky et al., J. Chem. Phys. 158, 174801 (2023)
     """
 
     basis_representation = Quantity(
