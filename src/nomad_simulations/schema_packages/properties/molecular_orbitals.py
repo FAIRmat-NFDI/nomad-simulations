@@ -41,6 +41,18 @@ class MolecularOrbitals(PhysicalProperty):
       mo_occupations  (float[n_mo])
       mo_coefficients (float[n_mo, n_ao])
       mo_type         (enum): canonical, natural, localized, …
+
+    Notes
+    -----
+    • To stay compatible with PhysicalProperty utilities,
+      `value` is defined as an alias of `mo_coefficients`
+      (shape = [n_mo, n_ao]).  Generic tooling that expects a
+      `value` array can therefore operate on the full AO→MO matrix
+      without extra indirection.
+
+    • If you access `value` you are **seeing the coefficients**, not
+      the orbital energies or occupations.
+
     """
 
     # reference to the AO basis in which these MOs are expressed
@@ -99,6 +111,12 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
+    value = Quantity(
+        type=np.float64,
+        shape=['n_mo', 'n_ao'],
+        description='Alias of `mo_coefficients` for generic property helpers.',
+    )
+
     mo_type = Quantity(
         type=MEnum('canonical', 'natural', 'localized', 'hybrid'),
         default='canonical',
@@ -118,6 +136,7 @@ class MolecularOrbitals(PhysicalProperty):
         if self.mo_energies is not None:
             self.n_mo = len(self.mo_energies)
         if self.mo_coefficients is not None:
+            self.value = self.mo_coefficients
             # ensure consistent dimensions
             nm, na = self.mo_coefficients.shape
             if self.n_mo is None:
