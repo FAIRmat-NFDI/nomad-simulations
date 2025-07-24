@@ -60,7 +60,7 @@ class Mesh(ArchiveSection):
         """,
     )
 
-    mesh_type = Quantity(
+    type = Quantity(
         type=MEnum('equidistant', 'logarithmic', 'tan'),
         shape=['dimensionality'],
         description="""
