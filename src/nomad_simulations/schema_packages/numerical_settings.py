@@ -61,7 +61,7 @@ class Mesh(ArchiveSection):
     )
 
     type = Quantity(
-        type=MEnum('equidistant', 'logarithmic', 'tan'),
+        type=MEnum('equidistant', 'logarithmic', 'tangent'),
         shape=['dimensionality'],
         description="""
         Kind of mesh identifying the spacing in each of the dimensions specified by `dimensionality`. It can take the values:
@@ -70,7 +70,7 @@ class Mesh(ArchiveSection):
         | --------- | -------------------------------- |
         | `'equidistant'`  | Equidistant grid (also known as 'Newton-Cotes') |
         | `'logarithmic'`  | log distance grid |
-        | `'Tan'`  | Non-uniform tan mesh for grids. More dense at low abs values of the points, while less dense for higher values |
+        | `'tangent'`  | Non-uniform mesh with tangent spacing, denser near |x|→0, coarser at larger |x| |
         """,
     )
 
@@ -195,7 +195,7 @@ class NumericalIntegration(NumericalSettings):
         type=np.float64,
         description="""
         An accuracy threshold for the integration grid, controlling how fine the 
-        discretization is. Some programs label it "integral accuracy" or "grid accuracy".
+        discretization is. Some simulation codes label it "integral accuracy" or "grid accuracy".
         For instance, GRIDTHR in Molpro or BFCut in ORCA.
         """,
     )
