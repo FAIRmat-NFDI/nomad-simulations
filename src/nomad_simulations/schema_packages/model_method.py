@@ -1677,6 +1677,10 @@ class ModelMethodMolecular(ModelMethodElectronic):
       - **frozen_core**
         One FrozenCore subsection, capturing details about frozen core approximation.
 
+      -  **dispersion_correction** - empirical or non-local dispersion model (D3, D4, VV10, …).
+
+      - **solvation_correction** - implicit-solvent model parameters (PCM, SMD, COSMO, …).
+
     All molecular electronic-structure methods should inherit from MolecularModelMethod to
     ensure consistent handling of orbitals, spin conventions, and shared post-SCF options.
     """
@@ -1714,6 +1718,25 @@ class ModelMethodMolecular(ModelMethodElectronic):
         description="""
         Frozen-core approximation: specify which inner shells to keep frozen
         (either by explicit orbital refs or by quantum-number thresholds).
+        """,
+    )
+
+    dispersion_correction = SubSection(
+        sub_section=DispersionModel.m_def,
+        repeats=False,
+        description="""
+        Empirical or non-local dispersion correction applied in conjunction with the
+        electronic method (e.g., D3, D4, VV10).  Contains parameters and scaling
+        options for the chosen dispersion model.
+        """,
+    )
+
+    solvation_correction = SubSection(
+        sub_section=SolvationModel.m_def,
+        repeats=False,
+        description="""
+        Implicit-solvent correction model (PCM, COSMO, SMD, CPCM, …).  Stores dielectric
+        constants, cavity definitions, surface charge parameters, and related options.
         """,
     )
 
