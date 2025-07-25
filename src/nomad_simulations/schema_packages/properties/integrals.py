@@ -114,7 +114,7 @@ class OneElectronIntegral(PhysicalProperty):
     value = Quantity(
         type=np.float64,
         unit='hartree',  # overlap is unitless but harmless
-        shape=['n_basis_functions', 'n_basis_functions'],
+        shape=['n_functions', 'n_functions'],
         description="""
         Square matrix holding the chosen component of the operator.
         """,
@@ -230,7 +230,7 @@ class TwoElectronIntegral(PhysicalProperty):
 
     eri_cholesky = Quantity(
         type=np.float64,
-        unit='sqrt(hartree)',
+        unit='hartree**0.5',
         shape=['eri_cholesky_num', 'n_functions', 'n_functions'],
         description='Cholesky factors (low-rank).',
     )
@@ -242,7 +242,7 @@ class TwoElectronIntegral(PhysicalProperty):
 
     eri_lr_cholesky = Quantity(
         type=np.float64,
-        unit='sqrt(hartree)',
+        unit='hartree**0.5',
         shape=['eri_lr_cholesky_num', 'n_functions', 'n_functions'],
         description='Long-range Cholesky factors.',
     )
