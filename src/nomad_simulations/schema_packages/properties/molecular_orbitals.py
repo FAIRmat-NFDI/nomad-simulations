@@ -111,12 +111,6 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
-    value = Quantity(
-        type=np.float64,
-        shape=['n_mo', 'n_ao'],
-        description='Alias of `mo_coefficients` for generic property helpers.',
-    )
-
     mo_type = Quantity(
         type=MEnum('canonical', 'natural', 'localized', 'hybrid'),
         default='canonical',
@@ -135,8 +129,6 @@ class MolecularOrbitals(PhysicalProperty):
         # infer sizes
         if self.mo_energies is not None:
             self.n_mo = len(self.mo_energies)
-        if self.mo_coefficients is not None:
-            self.value = self.mo_coefficients
             # ensure consistent dimensions
             nm, na = self.mo_coefficients.shape
             if self.n_mo is None:
