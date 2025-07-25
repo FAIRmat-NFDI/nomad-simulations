@@ -16,62 +16,44 @@ from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 class MolecularOrbitals(PhysicalProperty):
     """
-    Molecular-orbital eigenstates expressed in an atomic-orbital basis,
-    using the standard α/β spin-channel convention from MolSSI QCSchema
-    and TREXIO:
+    Molecular-orbital eigenstates expressed in an atom-centred AO basis.
 
-    • One instance per spin channel:
-      - spin_channel = 0 : α-spin orbitals
-      - spin_channel = 1 : β-spin orbitals
-    • RHF/RKS (closed-shell): instantiate once with spin_channel=0
-    • UHF/UKS (unrestricted): instantiate two objects, α then β
-    • Shape conventions (per instance):
-      - energies:      array of length n_mo (orbital energies εᵢ)
-      - occupations:  array of length n_mo (occupations nᵢ: 0,1 or 2)
-      - coefficients: matrix shape [n_mo x n_ao] (AO→MO expansion Cᵢμ)
+    Every quantity is either directly mappable to the TREXIO *mo* group or
+    provides auxiliary metadata needed by NOMAD tooling.  Shapes are expressed
+    in Fortran/column-major convention to match TREXIO and most quantum-code
+    outputs.
 
-    References for this pattern:
-      — MolSSI QCSchema Wavefunction: separate orbitals_a, orbitals_b arrays
-      — TREXIO mo_coeff_up / mo_coeff_dn groups
-
-    Quantities:
-      spin_channel    (int): 0=α, 1=β
-      n_mo            (int): number of MOs
-      mo_energies     (float[electron_volt][n_mo])
-      mo_occupations  (float[n_mo])
-      mo_coefficients (float[n_mo, n_ao])
-      mo_type         (enum): canonical, natural, localized, …
-
-    Notes
-    -----
-    • To stay compatible with PhysicalProperty utilities,
-      `value` is defined as an alias of `mo_coefficients`
-      (shape = [n_mo, n_ao]).  Generic tooling that expects a
-      `value` array can therefore operate on the full AO→MO matrix
-      without extra indirection.
-
-    • If you access `value` you are **seeing the coefficients**, not
-      the orbital energies or occupations.
+    ----------
+    Quantities
+    -----------------
+    ``basis_set_ref``        Reference to the AO basis section.
+    ``mo_spin``              Per-orbital spin index (TREXIO-style unified list).
+    ``n_mo``                 Number of molecular orbitals stored.
+    ``n_ao``                 Size of the AO basis.
+    ``mo_energies``          εᵢ orbital energies (eV).
+    ``mo_occupations``       nᵢ occupation numbers.
+    ``mo_coefficients``      Real part of AO→MO coefficient matrix C.
+    ``mo_coefficients_im``   Imaginary part of C (optional).
+    ``mo_class``             Role of each MO: Core/Inactive/Active/Virtual/Deleted.
+    ``mo_symmetry``          Irreducible-representation labels (e.g. *a₁*, *b₂*).
+    ``mo_type``              Classification of entire set: canonical/natural/…
 
     """
 
-    # reference to the AO basis in which these MOs are expressed
+    # ------------------------------------------------------------------ #
+    #                           References                               #
+    # ------------------------------------------------------------------ #
     basis_set_ref = Quantity(
         type=Reference(SectionProxy('AtomCenteredBasisSet')),
         description="""
-        The atom-centered basis set used for these molecular orbitals.
+        Reference to the atom-centered basis set in which these molecular
+        orbitals are expanded.
         """,
     )
 
-    # spin channel: 0=alpha, 1=beta (for closed‐shell can omit or set both)
-    spin_channel = Quantity(
-        type=np.int32,
-        description="""
-        Spin index of these orbitals: 0 (alpha) or 1 (beta).  
-        For closed-shell (RHF/RKS) you may store only channel 0.
-        """,
-    )
-
+    # ------------------------------------------------------------------ #
+    #                    Dimension-defining scalars                      #
+    # ------------------------------------------------------------------ #
     n_mo = Quantity(
         type=np.int32,
         description='Number of molecular orbitals stored.',
@@ -82,13 +64,25 @@ class MolecularOrbitals(PhysicalProperty):
         description='Number of atomic orbitals (size of AO basis).',
     )
 
+    # ------------------------------------------------------------------ #
+    #                   Per-orbital mandatory metadata                   #
+    # ------------------------------------------------------------------ #
+    mo_spin = Quantity(
+        type=np.int32,
+        shape=['n_mo'],
+        description="""
+        Spin index of each molecular orbital: 0 for α-spin, 1 for β-spin.
+        """,
+    )
+
     mo_energies = Quantity(
         type=np.float64,
         unit='electron_volt',
         shape=['n_mo'],
         description="""
         Orbital energies for each MO.  In a canonical SCF these are the eigenvalues 
-        of the (Fock) Hamiltonian; in post-processing they may be natural-orbital energies.
+        of the (Fock) Hamiltonian; in correlated frameworks they may be natural-orbital
+        energies or any other chosen set.
         """,
     )
 
@@ -101,6 +95,34 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
+    mo_class = Quantity(
+        type=MEnum('core', 'inactive', 'active', 'virtual', 'deleted'),
+        shape=['n_mo'],
+        description="""
+        Role of each MO within a correlated calculation or active-space
+        protocol:
+
+        * core     : energy-frozen doubly-occupied  
+        * inactive : doubly-occupied but variationally optimised  
+        * active   : part of the active space  
+        * virtual  : unoccupied (correlated) orbital  
+        * deleted  : pruned for technical reasons
+        """,
+    )
+
+    mo_symmetry = Quantity(
+        type=str,
+        shape=['n_mo'],
+        description="""
+        Symmetry label of each MO in the molecule's point group
+        (e.g. *a₁*, *b₂u*, *pi_g*). Leave empty for systems with
+        no detected symmetry.
+        """,
+    )
+
+    # ------------------------------------------------------------------ #
+    #                 AO → MO coefficient matrices                       #
+    # ------------------------------------------------------------------ #
     mo_coefficients = Quantity(
         type=np.float64,
         shape=['n_mo', 'n_ao'],
@@ -123,6 +145,9 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
+    # ------------------------------------------------------------------ #
+    #               Whole-set classification (free-text tag)             #
+    # ------------------------------------------------------------------ #
     mo_type = Quantity(
         type=MEnum('canonical', 'natural', 'localized', 'hybrid'),
         default='canonical',
@@ -134,28 +159,3 @@ class MolecularOrbitals(PhysicalProperty):
           - hybrid     : e.g. post-HF (CASSCF) orbitals, etc.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        # infer sizes
-        if self.mo_energies is not None:
-            self.n_mo = len(self.mo_energies)
-            # ensure consistent dimensions
-            nm, na = self.mo_coefficients.shape
-            if self.n_mo is None:
-                self.n_mo = nm
-            if self.n_ao is None:
-                self.n_ao = na
-            if (nm != self.n_mo) or (na != self.n_ao):
-                logger.error(
-                    'MO-coefficient matrix shape mismatch',
-                    given_shape=(int(nm), int(na)),
-                    expected_shape=(int(self.n_mo), int(self.n_ao)),
-                )
-
-        # shape‐check energies & occupations
-        if self.mo_energies is not None and len(self.mo_energies) != self.n_mo:
-            logger.error('Length of `mo_energies` must equal `n_mo`.')
-        if self.mo_occupations is not None and len(self.mo_occupations) != self.n_mo:
-            logger.error('Length of `mo_occupations` must equal `n_mo`.')
