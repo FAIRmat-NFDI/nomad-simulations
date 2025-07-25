@@ -162,3 +162,22 @@ class MolecularOrbitals(PhysicalProperty):
           - hybrid     : e.g. post-HF (CASSCF) orbitals, etc.
         """,
     )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        Infer `n_mo` / `n_ao` from supplied arrays when absent.
+        """
+        super().normalize(archive, logger)
+
+        # ---------- infer n_mo ----------
+        if self.n_mo is None:
+            if self.mo_coefficients is not None:
+                self.n_mo = int(self.mo_coefficients.shape[0])
+            elif self.mo_spin is not None:
+                self.n_mo = len(self.mo_spin)
+            elif self.mo_energies is not None:
+                self.n_mo = len(self.mo_energies)
+
+        # ---------- infer n_ao ----------
+        if self.n_ao is None and self.mo_coefficients is not None:
+            self.n_ao = int(self.mo_coefficients.shape[1])
