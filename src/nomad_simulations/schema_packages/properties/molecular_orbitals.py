@@ -23,6 +23,9 @@ class MolecularOrbitals(PhysicalProperty):
     in Fortran/column-major convention to match TREXIO and most quantum-code
     outputs.
 
+    The TREXIO format:
+    Posenitsky et al., J. Chem. Phys. 158, 174801 (2023)
+
     ----------
     Quantities
     -----------------

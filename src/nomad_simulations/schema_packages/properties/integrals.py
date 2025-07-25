@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
-from nomad.metainfo import MEnum, Quantity
+from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
@@ -19,10 +19,30 @@ class OneElectronIntegral(PhysicalProperty):
 
     This section mirrors the TREXIO format:
     Posenitsky et al., J. Chem. Phys. 158, 174801 (2023)
+
+    Quantities
+    ----------
+    operator_kind
+        Which operator: ``overlap``, ``kinetic``, ``potential_n_e``, ``ecp``,
+        or ``core_hamiltonian``.
+    basis_representation
+        ``ao`` → matrix is expressed in AO space, will be written to
+        ``ao_1e_int.<operator_kind>``;
+        ``mo`` → MO space, written to ``mo_1e_int.<operator_kind>``.
+    component
+        Part of a possibly complex matrix: ``real`` or ``imag`` (*dataset*\_im).
+    n_functions
+        Dimension of the chosen basis (TREXIO ``ao.num`` or ``mo.num``).
+    value
+        Square matrix, stored row-major (Fortran) exactly as in TREXIO.
+
     """
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/OneElectronIntegral'
 
+    # ------------------------------------------------------------------ #
+    #                       OPERATOR & BASIS TAGS                        #
+    # ------------------------------------------------------------------ #
     operator_kind = Quantity(
         type=MEnum(
             'overlap',  # TREXIO: *_1e_int.overlap
@@ -67,22 +87,36 @@ class OneElectronIntegral(PhysicalProperty):
         """,
     )
 
-    n_basis_functions = Quantity(
-        type=np.int32,
-        description="""
-        Number of basis functions in the selected representation
-        (TREXIO: `ao.num` or `mo.num`).
-        """,
+    # ------------------------------------------------------------------ #
+    #                          BASIS REFERENCES                          #
+    # ------------------------------------------------------------------ #
+    basis_set_ref = Quantity(
+        type=Reference(SectionProxy('AtomCenteredBasisSet')),
+        description="Required when `basis_representation == 'ao'`.",
     )
 
+    mo_ref = Quantity(
+        type=Reference(SectionProxy('MolecularOrbitals')),
+        description="Required when `basis_representation == 'mo'`.",
+    )
+
+    # ------------------------------------------------------------------ #
+    #                         MATRIX DIMENSION                           #
+    # ------------------------------------------------------------------ #
+    n_functions = Quantity(
+        type=np.int32,
+        description='Size of the chosen basis (AO or MO).',
+    )
+
+    # ------------------------------------------------------------------ #
+    #                               DATA                                 #
+    # ------------------------------------------------------------------ #
     value = Quantity(
         type=np.float64,
         unit='hartree',  # overlap is unitless but harmless
         shape=['n_basis_functions', 'n_basis_functions'],
         description="""
-        Square matrix holding the chosen component of the operator.  Stored in
-        row-major order, identical to TREXIO, so no transposition is required
-        when writing/reading.
+        Square matrix holding the chosen component of the operator.
         """,
     )
 
@@ -96,18 +130,16 @@ class TwoElectronIntegral(PhysicalProperty):
     Posenitsky et al., J. Chem. Phys. 158, 174801 (2023)
     """
 
+    # ------------------------------------------------------------------ #
+    #                       BASIS & COMPONENT TAGS                       #
+    # ------------------------------------------------------------------ #
     basis_representation = Quantity(
         type=MEnum('ao', 'mo'),
         description='See `OneElectronIntegral.basis_representation`.',
-    )  # EBB TODO
+    )
 
     component = Quantity(
         type=MEnum('real', 'imag'), description='See `OneElectronIntegral.component`.'
-    )
-
-    n_basis_functions = Quantity(
-        type=np.int32,
-        description='Number of AO or MO basis functions (`ao.num` / `mo.num`).',
     )
 
     storage_scheme = Quantity(
@@ -121,25 +153,53 @@ class TwoElectronIntegral(PhysicalProperty):
         """,
     )
 
-    # Dense tensor
+    # ------------------------------------------------------------------ #
+    #                          BASIS REFERENCES                          #
+    # ------------------------------------------------------------------ #
+    basis_set_ref = Quantity(
+        type=Reference(SectionProxy('AtomCenteredBasisSet')),
+        description='Required for `ao` representation.',
+    )
+
+    mo_ref = Quantity(
+        type=Reference(SectionProxy('MolecularOrbitals')),
+        description='Required for `mo` representation.',
+    )
+
+    # ------------------------------------------------------------------ #
+    #                        BASIS DIMENSION COUNT                       #
+    # ------------------------------------------------------------------ #
+    n_functions = Quantity(
+        type=np.int32,
+        description='Size of the chosen basis (AO or MO).',
+    )
+
+    # ------------------------------------------------------------------ #
+    #                           DENSE TENSORS                            #
+    # ------------------------------------------------------------------ #
     eri_dense = Quantity(
         type=np.float64,
         unit='hartree',
-        shape=[
-            'n_basis_functions',
-            'n_basis_functions',
-            'n_basis_functions',
-            'n_basis_functions',
-        ],
+        shape=['n_functions', 'n_functions', 'n_functions', 'n_functions'],
         description="Present only when `storage_scheme == 'dense'`.",
     )
 
-    # Sparse COO
+    eri_lr_dense = Quantity(
+        type=np.float64,
+        unit='hartree',
+        shape=['n_functions', 'n_functions', 'n_functions', 'n_functions'],
+        description='Long-range (erf-screened) part, dense encoding.',
+    )
+
+    # ------------------------------------------------------------------ #
+    #                           SPARSE TENSORS                           #
+    # ------------------------------------------------------------------ #
     eri_indices = Quantity(
         type=np.int64,
         shape=['*', 4],
-        description='Index quadruplets (i,j,k,l) for sparse COO representation.',
+        description='COO index quadruplets (i, j, k, l) – **0-based**.',
     )
+
     eri_values = Quantity(
         type=np.float64,
         unit='hartree',
@@ -147,10 +207,42 @@ class TwoElectronIntegral(PhysicalProperty):
         description='Values paired with `eri_indices`.',
     )
 
-    # Cholesky
+    eri_lr_indices = Quantity(
+        type=np.int64,
+        shape=['*', 4],
+        description='COO indices for long-range tensor.',
+    )
+
+    eri_lr_values = Quantity(
+        type=np.float64,
+        unit='hartree',
+        shape=['*'],
+        description='Values paired with `eri_lr_indices`.',
+    )
+
+    # ------------------------------------------------------------------ #
+    #                 CHOLESKY LOW-RANK REPRESENTATION                   #
+    # ------------------------------------------------------------------ #
+    eri_cholesky_num = Quantity(
+        type=np.int32,
+        description='Number of Cholesky vectors (TREXIO dim).',
+    )
+
     eri_cholesky = Quantity(
         type=np.float64,
         unit='sqrt(hartree)',
-        shape=['*', 'n_basis_functions', 'n_basis_functions'],
-        description="Cholesky factors when `storage_scheme == 'cholesky'`.",
+        shape=['eri_cholesky_num', 'n_functions', 'n_functions'],
+        description='Cholesky factors (low-rank).',
+    )
+
+    eri_lr_cholesky_num = Quantity(
+        type=np.int32,
+        description='Number of long-range Cholesky vectors.',
+    )
+
+    eri_lr_cholesky = Quantity(
+        type=np.float64,
+        unit='sqrt(hartree)',
+        shape=['eri_lr_cholesky_num', 'n_functions', 'n_functions'],
+        description='Long-range Cholesky factors.',
     )
