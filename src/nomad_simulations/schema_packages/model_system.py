@@ -192,12 +192,23 @@ class GeometricSpace(Entity):
     def get_geometric_space_for_atomic_cell(self, logger: 'BoundLogger') -> None:
         """
         Get the real space parameters for the atomic cell using ASE.
+        to_ase_atoms live under the parent ModelSystem.
 
         Args:
             logger (BoundLogger): The logger to log messages.
         """
+        parent = getattr(self, 'm_parent', None)
+        if parent is None or not hasattr(parent, 'to_ase_atoms'):
+            logger.warning(
+                'No parent ModelSystem with to_ase_atoms; skipping geometry.'
+            )
+            return
+
+        atoms = parent.to_ase_atoms(logger=logger)
+        if atoms is None:
+            return  # parent already logged the problem
+
         try:
-            atoms = self.to_ase_atoms(logger=logger)
             cell = atoms.get_cell()
             self.length_vector_a, self.length_vector_b, self.length_vector_c = (
                 cell.lengths() * ureg.angstrom
@@ -206,10 +217,10 @@ class GeometricSpace(Entity):
                 cell.angles() * ureg.degree
             )
             self.volume = cell.volume * ureg.angstrom**3
-        except Exception as e:
+        except Exception as exc:
             logger.warning(
-                'Could not extract geometric space information from ASE Atoms object.',
-                exc_info=e,
+                'Failed to extract geometric-space data from ASE cell.',
+                exc_info=exc,
             )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
@@ -1049,7 +1060,7 @@ class ModelSystem(System):
                     cell_section.lattice_vectors.to('angstrom').magnitude
                 )
             else:
-                logger.warning('No lattice_vectors found in cell[0].')
+                logger.info('No lattice_vectors found in cell[0].')
         else:
             logger.warning('No cell section available in ModelSystem.')
 
