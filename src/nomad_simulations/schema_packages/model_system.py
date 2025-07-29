@@ -197,10 +197,10 @@ class GeometricSpace(Entity):
         Args:
             logger (BoundLogger): The logger to log messages.
         """
-        parent = getattr(self, 'm_parent', None)
-        if parent is None or not hasattr(parent, 'to_ase_atoms'):
+        parent = self.m_parent
+        if not isinstance(parent, ModelSystem):
             logger.warning(
-                'No parent ModelSystem with to_ase_atoms; skipping geometry.'
+                'Parent is not a ModelSystem → geometric-space normalisation skipped.'
             )
             return
 
