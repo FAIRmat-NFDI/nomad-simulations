@@ -846,7 +846,9 @@ class ModelSystem(System):
         type=MEnum(
             'atom',
             'active_atom',
-            'molecule / cluster',
+            'molecule',
+            'monomer',
+            'cluster',
             '1D',
             'surface',
             '2D',
