@@ -110,3 +110,40 @@ class SUPERCODEParser:
         # append `Simulation` as an `archive.data` section
         archive.data.append(simulation)
 ```
+
+## Homogenization and the role of Workflows
+
+Workflows are a device for annotating the structure of a set of entries in a standardized way.
+A community can define a workflow schema, i.e. its standout sections, without any knowledge of the underlying entries.
+As such, the workflows define a homogenized data format which rich semantics, from where to explore the dataset.
+The actual workflow entry instance, meanwhile, handles the coordination between tasks and the underlying data.
+This mapping may be a mixture of (workflow) entries and sections.
+
+Below are a few examples of actual mappings.
+Important to note is that examples presuppose a default underlying structure, but that this s
+
+### Serial Updates to `ModelSystem`
+
+Geometry optimizations or molecular dynamics simulations, for example, typically store their data in a single entry.
+Tasks trace the updates to the system, i.e. calculation or time steps, respectively.
+The actual modifications of these steps are stored in the `model_system` and `outputs`.
+Hence, `task[0].input -> entry_0#data.model_system[0]` and `task[0].output -> entry_0#data.outputs[0]`.
+<!-- @JFRudzinski pls double-check the order of the arrows -->
+
+```json
+{
+    "workflow": {
+        "tasks": [
+            0: {
+                "input": "entry_0#data.model_system[0]",
+                "output": "entry_0#data.outputs[0]",
+            },
+            1: ...,
+        ],
+    }
+}
+```
+
+### Multi-step Workflows
+
+### Single-Point SCF Workflow
