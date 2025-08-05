@@ -300,3 +300,96 @@ def test_hierarchical_composition_and_branch_depth(n_h2o):
         assert leaf.composition_formula == 'H(2)O(1)'
     # Cu leaf should read "Cu(1)"
     assert cu.composition_formula == 'Cu(1)'
+
+
+class TestModelSystemBondFunctions:
+    """
+    Tests for:
+      - get_root_system
+      - get_bond_list
+      - is_molecule
+    """
+
+    def make_simple_system(self) -> ModelSystem:
+        """
+        Helper to build a root system with 4 particles and a single child subsystem.
+        Root bond list: [(0,1), (1,2), (2,3)]
+        Child subsystem: particles [1,2]
+        """
+        # Root system with 4 particles
+        root = ModelSystem(is_representative=True)
+        for sym in ['H', 'H', 'O', 'O']:
+            root.particle_states.append(AtomsState(chemical_symbol=sym))
+        root.n_particles = 4
+        root.bond_list = [(0, 1), (1, 2), (2, 3)]  # linear chain H-H-O-O
+
+        # Child subsystem (middle two particles)
+        child = ModelSystem(branch_label='child', is_representative=False)
+        child.particle_indices = [1, 2]
+        root.sub_systems.append(child)
+
+        return root
+
+    def test_get_root_system_returns_top_level(self):
+        """
+        Ensure get_root_system correctly traverses up to the root.
+        """
+        root = self.make_simple_system()
+        child = root.sub_systems[0]
+        # Root of root is itself
+        assert root.get_root_system() is root
+        # Root of child should be the parent root
+        assert child.get_root_system() is root
+
+    def test_get_bond_list_filters_bonds_correctly(self):
+        """
+        Ensure get_bond_list filters bonds to those involving only the subsystem's particle_indices.
+        """
+        root = self.make_simple_system()
+        child = root.sub_systems[0]
+
+        # Child bonds should include only bonds fully inside [1,2]
+        bonds = child.get_bond_list()
+        assert bonds.shape == (1, 2)
+        assert (bonds == np.array([[1, 2]])).all()
+
+        # Root bonds should return full bond list
+        root_bonds = root.get_bond_list()
+        assert root_bonds.shape == (3, 2)
+        assert (root_bonds == np.array([(0, 1), (1, 2), (2, 3)])).all()
+
+    def test_get_bond_list_no_particle_indices(self):
+        """
+        Ensure get_bond_list returns empty array if no particle_indices are set.
+        """
+        sys = ModelSystem()
+        sys.bond_list = [(0, 1), (1, 2)]
+        # No particle_indices set
+        assert sys.get_bond_list().size == 0
+
+    def test_is_molecule_connected_and_disconnected(self):
+        """
+        Check that is_molecule returns True for connected subsystems and False for disconnected ones.
+        """
+        root = self.make_simple_system()
+        child = root.sub_systems[0]
+
+        # Connected (bond between 1 and 2)
+        assert child.is_molecule() is True
+
+        # Modify root bonds to break connectivity: remove (1,2)
+        root.bond_list = [(0, 1), (2, 3)]
+        assert child.is_molecule() is False
+
+    def test_is_molecule_single_atom(self):
+        """
+        Single-particle subsystems with no bonds are considered molecules (isolated atoms).
+        """
+        root = self.make_simple_system()
+        single_atom_subsys = ModelSystem(
+            branch_label='isolated', is_representative=False
+        )
+        single_atom_subsys.particle_indices = [3]  # O atom
+        root.sub_systems.append(single_atom_subsys)
+
+        assert single_atom_subsys.is_molecule() is True

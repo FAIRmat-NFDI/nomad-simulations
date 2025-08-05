@@ -825,7 +825,7 @@ class ModelSystem(System):
 
         - Example 5, a passivated heterostructure Si/(GaAs-CO2) has: 1 parent ModelSystem
         section (for Si/(GaAs-CO2)), 2 child ModelSystem sections (for Si and GaAs-CO2),
-        and 2 additional children sections in one of the children (for GaAs and CO2). The number
+        and 2 additional children sections in one of the childs (for GaAs and CO2). The number
         of AtomicCell and Symmetry sections can be inferred using a combination of example
         2 and 3.
     """
@@ -913,13 +913,11 @@ class ModelSystem(System):
         type=np.int32,
         shape=['*'],
         description="""
-        Global indices of the particles that belong to this subsystem, 
-        counted from the representative (top-level) ModelSystem.
-
-        **Example (SrTiO_3 primitive cell)**
-        parent particle_states   : ['Sr', 'Ti', 'O', 'O', 'O']  # → indices 0-4
-        Ti-only subsystem      : particle_indices = [1]
-        Ti + apical-O subsystem: particle_indices = [1, 4]
+        Indices of the particles/atoms in the child with respect to its parent. Example:
+            - We have SrTiO3, where `AtomicCell.labels = ['Sr', 'Ti', 'O', 'O', 'O']`. If
+            we create a `model_system` child for the `'Ti'` atom only, then in that child
+            `ModelSystem.sub_systems[0].particle_indices = [1]`. If now we want to refer both to
+            the `'Ti'` and the last `'O'` atoms, `ModelSystem.sub_systems[0].particle_indices = [1, 4]`.
         """,
     )
 
@@ -1004,20 +1002,7 @@ class ModelSystem(System):
     particle_states = SubSection(
         section_def=ParticleState.m_def,
         repeats=True,
-        description="""
-        Particle state of each of the particles conforming the ModelSystem. 
-        This is a list of `n_particles` elements and the order matches that of `positions`.
-
-            Example
-            -------
-            A water molecule (H₂O):
-
-                positions       : [[…], […], […]]      # 3 atoms
-                particle_states :
-                    [0] AtomsState(H)
-                    [1] AtomsState(H)
-                    [2] AtomsState(O)
-        """,
+        description='Particle states',
     )
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
@@ -1268,3 +1253,84 @@ class ModelSystem(System):
 
     def is_ne_structure(self, other: 'ModelSystem') -> bool:
         return not self.is_equal_structure(other)
+
+    # functions for traversing the ModelSystem hierarchy
+    def get_root_system(self) -> 'ModelSystem':
+        """
+        Traverses up the hierarchy to find the root ModelSystem.
+
+        Returns:
+            ModelSystem: The top-level (root) ModelSystem.
+        """
+        # system = self
+        # parent = system.m_parent
+        # while isinstance(parent, ModelSystem):
+        #     system = parent
+        #     parent = system.m_parent
+        # return system
+        system = self
+        while isinstance(system.m_parent, ModelSystem):
+            system = system.m_parent
+        return system
+
+    # functions for working with molecules
+    def get_bond_list(self, set_local: bool = False) -> np.ndarray:
+        """
+        Retrieves the bond list for this subsystem by filtering the root bond_list
+        using the subsystem's `particle_indices`. The bond indices remain in root-level
+        coordinates (no reindexing).
+
+        Args:
+            set_local (bool): If True, sets `self.bond_list` to the filtered bonds.
+
+        Returns:
+            np.ndarray: Filtered bond list for this subsystem (root-level indices).
+        """
+        if self.particle_indices is None:
+            return np.array([])
+
+        root = self.get_root_system()
+        if root.bond_list is None:
+            return np.array([])
+
+        indices_set = set(self.particle_indices.tolist())
+        bond_list = np.array(
+            [
+                (i, j)
+                for i, j in root.bond_list
+                if i in indices_set and j in indices_set
+            ],
+            dtype=np.int32,
+        )
+
+        if set_local:
+            self.bond_list = bond_list
+
+        return bond_list
+
+    def is_molecule(self) -> bool:
+        """
+        Checks if the current subsystem forms a contiguous molecule (single connected component).
+
+        Returns:
+            bool: True if all particles are connected, False otherwise.
+        """
+        import networkx as nx
+
+        bonds = self.get_bond_list(set_local=False)
+        n_particles = (
+            len(self.particle_indices)
+            if self.particle_indices is not None
+            else self.n_particles
+        )
+
+        # No bonds: only a molecule if single atom
+        if bonds.size == 0:
+            return False
+
+        # Build graph and check if connected
+        graph = nx.Graph()
+        graph.add_nodes_from(range(n_particles))
+        graph.add_edges_from(bonds)
+
+        return nx.is_connected(graph)
