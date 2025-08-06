@@ -1264,12 +1264,6 @@ class ModelSystem(System):
         Returns:
             ModelSystem: The top-level (root) ModelSystem.
         """
-        # system = self
-        # parent = system.m_parent
-        # while isinstance(parent, ModelSystem):
-        #     system = parent
-        #     parent = system.m_parent
-        # return system
         system = self
         while isinstance(system.m_parent, ModelSystem):
             system = system.m_parent
