@@ -372,15 +372,13 @@ class TestModelSystemBondFunctions:
         bonds = child.get_bond_list()
         assert bonds.size == 0
 
-    def is_molecule(self) -> bool:
+    def test_is_molecule(self):
         """
-        Checks if the current subsystem forms a molecule:
-        - All particles in the subsystem are connected internally (single connected component).
-        - No bonds connect particles inside this subsystem to particles outside it.
-        - Single-particle subsystems are not considered molecules (must have at least one bond).
-
-        Returns:
-            bool: True if the subsystem is an isolated, bonded molecule; False otherwise.
+        Verify that is_molecule() enforces both internal connectivity and isolation:
+        - Fails if connected but bonded to outside.
+        - Passes if connected and isolated.
+        - Fails if disconnected.
+        - Single-particle subsystems are not considered molecules.
         """
         # Start from simple root system (4 atoms, bonds: (0,1), (1,2), (2,3))
         root = self.make_simple_system()
@@ -397,7 +395,7 @@ class TestModelSystemBondFunctions:
         assert child.is_molecule() is True
 
         # Case 3: No bonds at all → multi-particle subsystem fails
-        root.bond_list = []
+        root.bond_list = None
         assert child.is_molecule() is False
 
         # Single-particle subsystem should also fail (no bonds)
@@ -405,8 +403,10 @@ class TestModelSystemBondFunctions:
         root.sub_systems.append(single)
         assert single.is_molecule() is False
 
-        # Case 4: Single-particle subsystem bonded to outside → also fails
+        # Case 4: Single-particle subsystem bonded to outside → fails
         root.bond_list = [(1, 0)]
-        isolated = ModelSystem(branch_label='isolated', particle_indices=[3])
+        isolated = ModelSystem(
+            branch_label='isolated', particle_indices=[3]
+        )  # Single atom
         root.sub_systems.append(isolated)
         assert isolated.is_molecule() is False
