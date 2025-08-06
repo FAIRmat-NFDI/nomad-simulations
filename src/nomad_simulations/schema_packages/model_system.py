@@ -1337,9 +1337,61 @@ class ModelSystem(System):
         if bonds.size == 0:
             return False
 
+        particle_indices = self.particle_indices
+        if particle_indices is None:
+            n_particles = (
+                len(self.positions) if self.positions is not None else self.n_particles
+            )
+            particle_indices = np.arange(n_particles, dtype=np.int32)
+
         # Build graph and check if connected
         graph = nx.Graph()
-        graph.add_nodes_from(self.particle_indices)
+        graph.add_nodes_from(particle_indices)
         graph.add_edges_from(bonds)
 
         return nx.is_connected(graph)
+
+    def is_molecule(self) -> bool:
+        """
+        Checks if the current subsystem forms a contiguous and isolated molecule:
+        - All particles are connected (single connected component).
+        - No bonds connect particles inside this subsystem to particles outside it.
+
+        Returns:
+            bool: True if the subsystem is an isolated molecule, False otherwise.
+        """
+        import networkx as nx
+
+        # Internal bonds for this subsystem
+        bonds = self.get_bond_list(set_local=False)
+
+        # Handle case: no bonds
+        if bonds.size == 0:
+            return False
+
+        # Determine particle indices (fallback to range if None)
+        particle_indices = self.particle_indices
+        if particle_indices is None:
+            n_particles = (
+                len(self.positions) if self.positions is not None else self.n_particles
+            )
+            particle_indices = np.arange(n_particles, dtype=np.int32)
+
+        # --- 1. Connectivity check ---
+        graph = nx.Graph()
+        graph.add_nodes_from(particle_indices)
+        graph.add_edges_from(bonds)
+
+        if not nx.is_connected(graph):
+            return False
+
+        # --- 2. Isolation check: ensure no bonds cross subsystem boundary ---
+        root = self.get_root_system()
+        if root.bond_list is not None:
+            indices_set = set(particle_indices.tolist())
+            for i, j in root.bond_list:
+                # If exactly one endpoint is inside → cross-boundary bond
+                if (i in indices_set) ^ (j in indices_set):
+                    return False
+
+        return True
