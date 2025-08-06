@@ -37,7 +37,7 @@ class TotalEnergy(BaseEnergy):
     """
 
     # ? add a generic contributions quantity to PhysicalProperty
-    contributions = SubSection(sub_section=SectionProxy('TotalEnergy'), repeats=True)
+    contributions = SubSection(sub_section=SectionProxy('BaseEnergy'), repeats=True)
 
 
 # ? Separate quantities for nuclear and electronic KEs?
