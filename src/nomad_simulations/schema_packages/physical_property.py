@@ -32,15 +32,6 @@ class PhysicalProperty(PlotSection):
         """,
     )
 
-    source = Quantity(
-        type=MEnum('simulation', 'measurement', 'analysis'),
-        default='simulation',
-        description="""
-        Source of the physical property. This quantity is related with the `Activity` performed to obtain the physical
-        property. Example: an `ElectronicBandGap` can be obtained from a `'simulation'` or in a `'measurement'`.
-        """,
-    )  # ? useful
-
     type = Quantity(
         type=str,
         description="""
