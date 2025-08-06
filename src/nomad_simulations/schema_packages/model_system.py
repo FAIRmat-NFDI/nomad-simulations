@@ -22,8 +22,8 @@ from hashlib import sha1
 from typing import TYPE_CHECKING
 
 import ase
-from ase.symbols import symbols2numbers
 import numpy as np
+from ase.symbols import symbols2numbers
 from matid import Classifier, SymmetryAnalyzer  # pylint: disable=import-error
 from matid.classification.classifications import (
     Atom,
