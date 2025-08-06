@@ -1288,6 +1288,10 @@ class ModelSystem(System):
         Returns:
             np.ndarray: Filtered bond list for this subsystem (root-level indices).
         """
+
+        if not isinstance(self.m_parent, ModelSystem):  # this is the root system
+            return self.bond_list
+
         if self.particle_indices is None:
             return np.array([])
 
@@ -1320,19 +1324,13 @@ class ModelSystem(System):
         import networkx as nx
 
         bonds = self.get_bond_list(set_local=False)
-        n_particles = (
-            len(self.particle_indices)
-            if self.particle_indices is not None
-            else self.n_particles
-        )
 
-        # No bonds: only a molecule if single atom
         if bonds.size == 0:
             return False
 
         # Build graph and check if connected
         graph = nx.Graph()
-        graph.add_nodes_from(range(n_particles))
+        graph.add_nodes_from(self.particle_indices)
         graph.add_edges_from(bonds)
 
         return nx.is_connected(graph)

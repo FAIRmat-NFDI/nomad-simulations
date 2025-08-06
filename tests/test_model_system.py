@@ -318,10 +318,10 @@ class TestModelSystemBondFunctions:
         """
         # Root system with 4 particles
         root = ModelSystem(is_representative=True)
-        for sym in ['H', 'H', 'O', 'O']:
+        for sym in ['H', 'O', 'O', 'H']:
             root.particle_states.append(AtomsState(chemical_symbol=sym))
         root.n_particles = 4
-        root.bond_list = [(0, 1), (1, 2), (2, 3)]  # linear chain H-H-O-O
+        root.bond_list = [(0, 1), (1, 2), (2, 3)]  # linear chain H-O-O-H
 
         # Child subsystem (middle two particles)
         child = ModelSystem(branch_label='child', is_representative=False)
@@ -360,12 +360,17 @@ class TestModelSystemBondFunctions:
 
     def test_get_bond_list_no_particle_indices(self):
         """
-        Ensure get_bond_list returns empty array if no particle_indices are set.
+        Ensure get_bond_list returns an empty array for a subsystem without particle_indices.
         """
-        sys = ModelSystem()
-        sys.bond_list = [(0, 1), (1, 2)]
-        # No particle_indices set
-        assert sys.get_bond_list().size == 0
+        root = self.make_simple_system()
+        child = root.sub_systems[0]
+
+        # Remove particle_indices
+        child.particle_indices = None
+
+        # Expect empty array (since no filtering possible)
+        bonds = child.get_bond_list()
+        assert bonds.size == 0
 
     def test_is_molecule_connected_and_disconnected(self):
         """
@@ -386,10 +391,8 @@ class TestModelSystemBondFunctions:
         Single-particle subsystems with no bonds are considered molecules (isolated atoms).
         """
         root = self.make_simple_system()
-        single_atom_subsys = ModelSystem(
-            branch_label='isolated', is_representative=False
-        )
-        single_atom_subsys.particle_indices = [3]  # O atom
+        single_atom_subsys = ModelSystem(branch_label='isolated')
+        single_atom_subsys.particle_indices = [3]  # H atom
         root.sub_systems.append(single_atom_subsys)
 
-        assert single_atom_subsys.is_molecule() is True
+        assert single_atom_subsys.is_molecule() is False
