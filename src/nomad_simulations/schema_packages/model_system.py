@@ -1325,34 +1325,6 @@ class ModelSystem(System):
 
     def is_molecule(self) -> bool:
         """
-        Checks if the current subsystem forms a contiguous molecule (single connected component).
-
-        Returns:
-            bool: True if all particles are connected, False otherwise.
-        """
-        import networkx as nx
-
-        bonds = self.get_bond_list(set_local=False)
-
-        if bonds.size == 0:
-            return False
-
-        particle_indices = self.particle_indices
-        if particle_indices is None:
-            n_particles = (
-                len(self.positions) if self.positions is not None else self.n_particles
-            )
-            particle_indices = np.arange(n_particles, dtype=np.int32)
-
-        # Build graph and check if connected
-        graph = nx.Graph()
-        graph.add_nodes_from(particle_indices)
-        graph.add_edges_from(bonds)
-
-        return nx.is_connected(graph)
-
-    def is_molecule(self) -> bool:
-        """
         Checks if the current subsystem forms a contiguous and isolated molecule:
         - All particles are connected (single connected component).
         - No bonds connect particles inside this subsystem to particles outside it.
