@@ -1024,23 +1024,24 @@ class ModelSystem(System):
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
 
-    def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
-        """
-        Gets the chemical symbols from the particle_states that are AtomsState instances.
-        Args:
-            logger (BoundLogger): The logger to log messages.
-        Returns:
-            list: The list of chemical symbols of the atoms.
-        """
-        chemical_symbols = []
-        for particle_state in self.particle_states:
-            if isinstance(particle_state, AtomsState):
-                # Read directly from AtomsState.chemical_symbol
-                if particle_state.chemical_symbol is None:
-                    logger.warning('AtomsState has no `chemical_symbol` set.')
-                    return []
-                chemical_symbols.append(particle_state.chemical_symbol)
-        return chemical_symbols
+    # TODO Will remove this after developing CGBeadState functionality further
+    # def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
+    #     """
+    #     Gets the chemical symbols from the particle_states that are AtomsState instances.
+    #     Args:
+    #         logger (BoundLogger): The logger to log messages.
+    #     Returns:
+    #         list: The list of chemical symbols of the atoms.
+    #     """
+    #     chemical_symbols = []
+    #     for particle_state in self.particle_states:
+    #         if isinstance(particle_state, AtomsState):
+    #             # Read directly from AtomsState.chemical_symbol
+    #             if particle_state.chemical_symbol is None:
+    #                 logger.warning('AtomsState has no `chemical_symbol` set.')
+    #                 return []
+    #             chemical_symbols.append(particle_state.chemical_symbol)
+    #     return chemical_symbols
 
     # TODO: symbols should be a property right?
     # ? To replace get_chemical_symbols
@@ -1064,16 +1065,16 @@ class ModelSystem(System):
             symbols.append(symbol)
         return symbols
 
-    # ! Check for chemical elements
     def are_valid_chemical_symbols(self, logger: 'BoundLogger') -> bool:
         """
-        Checks if the chemical symbols in the particle_states are valid chemical symbols.
+        Validate that ASE can map all element symbols in the particle_states
+        to atomic numbers.
         Args:
             logger (BoundLogger): The logger to log messages.
         Returns:
             bool: True if all chemical symbols are valid, False otherwise.
         """
-        symbols = self.get_chemical_symbols(logger)
+        symbols = self.get_symbols(logger)
         if not symbols:
             return False
 
@@ -1099,7 +1100,7 @@ class ModelSystem(System):
           - positions from the top-level positions quantity,
           - periodic boundary conditions and lattice vectors from the first cell.
         """
-        symbols = self.get_chemical_symbols(logger)
+        symbols = self.get_symbols(logger)
         if not symbols:
             logger.error('Cannot generate ASE Atoms without chemical symbols.')
             return None
