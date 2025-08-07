@@ -1025,23 +1025,23 @@ class ModelSystem(System):
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
 
     # TODO Will remove this after developing CGBeadState functionality further
-    # def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
-    #     """
-    #     Gets the chemical symbols from the particle_states that are AtomsState instances.
-    #     Args:
-    #         logger (BoundLogger): The logger to log messages.
-    #     Returns:
-    #         list: The list of chemical symbols of the atoms.
-    #     """
-    #     chemical_symbols = []
-    #     for particle_state in self.particle_states:
-    #         if isinstance(particle_state, AtomsState):
-    #             # Read directly from AtomsState.chemical_symbol
-    #             if particle_state.chemical_symbol is None:
-    #                 logger.warning('AtomsState has no `chemical_symbol` set.')
-    #                 return []
-    #             chemical_symbols.append(particle_state.chemical_symbol)
-    #     return chemical_symbols
+    def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
+        """
+        Gets the chemical symbols from the particle_states that are AtomsState instances.
+        Args:
+            logger (BoundLogger): The logger to log messages.
+        Returns:
+            list: The list of chemical symbols of the atoms.
+        """
+        chemical_symbols = []
+        for particle_state in self.particle_states:
+            if isinstance(particle_state, AtomsState):
+                # Read directly from AtomsState.chemical_symbol
+                if particle_state.chemical_symbol is None:
+                    logger.warning('AtomsState has no `chemical_symbol` set.')
+                    return []
+                chemical_symbols.append(particle_state.chemical_symbol)
+        return chemical_symbols
 
     # TODO: symbols should be a property right?
     # ? To replace get_chemical_symbols
