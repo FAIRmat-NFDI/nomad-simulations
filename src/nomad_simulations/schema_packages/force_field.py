@@ -922,13 +922,9 @@ class ForceField(ModelMethod):
 
 ## GROMACS BONDED INTERACTIONS
 
-# Fourth power potential -- Use PolynomialBond? (Could also use it for harmonic and cubic but I guess it's better to have simpler forms for these more common ones)
-
 # Linear Angle potential -- useful?
 
 # Bond-Angle cross term -- useful?
-
-# Quartic angle potential -- Use polynomial angle?
 
 # Improper dihedrals
 
@@ -953,3 +949,244 @@ class ForceField(ModelMethod):
 
 
 # ! Need to survey Lammps and maybe openmm and check for other common potential types
+
+
+## DRAFT PROVIDED BY CHAT GPT
+
+
+class LinearAngle(AnglePotential):
+    r"""
+    Section containing information about a linear angle potential:
+    $V(\theta) = k_\theta (\theta - \theta_0) + C$,
+    where $k_\theta$ is the `force_constant` and $\theta_0$ is the `equilibrium_value`.
+    $C$ is an arbitrary constant (not stored).
+    """
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'LinearAngle'
+        if not self.functional_form:
+            self.functional_form = 'linear'
+        elif self.functional_form != 'linear':
+            logger.warning('Incorrect functional form set for LinearAngle.')
+
+
+class BondAngleCrossTerm(Potential):
+    r"""
+    Section containing a cross-term between bond and angle:
+    $V(r, \theta) = k (r - r_0)(\theta - \theta_0) + C$,
+    where $r_0$ and $\theta_0$ are the equilibrium values.
+    """
+
+    equilibrium_bond_length = Quantity(
+        type=np.float64,
+        unit='m',
+        shape=[],
+        description="""
+        Equilibrium bond length $r_0$.
+        """,
+    )
+
+    equilibrium_angle = Quantity(
+        type=np.float64,
+        unit='degree',
+        shape=[],
+        description="""
+        Equilibrium angle $\theta_0$.
+        """,
+    )
+
+    force_constant = Quantity(
+        type=np.float64,
+        unit='J / (m * degree)',
+        shape=[],
+        description="""
+        Force constant coupling bond length and angle.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'BondAngleCrossTerm'
+        if not self.functional_form:
+            self.functional_form = 'bond_angle_cross'
+
+
+class ImproperDihedralPotential(Potential):
+    """
+    Generic base class for improper dihedral potentials.
+    """
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'ImproperDihedralPotential'
+        if not self.type:
+            self.type = 'improper dihedral'
+        elif self.type != 'improper dihedral':
+            logger.warning('Incorrect type set for ImproperDihedralPotential.')
+
+        if self.n_particles:
+            if self.n_particles != 4:
+                logger.warning(
+                    'Incorrect number of particles for ImproperDihedralPotential.'
+                )
+            else:
+                self.n_particles = 4
+
+
+class HarmonicImproper(ImproperDihedralPotential):
+    r"""
+    Section for harmonic improper dihedral potential:
+    $V(\omega) = \frac{1}{2} k (\omega - \omega_0)^2 + C$
+    """
+
+    equilibrium_value = Quantity(
+        type=np.float64,
+        unit='degree',
+        shape=[],
+        description="""
+        Equilibrium improper angle $\omega_0$.
+        """,
+    )
+
+    force_constant = Quantity(
+        type=np.float64,
+        unit='J / degree**2',
+        shape=[],
+        description="""
+        Force constant $k$.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'HarmonicImproper'
+        if not self.functional_form:
+            self.functional_form = 'harmonic'
+
+
+class PeriodicImproper(ImproperDihedralPotential):
+    r"""
+    Section for periodic improper dihedral potential:
+    $V(\omega) = \frac{1}{2} k [1 + \cos(n \omega - \delta)] + C$
+    """
+
+    multiplicity = Quantity(
+        type=np.int32,
+        shape=[],
+        description="""
+        Periodicity $n$.
+        """,
+    )
+
+    phase_shift = Quantity(
+        type=np.float64,
+        unit='degree',
+        shape=[],
+        description="""
+        Phase shift $\delta$.
+        """,
+    )
+
+    force_constant = Quantity(
+        type=np.float64,
+        unit='J',
+        shape=[],
+        description="""
+        Amplitude $k$.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'PeriodicImproper'
+        if not self.functional_form:
+            self.functional_form = 'periodic'
+
+
+class PeriodicDihedral(DihedralPotential):
+    r"""
+    Section for periodic proper dihedral potential:
+    $V(\phi) = \frac{1}{2} k [1 + \cos(n \phi - \delta)] + C$
+    """
+
+    multiplicity = Quantity(
+        type=np.int32,
+        shape=[],
+        description="""
+        Periodicity $n$.
+        """,
+    )
+
+    phase_shift = Quantity(
+        type=np.float64,
+        unit='degree',
+        shape=[],
+        description="""
+        Phase shift $\delta$.
+        """,
+    )
+
+    force_constant = Quantity(
+        type=np.float64,
+        unit='J',
+        shape=[],
+        description="""
+        Amplitude $k$.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'PeriodicDihedral'
+        if not self.functional_form:
+            self.functional_form = 'periodic'
+
+
+class RyckaertBellemansDihedral(DihedralPotential):
+    r"""
+    Ryckaert-Bellemans dihedral:
+    $V(\phi) = \sum_{n=0}^{5} C_n \cos^n(\phi)$
+    """
+
+    coefficients = Quantity(
+        type=np.float64,
+        shape=[6],
+        unit='J',
+        description="""
+        Coefficients $C_0$ through $C_5$.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'RyckaertBellemansDihedral'
+        if not self.functional_form:
+            self.functional_form = 'ryckaert_bellemans'
+
+
+class BendingTorsionCoupledPotential(Potential):
+    r"""
+    Combined bending-torsion coupling potential:
+    $V = k_1(\theta - \theta_0)^2 + k_2(\phi - \phi_0)^2 + k_3(\theta - \theta_0)(\phi - \phi_0)$
+    """
+
+    equilibrium_angle = Quantity(type=np.float64, unit='degree', shape=[])
+    equilibrium_dihedral = Quantity(type=np.float64, unit='degree', shape=[])
+    force_constant_angle = Quantity(type=np.float64, unit='J/degree**2', shape=[])
+    force_constant_dihedral = Quantity(type=np.float64, unit='J/degree**2', shape=[])
+    coupling_constant = Quantity(type=np.float64, unit='J/degree**2', shape=[])
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'BendingTorsionCoupledPotential'
+        if not self.functional_form:
+            self.functional_form = 'bending_torsion_coupled'
