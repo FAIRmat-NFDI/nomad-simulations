@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 
 import ase
 import numpy as np
+from ase.symbols import symbols2numbers
 from matid import Classifier, SymmetryAnalyzer  # pylint: disable=import-error
 from matid.classification.classifications import (
     Atom,
@@ -51,6 +52,7 @@ if TYPE_CHECKING:
 
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
+    CGBeadState,
     ParticleState,
 )
 from nomad_simulations.schema_packages.utils import (
@@ -844,7 +846,9 @@ class ModelSystem(System):
         type=MEnum(
             'atom',
             'active_atom',
-            'molecule / cluster',
+            'molecule',
+            'monomer',
+            'cluster',
             '1D',
             'surface',
             '2D',
@@ -911,7 +915,7 @@ class ModelSystem(System):
         type=np.int32,
         shape=['*'],
         description="""
-        Global indices of the particles that belong to this subsystem, 
+        Global indices of the particles that belong to this subsystem,
         counted from the representative (top-level) ModelSystem.
 
         **Example (SrTiO_3 primitive cell)**
@@ -935,6 +939,16 @@ class ModelSystem(System):
         description="""
             Cartesian coordinates of all atoms in the top-level system.
             All subsystems will reference these positions via particle_indices.
+        """,
+    )
+
+    velocities = Quantity(
+        type=np.float64,
+        shape=['*', 3],
+        unit='meter / second',
+        description="""
+            Velocities of the particles: I.e., the change in cartesian coordinates of the
+        particle position with time.
         """,
     )
 
@@ -993,7 +1007,7 @@ class ModelSystem(System):
         section_def=ParticleState.m_def,
         repeats=True,
         description="""
-        Particle state of each of the particles conforming the ModelSystem. 
+        Particle state of each of the particles conforming the ModelSystem.
         This is a list of `n_particles` elements and the order matches that of `positions`.
 
             Example
@@ -1010,6 +1024,7 @@ class ModelSystem(System):
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
 
+    # TODO Will remove this after developing CGBeadState functionality further
     def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
         """
         Gets the chemical symbols from the particle_states that are AtomsState instances.
@@ -1028,6 +1043,55 @@ class ModelSystem(System):
                 chemical_symbols.append(particle_state.chemical_symbol)
         return chemical_symbols
 
+    # TODO: symbols should be a property right?
+    # ? To replace get_chemical_symbols
+    def get_symbols(self, logger: 'BoundLogger') -> list[str]:
+        """
+        Gets the symbols from the particle_states.
+        Args:
+            logger (BoundLogger): The logger to log messages.
+        Returns:
+            list: The list of symbols of the particles.
+        """
+        symbols = []
+        for particle_state in self.particle_states:
+            symbol = None
+            if isinstance(particle_state, AtomsState):
+                symbol = particle_state.chemical_symbol
+            elif isinstance(particle_state, CGBeadState):
+                symbol = particle_state.bead_symbol
+            if not symbol:
+                logger.warning('missing symbol in ParticleState.')
+            symbols.append(symbol)
+        return symbols
+
+    def are_valid_chemical_symbols(self, logger: 'BoundLogger') -> bool:
+        """
+        Validate that ASE can map all element symbols in the particle_states
+        to atomic numbers.
+        Args:
+            logger (BoundLogger): The logger to log messages.
+        Returns:
+            bool: True if all chemical symbols are valid, False otherwise.
+        """
+        symbols = self.get_symbols(logger)
+        if not symbols:
+            return False
+
+        try:
+            symbols2numbers(symbols)
+        except KeyError as e:
+            logger.error(f'Invalid chemical symbol found: {e}')
+            return False
+        return True
+
+    # atom_labels = self.traj_parser.get_atom_labels(n)
+    # if atom_labels is not None:
+    #     try:
+    #         symbols2numbers(atom_labels)
+    #     except KeyError:
+    #         atom_labels = ['X'] * len(atom_labels)
+
     def to_ase_atoms(self, logger: 'BoundLogger') -> 'Optional[ase.Atoms]':
         """
         Generates an ASE Atoms object from ModelSystem data.
@@ -1036,7 +1100,7 @@ class ModelSystem(System):
           - positions from the top-level positions quantity,
           - periodic boundary conditions and lattice vectors from the first cell.
         """
-        symbols = self.get_chemical_symbols(logger)
+        symbols = self.get_symbols(logger)
         if not symbols:
             logger.error('Cannot generate ASE Atoms without chemical symbols.')
             return None
@@ -1207,3 +1271,100 @@ class ModelSystem(System):
 
     def is_ne_structure(self, other: 'ModelSystem') -> bool:
         return not self.is_equal_structure(other)
+
+    # functions for traversing the ModelSystem hierarchy
+    def get_root_system(self) -> 'ModelSystem':
+        """
+        Traverses up the hierarchy to find the root ModelSystem.
+
+        Returns:
+            ModelSystem: The top-level (root) ModelSystem.
+        """
+        system = self
+        while isinstance(system.m_parent, ModelSystem):
+            system = system.m_parent
+        return system
+
+    # functions for working with molecules
+    def get_bond_list(self, set_local: bool = False) -> np.ndarray:
+        """
+        Retrieves the bond list for this subsystem by filtering the root bond_list
+        using the subsystem's `particle_indices`. The bond indices remain in root-level
+        coordinates (no reindexing).
+
+        Args:
+            set_local (bool): If True, sets `self.bond_list` to the filtered bonds.
+
+        Returns:
+            np.ndarray: Filtered bond list for this subsystem (root-level indices).
+        """
+
+        if not isinstance(self.m_parent, ModelSystem):  # this is the root system
+            return self.bond_list
+
+        if self.particle_indices is None:
+            return np.array([])
+
+        root = self.get_root_system()
+        if root.bond_list is None:
+            return np.array([])
+
+        indices_set = set(self.particle_indices.tolist())
+        bond_list = np.array(
+            [
+                (i, j)
+                for i, j in root.bond_list
+                if i in indices_set and j in indices_set
+            ],
+            dtype=np.int32,
+        )
+
+        if set_local:
+            self.bond_list = bond_list
+
+        return bond_list
+
+    def is_molecule(self) -> bool:
+        """
+        Checks if the current subsystem forms a contiguous and isolated molecule:
+        - All particles are connected (single connected component).
+        - No bonds connect particles inside this subsystem to particles outside it.
+
+        Returns:
+            bool: True if the subsystem is an isolated molecule, False otherwise.
+        """
+        import networkx as nx
+
+        # Internal bonds for this subsystem
+        bonds = self.get_bond_list(set_local=False)
+
+        # Handle case: no bonds
+        if bonds.size == 0:
+            return False
+
+        # Determine particle indices (fallback to range if None)
+        particle_indices = self.particle_indices
+        if particle_indices is None:
+            n_particles = (
+                len(self.positions) if self.positions is not None else self.n_particles
+            )
+            particle_indices = np.arange(n_particles, dtype=np.int32)
+
+        # --- 1. Connectivity check ---
+        graph = nx.Graph()
+        graph.add_nodes_from(particle_indices)
+        graph.add_edges_from(bonds)
+
+        if not nx.is_connected(graph):
+            return False
+
+        # --- 2. Isolation check: ensure no bonds cross subsystem boundary ---
+        root = self.get_root_system()
+        if root.bond_list is not None:
+            indices_set = set(particle_indices.tolist())
+            for i, j in root.bond_list:
+                # If exactly one endpoint is inside → cross-boundary bond
+                if (i in indices_set) ^ (j in indices_set):
+                    return False
+
+        return True
