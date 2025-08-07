@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.plot import PlotlyFigure
 from nomad.metainfo import Quantity
@@ -92,10 +93,17 @@ class TestPhysicalProperty:
         assert main_property.m_cache.get('_is_normalized', False) is True
         assert contribution.m_cache.get('_is_normalized', False) is True
 
-    def test_name_setting_during_normalization(self):
+    @pytest.mark.parametrize(
+        'instantiator, reference',
+        [
+            (PhysicalProperty, 'PhysicalProperty'),
+            (DummyPhysicalProperty, 'DummyPhysicalProperty'),
+        ],
+    )
+    def test_name_setting_during_normalization(self, instantiator: callable, reference: str):
         """
         Test that the name is set during normalization for PhysicalProperty.
         """
-        property_obj = PhysicalProperty()
+        property_obj = instantiator()
         property_obj.normalize(EntryArchive(), logger)
-        assert property_obj.name == 'PhysicalProperty'
+        assert property_obj.name == reference
