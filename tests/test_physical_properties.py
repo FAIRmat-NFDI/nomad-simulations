@@ -1,6 +1,7 @@
+from typing import Callable
+
 import numpy as np
 import pytest
-from typing import Callable
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.plot import PlotlyFigure
 from nomad.metainfo import Quantity
@@ -39,13 +40,12 @@ class TestPhysicalProperty:
         Test the `normalize` and `_is_derived` methods.
         """
         # Testing a directly parsed physical property
-        not_derived_physical_property = PhysicalProperty(source='simulation')
+        not_derived_physical_property = PhysicalProperty()
         assert not_derived_physical_property._is_derived() is False
         not_derived_physical_property.normalize(EntryArchive(), logger)
         assert not_derived_physical_property.is_derived is False
         # Testing a derived physical property
         derived_physical_property = PhysicalProperty(
-            source='analysis',
             physical_property_ref=not_derived_physical_property,
         )
         assert derived_physical_property._is_derived() is True
@@ -56,7 +56,7 @@ class TestPhysicalProperty:
         """
         Test that the normalization flag prevents duplicate normalization.
         """
-        property_obj = DummyPhysicalProperty(source='simulation')
+        property_obj = DummyPhysicalProperty()
 
         # First normalization
         property_obj.normalize(EntryArchive(), logger)
@@ -78,15 +78,15 @@ class TestPhysicalProperty:
         Test plotting integration and contributions normalization.
         """
         # Test main property plotting
-        property_obj = DummyPhysicalProperty(source='simulation')
+        property_obj = DummyPhysicalProperty()
         property_obj.normalize(EntryArchive(), logger)
 
         assert len(property_obj.figures) > 0
         assert isinstance(property_obj.figures[0], PlotlyFigure)
 
         # Test contributions
-        main_property = DummyPhysicalProperty(source='simulation')
-        contribution = DummyPhysicalProperty(source='analysis', name='contribution')
+        main_property = DummyPhysicalProperty()
+        contribution = DummyPhysicalProperty(name='contribution')
         main_property.contributions = [contribution]
         main_property.normalize(EntryArchive(), logger)
 
@@ -125,20 +125,16 @@ class TestPhysicalProperty:
             has_nested_contributions: Whether to create nested contribution structure
             log_ref: Whether validation error should be logged
         """
-        main_property = DummyPhysicalProperty(source='simulation', name='main')
+        main_property = DummyPhysicalProperty(name='main')
 
         if has_nested_contributions:
-            nested_contribution = DummyPhysicalProperty(
-                source='analysis', name='nested'
-            )
-            contribution_with_nested = DummyPhysicalProperty(
-                source='analysis', name='parent_contribution'
-            )
+            nested_contribution = DummyPhysicalProperty(name='nested')
+            contribution_with_nested = DummyPhysicalProperty(name='parent_contribution')
             contribution_with_nested.contributions = [nested_contribution]
             main_property.contributions = [contribution_with_nested]
         else:
-            contribution1 = DummyPhysicalProperty(source='analysis', name='contrib1')
-            contribution2 = DummyPhysicalProperty(source='analysis', name='contrib2')
+            contribution1 = DummyPhysicalProperty(name='contrib1')
+            contribution2 = DummyPhysicalProperty(name='contrib2')
             main_property.contributions = [contribution1, contribution2]
 
         with caplog.at_level('ERROR'):
@@ -177,11 +173,11 @@ class TestPhysicalProperty:
             set_contribution_type_on_contrib: Whether to set contribution_type on contribution
             log_ref: Whether validation error should be logged
         """
-        main_property = DummyPhysicalProperty(source='simulation', name='main')
+        main_property = DummyPhysicalProperty(name='main')
         if set_contribution_type_on_main:
             main_property.contribution_type = 'invalid_main_type'
 
-        contribution = DummyPhysicalProperty(source='analysis', name='contrib')
+        contribution = DummyPhysicalProperty(name='contrib')
         if set_contribution_type_on_contrib:
             contribution.contribution_type = 'valid_contrib_type'
 
@@ -200,8 +196,8 @@ class TestPhysicalProperty:
         """
         Test the _is_contribution helper method.
         """
-        main_property = DummyPhysicalProperty(source='simulation', name='main')
-        contribution = DummyPhysicalProperty(source='analysis', name='contrib')
+        main_property = DummyPhysicalProperty(name='main')
+        contribution = DummyPhysicalProperty(name='contrib')
 
         assert not main_property._is_contribution()
         assert not contribution._is_contribution()
