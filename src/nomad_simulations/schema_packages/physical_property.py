@@ -130,14 +130,17 @@ class PhysicalProperty(PlotSection):
         """
         Determines if this instance is a contribution by checking if it's contained
         in a parent's contributions list.
-        
+
         Returns:
             (bool): True if this instance is a contribution, False otherwise.
         """
         if hasattr(self, 'm_parent') and self.m_parent:
             parent_section = self.m_parent
             # If parent has contributions containing this instance, we are a contribution
-            if hasattr(parent_section, 'contributions') and parent_section.contributions:
+            if (
+                hasattr(parent_section, 'contributions')
+                and parent_section.contributions
+            ):
                 if self in parent_section.contributions:
                     return True
         return False
@@ -147,20 +150,20 @@ class PhysicalProperty(PlotSection):
         Validates that contributions do not contain nested contributions.
         This prevents recursive contribution structures which are not intended.
         Only runs for top-level PhysicalProperty instances, not for contributions themselves.
-        
+
         Args:
             logger: Logger instance for error reporting.
-        
+
         Returns:
             (bool): True if validation passes, False if nested contributions are found.
         """
         # Skip validation for contribution instances
         if self._is_contribution():
             return True
-        
+
         if not self.contributions:
             return True
-            
+
         has_nested_contributions = False
         for i, contribution in enumerate(self.contributions):
             if hasattr(contribution, 'contributions') and contribution.contributions:
@@ -169,22 +172,22 @@ class PhysicalProperty(PlotSection):
                     'Contributions should not have their own contributions subsection populated.'
                 )
                 has_nested_contributions = True
-        
+
         return not has_nested_contributions
 
     def _validate_contribution_type(self, logger) -> bool:
         """
         Validates that contribution_type is only set for contribution instances
         and is not set for top-level PhysicalProperty instances.
-        
+
         Args:
             logger: Logger instance for error reporting.
-        
+
         Returns:
             (bool): True if validation passes, False if contribution_type is incorrectly set.
         """
         is_contribution = self._is_contribution()
-        
+
         # Check for incorrect usage
         if not is_contribution and self.contribution_type is not None:
             logger.error(
@@ -192,7 +195,7 @@ class PhysicalProperty(PlotSection):
                 'contribution_type should only be set for instances in the contributions subsection.'
             )
             return False
-            
+
         return True
 
     def plot(self, **kwargs) -> list[PlotlyFigure]:
