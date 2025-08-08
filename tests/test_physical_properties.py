@@ -100,7 +100,9 @@ class TestPhysicalProperty:
             (DummyPhysicalProperty, 'DummyPhysicalProperty'),
         ],
     )
-    def test_name_setting_during_normalization(self, instantiator: callable, reference: str):
+    def test_name_setting_during_normalization(
+        self, instantiator: callable, reference: str
+    ):
         """
         Test that the name is set during normalization for PhysicalProperty.
         """
@@ -110,37 +112,43 @@ class TestPhysicalProperty:
 
     @pytest.mark.parametrize(
         'has_nested_contributions, log_ref',
-        [
-            (True, True),
-            (False, False)
-        ],
+        [(True, True), (False, False)],
     )
-    def test_contributions_validation(self, caplog, has_nested_contributions: bool, log_ref: bool):
+    def test_contributions_validation(
+        self, caplog, has_nested_contributions: bool, log_ref: bool
+    ):
         """
         Test contributions validation during normalization.
-        
+
         Args:
             has_nested_contributions: Whether to create nested contribution structure
             log_ref: Whether validation error should be logged
         """
         main_property = DummyPhysicalProperty(source='simulation', name='main')
-        
+
         if has_nested_contributions:
-            nested_contribution = DummyPhysicalProperty(source='analysis', name='nested')
-            contribution_with_nested = DummyPhysicalProperty(source='analysis', name='parent_contribution')
+            nested_contribution = DummyPhysicalProperty(
+                source='analysis', name='nested'
+            )
+            contribution_with_nested = DummyPhysicalProperty(
+                source='analysis', name='parent_contribution'
+            )
             contribution_with_nested.contributions = [nested_contribution]
             main_property.contributions = [contribution_with_nested]
         else:
             contribution1 = DummyPhysicalProperty(source='analysis', name='contrib1')
             contribution2 = DummyPhysicalProperty(source='analysis', name='contrib2')
             main_property.contributions = [contribution1, contribution2]
-        
+
         with caplog.at_level('ERROR'):
             main_property.normalize(EntryArchive(), logger)
-        
-        has_nested_error = any('nested contributions' in record.message.lower() for record in caplog.records)
+
+        has_nested_error = any(
+            'nested contributions' in record.message.lower()
+            for record in caplog.records
+        )
         assert has_nested_error == log_ref
-        
+
         if log_ref:
             assert any('Contribution 0' in record.message for record in caplog.records)
 
@@ -153,11 +161,16 @@ class TestPhysicalProperty:
             (True, True, True),
         ],
     )
-    def test_contribution_type_validation(self, caplog, set_contribution_type_on_main: bool, 
-                                        set_contribution_type_on_contrib: bool, log_ref: bool):
+    def test_contribution_type_validation(
+        self,
+        caplog,
+        set_contribution_type_on_main: bool,
+        set_contribution_type_on_contrib: bool,
+        log_ref: bool,
+    ):
         """
         Test contribution_type validation during normalization.
-        
+
         Args:
             set_contribution_type_on_main: Whether to set contribution_type on main property
             set_contribution_type_on_contrib: Whether to set contribution_type on contribution
@@ -166,18 +179,20 @@ class TestPhysicalProperty:
         main_property = DummyPhysicalProperty(source='simulation', name='main')
         if set_contribution_type_on_main:
             main_property.contribution_type = 'invalid_main_type'
-        
+
         contribution = DummyPhysicalProperty(source='analysis', name='contrib')
         if set_contribution_type_on_contrib:
             contribution.contribution_type = 'valid_contrib_type'
-        
+
         main_property.contributions = [contribution]
-        
+
         with caplog.at_level('ERROR'):
             main_property.normalize(EntryArchive(), logger)
-        
-        has_contrib_type_error = any('contribution_type set but is not a contribution' in record.message.lower() 
-                                   for record in caplog.records)
+
+        has_contrib_type_error = any(
+            'contribution_type set but is not a contribution' in record.message.lower()
+            for record in caplog.records
+        )
         assert has_contrib_type_error == log_ref
 
     def test_is_contribution_method(self):
@@ -186,11 +201,11 @@ class TestPhysicalProperty:
         """
         main_property = DummyPhysicalProperty(source='simulation', name='main')
         contribution = DummyPhysicalProperty(source='analysis', name='contrib')
-        
+
         assert not main_property._is_contribution()
         assert not contribution._is_contribution()
-        
+
         main_property.contributions = [contribution]
         main_property.normalize(EntryArchive(), logger)
-    
+
         assert not main_property._is_contribution()

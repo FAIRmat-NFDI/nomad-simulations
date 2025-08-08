@@ -130,12 +130,12 @@ class HelmholtzFreeEnergy(BaseEnergy):
 class ChemicalPotential(BaseEnergy):
     """
     Free energy cost of adding or extracting a particle from a thermodynamic system.
-    
+
     At finite temperature, the chemical potential determines the equilibrium condition
     for particle exchange between different phases or subsystems. It can be defined
     as the partial derivative of the internal energy with respect to particle number
-    at constant entropy and volume, or equivalently as the partial derivative of 
-    the Gibbs free energy with respect to particle number at constant temperature 
+    at constant entropy and volume, or equivalently as the partial derivative of
+    the Gibbs free energy with respect to particle number at constant temperature
     and pressure.
     """
 
