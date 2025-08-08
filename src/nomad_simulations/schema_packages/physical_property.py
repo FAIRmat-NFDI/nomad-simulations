@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from nomad import utils
 from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
@@ -6,6 +8,9 @@ from nomad.metainfo import URL, Quantity, Reference, SectionProxy, SubSection
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 
 logger = utils.get_logger(__name__)
+
+if TYPE_CHECKING:
+    from nomad.datamodel.metainfo import BoundLogger
 
 
 class PhysicalProperty(PlotSection):
@@ -145,7 +150,7 @@ class PhysicalProperty(PlotSection):
                     return True
         return False
 
-    def _validate_contributions_structure(self, logger) -> bool:
+    def _validate_contributions_structure(self, logger: 'BoundLogger') -> bool:
         """
         Validates that contributions do not contain nested contributions.
         This prevents recursive contribution structures which are not intended.
