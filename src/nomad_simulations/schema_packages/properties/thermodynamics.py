@@ -130,9 +130,50 @@ class HelmholtzFreeEnergy(BaseEnergy):
 class ChemicalPotential(BaseEnergy):
     """
     Free energy cost of adding or extracting a particle from a thermodynamic system.
+    
+    At finite temperature, the chemical potential determines the equilibrium condition
+    for particle exchange between different phases or subsystems. It can be defined
+    as the partial derivative of the internal energy with respect to particle number
+    at constant entropy and volume, or equivalently as the partial derivative of 
+    the Gibbs free energy with respect to particle number at constant temperature 
+    and pressure.
     """
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/ChemicalPotential'
+
+    temperature = Quantity(
+        type=np.float64,
+        unit='kelvin',
+        description="""
+        Temperature at which the chemical potential is calculated.
+        Essential for finite-temperature calculations.
+        """,
+    )
+
+    particle_number = Quantity(
+        type=np.float64,
+        description="""
+        Number of particles (or particle density) for which the chemical potential applies.
+        Can represent electron number, atom number, or other relevant particle count.
+        """,
+    )
+
+    fermi_energy = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Fermi energy at T=0K, used as reference for finite-temperature chemical potential.
+        At T=0, the chemical potential equals the Fermi energy.
+        """,
+    )
+
+    type = Quantity(
+        type=str,
+        description="""
+        Type of chemical potential calculation. Examples: 'electronic', 'atomic', 
+        'ionic', 'molecular'. Helps identify what kind of particles this applies to.
+        """,
+    )
 
 
 class HeatCapacity(PhysicalProperty):
