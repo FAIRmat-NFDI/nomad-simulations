@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from typing import Callable
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.plot import PlotlyFigure
 from nomad.metainfo import Quantity
@@ -101,7 +102,7 @@ class TestPhysicalProperty:
         ],
     )
     def test_name_setting_during_normalization(
-        self, instantiator: callable, reference: str
+        self, instantiator: Callable, reference: str
     ):
         """
         Test that the name is set during normalization for PhysicalProperty.
