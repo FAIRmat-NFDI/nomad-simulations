@@ -219,9 +219,11 @@ class PhysicalProperty(PlotSection):
         """
         if not self.contributions or not self.figures:
             return
-
-        target_indices = kwargs.get('target_indices', -1)
-        target_figure = self.figures[target_indices]
+        
+        try:
+            target_figure = self.figures[kwargs.get('target_indices', -1)]
+        except (IndexError, TypeError):
+            return
 
         if target_figure.figure:
             figure_dict = target_figure.figure.copy()
