@@ -62,19 +62,19 @@ class TestElectronicEigenvalues:
             (
                 None,
                 [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                False,
+                (),
                 (None, None),
             ),
             (
                 [[2, 2], [0, 0]],
                 [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                False,
+                (),
                 (None, None),
             ),  # `value` and `occupation` must have same shape
             (
                 [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
                 None,
-                False,
+                (),
                 (None, None),
             ),
             (
