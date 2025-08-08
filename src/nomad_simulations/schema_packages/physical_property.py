@@ -40,6 +40,15 @@ class PhysicalProperty(PlotSection):
         """,
     )
 
+    contribution_type = Quantity(
+        type=str,
+        default=None,
+        description="""
+        Type of contribution to the physical property. Hence, only applies to `contributions` instances.
+        Example: `TotalEnergy` may have contributions like _kinetic_, _potential_, etc.
+        """,
+    )
+
     label = Quantity(
         type=str,
         description="""
@@ -101,7 +110,7 @@ class PhysicalProperty(PlotSection):
         repeats=True,
         description="""
         Shallow list of contributions to the physical property.
-        This is useful for visualizing different components of the physical property.
+        Does not necessarily entail a (full) partioning.
         """,
     )
     # TODO: would be wishful to have `section_def` be a stripped down version of PhysicalProperty
@@ -117,11 +126,27 @@ class PhysicalProperty(PlotSection):
         """
         return self.physical_property_ref is not None
 
+    def _is_contribution(self) -> bool:
+        """
+        Determines if this instance is a contribution by checking if it's contained
+        in a parent's contributions list.
+        
+        Returns:
+            (bool): True if this instance is a contribution, False otherwise.
+        """
+        if hasattr(self, 'm_parent') and self.m_parent:
+            parent_section = self.m_parent
+            # If parent has contributions containing this instance, we are a contribution
+            if hasattr(parent_section, 'contributions') and parent_section.contributions:
+                if self in parent_section.contributions:
+                    return True
+        return False
+
     def _validate_contributions_structure(self, logger) -> bool:
         """
         Validates that contributions do not contain nested contributions.
         This prevents recursive contribution structures which are not intended.
-        Only runs for top-level `PhysicalProperty` instances, not for contributions themselves.
+        Only runs for top-level PhysicalProperty instances, not for contributions themselves.
         
         Args:
             logger: Logger instance for error reporting.
@@ -129,13 +154,9 @@ class PhysicalProperty(PlotSection):
         Returns:
             (bool): True if validation passes, False if nested contributions are found.
         """
-        # Check if this instance is itself a contribution by looking at the parent
-        if hasattr(self, 'm_parent') and self.m_parent:
-            parent_section = self.m_parent
-            # If parent has contributions containing this instance, we are a contribution
-            if hasattr(parent_section, 'contributions') and parent_section.contributions:
-                if self in parent_section.contributions:
-                    return True  # Skip validation for contribution instances
+        # Skip validation for contribution instances
+        if self._is_contribution():
+            return True
         
         if not self.contributions:
             return True
@@ -150,6 +171,29 @@ class PhysicalProperty(PlotSection):
                 has_nested_contributions = True
         
         return not has_nested_contributions
+
+    def _validate_contribution_type(self, logger) -> bool:
+        """
+        Validates that contribution_type is only set for contribution instances
+        and is not set for top-level PhysicalProperty instances.
+        
+        Args:
+            logger: Logger instance for error reporting.
+        
+        Returns:
+            (bool): True if validation passes, False if contribution_type is incorrectly set.
+        """
+        is_contribution = self._is_contribution()
+        
+        # Check for incorrect usage
+        if not is_contribution and self.contribution_type is not None:
+            logger.error(
+                f'{self.__class__.__name__} has contribution_type set but is not a contribution. '
+                'contribution_type should only be set for instances in the contributions subsection.'
+            )
+            return False
+            
+        return True
 
     def plot(self, **kwargs) -> list[PlotlyFigure]:
         """
@@ -205,9 +249,10 @@ class PhysicalProperty(PlotSection):
 
         self.is_derived = self._is_derived()
 
-        # validate contributions structure
+        # validate contributions structure and contribution_type usage
         logger_arg = args[1] if len(args) > 1 else logger
         self._validate_contributions_structure(logger_arg)
+        self._validate_contribution_type(logger_arg)
 
         for contribution in self.contributions:
             if hasattr(contribution, 'normalize'):
