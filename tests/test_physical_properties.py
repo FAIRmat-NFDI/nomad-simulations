@@ -107,3 +107,39 @@ class TestPhysicalProperty:
         property_obj = instantiator()
         property_obj.normalize(EntryArchive(), logger)
         assert property_obj.name == reference
+
+    @pytest.mark.parametrize(
+        'has_nested_contributions, should_log_error',
+        [
+            (True, True),
+            (False, False)
+        ],
+    )
+    def test_contributions_validation(self, caplog, has_nested_contributions: bool, should_log_error: bool):
+        """
+        Test contributions validation during normalization.
+        
+        Args:
+            has_nested_contributions: Whether to create nested contribution structure
+            should_log_error: Whether validation error should be logged
+        """
+        main_property = DummyPhysicalProperty(source='simulation', name='main')
+        
+        if has_nested_contributions:
+            nested_contribution = DummyPhysicalProperty(source='analysis', name='nested')
+            contribution_with_nested = DummyPhysicalProperty(source='analysis', name='parent_contribution')
+            contribution_with_nested.contributions = [nested_contribution]
+            main_property.contributions = [contribution_with_nested]
+        else:
+            contribution1 = DummyPhysicalProperty(source='analysis', name='contrib1')
+            contribution2 = DummyPhysicalProperty(source='analysis', name='contrib2')
+            main_property.contributions = [contribution1, contribution2]
+        
+        with caplog.at_level('ERROR'):
+            main_property.normalize(EntryArchive(), logger)
+        
+        has_nested_error = any('nested contributions' in record.message.lower() for record in caplog.records)
+        assert has_nested_error == should_log_error
+        
+        if should_log_error:
+            assert any('Contribution 0' in record.message for record in caplog.records)

@@ -1,7 +1,7 @@
 from nomad import utils
 from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
-from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy, SubSection
+from nomad.metainfo import URL, Quantity, Reference, SectionProxy, SubSection
 
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 
@@ -117,6 +117,40 @@ class PhysicalProperty(PlotSection):
         """
         return self.physical_property_ref is not None
 
+    def _validate_contributions_structure(self, logger) -> bool:
+        """
+        Validates that contributions do not contain nested contributions.
+        This prevents recursive contribution structures which are not intended.
+        Only runs for top-level `PhysicalProperty` instances, not for contributions themselves.
+        
+        Args:
+            logger: Logger instance for error reporting.
+        
+        Returns:
+            (bool): True if validation passes, False if nested contributions are found.
+        """
+        # Check if this instance is itself a contribution by looking at the parent
+        if hasattr(self, 'm_parent') and self.m_parent:
+            parent_section = self.m_parent
+            # If parent has contributions containing this instance, we are a contribution
+            if hasattr(parent_section, 'contributions') and parent_section.contributions:
+                if self in parent_section.contributions:
+                    return True  # Skip validation for contribution instances
+        
+        if not self.contributions:
+            return True
+            
+        has_nested_contributions = False
+        for i, contribution in enumerate(self.contributions):
+            if hasattr(contribution, 'contributions') and contribution.contributions:
+                logger.error(
+                    f'Contribution {i} in {self.__class__.__name__} contains nested contributions. '
+                    'Contributions should not have their own contributions subsection populated.'
+                )
+                has_nested_contributions = True
+        
+        return not has_nested_contributions
+
     def plot(self, **kwargs) -> list[PlotlyFigure]:
         """
         Placeholder for a method to plot the physical property. This method should be overridden in derived classes
@@ -170,6 +204,10 @@ class PhysicalProperty(PlotSection):
         super().normalize(*args, **kwargs)
 
         self.is_derived = self._is_derived()
+
+        # validate contributions structure
+        logger_arg = args[1] if len(args) > 1 else logger
+        self._validate_contributions_structure(logger_arg)
 
         for contribution in self.contributions:
             if hasattr(contribution, 'normalize'):
