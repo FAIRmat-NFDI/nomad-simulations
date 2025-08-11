@@ -1,28 +1,25 @@
-import numpy as np
-import pint
 import re
 import typing
-from scipy.interpolate import UnivariateSpline
 
 # from structlog.stdlib import BoundLogger
-from typing import Optional, List, Tuple
-from ase.dft.kpoints import monkhorst_pack, get_monkhorst_pack_size_and_offset
-
-from nomad.units import ureg
+import numpy as np
+from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.metainfo import (
-    URL,
-    Quantity,
-    SubSection,
-    MEnum,
-    Section,
-    Context,
     JSON,
+    URL,
+    Context,
+    MEnum,
+    Quantity,
+    Section,
+    SubSection,
 )
+from nomad.units import ureg
+from scipy.interpolate import UnivariateSpline
 
-from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
+from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import is_not_representative
 
 MOL = 6.022140857e23
@@ -80,13 +77,21 @@ class Potential(BaseModelMethod):
     )
 
     type = Quantity(
-        type=MEnum('bond', 'angle', 'dihedral', 'improper dihedral', 'nonbonded'),
+        type=MEnum(
+            'bond',
+            'angle',
+            'bond-angle',
+            'dihedral',
+            'angle-dihedralimproper dihedral',
+            'nonbonded',
+        ),
         shape=[],
         description="""
         Denotes the classification of the interaction.
         """,
     )
 
+    # ? Use Enum here as well?
     functional_form = Quantity(
         type=str,
         shape=[],
@@ -614,6 +619,33 @@ class AnglePotential(Potential):
                 self.n_particles = 3
 
 
+class LinearAngle(AnglePotential):
+    r"""
+    Section containing information about a linear angle potential:
+    $V(\theta) = k_\theta (\theta - \theta_0) + C$,
+    where $k_\theta$ is the `force_constant` and $\theta_0$ is the `equilibrium_value`.
+    $C$ is an arbitrary constant (not stored).
+    """
+
+    force_constant = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='J / degree',
+        description="""
+        Specifies the force constant of the angle potential.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'LinearAngle'
+        if not self.functional_form:
+            self.functional_form = 'linear'
+        elif self.functional_form != 'linear':
+            logger.warning('Incorrect functional form set for LinearAngle.')
+
+
 class HarmonicAngle(AnglePotential):
     r"""
     Section containing information about a Harmonic angle potential:
@@ -796,6 +828,75 @@ class TabulatedAngle(AnglePotential, TabulatedPotential):
         self.name = 'TabulatedAngle'
 
 
+class BondAngleCouplingPotential(Potential):
+    """
+    Section containing information about bond potentials.
+
+    Suggested types are: linear
+    """
+
+    equilibrium_bond_length = Quantity(
+        type=np.float64,
+        unit='m',
+        shape=[],
+        description="""
+        Equilibrium bond length $r_0$.
+        """,
+    )
+
+    equilibrium_angle = Quantity(
+        type=np.float64,
+        unit='degree',
+        shape=[],
+        description="""
+        Equilibrium angle $\theta_0$.
+        """,
+    )
+
+    force_constant = Quantity(
+        type=np.float64,
+        unit='J / (m * degree)',
+        shape=[],
+        description="""
+        Force constant coupling bond length and angle.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'BondAngleCouplingPotential'
+        if not self.type:
+            self.type = 'bond-angle'
+        elif self.type != 'bond-angle':
+            logger.warning('Incorrect type set for BondAngleCouplingPotential.')
+
+        if self.n_particles:
+            if self.n_particles != 3:
+                logger.warning(
+                    'Incorrect number of particles set for BondAngleCouplingPotential.'
+                )
+            else:
+                self.n_particles = 3
+
+
+class LinearBondAngleCoupling(BondAngleCouplingPotential):
+    r"""
+    Section containing a linear bond–angle coupling potential:
+    $V(r, \theta) = k (r - r_0)(\theta - \theta_0) + C$,
+    where $r_0$ and $\theta_0$ are the equilibrium values.
+    """
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'LinearBondAngleCoupling'
+        if not self.functional_form:
+            self.functional_form = 'linear'
+        elif self.functional_form != 'linear':
+            logger.warning('Incorrect functional form set for LinearBondAngleCoupling.')
+
+
 class DihedralPotential(Potential):
     """
     Section containing information about dihedral potentials.
@@ -841,6 +942,69 @@ class DihedralPotential(Potential):
                 self.n_particles = 4
 
 
+class PeriodicDihedral(DihedralPotential):
+    r"""
+    Section for periodic proper dihedral potential:
+    $V(\phi) = \frac{1}{2} k [1 + \cos(n \phi - \delta)] + C$
+    """
+
+    multiplicity = Quantity(
+        type=np.int32,
+        shape=[],
+        description="""
+        Periodicity $n$.
+        """,
+    )
+
+    phase_shift = Quantity(
+        type=np.float64,
+        unit='degree',
+        shape=[],
+        description="""
+        Phase shift $\delta$.
+        """,
+    )
+
+    force_constant = Quantity(
+        type=np.float64,
+        unit='J',
+        shape=[],
+        description="""
+        Amplitude $k$.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'PeriodicDihedral'
+        if not self.functional_form:
+            self.functional_form = 'periodic'
+
+
+class RyckaertBellemansDihedral(DihedralPotential):
+    r"""
+    Ryckaert-Bellemans dihedral:
+    $V(\phi) = \sum_{n=0}^{5} C_n \cos^n(\phi)$
+    """
+
+    coefficients = Quantity(
+        type=np.float64,
+        shape=[6],
+        unit='J',
+        description="""
+        Coefficients $C_0$ through $C_5$.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'RyckaertBellemansDihedral'
+        if not self.functional_form:
+            self.functional_form = 'ryckaert_bellemans'
+
+
 class TabulatedDihedral(DihedralPotential, TabulatedPotential):
     """
     Section containing information about a tabulated bond potential. The value of the potential and/or force
@@ -869,6 +1033,143 @@ class TabulatedDihedral(DihedralPotential, TabulatedPotential):
         super().normalize(archive, logger)
 
         self.name = 'TabulatedDihedral'
+
+
+class AngleDihedralCouplingPotential(Potential):
+    """
+    Section containing information about angle-dihedral potentials.
+
+    Suggested types are: linear
+    """
+
+    equilibrium_angle = Quantity(type=np.float64, unit='degree', shape=[])
+    equilibrium_dihedral = Quantity(type=np.float64, unit='degree', shape=[])
+    force_constant_angle = Quantity(type=np.float64, unit='J/degree**2', shape=[])
+    force_constant_dihedral = Quantity(type=np.float64, unit='J/degree**2', shape=[])
+    coupling_constant = Quantity(type=np.float64, unit='J/degree**2', shape=[])
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'AngleDihedralCouplingPotential'
+        if not self.type:
+            self.type = 'angle-dihedral'
+        elif self.type != 'angle-dihedral':
+            logger.warning('Incorrect type set for AngleDihedralCouplingPotential.')
+
+        if self.n_particles:
+            if self.n_particles != 4:
+                logger.warning(
+                    'Incorrect number of particles set for AngleDihedralCouplingPotential.'
+                )
+            else:
+                self.n_particles = 4
+
+
+class HarmonicAngleDihedralCoupling(AngleDihedralCouplingPotential):
+    """
+    Harmonic form of an angle–dihedral coupling potential:
+    $V = k_1(\theta - \theta_0)^2 + k_2(\phi - \phi_0)^2 + k_3(\theta - \theta_0)(\phi - \phi_0)$
+    """
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'HarmonicAngleDihedralCoupling'
+        if not self.functional_form:
+            self.functional_form = 'angle_dihedral_coupled'
+        elif self.functional_form != 'angle_dihedral_coupled':
+            logger.warning(
+                'Incorrect functional form set for HarmonicAngleDihedralCoupling.'
+            )
+
+
+class ImproperDihedralPotential(DihedralPotential):
+    """
+    Section containing information about improper dihedral potentials.
+
+    Suggested types are: ...
+
+    # ? Something about angle convention?
+    """
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+        self.name = 'ImproperDihedralPotential'
+        if self.type != 'improper dihedral':
+            self.type = 'improper dihedral'
+
+
+class HarmonicImproper(ImproperDihedralPotential):
+    r"""
+    Section for harmonic improper dihedral potential:
+    $V(\omega) = \frac{1}{2} k (\omega - \omega_0)^2 + C$
+    """
+
+    equilibrium_value = Quantity(
+        type=np.float64,
+        unit='degree',
+        shape=[],
+        description="""
+        Equilibrium improper angle $\omega_0$.
+        """,
+    )
+
+    force_constant = Quantity(
+        type=np.float64,
+        unit='J / degree**2',
+        shape=[],
+        description="""
+        Force constant $k$.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'HarmonicImproper'
+        if not self.functional_form:
+            self.functional_form = 'harmonic'
+
+
+class PeriodicImproper(ImproperDihedralPotential):
+    r"""
+    Section for periodic improper dihedral potential:
+    $V(\omega) = \frac{1}{2} k [1 + \cos(n \omega - \delta)] + C$
+    """
+
+    multiplicity = Quantity(
+        type=np.int32,
+        shape=[],
+        description="""
+        Periodicity $n$.
+        """,
+    )
+
+    phase_shift = Quantity(
+        type=np.float64,
+        unit='degree',
+        shape=[],
+        description="""
+        Phase shift $\delta$.
+        """,
+    )
+
+    force_constant = Quantity(
+        type=np.float64,
+        unit='J',
+        shape=[],
+        description="""
+        Amplitude $k$.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'PeriodicImproper'
+        if not self.functional_form:
+            self.functional_form = 'periodic'
 
 
 class ForceField(ModelMethod):
@@ -920,36 +1221,4 @@ class ForceField(ModelMethod):
         logger.warning('in force field')
 
 
-## GROMACS BONDED INTERACTIONS
-
-# Fourth power potential -- Use PolynomialBond? (Could also use it for harmonic and cubic but I guess it's better to have simpler forms for these more common ones)
-
-# Linear Angle potential -- useful?
-
-# Bond-Angle cross term -- useful?
-
-# Quartic angle potential -- Use polynomial angle?
-
-# Improper dihedrals
-
-# Improper dihedrals: harmonic type
-
-# Improper dihedrals: periodic type
-
-# Proper dihedrals
-
-# Proper dihedrals: periodic type
-
-# Proper dihedral angles are defined according to the IUPAC/IUB convention, where
-
-# Proper dihedrals: Ryckaert-Bellemans function
-
-# Proper dihedrals: Combined bending-torsion potential
-
-# Bonded pair and 1-4 interactions
-# Most force fields do not use normal Lennard-Jones and Coulomb interactions for atoms separated by three bonds, the so-called 1-4 interactions. These interactions are still affected by the modified electronic distributions due to the chemical bonds and they are modified in the force field by the dihedral terms. For this reason the Lennard-Jones and Coulomb 1-4 interactions are often scaled down, by a fixed factor given by the force field. These factors can be supplied in the topology and the parameters can also be overriden per 1-4 interaction or atom type pair. The pair interactions can be used for any atom pair in a molecule, not only 1-4 pairs. The non-bonded interactions between such pairs should be excluded to avoid double interactions. Plain Lennard-Jones and Coulomb interactions are used which are not affected by the non-bonded interaction treatment and potential modifiers.
-
-# Tabulated bonded interaction functions
-
-
-# ! Need to survey Lammps and maybe openmm and check for other common potential types
+# TODO Need to survey Lammps and maybe openmm and check for other common potential types
