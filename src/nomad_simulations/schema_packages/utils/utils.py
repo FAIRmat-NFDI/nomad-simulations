@@ -147,3 +147,87 @@ def catch_not_implemented(func: 'Callable') -> 'Callable':
             return False
 
     return wrapper
+
+
+def check_not_none(*attributes: str) -> 'Callable':
+    """
+    Decorator that checks if specified object or class attributes are not `None`.
+    Returns `None` if any of the specified attributes are `None`, otherwise executes the function.
+
+    Args:
+        *attributes: Names of attributes to check for None values
+            Use 'input.<attribute>' for input attributes
+            Use 'self.<attribute>' for object attributes
+            Use 'class.<attribute>' for class attributes
+            Use '<attribute>' for global attributes
+    """
+
+    def decorator(func: 'Callable') -> 'Callable':
+        import inspect
+        
+        def wrapper(*args, **kwargs):
+            # Get function signature to map arguments by name
+            sig = inspect.signature(func)
+            bound_args = sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+            
+            for attr in attributes:
+                # Parse attribute path
+                if attr.startswith('input.'):
+                    param_name, attr_name = attr[6:].split('.', 1) if '.' in attr[6:] else ('', attr[6:])
+                    if param_name:
+                        # Specific parameter name given
+                        source = bound_args.arguments.get(param_name)
+                    else:
+                        # Default to first parameter for backward compatibility
+                        source = list(bound_args.arguments.values())[0] if bound_args.arguments else None
+                elif attr.startswith('self.'):
+                    attr_name = attr[5:]
+                    source = bound_args.arguments.get('self')
+                elif attr.startswith('class.'):
+                    attr_name = attr[6:]
+                    self_obj = bound_args.arguments.get('self')
+                    source = self_obj.__class__ if self_obj else None
+                else:
+                    attr_name = attr
+                    source = globals()
+                
+                if source is None or not hasattr(source, attr_name) or getattr(source, attr_name) is None:
+                    return None
+
+            return func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+def inner_copy(
+    tensor: np.ndarray, rank_selection: int | tuple[int] | slice, repeat: int = 0
+) -> np.ndarray:
+    """
+    Take a chunk of a high-ranked array and extend it with exact copies of the selection.
+
+    This function selects a portion of a tensor along its first axis and repeats it
+    the specified number of times, effectively extending the tensor.
+
+    Args:
+        tensor: Input `numpy` array to copy from
+        rank_selection: `int`, `tuple`, `slice` specifying which elements to select
+        repeat: Number of times to repeat the selection. Counting starts from 0 (default: 0)
+
+    Example:
+        >>> arr = np.array([[1, 2], [3, 4], [5, 6]])
+        >>> inner_copy(arr, slice(0, None), repeat=2)
+        array([[1, 2], [1, 2], [1, 2]])
+    """
+    if tensor.size == 0:
+        return tensor
+
+    selected_chunk = tensor[rank_selection]
+
+    # If selection results in 1D array, ensure it maintains proper shape
+    if selected_chunk.ndim == tensor.ndim - 1:
+        selected_chunk = np.expand_dims(selected_chunk, axis=0)
+
+    repeated_chunks = np.tile(selected_chunk, (repeat + 1, *([1] * (tensor.ndim - 1))))
+    return np.concatenate([tensor, repeated_chunks], axis=0)

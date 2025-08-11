@@ -3,8 +3,6 @@ from nomad.datamodel.metainfo.workflow import Link, TaskReference
 from nomad.metainfo import Quantity
 from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.properties.spectral_profile import DOSProfile
-
 from .general import (
     INCORRECT_N_TASKS,
     SimulationWorkflow,
