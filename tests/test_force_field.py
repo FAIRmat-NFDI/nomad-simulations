@@ -1,41 +1,38 @@
-import pytest
+from typing import Any
+
 import numpy as np
-from typing import List, Tuple, Dict, Any
-
-
-from nomad_simulations.schema_packages.general import Simulation
+import pytest
+from nomad.datamodel import EntryArchive
+from nomad.units import ureg
 
 # from nomad_simulations.schema_packages.method import ModelMethod
 from nomad_simulations.schema_packages.force_field import (
-    ForceField,
-    ParameterEntry,
-    Potential,
-    TabulatedPotential,
-    BondPotential,
-    HarmonicBond,
-    CubicBond,
-    PolynomialForceConstant,
-    PolynomialBond,
-    MorseBond,
-    FeneBond,
-    TabulatedBond,
     AnglePotential,
-    HarmonicAngle,
+    BondPotential,
     CosineAngle,
-    RestrictedCosineAngle,
+    CubicBond,
+    FeneBond,
+    ForceField,
     FourierSeriesAngle,
-    UreyBradleyAngle,
+    HarmonicAngle,
+    HarmonicBond,
+    MorseBond,
+    ParameterEntry,
     PolynomialAngle,
+    PolynomialBond,
+    PolynomialForceConstant,
+    Potential,
+    RestrictedCosineAngle,
     TabulatedAngle,
+    TabulatedBond,
+    TabulatedPotential,
+    UreyBradleyAngle,
 )
+from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.numerical_settings import ForceCalculations
-
-from nomad.datamodel import EntryArchive
 
 # from structlog.stdlib import BoundLogger
 from . import logger
-from nomad.units import ureg
-
 
 MOL = 6.022140857e23
 
@@ -58,7 +55,7 @@ def assert_dict_equal(d1, d2):
     assert d1.keys() == d2.keys(), f'Keys mismatch: {d1.keys()} != {d2.keys()}'
 
     def compare_unknown(key, value1, value2):
-        assert value1 == None, f"Unknown types'{key}': {type(value1)} != {type(value2)}"
+        assert value1 is None, f"Unknown types'{key}': {type(value1)} != {type(value2)}"
 
     def compare_string(key, str1, str2):
         assert str1 == str2, f"Value mismatch for key '{key}': {str1} != {str2}"
@@ -853,10 +850,10 @@ def test_potentials(
     potential_class: Potential,
     n_interactions: int,
     n_particles: int,
-    particle_labels: List[Tuple[str, str]],
-    particle_indices: List[Tuple[int, int]],
-    parameters: Dict[str, Any],
-    results: Dict[str, Any],
+    particle_labels: list[tuple[str, str]],
+    particle_indices: list[tuple[int, int]],
+    parameters: dict[str, Any],
+    results: dict[str, Any],
 ):
     """_summary_
 
