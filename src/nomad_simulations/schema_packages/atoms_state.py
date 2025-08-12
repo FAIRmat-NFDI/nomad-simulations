@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 import ase
 import numpy as np
 import pint
-from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import MEnum, Quantity, SubSection, SectionProxy
 from nomad.units import ureg
@@ -13,6 +12,7 @@ if TYPE_CHECKING:
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.data_types import positive_float, positive_int, strictly_positive_int, unit_float
 from nomad_simulations.schema_packages.utils import RussellSaundersState
 
 
@@ -22,7 +22,9 @@ class BaseSpinState(Entity):
     It can be extended to include any common quantities in the future.
     """
 
-    pass
+    @property
+    def _degeneracy(self) -> int:
+        raise NotImplementedError("Subclasses must implement this method.")
 
 
 class SimpleSpinState(BaseSpinState):
@@ -31,21 +33,20 @@ class SimpleSpinState(BaseSpinState):
     """
 
     ms_quantum_number = Quantity(
-        type=np.float64,
+        type=MEnum(-0.5, 0.5),  # @EBB2675 like this, or do you prefer `(-, +)`, `(-1/2, +1/2)`, or `(-1, 1)`?
         description="""
-        Spin quantum number. Set to -1 for spin down and +1 for spin up. In non-collinear spin
+        Spin projection along an arbitrary, system-wide axis.
+        Set to -0.5 for spin down and +0.5 for spin up. In non-collinear spin
         systems, the projection axis $z$ should also be defined.
         """,
     )
 
-    ms_quantum_symbol = Quantity(
-        type=MEnum('down', 'up'),
-        description="""
-        Spin quantum symbol. Set to 'down' for spin down and 'up' for spin up. In non-collinear
-        spin systems, the projection axis $z$ should also be defined.
-        """,
-    )
-
+    @property
+    def _degeneracy(self) -> int:
+        if self.ms_quantum_number is None:
+            return 2
+        else:
+            return 1
 
 class NonCollinearSpinState(BaseSpinState):
 
@@ -76,6 +77,32 @@ class NonCollinearSpinState(BaseSpinState):
         """,
     )
 
+    @property
+    def _degeneracy(self) -> int:
+        """
+        Calculate degeneracy for non-collinear spin systems.
+        Uses J-coupling (Russell-Saunders) when j_quantum_number is available,
+        otherwise defaults to simple spin degeneracy.
+        """
+        if self.j_quantum_number is None:
+            return 2  # Default spin degeneracy (spin-up and spin-down)
+            
+        # J-coupling degeneracy calculation
+        degeneracy = 0
+        for jj in self.j_quantum_number:
+            if self.mj_quantum_number is not None:
+                # Specific mj values are defined
+                mjs = RussellSaundersState.generate_MJs(
+                    J=self.j_quantum_number[0], rising=True
+                )
+                degeneracy += len(
+                    [mj for mj in mjs if mj in self.mj_quantum_number]
+                )
+            else:
+                # All mj values possible for this j
+                degeneracy += RussellSaundersState(J=jj, occ=1).degeneracy
+        return degeneracy
+
 
 class ElectronicState(Entity):
     """
@@ -87,16 +114,16 @@ class ElectronicState(Entity):
     # TODO: add the relativistic kappa_quantum_number
 
     n_quantum_number = Quantity(
-        type=np.int32,
+        type=strictly_positive_int,
         description="""
-        Principal quantum number of the orbital state.
+        Principal quantum number of the orbital state. Must be >= 1.
         """,
     )
 
     l_quantum_number = Quantity(
-        type=np.int32,
+        type=positive_int,
         description="""
-        Azimuthal quantum number of the orbital state. This quantity is equivalent to `l_quantum_symbol`.
+        Azimuthal quantum number of the orbital state. Must be >= 0. This quantity is equivalent to `l_quantum_symbol`.
         """,
     )
 
@@ -180,17 +207,16 @@ class ElectronicState(Entity):
         self._orbitals_map: dict[str, Any] = {
             'l_symbols': self._orbitals[-1],
             'ml_symbols': {i: self._orbitals[i] for i in range(4)},
-            'ms_symbols': dict(zip((-0.5, 0.5), ('down', 'up'))),
             'l_numbers': {v: k for k, v in self._orbitals[-1].items()},
             'ml_numbers': {
                 k: {v: k for k, v in self._orbitals[k].items()} for k in range(4)
             },
-            'ms_numbers': dict(zip(('down', 'up'), (-0.5, 0.5))),
         }
 
     def validate_quantum_numbers(self, logger: 'BoundLogger') -> bool:
         """
-        Validate the quantum numbers (`n`, `l`, `ml`, `ms`) by checking if they are physically sensible.
+        Validate the quantum numbers (`ml`, `ms`) by checking if they are physically sensible.
+        Note: `n` and `l` quantum numbers are validated by the schema constraints.
 
         Args:
             logger (BoundLogger): The logger to log messages.
@@ -198,25 +224,13 @@ class ElectronicState(Entity):
         Returns:
             (bool): True if the quantum numbers are physically sensible, False otherwise.
         """
-        if self.n_quantum_number is not None and self.n_quantum_number < 1:
-            logger.error('The `n_quantum_number` must be greater than 0.')
-            return False
-        if self.l_quantum_number is not None and self.l_quantum_number < 0:
-            logger.error('The `l_quantum_number` must be >= 0.')
-            return False
-        if self.ml_quantum_number is not None and (
+        if self.ml_quantum_number is not None and self.l_quantum_number is not None and (
             self.ml_quantum_number < -self.l_quantum_number
             or self.ml_quantum_number > self.l_quantum_number
         ):
             logger.error(
                 'The `ml_quantum_number` must be between `-l_quantum_number` and `l_quantum_number`.'
             )
-            return False
-        if self.ms_quantum_number is not None and self.ms_quantum_number not in [
-            -0.5,
-            0.5,
-        ]:
-            logger.error('The `ms_quantum_number` must be -0.5 or 0.5.')
             return False
         return True
 
@@ -229,15 +243,15 @@ class ElectronicState(Entity):
         (e.g., quantum_type == 'number' => countertype == 'symbol') is used to resolve it.
 
         Args:
-            quantum_name (str): The quantum name to resolve. Can be 'l', 'ml' or 'ms'.
+            quantum_name (str): The quantum name to resolve. Can be 'l', 'ml'.
             quantum_type (str): The type of the quantum name. Can be 'number' or 'symbol'.
             logger (BoundLogger): The logger to log messages.
 
         Returns:
             (Optional[Union[str, int]]): The quantum number or symbol resolved from the orbitals_map.
         """
-        if quantum_name not in ['l', 'ml', 'ms']:
-            logger.warning("The quantum_name is not recognized. Try 'l', 'ml' or 'ms'.")
+        if quantum_name not in ['l', 'ml']:
+            logger.warning("The quantum_name is not recognized. Try 'l', 'ml'.")
             return None
         if quantum_type not in ['number', 'symbol']:
             logger.warning(
@@ -263,7 +277,7 @@ class ElectronicState(Entity):
 
         # If the counterpart exists, then resolve the quantity from the orbitals_map
         orbital_quantity = self._orbitals_map.get(f'{quantum_name}_{quantum_type}s', {})
-        if quantum_name in ['l', 'ms']:
+        if quantum_name == 'l':
             quantity = orbital_quantity.get(other_quantity)
         elif quantum_name == 'ml':
             if self.l_quantum_number is None:
@@ -275,47 +289,24 @@ class ElectronicState(Entity):
 
     def resolve_degeneracy(self) -> Optional[int]:
         """
-        Resolves the degeneracy of the orbital state. If `j_quantum_number` is not defined, then the
-        degeneracy is computed from the `l_quantum_number` and `ml_quantum_number`. If `j_quantum_number`
-        is defined, then the degeneracy is computed from the `j_quantum_number` and `mj_quantum_number`.
-        There is a factor of 2 included if `ms_quantum_number` is not defined (for orbitals which
-        are spin-degenerated).
+        Resolves the degeneracy of the orbital state using the general formula:
+        total_degeneracy = orbital_degeneracy × spin_degeneracy
+        
+        The orbital degeneracy is 2*l + 1 (if ml not specified) or 1 (if ml specified).
+        The spin degeneracy is delegated to the spin_state._degeneracy property, which
+        handles simple spin (2 or 1) or J-coupling cases automatically.
 
         Returns:
             (Optional[int]): The degeneracy of the orbital state.
         """
-        degeneracy = None
-        if (
-            self.l_quantum_number
-            and self.ml_quantum_number is None
-            and self.j_quantum_number is None
-        ):
-            if self.ms_quantum_number:
-                degeneracy = 2 * self.l_quantum_number + 1
-            else:
-                degeneracy = 2 * (2 * self.l_quantum_number + 1)
-        elif (
-            self.l_quantum_number
-            and self.ml_quantum_number
-            and self.j_quantum_number is None
-        ):
-            if self.ms_quantum_number:
-                degeneracy = 1
-            else:
-                degeneracy = 2
-        elif self.j_quantum_number is not None:
-            degeneracy = 0
-            for jj in self.j_quantum_number:
-                if self.mj_quantum_number is not None:
-                    mjs = RussellSaundersState.generate_MJs(
-                        J=self.j_quantum_number[0], rising=True
-                    )
-                    degeneracy += len(
-                        [mj for mj in mjs if mj in self.mj_quantum_number]
-                    )
-                else:
-                    degeneracy += RussellSaundersState(J=jj, occ=1).degeneracy
-        return degeneracy
+        # Calculate orbital degeneracy
+        if self.l_quantum_number is None:
+            return None
+        
+        orbital_degeneracy = 2 * self.l_quantum_number + 1 if self.ml_quantum_number is None else 1
+        spin_degeneracy = self.spin_state._degeneracy if self.spin_state is not None else 2
+            
+        return orbital_degeneracy * spin_degeneracy
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -326,7 +317,7 @@ class ElectronicState(Entity):
             return
 
         # Resolving the quantum numbers and symbols if not available
-        for quantum_name in ['l', 'ml', 'ms']:
+        for quantum_name in ['l', 'ml']:
             for quantum_type in ['number', 'symbol']:
                 quantity = self.resolve_number_and_symbol(
                     quantum_name=quantum_name, quantum_type=quantum_type, logger=logger
@@ -346,7 +337,7 @@ class CoreHole(ElectronicState):
     """
 
     n_excited_electrons = Quantity(
-        type=np.float64,
+        type=unit_float,  # ? too restrictive
         description="""
         The electron charge excited for modelling purposes. This is a number between 0 and 1 (Janak state).
         If `dscf_state` is set to 'initial', then this quantity is set to None (but assumed to be excited
@@ -390,19 +381,13 @@ class CoreHole(ElectronicState):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Check if n_excited_electrons is between 0 and 1
-        if self.n_excited_electrons < 0 or self.n_excited_electrons > 1:
-            logger.error('Number of excited electrons must be between 0 and 1.')
-            return
-
         # Resolve the occupation of the active orbital state
-        if self.orbital_ref is not None:
-            # If dscf_state is 'initial', then n_excited_electrons is set to 0
-            if self.dscf_state == 'initial':
-                self.n_excited_electrons = None
-                self.orbital_ref.degeneracy = 1
-            if self.orbital_ref.occupation is None:
-                self.orbital_ref.occupation = self.resolve_occupation(logger=logger)
+        # If dscf_state is 'initial', then n_excited_electrons is set to 0
+        if self.dscf_state == 'initial':
+            self.n_excited_electrons = 0
+            self.degeneracy = 1
+        if self.occupation is None:
+            self.occupation = self.resolve_occupation(logger=logger)
 
 
 class HubbardInteractions(ElectronicState):
@@ -430,10 +415,10 @@ class HubbardInteractions(ElectronicState):
     )
 
     u_interaction = Quantity(
-        type=np.float64,
+        type=positive_float,
         unit='joule',
         description="""
-        Value of the (intraorbital) Hubbard interaction
+        Value of the (intra-orbital) Hubbard interaction
         """,
     )
 
@@ -510,7 +495,7 @@ class HubbardInteractions(ElectronicState):
         if self.slater_integrals is None or len(self.slater_integrals) != 3:
             logger.warning(
                 'Could not find `slater_integrals` or the length is not three.'
-            )
+            )  # TODO: move shape-check to schema
             return None, None, None
         f0 = self.slater_integrals[0]
         f2 = self.slater_integrals[1]
@@ -536,10 +521,7 @@ class HubbardInteractions(ElectronicState):
         """
         if self.u_interaction is None:
             logger.warning('Could not find `HubbardInteractions.u_interaction`.')
-            return None
-        if self.u_interaction.magnitude < 0.0:
-            logger.error('The `HubbardInteractions.u_interaction` must be positive.')
-            return None
+            return
         if self.j_local_exchange_interaction is None:
             self.j_local_exchange_interaction = 0.0 * ureg.eV
         return self.u_interaction - self.j_local_exchange_interaction
@@ -563,9 +545,9 @@ class HubbardInteractions(ElectronicState):
         if self.u_effective is None:
             self.u_effective = self.resolve_u_effective(logger=logger)
 
-        # Check if length of `orbitals_ref` is the same as the length of `umn`:
+        # Check if length of `orbitals_ref` is the same as the length of `u_matrix`:
         if self.u_matrix is not None and self.orbitals_ref is not None:
-            if len(self.u_matrix) != len(self.orbitals_ref):
+            if len(self.u_matrix) != len(self.orbitals_ref):  # TODO: move shape-check to schema
                 logger.error(
                     'The length of `HubbardInteractions.u_matrix` does not coincide with length of `HubbardInteractions.orbitals_ref`.'
                 )
