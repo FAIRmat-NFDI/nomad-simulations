@@ -49,7 +49,6 @@ def test_total_energy_contributions_basic_flow_and_idempotency():
     assert len(tot.figures) == figures_before
 
 
-
 def test_total_energy_accepts_baseenergy_contributions_mixed():
     """
     TotalEnergy.contributions accepts BaseEnergy directly, and mixed subclasses.

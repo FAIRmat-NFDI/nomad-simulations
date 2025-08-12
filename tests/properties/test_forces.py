@@ -50,5 +50,3 @@ def test_total_force_with_multiple_contributions_idempotency_and_flags():
     before = len(total.figures)
     total.normalize(EntryArchive(), logger)
     assert len(total.figures) == before
-
-

@@ -37,5 +37,3 @@ def test_is_contribution_detection_across_types():
     assert totF._is_contribution() is False
     assert f1._is_contribution() is True
     assert f2._is_contribution() is True
-
-
