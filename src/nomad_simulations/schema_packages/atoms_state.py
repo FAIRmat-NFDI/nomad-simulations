@@ -33,7 +33,7 @@ class SimpleSpinState(BaseSpinState):
     """
 
     ms_quantum_number = Quantity(
-        type=MEnum(-0.5, 0.5),  # @EBB2675 like this, or do you prefer `(-, +)`, `(-1/2, +1/2)`, or `(-1, 1)`?
+        type=MEnum(-0.5, 0.5),  # this, `(-, +)`, `(-1/2, +1/2)`, or `(-1, 1)`?
         description="""
         Spin projection along an arbitrary, system-wide axis.
         Set to -0.5 for spin down and +0.5 for spin up. In non-collinear spin
