@@ -998,9 +998,8 @@ class ModelSystem(System):
         """,
     )
 
-    electronic = SubSection(
+    electronic_state = SubSection(
         section_def=ElectronicState.m_def,
-        repeats=False,
         description="""
         Electronic state of the system, e.g., the electronic structure information.
         This is an starting point for navigating the electronic hierarchy.
