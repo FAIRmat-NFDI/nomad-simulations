@@ -115,12 +115,13 @@ class SUPERCODEParser:
 
 Workflows are a device for annotating the structure of a set of entries in a standardized way.
 A community can define a workflow schema, i.e. its standout sections, without any knowledge of the underlying entries.
-As such, the workflows define a homogenized data format which rich semantics, from where to explore the dataset.
+As such, workflows define a homogenized data format with rich semantics that act as the starting point wherefrom to explore the dataset.
 The actual workflow entry instance, meanwhile, handles the coordination between tasks and the underlying data.
 This mapping may be a mixture of (workflow) entries and sections.
 
 Below are a few examples of actual mappings.
-Important to note is that examples presuppose a default underlying structure, but that this s
+Important to note is that these examples already presuppose a certain structure on the side of the referenced `archive.data` sections.
+In reality, workflow should be capable of hosting multiple underlying structures.
 
 ### Serial Updates to `ModelSystem`
 
@@ -134,11 +135,11 @@ Hence, `task[0].input -> entry_0#data.model_system[0]` and `task[0].output -> en
 {
     "workflow": {
         "tasks": [
-            0: {
+            "0": {
                 "input": "entry_0#data.model_system[0]",
                 "output": "entry_0#data.outputs[0]",
             },
-            1: ...,
+            "1": "...",
         ],
     }
 }
