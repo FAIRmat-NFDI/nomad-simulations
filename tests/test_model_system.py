@@ -300,3 +300,113 @@ def test_hierarchical_composition_and_branch_depth(n_h2o):
         assert leaf.composition_formula == 'H(2)O(1)'
     # Cu leaf should read "Cu(1)"
     assert cu.composition_formula == 'Cu(1)'
+
+
+class TestModelSystemBondFunctions:
+    """
+    Tests for:
+      - get_root_system
+      - get_bond_list
+      - is_molecule
+    """
+
+    def make_simple_system(self) -> ModelSystem:
+        """
+        Helper to build a root system with 4 particles and a single child subsystem.
+        Root bond list: [(0,1), (1,2), (2,3)]
+        Child subsystem: particles [1,2]
+        """
+        # Root system with 4 particles
+        root = ModelSystem(is_representative=True)
+        for sym in ['H', 'O', 'O', 'H']:
+            root.particle_states.append(AtomsState(chemical_symbol=sym))
+        root.n_particles = 4
+        root.bond_list = [(0, 1), (1, 2), (2, 3)]  # linear chain H-O-O-H
+
+        # Child subsystem (middle two particles)
+        child = ModelSystem(branch_label='child', is_representative=False)
+        child.particle_indices = [1, 2]
+        root.sub_systems.append(child)
+
+        return root
+
+    def test_get_root_system_returns_top_level(self):
+        """
+        Ensure get_root_system correctly traverses up to the root.
+        """
+        root = self.make_simple_system()
+        child = root.sub_systems[0]
+        # Root of root is itself
+        assert root.get_root_system() is root
+        # Root of child should be the parent root
+        assert child.get_root_system() is root
+
+    def test_get_bond_list_filters_bonds_correctly(self):
+        """
+        Ensure get_bond_list filters bonds to those involving only the subsystem's particle_indices.
+        """
+        root = self.make_simple_system()
+        child = root.sub_systems[0]
+
+        # Child bonds should include only bonds fully inside [1,2]
+        bonds = child.get_bond_list()
+        assert bonds.shape == (1, 2)
+        assert (bonds == np.array([[1, 2]])).all()
+
+        # Root bonds should return full bond list
+        root_bonds = root.get_bond_list()
+        assert root_bonds.shape == (3, 2)
+        assert (root_bonds == np.array([(0, 1), (1, 2), (2, 3)])).all()
+
+    def test_get_bond_list_no_particle_indices(self):
+        """
+        Ensure get_bond_list returns an empty array for a subsystem without particle_indices.
+        """
+        root = self.make_simple_system()
+        child = root.sub_systems[0]
+
+        # Remove particle_indices
+        child.particle_indices = None
+
+        # Expect empty array (since no filtering possible)
+        bonds = child.get_bond_list()
+        assert bonds.size == 0
+
+    def test_is_molecule(self):
+        """
+        Verify that is_molecule() enforces both internal connectivity and isolation:
+        - Fails if connected but bonded to outside.
+        - Passes if connected and isolated.
+        - Fails if disconnected.
+        - Single-particle subsystems are not considered molecules.
+        """
+        # Start from simple root system (4 atoms, bonds: (0,1), (1,2), (2,3))
+        root = self.make_simple_system()
+        child = root.sub_systems[0]  # child with particle_indices [1,2]
+
+        # Case 1: Connected internally, but also bonded to outside (bond 0-1 exists)
+        assert child.is_molecule() is False  # Cross-boundary bond prevents molecule
+
+        # Case 2: Remove cross-boundary bonds; only internal (1,2) remains
+        root.bond_list = [(1, 2)]
+        assert child.is_molecule() is True  # Now isolated and connected
+        # Add unrelated external bond (0-3) which should not affect isolation
+        root.bond_list = [(0, 3), (1, 2)]
+        assert child.is_molecule() is True
+
+        # Case 3: No bonds at all → multi-particle subsystem fails
+        root.bond_list = None
+        assert child.is_molecule() is False
+
+        # Single-particle subsystem should also fail (no bonds)
+        single = ModelSystem(particle_indices=[1])
+        root.sub_systems.append(single)
+        assert single.is_molecule() is False
+
+        # Case 4: Single-particle subsystem bonded to outside → fails
+        root.bond_list = [(1, 0)]
+        isolated = ModelSystem(
+            branch_label='isolated', particle_indices=[3]
+        )  # Single atom
+        root.sub_systems.append(isolated)
+        assert isolated.is_molecule() is False

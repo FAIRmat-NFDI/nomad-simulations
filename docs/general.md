@@ -110,3 +110,56 @@ class SUPERCODEParser:
         # append `Simulation` as an `archive.data` section
         archive.data.append(simulation)
 ```
+
+## Homogenization and the role of Workflows
+
+Workflows are a device for annotating the structure of a set of entries in a standardized way.
+A community can define a workflow schema, i.e. its standout sections, without any knowledge of the underlying entries.
+As such, workflows define a homogenized data format with rich semantics that act as the starting point wherefrom to explore the dataset.
+The actual workflow entry instance, meanwhile, handles the coordination between tasks and the underlying data.
+This mapping may be a mixture of (workflow) entries and sections.
+
+Below are a few examples of actual mappings.
+Important to note is that these examples already presuppose a certain structure on the side of the referenced `archive.data` sections.
+In reality, workflow should be capable of hosting multiple underlying structures.
+
+### Serial Updates to `ModelSystem`
+
+Geometry optimizations or molecular dynamics simulations, for example, typically store their data in a single entry.
+Tasks trace the updates to the system, i.e. calculation or time steps, respectively.
+The actual modifications of these steps are stored in the `model_system` and `outputs`.
+<!-- @JFRudzinski pls double-check the order of the arrows -->
+
+```
+entry_x#workflow2.task[0].input  -> entry_y1#data.model_system[0]
+entry_x#workflow2.task[0].output -> entry_y2#data.outputs[0]
+...
+entry_x#workflow2.task[n].input  -> entry_y1#data.model_system[n]
+entry_x#workflow2.task[n].output -> entry_y2#data.outputs[n]
+```
+
+Note that `entry_x`, `entry_y1`, `entry_y2` will typically refer to the same entry, though this isn't a hard requirement.
+
+#### Including SCF steps
+
+!!! warning "Under construction"
+    This section will be updated once its schema-side is settled on.
+
+### Single-Point SCF Workflow
+
+In the case of a single-point calculation, the emphasis clearly lies on the relaxation of the electronic structure.
+Now, each `outputs` section can wholesale be dedicated to following the SCF cycle.
+
+```
+entry_x#workflow2.task[0].output -> entry_y#data.outputs[0]
+```
+
+### Multi-step Electronic Workflows
+
+There are two main design choices here:
+
+1. the methodology and computed outputs are split along major subroutines.
+2. they are kept in a single entry. This is especially useful for legacy cases, where some subroutines were originally not distinguished.
+
+In option 2, for any workflows at are not simply _serial_, there is no canonical way of ordering `outputs`.
+This burden remains with `workflow2.tasks`.
