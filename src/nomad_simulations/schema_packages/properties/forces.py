@@ -10,7 +10,7 @@ from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 class BaseForce(PhysicalProperty):
     """
-    Abstract class used to define a common `value` quantity with the appropriate units
+    Base class used to define a common `value` quantity with the appropriate units
     for different types of forces, which avoids repeating the definitions for each
     force class.
     """
