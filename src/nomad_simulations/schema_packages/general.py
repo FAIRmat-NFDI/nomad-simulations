@@ -13,9 +13,9 @@ from nomad.datamodel.metainfo.basesections import Activity, Entity
 from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection
 
 from nomad_simulations.schema_packages.atoms_state import (
+    ParticleState,
     AtomsState,
     CGBeadState,
-    ParticleState,
 )
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
