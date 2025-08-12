@@ -15,10 +15,14 @@ if TYPE_CHECKING:
 
 class PhysicalProperty(PlotSection):
     """
-    A base section for computational output properties,
-    containing all (meta)data relevant for visualization.
-    Define and use `value` when the data corresponds with the titular section property.
-    May also contain partitions as subsections.
+    A base section for computational output properties, containing all relevant
+    (meta)data. This includes support for visualization and plotting.
+
+    - Supports the definition and use of `value` for the main property data.
+    - Allows for the inclusion of contributions (e.g., via the `contribution_type` attribute and
+      possible subsections), enabling representation of properties that are composed of multiple
+      parts or sources.
+    - Inherits from `PlotSection`, enabling direct integration with plotting and visualization tools.
     """
 
     name = Quantity(
