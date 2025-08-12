@@ -22,7 +22,6 @@ class TestPermittivity:
         """
         permittivity = Permittivity()
         assert permittivity.iri == 'http://fairmat-nfdi.eu/taxonomy/Permittivity'
-        assert permittivity.name == 'Permittivity'
 
     @pytest.mark.parametrize(
         'kmesh_grid, frequency, result',

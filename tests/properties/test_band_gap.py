@@ -26,7 +26,6 @@ class TestElectronicBandGap:
             electronic_band_gap.iri
             == 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandGap'
         )
-        assert electronic_band_gap.name == 'ElectronicBandGap'
 
     @pytest.mark.parametrize(
         'momentum_transfer, type, result',

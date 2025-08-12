@@ -27,7 +27,6 @@ class TestHoppingMatrix:
         """
         hopping_matrix = HoppingMatrix(n_orbitals=n_orbitals)
         assert hopping_matrix.iri == 'http://fairmat-nfdi.eu/taxonomy/HoppingMatrix'
-        assert hopping_matrix.name == 'HoppingMatrix'
 
 
 class TestCrystalFieldSplitting:
@@ -51,4 +50,3 @@ class TestCrystalFieldSplitting:
         assert (
             crystal_field.iri == 'http://fairmat-nfdi.eu/taxonomy/CrystalFieldSplitting'
         )
-        assert crystal_field.name == 'CrystalFieldSplitting'

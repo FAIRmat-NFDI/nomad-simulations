@@ -1,72 +1,29 @@
-from functools import wraps
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-import numpy as np
 from nomad import utils
-from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy, SubSection
+from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
+from nomad.metainfo import URL, Quantity, Reference, SectionProxy, SubSection
 
-if TYPE_CHECKING:
-    from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
-    from structlog.stdlib import BoundLogger
-
-from nomad_simulations.schema_packages.model_method import BaseModelMethod
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
-from nomad_simulations.schema_packages.variables import Variables
 
-# We add `logger` for the `validate_quantity_wrt_value` decorator
 logger = utils.get_logger(__name__)
 
+if TYPE_CHECKING:
+    from nomad.datamodel.metainfo import BoundLogger
 
-def validate_quantity_wrt_value(name: str = ''):
+
+class PhysicalProperty(PlotSection):
     """
-    Decorator to validate the existence of a quantity and its shape with respect to the `PhysicalProperty.value`
-    before calling a method. An example can be found in the module `properties/band_structure.py` for the method
-    `ElectronicEigenvalues.order_eigenvalues()`.
+    A base section for computational output properties, containing all relevant
+    (meta)data. This includes support for visualization and plotting.
 
-    Args:
-        name (str, optional): The name of the `quantity` to validate. Defaults to ''.
+    - Supports the definition and use of `value` for the main property data.
+    - Allows for the inclusion of contributions (e.g., via the `contribution_type` attribute and
+      possible subsections), enabling representation of properties that are composed of multiple
+      parts or sources.
+    - Inherits from `PlotSection`, enabling direct integration with plotting and visualization tools.
     """
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper(self, *args, **kwargs):
-            # Checks if `quantity` is defined
-            quantity = getattr(self, name, None)
-            if quantity is None or len(quantity) == 0:
-                logger.warning(f'The quantity `{name}` is not defined.')
-                return False
-
-            # Checks if `value` exists and has the same shape as `quantity`
-            value = getattr(self, 'value', None)
-            if value is None:
-                logger.warning('The quantity `value` is not defined.')
-                return False
-            if value is not None and value.shape != quantity.shape:
-                logger.warning(
-                    f'The shape of the quantity `{name}` does not match the shape of the `value`.'
-                )
-                return False
-
-            return func(self, *args, **kwargs)
-
-        return wrapper
-
-    return decorator
-
-
-class PhysicalProperty(ArchiveSection):
-    """
-    A base section used to define the physical properties obtained in a simulation, experiment, or in a post-processing
-    analysis. The main quantity of the `PhysicalProperty` is `value`, whose instantiation has to be overwritten in the derived classes
-    when inheriting from `PhysicalProperty`. It contains `variables`, to define the variables over which the physical property varies (see variables.py).
-    This class can also store several string identifiers and quantities for referencing and establishing the character of a physical property.
-    """
-
-    # TODO add `errors`
-    # TODO add `smearing`
 
     name = Quantity(
         type=str,
@@ -77,18 +34,10 @@ class PhysicalProperty(ArchiveSection):
 
     iri = Quantity(
         type=URL,
+        default='',
         description="""
-        Internationalized Resource Identifier (IRI) of the physical property defined in the FAIRmat
-        taxonomy, https://fairmat-nfdi.github.io/fairmat-taxonomy/.
-        """,
-    )
-
-    source = Quantity(
-        type=MEnum('simulation', 'measurement', 'analysis'),
-        default='simulation',
-        description="""
-        Source of the physical property. This quantity is related with the `Activity` performed to obtain the physical
-        property. Example: an `ElectronicBandGap` can be obtained from a `'simulation'` or in a `'measurement'`.
+        Internationalized Resource Identifier (IRI) pointing to a definition,
+        typically within a larger, ontological framework.
         """,
     )
 
@@ -98,7 +47,15 @@ class PhysicalProperty(ArchiveSection):
         Type categorization of the physical property. Example: an `ElectronicBandGap` can be `'direct'`
         or `'indirect'`.
         """,
-        # ! add more examples in the description to improve the understanding of this quantity
+    )
+
+    contribution_type = Quantity(
+        type=str,
+        default=None,
+        description="""
+        Type of contribution to the physical property. Hence, only applies to `contributions` instances.
+        Example: `TotalEnergy` may have contributions like _kinetic_, _potential_, etc.
+        """,
     )
 
     label = Quantity(
@@ -107,13 +64,8 @@ class PhysicalProperty(ArchiveSection):
         Label for additional classification of the physical property. Example: an `ElectronicBandGap`
         can be labeled as `'DFT'` or `'GW'` depending on the methodology used to calculate it.
         """,
-        # ! add more examples in the description to improve the understanding of this quantity
-    )
+    )  # TODO: specify use better
 
-    # variables = SubSection(sub_section=Variables.m_def, repeats=True)
-
-    # * `value` must be overwritten in the derived classes defining its type, unit, and description
-    # TODO use abstract to enforce policy?
     value: Quantity = None
 
     entity_ref = Quantity(
@@ -124,15 +76,7 @@ class PhysicalProperty(ArchiveSection):
             cell. In the first case, `outputs.model_system_ref` (see outputs.py) will point to the `ModelSystem` section,
             while in the second case, `entity_ref` will point to `AtomsState` section (see atoms_state.py).
         """,
-    )
-
-    physical_property_ref = Quantity(
-        type=Reference(SectionProxy('PhysicalProperty')),
-        description="""
-        Reference to the `PhysicalProperty` section from which the physical property was derived. If `physical_property_ref`
-        is populated, the quantity `is_derived` is set to True via normalization.
-        """,
-    )
+    )  # TODO: only used for electronic states, remove
 
     is_derived = Quantity(
         type=bool,
@@ -146,13 +90,21 @@ class PhysicalProperty(ArchiveSection):
         """,
     )
 
+    physical_property_ref = Quantity(
+        type=Reference(SectionProxy('PhysicalProperty')),
+        description="""
+        Reference to the `PhysicalProperty` section from which the physical property was derived. If `physical_property_ref`
+        is populated, the quantity `is_derived` is set to True via normalization.
+        """,
+    )
+
     is_scf_converged = Quantity(
         type=bool,
         description="""
         Flag indicating whether the physical property is converged or not after a SCF process. This quantity is connected
         with `SelfConsistency` defined in the `numerical_settings.py` module.
         """,
-    )
+    )  # ? tie to calculation, not individual property
 
     self_consistency_ref = Quantity(
         type=SelfConsistency,
@@ -160,61 +112,19 @@ class PhysicalProperty(ArchiveSection):
         Reference to the `SelfConsistency` section that defines the numerical settings to converge the
         physical property (see numerical_settings.py).
         """,
+    )  # ? remove
+
+    contributions = SubSection(
+        section_def=SectionProxy('PhysicalProperty'),
+        repeats=True,
+        description="""
+        Shallow list of contributions to the physical property.
+        Does not necessarily entail a (full) partioning.
+        """,
     )
-
-    # @property
-    # def variables_shape(self) -> Optional[list]:
-    #    """
-    #    Shape of the variables over which the physical property varies. This is extracted from
-    #    `Variables.n_points` and appended in a list.
-    #
-    #    Example, a physical property which varies with `Temperature` and `ElectricField` will
-    #    return `variables_shape = [n_temperatures, n_electric_fields]`.
-    #
-    #    Returns:
-    #        (list): The shape of the variables over which the physical property varies.
-    #    """
-    #    if self.variables is not None:
-    #        return [v.get_n_points(logger) for v in self.variables]
-    #    return []
-
-    @property
-    def full_shape(self) -> list[int]:
-        """
-        Full shape of the physical property. This quantity is calculated as a concatenation of the `variables_shape`
-        and `value.shape`:
-
-            `full_shape = variables_shape + value.shape`
-
-        Example: a physical property which is a 3D vector and varies with `variables=[Temperature, ElectricField]`
-        will have `value.shape=[3]`, `variables_shape=[n_temperatures, n_electric_fields]`, and thus
-        `full_shape=[n_temperatures, n_electric_fields, 3]`.
-
-        Returns:
-            (list): The full shape of the physical property.
-        """
-        value_shape = self.value.shape if self.value is not None else []
-        # return self.variables_shape + value_shape
-        return [] + value_shape
-
-    def __init__(
-        self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs
-    ) -> None:
-        super().__init__(m_def, m_context, **kwargs)
-        # Checking if IRI is defined
-        if self.iri is None:
-            logger.warning(
-                'The used property is not defined in the FAIRmat taxonomy (https://fairmat-nfdi.github.io/fairmat-taxonomy/). You can contribute there if you want to extend the list of available materials properties.'
-            )
-
-    def __setattr__(self, name, value):
-        if name == 'value':
-            try:
-                value = np.array(value)
-                # self.__class__.value.shape = ['*'] * value.ndim
-            except Exception:
-                pass
-        return super().__setattr__(name, value)
+    # TODO: would be wishful to have `section_def` be a stripped down version of PhysicalProperty
+    # that gets automatically updated when extending PhysicalProperty
+    # should be discussed with @TLCFEM
 
     def _is_derived(self) -> bool:
         """
@@ -223,32 +133,149 @@ class PhysicalProperty(ArchiveSection):
         Returns:
             (bool): The flag indicating whether the physical property is derived or not.
         """
-        if self.physical_property_ref is not None:
-            return True
+        return self.physical_property_ref is not None
+
+    def _is_contribution(self) -> bool:
+        """
+        Determines if this instance is a contribution by checking if it's contained
+        in a parent's contributions list.
+
+        Returns:
+            (bool): True if this instance is a contribution, False otherwise.
+        """
+        if hasattr(self, 'm_parent') and self.m_parent:
+            parent_section = self.m_parent
+            # If parent has contributions containing this instance, we are a contribution
+            if (
+                hasattr(parent_section, 'contributions')
+                and parent_section.contributions
+            ):
+                if self in parent_section.contributions:
+                    return True
         return False
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+    def _validate_contributions_structure(self, logger: 'BoundLogger') -> bool:
+        """
+        Validates that contributions do not contain nested contributions.
+        This prevents recursive contribution structures which are not intended.
+        Only runs for top-level PhysicalProperty instances, not for contributions themselves.
+
+        Args:
+            logger: Logger instance for error reporting.
+
+        Returns:
+            (bool): True if validation passes, False if nested contributions are found.
+        """
+        # Skip validation for contribution instances
+        if self._is_contribution():
+            return True
+
+        if not self.contributions:
+            return True
+
+        has_nested_contributions = False
+        for i, contribution in enumerate(self.contributions):
+            if hasattr(contribution, 'contributions') and contribution.contributions:
+                logger.error(
+                    f'Contribution {i} in {self.__class__.__name__} contains nested contributions. '
+                    'Contributions should not have their own contributions subsection populated.'
+                )
+                has_nested_contributions = True
+
+        return not has_nested_contributions
+
+    def _validate_contribution_type(self, logger) -> bool:
+        """
+        Validates that contribution_type is only set for contribution instances
+        and is not set for top-level PhysicalProperty instances.
+
+        Args:
+            logger: Logger instance for error reporting.
+
+        Returns:
+            (bool): True if validation passes, False if contribution_type is incorrectly set.
+        """
+        is_contribution = self._is_contribution()
+
+        # Check for incorrect usage
+        if not is_contribution and self.contribution_type is not None:
+            logger.error(
+                f'{self.__class__.__name__} has contribution_type set but is not a contribution. '
+                'contribution_type should only be set for instances in the contributions subsection.'
+            )
+            return False
+
+        return True
+
+    def plot(self, **kwargs) -> list[PlotlyFigure]:
+        """
+        Placeholder for a method to plot the physical property. This method should be overridden in derived classes
+        to provide specific plotting functionality.
+
+        Returns:
+            (list[PlotlyFigure]): A list of PlotlyFigure objects representing the physical property.
+        """
+        return []
+
+    def sub_plots(self, **kwargs) -> None:
+        """
+        Collects plots from `self.contributions` and overlays them onto the target figure.
+        """
+        if not self.contributions or not self.figures:
+            return
+
+        try:
+            target_figure = self.figures[kwargs.get('target_indices', -1)]
+        except (IndexError, TypeError):
+            return
+
+        if target_figure.figure:
+            figure_dict = target_figure.figure.copy()
+        else:
+            figure_dict = {'data': [], 'layout': {}}
+
+        for contribution in self.contributions:
+            # Use existing figures if already normalized, otherwise call plot()
+            plots = (
+                contribution.figures
+                if contribution.figures
+                else contribution.plot(**kwargs)
+            )
+
+            if plots:
+                for plot in plots:
+                    if hasattr(plot, 'figure') and plot.figure:
+                        plot_data = plot.figure.get('data', [])
+                        for trace in plot_data:
+                            figure_dict['data'].append(trace)
+
+        target_figure.figure = figure_dict
+
+    def normalize(self, *args, **kwargs) -> None:
+        # check whether already normalized
+        if self.m_cache.get('_is_normalized', False):
+            return
+        else:
+            self.m_cache['_is_normalized'] = True
+
+        # perform own normalization
+        super().normalize(*args, **kwargs)
+
         self.is_derived = self._is_derived()
 
+        # validate contributions structure and contribution_type usage
+        logger_arg = args[1] if len(args) > 1 else logger
+        self._validate_contributions_structure(logger_arg)
+        self._validate_contribution_type(logger_arg)
 
-class PropertyContribution(PhysicalProperty):
-    """
-    Abstract physical property section linking a property contribution to a contribution
-    from some method.
+        for contribution in self.contributions:
+            if hasattr(contribution, 'normalize'):
+                contribution.normalize(*args, **kwargs)
 
-    Abstract class for incorporating specific contributions of a physical property, while
-    linking this contribution to a specific component (of class `BaseModelMethod`) of the
-    over `ModelMethod` using the `model_method_ref` quantity.
-    """
+        if plot_figures := self.plot(**kwargs):
+            self.figures.extend(plot_figures)
+        self.sub_plots(**kwargs)
 
-    model_method_ref = Quantity(
-        type=BaseModelMethod,
-        description="""
-        Reference to the `ModelMethod` section to which the property is linked to.
-        """,
-    )
-
-    def normalize(self, archive, logger) -> None:
-        super().normalize(archive, logger)
-        if not self.name:
-            self.name = self.get('model_method_ref', {}).get('name')
+        # set names last, they may depend other normalized properties
+        if self.m_def.name is not None:
+            self.name = self.m_def.name

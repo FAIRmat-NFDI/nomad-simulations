@@ -33,3 +33,11 @@ class TestVariables:
         assert variable.get_n_points(logger) == result
         variable.normalize(EntryArchive(), logger)
         assert variable.n_points == result
+
+    def test_name_setting_during_normalization(self):
+        """
+        Test that the name is set during normalization for Variables.
+        """
+        variable = Variables()
+        variable.normalize(EntryArchive(), logger)
+        assert variable.name == 'Variables'

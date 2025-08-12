@@ -34,7 +34,6 @@ class TestElectronicDensityOfStates:
             electronic_dos.iri
             == 'http://fairmat-nfdi.eu/taxonomy/ElectronicDensityOfStates'
         )
-        assert electronic_dos.name == 'ElectronicDensityOfStates'
 
     def test_resolve_energies_origin(self):
         """
@@ -209,23 +208,13 @@ class TestAbsorptionSpectrum:
         Test the default quantities assigned when creating an instance of the `AbsorptionSpectrum` class.
         """
         absorption_spectrum = AbsorptionSpectrum()
-        assert absorption_spectrum.iri is None  # Add iri when available
-        assert absorption_spectrum.name == 'AbsorptionSpectrum'
+        assert absorption_spectrum.iri == ''  # IRI is empty string by default
 
 
 class TestXASSpectrum:
     """
     Test the `XASSpectrum` class defined in `properties/spectral_profile.py`.
     """
-
-    # ! Include this initial `test_default_quantities` method when testing your PhysicalProperty classes
-    def test_default_quantities(self):
-        """
-        Test the default quantities assigned when creating an instance of the `XASSpectrum` class.
-        """
-        xas_spectrum = XASSpectrum()
-        assert xas_spectrum.iri is None  # Add iri when available
-        assert xas_spectrum.name == 'XASSpectrum'
 
     @pytest.mark.parametrize(
         'xanes_energies, exafs_energies, xas_values',
