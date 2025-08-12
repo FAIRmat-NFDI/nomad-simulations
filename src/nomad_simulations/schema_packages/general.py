@@ -12,7 +12,11 @@ from nomad.datamodel.data import Schema
 from nomad.datamodel.metainfo.basesections import Activity, Entity
 from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.atoms_state import (
+    ParticleState,
+    AtomsState,
+    CGBeadState,
+)
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
@@ -211,22 +215,31 @@ class Simulation(BaseSimulation, Schema):
         """
 
         def set_composition_formula(
-            system: ModelSystem, subsystems: list[ModelSystem], atom_labels: list[str]
+            system: ModelSystem, subsystems: list[ModelSystem], labels: list[str]
         ) -> None:
             """Determine the composition formula for `system` based on its `subsystems`.
-            If `system` has no children, the atom_labels are used to determine the formula.
+            If `system` has no children, the labels are used to determine the formula.
 
             Args:
                 system (ModelSystem): The system under consideration.
                 subsystems (list[ModelSystem]): The children of system.
-                atom_labels (list[str]): The global list of atom labels corresponding
-                to the atom indices stored in system.
+                labels (list[str]): The global list of labels corresponding
+                to the particle indices stored in system.
             """
             if not subsystems:
-                if system.particle_indices is not None and atom_labels:
-                    subsystem_labels = [atom_labels[i] for i in system.particle_indices]
-                elif system.particle_indices is not None:
-                    subsystem_labels = ['Unknown'] * len(system.particle_indices)
+                idx = getattr(system, 'particle_indices', None)
+                if idx is not None:
+                    if labels:
+                        try:
+                            arr = np.asarray(labels, dtype=object)
+                            subsystem_labels = [str(x) for x in arr[idx]]
+                        except Exception:
+                            subsystem_labels = [
+                                labels[i] if 0 <= i < len(labels) else 'Unknown'
+                                for i in idx
+                            ]
+                    else:
+                        subsystem_labels = ['Unknown'] * len(idx)
                 else:
                     subsystem_labels = []
             else:
@@ -241,35 +254,50 @@ class Simulation(BaseSimulation, Schema):
                     children_names=subsystem_labels
                 )
 
-        def get_composition_recurs(system: ModelSystem, atom_labels: list[str]) -> None:
+        def get_composition_recurs(system: ModelSystem, labels: list[str]) -> None:
             """Traverse the system hierarchy downward and set the branch composition for
             all (sub)systems at each level.
 
             Args:
                 system (ModelSystem): The system to traverse downward.
-                atom_labels (list[str]): The global list of atom labels corresponding
-                to the atom indices stored in system.
+                labels (list[str]): The global list of labels corresponding
+                to the particle indices stored in system.
             """
             subsystems = system.sub_systems
-            set_composition_formula(
-                system=system, subsystems=subsystems, atom_labels=atom_labels
-            )
+            set_composition_formula(system=system, subsystems=subsystems, labels=labels)
             if subsystems:
                 for subsystem in subsystems:
-                    get_composition_recurs(system=subsystem, atom_labels=atom_labels)
+                    get_composition_recurs(system=subsystem, labels=labels)
 
-        # Pull chemical symbols straight from AtomsState.chemical_symbol
-        atom_labels = (
-            [
-                atom.chemical_symbol
-                for atom in system_parent.particle_states
-                if isinstance(atom, AtomsState) and atom.chemical_symbol is not None
-            ]
-            if system_parent.particle_states
-            else []
-        )
+        def _label_from_particle_state(p: ParticleState) -> str:
+            if isinstance(p, AtomsState):
+                return p.chemical_symbol or p.label or 'Unknown'
+            if CGBeadState is not None and isinstance(p, CGBeadState):
+                bs = getattr(p, 'bead_symbol', None)
+                if bs:
+                    return bs
+                lab = getattr(p, 'label', None)
+                if lab:
+                    return lab
+                alt = getattr(p, 'alt_labels', None)
+                if alt:
+                    try:
+                        return alt[0]
+                    except Exception:
+                        pass
+                return 'Unknown'
+            return getattr(p, 'label', None) or 'Unknown'
 
-        get_composition_recurs(system=system_parent, atom_labels=atom_labels)
+        labels: list[str] = []
+        if getattr(system_parent, 'particle_states', None):
+            try:
+                labels = [
+                    _label_from_particle_state(p) for p in system_parent.particle_states
+                ]  # type: ignore[attr-defined]
+            except Exception:
+                labels = []
+
+        get_composition_recurs(system=system_parent, labels=labels)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super(Schema, self).normalize(archive, logger)

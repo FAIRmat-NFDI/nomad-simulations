@@ -68,9 +68,12 @@ class TestSimulation:
             simulation._set_system_branch_depth(system_parent=system_parent)
 
         # TODO move this into its own method to handle `ModelSystem` hierarchies (see below `get_system_recurs`)
-        def get_flat_depths(
-            system_parent: ModelSystem, quantity_name: str, value: list = []
-        ):
+        # def get_flat_depths(
+        #     system_parent: ModelSystem, quantity_name: str, value: list = []
+        # ):
+        def get_flat_depths(system_parent: ModelSystem, quantity_name: str, value=None):
+            if value is None:
+                value = []
             for system_child in system_parent.sub_systems:
                 val = getattr(system_child, quantity_name)
                 value.append(val)

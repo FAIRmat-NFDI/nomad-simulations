@@ -6,7 +6,7 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.atoms_state import AtomsState, CGBeadState
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
@@ -410,3 +410,19 @@ class TestModelSystemBondFunctions:
         )  # Single atom
         root.sub_systems.append(isolated)
         assert isolated.is_molecule() is False
+
+    @pytest.mark.parametrize(
+        'states, expected',
+        [
+            ([], False),  # empty
+            ([AtomsState(chemical_symbol='H')], True),
+            ([AtomsState(chemical_symbol='H'), AtomsState(chemical_symbol='O')], True),
+            ([CGBeadState(bead_symbol='B')], False),
+            ([AtomsState(chemical_symbol='H'), CGBeadState(bead_symbol='B')], False),
+        ],
+    )
+    def test_is_atomic_flag(self, states, expected):
+        ms = ModelSystem()
+        for s in states:
+            ms.particle_states.append(s)
+        assert ms.is_atomic() is expected

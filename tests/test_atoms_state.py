@@ -398,3 +398,55 @@ class TestAtomsState:
         atom_state = AtomsState(atomic_number=atomic_number)
         atom_state.normalize(EntryArchive(), logger)
         assert atom_state.chemical_symbol == chemical_symbol
+
+
+import pytest
+from nomad.datamodel import EntryArchive
+from nomad.units import ureg
+
+from nomad_simulations.schema_packages.atoms_state import CGBeadState
+
+from . import logger
+
+
+class TestCGBeadState:
+    """
+    Basic sanity tests for the CGBeadState section.
+    """
+
+    def test_fields_roundtrip(self):
+        bead = CGBeadState(
+            bead_symbol='A',
+            label='A1',
+            alt_labels=['A-alt', 'A-alt2'],
+        )
+        bead.normalize(EntryArchive(), logger)
+
+        assert bead.bead_symbol == 'A'
+        assert bead.label == 'A1'
+        assert bead.alt_labels == ['A-alt', 'A-alt2']
+
+    def test_units_mass_and_charge(self):
+        bead = CGBeadState(
+            bead_symbol='B',
+            mass=10.0 * ureg.kg,
+            charge=1.6e-19 * ureg.coulomb,
+        )
+        bead.normalize(EntryArchive(), logger)
+
+        assert bead.mass is not None
+        assert bead.charge is not None
+        # compare magnitudes in declared units
+        assert pytest.approx(bead.mass.to('kg').magnitude) == 10.0
+        assert pytest.approx(bead.charge.to('coulomb').magnitude) == 1.6e-19
+
+    def test_minimal_construct_normalizes(self):
+        # No fields provided; just ensure normalize doesn't error and fields stay None/empty
+        bead = CGBeadState()
+        bead.normalize(EntryArchive(), logger)
+
+        assert bead.bead_symbol is None
+        assert bead.label is None
+        assert bead.alt_labels is None
+        assert bead.mass is None
+        assert bead.charge is None
