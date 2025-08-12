@@ -8,9 +8,9 @@ from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 ##################
 
 
-class TotalForce(PhysicalProperty):
+class BaseForce(PhysicalProperty):
     """
-    Abstract class used to define a common `value` quantity with the appropriate units
+    Base class used to define a common `value` quantity with the appropriate units
     for different types of forces, which avoids repeating the definitions for each
     force class.
     """
@@ -23,11 +23,11 @@ class TotalForce(PhysicalProperty):
         """,
     )
 
-    contributions = SubSection(
-        sub_section=SectionProxy('TotalForce'),
-        repeats=True,
-        description="""
-        The contributions to the total force. Each contribution is a specific force
-        component, such as the force from a specific potential or interaction.
-        """,
-    )
+
+class TotalForce(BaseForce):
+    """
+    The total force of a system. `contributions` specify individual
+    contributions to the `TotalForce`.
+    """
+
+    contributions = SubSection(sub_section=SectionProxy('BaseForce'), repeats=True)
