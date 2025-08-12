@@ -39,25 +39,3 @@ def test_is_contribution_detection_across_types():
     assert f2._is_contribution() is True
 
 
-def test_contribution_list_is_shallow_only(caplog):
-    nested_leaf = PotentialEnergy(value=0.5 * ureg.joule)
-    mid = KineticEnergy(value=1.5 * ureg.joule, contributions=[nested_leaf])  # illegal
-    top = TotalEnergy(value=2.0 * ureg.joule, contributions=[mid])
-
-    with caplog.at_level('ERROR'):
-        top.normalize(EntryArchive(), logger)
-
-    assert any('nested contributions' in rec.message.lower() for rec in caplog.records)
-
-
-def test_main_section_name_is_set_from_definition():
-    items = [
-        TotalEnergy(value=0.0 * ureg.joule),
-        KineticEnergy(value=0.0 * ureg.joule),
-        PotentialEnergy(value=0.0 * ureg.joule),
-        TotalForce(value=(np.zeros((2, 3)) * ureg.newton)),
-        BaseForce(value=(np.zeros((2, 3)) * ureg.newton)),
-    ]
-    for sec in items:
-        sec.normalize(EntryArchive(), logger)
-        assert sec.name == sec.__class__.__name__

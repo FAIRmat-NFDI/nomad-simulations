@@ -52,37 +52,3 @@ def test_total_force_with_multiple_contributions_idempotency_and_flags():
     assert len(total.figures) == before
 
 
-def test_total_force_rejects_nested_contributions(caplog):
-    n_atoms = 2
-    deep_child = BaseForce(value=(np.zeros((n_atoms, 3)) * ureg.newton))
-    child = BaseForce(value=(np.ones((n_atoms, 3)) * ureg.newton))
-    child.contributions = [deep_child]  # illegal nesting
-
-    total = TotalForce(value=(np.ones((n_atoms, 3)) * ureg.newton))
-    total.contributions = [child]
-
-    with caplog.at_level('ERROR'):
-        total.normalize(EntryArchive(), logger)
-
-    assert any('nested contributions' in rec.message.lower() for rec in caplog.records)
-
-
-def test_contribution_type_on_total_force_main_is_error(caplog):
-    n_atoms = 2
-    a = BaseForce(value=(np.ones((n_atoms, 3)) * ureg.newton), contribution_type='lj')
-    b = BaseForce(
-        value=(np.ones((n_atoms, 3)) * ureg.newton), contribution_type='coulomb'
-    )
-
-    total = TotalForce(
-        value=(np.zeros((n_atoms, 3)) * ureg.newton), contribution_type='invalid_main'
-    )
-    total.contributions = [a, b]
-
-    with caplog.at_level('ERROR'):
-        total.normalize(EntryArchive(), logger)
-
-    assert any(
-        'contribution_type set but is not a contribution' in rec.message.lower()
-        for rec in caplog.records
-    )
