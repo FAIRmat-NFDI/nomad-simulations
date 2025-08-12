@@ -332,8 +332,8 @@ class ElectronicState(Entity):
 
 class CoreHole(ElectronicState):
     """
-    A base section used to define the core-hole state of an atom by referencing the `OrbitalsState`
-    section where the core-hole was generated.
+    A section used to define the core-hole state of an atom by extending the `ElectronicState`
+    section with core-hole specific properties like excited electron count and DSCF state.
     """
 
     n_excited_electrons = Quantity(
@@ -591,12 +591,12 @@ class AtomsState(ParticleState):
         default=0,
         description="""
         Charge of the atom. It is defined as the number of extra electrons or holes in the
-        atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`OrbitalsState.occupation`
+        atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`ElectronicState.occupation`
         coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)
         for cations or any negative integer (-1, -2...) for anions.
 
         Note: for `CoreHole` systems we do not consider the charge of the atom even if
-        we do not store the final `OrbitalsState` where the electron was excited to.
+        we do not store the final `ElectronicState` where the electron was excited to.
         """,
     )
 
