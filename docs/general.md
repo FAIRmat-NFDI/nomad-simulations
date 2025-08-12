@@ -128,23 +128,38 @@ In reality, workflow should be capable of hosting multiple underlying structures
 Geometry optimizations or molecular dynamics simulations, for example, typically store their data in a single entry.
 Tasks trace the updates to the system, i.e. calculation or time steps, respectively.
 The actual modifications of these steps are stored in the `model_system` and `outputs`.
-Hence, `task[0].input -> entry_0#data.model_system[0]` and `task[0].output -> entry_0#data.outputs[0]`.
 <!-- @JFRudzinski pls double-check the order of the arrows -->
 
-```json
-{
-    "workflow": {
-        "tasks": [
-            "0": {
-                "input": "entry_0#data.model_system[0]",
-                "output": "entry_0#data.outputs[0]",
-            },
-            "1": "...",
-        ],
-    }
-}
+```
+entry_x#workflow2.task[0].input  -> entry_y1#data.model_system[0]
+entry_x#workflow2.task[0].output -> entry_y2#data.outputs[0]
+...
+entry_x#workflow2.task[n].input  -> entry_y1#data.model_system[n]
+entry_x#workflow2.task[n].output -> entry_y2#data.outputs[n]
 ```
 
-### Multi-step Workflows
+Note that `entry_x`, `entry_y1`, `entry_y2` will typically refer to the same entry, though this isn't a hard requirement.
+
+#### Including SCF steps
+
+!!! warning "Under construction"
+    This section will be updated once its schema-side is settled on.
 
 ### Single-Point SCF Workflow
+
+In the case of a single-point calculation, the emphasis clearly lies on the relaxation of the electronic structure.
+Now, each `outputs` section can wholesale be dedicated to following the SCF cycle.
+
+```
+entry_x#workflow2.task[0].output -> entry_y#data.outputs[0]
+```
+
+### Multi-step Electronic Workflows
+
+There are two main design choices here:
+
+1. the methodology and computed outputs are split along major subroutines.
+2. they are kept in a single entry. This is especially useful for legacy cases, where some subroutines were originally not distinguished.
+
+In option 2, for any workflows at are not simply _serial_, there is no canonical way of ordering `outputs`.
+This burden remains with `workflow2.tasks`.
