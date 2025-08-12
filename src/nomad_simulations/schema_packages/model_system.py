@@ -17,7 +17,6 @@
 #
 
 import re
-from functools import lru_cache
 from hashlib import sha1
 from typing import TYPE_CHECKING
 
@@ -42,21 +41,17 @@ from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
-    from typing import Any, Callable, Optional
-
-    import pint
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
+    from typing import Callable, Optional
 
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
     CGBeadState,
+    ElectronicState,
     ParticleState,
 )
 from nomad_simulations.schema_packages.utils import (
-    catch_not_implemented,
     get_sibling_section,
     is_not_representative,
 )
@@ -1000,6 +995,15 @@ class ModelSystem(System):
         Stored as an integer or half-integer represented in doubled form
         (e.g. singlet → 0, doublet → 1, triplet → 2).
         Not to be confused with the spin multiplicity 2S+1.
+        """,
+    )
+
+    electronic = SubSection(
+        section_def=ElectronicState.m_def,
+        repeats=False,
+        description="""
+        Electronic state of the system, e.g., the electronic structure information.
+        This is an starting point for navigating the electronic hierarchy.
         """,
     )
 

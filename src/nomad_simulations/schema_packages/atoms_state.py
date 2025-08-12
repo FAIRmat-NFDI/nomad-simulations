@@ -5,7 +5,7 @@ import numpy as np
 import pint
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import MEnum, Quantity, SubSection
+from nomad.metainfo import MEnum, Quantity, SubSection, SectionProxy
 from nomad.units import ureg
 
 if TYPE_CHECKING:
@@ -16,9 +16,71 @@ if TYPE_CHECKING:
 from nomad_simulations.schema_packages.utils import RussellSaundersState
 
 
-class OrbitalsState(Entity):
+class BaseSpinState(Entity):
+    """A base section to define the spin state of an atom.
+    This is used to define the spin state of an atom in a simulation.
+    It can be extended to include any common quantities in the future.
     """
-    A base section used to define the orbital state of an atom.
+
+    pass
+
+
+class SimpleSpinState(BaseSpinState):
+    """A simple section to define the spin state of an atom.
+    This is used to define the spin state of an atom in a simulation.
+    """
+
+    ms_quantum_number = Quantity(
+        type=np.float64,
+        description="""
+        Spin quantum number. Set to -1 for spin down and +1 for spin up. In non-collinear spin
+        systems, the projection axis $z$ should also be defined.
+        """,
+    )
+
+    ms_quantum_symbol = Quantity(
+        type=MEnum('down', 'up'),
+        description="""
+        Spin quantum symbol. Set to 'down' for spin down and 'up' for spin up. In non-collinear
+        spin systems, the projection axis $z$ should also be defined.
+        """,
+    )
+
+
+class NonCollinearSpinState(BaseSpinState):
+
+    axis = Quantity(
+        type=np.float64,
+        shape=['3'],
+        description="""
+        The projection axis for non-collinear spin systems.
+        Expressed in the axis frame in which `ModelSystem` is defined.
+        """
+    )
+
+    j_quantum_number = Quantity(
+        type=np.float64,
+        shape=['1..2'],
+        description="""
+        Total angular momentum quantum number $j = |l-s| ... l+s$. Necessary with strong
+        L-S coupling or non-collinear spin systems.
+        """,
+    )
+
+    mj_quantum_number = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description="""
+        Azimuthal projection of the `j` vector. Necessary with strong L-S coupling or
+        non-collinear spin systems.
+        """,
+    )
+
+
+class ElectronicState(Entity):
+    """
+    A section to define the electronic state information.
+    Assumes a hierarchical structure, where `sub_states` can be defined.
     """
 
     # TODO add check for `j_quantum_number` and `mj_quantum_number`
@@ -61,38 +123,11 @@ class OrbitalsState(Entity):
         """,
     )
 
-    j_quantum_number = Quantity(
-        type=np.float64,
-        shape=['1..2'],
+    spin_state = SubSection(
+        section_def=BaseSpinState.m_def,
         description="""
-        Total angular momentum quantum number $j = |l-s| ... l+s$. Necessary with strong
-        L-S coupling or non-collinear spin systems.
-        """,
-    )
-
-    mj_quantum_number = Quantity(
-        type=np.float64,
-        shape=['*'],
-        description="""
-        Azimuthal projection of the `j` vector. Necessary with strong L-S coupling or
-        non-collinear spin systems.
-        """,
-    )
-
-    ms_quantum_number = Quantity(
-        type=np.float64,
-        description="""
-        Spin quantum number. Set to -1 for spin down and +1 for spin up. In non-collinear spin
-        systems, the projection axis $z$ should also be defined.
-        """,
-    )
-
-    ms_quantum_symbol = Quantity(
-        type=MEnum('down', 'up'),
-        description="""
-        Spin quantum symbol. Set to 'down' for spin down and 'up' for spin up. In non-collinear
-        spin systems, the projection axis $z$ should also be defined.
-        """,
+        The spin state of the electron.
+        """
     )
 
     degeneracy = Quantity(
@@ -110,6 +145,14 @@ class OrbitalsState(Entity):
         The number of electrons in the orbital state. The state is fully occupied if
         occupation = degeneracy.
         """,
+    )
+
+    sub_states = SubSection(
+        section_def=SectionProxy('ElectronicState').m_def,
+        repeats=True,
+        description="""
+        Sub-states of the electronic state, e.g., different orbital states.
+        """
     )
 
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
@@ -296,18 +339,11 @@ class OrbitalsState(Entity):
             self.degeneracy = self.resolve_degeneracy()
 
 
-class CoreHole(ArchiveSection):
+class CoreHole(ElectronicState):
     """
     A base section used to define the core-hole state of an atom by referencing the `OrbitalsState`
     section where the core-hole was generated.
     """
-
-    orbital_ref = Quantity(
-        type=OrbitalsState,
-        description="""
-        Reference to the OrbitalsState section that is used as a basis to obtain the `CoreHole` section.
-        """,
-    )
 
     n_excited_electrons = Quantity(
         type=np.float64,
@@ -339,18 +375,17 @@ class CoreHole(ArchiveSection):
         Returns:
             (Optional[np.float64]): The occupation of the active orbital state.
         """
-        if self.orbital_ref is None or self.n_excited_electrons is None:
+        if self.n_excited_electrons is None:
             logger.warning(
-                'Cannot resolve occupation without `orbital_ref` or `n_excited_electrons`.'
+                'Cannot resolve occupation without `n_excited_electrons`.'
             )
-            return None
-        if self.orbital_ref.occupation is None:
-            degeneracy = self.orbital_ref.resolve_degeneracy()
+            return
+        if self.occupation is None:
+            degeneracy = self.resolve_degeneracy()
             if degeneracy is None:
                 logger.warning('Cannot resolve occupation without `degeneracy`.')
-                return None
+                return
             return degeneracy - self.n_excited_electrons
-        return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -370,7 +405,7 @@ class CoreHole(ArchiveSection):
                 self.orbital_ref.occupation = self.resolve_occupation(logger=logger)
 
 
-class HubbardInteractions(ArchiveSection):
+class HubbardInteractions(ElectronicState):
     """
     A base section to define the Hubbard interactions of the system.
     """
@@ -384,22 +419,13 @@ class HubbardInteractions(ArchiveSection):
         """,
     )
 
-    orbitals_ref = Quantity(
-        type=OrbitalsState,
-        shape=['n_orbitals'],
-        description="""
-        Reference to the `OrbitalsState` sections that are used as a basis to obtain the Hubbard
-        interaction matrices.
-        """,
-    )
-
     u_matrix = Quantity(
         type=np.float64,
         shape=['n_orbitals', 'n_orbitals'],
         unit='joule',
         description="""
-        Value of the local Hubbard interaction matrix. The order of the rows and columns coincide
-        with the elements in `orbital_ref`.
+        Value of the local Hubbard interaction matrix.
+        The order of the rows and columns coincide with the elements in `orbital_ref`.
         """,
     )
 
@@ -609,13 +635,7 @@ class AtomsState(ParticleState):
         """,
     )
 
-    orbitals_state = SubSection(sub_section=OrbitalsState.m_def, repeats=True)
-
-    core_hole = SubSection(sub_section=CoreHole.m_def, repeats=False)
-
-    hubbard_interactions = SubSection(
-        sub_section=HubbardInteractions.m_def, repeats=False
-    )
+    electronic_state = SubSection(sub_section=ElectronicState.m_def)
 
     def resolve_chemical_symbol(self, logger: 'BoundLogger') -> Optional[str]:
         """
