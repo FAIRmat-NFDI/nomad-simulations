@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 
 from nomad_simulations.schema_packages.utils import RussellSaundersState
 
+# TODO rename this file particles_state.py or place ParticleState in model_system.py
+# TODO and make separate module files for AtomsState, CGBeadState, etc.
+
 
 class OrbitalsState(Entity):
     """
