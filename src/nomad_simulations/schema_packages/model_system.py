@@ -1399,11 +1399,6 @@ class ModelSystem(System):
             system = system.m_parent
         return system
 
-    def is_atomic(self) -> bool:
-        return bool(self.particle_states) and all(
-            isinstance(p, AtomsState) for p in self.particle_states
-        )
-
     # functions for working with molecules
     def get_bond_list(self, set_local: bool = False) -> np.ndarray:
         """
