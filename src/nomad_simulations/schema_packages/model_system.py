@@ -191,44 +191,6 @@ class GeometricSpace(Entity):
         """,
     )
 
-    def get_geometric_space_for_atomic_cell(self, logger: 'BoundLogger') -> None:
-        """
-        Get the real space parameters for the atomic cell using ASE.
-        to_ase_atoms live under the parent ModelSystem.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-        """
-        parent = self.m_parent
-        if not isinstance(parent, ModelSystem):
-            logger.warning(
-                'Parent is not a ModelSystem → geometric-space normalisation skipped.'
-            )
-            return
-
-        atoms = parent.to_ase_atoms(logger=logger)
-        if atoms is None:
-            return  # parent already logged the problem
-
-        try:
-            cell = atoms.get_cell()
-            self.length_vector_a, self.length_vector_b, self.length_vector_c = (
-                cell.lengths() * ureg.angstrom
-            )
-            self.angle_vectors_b_c, self.angle_vectors_a_c, self.angle_vectors_a_b = (
-                cell.angles() * ureg.degree
-            )
-            self.volume = cell.volume * ureg.angstrom**3
-        except Exception as exc:
-            logger.warning(
-                'Failed to extract geometric-space data from ASE cell.',
-                exc_info=exc,
-            )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        # extract all the geometric‐space quantities; errors are logged inside
-        self.get_geometric_space_for_atomic_cell(logger=logger)
-
 
 def _check_implemented(func: 'Callable'):
     """
@@ -381,11 +343,48 @@ class AtomicCell(Cell):
         """,
     )
 
+    def get_geometric_space_for_atomic_cell(self, logger: 'BoundLogger') -> None:
+        """
+        Get the real space parameters for the atomic cell using ASE.
+        to_ase_atoms live under the parent ModelSystem.
+
+        Args:
+            logger (BoundLogger): The logger to log messages.
+        """
+        parent = self.m_parent
+        if not isinstance(parent, ModelSystem):
+            logger.warning(
+                'Parent is not a ModelSystem → geometric-space normalisation skipped.'
+            )
+            return
+
+        atoms = parent.to_ase_atoms(logger=logger)
+        if atoms is None:
+            return  # parent already logged the problem
+
+        try:
+            cell = atoms.get_cell()
+            self.length_vector_a, self.length_vector_b, self.length_vector_c = (
+                cell.lengths() * ureg.angstrom
+            )
+            self.angle_vectors_b_c, self.angle_vectors_a_c, self.angle_vectors_a_b = (
+                cell.angles() * ureg.degree
+            )
+            self.volume = cell.volume * ureg.angstrom**3
+        except Exception as exc:
+            logger.warning(
+                'Failed to extract geometric-space data from ASE cell.',
+                exc_info=exc,
+            )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
         # Set the name of the section
         self.name = self.m_def.name if self.name is None else self.name
+
+        # extract all the geometric‐space quantities; errors are logged inside
+        self.get_geometric_space_for_atomic_cell(logger=logger)
 
 
 class Symmetry(ArchiveSection):
@@ -1327,12 +1326,14 @@ class ModelSystem(System):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # We don't need to normalize if the system is not representative
-        if is_not_representative(model_system=self, logger=logger):
-            return
-
         # reassign particle states according to label validity
         self._reassign_generic_particle_states(archive, logger)
+
+        # We don't need to normalize if the system is not representative
+        # TODO decide the meaning and exact usage of a system being representative
+        # TODO before avoiding normalization
+        # if is_not_representative(model_system=self, logger=logger):
+        #     return
 
         ## ATOMIC NORMALIZATION
         if not self._is_atomic:
