@@ -1,4 +1,3 @@
-from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 import ase
@@ -547,17 +546,6 @@ class HubbardInteractions(ArchiveSection):
                 logger.error(
                     'The length of `HubbardInteractions.u_matrix` does not coincide with length of `HubbardInteractions.orbitals_ref`.'
                 )
-
-
-@lru_cache(maxsize=256)
-def _is_element_label(label: Optional[str]) -> bool:
-    if not label:
-        return False
-    try:
-        ase.symbols.symbols2numbers([label])
-        return True
-    except KeyError:
-        return False
 
 
 class ParticleState(Entity):
