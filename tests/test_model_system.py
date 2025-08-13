@@ -478,6 +478,27 @@ class TestGenericParticleReassignment:
         ]
         assert ms.is_atomic() is False
 
+    def test_parser_atoms_trusted_no_reassign(self):
+        """
+        If the parser already provided only AtomsState entries, the normalizer
+        must *not* reassign them. Identities and order should be preserved.
+        """
+        ms = ModelSystem(is_representative=True)
+        a1 = AtomsState(chemical_symbol='H')
+        a2 = AtomsState(chemical_symbol='O')
+        ms.particle_states.extend([a1, a2])
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        # No reassignment: same objects, same order
+        assert len(ms.particle_states) == 2
+        assert ms.particle_states[0] is a1
+        assert ms.particle_states[1] is a2
+
+        # Still atomic and symbols intact
+        assert ms.is_atomic() is True
+        assert [p.chemical_symbol for p in ms.particle_states] == ['H', 'O']
+
     def test_mixed_types_trust_parser(self):
         ms = ModelSystem(is_representative=True)
         ms.particle_states.append(AtomsState(chemical_symbol='C'))
