@@ -401,12 +401,8 @@ class TestAtomsState:
 
 
 import pytest
-from nomad.datamodel import EntryArchive
-from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import CGBeadState
-
-from . import logger
 
 
 class TestCGBeadState:
