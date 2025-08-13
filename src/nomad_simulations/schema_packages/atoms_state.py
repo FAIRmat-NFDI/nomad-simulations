@@ -1,4 +1,5 @@
 from typing import TYPE_CHECKING, Any, Optional, Union
+from functools import lru_cache
 
 import ase
 import numpy as np
@@ -548,6 +549,17 @@ class HubbardInteractions(ArchiveSection):
                 )
 
 
+@lru_cache(maxsize=256)
+def _is_element_label(label: Optional[str]) -> bool:
+    if not label:
+        return False
+    try:
+        ase.symbols.symbols2numbers([label])
+        return True
+    except KeyError:
+        return False
+
+
 class ParticleState(Entity):
     """
     Generic base section representing the state of a particle in a simulation.
@@ -560,6 +572,9 @@ class ParticleState(Entity):
         User- or program-package-defined identifier for this particle.
         """,
     )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
 
 
 class AtomsState(ParticleState):
@@ -664,8 +679,14 @@ class AtomsState(ParticleState):
         # Get chemical_symbol from atomic_number and viceversa
         if self.chemical_symbol is None:
             self.chemical_symbol = self.resolve_chemical_symbol(logger=logger)
-        if self.atomic_number is None:
+        elif self.atomic_number is None:
             self.atomic_number = self.resolve_atomic_number(logger=logger)
+        else:
+            # If both are set, check if they match
+            if self.atomic_number != ase.data.atomic_numbers[self.chemical_symbol]:
+                logger.error(
+                    'The `AtomsState.atomic_number` and `chemical_symbol` do not match.'
+                )
 
 
 class CGBeadState(ParticleState):

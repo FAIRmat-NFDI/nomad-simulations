@@ -6,7 +6,12 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState, CGBeadState
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomsState,
+    CGBeadState,
+    ParticleState,
+)
+
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
@@ -426,3 +431,72 @@ class TestModelSystemBondFunctions:
         for s in states:
             ms.particle_states.append(s)
         assert ms.is_atomic() is expected
+
+
+class TestGenericParticleReassignment:
+    """
+    Tests for automatic typing of generic ParticleState → AtomsState/CGBeadState
+    and the atomic gating in ModelSystem.normalize().
+    """
+
+    def test_generic_promotes_to_atoms(self):
+        ms = ModelSystem(is_representative=True)
+        # Generic particles with element labels
+        ms.particle_states.append(ParticleState(label='H'))
+        ms.particle_states.append(ParticleState(label='O'))
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        assert ms.is_atomic() is True
+        assert all(isinstance(p, AtomsState) for p in ms.particle_states)
+        assert [p.chemical_symbol for p in ms.particle_states] == ['H', 'O']
+
+    def test_generic_demotes_to_cg(self):
+        ms = ModelSystem(is_representative=True)
+        # Non-element labels → CG beads
+        ms.particle_states.append(ParticleState(label='B1'))
+        ms.particle_states.append(ParticleState(label='X'))
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        assert ms.is_atomic() is False
+        assert all(isinstance(p, CGBeadState) for p in ms.particle_states)
+        assert [p.bead_symbol for p in ms.particle_states] == ['B1', 'X']
+
+    def test_generic_with_missing_label_preserves_length(self):
+        ms = ModelSystem(is_representative=True)
+        ms.particle_states.append(ParticleState(label='H'))
+        ms.particle_states.append(ParticleState(label=None))  # missing
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        # Falls back to CG and preserves count/order
+        assert len(ms.particle_states) == 2
+        assert all(isinstance(p, CGBeadState) for p in ms.particle_states)
+        assert [getattr(p, 'bead_symbol', None) for p in ms.particle_states] == [
+            'H',
+            None,
+        ]
+        assert ms.is_atomic() is False
+
+    def test_mixed_types_trust_parser(self):
+        ms = ModelSystem(is_representative=True)
+        ms.particle_states.append(AtomsState(chemical_symbol='C'))
+        ms.particle_states.append(
+            ParticleState(label='O')
+        )  # generic, but mixed with AA
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        # We trust the parser: no auto-reassignment when mixed types present
+        assert isinstance(ms.particle_states[0], AtomsState)
+        assert isinstance(ms.particle_states[1], ParticleState)
+
+    def test_atomic_gate_blocks_non_atomic_flow(self):
+        ms = ModelSystem(is_representative=True)
+        ms.particle_states.append(CGBeadState(bead_symbol='B'))
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        # Non-atomic → early return; chemical_formula should not be created
+        assert not ms.chemical_formula  # remains None/empty
