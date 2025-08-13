@@ -1,5 +1,5 @@
-from typing import TYPE_CHECKING, Any, Optional, Union
 from functools import lru_cache
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import ase
 import numpy as np

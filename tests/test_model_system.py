@@ -11,7 +11,6 @@ from nomad_simulations.schema_packages.atoms_state import (
     CGBeadState,
     ParticleState,
 )
-
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
