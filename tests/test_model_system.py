@@ -139,7 +139,7 @@ class TestModelSystem:
         [
             (np.array([[0, 0, 0]]), [False, False, False], 'atom', 0),
             (np.array([[0, 0, 0], [0.5, 0.5, 0.5]]), [True, True, True], 'bulk', 3),
-            # etc. Adjust as needed
+            (np.array([[0, 0, 0], [0, 0, 0.74]]), [False, False, False], 'molecule / cluster', 0),
         ],
     )
     def test_resolve_system_type_dim(self, positions, pbc, expected_type, expected_dim):
