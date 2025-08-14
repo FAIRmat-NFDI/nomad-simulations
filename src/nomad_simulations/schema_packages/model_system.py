@@ -849,6 +849,7 @@ class ModelSystem(System):
             'atom',
             'active_atom',
             'molecule',
+            'cluster',
             'molecule / cluster',  # this is kept due to MatID Class0D classification
             'monomer',
             '1D',
