@@ -843,11 +843,13 @@ class ModelSystem(System):
     )
 
     # TODO work on improving and extending this quantity and the description
+    # TODO distinguish between molecule and cluster
     type = Quantity(
         type=MEnum(
             'atom',
             'active_atom',
-            'molecule / cluster',
+            'molecule',
+            'molecule / cluster',  # this is kept due to MatID Class0D classification
             'monomer',
             '1D',
             'surface',
