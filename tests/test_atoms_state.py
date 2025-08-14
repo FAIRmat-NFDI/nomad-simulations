@@ -7,6 +7,7 @@ from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
+    CGBeadState,
     CoreHole,
     HubbardInteractions,
     OrbitalsState,
@@ -398,11 +399,6 @@ class TestAtomsState:
         atom_state = AtomsState(atomic_number=atomic_number)
         atom_state.normalize(EntryArchive(), logger)
         assert atom_state.chemical_symbol == chemical_symbol
-
-
-import pytest
-
-from nomad_simulations.schema_packages.atoms_state import CGBeadState
 
 
 class TestCGBeadState:

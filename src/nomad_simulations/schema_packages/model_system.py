@@ -19,7 +19,7 @@
 import re
 from functools import lru_cache
 from hashlib import sha1
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import ase
 import numpy as np
@@ -191,44 +191,6 @@ class GeometricSpace(Entity):
         """,
     )
 
-    def get_geometric_space_for_atomic_cell(self, logger: 'BoundLogger') -> None:
-        """
-        Get the real space parameters for the atomic cell using ASE.
-        to_ase_atoms live under the parent ModelSystem.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-        """
-        parent = self.m_parent
-        if not isinstance(parent, ModelSystem):
-            logger.warning(
-                'Parent is not a ModelSystem → geometric-space normalisation skipped.'
-            )
-            return
-
-        atoms = parent.to_ase_atoms(logger=logger)
-        if atoms is None:
-            return  # parent already logged the problem
-
-        try:
-            cell = atoms.get_cell()
-            self.length_vector_a, self.length_vector_b, self.length_vector_c = (
-                cell.lengths() * ureg.angstrom
-            )
-            self.angle_vectors_b_c, self.angle_vectors_a_c, self.angle_vectors_a_b = (
-                cell.angles() * ureg.degree
-            )
-            self.volume = cell.volume * ureg.angstrom**3
-        except Exception as exc:
-            logger.warning(
-                'Failed to extract geometric-space data from ASE cell.',
-                exc_info=exc,
-            )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        # extract all the geometric‐space quantities; errors are logged inside
-        self.get_geometric_space_for_atomic_cell(logger=logger)
-
 
 def _check_implemented(func: 'Callable'):
     """
@@ -381,11 +343,48 @@ class AtomicCell(Cell):
         """,
     )
 
+    def get_geometric_space_for_atomic_cell(self, logger: 'BoundLogger') -> None:
+        """
+        Get the real space parameters for the atomic cell using ASE.
+        to_ase_atoms live under the parent ModelSystem.
+
+        Args:
+            logger (BoundLogger): The logger to log messages.
+        """
+        parent = self.m_parent
+        if not isinstance(parent, ModelSystem):
+            logger.warning(
+                'Parent is not a ModelSystem → geometric-space normalisation skipped.'
+            )
+            return
+
+        atoms = parent.to_ase_atoms(logger=logger)
+        if atoms is None:
+            return  # parent already logged the problem
+
+        try:
+            cell = atoms.get_cell()
+            self.length_vector_a, self.length_vector_b, self.length_vector_c = (
+                cell.lengths() * ureg.angstrom
+            )
+            self.angle_vectors_b_c, self.angle_vectors_a_c, self.angle_vectors_a_b = (
+                cell.angles() * ureg.degree
+            )
+            self.volume = cell.volume * ureg.angstrom**3
+        except Exception as exc:
+            logger.warning(
+                'Failed to extract geometric-space data from ASE cell.',
+                exc_info=exc,
+            )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
         # Set the name of the section
         self.name = self.m_def.name if self.name is None else self.name
+
+        # extract all the geometric‐space quantities; errors are logged inside
+        self.get_geometric_space_for_atomic_cell(logger=logger)
 
 
 class Symmetry(ArchiveSection):
@@ -545,7 +544,7 @@ class Symmetry(ArchiveSection):
         cell = system.get_cell()
 
         # Create the cell (or atomic cell) for geometry only
-        atomic_cell = Cell(type=cell_type)
+        atomic_cell = AtomicCell(type=cell_type)
         atomic_cell.lattice_vectors = cell * ureg.angstrom
         # ! Positions are stored directly under model_system in nomad-simulations>=0.4.
         atomic_cell.wyckoff_letters = wyckoff
@@ -830,6 +829,8 @@ class ModelSystem(System):
         2 and 3.
     """
 
+    __is_atomic_flag: Optional[bool] = None
+
     normalizer_level = 0
 
     name = Quantity(
@@ -1024,27 +1025,34 @@ class ModelSystem(System):
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
 
-    # TODO Will remove this after developing CGBeadState functionality further
-    def get_chemical_symbols(self, logger: 'BoundLogger') -> list[str]:
-        """
-        Gets the chemical symbols from the particle_states that are AtomsState instances.
-        Args:
-            logger (BoundLogger): The logger to log messages.
-        Returns:
-            list: The list of chemical symbols of the atoms.
-        """
-        chemical_symbols = []
-        for particle_state in self.particle_states:
-            if isinstance(particle_state, AtomsState):
-                # Read directly from AtomsState.chemical_symbol
-                if particle_state.chemical_symbol is None:
-                    logger.warning('AtomsState has no `chemical_symbol` set.')
-                    return []
-                chemical_symbols.append(particle_state.chemical_symbol)
-        return chemical_symbols
+    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
+        super().__init__(m_def, m_context, **kwargs)
+        self.__is_atomic_flag = None
 
-    # TODO: symbols should be a property right?
-    # ? To replace get_chemical_symbols
+    @property
+    def _is_atomic(self) -> bool:
+        """
+        If explicitly set (True/False), use that.
+        Otherwise compute from current particle_states every time (no caching),
+        so it can’t go stale.
+        """
+        if self.__is_atomic_flag is not None:
+            return self.__is_atomic_flag
+        return bool(self.particle_states) and all(
+            isinstance(p, AtomsState) for p in self.particle_states
+        )
+
+    @_is_atomic.setter
+    def _is_atomic(self, value: Optional[bool]) -> None:
+        """
+        Set to True/False to force; set to None to clear the override.
+        """
+        self.__is_atomic_flag = None if value is None else bool(value)
+
+    def is_atomic(self) -> bool:
+        return self._is_atomic
+
+    # ? Is it better to get symbols with logging or make a property without?
     def get_symbols(self, logger: 'BoundLogger') -> list[str]:
         """
         Gets the symbols from the particle_states.
@@ -1060,10 +1068,23 @@ class ModelSystem(System):
                 symbol = particle_state.chemical_symbol
             elif isinstance(particle_state, CGBeadState):
                 symbol = particle_state.bead_symbol
+            else:
+                symbol = particle_state.label
             if not symbol:
                 logger.warning('missing symbol in ParticleState.')
+                return []
             symbols.append(symbol)
         return symbols
+
+    def _all_labels_are_elements(self, labels: list[str]) -> bool:
+        """True if every label is a valid element symbol."""
+        if not labels:
+            return False
+        try:
+            symbols2numbers(labels)
+            return True
+        except KeyError:
+            return False
 
     def are_valid_chemical_symbols(self, logger: 'BoundLogger') -> bool:
         """
@@ -1078,19 +1099,11 @@ class ModelSystem(System):
         if not symbols:
             return False
 
-        try:
-            symbols2numbers(symbols)
-        except KeyError as e:
-            logger.error(f'Invalid chemical symbol found: {e}')
-            return False
-        return True
+        if self._all_labels_are_elements(symbols):
+            return True
 
-    # atom_labels = self.traj_parser.get_atom_labels(n)
-    # if atom_labels is not None:
-    #     try:
-    #         symbols2numbers(atom_labels)
-    #     except KeyError:
-    #         atom_labels = ['X'] * len(atom_labels)
+        logger.error('Invalid or missing chemical symbols.')
+        return False
 
     def to_ase_atoms(self, logger: 'BoundLogger') -> 'Optional[ase.Atoms]':
         """
@@ -1142,6 +1155,8 @@ class ModelSystem(System):
         Replaces the atom_states subsection with new entries based on the ASE chemical symbols,
         and assigns ASE positions to the top-level positions quantity.
         """
+        # ? Should particle_states be cleared before populating?
+        # ? self._clear_particle_states_inplace()
         # Iterate over chemical symbols and atomic numbers from the ASE Atoms object
         for symbol, atomic_number in zip(
             ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers()
@@ -1217,13 +1232,93 @@ class ModelSystem(System):
 
         return system_type, dimensionality
 
+    # ! Needs to be checked !
+    def _copy_common_quantities(self, src, dst, *, exclude: set[str] = None) -> None:
+        exclude = exclude or set()
+
+        def _qnames(section) -> set[str]:
+            aq = getattr(section.m_def, 'all_quantities', None)
+            if aq is None:
+                return set()
+            if isinstance(aq, dict):
+                return set(aq.keys())
+            # iterable of Quantity objects
+            return {q.name for q in aq}
+
+        src_q = _qnames(src)
+        dst_q = _qnames(dst)
+        for name in (src_q & dst_q) - exclude:
+            val = getattr(src, name, None)
+            if val is not None:
+                setattr(dst, name, val)
+
+    def _clear_particle_states_inplace(self) -> None:
+        while len(self.particle_states):
+            self.particle_states.pop()
+
+    def _reassign_generic_particle_states(self, archive, logger) -> None:
+        """
+        If the parser populated only generic ParticleState entries, convert *all* to:
+        - AtomsState if all labels are valid element symbols, else
+        - CGBeadState.
+        If any AtomsState/CGBeadState is already present, do nothing (trust parser).
+        """
+        if not self.particle_states:
+            return
+
+        ps_list = list(self.particle_states)
+
+        # Only act if *every* entry is plain ParticleState (no AA/CG mixed in)
+        if not all(
+            isinstance(p, ParticleState)
+            and not isinstance(p, (AtomsState, CGBeadState))
+            for p in ps_list
+        ):
+            return
+
+        labels = self.get_symbols(logger)
+        to_atoms = bool(labels) and self._all_labels_are_elements(labels)
+
+        self._clear_particle_states_inplace()
+
+        if to_atoms:
+            # Map one-to-one using validated element labels
+            for old, lab in zip(ps_list, labels):
+                new = AtomsState()
+                new.chemical_symbol = lab  # validated by symbols2numbers + MEnum on set
+                # Copy all overlapping fields EXCEPT chemical_symbol (we just set it)
+                self._copy_common_quantities(old, new, exclude={'chemical_symbol'})
+                new.normalize(archive, logger)
+                self.particle_states.append(new)
+            self._is_atomic = True
+        else:
+            # Fall back to CG; use each original ParticleState.label (may be None)
+            for old in ps_list:
+                lab = getattr(old, 'label', None)
+                new = CGBeadState()
+                if lab:
+                    new.bead_symbol = lab
+                # Copy all overlapping fields EXCEPT bead_symbol (we just set it)
+                self._copy_common_quantities(old, new, exclude={'bead_symbol'})
+                new.normalize(archive, logger)
+                self.particle_states.append(new)
+            self._is_atomic = False
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # We don't need to normalize if the system is not representative
-        if is_not_representative(model_system=self, logger=logger):
-            return
+        # reassign particle states according to label validity
+        self._reassign_generic_particle_states(archive, logger)
 
+        # We don't need to normalize if the system is not representative
+        # TODO decide the meaning and exact usage of a system being representative
+        # TODO before avoiding normalization
+        # if is_not_representative(model_system=self, logger=logger):
+        #     return
+
+        ## ATOMIC NORMALIZATION
+        if not self._is_atomic:
+            return
         # Generate ASE Atoms object from top-level ModelSystem data
         ase_atoms = self.to_ase_atoms(logger)
         if ase_atoms is None:
@@ -1284,11 +1379,6 @@ class ModelSystem(System):
         while isinstance(system.m_parent, ModelSystem):
             system = system.m_parent
         return system
-
-    def is_atomic(self) -> bool:
-        return bool(self.particle_states) and all(
-            isinstance(p, AtomsState) for p in self.particle_states
-        )
 
     # functions for working with molecules
     def get_bond_list(self, set_local: bool = False) -> np.ndarray:
