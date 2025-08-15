@@ -168,7 +168,7 @@ class TabulatedPotential(Potential):
 
     bins = Quantity(
         type=np.float64,
-        shape=[],
+        shape=['*'],
         description="""
         List of bin angles.
         """,
@@ -177,7 +177,7 @@ class TabulatedPotential(Potential):
     energies = Quantity(
         type=np.float64,
         unit='J',
-        shape=[],
+        shape=['*'],
         description="""
         List of energy values associated with each bin.
         """,
@@ -557,7 +557,7 @@ class TabulatedBond(TabulatedPotential, BondPotential):
     bins = Quantity(
         type=np.float64,
         unit='m',
-        shape=[],
+        shape=['*'],
         description="""
         List of bin distances.
         """,
@@ -566,7 +566,7 @@ class TabulatedBond(TabulatedPotential, BondPotential):
     forces = Quantity(
         type=np.float64,
         unit='J/m',
-        shape=[],
+        shape=['*'],
         description="""
         List of force values associated with each bin.
         """,
@@ -807,7 +807,7 @@ class TabulatedAngle(AnglePotential, TabulatedPotential):
     bins = Quantity(
         type=np.float64,
         unit='degree',
-        shape=[],
+        shape=['*'],
         description="""
         List of bin angles.
         """,
@@ -816,7 +816,7 @@ class TabulatedAngle(AnglePotential, TabulatedPotential):
     forces = Quantity(
         type=np.float64,
         unit='J/degree',
-        shape=[],
+        shape=['*'],
         description="""
         List of force values associated with each bin.
         """,
@@ -1014,7 +1014,7 @@ class TabulatedDihedral(DihedralPotential, TabulatedPotential):
     bins = Quantity(
         type=np.float64,
         unit='degree',
-        shape=[],
+        shape=['*'],
         description="""
         List of bin dihedral angles.
         """,
@@ -1023,7 +1023,7 @@ class TabulatedDihedral(DihedralPotential, TabulatedPotential):
     forces = Quantity(
         type=np.float64,
         unit='J/degree',
-        shape=[],
+        shape=['*'],
         description="""
         List of force values associated with each bin.
         """,

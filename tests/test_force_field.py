@@ -7,6 +7,7 @@ from nomad.units import ureg
 
 # from nomad_simulations.schema_packages.method import ModelMethod
 from nomad_simulations.schema_packages.force_field import (
+    Potential,
     AnglePotential,
     BondPotential,
     CosineAngle,
@@ -64,19 +65,19 @@ def assert_dict_equal(d1, d2):
         if abs(float1) == float('inf'):
             assert 'inf' == float2 if float1 > 0 else '-inf' == float2
         else:
-            assert float1 == approx(float2), (
-                f"Value mismatch for key '{key}': {float1} != {float2}"
-            )
+            assert float1 == approx(
+                float2
+            ), f"Value mismatch for key '{key}': {float1} != {float2}"
 
     def compare_arrays(key, arr1, arr2):
-        assert np.isclose(arr1, arr2).all(), (
-            f"Value mismatch for key '{key}': {arr1} != {arr2}"
-        )
+        assert np.isclose(
+            arr1, arr2
+        ).all(), f"Value mismatch for key '{key}': {arr1} != {arr2}"
 
     def compare_lists(key, l1, l2):
-        assert len(l1) == len(l2), (
-            f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
-        )
+        assert len(l1) == len(
+            l2
+        ), f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
 
         for i, l1_item in enumerate(l1):
             if isinstance(l1_item, dict) and isinstance(l2[i], dict):
@@ -847,11 +848,11 @@ data_tabulated_angle = (
     ],
 )
 def test_potentials(
-    potential_class: Potential,
+    potential_class: type[Potential],
     n_interactions: int,
     n_particles: int,
-    particle_labels: list[tuple[str, str]],
-    particle_indices: list[tuple[int, int]],
+    particle_labels: list[tuple[str, ...]],
+    particle_indices: list[tuple[int, ...]],
     parameters: dict[str, Any],
     results: dict[str, Any],
 ):
