@@ -13,23 +13,23 @@ from nomad_simulations.schema_packages.force_field import (
     FeneBond,
     ForceField,
     HarmonicAngle,
+    HarmonicAngleDihedralCoupling,
     HarmonicBond,
+    HarmonicImproper,
+    LinearBondAngleCoupling,
     MorseBond,
     ParameterEntry,
+    PeriodicDihedral,
+    PeriodicImproper,
     PolynomialAngle,
     PolynomialBond,
     PolynomialForceConstant,
     Potential,
     RestrictedCosineAngle,
+    RyckaertBellemansDihedral,
     TabulatedAngle,
     TabulatedBond,
     UreyBradleyAngle,
-    LinearBondAngleCoupling,
-    HarmonicAngleDihedralCoupling,
-    HarmonicImproper,
-    PeriodicImproper,
-    PeriodicDihedral,
-    RyckaertBellemansDihedral,
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.numerical_settings import ForceCalculations
@@ -70,19 +70,19 @@ def assert_dict_equal(d1, d2):
         if abs(float1) == float('inf'):
             assert 'inf' == float2 if float1 > 0 else '-inf' == float2
         else:
-            assert float1 == approx(
-                float2
-            ), f"Value mismatch for key '{key}': {float1} != {float2}"
+            assert float1 == approx(float2), (
+                f"Value mismatch for key '{key}': {float1} != {float2}"
+            )
 
     def compare_arrays(key, arr1, arr2):
-        assert np.isclose(
-            arr1, arr2
-        ).all(), f"Value mismatch for key '{key}': {arr1} != {arr2}"
+        assert np.isclose(arr1, arr2).all(), (
+            f"Value mismatch for key '{key}': {arr1} != {arr2}"
+        )
 
     def compare_lists(key, l1, l2):
-        assert len(l1) == len(
-            l2
-        ), f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
+        assert len(l1) == len(l2), (
+            f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
+        )
 
         for i, l1_item in enumerate(l1):
             if isinstance(l1_item, dict) and isinstance(l2[i], dict):
