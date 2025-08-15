@@ -7,6 +7,7 @@ from nomad.units import ureg
 
 # from nomad_simulations.schema_packages.method import ModelMethod
 from nomad_simulations.schema_packages.force_field import (
+    Potential,
     AnglePotential,
     BondPotential,
     CosineAngle,
@@ -36,6 +37,9 @@ from . import logger
 
 MOL = 6.022140857e23
 
+particle_labels: list[tuple[str, ...]]
+particle_indices: list[tuple[int, ...]]
+
 
 def approx(value, abs=0, rel=1e-6):
     return pytest.approx(value, abs=abs, rel=rel)
@@ -64,19 +68,19 @@ def assert_dict_equal(d1, d2):
         if abs(float1) == float('inf'):
             assert 'inf' == float2 if float1 > 0 else '-inf' == float2
         else:
-            assert float1 == approx(float2), (
-                f"Value mismatch for key '{key}': {float1} != {float2}"
-            )
+            assert float1 == approx(
+                float2
+            ), f"Value mismatch for key '{key}': {float1} != {float2}"
 
     def compare_arrays(key, arr1, arr2):
-        assert np.isclose(arr1, arr2).all(), (
-            f"Value mismatch for key '{key}': {arr1} != {arr2}"
-        )
+        assert np.isclose(
+            arr1, arr2
+        ).all(), f"Value mismatch for key '{key}': {arr1} != {arr2}"
 
     def compare_lists(key, l1, l2):
-        assert len(l1) == len(l2), (
-            f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
-        )
+        assert len(l1) == len(
+            l2
+        ), f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
 
         for i, l1_item in enumerate(l1):
             if isinstance(l1_item, dict) and isinstance(l2[i], dict):
@@ -406,51 +410,55 @@ data_tabulated_bond = (
     particle_labels,
     particle_indices,
     {
-        'bins': [
-            0.076,
-            0.0797,
-            0.0834,
-            0.0871,
-            0.0907,
-            0.0944,
-            0.0981,
-            0.1018,
-            0.1055,
-            0.1092,
-            0.1128,
-            0.1165,
-            0.1202,
-            0.1239,
-            0.1276,
-            0.1313,
-            0.1349,
-            0.1386,
-            0.1423,
-            0.146,
-        ]
+        'bins': np.array(
+            [
+                0.076,
+                0.0797,
+                0.0834,
+                0.0871,
+                0.0907,
+                0.0944,
+                0.0981,
+                0.1018,
+                0.1055,
+                0.1092,
+                0.1128,
+                0.1165,
+                0.1202,
+                0.1239,
+                0.1276,
+                0.1313,
+                0.1349,
+                0.1386,
+                0.1423,
+                0.146,
+            ]
+        )
         * ureg.nanometer,
-        'energies': [  # ! pass in energies and test the auto-generation of forces
-            0.7968,
-            0.5307,
-            0.3183,
-            0.1598,
-            0.0553,
-            0.005,
-            0.0089,
-            0.0671,
-            0.1798,
-            0.3472,
-            0.5692,
-            0.8461,
-            1.178,
-            1.5649,
-            2.0071,
-            2.5045,
-            3.0574,
-            3.6659,
-            4.33,
-            5.05,
-        ]
+        'energies': np.array(
+            [  # ! pass in energies and test the auto-generation of forces
+                0.7968,
+                0.5307,
+                0.3183,
+                0.1598,
+                0.0553,
+                0.005,
+                0.0089,
+                0.0671,
+                0.1798,
+                0.3472,
+                0.5692,
+                0.8461,
+                1.178,
+                1.5649,
+                2.0071,
+                2.5045,
+                3.0574,
+                3.6659,
+                4.33,
+                5.05,
+            ]
+        )
         * ureg.kJ
         / MOL,
     },
@@ -774,51 +782,55 @@ data_tabulated_angle = (
     particle_labels,
     particle_indices,
     {
-        'bins': [
-            1.623,
-            1.64405263,
-            1.66510526,
-            1.68615789,
-            1.70721053,
-            1.72826316,
-            1.74931579,
-            1.77036842,
-            1.79142105,
-            1.81247368,
-            1.83352632,
-            1.85457895,
-            1.87563158,
-            1.89668421,
-            1.91773684,
-            1.93878947,
-            1.95984211,
-            1.98089474,
-            2.00194737,
-            2.023,
-        ]
+        'bins': np.array(
+            [
+                1.623,
+                1.64405263,
+                1.66510526,
+                1.68615789,
+                1.70721053,
+                1.72826316,
+                1.74931579,
+                1.77036842,
+                1.79142105,
+                1.81247368,
+                1.83352632,
+                1.85457895,
+                1.87563158,
+                1.89668421,
+                1.91773684,
+                1.93878947,
+                1.95984211,
+                1.98089474,
+                2.00194737,
+                2.023,
+            ]
+        )
         * ureg.radian,
-        'forces': [  # ! This time input the forces and test the auto-generation of energies
-            15.0,
-            13.42105263,
-            11.84210526,
-            10.26315789,
-            8.68421053,
-            7.10526316,
-            5.52631579,
-            3.94736842,
-            2.36842105,
-            0.78947368,
-            -0.78947368,
-            -2.36842105,
-            -3.94736842,
-            -5.52631579,
-            -7.10526316,
-            -8.68421053,
-            -10.26315789,
-            -11.84210526,
-            -13.42105263,
-            -15.0,
-        ]
+        'forces': np.array(
+            [  # ! This time input the forces and test the auto-generation of energies
+                15.0,
+                13.42105263,
+                11.84210526,
+                10.26315789,
+                8.68421053,
+                7.10526316,
+                5.52631579,
+                3.94736842,
+                2.36842105,
+                0.78947368,
+                -0.78947368,
+                -2.36842105,
+                -3.94736842,
+                -5.52631579,
+                -7.10526316,
+                -8.68421053,
+                -10.26315789,
+                -11.84210526,
+                -13.42105263,
+                -15.0,
+            ]
+        )
         * ureg.kJ
         / MOL
         / ureg.radian,
