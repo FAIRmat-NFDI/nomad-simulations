@@ -233,6 +233,15 @@ class TabulatedPotential(Potential):
             smoothing_factor = len(self.bins) - np.sqrt(2 * len(self.bins))
             tol = 1e-2
             if self.forces is None and self.energies is not None:
+                if not isinstance(self.bins, ureg.Quantity) or not isinstance(
+                    self.energies, ureg.Quantity
+                ):
+                    self.logger.warning(
+                        'Unable to derive tabulated forces from energies, '
+                        'bins or energies do not have units.'
+                    )
+                    return
+
                 try:
                     # generate forces from energies numerically using spline
                     self.forces = (
@@ -240,7 +249,9 @@ class TabulatedPotential(Potential):
                             self.bins.magnitude,
                             self.energies.magnitude,
                             smoothing_factor=smoothing_factor,
-                        )  # ? How do I deal with units here?
+                        )
+                        * self.energies.units
+                        / self.bins.units
                     )
                     # re-derive energies to check consistency of the forces
                     energies = (
@@ -249,7 +260,7 @@ class TabulatedPotential(Potential):
                             self.forces.magnitude,
                             smoothing_factor=smoothing_factor,
                         )
-                        * ureg.J
+                        * self.energies.units
                     )
 
                     energies_diff = energies.to('kJ').magnitude * MOL - (
@@ -274,6 +285,14 @@ class TabulatedPotential(Potential):
                     )
 
             if self.forces is not None and self.energies is None:
+                if not isinstance(self.bins, ureg.Quantity) or not isinstance(
+                    self.forces, ureg.Quantity
+                ):
+                    self.logger.warning(
+                        'Unable to derive tabulated energies from forces, '
+                        'bins or forces do not have units.'
+                    )
+                    return
                 try:
                     # generated energies from forces numerically using spline
                     self.energies = self.compute_energies(
@@ -288,8 +307,7 @@ class TabulatedPotential(Potential):
                             self.energies.magnitude,
                             smoothing_factor=smoothing_factor,
                         )
-                        * ureg.J
-                        / self.bins.units
+                        * self.forces.units
                     )
 
                     forces_diff = forces.to(f'kJ/{self.bins.units}').magnitude * MOL - (
@@ -1190,3 +1208,5 @@ class ForceField(ModelMethod):
 
 
 # TODO Need to survey Lammps and maybe openmm and check for other common potential types
+# TODO prevent the base classes from being used directly as they won't pass norm
+# without units
