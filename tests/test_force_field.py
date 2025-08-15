@@ -24,6 +24,12 @@ from nomad_simulations.schema_packages.force_field import (
     TabulatedAngle,
     TabulatedBond,
     UreyBradleyAngle,
+    LinearBondAngleCoupling,
+    HarmonicAngleDihedralCoupling,
+    HarmonicImproper,
+    PeriodicImproper,
+    PeriodicDihedral,
+    RyckaertBellemansDihedral,
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.numerical_settings import ForceCalculations
@@ -64,19 +70,19 @@ def assert_dict_equal(d1, d2):
         if abs(float1) == float('inf'):
             assert 'inf' == float2 if float1 > 0 else '-inf' == float2
         else:
-            assert float1 == approx(float2), (
-                f"Value mismatch for key '{key}': {float1} != {float2}"
-            )
+            assert float1 == approx(
+                float2
+            ), f"Value mismatch for key '{key}': {float1} != {float2}"
 
     def compare_arrays(key, arr1, arr2):
-        assert np.isclose(arr1, arr2).all(), (
-            f"Value mismatch for key '{key}': {arr1} != {arr2}"
-        )
+        assert np.isclose(
+            arr1, arr2
+        ).all(), f"Value mismatch for key '{key}': {arr1} != {arr2}"
 
     def compare_lists(key, l1, l2):
-        assert len(l1) == len(l2), (
-            f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
-        )
+        assert len(l1) == len(
+            l2
+        ), f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
 
         for i, l1_item in enumerate(l1):
             if isinstance(l1_item, dict) and isinstance(l2[i], dict):
@@ -809,6 +815,174 @@ data_tabulated_angle = (
     results_tabulated_angle,
 )
 
+# LinearBondAngleCoupling
+results_linear_bond_angle_coupling = {
+    'n_interactions': 1,
+    'n_particles': 3,
+    'particle_indices': [[0, 1, 2]],
+    'particle_labels': [['O', 'H', 'H']],
+    'equilibrium_bond_length': 1e-10,
+    'equilibrium_angle': 1.7453292519943295,
+    'force_constant': 3.1225564600229705e-07,
+    'name': 'LinearBondAngleCoupling',
+    'type': 'bond-angle',
+    'functional_form': 'linear',
+}
+data_linear_bond_angle_coupling = (
+    LinearBondAngleCoupling,
+    1,
+    3,
+    [('O', 'H', 'H')],
+    [(0, 1, 2)],
+    {
+        'equilibrium_bond_length': 1.0 * ureg.angstrom,
+        'equilibrium_angle': 100 * ureg.degree,
+        'force_constant': 328.2 * ureg.kJ / MOL / (ureg.angstrom * ureg.degree),
+    },
+    results_linear_bond_angle_coupling,
+)
+
+# HarmonicAngleDihedralCoupling
+results_angle_dihedral_coupling = {
+    'n_interactions': 1,
+    'n_particles': 4,
+    'particle_indices': [[0, 1, 2, 3]],
+    'particle_labels': [['C', 'C', 'C', 'C']],
+    'equilibrium_angle': 1.5707963267948966,
+    'equilibrium_dihedral': 3.141592653589793,
+    'force_constant_angle': 2.1804912425426808e-15,
+    'force_constant_dihedral': 4.142933360831094e-15,
+    'coupling_constant': 3.4778835318555754e-15,
+    'name': 'HarmonicAngleDihedralCoupling',
+    'type': 'angle-dihedral',
+    'functional_form': 'angle_dihedral_coupled',
+}
+data_angle_dihedral_coupling = (
+    HarmonicAngleDihedralCoupling,
+    1,
+    4,
+    [('C', 'C', 'C', 'C')],
+    [(0, 1, 2, 3)],
+    {
+        'equilibrium_angle': 90 * ureg.degree,
+        'equilibrium_dihedral': 180 * ureg.degree,
+        'force_constant_angle': 400.0 * ureg.kJ / MOL / ureg.degree**2,
+        'force_constant_dihedral': 760.0 * ureg.kJ / MOL / ureg.degree**2,
+        'coupling_constant': 638.0 * ureg.kJ / MOL / ureg.degree**2,
+    },
+    results_angle_dihedral_coupling,
+)
+
+# HarmonicImproper
+results_harmonic_improper = {
+    'n_interactions': 1,
+    'n_particles': 4,
+    'particle_indices': [[0, 1, 2, 3]],
+    'particle_labels': [['H', 'N', 'H', 'H']],
+    'equilibrium_value': 0.0,
+    'force_constant': 1.6605390404271642e-22,
+    'name': 'HarmonicImproper',
+    'type': 'improper dihedral',
+    'functional_form': 'harmonic',
+}
+data_harmonic_improper = (
+    HarmonicImproper,
+    1,
+    4,
+    [('H', 'N', 'H', 'H')],
+    [(0, 1, 2, 3)],
+    {
+        'equilibrium_value': 0.0 * ureg.radian,
+        'force_constant': 0.1 * ureg.kJ / MOL / ureg.radian**2,
+    },
+    results_harmonic_improper,
+)
+
+
+# Test case: PeriodicImproper
+results_periodic_improper = {
+    'n_interactions': 1,
+    'n_particles': 4,
+    'particle_indices': [[0, 1, 2, 3]],
+    'particle_labels': [['N', 'H', 'H', 'H']],
+    'multiplicity': 2,
+    'phase_shift': 0.0,
+    'force_constant': 1.6605390404271642e-20,
+    'name': 'PeriodicImproper',
+    'type': 'improper dihedral',
+    'functional_form': 'periodic',
+}
+data_periodic_improper = (
+    PeriodicImproper,
+    1,
+    4,
+    [['N', 'H', 'H', 'H']],
+    [[0, 1, 2, 3]],
+    {
+        'multiplicity': 2,
+        'phase_shift': 0.0 * ureg.radian,
+        'force_constant': 10.0 * ureg.kJ / MOL,
+    },
+    results_periodic_improper,
+)
+
+# Test case: PeriodicDihedral
+results_periodic_dihedral = {
+    'n_interactions': 1,
+    'n_particles': 4,
+    'particle_indices': [[0, 1, 2, 3]],
+    'particle_labels': [['C', 'C', 'C', 'C']],
+    'multiplicity': 3,
+    'phase_shift': 0.0,
+    'force_constant': 8.302695202135821e-21,
+    'name': 'PeriodicDihedral',
+    'type': 'dihedral',
+    'functional_form': 'periodic',
+}
+data_periodic_dihedral = (
+    PeriodicDihedral,
+    1,
+    4,
+    [['C', 'C', 'C', 'C']],
+    [[0, 1, 2, 3]],
+    {
+        'multiplicity': 3,
+        'phase_shift': 0.0 * ureg.radian,
+        'force_constant': 5.0 * ureg.kJ / MOL,
+    },
+    results_periodic_dihedral,
+)
+
+# Test case: RyckaertBellemansDihedral
+results_rb_dihedral = {
+    'n_interactions': 1,
+    'n_particles': 4,
+    'particle_indices': [[0, 1, 2, 3]],
+    'particle_labels': [['C', 'C', 'C', 'C']],
+    'coefficients': [
+        1.6605390404271642e-22,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+    ],
+    'name': 'RyckaertBellemansDihedral',
+    'type': 'dihedral',
+    'functional_form': 'ryckaert_bellemans',
+}
+data_rb_dihedral = (
+    RyckaertBellemansDihedral,
+    1,
+    4,
+    [['C', 'C', 'C', 'C']],
+    [[0, 1, 2, 3]],
+    {
+        'coefficients': np.array([0.1, 0, 0, 0, 0, 0]) * ureg.kJ / MOL,
+    },
+    results_rb_dihedral,
+)
+
 
 @pytest.mark.parametrize(
     'potential_class, n_interactions, n_particles, particle_labels, particle_indices, parameters, results',
@@ -826,6 +1000,12 @@ data_tabulated_angle = (
         data_ureybradley_angle,
         data_polynomial_angle,
         data_tabulated_angle,
+        data_linear_bond_angle_coupling,
+        data_angle_dihedral_coupling,
+        data_harmonic_improper,
+        data_periodic_improper,
+        data_periodic_dihedral,
+        data_rb_dihedral,
     ],
 )
 def test_potentials(
@@ -862,9 +1042,6 @@ def test_potentials(
     potential_dict = {  # ! The dev is required to add new results to the dictionary, this will not be caught by the test!
         key: value for key, value in potential_dict.items() if key in results
     }
-    # print(potential_dict)
-    # print(results)
-    # assert 1 == 2
     assert_dict_equal(potential_dict, results)
 
     # TODO - Fix this module and add additional tests for each potential type
