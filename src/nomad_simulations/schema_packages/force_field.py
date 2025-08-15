@@ -588,7 +588,7 @@ class AnglePotential(Potential):
 
     equilibrium_value = Quantity(
         type=np.float64,
-        unit='degree',
+        unit='radian',
         shape=[],
         description="""
         Specifies the equilibrium angle.
@@ -598,7 +598,7 @@ class AnglePotential(Potential):
     force_constant = Quantity(
         type=np.float64,
         shape=[],
-        unit='J / degree**2',
+        unit='J / radian**2',
         description="""
         Specifies the force constant of the angle potential.
         """,
@@ -631,7 +631,7 @@ class LinearAngle(AnglePotential):
     force_constant = Quantity(
         type=np.float64,
         shape=[],
-        unit='J / degree',
+        unit='J / radian',
         description="""
         Specifies the force constant of the angle potential.
         """,
@@ -774,7 +774,7 @@ class TabulatedAngle(AnglePotential, TabulatedPotential):
 
     bins = Quantity(
         type=np.float64,
-        unit='degree',
+        unit='radian',
         shape=['*'],
         description="""
         List of bin angles.
@@ -783,7 +783,7 @@ class TabulatedAngle(AnglePotential, TabulatedPotential):
 
     forces = Quantity(
         type=np.float64,
-        unit='J/degree',
+        unit='J/radian',
         shape=['*'],
         description="""
         List of force values associated with each bin.
@@ -814,7 +814,7 @@ class BondAngleCouplingPotential(Potential):
 
     equilibrium_angle = Quantity(
         type=np.float64,
-        unit='degree',
+        unit='radian',
         shape=[],
         description="""
         Equilibrium angle $\theta_0$.
@@ -823,7 +823,7 @@ class BondAngleCouplingPotential(Potential):
 
     force_constant = Quantity(
         type=np.float64,
-        unit='J / (m * degree)',
+        unit='J / (m * radian)',
         shape=[],
         description="""
         Force constant coupling bond length and angle.
@@ -876,7 +876,7 @@ class DihedralPotential(Potential):
 
     equilibrium_value = Quantity(
         type=np.float64,
-        unit='degree',
+        unit='radian',
         shape=[],
         description="""
         Specifies the equilibrium dihedral angle.
@@ -886,7 +886,7 @@ class DihedralPotential(Potential):
     force_constant = Quantity(
         type=np.float64,
         shape=[],
-        unit='J / degree**2',
+        unit='J / radian**2',
         description="""
         Specifies the force constant of the dihedral angle potential.
         """,
@@ -926,7 +926,7 @@ class PeriodicDihedral(DihedralPotential):
 
     phase_shift = Quantity(
         type=np.float64,
-        unit='degree',
+        unit='radian',
         shape=[],
         description="""
         Phase shift $\delta$.
@@ -981,7 +981,7 @@ class TabulatedDihedral(DihedralPotential, TabulatedPotential):
 
     bins = Quantity(
         type=np.float64,
-        unit='degree',
+        unit='radian',
         shape=['*'],
         description="""
         List of bin dihedral angles.
@@ -990,7 +990,7 @@ class TabulatedDihedral(DihedralPotential, TabulatedPotential):
 
     forces = Quantity(
         type=np.float64,
-        unit='J/degree',
+        unit='J/radian',
         shape=['*'],
         description="""
         List of force values associated with each bin.
@@ -1010,11 +1010,11 @@ class AngleDihedralCouplingPotential(Potential):
     Suggested types are: linear
     """
 
-    equilibrium_angle = Quantity(type=np.float64, unit='degree', shape=[])
-    equilibrium_dihedral = Quantity(type=np.float64, unit='degree', shape=[])
-    force_constant_angle = Quantity(type=np.float64, unit='J/degree**2', shape=[])
-    force_constant_dihedral = Quantity(type=np.float64, unit='J/degree**2', shape=[])
-    coupling_constant = Quantity(type=np.float64, unit='J/degree**2', shape=[])
+    equilibrium_angle = Quantity(type=np.float64, unit='radian', shape=[])
+    equilibrium_dihedral = Quantity(type=np.float64, unit='radian', shape=[])
+    force_constant_angle = Quantity(type=np.float64, unit='J/radian**2', shape=[])
+    force_constant_dihedral = Quantity(type=np.float64, unit='J/radian**2', shape=[])
+    coupling_constant = Quantity(type=np.float64, unit='J/radian**2', shape=[])
 
     def normalize(self, archive, logger) -> None:
         super().normalize(archive, logger)
@@ -1076,7 +1076,7 @@ class HarmonicImproper(ImproperDihedralPotential):
 
     equilibrium_value = Quantity(
         type=np.float64,
-        unit='degree',
+        unit='radian',
         shape=[],
         description="""
         Equilibrium improper angle $\omega_0$.
@@ -1085,7 +1085,7 @@ class HarmonicImproper(ImproperDihedralPotential):
 
     force_constant = Quantity(
         type=np.float64,
-        unit='J / degree**2',
+        unit='J / radian**2',
         shape=[],
         description="""
         Force constant $k$.
@@ -1116,7 +1116,7 @@ class PeriodicImproper(ImproperDihedralPotential):
 
     phase_shift = Quantity(
         type=np.float64,
-        unit='degree',
+        unit='radian',
         shape=[],
         description="""
         Phase shift $\delta$.
