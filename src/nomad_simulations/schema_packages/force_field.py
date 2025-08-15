@@ -82,7 +82,7 @@ class Potential(BaseModelMethod):
             'angle',
             'bond-angle',
             'dihedral',
-            'angle-dihedralimproper dihedral',
+            'angle-dihedral,' 'improper dihedral',
             'nonbonded',
         ),
         shape=[],
@@ -143,7 +143,7 @@ class Potential(BaseModelMethod):
                 else None
             )
         if not self.n_particles:
-            self.n_interactions = (
+            self.n_particles = (
                 len(self.particle_indices[0])
                 if self.particle_indices is not None
                 else None
@@ -185,7 +185,7 @@ class TabulatedPotential(Potential):
 
     forces = Quantity(
         type=np.float64,
-        shape=[],
+        shape=['*'],
         description="""
         List of force values associated with each bin.
         """,
@@ -582,7 +582,7 @@ class AnglePotential(Potential):
     """
     Section containing information about angle potentials.
 
-    Suggested types are: harmonic, cosine, restricted_cosinse, fourier_series, urey_bradley, polynomial, tabulated
+    Suggested types are: harmonic, cosine, restricted_cosine, fourier_series, urey_bradley, polynomial, tabulated
     """
 
     equilibrium_value = Quantity(
@@ -702,43 +702,10 @@ class RestrictedCosineAngle(AnglePotential):
             logger.warning('Incorrect functional form set for RestrictedCosineAngle.')
 
 
-# TODO I think this was intended for the dihedral, like RB function, could generalize or just sepecify as dihedral potential
-# TODO Similar to UB pot, just say AKA RB function
-class FourierSeriesAngle(AnglePotential):
-    r"""
-    Section containing information about a Fourier Series angle potential:
-    $V(\theta) = k_1 \left[ 1 + \cos(\theta - \theta_0) \right] +
-    k_2 \left[ 1 + \cos(2(\theta - \theta_0)) \right] + \dots + C$,
-    where $\{k_1, k_2, \dots}$ are the `fourier_force_constants` for each term in the series
-    and $\theta_0$ is the `equilibrium_value` of the angle $\theta$.
-    $C$ is an arbitrary constant (not stored).
-    """
-
-    fourier_force_constants = Quantity(
-        type=np.float64,
-        shape=['*'],
-        unit='J / degree**2',
-        description="""
-        Specifies the force constants for each term in the fourier series representation
-        of the angle potential. The force constants of any "missing" terms must be
-        explicitly set to zero.
-        """,
-    )
-
-    def normalize(self, archive, logger) -> None:
-        super().normalize(archive, logger)
-
-        self.name = 'FourierSeriesAngle'
-        if not self.functional_form:
-            self.functional_form = 'fourier_series'
-        elif self.functional_form != 'fourier_series':
-            logger.warning('Incorrect functional form set for FourierSeriesAngle.')
-
-
 # TODO I think we should name these more generally and then say that AKA
 class UreyBradleyAngle(AnglePotential):
     r"""
-    Section containing information about a Urey-Bradly angle potential:
+    Section containing information about a Urey-Bradley angle potential:
     $V(\theta) = \frac{1}{2} k_\theta (\theta - \theta_0)^2 +
     \frac{1}{2} k_{13} (r_{13} - r_{13}^0)^2 + C$,
     where where $k_\theta$ is the `force_constant` and $\theta_0$ is the `equilibrium_value` of

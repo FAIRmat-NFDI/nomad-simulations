@@ -13,7 +13,6 @@ from nomad_simulations.schema_packages.force_field import (
     CubicBond,
     FeneBond,
     ForceField,
-    FourierSeriesAngle,
     HarmonicAngle,
     HarmonicBond,
     MorseBond,
@@ -67,19 +66,19 @@ def assert_dict_equal(d1, d2):
         if abs(float1) == float('inf'):
             assert 'inf' == float2 if float1 > 0 else '-inf' == float2
         else:
-            assert float1 == approx(float2), (
-                f"Value mismatch for key '{key}': {float1} != {float2}"
-            )
+            assert float1 == approx(
+                float2
+            ), f"Value mismatch for key '{key}': {float1} != {float2}"
 
     def compare_arrays(key, arr1, arr2):
-        assert np.isclose(arr1, arr2).all(), (
-            f"Value mismatch for key '{key}': {arr1} != {arr2}"
-        )
+        assert np.isclose(
+            arr1, arr2
+        ).all(), f"Value mismatch for key '{key}': {arr1} != {arr2}"
 
     def compare_lists(key, l1, l2):
-        assert len(l1) == len(l2), (
-            f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
-        )
+        assert len(l1) == len(
+            l2
+        ), f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
 
         for i, l1_item in enumerate(l1):
             if isinstance(l1_item, dict) and isinstance(l2[i], dict):
@@ -581,34 +580,6 @@ data_restrictedcosine_angle = (
     results_restrictedcosine_angle,
 )
 
-# fourier_series
-results_fourier_angle = {
-    'n_interactions': 2,
-    'n_particles': 3,
-    'particle_indices': [[0, 1, 2], [3, 4, 5]],
-    'particle_labels': [['O', 'H', 'H'], ['O', 'H', 'H']],
-    'equilibrium_value': 104.45020605234907,
-    'fourier_force_constants': [5.0582911795001975e-23, 0.0, 1.2645727948750494e-23],
-    'name': 'FourierSeriesAngle',
-    'type': 'angle',
-    'functional_form': 'fourier_series',
-}
-data_fourier_angle = (
-    FourierSeriesAngle,
-    n_interactions,
-    n_particles,
-    particle_labels,
-    particle_indices,
-    {
-        'equilibrium_value': 1.823 * ureg.radian,
-        'fourier_force_constants': np.array([100, 0, 25])
-        * ureg.kJ
-        / MOL
-        / ureg.radian**2,
-    },
-    results_fourier_angle,
-)
-
 # urey_bradley
 results_ureybradley_angle = {
     'n_interactions': 2,
@@ -854,7 +825,6 @@ data_tabulated_angle = (
         data_harmonic_angle,
         data_cosine_angle,
         data_restrictedcosine_angle,
-        data_fourier_angle,
         data_ureybradley_angle,
         data_polynomial_angle,
         data_tabulated_angle,
