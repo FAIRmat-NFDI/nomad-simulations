@@ -82,7 +82,7 @@ class Potential(BaseModelMethod):
             'angle',
             'bond-angle',
             'dihedral',
-            'angle-dihedral,' 'improper dihedral',
+            'angle-dihedral,improper dihedral',
             'nonbonded',
         ),
         shape=[],
