@@ -236,7 +236,7 @@ class TabulatedPotential(Potential):
                 if not isinstance(self.bins, ureg.Quantity) or not isinstance(
                     self.energies, ureg.Quantity
                 ):
-                    self.logger.warning(
+                    logger.warning(
                         'Unable to derive tabulated forces from energies, '
                         'bins or energies do not have units.'
                     )
@@ -288,7 +288,7 @@ class TabulatedPotential(Potential):
                 if not isinstance(self.bins, ureg.Quantity) or not isinstance(
                     self.forces, ureg.Quantity
                 ):
-                    self.logger.warning(
+                    logger.warning(
                         'Unable to derive tabulated energies from forces, '
                         'bins or forces do not have units.'
                     )
