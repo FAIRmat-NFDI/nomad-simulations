@@ -7,6 +7,8 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
+from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Reference
+
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
@@ -34,7 +36,6 @@ from nomad_simulations.schema_packages.properties import (
     TotalForce,
     XASSpectrum,
 )
-from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Reference
 
 from .common import Time
 
