@@ -1,4 +1,5 @@
 import functools
+import inspect
 from math import factorial
 from typing import TYPE_CHECKING, Any
 
@@ -12,9 +13,52 @@ if TYPE_CHECKING:
     from nomad.datamodel.data import ArchiveSection
     from structlog.stdlib import BoundLogger
 
-configuration = config.get_plugin_entry_point(
-    'nomad_simulations.schema_packages:nomad_simulations_plugin'
-)
+
+def log(
+    function: 'Callable' = None,
+    logger: 'BoundLogger' = get_logger(__name__),
+    exc_msg: str = None,
+    exc_raise: bool = False,
+    default: Any = None,
+):
+    """
+    Function decorator to log exceptions.
+
+    Args:
+        function (Callable): function to evaluate
+        logger (Logger, optional): logger to attach exceptions
+        exc_msg (str, optional): prefix to exception
+        exc_raise (bool, optional): if True will raise error
+        default (Any, optional): return value of function if error
+    """
+
+    def _log(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            _logger = kwargs.get('logger', logger)
+            _exc_msg = kwargs.get(
+                'exc_msg', exc_msg or f'Exception raised in {func.__name__}:'
+            )
+            _exc_raise = kwargs.get('exc_raise', exc_raise)
+            func.__annotations__['logger'] = _logger
+            try:
+                return func(
+                    *args,
+                    **{
+                        key: val
+                        for key, val in kwargs.items()
+                        if key in inspect.signature(func).parameters
+                    },
+                )
+            except Exception as e:
+                _logger.warning(f'{_exc_msg} {e}')
+                if _exc_raise:
+                    raise e
+                return kwargs.get('default', default)
+
+        return wrapper
+
+    return _log(function) if function else _log
 
 
 def get_sibling_section(
@@ -149,43 +193,3 @@ def catch_not_implemented(func: 'Callable') -> 'Callable':
             return False
 
     return wrapper
-
-
-def log(
-    function: Callable = None,
-    logger: 'BoundLogger' = get_logger(__name__),
-    exc_msg: str = None,
-    exc_raise: bool = False,
-    default: Any = None,
-):
-    """
-    Function decorator to log exceptions.
-
-    Args:
-        function (Callable): function to evaluate
-        logger (Logger, optional): logger to attach exceptions
-        exc_msg (str, optional): prefix to exception
-        exc_raise (bool, optional): if True will raise error
-        default (Any, optional): return value of function if error
-    """
-
-    def _log(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            _logger = kwargs.get('logger', logger)
-            _exc_msg = kwargs.get(
-                'exc_msg', exc_msg or f'Exception raised in {func.__name__}:'
-            )
-            _exc_raise = kwargs.get('exc_raise', exc_raise)
-
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                _logger.warning(f'{_exc_msg} {e}')
-                if _exc_raise:
-                    raise e
-                return kwargs.get('default', default)
-
-        return wrapper
-
-    return _log(function) if function else _log

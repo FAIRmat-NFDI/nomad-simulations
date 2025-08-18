@@ -41,6 +41,8 @@ from nomad.datamodel.metainfo.basesections.v2 import Entity, System
 from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
+from nomad_simulations.schema_packages.utils import log
+
 if TYPE_CHECKING:
     from collections.abc import Generator
     from typing import Any, Callable, Optional
@@ -1107,7 +1109,8 @@ class ModelSystem(System):
         logger.error('Invalid or missing chemical symbols.')
         return False
 
-    def to_ase_atoms(self, logger: 'BoundLogger') -> 'Optional[ase.Atoms]':
+    @log
+    def to_ase_atoms(self) -> 'Optional[ase.Atoms]':
         """
         Generates an ASE Atoms object from ModelSystem data.
         Uses:
@@ -1115,6 +1118,7 @@ class ModelSystem(System):
           - positions from the top-level positions quantity,
           - periodic boundary conditions and lattice vectors from the first cell.
         """
+        logger = self.to_ase_atoms.__annotations__['logger']
         symbols = self.get_symbols(logger)
         if not symbols:
             logger.error('Cannot generate ASE Atoms without chemical symbols.')
