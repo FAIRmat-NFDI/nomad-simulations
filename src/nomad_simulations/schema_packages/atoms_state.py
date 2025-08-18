@@ -16,8 +16,18 @@ from nomad_simulations.schema_packages.data_types import positive_float, positiv
 
 
 class BaseSpinOrbitalState(Entity):
-    """Base class for all quantum states with j quantum numbers,
-    including support for special relativistic effects."""
+    @property
+    def _name(self) -> str:
+        raise NotImplementedError("Subclasses must implement this method.")
+
+    @property
+    def _degeneracy(self) -> int:
+        raise NotImplementedError("Subclasses must implement this method.")
+
+
+class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also split this section into 3 mutually inheriting sections
+    """Describes a quantum state under spherical symmetry.
+    Supports SOC and relativistic effects."""
 
     # TODO: define when these quantities are populated and `None` semantics
 
@@ -35,6 +45,13 @@ class BaseSpinOrbitalState(Entity):
         """,
     )
 
+    l_quantum_number = Quantity(
+        type=positive_int,
+        description="""
+        Angular quantum number of the orbital state. Must be >= 0.
+        """,
+    )
+
     mj_quantum_number = Quantity(
         type=np.float64,
         shape=['*'],
@@ -43,6 +60,29 @@ class BaseSpinOrbitalState(Entity):
         non-collinear spin systems.
         """,
     )
+
+    ml_quantum_number = Quantity(
+        type=np.int32,
+        description="""
+        Azimuthal projection number of the `l` vector.
+        """,
+    )
+
+    s_quantum_number = Quantity(
+        type=np.float64,
+        default=0.5,
+        description="""
+        Total spin quantum number $s = 0, 1/2, 1, ...$.
+        """
+    )
+
+    ms_quantum_number = Quantity(
+        type=np.float64,
+        default=0.5,
+        description="""
+        Azimuthal projection of the $s$ vector.
+        """
+    )  # this, `(-, +)`, `(-1/2, +1/2)`, or `(-1, 1)`?
 
     coupling_origin = Quantity(
         type=MEnum('pure_LS', 'pure_jj', 'intermediate', 'relativistic'),
@@ -261,10 +301,6 @@ class BaseSpinOrbitalState(Entity):
         # Remove duplicates and sort
         return sorted(list(set(all_j_combinations)))
 
-    @property
-    def _degeneracy(self) -> int:
-        raise NotImplementedError("Subclasses must implement this method.")
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
         
@@ -275,39 +311,11 @@ class BaseSpinOrbitalState(Entity):
         self.normalize_kappa_j_consistency()
 
 
-class BaseSpinState(BaseSpinOrbitalState):
-    """A base section to define the spin state in a decoupled way from an orbital state.
-    This is used to define the spin state of an atom in a simulation.
-    It can be extended to include any common quantities in the future.
-    """
-
-
-class SimpleSpinState(BaseSpinState):
-    """A simple section to define the spin state of an atom.
-    This is used to define the spin state of an atom in a simulation.
-    """
-
-    ms_quantum_number = Quantity(
-        type=MEnum(-0.5, 0.5),  # this, `(-, +)`, `(-1/2, +1/2)`, or `(-1, 1)`?
-        description="""
-        Spin projection along an arbitrary, system-wide axis.
-        Set to -0.5 for spin down and +0.5 for spin up. In non-collinear spin
-        systems, the projection axis $z$ should also be defined.
-        """,
-    )
-
-    @property
-    def _degeneracy(self) -> int:
-        if self.ms_quantum_number is None:
-            return 2
-        else:
-            return 1
-
-class NonCollinearSpinState(BaseSpinState):
+class NonCollinearSpinState(SphericalSymmetryState):  # ? Move to `ElectronicState`
 
     axis = Quantity(
         type=np.float64,
-        shape=['3', '3'],  # add actual size restrictions
+        shape=['3'],  # add actual size restrictions
         description="""
         The projection axis for non-collinear spin systems.
         Expressed in the axis frame in which `ModelSystem` is defined.
@@ -317,51 +325,7 @@ class NonCollinearSpinState(BaseSpinState):
     # ? particle_index
 
 
-class BaseOrbitalState(Entity):
-    pass
-
-
-class SphericallySymmetricOrbitalState(BaseOrbitalState):
-    """
-    A section to define the parameters of a spherically symmetric orbital state.
-    """
-
-    n_quantum_number = Quantity(
-        type=strictly_positive_int,
-        description="""
-        Principal quantum number of the orbital state. Must be >= 1.
-        """,
-    )
-
-    l_quantum_number = Quantity(
-        type=positive_int,
-        description="""
-        Azimuthal quantum number of the orbital state. Must be >= 0. This quantity is equivalent to `l_quantum_symbol`.
-        """,
-    )
-
-    l_quantum_symbol = Quantity(
-        type=str,
-        description="""
-        Azimuthal quantum symbol of the orbital state, "s", "p", "d", "f", etc. This
-        quantity is equivalent to `l_quantum_number`.
-        """,
-    )
-
-    ml_quantum_number = Quantity(
-        type=np.int32,
-        description="""
-        Azimuthal projection number of the `l` vector. This quantity is equivalent to `ml_quantum_symbol`.
-        """,
-    )
-
-    ml_quantum_symbol = Quantity(
-        type=str,
-        description="""
-        Azimuthal projection symbol of the `l` vector, "x", "y", "z", etc. This quantity is equivalent
-        to `ml_quantum_number`.
-        """,
-    )
+# TODO: add `class CrystalFieldState(BaseSpinOrbitalState)`
 
 
 class ElectronicState(Entity):
@@ -370,14 +334,25 @@ class ElectronicState(Entity):
     Assumes a hierarchical structure, where `sub_states` can be defined.
     """
 
+    name = Quantity(type=str)
+
+    n_quantum_number = Quantity(type=strictly_positive_int)
+
+    point_group = Quantity(
+        type=str,
+        description="Point-group symmetry based on the relevant nuclear environment."
+    )
+
+    symmetry_label = Quantity(
+        type=str,
+        description="Irreducible representation label under the point group: t2g, eg, a1g, etc."
+    )
+
     spin_orbit_state = SubSection(
         section_def=BaseSpinOrbitalState.m_def,
-        repeats=True,
         description="""
-        The spin-orbit state of the electron.
-        Contains all degenerate states at the current level of hierarchy.
-        If the spin state and orbitals are decoupled, it contains alternating pairs
-        of `BaseOrbitalState` and `BaseSpinState` instances.
+        The spin-orbit state of the electronic system described.
+        Acts as a reference for populating the overview quantities and `name`.
         """
     )
 
@@ -552,6 +527,12 @@ class ElectronicState(Entity):
         if self.degeneracy is None:
             self.degeneracy = self.resolve_degeneracy()
 
+        # Extract name
+        if self.name is None:
+            if self.n_quantum_number is not None and self.spin_orbit_state is not None:
+                self.name = f"{self.n_quantum_number}{self.spin_orbit_state._name}"
+            elif self.spin_orbit_state is not None:
+                self.name = f"{self.spin_orbit_state._name}"
 
 class CoreHole(ElectronicState):
     """
@@ -787,7 +768,7 @@ class ParticleState(Entity):
         description="""
         User- or program-package-defined identifier for this particle.
         """,
-    )
+    )  # ? name
 
 
 class AtomsState(ParticleState):
