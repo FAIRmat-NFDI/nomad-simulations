@@ -69,8 +69,8 @@ def test_log(func, logger_kwarg, logger_name):
     handler = logging.StreamHandler(stream)
     handler.setLevel(logging.DEBUG)
     # remove prior handlers
-    for handler in logger.handlers:
-        logger.removeHandler(handler)
+    # for handler in logger.handlers:
+    #     logger.removeHandler(handler)
     logger.addHandler(handler)
 
     if logger_kwarg:
