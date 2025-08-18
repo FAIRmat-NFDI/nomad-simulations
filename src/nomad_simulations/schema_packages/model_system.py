@@ -1487,8 +1487,9 @@ class ModelSystem(System):
         idx = (
             np.asarray(self.particle_indices, dtype=np.int32).ravel()
             if self.particle_indices is not None
-            else []
+            else np.empty(0, dtype=np.int32)
         )
+
         mask = np.isin(root.bond_list, idx).all(axis=1)
         root_bonds = np.asarray(root.bond_list, dtype=np.int32).reshape(-1, 2)
         bond_list = root_bonds[mask]
