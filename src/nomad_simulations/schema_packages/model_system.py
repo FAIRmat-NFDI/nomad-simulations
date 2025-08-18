@@ -20,6 +20,7 @@ import re
 from functools import lru_cache
 from hashlib import sha1
 from typing import TYPE_CHECKING, Optional
+from numpy.typing import NDArray
 
 import ase
 import numpy as np
@@ -1482,6 +1483,7 @@ class ModelSystem(System):
         if root.bond_list is None:
             return empty_return
 
+        idx: NDArray[np.int32]
         idx = (
             np.asarray(self.particle_indices, dtype=np.int32).ravel()
             if self.particle_indices is not None
