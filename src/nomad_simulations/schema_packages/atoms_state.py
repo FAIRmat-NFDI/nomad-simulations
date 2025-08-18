@@ -39,7 +39,7 @@ class BaseSpinOrbitalState(Entity):
         type=np.float64,
         shape=['*'],
         description="""
-        Azimuthal projection of the `j` vector. Necessary with strong L-S coupling or
+        Azimuthal projection of the `j$ vector. Necessary with strong L-S coupling or
         non-collinear spin systems.
         """,
     )
@@ -49,40 +49,230 @@ class BaseSpinOrbitalState(Entity):
         description="How this j value was derived"
     )
 
-    def _russel_saunders(self, l_quantum: float, s_quantum: float):
-        """Compute $j$ (and $m_j$) quantum numbers based on the Russell-Saunders coupling scheme."""
-        self.j_quantum_number = abs(l_quantum + s_quantum)
+    def compute_kappa_from_j_l(self, j: float, l: int) -> int:
+        """
+        Compute κ quantum number from j and l quantum numbers.
+        
+        Args:
+            j: Total angular momentum quantum number
+            l: Orbital angular momentum quantum number
+            
+        Returns:
+            κ = -(j + 1/2) if j = l + 1/2, or κ = +(j + 1/2) if j = l - 1/2
+        """
+        if abs(j - (l + 0.5)) < 1e-10:  # j = l + 1/2
+            return -(int(j + 0.5))
+        elif abs(j - (l - 0.5)) < 1e-10:  # j = l - 1/2  
+            return +(int(j + 0.5))
+        else:
+            raise ValueError(f"Invalid j={j} for l={l}. Must be l±1/2")
+    
+    def compute_j_from_kappa(self, kappa: int) -> float:
+        """
+        Compute j quantum number from κ.
+        
+        Args:
+            kappa: Relativistic quantum number (κ ≠ 0)
+            
+        Returns:
+            j = |κ| - 1/2
+        """
+        if kappa == 0:
+            raise ValueError("κ = 0 is unphysical")
+        return abs(kappa) - 0.5
+    
+    def compute_l_from_kappa(self, kappa: int) -> int:
+        """
+        Compute l quantum number from κ.
+        
+        Args:
+            kappa: Relativistic quantum number
+            
+        Returns:
+            l = |κ| - 1/2 if κ < 0, or l = κ for κ > 0
+        """
+        if kappa == 0:
+            raise ValueError("κ = 0 is unphysical")
+        if kappa < 0:
+            return abs(kappa) - 1  # l = |κ| - 1 for κ < 0
+        else:
+            return kappa  # l = κ for κ > 0
+    
+    def validate_kappa_j_relationship(self, logger: 'BoundLogger') -> bool:
+        """
+        Validate consistency between κ and j quantum numbers using factored computation.
+        
+        Returns:
+            True if consistent or only one is defined, False if inconsistent
+        """
+        if self.kappa_quantum_number is not None and self.j_quantum_number is not None:
+            try:
+                # Use factored computation for validation
+                expected_j = self.compute_j_from_kappa(self.kappa_quantum_number)
+                
+                # Check if any j value matches expected
+                j_values = self.j_quantum_number if isinstance(self.j_quantum_number, list) else [self.j_quantum_number]
+                if not any(abs(j - expected_j) < 1e-10 for j in j_values):
+                    logger.error(
+                        f"Inconsistent κ={self.kappa_quantum_number} and j={self.j_quantum_number}. "
+                        f"Expected j={expected_j}"
+                    )
+                    return False
+            except ValueError as e:
+                logger.error(f"Invalid quantum numbers: {e}")
+                return False
+        return True
+    
+    def normalize_kappa_j_consistency(self):
+        """
+        Ensure κ and j are consistent during normalization using factored computation.
+        Populates missing values when possible.
+        """
+        if self.kappa_quantum_number is not None and self.j_quantum_number is None:
+            # Compute j from κ
+            self.j_quantum_number = [self.compute_j_from_kappa(self.kappa_quantum_number)]
+        
+        elif self.j_quantum_number is not None and self.kappa_quantum_number is None:
+            # Cannot uniquely determine κ from j alone (need l as well)
+            # This would need orbital information
+            pass
 
-    def _jj_coupling(self, l_quantum: float, s_quantum: float):
-        """Compute $j$ (and $m_j$) quantum numbers based on the jj coupling scheme."""
-        self.j_quantum_number = l_quantum + s_quantum
+    def _russel_saunders_j_values(self, l_quantum: float, s_quantum: float) -> list[float]:
+        """Generate all possible j values: |l - s|, |l - s| + 1, ..., l + s"""
+        j_min = abs(l_quantum - s_quantum)
+        j_max = l_quantum + s_quantum
+        return [j_min + i for i in range(int(j_max - j_min) + 1)]
+
+    def _jj_coupling_single_electron(self, l_quantum: float) -> list[float]:
+        """
+        Compute j values for single electron jj-coupling: j = l ± 1/2
+        
+        Args:
+            l_quantum: Orbital angular momentum quantum number
+            
+        Returns:
+            List of possible j values [l - 1/2, l + 1/2] or [1/2] for l=0
+        """
+        s_quantum = 0.5  # Electron spin is always 1/2
+        
+        if l_quantum == 0:
+            return [s_quantum]  # Only j = 1/2 for s orbitals
+        else:
+            return [l_quantum - s_quantum, l_quantum + s_quantum]
+    
+    def _jj_coupling_multi_electron(self, electron_configs: list[tuple[float, float]]) -> list[float]:
+        """
+        Compute total J values for multi-electron jj-coupling.
+        
+        Args:
+            electron_configs: List of (l_i, j_i) pairs for each electron
+            
+        Returns:
+            List of possible total J values from coupling all j_i
+            
+        Example:
+            # Two electrons: (l1=1, j1=1/2) and (l2=2, j2=5/2)
+            # Possible J = |1/2 - 5/2|, ..., 1/2 + 5/2 = 2, 3
+            electron_configs = [(1, 0.5), (2, 2.5)]
+            J_values = _jj_coupling_multi_electron(electron_configs)
+        """
+        if not electron_configs:
+            return []
+        
+        if len(electron_configs) == 1:
+            return [electron_configs[0][1]]  # Single electron: J = j
+        
+        # Start with first electron
+        current_J_values = [electron_configs[0][1]]
+        
+        # Couple each subsequent electron
+        for _, j_i in electron_configs[1:]:
+            new_J_values = []
+            for J_current in current_J_values:
+                # Couple J_current with j_i: |J_current - j_i| ≤ J_new ≤ J_current + j_i
+                J_min = abs(J_current - j_i)
+                J_max = J_current + j_i
+                
+                # Generate all possible J values (in steps of 1)
+                J_new = J_min
+                while J_new <= J_max + 1e-10:  # Small epsilon for float comparison
+                    new_J_values.append(J_new)
+                    J_new += 1.0
+            
+            current_J_values = new_J_values
+        
+        # Remove duplicates and sort
+        return sorted(list(set(current_J_values)))
+    
+    def _jj_coupling(self, electron_data: list[dict]) -> list[float]:
+        """
+        Unified jj-coupling method for single or multi-electron systems.
+        
+        Args:
+            electron_data: List of dicts with electron quantum numbers
+                          [{'l': 1, 'j': 0.5}, {'l': 2, 'j': 2.5}, ...]
+                          If 'j' not provided, computed from 'l'
+                          
+        Returns:
+            List of possible total J values
+            
+        Examples:
+            # Single electron
+            j_values = _jj_coupling([{'l': 1}])  # Returns [0.5, 1.5]
+            
+            # Multi-electron with known j values  
+            j_values = _jj_coupling([{'l': 1, 'j': 0.5}, {'l': 2, 'j': 2.5}])
+            
+            # Multi-electron with computed j values
+            j_values = _jj_coupling([{'l': 1}, {'l': 2}])  # Computes all combinations
+        """
+        if not electron_data:
+            return []
+        
+        # Handle single electron case
+        if len(electron_data) == 1:
+            electron = electron_data[0]
+            if 'j' in electron:
+                return [electron['j']]
+            else:
+                return self._jj_coupling_single_electron(electron['l'])
+        
+        # Multi-electron case: need to handle all possible j combinations
+        all_j_combinations = []
+        
+        # Generate all possible j values for each electron
+        electron_j_possibilities = []
+        for electron in electron_data:
+            if 'j' in electron:
+                electron_j_possibilities.append([electron['j']])
+            else:
+                electron_j_possibilities.append(
+                    self._jj_coupling_single_electron(electron['l'])
+                )
+        
+        # Generate all combinations of j values
+        import itertools
+        for j_combination in itertools.product(*electron_j_possibilities):
+            electron_configs = [(electron_data[i]['l'], j_combination[i]) 
+                              for i in range(len(electron_data))]
+            total_J_values = self._jj_coupling_multi_electron(electron_configs)
+            all_j_combinations.extend(total_J_values)
+        
+        # Remove duplicates and sort
+        return sorted(list(set(all_j_combinations)))
 
     @property
     def _degeneracy(self) -> int:
         raise NotImplementedError("Subclasses must implement this method.")
-    
-    """
 
-    @property
-    def _degeneracy(self) -> int:
-        if self.j_quantum_number is None:
-            return 2  # Default spin degeneracy (spin-up and spin-down)
-            
-        # J-coupling degeneracy calculation
-        degeneracy = 0
-        for jj in self.j_quantum_number:
-            if self.mj_quantum_number is not None:
-                # Specific mj values are defined
-                mjs = RussellSaundersState.generate_MJs(
-                    J=self.j_quantum_number[0], rising=True
-                )
-                degeneracy += len(
-                    [mj for mj in mjs if mj in self.mj_quantum_number]
-                )
-            else:
-                # All mj values possible for this j
-                degeneracy += RussellSaundersState(J=jj, occ=1).degeneracy
-        return degeneracy"""
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        
+        # Validate and normalize κ-j relationship using factored computation
+        if not self.validate_kappa_j_relationship(logger):
+            return
+        
+        self.normalize_kappa_j_consistency()
 
 
 class BaseSpinState(BaseSpinOrbitalState):
