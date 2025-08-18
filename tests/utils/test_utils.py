@@ -21,7 +21,17 @@ from nomad_simulations.schema_packages.variables import Temperature
 
 from . import logger
 
-LOGGER = logging.getLogger('TestLogger')
+LOGGER = get_logger('TestLogger')
+
+
+@pytest.fixture
+def log_output():
+    return LogCapture()
+
+
+@pytest.fixture(autouse=True)
+def fixture_configure_structlog(log_output):
+    structlog.configure(processors=[log_output])
 
 
 @pytest.fixture
@@ -64,10 +74,7 @@ def example_func2(a):
     [
         pytest.param(example_func1, None, 'TestLogger', id='defined'),
         pytest.param(
-            example_func2,
-            logging.getLogger('TestLogger2'),
-            'TestLogger2',
-            id='as_kwarg',
+            example_func2, get_logger('TestLogger2'), 'TestLogger2', id='as_kwarg'
         ),
         pytest.param(
             example_func2,
