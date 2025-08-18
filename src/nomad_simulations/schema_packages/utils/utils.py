@@ -1,10 +1,10 @@
 from math import factorial
-from typing import TYPE_CHECKING, Optional, Callable
-from nomad.datamodel.data import ArchiveSection
-from structlog.stdlib import BoundLogger
+from typing import TYPE_CHECKING, Callable, Optional
 
 import numpy as np
 from nomad.config import config
+from nomad.datamodel.data import ArchiveSection
+from structlog.stdlib import BoundLogger
 
 # if TYPE_CHECKING:
 #     from typing import Callable, Optional
