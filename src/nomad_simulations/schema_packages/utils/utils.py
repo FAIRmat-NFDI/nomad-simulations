@@ -6,12 +6,6 @@ from nomad.config import config
 from nomad.datamodel.data import ArchiveSection
 from structlog.stdlib import BoundLogger
 
-# if TYPE_CHECKING:
-#     from typing import Callable, Optional
-
-#     from nomad.datamodel.data import ArchiveSection
-#     from structlog.stdlib import BoundLogger
-
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
 )
