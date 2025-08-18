@@ -1095,17 +1095,16 @@ class ModelSystem(System):
             return symbols
 
         if self.is_root_system():
-            print('in root system')
             return _root_symbols(self)
 
         # child: slice the labels from root with particle_indices
         root = self.get_root_system()
-        print('root system', root)
         root_syms = _root_symbols(root)
-        print('root symbols', root_syms)
-        print('particle indices', self.particle_indices)
-
         if not root_syms or self.particle_indices is None:
+            return []
+
+        # Validate indices: must be ints and 0 <= i < len(root_syms)
+        if any(i < 0 or i >= len(root_syms) for i in self.particle_indices):
             return []
 
         try:
@@ -1412,54 +1411,54 @@ class ModelSystem(System):
         return not self.is_equal_structure(other)
 
     # functions for traversing the ModelSystem hierarchy
-    def _parent_is_modelsystem(self, parent) -> bool:
-        """Robustly detect whether `parent` behaves like a ModelSystem, even if it’s a proxy."""
-        if parent is None:
-            return False
-        # 1) Plain isinstance fast path
-        try:
-            if isinstance(parent, ModelSystem):
-                return True
-        except Exception:
-            pass
-        # 2) Section definition identity or name match
-        try:
-            pdef = getattr(parent, 'm_def', None)
-            if pdef is not None:
-                if pdef is getattr(ModelSystem, 'm_def', None):
-                    return True
-                if (
-                    getattr(pdef, 'name', None)
-                    == getattr(ModelSystem.m_def, 'name', None)
-                    == 'ModelSystem'
-                ):
-                    return True
-        except Exception:
-            pass
-        # 3) Structural fallback: ModelSystem‐like interface
-        if hasattr(parent, 'sub_systems') and hasattr(parent, 'particle_states'):
-            return True
-        # 4) Class name last resort
-        if (
-            getattr(parent, '__class__', None)
-            and parent.__class__.__name__ == 'ModelSystem'
-        ):
-            return True
-        return False
+    # def _parent_is_modelsystem(self, parent) -> bool:
+    #     """Robustly detect whether `parent` behaves like a ModelSystem, even if it’s a proxy."""
+    #     if parent is None:
+    #         return False
+    #     # 1) Plain isinstance fast path
+    #     try:
+    #         if isinstance(parent, ModelSystem):
+    #             return True
+    #     except Exception:
+    #         pass
+    #     # 2) Section definition identity or name match
+    #     try:
+    #         pdef = getattr(parent, 'm_def', None)
+    #         if pdef is not None:
+    #             if pdef is getattr(ModelSystem, 'm_def', None):
+    #                 return True
+    #             if (
+    #                 getattr(pdef, 'name', None)
+    #                 == getattr(ModelSystem.m_def, 'name', None)
+    #                 == 'ModelSystem'
+    #             ):
+    #                 return True
+    #     except Exception:
+    #         pass
+    #     # 3) Structural fallback: ModelSystem‐like interface
+    #     if hasattr(parent, 'sub_systems') and hasattr(parent, 'particle_states'):
+    #         return True
+    #     # 4) Class name last resort
+    #     if (
+    #         getattr(parent, '__class__', None)
+    #         and parent.__class__.__name__ == 'ModelSystem'
+    #     ):
+    #         return True
+    #     return False
 
-    def is_root_system(self) -> bool:
-        parent = self.m_parent
-        print('parent', parent)
-        return not self._parent_is_modelsystem(parent)
+    # def is_root_system(self) -> bool:
+    #     parent = self.m_parent
+    #     print('parent', parent)
+    #     return not self._parent_is_modelsystem(parent)
 
-    def get_root_system(self) -> 'ModelSystem':
-        system = self
-        while True:
-            parent = getattr(system, 'm_parent', None)
-            if not self._parent_is_modelsystem(parent):
-                break
-            system = parent
-        return system
+    # def get_root_system(self) -> 'ModelSystem':
+    #     system = self
+    #     while True:
+    #         parent = getattr(system, 'm_parent', None)
+    #         if not self._parent_is_modelsystem(parent):
+    #             break
+    #         system = parent
+    #     return system
 
     # def is_root_system(self) -> bool:
     #     """
@@ -1477,21 +1476,21 @@ class ModelSystem(System):
     #     """
     #     parent = self.m_parent
     #     return not (parent is not None and parent.m_def is ModelSystem.m_def)
-    # def is_root_system(self) -> bool:
-    #     """
-    #     A node is root if its parent is not a ModelSystem section.
-    #     Prefer isinstance for robustness; fall back to m_def identity.
-    #     """
-    #     parent = getattr(self, 'm_parent', None)
-    #     if parent is None:
-    #         return True
-    #     try:
-    #         if isinstance(parent, ModelSystem):
-    #             return False
-    #     except Exception:
-    #         pass
+    def is_root_system(self) -> bool:
+        """
+        A node is root if its parent is not a ModelSystem section.
+        Prefer isinstance for robustness; fall back to m_def identity.
+        """
+        parent = getattr(self, 'm_parent', None)
+        if parent is None:
+            return True
+        try:
+            if isinstance(parent, ModelSystem):
+                return False
+        except Exception:
+            pass
 
-    #     return getattr(parent, 'm_def', None) is not ModelSystem.m_def
+        return getattr(parent, 'm_def', None) is not ModelSystem.m_def
 
     # def get_root_system(self) -> 'ModelSystem':
     #     """
@@ -1515,26 +1514,26 @@ class ModelSystem(System):
     #             break
     #         system = parent
     #     return system
-    # def get_root_system(self) -> 'ModelSystem':
-    #     """
-    #     Walk up through parents while the parent behaves like a ModelSystem.
-    #     """
-    #     system = self
-    #     while True:
-    #         parent = getattr(system, 'm_parent', None)
-    #         if parent is None:
-    #             break
-    #         try:
-    #             if isinstance(parent, ModelSystem):
-    #                 system = parent
-    #                 continue
-    #         except Exception:
-    #             pass
-    #         if getattr(parent, 'm_def', None) is ModelSystem.m_def:
-    #             system = parent
-    #             continue
-    #         break
-    #     return system
+    def get_root_system(self) -> 'ModelSystem':
+        """
+        Walk up through parents while the parent behaves like a ModelSystem.
+        """
+        system = self
+        while True:
+            parent = getattr(system, 'm_parent', None)
+            if parent is None:
+                break
+            try:
+                if isinstance(parent, ModelSystem):
+                    system = parent
+                    continue
+            except Exception:
+                pass
+            if getattr(parent, 'm_def', None) is ModelSystem.m_def:
+                system = parent
+                continue
+            break
+        return system
 
     # functions for working with molecules
     def get_bond_list(self, set_local: bool = False) -> np.ndarray:

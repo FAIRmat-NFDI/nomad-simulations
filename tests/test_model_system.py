@@ -426,12 +426,12 @@ class TestModelSystemBondFunctions:
         for s in ['H', 'O', 'O', 'H']:
             root.particle_states.append(AtomsState(chemical_symbol=s))
         root.bond_list = [(0, 1), (1, 2), (2, 3)]
-        child = ModelSystem(m_parent=root)
+        child = ModelSystem()
         child.particle_indices = [1, 2]
+        root.sub_systems.append(child)
         _ = child.get_bond_list(set_local=True)
-        # assert isinstance(child.bond_list, np.ndarray)
-        print(child.bond_list)
-        # assert child.bond_list.shape == (1, 2)
+        assert isinstance(child.bond_list, np.ndarray)  # ! Check/change this
+        assert child.bond_list.shape == (1, 2)
         assert (child.bond_list == np.array([[1, 2]])).all()
 
     def test_is_molecule(self):
@@ -624,10 +624,9 @@ class TestModelSystemSymbols:
         root = ModelSystem()
         for s in ['H', 'O', 'H', 'O']:
             root.particle_states.append(AtomsState(chemical_symbol=s))
-        child = ModelSystem(m_parent=root)
+        child = ModelSystem()
         child.particle_indices = [3, 0, 0, 1]
-        print('starting symbols test')
-        print('m_parent:', child.m_parent)
+        root.sub_systems.append(child)
         assert child.symbols == ['O', 'H', 'H', 'O']
 
     def test_symbols_child_no_indices_returns_empty(self):
@@ -637,8 +636,9 @@ class TestModelSystemSymbols:
         root = ModelSystem()
         for s in ['H', 'O']:
             root.particle_states.append(AtomsState(chemical_symbol=s))
-        child = ModelSystem(m_parent=root)
+        child = ModelSystem()
         child.particle_indices = None
+        root.sub_systems.append(child)
         assert child.symbols == []
 
     def test_symbols_child_out_of_range_returns_empty(self):
@@ -649,13 +649,11 @@ class TestModelSystemSymbols:
         root = ModelSystem()
         for s in ['H', 'O']:
             root.particle_states.append(AtomsState(chemical_symbol=s))
-        child = ModelSystem(m_parent=root)
-        child.particle_indices = [0, 2]  # 2 is OOR
+        child = ModelSystem()
+        child.particle_indices = [0, 2]  # 2 is out of range
+        root.sub_systems.append(child)
         assert child.symbols == []
 
-    @pytest.mark.xfail(
-        reason='Negative indices wrap by design; remove xfail if you want to lock that in.'
-    )
     def test_symbols_child_negative_index_policy(self):
         """
         Policy test for negative indices in particle_indices. Marked xfail because
@@ -664,9 +662,9 @@ class TestModelSystemSymbols:
         root = ModelSystem()
         for s in ['H', 'O', 'H']:
             root.particle_states.append(AtomsState(chemical_symbol=s))
-        child = ModelSystem(m_parent=root)
+        child = ModelSystem()
         child.particle_indices = [-1, 0]
-        # decide policy; currently this would return ['H','H']
+        root.sub_systems.append(child)
         assert child.symbols == []
 
     def test_are_valid_chemical_symbols_true_false(self):
@@ -692,8 +690,10 @@ class TestModelSystemSymbols:
         root = ModelSystem()
         for s in ['H', 'O', 'H', 'O', 'Cu']:
             root.particle_states.append(AtomsState(chemical_symbol=s))
-        mid = ModelSystem(m_parent=root)
-        leaf = ModelSystem(m_parent=mid)
+        mid = ModelSystem()
+        root.sub_systems.append(mid)
+        leaf = ModelSystem()
+        mid.sub_systems.append(leaf)
         mid.particle_indices = [0, 1, 2, 3, 4]  # whole set
         leaf.particle_indices = [3, 4, 0]  # pick from root order via leaf
         assert leaf.symbols == ['O', 'Cu', 'H']
