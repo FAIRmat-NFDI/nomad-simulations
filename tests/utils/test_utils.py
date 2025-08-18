@@ -42,29 +42,6 @@ def log_output():
         structlog.configure(processors=processors)
 
 
-@pytest.fixture(autouse=True)
-def fixture_configure_structlog(log_output):
-    structlog.configure(processors=[log_output])
-
-
-@pytest.fixture
-def log_output():
-    capture = LogCapture()
-    processors = structlog.get_config()['processors']
-    old_processors = processors.copy()
-    try:
-        # clear processors list and use LogCapture for testing
-        processors.clear()
-        processors.append(capture)
-        structlog.configure(processors=processors)
-        yield capture
-    finally:
-        # remove LogCapture and restore original processors
-        processors.clear()
-        processors.extend(old_processors)
-        structlog.configure(processors=processors)
-
-
 def f_kernel(f, a):
     logger = f.__annotations__['logger']
     logger.info('Executing func.')
