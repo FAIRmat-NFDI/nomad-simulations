@@ -76,7 +76,12 @@ def test_log(func, logger_kwarg, logger_name, log_output):
     else:
         func('a')
 
-    assert func.__annotations__['logger'].name == logger_name
+    flogger = func.__annotations__['logger']
+    assert (
+        flogger.logger.name
+        if hasattr(flogger, 'logger')
+        else flogger.name == logger_name
+    )
 
     assert 'Executing func' in log_output.entries[0].get('event')
     assert (
