@@ -212,14 +212,13 @@ class Simulation(BaseSimulation, Schema):
 
         Rules
         -----
-        - Internal nodes (with children): formula counts child branch labels, using 'Unknown' when a child has no branch_label.
-        - Leaves (no children): formula is derived from the root-level particle labels sliced by this node's particle_indices. If particle_indices is missing, or if the particle labels are missing at root, leave the formula as None (do not compute).
+        - Internal nodes (with children): formula counts child branch labels, using 'Unknown'
+        when a child has no branch_label.
+        - Leaves (no children):
+            * If particle_indices is missing → leave as None.
+            * If symbols are available → use them.
+            * Otherwise → treat each particle as 'Unknown' and count, e.g. Unknown(3).
         - Never overwrite a pre-set custom composition_formula (only set when None).
-
-        Parameters
-        ----------
-        system_parent : ModelSystem
-            The root (upper-most) system of the hierarchy to consider.
         """
 
         def set_for(system: ModelSystem) -> None:
@@ -231,114 +230,127 @@ class Simulation(BaseSimulation, Schema):
             if subsystems:
                 # INTERNAL NODE: use child branch labels
                 children_names = [
-                    (
-                        child.branch_label
-                        if child.branch_label is not None
-                        else 'Unknown'
-                    )
-                    for child in subsystems
+                    (child.branch_label or 'Unknown') for child in subsystems
                 ]
+                system.composition_formula = get_composition(
+                    children_names=children_names
+                )
+                return
+
+            # LEAF NODE
+            if system.particle_indices is None:
+                return  # cannot infer size
+
+            names = system.symbols  # already slices from root via particle_indices
+            if names:
+                system.composition_formula = get_composition(children_names=names)
             else:
-                # LEAF: use particle labels if possible; otherwise Unknown(n)
-                idx = system.particle_indices
-                if idx is None:
-                    return
-                # Determine count n of indices (robustly)
-                try:
-                    n = int(np.size(idx))
-                except Exception:
-                    return
+                # No labels available → count Unknown tokens
+                n = len(system.particle_indices)
+                if n > 0:
+                    system.composition_formula = get_composition(
+                        children_names=['Unknown'] * n
+                    )
 
-                # Try resolving from symbols (root slice). If empty, fall back to Unknown(n).
-                syms = system.symbols
-                children_names = syms if syms else (['Unknown'] * n)
-                if not children_names:
-                    return
-
-            system.composition_formula = get_composition(children_names=children_names)
-
-        def walk(system: ModelSystem) -> None:
-            set_for(system)
-            for child in system.sub_systems or []:
+        def walk(node: ModelSystem) -> None:
+            set_for(node)
+            for child in node.sub_systems or []:
                 walk(child)
 
         walk(system_parent)
-        ## V3
-        # root_labels: list[str] = system_parent.symbols
 
-        # def set_for(system: ModelSystem) -> None:
-        #     # Honor custom formulas
-        #     if system.composition_formula is not None:
-        #         return
+    # def resolve_composition_formula(self, system_parent: ModelSystem) -> None:
+    #     """
+    #     Determine and set the composition_formula for `system_parent` and all descendants.
 
-        #     subsystems = system.sub_systems
-        #     if subsystems:
-        #         # INTERNAL NODE: use child branch labels
-        #         children_names = [
-        #             (
-        #                 child.branch_label
-        #                 if child.branch_label is not None
-        #                 else 'Unknown'
-        #             )
-        #             for child in subsystems
-        #         ]
-        #     else:
-        #         # LEAF: use particle labels
-        #         if system.particle_indices is None or not root_labels:
-        #             return
-        #         children_names = system.symbols
-        #         if not children_names:
-        #             return
+    #     Rules
+    #     -----
+    #     - Internal nodes (with children): formula counts child branch labels, using 'Unknown' when a child has no branch_label.
+    #     - Leaves (no children): formula is derived from the root-level particle labels sliced by this node's particle_indices. If particle_indices is missing, or if the particle labels are missing at root, leave the formula as None (do not compute).
+    #     - Never overwrite a pre-set custom composition_formula (only set when None).
 
-        #     system.composition_formula = get_composition(children_names=children_names)
+    #     Parameters
+    #     ----------
+    #     system_parent : ModelSystem
+    #         The root (upper-most) system of the hierarchy to consider.
+    #     """
 
-        # def walk(system: ModelSystem) -> None:
-        #     set_for(system)
-        #     for child in system.sub_systems or []:
-        #         walk(child)
+    ## V3
+    # root_labels: list[str] = system_parent.symbols
 
-        # walk(system_parent)
-        ## V2
-        # root_labels: list[str] = system_parent.symbols
+    # def set_for(system: ModelSystem) -> None:
+    #     # Honor custom formulas
+    #     if system.composition_formula is not None:
+    #         return
 
-        # def set_composition_formula(
-        #     system: ModelSystem, subsystems: list[ModelSystem], labels: list[str]
-        # ) -> None:
-        #     """
-        #     Compute composition for a single node if not already set.
+    #     subsystems = system.sub_systems
+    #     if subsystems:
+    #         # INTERNAL NODE: use child branch labels
+    #         children_names = [
+    #             (
+    #                 child.branch_label
+    #                 if child.branch_label is not None
+    #                 else 'Unknown'
+    #             )
+    #             for child in subsystems
+    #         ]
+    #     else:
+    #         # LEAF: use particle labels
+    #         if system.particle_indices is None or not root_labels:
+    #             return
+    #         children_names = system.symbols
+    #         if not children_names:
+    #             return
 
-        #     Internal nodes → from child branch labels.
-        #     Leaves → from root labels sliced by particle_indices (or Unknown).
-        #     """
-        #     if system.composition_formula is not None:
-        #         return  # honor custom formulas
+    #     system.composition_formula = get_composition(children_names=children_names)
 
-        #     if not subsystems:  # LEAF
-        #         idx = system.particle_indices
-        #         if idx is None or labels is None:
-        #             return
-        #         subsystem_labels = system.symbols
-        #     else:  # INTERNAL NODE
-        #         subsystem_labels = [
-        #             (
-        #                 child.branch_label
-        #                 if child.branch_label is not None
-        #                 else 'Unknown'
-        #             )
-        #             for child in subsystems
-        #         ]
+    # def walk(system: ModelSystem) -> None:
+    #     set_for(system)
+    #     for child in system.sub_systems or []:
+    #         walk(child)
 
-        #     system.composition_formula = get_composition(
-        #         children_names=subsystem_labels
-        #     )
+    # walk(system_parent)
+    ## V2
+    # root_labels: list[str] = system_parent.symbols
 
-        # def walk(system: ModelSystem, labels: list[str]) -> None:
-        #     subsystems = system.sub_systems
-        #     set_composition_formula(system=system, subsystems=subsystems, labels=labels)
-        #     for child in subsystems or []:
-        #         walk(system=child, labels=labels)
+    # def set_composition_formula(
+    #     system: ModelSystem, subsystems: list[ModelSystem], labels: list[str]
+    # ) -> None:
+    #     """
+    #     Compute composition for a single node if not already set.
 
-        # walk(system=system_parent, labels=root_labels)
+    #     Internal nodes → from child branch labels.
+    #     Leaves → from root labels sliced by particle_indices (or Unknown).
+    #     """
+    #     if system.composition_formula is not None:
+    #         return  # honor custom formulas
+
+    #     if not subsystems:  # LEAF
+    #         idx = system.particle_indices
+    #         if idx is None or labels is None:
+    #             return
+    #         subsystem_labels = system.symbols
+    #     else:  # INTERNAL NODE
+    #         subsystem_labels = [
+    #             (
+    #                 child.branch_label
+    #                 if child.branch_label is not None
+    #                 else 'Unknown'
+    #             )
+    #             for child in subsystems
+    #         ]
+
+    #     system.composition_formula = get_composition(
+    #         children_names=subsystem_labels
+    #     )
+
+    # def walk(system: ModelSystem, labels: list[str]) -> None:
+    #     subsystems = system.sub_systems
+    #     set_composition_formula(system=system, subsystems=subsystems, labels=labels)
+    #     for child in subsystems or []:
+    #         walk(system=child, labels=labels)
+
+    # walk(system=system_parent, labels=root_labels)
 
     ## V1
     # def resolve_composition_formula(self, system_parent: ModelSystem) -> None:
