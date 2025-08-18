@@ -69,7 +69,7 @@ def get_sibling_section(
     sibling_section_name: str,
     logger: 'BoundLogger',
     index_sibling: int = 0,
-) -> 'Optional[ArchiveSection]':
+) -> Optional[ArchiveSection]:
     """
     Gets the sibling section of a section by performing a seesaw move by going to the parent
     of the section and then going down to the sibling section. This is used, e.g., to get
@@ -180,7 +180,7 @@ def is_not_representative(model_system, logger: 'BoundLogger'):
 #     children_count_tup = np.unique(children_names, return_counts=True)
 #     formula = ''.join([f'{name}({count})' for name, count in zip(*children_count_tup)])
 #     return formula if formula else None
-def get_composition(children_names: list[str]) -> 'Optional[str]':
+def get_composition(children_names: list[str]) -> Optional[str]:
     """
     Build a canonical 'composition' string like X(m)Y(n) from child names.
 
