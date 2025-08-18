@@ -42,11 +42,6 @@ def log_output():
         structlog.configure(processors=processors)
 
 
-@pytest.fixture(autouse=True)
-def fixture_configure_structlog(log_output):
-    structlog.configure(processors=[log_output])
-
-
 def f_kernel(f, a):
     logger = f.__annotations__['logger']
     logger.info('Executing func.')
