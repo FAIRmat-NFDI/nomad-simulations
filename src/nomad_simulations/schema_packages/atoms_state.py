@@ -13,18 +13,83 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.data_types import positive_float, positive_int, strictly_positive_int, unit_float
-from nomad_simulations.schema_packages.utils import RussellSaundersState
 
 
-class BaseSpinState(Entity):
-    """A base section to define the spin state of an atom.
-    This is used to define the spin state of an atom in a simulation.
-    It can be extended to include any common quantities in the future.
-    """
+class BaseSpinOrbitalState(Entity):
+    """Base class for all quantum states with j quantum numbers,
+    including support for special relativistic effects."""
+
+    # TODO: define when these quantities are populated and `None` semantics
+
+    kappa_quantum_number = Quantity(
+        type=np.int32,
+        description="κ = ±(j + 1/2), encodes l and j"
+    )  # ? should this be mutually exclusive with j_quantum_number?
+
+    j_quantum_number = Quantity(
+        type=np.float64,
+        shape=['1..2'],
+        description="""
+        Total angular momentum quantum number $j = |l-s| ... l+s$. Necessary with strong
+        L-S coupling or non-collinear spin systems.
+        """,
+    )
+
+    mj_quantum_number = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description="""
+        Azimuthal projection of the `j` vector. Necessary with strong L-S coupling or
+        non-collinear spin systems.
+        """,
+    )
+
+    coupling_origin = Quantity(
+        type=MEnum('pure_LS', 'pure_jj', 'intermediate', 'relativistic'),
+        description="How this j value was derived"
+    )
+
+    def _russel_saunders(self, l_quantum: float, s_quantum: float):
+        """Compute $j$ (and $m_j$) quantum numbers based on the Russell-Saunders coupling scheme."""
+        self.j_quantum_number = abs(l_quantum + s_quantum)
+
+    def _jj_coupling(self, l_quantum: float, s_quantum: float):
+        """Compute $j$ (and $m_j$) quantum numbers based on the jj coupling scheme."""
+        self.j_quantum_number = l_quantum + s_quantum
 
     @property
     def _degeneracy(self) -> int:
         raise NotImplementedError("Subclasses must implement this method.")
+    
+    """
+
+    @property
+    def _degeneracy(self) -> int:
+        if self.j_quantum_number is None:
+            return 2  # Default spin degeneracy (spin-up and spin-down)
+            
+        # J-coupling degeneracy calculation
+        degeneracy = 0
+        for jj in self.j_quantum_number:
+            if self.mj_quantum_number is not None:
+                # Specific mj values are defined
+                mjs = RussellSaundersState.generate_MJs(
+                    J=self.j_quantum_number[0], rising=True
+                )
+                degeneracy += len(
+                    [mj for mj in mjs if mj in self.mj_quantum_number]
+                )
+            else:
+                # All mj values possible for this j
+                degeneracy += RussellSaundersState(J=jj, occ=1).degeneracy
+        return degeneracy"""
+
+
+class BaseSpinState(BaseSpinOrbitalState):
+    """A base section to define the spin state in a decoupled way from an orbital state.
+    This is used to define the spin state of an atom in a simulation.
+    It can be extended to include any common quantities in the future.
+    """
 
 
 class SimpleSpinState(BaseSpinState):
@@ -52,66 +117,24 @@ class NonCollinearSpinState(BaseSpinState):
 
     axis = Quantity(
         type=np.float64,
-        shape=['3'],
+        shape=['3', '3'],  # add actual size restrictions
         description="""
         The projection axis for non-collinear spin systems.
         Expressed in the axis frame in which `ModelSystem` is defined.
         """
-    )
+    )  # ? need to define orientation
 
-    j_quantum_number = Quantity(
-        type=np.float64,
-        shape=['1..2'],
-        description="""
-        Total angular momentum quantum number $j = |l-s| ... l+s$. Necessary with strong
-        L-S coupling or non-collinear spin systems.
-        """,
-    )
-
-    mj_quantum_number = Quantity(
-        type=np.float64,
-        shape=['*'],
-        description="""
-        Azimuthal projection of the `j` vector. Necessary with strong L-S coupling or
-        non-collinear spin systems.
-        """,
-    )
-
-    @property
-    def _degeneracy(self) -> int:
-        """
-        Calculate degeneracy for non-collinear spin systems.
-        Uses J-coupling (Russell-Saunders) when j_quantum_number is available,
-        otherwise defaults to simple spin degeneracy.
-        """
-        if self.j_quantum_number is None:
-            return 2  # Default spin degeneracy (spin-up and spin-down)
-            
-        # J-coupling degeneracy calculation
-        degeneracy = 0
-        for jj in self.j_quantum_number:
-            if self.mj_quantum_number is not None:
-                # Specific mj values are defined
-                mjs = RussellSaundersState.generate_MJs(
-                    J=self.j_quantum_number[0], rising=True
-                )
-                degeneracy += len(
-                    [mj for mj in mjs if mj in self.mj_quantum_number]
-                )
-            else:
-                # All mj values possible for this j
-                degeneracy += RussellSaundersState(J=jj, occ=1).degeneracy
-        return degeneracy
+    # ? particle_index
 
 
-class ElectronicState(Entity):
+class BaseOrbitalState(Entity):
+    pass
+
+
+class SphericallySymmetricOrbitalState(BaseOrbitalState):
     """
-    A section to define the electronic state information.
-    Assumes a hierarchical structure, where `sub_states` can be defined.
+    A section to define the parameters of a spherically symmetric orbital state.
     """
-
-    # TODO add check for `j_quantum_number` and `mj_quantum_number`
-    # TODO: add the relativistic kappa_quantum_number
 
     n_quantum_number = Quantity(
         type=strictly_positive_int,
@@ -150,19 +173,29 @@ class ElectronicState(Entity):
         """,
     )
 
-    spin_state = SubSection(
-        section_def=BaseSpinState.m_def,
+
+class ElectronicState(Entity):
+    """
+    A section to define the electronic state information.
+    Assumes a hierarchical structure, where `sub_states` can be defined.
+    """
+
+    spin_orbit_state = SubSection(
+        section_def=BaseSpinOrbitalState.m_def,
+        repeats=True,
         description="""
-        The spin state of the electron.
+        The spin-orbit state of the electron.
+        Contains all degenerate states at the current level of hierarchy.
+        If the spin state and orbitals are decoupled, it contains alternating pairs
+        of `BaseOrbitalState` and `BaseSpinState` instances.
         """
     )
 
     degeneracy = Quantity(
         type=np.int32,
         description="""
-        The degeneracy of the orbital state. The degeneracy is the number of states with the same
-        energy. It is equal to 2 * l + 1 for non-relativistic systems and 2 * j + 1 for
-        relativistic systems, if ms_quantum_number is defined (otherwise a factor of 2 is included).
+        The degeneracy of the orbital state, i.e. no. states with the same energy.
+        It is equal to $2 * l + 1$ for non-relativistic systems and $2 * j + 1$ for relativistic systems.
         """,
     )
 
