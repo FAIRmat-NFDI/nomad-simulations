@@ -1,4 +1,8 @@
+import logging
+from io import StringIO
+
 import pytest
+from nomad.utils import get_logger
 
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
@@ -8,11 +12,74 @@ from nomad_simulations.schema_packages.model_system import (
 from nomad_simulations.schema_packages.utils import (
     get_sibling_section,
     is_not_representative,
+    log,
 )
 from nomad_simulations.schema_packages.variables import Energy2 as Energy
 from nomad_simulations.schema_packages.variables import Temperature
 
 from . import logger
+
+LOGGER = get_logger('TestLogger')
+
+
+def f_kernel(f, a):
+    logger = f.__annotations__['logger']
+    logger.info('Executing func.')
+    return int(a)
+
+
+@log(logger=LOGGER)
+def example_func1(a):
+    return f_kernel(example_func1, a)
+
+
+@log
+def example_func2(a):
+    return f_kernel(example_func2, a)
+
+
+@pytest.mark.parametrize(
+    'func, logger_kwarg, logger_name',
+    [
+        pytest.param(example_func1, None, 'TestLogger', id='defined'),
+        pytest.param(
+            example_func2, get_logger('TestLogger2'), 'TestLogger2', id='as_kwarg'
+        ),
+        pytest.param(
+            example_func2,
+            None,
+            'nomad_simulations.schema_packages.utils.utils',
+            id='default',
+        ),
+    ],
+)
+def test_log(func, logger_kwarg, logger_name):
+    """
+    Test for the `log` decorator.
+    """
+
+    stream = StringIO()
+    logger = logger_kwarg if logger_kwarg is not None else LOGGER
+    if logger_name == 'nomad_simulations.schema_packages.utils.utils':
+        # inject streaming steam handler to the default logger
+        from nomad_simulations.schema_packages.utils.utils import (
+            DEFAULT_LOGGER as logger,
+        )  # noqa
+
+    logger.addHandler(logging.StreamHandler(stream))
+
+    if logger_kwarg:
+        func('a', logger=logger)
+    else:
+        func('a')
+
+    assert func.__annotations__['logger'].name == logger_name
+
+    stream.seek(0)
+    lines = stream.readlines()
+
+    assert 'Executing func' in lines[0]
+    assert f'Exception raised in {func.__name__}: invalid literal for int' in lines[1]
 
 
 def test_get_sibling_section():

@@ -14,9 +14,12 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 
+DEFAULT_LOGGER = get_logger(__name__)
+
+
 def log(
     function: 'Callable' = None,
-    logger: 'BoundLogger' = get_logger(__name__),
+    logger: 'BoundLogger' = DEFAULT_LOGGER,
     exc_msg: str = None,
     exc_raise: bool = False,
     default: Any = None,
