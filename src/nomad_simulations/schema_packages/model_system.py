@@ -20,7 +20,6 @@ import re
 from functools import lru_cache
 from hashlib import sha1
 from typing import TYPE_CHECKING, Optional
-from numpy.typing import NDArray
 
 import ase
 import numpy as np
@@ -41,6 +40,7 @@ from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity, System
 from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
+from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from collections.abc import Generator
