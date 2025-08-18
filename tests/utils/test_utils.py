@@ -58,7 +58,7 @@ def test_log(func, logger_kwarg, logger_name):
     Test for the `log` decorator.
     """
 
-    stream = StringIO()
+    stream = StringIO('')
     logger = logger_kwarg if logger_kwarg is not None else LOGGER
     if logger_name == 'nomad_simulations.schema_packages.utils.utils':
         # inject streaming steam handler to the default logger
@@ -66,7 +66,12 @@ def test_log(func, logger_kwarg, logger_name):
             DEFAULT_LOGGER as logger,
         )  # noqa
 
-    logger.addHandler(logging.StreamHandler(stream))
+    handler = logging.StreamHandler(stream)
+    logger.setLevel(logging.DEBUG)
+    # remove prior handlers
+    for handler in logger.handlers:
+        logger.removeHandler(handler)
+    logger.addHandler(handler)
 
     if logger_kwarg:
         func('a', logger=logger)
@@ -80,6 +85,9 @@ def test_log(func, logger_kwarg, logger_name):
 
     assert 'Executing func' in lines[0]
     assert f'Exception raised in {func.__name__}: invalid literal for int' in lines[1]
+
+    logger.removeHandler(handler)
+    handler.close()
 
 
 def test_get_sibling_section():
