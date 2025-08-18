@@ -26,7 +26,20 @@ LOGGER = get_logger('TestLogger')
 
 @pytest.fixture
 def log_output():
-    return LogCapture()
+    capture = LogCapture()
+    processors = structlog.get_config()['processors']
+    old_processors = processors.copy()
+    try:
+        # clear processors list and use LogCapture for testing
+        processors.clear()
+        processors.append(capture)
+        structlog.configure(processors=processors)
+        yield capture
+    finally:
+        # remove LogCapture and restore original processors
+        processors.clear()
+        processors.extend(old_processors)
+        structlog.configure(processors=processors)
 
 
 @pytest.fixture(autouse=True)
