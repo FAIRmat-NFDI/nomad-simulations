@@ -1058,30 +1058,66 @@ class ModelSystem(System):
     def is_atomic(self) -> bool:
         return self._is_atomic
 
-    # ? Is it better to get symbols with logging or make a property without?
     @log
     def get_symbols(self) -> list[str]:
         """
-        Gets the symbols from the particle_states.
-        Args:
-            logger (BoundLogger): The logger to log messages.
-        Returns:
-            list: The list of symbols of the particles.
+        Access to particle labels, irrespective of specific child class.
+
+        Returns [] if any particle lacks a usable label/symbol.
         """
         logger = self.get_symbols.__annotations__['logger']
-        symbols = []
-        for particle_state in self.particle_states:
-            symbol = None
-            if isinstance(particle_state, AtomsState):
-                symbol = particle_state.chemical_symbol
-            elif isinstance(particle_state, CGBeadState):
-                symbol = particle_state.bead_symbol
-            else:
-                symbol = particle_state.label
-            if not symbol:
-                logger.warning('missing symbol in ParticleState.')
+
+        def _root_symbols(ms: 'ModelSystem') -> list[str]:
+            if not ms.particle_states:
                 return []
-            symbols.append(symbol)
+            symbols: list[str] = []
+            for particle_state in ms.particle_states:
+                symbol = None
+                if isinstance(particle_state, AtomsState):
+                    symbol = (
+                        particle_state.chemical_symbol
+                        if particle_state.chemical_symbol
+                        else particle_state.label
+                    )
+                elif isinstance(particle_state, CGBeadState):
+                    symbol = (
+                        particle_state.bead_symbol
+                        if particle_state.bead_symbol
+                        else particle_state.label
+                    )
+                    if not symbol:
+                        alts = particle_state.alt_labels
+                        if alts:
+                            try:
+                                symbol = alts[0]
+                            except Exception:
+                                symbol = None
+                else:
+                    symbol = particle_state.label
+                if not symbol:
+                    return []
+                symbols.append(symbol)
+            return symbols
+
+        if self.is_root_system():
+            print('in root system')
+            return _root_symbols(self)
+
+        # child: slice the labels from root with particle_indices
+        root = self.get_root_system()
+        print('root system', root)
+        root_syms = _root_symbols(root)
+        print('root symbols', root_syms)
+        print('particle indices', self.particle_indices)
+
+        if not root_syms or self.particle_indices is None:
+            return []
+
+        try:
+            symbols = [root_syms[i] for i in self.particle_indices]
+        except Exception:
+            return []
+
         return symbols
 
     def _all_labels_are_elements(self, labels: list[str]) -> bool:
@@ -1128,6 +1164,11 @@ class ModelSystem(System):
         symbols = self.get_symbols(logger=logger)
         if not symbols:
             logger.error('Cannot generate ASE Atoms without chemical symbols.')
+            return None
+        if not self._all_labels_are_elements(symbols):
+            logger.error(
+                'Cannot generate ASE Atoms: symbols are not all element symbols.'
+            )
             return None
 
         ase_atoms = ase.Atoms(symbols=symbols)
@@ -1308,7 +1349,7 @@ class ModelSystem(System):
         else:
             # Fall back to CG; use each original ParticleState.label (may be None)
             for old in ps_list:
-                lab = getattr(old, 'label', None)
+                lab = old.label
                 new = CGBeadState()
                 if lab:
                     new.bead_symbol = lab
@@ -1382,17 +1423,129 @@ class ModelSystem(System):
         return not self.is_equal_structure(other)
 
     # functions for traversing the ModelSystem hierarchy
-    def get_root_system(self) -> 'ModelSystem':
-        """
-        Traverses up the hierarchy to find the root ModelSystem.
+    def _parent_is_modelsystem(self, parent) -> bool:
+        """Robustly detect whether `parent` behaves like a ModelSystem, even if it’s a proxy."""
+        if parent is None:
+            return False
+        # 1) Plain isinstance fast path
+        try:
+            if isinstance(parent, ModelSystem):
+                return True
+        except Exception:
+            pass
+        # 2) Section definition identity or name match
+        try:
+            pdef = getattr(parent, 'm_def', None)
+            if pdef is not None:
+                if pdef is getattr(ModelSystem, 'm_def', None):
+                    return True
+                if (
+                    getattr(pdef, 'name', None)
+                    == getattr(ModelSystem.m_def, 'name', None)
+                    == 'ModelSystem'
+                ):
+                    return True
+        except Exception:
+            pass
+        # 3) Structural fallback: ModelSystem‐like interface
+        if hasattr(parent, 'sub_systems') and hasattr(parent, 'particle_states'):
+            return True
+        # 4) Class name last resort
+        if (
+            getattr(parent, '__class__', None)
+            and parent.__class__.__name__ == 'ModelSystem'
+        ):
+            return True
+        return False
 
-        Returns:
-            ModelSystem: The top-level (root) ModelSystem.
-        """
+    def is_root_system(self) -> bool:
+        parent = self.m_parent
+        print('parent', parent)
+        return not self._parent_is_modelsystem(parent)
+
+    def get_root_system(self) -> 'ModelSystem':
         system = self
-        while isinstance(system.m_parent, ModelSystem):
-            system = system.m_parent
+        while True:
+            parent = getattr(system, 'm_parent', None)
+            if not self._parent_is_modelsystem(parent):
+                break
+            system = parent
         return system
+
+    # def is_root_system(self) -> bool:
+    #     """
+    #     Checks if the current ModelSystem is the root system (top-level).
+
+    #     Returns:
+    #         bool: True if this is the root ModelSystem, False otherwise.
+    #     """
+    #     return not isinstance(self.m_parent, ModelSystem)
+    # def is_root_system(self) -> bool:
+    #     """
+    #     A node is root if its parent is not a ModelSystem section.
+    #     Use section definitions rather than isinstance to be robust
+    #     to proxies / metainfo wrapper types.
+    #     """
+    #     parent = self.m_parent
+    #     return not (parent is not None and parent.m_def is ModelSystem.m_def)
+    # def is_root_system(self) -> bool:
+    #     """
+    #     A node is root if its parent is not a ModelSystem section.
+    #     Prefer isinstance for robustness; fall back to m_def identity.
+    #     """
+    #     parent = getattr(self, 'm_parent', None)
+    #     if parent is None:
+    #         return True
+    #     try:
+    #         if isinstance(parent, ModelSystem):
+    #             return False
+    #     except Exception:
+    #         pass
+
+    #     return getattr(parent, 'm_def', None) is not ModelSystem.m_def
+
+    # def get_root_system(self) -> 'ModelSystem':
+    #     """
+    #     Traverses up the hierarchy to find the root ModelSystem.
+
+    #     Returns:
+    #         ModelSystem: The top-level (root) ModelSystem.
+    #     """
+    #     system = self
+    #     while isinstance(system.m_parent, ModelSystem):
+    #         system = system.m_parent
+    #     return system
+    # def get_root_system(self) -> 'ModelSystem':
+    #     """
+    #     Walk up through parents while the parent is a ModelSystem (by m_def identity).
+    #     """
+    #     system = self
+    #     while True:
+    #         parent = system.m_parent
+    #         if parent is None or parent.m_def is not ModelSystem.m_def:
+    #             break
+    #         system = parent
+    #     return system
+    # def get_root_system(self) -> 'ModelSystem':
+    #     """
+    #     Walk up through parents while the parent behaves like a ModelSystem.
+    #     """
+    #     system = self
+    #     while True:
+    #         parent = getattr(system, 'm_parent', None)
+    #         if parent is None:
+    #             break
+    #         try:
+    #             if isinstance(parent, ModelSystem):
+    #                 system = parent
+    #                 continue
+    #         except Exception:
+    #             pass
+    #         if getattr(parent, 'm_def', None) is ModelSystem.m_def:
+    #             system = parent
+    #             continue
+    #         break
+    #     return system
 
     # functions for working with molecules
     def get_bond_list(self, set_local: bool = False) -> np.ndarray:
@@ -1407,26 +1560,35 @@ class ModelSystem(System):
         Returns:
             np.ndarray: Filtered bond list for this subsystem (root-level indices).
         """
-
-        if not isinstance(self.m_parent, ModelSystem):  # this is the root system
-            return self.bond_list
+        empty_return = np.empty((0, 2), dtype=np.int32)
+        if self.is_root_system():
+            return self.bond_list if self.bond_list is not None else empty_return
 
         if self.particle_indices is None:
-            return np.array([])
+            return empty_return
 
         root = self.get_root_system()
         if root.bond_list is None:
-            return np.array([])
+            return empty_return
 
-        indices_set = set(self.particle_indices.tolist())
-        bond_list = np.array(
-            [
-                (i, j)
-                for i, j in root.bond_list
-                if i in indices_set and j in indices_set
-            ],
-            dtype=np.int32,
+        idx = (
+            np.asarray(self.particle_indices, dtype=np.int32).ravel()
+            if self.particle_indices is not None
+            else []
         )
+        mask = np.isin(root.bond_list, idx).all(axis=1)
+        root_bonds = np.asarray(root.bond_list, dtype=np.int32).reshape(-1, 2)
+        bond_list = root_bonds[mask]
+        bond_list = np.unique(bond_list, axis=0)
+        # indices_set = set(self.particle_indices.tolist())
+        # bond_list = np.array(
+        #     [
+        #         (i, j)
+        #         for i, j in root.bond_list
+        #         if i in indices_set and j in indices_set
+        #     ],
+        #     dtype=np.int32,
+        # )
 
         if set_local:
             self.bond_list = bond_list
