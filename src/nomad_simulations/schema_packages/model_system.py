@@ -1326,7 +1326,7 @@ class ModelSystem(System):
         if not self._is_atomic:
             return
         # Generate ASE Atoms object from top-level ModelSystem data
-        ase_atoms = self.to_ase_atoms(logger)
+        ase_atoms = self.to_ase_atoms(logger=logger)
         if ase_atoms is None:
             logger.error('Could not generate ASE Atoms from ModelSystem.')
             return
