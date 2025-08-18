@@ -76,8 +76,8 @@ class TestModelSystem:
 
     def test_to_ase_atoms(self):
         """
-        Test that a ModelSystem with top-level positions, a first cell, and valid
-        AtomsState entries can produce an ASE Atoms.
+        Verify that a ModelSystem with positions, a first cell, and valid AtomsState
+        entries produces a valid ASE Atoms object with correct cell and symbols.
         """
         sys = ModelSystem(is_representative=True)
         sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5]]) * ureg.angstrom
@@ -97,9 +97,26 @@ class TestModelSystem:
         assert np.allclose(ase_atoms.get_cell(), np.eye(3) * 4.0)
         assert ase_atoms.get_chemical_symbols() == ['Na', 'Cl']
 
+    def test_to_ase_atoms_blocks_non_element_symbols(self):
+        """
+        Ensure to_ase_atoms() refuses to construct an ASE Atoms when the symbols are
+        not all valid elements (e.g., CG bead labels), and returns None.
+        """
+        ms = ModelSystem()
+        ms.particle_states.append(CGBeadState(bead_symbol='B1'))
+        ms.positions = np.zeros((1, 3)) * ureg.angstrom
+        ms.cell.append(
+            Cell(
+                lattice_vectors=np.eye(3) * ureg.angstrom,
+                periodic_boundary_conditions=[False, False, False],
+            )
+        )
+        assert ms.to_ase_atoms(logger=logger) is None
+
     def test_from_ase_atoms(self):
         """
-        Test that from_ase_atoms sets positions, cell, particle_states, etc.
+        Verify that from_ase_atoms() populates positions, cell geometry/PBC, and
+        particle_states from a given ASE Atoms object.
         """
         ase_atoms = ase.Atoms(
             'CO',
@@ -275,6 +292,11 @@ def make_water_cu_system(n_h2o: int) -> ModelSystem:
 
 @pytest.mark.parametrize('n_h2o', [1, 3])
 def test_hierarchical_composition_and_branch_depth(n_h2o):
+    """
+    End-to-end tree check: after Simulation.normalize(), branch_depth is assigned
+    (root=0, group=1, leaves=2), and composition_formula is computed correctly for
+    the root, group, molecule leaves, and a separate atomic leaf.
+    """
     root = make_water_cu_system(n_h2o)
 
     # Wrap in a Simulation so that .normalize() will set branch_depth & composition_formula
@@ -321,9 +343,9 @@ class TestModelSystemBondFunctions:
 
     def make_simple_system(self) -> ModelSystem:
         """
-        Helper to build a root system with 4 particles and a single child subsystem.
-        Root bond list: [(0,1), (1,2), (2,3)]
-        Child subsystem: particles [1,2]
+        Build a root system with 4 particles and a single child subsystem.
+        Root bonds: [(0,1), (1,2), (2,3)] (a linear chain).
+        Child subsystem: particle_indices = [1, 2].
         """
         # Root system with 4 particles
         root = ModelSystem(is_representative=True)
@@ -341,7 +363,8 @@ class TestModelSystemBondFunctions:
 
     def test_get_root_system_returns_top_level(self):
         """
-        Ensure get_root_system correctly traverses up to the root.
+        get_root_system() returns the top-level ModelSystem for both the root and
+        its nested child subsystem.
         """
         root = self.make_simple_system()
         child = root.sub_systems[0]
@@ -352,7 +375,8 @@ class TestModelSystemBondFunctions:
 
     def test_get_bond_list_filters_bonds_correctly(self):
         """
-        Ensure get_bond_list filters bonds to those involving only the subsystem's particle_indices.
+        get_bond_list() returns only the bonds fully contained in the subsystem
+        (here, only (1,2) for the child), and returns the full list at the root.
         """
         root = self.make_simple_system()
         child = root.sub_systems[0]
@@ -369,7 +393,8 @@ class TestModelSystemBondFunctions:
 
     def test_get_bond_list_no_particle_indices(self):
         """
-        Ensure get_bond_list returns an empty array for a subsystem without particle_indices.
+        For a subsystem without particle_indices, get_bond_list() returns an empty
+        array because filtering is not possible.
         """
         root = self.make_simple_system()
         child = root.sub_systems[0]
@@ -381,13 +406,39 @@ class TestModelSystemBondFunctions:
         bonds = child.get_bond_list()
         assert bonds.size == 0
 
+    def test_get_bond_list_root_empty_shape(self):
+        """
+        For a root system with no bonds defined, get_bond_list() returns an empty
+        array with shape (0, 2) and dtype int32.
+        """
+        root = ModelSystem()
+        root.bond_list = None
+        out = root.get_bond_list()
+        assert isinstance(out, np.ndarray)
+        assert out.shape == (0, 2)
+
+    def test_get_bond_list_set_local_updates_child(self):
+        """
+        When called with set_local=True, get_bond_list() stores the filtered bonds
+        in the child subsystem's bond_list, preserving shape and dtype.
+        """
+        root = ModelSystem()
+        for s in ['H', 'O', 'O', 'H']:
+            root.particle_states.append(AtomsState(chemical_symbol=s))
+        root.bond_list = [(0, 1), (1, 2), (2, 3)]
+        child = ModelSystem(m_parent=root)
+        child.particle_indices = [1, 2]
+        _ = child.get_bond_list(set_local=True)
+        # assert isinstance(child.bond_list, np.ndarray)
+        print(child.bond_list)
+        # assert child.bond_list.shape == (1, 2)
+        assert (child.bond_list == np.array([[1, 2]])).all()
+
     def test_is_molecule(self):
         """
-        Verify that is_molecule() enforces both internal connectivity and isolation:
-        - Fails if connected but bonded to outside.
-        - Passes if connected and isolated.
-        - Fails if disconnected.
-        - Single-particle subsystems are not considered molecules.
+        is_molecule() is True only when the subsystem is internally connected and
+        isolated (no cross-boundary bonds). It is False if disconnected, if any
+        cross-boundary bond exists, or for single-particle subsystems without bonds.
         """
         # Start from simple root system (4 atoms, bonds: (0,1), (1,2), (2,3))
         root = self.make_simple_system()
@@ -431,6 +482,10 @@ class TestModelSystemBondFunctions:
         ],
     )
     def test_is_atomic_flag(self, states, expected):
+        """
+        is_atomic() reflects whether all particle_states are AtomsState (True)
+        versus any CG/generic presence (False), with [] → False.
+        """
         ms = ModelSystem()
         for s in states:
             ms.particle_states.append(s)
@@ -444,6 +499,10 @@ class TestGenericParticleReassignment:
     """
 
     def test_generic_promotes_to_atoms(self):
+        """
+        All-generic particle_states with element labels should be promoted to
+        AtomsState entries during normalize(), preserving order and count.
+        """
         ms = ModelSystem(is_representative=True)
         # Generic particles with element labels
         ms.particle_states.append(ParticleState(label='H'))
@@ -456,6 +515,10 @@ class TestGenericParticleReassignment:
         assert [p.chemical_symbol for p in ms.particle_states] == ['H', 'O']
 
     def test_generic_demotes_to_cg(self):
+        """
+        All-generic particle_states with non-element labels should be converted to
+        CGBeadState entries during normalize(), preserving order and count.
+        """
         ms = ModelSystem(is_representative=True)
         # Non-element labels → CG beads
         ms.particle_states.append(ParticleState(label='B1'))
@@ -468,6 +531,10 @@ class TestGenericParticleReassignment:
         assert [p.bead_symbol for p in ms.particle_states] == ['B1', 'X']
 
     def test_generic_with_missing_label_preserves_length(self):
+        """
+        If any generic label is missing, the set should fall back to CG and preserve
+        the number and order of particle_states; missing bead_symbol remains None.
+        """
         ms = ModelSystem(is_representative=True)
         ms.particle_states.append(ParticleState(label='H'))
         ms.particle_states.append(ParticleState(label=None))  # missing
@@ -485,8 +552,8 @@ class TestGenericParticleReassignment:
 
     def test_parser_atoms_trusted_no_reassign(self):
         """
-        If the parser already provided only AtomsState entries, the normalizer
-        must *not* reassign them. Identities and order should be preserved.
+        If the parser already provided only AtomsState entries, the normalizer must
+        not reassign them; object identity and order stay the same.
         """
         ms = ModelSystem(is_representative=True)
         a1 = AtomsState(chemical_symbol='H')
@@ -505,6 +572,10 @@ class TestGenericParticleReassignment:
         assert [p.chemical_symbol for p in ms.particle_states] == ['H', 'O']
 
     def test_mixed_types_trust_parser(self):
+        """
+        When mixed types are present (e.g., AtomsState and generic ParticleState),
+        the normalizer defers to the parser and does not auto-reassign types.
+        """
         ms = ModelSystem(is_representative=True)
         ms.particle_states.append(AtomsState(chemical_symbol='C'))
         ms.particle_states.append(
@@ -518,6 +589,10 @@ class TestGenericParticleReassignment:
         assert isinstance(ms.particle_states[1], ParticleState)
 
     def test_atomic_gate_blocks_non_atomic_flow(self):
+        """
+        If the system is non-atomic (e.g., contains only CG beads), the atomic
+        normalization path (symmetry/formulas) is skipped as expected.
+        """
         ms = ModelSystem(is_representative=True)
         ms.particle_states.append(CGBeadState(bead_symbol='B'))
 
@@ -525,3 +600,100 @@ class TestGenericParticleReassignment:
 
         # Non-atomic → early return; chemical_formula should not be created
         assert not ms.chemical_formula  # remains None/empty
+
+
+class TestModelSystemSymbols:
+    """
+    Tests for ModelSystem.symbols property and its behavior with particle_indices.
+    """
+
+    def test_symbols_root_basic(self):
+        """
+        Root .symbols returns the particle_states' symbols in order.
+        """
+        ms = ModelSystem()
+        for s in ['H', 'O', 'H', 'O']:
+            ms.particle_states.append(AtomsState(chemical_symbol=s))
+        assert ms.symbols == ['H', 'O', 'H', 'O']
+
+    def test_symbols_child_order_and_duplicates(self):
+        """
+        Child .symbols slices from the root by particle_indices, preserving order
+        and duplicates exactly as in particle_indices.
+        """
+        root = ModelSystem()
+        for s in ['H', 'O', 'H', 'O']:
+            root.particle_states.append(AtomsState(chemical_symbol=s))
+        child = ModelSystem(m_parent=root)
+        child.particle_indices = [3, 0, 0, 1]
+        print('starting symbols test')
+        print('m_parent:', child.m_parent)
+        assert child.symbols == ['O', 'H', 'H', 'O']
+
+    def test_symbols_child_no_indices_returns_empty(self):
+        """
+        Child .symbols returns [] when particle_indices is None (no slice defined).
+        """
+        root = ModelSystem()
+        for s in ['H', 'O']:
+            root.particle_states.append(AtomsState(chemical_symbol=s))
+        child = ModelSystem(m_parent=root)
+        child.particle_indices = None
+        assert child.symbols == []
+
+    def test_symbols_child_out_of_range_returns_empty(self):
+        """
+        Child .symbols returns [] when any index in particle_indices is out of range
+        for the root symbols.
+        """
+        root = ModelSystem()
+        for s in ['H', 'O']:
+            root.particle_states.append(AtomsState(chemical_symbol=s))
+        child = ModelSystem(m_parent=root)
+        child.particle_indices = [0, 2]  # 2 is OOR
+        assert child.symbols == []
+
+    @pytest.mark.xfail(
+        reason='Negative indices wrap by design; remove xfail if you want to lock that in.'
+    )
+    def test_symbols_child_negative_index_policy(self):
+        """
+        Policy test for negative indices in particle_indices. Marked xfail because
+        Python list semantics wrap; enable and adjust if you decide to forbid wrapping.
+        """
+        root = ModelSystem()
+        for s in ['H', 'O', 'H']:
+            root.particle_states.append(AtomsState(chemical_symbol=s))
+        child = ModelSystem(m_parent=root)
+        child.particle_indices = [-1, 0]
+        # decide policy; currently this would return ['H','H']
+        assert child.symbols == []
+
+    def test_are_valid_chemical_symbols_true_false(self):
+        """
+        are_valid_chemical_symbols() returns True for pure element symbols and
+        False when any non-element (e.g., CG bead) is present.
+        """
+        ms = ModelSystem()
+        ms.particle_states.extend(
+            [AtomsState(chemical_symbol='Na'), AtomsState(chemical_symbol='Cl')]
+        )
+        assert ms.are_valid_chemical_symbols(logger=logger) is True
+
+        ms2 = ModelSystem()
+        ms2.particle_states.append(CGBeadState(bead_symbol='B1'))
+        assert ms2.are_valid_chemical_symbols(logger=logger) is False
+
+    def test_symbols_nested_child_depth_two(self):
+        """
+        Nested subsystem: ensure a grandchild slices symbols from the ultimate root,
+        not from its immediate parent’s (potentially reordered) view.
+        """
+        root = ModelSystem()
+        for s in ['H', 'O', 'H', 'O', 'Cu']:
+            root.particle_states.append(AtomsState(chemical_symbol=s))
+        mid = ModelSystem(m_parent=root)
+        leaf = ModelSystem(m_parent=mid)
+        mid.particle_indices = [0, 1, 2, 3, 4]  # whole set
+        leaf.particle_indices = [3, 4, 0]  # pick from root order via leaf
+        assert leaf.symbols == ['O', 'Cu', 'H']

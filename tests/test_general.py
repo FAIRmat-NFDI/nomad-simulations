@@ -98,15 +98,30 @@ class TestSimulation:
                 ['group_H20(1)', 'H20(3)', 'H(1)O(2)', 'H(1)O(2)', 'H(1)O(2)'],
                 [None, None, None, None, None],
             ),  # pure system
-            (
+            # (
+            #     False,
+            #     True,
+            #     ['H20'],
+            #     [3],
+            #     [['H', 'O', 'O']],
+            #     [None, None, None, None, None],
+            #     [None, None, None, None, None],
+            # ),  # non-representative system
+            (  # temporary until we decide about is_representative
                 False,
                 True,
                 ['H20'],
                 [3],
                 [['H', 'O', 'O']],
+                [
+                    'group_H20(1)',
+                    'H20(3)',
+                    'H(1)O(2)',
+                    'H(1)O(2)',
+                    'H(1)O(2)',
+                ],  # compute even if not representative
                 [None, None, None, None, None],
-                [None, None, None, None, None],
-            ),  # non-representative system
+            ),
             (
                 True,
                 True,

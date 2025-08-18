@@ -1,14 +1,16 @@
 from math import factorial
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Callable
+from nomad.datamodel.data import ArchiveSection
+from structlog.stdlib import BoundLogger
 
 import numpy as np
 from nomad.config import config
 
-if TYPE_CHECKING:
-    from typing import Callable, Optional
+# if TYPE_CHECKING:
+#     from typing import Callable, Optional
 
-    from nomad.datamodel.data import ArchiveSection
-    from structlog.stdlib import BoundLogger
+#     from nomad.datamodel.data import ArchiveSection
+#     from structlog.stdlib import BoundLogger
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -123,14 +125,48 @@ def is_not_representative(model_system, logger: 'BoundLogger'):
 
 
 # TODO remove function in nomad.atomutils
-def get_composition(children_names: 'list[str]') -> str:
+# def get_composition(children_names: 'list[str]') -> str:
+#     """
+#     Generates a generalized "chemical formula" based on the provided list `children_names`,
+#     with the format X(m)Y(n) for children_names X and Y of quantities m and n, respectively.
+#     """
+#     children_count_tup = np.unique(children_names, return_counts=True)
+#     formula = ''.join([f'{name}({count})' for name, count in zip(*children_count_tup)])
+#     return formula if formula else None
+def get_composition(children_names: list[str]) -> 'Optional[str]':
     """
-    Generates a generalized "chemical formula" based on the provided list `children_names`,
-    with the format X(m)Y(n) for children_names X and Y of quantities m and n, respectively.
+    Build a canonical 'composition' string like X(m)Y(n) from child names.
+
+    Notes
+    -----
+    - Names are counted and sorted alphabetically (lexicographic).
+    - Returns None if the input list is empty.
+
+    Parameters
+    ----------
+    children_names : list[str]
+        Child names to count.
+
+    Returns
+    -------
+    Optional[str]
+        Canonical composition string or None if no names were provided.
     """
-    children_count_tup = np.unique(children_names, return_counts=True)
-    formula = ''.join([f'{name}({count})' for name, count in zip(*children_count_tup)])
-    return formula if formula else None
+    if not children_names:
+        return None
+
+    # Ensure string dtype; np.unique returns sorted unique names and counts
+    arr = np.asarray(children_names, dtype=object).astype(str)
+    names, counts = np.unique(arr, return_counts=True)  # case-sensitive
+    # ? switch the above line for case insensitive sorting below?
+    # from collections import Counter
+
+    # counts = Counter(map(str, children_names))
+    # parts = [f'{name}({counts[name]})' for name in sorted(counts, key=str.casefold)]
+    # return ''.join(parts) if parts else None
+
+    # Join in sorted order from np.unique
+    return ''.join(f'{name}({count})' for name, count in zip(names, counts))
 
 
 def catch_not_implemented(func: 'Callable') -> 'Callable':
