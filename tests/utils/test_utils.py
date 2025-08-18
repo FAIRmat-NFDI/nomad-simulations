@@ -2,7 +2,9 @@ import logging
 from io import StringIO
 
 import pytest
+import structlog
 from nomad.utils import get_logger
+from structlog.testing import LogCapture
 
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
@@ -19,7 +21,17 @@ from nomad_simulations.schema_packages.variables import Temperature
 
 from . import logger
 
-LOGGER = logging.getLogger('TestLogger')
+LOGGER = get_logger('TestLogger')
+
+
+@pytest.fixture
+def log_output():
+    return LogCapture()
+
+
+@pytest.fixture(autouse=True)
+def fixture_configure_structlog(log_output):
+    structlog.configure(processors=[log_output])
 
 
 def f_kernel(f, a):
@@ -43,10 +55,7 @@ def example_func2(a):
     [
         pytest.param(example_func1, None, 'TestLogger', id='defined'),
         pytest.param(
-            example_func2,
-            logging.getLogger('TestLogger2'),
-            'TestLogger2',
-            id='as_kwarg',
+            example_func2, get_logger('TestLogger2'), 'TestLogger2', id='as_kwarg'
         ),
         pytest.param(
             example_func2,
@@ -56,26 +65,12 @@ def example_func2(a):
         ),
     ],
 )
-def test_log(func, logger_kwarg, logger_name):
+def test_log(func, logger_kwarg, logger_name, log_output):
     """
     Test for the `log` decorator.
     """
 
-    stream = StringIO('')
     logger = logger_kwarg if logger_kwarg is not None else LOGGER
-    if logger_name == 'nomad_simulations.schema_packages.utils.utils':
-        # inject streaming steam handler to the default logger
-        from nomad_simulations.schema_packages.utils.utils import (
-            DEFAULT_LOGGER as logger,
-        )  # noqa
-
-    handler = logging.StreamHandler(stream)
-    handler.setLevel(logging.DEBUG)
-    # remove prior handlers
-    # for handler in logger.handlers:
-    #     logger.removeHandler(handler)
-    logger.addHandler(handler)
-
     if logger_kwarg:
         func('a', logger=logger)
     else:
@@ -83,14 +78,11 @@ def test_log(func, logger_kwarg, logger_name):
 
     assert func.__annotations__['logger'].name == logger_name
 
-    stream.seek(0)
-    lines = stream.readlines()
-
-    assert 'Executing func' in lines[0]
-    assert f'Exception raised in {func.__name__}: invalid literal for int' in lines[1]
-
-    logger.removeHandler(handler)
-    handler.close()
+    assert 'Executing func' in log_output.entries[0].get('event')
+    assert (
+        f'Exception raised in {func.__name__}: invalid literal for int'
+        in log_output.entries[1].get('event')
+    )
 
 
 def test_get_sibling_section():
