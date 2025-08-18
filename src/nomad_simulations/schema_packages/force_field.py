@@ -23,6 +23,7 @@ from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import is_not_representative
 
 MOL = 6.022140857e23
+FF_TOL = 1e-2
 
 
 class ParameterEntry(ArchiveSection):
@@ -231,7 +232,6 @@ class TabulatedPotential(Potential):
 
         if self.bins is not None:
             smoothing_factor = len(self.bins) - np.sqrt(2 * len(self.bins))
-            tol = 1e-2
             if self.forces is None and self.energies is not None:
                 if not isinstance(self.bins, ureg.Quantity) or not isinstance(
                     self.energies, ureg.Quantity
@@ -267,15 +267,15 @@ class TabulatedPotential(Potential):
                         self.energies.to('kJ').magnitude * MOL
                         - np.min(self.energies.to('kJ').magnitude * MOL)
                     )
-                    if np.all([x < tol for x in energies_diff]):
+                    if np.all([np.abs(x) < FF_TOL for x in energies_diff]):
                         logger.warning(
                             f'Tabulated forces were generated from energies in {self.name},'
-                            f'with consistency errors less than tol={tol}. '
+                            f'with consistency errors less than tol={FF_TOL}. '
                         )
                     else:
                         logger.warning(
                             f'Unable to derive tabulated forces from energies in {self.name},'
-                            f'consistency errors were greater than tol={tol}.'
+                            f'consistency errors were greater than tol={FF_TOL}.'
                         )
                         self.forces = None
                 except ValueError as e:
@@ -313,15 +313,15 @@ class TabulatedPotential(Potential):
                     forces_diff = forces.to(f'kJ/{self.bins.units}').magnitude * MOL - (
                         self.forces.to(f'kJ/{self.bins.units}').magnitude * MOL
                     )
-                    if np.all([x < tol for x in forces_diff]):
+                    if np.all([np.abs(x) < FF_TOL for x in forces_diff]):
                         logger.warning(
                             f'Tabulated energies were generated from forces in {self.name},'
-                            f'with consistency errors less than tol={tol}. '
+                            f'with consistency errors less than tol={FF_TOL}. '
                         )
                     else:
                         logger.warning(
                             f'Unable to derive tabulated energies from forces in {self.name},'
-                            f'consistency errors were greater than tol={tol}.'
+                            f'consistency errors were greater than tol={FF_TOL}.'
                         )
                         self.energies = None
                 except ValueError as e:
