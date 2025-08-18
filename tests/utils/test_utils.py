@@ -67,7 +67,7 @@ def test_log(func, logger_kwarg, logger_name):
         )  # noqa
 
     handler = logging.StreamHandler(stream)
-    logger.setLevel(logging.DEBUG)
+    handler.setLevel(logging.DEBUG)
     # remove prior handlers
     for handler in logger.handlers:
         logger.removeHandler(handler)
