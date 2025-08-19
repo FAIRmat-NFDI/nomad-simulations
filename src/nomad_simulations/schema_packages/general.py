@@ -212,24 +212,33 @@ class Simulation(BaseSimulation, Schema):
         if system.composition_formula is not None:
             return system.composition_formula
 
+        def get_formula_from_particles(system: ModelSystem) -> str | None:
+            if system.particle_indices is None:
+                return
+
+            names = (
+                system.get_symbols()
+            )  # already slices from root via particle_indices
+
+            return get_composition(children_names=names) if names else None
+
+        formula = None
         subsystems = system.sub_systems
         # INTERNAL NODE: use child branch labels
         if subsystems:
             children_names = [(child.branch_label or 'Unknown') for child in subsystems]
-            return get_composition(children_names=children_names)
+            children_names = (
+                children_names
+                if not all([name == 'Unknown' for name in children_names])
+                else []
+            )
+            formula = get_composition(children_names=children_names)
 
-        # LEAF NODE
-        if system.particle_indices is None:
-            return  # cannot infer size
+        # LEAF NODE or all children have no branch_label
+        if not formula:
+            formula = get_formula_from_particles(system)
 
-        names = system.get_symbols()  # already slices from root via particle_indices
-        if names:
-            return get_composition(children_names=names)
-        else:
-            # No labels available → count Unknown tokens
-            n = len(system.particle_indices)
-            if n > 0:
-                return get_composition(children_names=['Unknown'] * n)
+        return formula
 
     @staticmethod
     def set_composition_formula(system_parent: ModelSystem) -> None:
@@ -238,48 +247,19 @@ class Simulation(BaseSimulation, Schema):
 
         Rules
         -----
-        - Internal nodes (with children): formula counts child branch labels, using 'Unknown'
-        when a child has no branch_label.
-        - Leaves (no children):
-            * If particle_indices is missing → leave as None.
-            * If symbols are available → use them.
-            * Otherwise → treat each particle as 'Unknown' and count, e.g. Unknown(3).
         - Never overwrite a pre-set custom composition_formula (only set when None).
+        - Internal nodes (with children):
+            * Formula counts child branch labels when available, using 'Unknown' otherwise.
+            * If no children have branch labels, falls back to using particle labels.
+        - Leaves (no children):
+            * Uses particle labels.
+            * If particle_indices or symbols are missing → leave as None.
+
+        Args:
+        ----
+            system_parent (ModelSystem): The upper-most level of the system hierarchy to consider.
+
         """
-
-        # def set_formula(system: ModelSystem) -> None:
-        # # Honor custom formulas
-        # if system.composition_formula is not None:
-        #     return
-
-        # subsystems = system.sub_systems
-        # # INTERNAL NODE: use child branch labels
-        # if subsystems:
-        #     children_names = [
-        #         (child.branch_label or 'Unknown') for child in subsystems
-        #     ]
-        #     system.composition_formula = get_composition(
-        #         children_names=children_names
-        #     )
-        #     return
-
-        # # LEAF NODE
-        # if system.particle_indices is None:
-        #     return  # cannot infer size
-
-        # names = (
-        #     system.get_symbols()
-        # )  # already slices from root via particle_indices
-        # if names:
-        #     system.composition_formula = get_composition(children_names=names)
-        # else:
-        #     # No labels available → count Unknown tokens
-        #     n = len(system.particle_indices)
-        #     if n > 0:
-        #         system.composition_formula = get_composition(
-        #             children_names=['Unknown'] * n
-        #         )
-
         system_parent.composition_formula = Simulation.get_composition_formula(
             system_parent
         )
