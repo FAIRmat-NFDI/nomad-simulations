@@ -1,3 +1,4 @@
+from .elastic import Elastic
 from .equation_of_state import EquationOfState
 from .general import ParallelWorkflow, SerialWorkflow, SimulationWorkflow
 from .geometry_optimization import GeometryOptimization
