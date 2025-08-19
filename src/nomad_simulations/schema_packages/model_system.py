@@ -834,8 +834,6 @@ class ModelSystem(System):
         2 and 3.
     """
 
-    __is_atomic_flag: Optional[bool] = None
-
     normalizer_level = 0
 
     name = Quantity(
@@ -1034,30 +1032,20 @@ class ModelSystem(System):
 
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
         super().__init__(m_def, m_context, **kwargs)
-        self.__is_atomic_flag = None
-
-    @property
-    def _is_atomic(self) -> bool:
-        """
-        If explicitly set (True/False), use that.
-        Otherwise compute from current particle_states every time (no caching),
-        so it can’t go stale.
-        """
-        if self.__is_atomic_flag is not None:
-            return self.__is_atomic_flag
-        return bool(self.particle_states) and all(
-            isinstance(p, AtomsState) for p in self.particle_states
-        )
-
-    @_is_atomic.setter
-    def _is_atomic(self, value: Optional[bool]) -> None:
-        """
-        Set to True/False to force; set to None to clear the override.
-        """
-        self.__is_atomic_flag = None if value is None else bool(value)
+        self._cache: dict[str, Any] = {}
 
     def is_atomic(self) -> bool:
-        return self._is_atomic
+        """
+        Determine if system has only AtomStates.
+        """
+        if self._cache.get('is_atomic') is not None:
+            return self._cache['is_atomic']
+
+        is_atomic = bool(self.particle_states) and all(
+            isinstance(p, AtomsState) for p in self.particle_states
+        )
+        self._cache['is_atomic'] = is_atomic
+        return is_atomic
 
     @log
     def get_symbols(self) -> list[str]:
@@ -1068,56 +1056,42 @@ class ModelSystem(System):
         """
         logger = self.get_symbols.__annotations__['logger']
 
+        if self._cache.get('symbols') is not None:
+            return self._cache['symbols']
+
         def _root_symbols(ms: 'ModelSystem') -> list[str]:
             if not ms.particle_states:
                 return []
-            symbols: list[str] = []
-            for particle_state in ms.particle_states:
-                symbol = None
-                if isinstance(particle_state, AtomsState):
-                    symbol = (
-                        particle_state.chemical_symbol
-                        if particle_state.chemical_symbol
-                        else particle_state.label
-                    )
-                elif isinstance(particle_state, CGBeadState):
-                    symbol = (
-                        particle_state.bead_symbol
-                        if particle_state.bead_symbol
-                        else particle_state.label
-                    )
-                    if not symbol:
-                        alts = particle_state.alt_labels
-                        if alts:
-                            try:
-                                symbol = alts[0]
-                            except Exception:
-                                symbol = None
-                else:
-                    symbol = particle_state.label
-                if not symbol:
-                    return []
-                symbols.append(symbol)
+
+            symbols: list[str] = [ps.get_label() for ps in ms.particle_states]
+            if None in symbols:
+                return []
+
+            self._cache['symbols'] = symbols
             return symbols
 
-        if self.is_root_system():
+        if self.is_root_system():  # ? How to deal with cache?
             return _root_symbols(self)
 
         # child: slice the labels from root with particle_indices
         root = self.get_root_system()
         root_syms = _root_symbols(root)
         if not root_syms or self.particle_indices is None:
+            self._cache['symbols'] = []
             return []
 
         # Validate indices: must be ints and 0 <= i < len(root_syms)
         if any(i < 0 or i >= len(root_syms) for i in self.particle_indices):
+            self._cache['symbols'] = []
             return []
 
         try:
             symbols = [root_syms[i] for i in self.particle_indices]
         except Exception:
+            self._cache['symbols'] = []
             return []
 
+        self._cache['symbols'] = symbols
         return symbols
 
     def _all_labels_are_elements(self, labels: list[str]) -> bool:
@@ -1345,7 +1319,6 @@ class ModelSystem(System):
                 self._copy_common_quantities(old, new, exclude={'chemical_symbol'})
                 new.normalize(archive, logger)
                 self.particle_states.append(new)
-            self._is_atomic = True
         else:
             # Fall back to CG; use each original ParticleState.label (may be None)
             for old in ps_list:
@@ -1357,7 +1330,6 @@ class ModelSystem(System):
                 self._copy_common_quantities(old, new, exclude={'bead_symbol'})
                 new.normalize(archive, logger)
                 self.particle_states.append(new)
-            self._is_atomic = False
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -1372,7 +1344,7 @@ class ModelSystem(System):
         #     return
 
         ## ATOMIC NORMALIZATION
-        if not self._is_atomic:
+        if not self.is_atomic():
             return
         # Generate ASE Atoms object from top-level ModelSystem data
         ase_atoms = self.to_ase_atoms(logger=logger)
