@@ -1049,7 +1049,6 @@ class ModelSystem(System):
 
         Returns [] if any particle lacks a usable label/symbol.
         """
-
         if self._cache.get('symbols') is not None:
             return self._cache['symbols']
 
@@ -1455,6 +1454,7 @@ class ModelSystem(System):
         bond_list = root_bonds[mask]
         bond_list = np.unique(bond_list, axis=0)
 
+        # TODO - separate setting from getting
         if set_local:
             self.bond_list = bond_list
 

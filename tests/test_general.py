@@ -128,7 +128,7 @@ class TestSimulation:
                 [None],
                 [3],
                 [['H', 'O', 'O']],
-                ['Unknown(1)', 'Unknown(3)', 'H(1)O(2)', 'H(1)O(2)', 'H(1)O(2)'],
+                ['H(3)O(6)', 'H(3)O(6)', 'H(1)O(2)', 'H(1)O(2)', 'H(1)O(2)'],
                 [None, None, None, None, None],
             ),  # missing branch labels
             (
@@ -137,7 +137,7 @@ class TestSimulation:
                 ['H20'],
                 [3],
                 [[None, None, None]],
-                ['group_H20(1)', 'H20(3)', 'Unknown(3)', 'Unknown(3)', 'Unknown(3)'],
+                ['group_H20(1)', 'H20(3)', None, None, None],
                 [None, None, None, None, None],
             ),  # missing atom labels
             (
@@ -221,7 +221,7 @@ class TestSimulation:
         atomic_cell = AtomicCell()
         model_system.cell.append(atomic_cell)
         if has_atom_indices:
-            model_system.particle_indices = []
+            model_system.particle_indices = np.empty(0, dtype=np.int32)
 
         # add the atoms to the ModelSystem's particle_states.
         for mol_label, n_mol, atom_labels in zip(
@@ -230,7 +230,7 @@ class TestSimulation:
             # Create a branch (group) for this molecule type.
             model_system_mol_group = ModelSystem()
             if has_atom_indices:
-                model_system_mol_group.particle_indices = []
+                model_system_mol_group.particle_indices = np.empty(0, dtype=np.int32)
             model_system_mol_group.branch_label = (
                 f'group_{mol_label}' if mol_label is not None else None
             )

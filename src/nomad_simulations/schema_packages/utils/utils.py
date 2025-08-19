@@ -119,15 +119,7 @@ def is_not_representative(model_system, logger: 'BoundLogger'):
 
 
 # TODO remove function in nomad.atomutils
-# def get_composition(children_names: 'list[str]') -> str:
-#     """
-#     Generates a generalized "chemical formula" based on the provided list `children_names`,
-#     with the format X(m)Y(n) for children_names X and Y of quantities m and n, respectively.
-#     """
-#     children_count_tup = np.unique(children_names, return_counts=True)
-#     formula = ''.join([f'{name}({count})' for name, count in zip(*children_count_tup)])
-#     return formula if formula else None
-def get_composition(children_names: list[str]) -> Optional[str]:
+def get_composition(children_names: list[str]) -> str | None:
     """
     Build a canonical 'composition' string like X(m)Y(n) from child names.
 
@@ -143,7 +135,7 @@ def get_composition(children_names: list[str]) -> Optional[str]:
 
     Returns
     -------
-    Optional[str]
+    str | None
         Canonical composition string or None if no names were provided.
     """
     if not children_names:
