@@ -117,6 +117,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
         # do not overwrite if tasks are set but give out a warning that it maybe
         # inconsistent with the outputs
+        logger = self.map_tasks.__annotations__['logger']
         if self.tasks:
             logger.warning('Tasks are predefined and will not generate from outputs.')
             return
