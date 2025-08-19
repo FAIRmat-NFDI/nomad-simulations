@@ -1,48 +1,32 @@
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import SchemaPackage, SubSection
+from nomad.metainfo import SchemaPackage
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
 
-from .general import (
-    INCORRECT_N_TASKS,
-    ElectronicStructureResults,
-    SerialWorkflow,
-    SimulationWorkflowModel,
-    SimulationWorkflowResults,
-)
+from .beyond_dft import BeyondDFTModel, BeyondDFTResults, BeyondDFTWorkflow
 
 m_package = SchemaPackage()
 
-# TODO use defs in beyond_dft
 
-
-class DFTGWModel(SimulationWorkflowModel):
+class DFTGWModel(BeyondDFTModel):
     label = 'DFT+GW workflow parameters'
 
 
-class DFTGWResults(SimulationWorkflowResults):
-    """
-    Contains references to DFT and GW outputs.
-    """
-
+class DFTGWResults(BeyondDFTResults):
     label = 'DFT+GW workflow results'
 
-    dft = SubSection(sub_section=ElectronicStructureResults)
 
-    gw = SubSection(sub_section=ElectronicStructureResults)
-
-
-class DFTGWWorkflow(SerialWorkflow):
+class DFTGWWorkflow(BeyondDFTWorkflow):
     """
-    Definitions for GW calculation based on DFT workflow.
+    Definitions for GW calculations based on DFT.
     """
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
             self.model = DFTGWModel()
-        logger = self.map_input.__annotations__['logger']
+        logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
     @log
@@ -56,14 +40,11 @@ class DFTGWWorkflow(SerialWorkflow):
         """
         Link the DFT and GW single point workflows in the DFT-GW workflow.
         """
+
         super().normalize(archive, logger)
 
-        if not self.name:
-            self.name: str = 'DFT+GW'
-
-        if len(self.tasks) != 2:
-            logger.error(INCORRECT_N_TASKS)
-            return
+        if self.task and not self.task[-1].name:
+            self.task[-1].name = 'GW'
 
 
 m_package.__init_metainfo__()
