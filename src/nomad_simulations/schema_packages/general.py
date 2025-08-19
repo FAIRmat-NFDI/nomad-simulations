@@ -206,7 +206,33 @@ class Simulation(BaseSimulation, Schema):
                 system_parent=system_child, branch_depth=branch_depth + 1
             )
 
-    def resolve_composition_formula(self, system_parent: ModelSystem) -> None:
+    @staticmethod
+    def get_composition_formula(system: ModelSystem) -> str | None:
+        # Honor custom formulas
+        if system.composition_formula is not None:
+            return system.composition_formula
+
+        subsystems = system.sub_systems
+        # INTERNAL NODE: use child branch labels
+        if subsystems:
+            children_names = [(child.branch_label or 'Unknown') for child in subsystems]
+            return get_composition(children_names=children_names)
+
+        # LEAF NODE
+        if system.particle_indices is None:
+            return  # cannot infer size
+
+        names = system.get_symbols()  # already slices from root via particle_indices
+        if names:
+            return get_composition(children_names=names)
+        else:
+            # No labels available → count Unknown tokens
+            n = len(system.particle_indices)
+            if n > 0:
+                return get_composition(children_names=['Unknown'] * n)
+
+    @staticmethod
+    def set_composition_formula(system_parent: ModelSystem) -> None:
         """
         Determine and set the composition_formula for `system_parent` and all descendants.
 
@@ -221,43 +247,44 @@ class Simulation(BaseSimulation, Schema):
         - Never overwrite a pre-set custom composition_formula (only set when None).
         """
 
-        def set_for(system: ModelSystem) -> None:
-            # Honor custom formulas
-            if system.composition_formula is not None:
-                return
+        # def set_formula(system: ModelSystem) -> None:
+        # # Honor custom formulas
+        # if system.composition_formula is not None:
+        #     return
 
-            subsystems = system.sub_systems
-            if subsystems:
-                # INTERNAL NODE: use child branch labels
-                children_names = [
-                    (child.branch_label or 'Unknown') for child in subsystems
-                ]
-                system.composition_formula = get_composition(
-                    children_names=children_names
-                )
-                return
+        # subsystems = system.sub_systems
+        # # INTERNAL NODE: use child branch labels
+        # if subsystems:
+        #     children_names = [
+        #         (child.branch_label or 'Unknown') for child in subsystems
+        #     ]
+        #     system.composition_formula = get_composition(
+        #         children_names=children_names
+        #     )
+        #     return
 
-            # LEAF NODE
-            if system.particle_indices is None:
-                return  # cannot infer size
+        # # LEAF NODE
+        # if system.particle_indices is None:
+        #     return  # cannot infer size
 
-            names = system.symbols  # already slices from root via particle_indices
-            if names:
-                system.composition_formula = get_composition(children_names=names)
-            else:
-                # No labels available → count Unknown tokens
-                n = len(system.particle_indices)
-                if n > 0:
-                    system.composition_formula = get_composition(
-                        children_names=['Unknown'] * n
-                    )
+        # names = (
+        #     system.get_symbols()
+        # )  # already slices from root via particle_indices
+        # if names:
+        #     system.composition_formula = get_composition(children_names=names)
+        # else:
+        #     # No labels available → count Unknown tokens
+        #     n = len(system.particle_indices)
+        #     if n > 0:
+        #         system.composition_formula = get_composition(
+        #             children_names=['Unknown'] * n
+        #         )
 
-        def walk(node: ModelSystem) -> None:
-            set_for(node)
-            for child in node.sub_systems or []:
-                walk(child)
-
-        walk(system_parent)
+        system_parent.composition_formula = Simulation.get_composition_formula(
+            system_parent
+        )
+        for child in system_parent.sub_systems:
+            Simulation.set_composition_formula(system_parent=child)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super(Schema, self).normalize(archive, logger)
@@ -280,10 +307,10 @@ class Simulation(BaseSimulation, Schema):
                 continue
             self._set_system_branch_depth(system_parent=system_parent)
 
-            # ! Address when we know the role of is_representative
+            # TODO Address when we know the role of is_representative
             # if is_not_representative(model_system=system_parent, logger=logger):
             #     continue
-            self.resolve_composition_formula(system_parent=system_parent)
+            self.set_composition_formula(system_parent=system_parent)
 
 
 m_package.__init_metainfo__()

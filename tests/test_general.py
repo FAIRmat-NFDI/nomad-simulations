@@ -107,7 +107,7 @@ class TestSimulation:
             #     [None, None, None, None, None],
             #     [None, None, None, None, None],
             # ),  # non-representative system
-            (  # temporary until we decide about is_representative
+            (  # TODO - decide between tests above or below depending on scope of is_representative
                 False,
                 True,
                 ['H20'],

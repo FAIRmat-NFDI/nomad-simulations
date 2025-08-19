@@ -614,7 +614,7 @@ class TestModelSystemSymbols:
         ms = ModelSystem()
         for s in ['H', 'O', 'H', 'O']:
             ms.particle_states.append(AtomsState(chemical_symbol=s))
-        assert ms.symbols == ['H', 'O', 'H', 'O']
+        assert ms.get_symbols() == ['H', 'O', 'H', 'O']
 
     def test_symbols_child_order_and_duplicates(self):
         """
@@ -627,7 +627,7 @@ class TestModelSystemSymbols:
         child = ModelSystem()
         child.particle_indices = [3, 0, 0, 1]
         root.sub_systems.append(child)
-        assert child.symbols == ['O', 'H', 'H', 'O']
+        assert child.get_symbols() == ['O', 'H', 'H', 'O']
 
     def test_symbols_child_no_indices_returns_empty(self):
         """
@@ -639,7 +639,7 @@ class TestModelSystemSymbols:
         child = ModelSystem()
         child.particle_indices = None
         root.sub_systems.append(child)
-        assert child.symbols == []
+        assert child.get_symbols() == []
 
     def test_symbols_child_out_of_range_returns_empty(self):
         """
@@ -652,7 +652,7 @@ class TestModelSystemSymbols:
         child = ModelSystem()
         child.particle_indices = [0, 2]  # 2 is out of range
         root.sub_systems.append(child)
-        assert child.symbols == []
+        assert child.get_symbols() == []
 
     def test_symbols_child_negative_index_policy(self):
         """
@@ -665,7 +665,7 @@ class TestModelSystemSymbols:
         child = ModelSystem()
         child.particle_indices = [-1, 0]
         root.sub_systems.append(child)
-        assert child.symbols == []
+        assert child.get_symbols() == []
 
     def test_are_valid_chemical_symbols_true_false(self):
         """
@@ -696,4 +696,4 @@ class TestModelSystemSymbols:
         mid.sub_systems.append(leaf)
         mid.particle_indices = [0, 1, 2, 3, 4]  # whole set
         leaf.particle_indices = [3, 4, 0]  # pick from root order via leaf
-        assert leaf.symbols == ['O', 'Cu', 'H']
+        assert leaf.get_symbols() == ['O', 'Cu', 'H']
