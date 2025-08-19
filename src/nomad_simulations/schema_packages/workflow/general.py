@@ -97,6 +97,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
             # add method to inputs
             self.inputs.append(Link(name=self.model.label, section=self.model))
 
+    @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if self.results:
             logger = self.map_outputs.__annotations__['logger']
@@ -104,6 +105,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
             # add results to outputs
             self.outputs.append(Link(name=self.results.label, section=self.results))
 
+    @log
     def map_tasks(self, archive: EntryArchive) -> None:
         """
         Generate tasks from archive data outputs. Tasks are ordered and linked based
