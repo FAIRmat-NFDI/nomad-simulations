@@ -1,0 +1,56 @@
+import numpy as np
+from nomad.datamodel import EntryArchive
+from nomad.metainfo import SchemaPackage
+from structlog.stdlib import BoundLogger
+
+from nomad_simulations.schema_packages.utils import log
+
+from .beyond_dft import BeyondDFTModel, BeyondDFTResults, BeyondDFTWorkflow
+
+m_package = SchemaPackage()
+
+
+class XSModel(BeyondDFTModel):
+    label = 'DFT+GW workflow parameters'
+
+
+class XSResults(BeyondDFTResults):
+    label = 'DFT+GW workflow results'
+
+
+class XSWorkflow(BeyondDFTWorkflow):
+    """
+    Definitions for GW calculations based on DFT.
+    """
+
+    @log
+    def map_inputs(self, archive: EntryArchive) -> None:
+        if not self.model:
+            self.model = XSModel()
+        logger = self.map_inputs.__annotations__['logger']
+        super().map_inputs(archive, logger=logger)
+
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
+        if not self.results:
+            self.results = XSResults()
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
+
+    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        """
+        Link the DFT and GW single point workflows in the DFT-GW workflow.
+        """
+
+        super().normalize(archive, logger)
+
+        if self.task:
+            if not self.task[-1].name:
+                self.task[-1].name = 'PhotonPolarization'
+            if len(self.task) == 3 and not self.tasks[1].name:
+                self.task[1].name = 'GW'
+
+        # TODO fill in results and model
+
+
+m_package.__init_metainfo__()
