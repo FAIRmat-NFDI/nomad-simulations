@@ -2,6 +2,8 @@ from nomad.datamodel import EntryArchive
 from nomad.metainfo import SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.utils import log
+
 from .general import (
     INCORRECT_N_TASKS,
     ElectronicStructureResults,
@@ -34,15 +36,19 @@ class BeyondDFTWorkflow(SerialWorkflow):
     Definitions for workflows based on DFT.
     """
 
-    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
             self.model = BeyondDFTModel()
-        super().map_inputs(archive, logger)
+        logger = self.map_inputs.__annotations__['logger']
+        super().map_inputs(archive, logger=logger)
 
-    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             self.results = BeyondDFTResults()
-        super().map_outputs(archive, logger)
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         """

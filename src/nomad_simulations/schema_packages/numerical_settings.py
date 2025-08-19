@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.model_system import ModelSystem
-from nomad_simulations.schema_packages.utils import is_not_representative
+from nomad_simulations.schema_packages.utils import is_not_representative, log
 
 
 class NumericalSettings(ArchiveSection):
@@ -578,7 +578,8 @@ class KLinePath(ArchiveSection):
         ]
         return high_symmetry_path_values
 
-    def validate_high_symmetry_path(self, logger: 'BoundLogger') -> bool:
+    @log
+    def validate_high_symmetry_path(self) -> bool:
         """
         Validate `high_symmetry_path_names` and `high_symmetry_path_values` by checking if they are defined and have the same length.
 
@@ -588,6 +589,7 @@ class KLinePath(ArchiveSection):
         Returns:
             (bool): True if the `high_symmetry_path_names` and `high_symmetry_path_values` are defined and have the same length, False otherwise.
         """
+        logger = self.validate_high_symmetry_path.__annotations__['logger']
         if (
             self.high_symmetry_path_names is None
             or self.high_symmetry_path_values is None

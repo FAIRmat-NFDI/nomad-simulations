@@ -247,7 +247,7 @@ class TestXASSpectrum:
             exafs_spectrum.energies = Energy(points=exafs_energies * ureg.joule)
             exafs_spectrum.value = [0.2, 0.4, 0.6]
             xas_spectrum.exafs_spectrum = exafs_spectrum
-        xas_spectrum.generate_from_contributions(logger)
+        xas_spectrum.generate_from_contributions(logger=logger)
         if xas_spectrum.value is None:
             assert xas_values is None
         else:

@@ -4,6 +4,7 @@ from nomad.metainfo import MEnum, Quantity, SchemaPackage
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.properties.energies import BaseEnergy
+from nomad_simulations.schema_packages.utils import log
 
 from .general import SerialWorkflow, SimulationWorkflowModel, SimulationWorkflowResults
 
@@ -191,15 +192,19 @@ class GeometryOptimization(SerialWorkflow):
 
     task_label = 'Step'
 
-    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
             self.model = GeometryOptimizationModel()
-        super().map_inputs(archive, logger)
+        logger = self.map_inputs.__annotations__['logger']
+        super().map_inputs(archive, logger=logger)
 
-    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             self.results = GeometryOptimizationResults()
-        super().map_outputs(archive, logger)
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
 
 
 m_package.__init_metainfo__()

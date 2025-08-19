@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.utils import RussellSaundersState
+from nomad_simulations.schema_packages.utils import RussellSaundersState, log
 
 # TODO rename this file particles_state.py or place ParticleState in model_system.py
 # TODO and make separate module files for AtomsState, CGBeadState, etc.
@@ -148,7 +148,8 @@ class OrbitalsState(Entity):
             'ms_numbers': dict(zip(('down', 'up'), (-0.5, 0.5))),
         }
 
-    def validate_quantum_numbers(self, logger: 'BoundLogger') -> bool:
+    @log
+    def validate_quantum_numbers(self) -> bool:
         """
         Validate the quantum numbers (`n`, `l`, `ml`, `ms`) by checking if they are physically sensible.
 
@@ -158,6 +159,7 @@ class OrbitalsState(Entity):
         Returns:
             (bool): True if the quantum numbers are physically sensible, False otherwise.
         """
+        logger = self.validate_quantum_numbers.__annotations__['logger']
         if self.n_quantum_number is not None and self.n_quantum_number < 1:
             logger.error('The `n_quantum_number` must be greater than 0.')
             return False
@@ -331,7 +333,8 @@ class CoreHole(ArchiveSection):
         """,
     )
 
-    def resolve_occupation(self, logger: 'BoundLogger') -> Optional[np.float64]:
+    @log
+    def resolve_occupation(self) -> Optional[np.float64]:
         """
         Resolves the occupation of the orbital state. The occupation is resolved from the degeneracy
         and the number of excited electrons.
@@ -342,6 +345,7 @@ class CoreHole(ArchiveSection):
         Returns:
             (Optional[np.float64]): The occupation of the active orbital state.
         """
+        logger = self.resolve_occupation.__annotations__['logger']
         if self.orbital_ref is None or self.n_excited_electrons is None:
             logger.warning(
                 'Cannot resolve occupation without `orbital_ref` or `n_excited_electrons`.'
@@ -473,7 +477,8 @@ class HubbardInteractions(ArchiveSection):
         """,
     )
 
-    def resolve_u_interactions(self, logger: 'BoundLogger') -> Optional[tuple]:
+    @log
+    def resolve_u_interactions(self) -> Optional[tuple]:
         """
         Resolves the Hubbard interactions (u_interaction, u_interorbital_interaction, j_hunds_coupling)
         from the Slater integrals (F0, F2, F4) in the units defined for the Quantity.
@@ -484,6 +489,7 @@ class HubbardInteractions(ArchiveSection):
         Returns:
             (Optional[tuple]): The Hubbard interactions (u_interaction, u_interorbital_interaction, j_hunds_coupling).
         """
+        logger = self.resolve_u_interactions.__annotations__['logger']
         if self.slater_integrals is None or len(self.slater_integrals) != 3:
             logger.warning(
                 'Could not find `slater_integrals` or the length is not three.'
@@ -501,7 +507,8 @@ class HubbardInteractions(ArchiveSection):
         )
         return u_interaction, u_interorbital_interaction, j_hunds_coupling
 
-    def resolve_u_effective(self, logger: 'BoundLogger') -> Optional[pint.Quantity]:
+    @log
+    def resolve_u_effective(self) -> Optional[pint.Quantity]:
         """
         Resolves the effective U parameter (u_interaction - j_local_exchange_interaction).
 
@@ -511,6 +518,7 @@ class HubbardInteractions(ArchiveSection):
         Returns:
             (Optional[pint.Quantity]): The effective U parameter.
         """
+        logger = self.resolve_u_effective.__annotations__['logger']
         if self.u_interaction is None:
             logger.warning('Could not find `HubbardInteractions.u_interaction`.')
             return None
@@ -623,7 +631,8 @@ class AtomsState(ParticleState):
         sub_section=HubbardInteractions.m_def, repeats=False
     )
 
-    def resolve_chemical_symbol(self, logger: 'BoundLogger') -> Optional[str]:
+    @log
+    def resolve_chemical_symbol(self) -> Optional[str]:
         """
         Resolves the `chemical_symbol` from the `atomic_number`.
 
@@ -633,6 +642,7 @@ class AtomsState(ParticleState):
         Returns:
             (Optional[str]): The resolved `chemical_symbol`.
         """
+        logger = self.resolve_chemical_symbol.__annotations__['logger']
         if self.atomic_number is not None:
             try:
                 return ase.data.chemical_symbols[self.atomic_number]
@@ -642,7 +652,8 @@ class AtomsState(ParticleState):
                 )
         return None
 
-    def resolve_atomic_number(self, logger: 'BoundLogger') -> Optional[int]:
+    @log
+    def resolve_atomic_number(self) -> Optional[int]:
         """
         Resolves the `atomic_number` from the `chemical_symbol`.
 
@@ -652,6 +663,7 @@ class AtomsState(ParticleState):
         Returns:
             (Optional[int]): The resolved `atomic_number`.
         """
+        logger = self.resolve_atomic_number.__annotations__['logger']
         if self.chemical_symbol is not None:
             try:
                 return ase.data.atomic_numbers[self.chemical_symbol]
