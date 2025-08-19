@@ -67,30 +67,4 @@ class BeyondDFTWorkflow(SerialWorkflow):
             self.tasks[0].name = 'DFT'
 
 
-class DFTTBModel(BeyondDFTModel):
-    label = 'DFT+TB workflow parameters'
-
-
-class DFTTBResults(BeyondDFTResults):
-    label = 'DFT+TB worklfow results'
-
-
-class DFTTBWorkflow(BeyondDFTWorkflow):
-    """
-    Definitions for TB calculations based on DFT.
-    """
-
-    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if not self.model:
-            self.model = DFTTBModel()
-
-        if not self.results:
-            self.results = DFTTBResults()
-
-        super().normalize(archive, logger)
-
-        if self.tasks and not self.tasks[-1].name:
-            self.tasks[-1].name = 'TB'
-
-
 m_package.__init_metainfo__()
