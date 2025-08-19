@@ -8,3 +8,4 @@ from .photon_polarization import PhotonPolarizationWorkflow
 from .single_point import SinglePoint
 from .tb import DFTTBWorkflow
 from .thermodynamics import Thermodynamics
+from .xs import XSWorkflow
