@@ -1,5 +1,6 @@
 from math import factorial
 from typing import TYPE_CHECKING, Callable, Optional
+from collections import Counter
 
 import numpy as np
 from nomad.config import config
@@ -121,12 +122,18 @@ def is_not_representative(model_system, logger: 'BoundLogger'):
 # TODO remove function in nomad.atomutils
 def get_composition(children_names: list[str]) -> str | None:
     """
-    Build a canonical 'composition' string like X(m)Y(n) from child names.
+    Build a canonical composition string like ``X(m)Y(n)`` from child names.
 
     Notes
     -----
-    - Names are counted and sorted alphabetically (lexicographic).
-    - Returns None if the input list is empty.
+    - Names are **counted case-sensitively** (``"A"`` and ``"a"`` are distinct).
+    - Output terms are ordered by a **case-insensitive** primary sort
+      (using ``str.casefold()``), with a **deterministic tie-breaker** on the
+      original string (i.e., sorted by ``(name.casefold(), name)``).
+      This makes the result independent of the input order while preserving
+      distinct case variants as separate terms.
+    - All items are converted to strings via ``str(...)`` before counting.
+    - Returns ``None`` if the input list is empty.
 
     Parameters
     ----------
@@ -136,23 +143,24 @@ def get_composition(children_names: list[str]) -> str | None:
     Returns
     -------
     str | None
-        Canonical composition string or None if no names were provided.
+        Canonical composition string, or ``None`` if no names were provided.
+
+    Examples
+    --------
+    >>> get_composition(['H', 'O', 'H'])
+    'H(2)O(1)'
+    >>> get_composition(['a', 'A', 'b'])
+    'A(1)a(1)b(1)'
     """
     if not children_names:
         return None
 
-    # Ensure string dtype; np.unique returns sorted unique names and counts
-    arr = np.asarray(children_names, dtype=object).astype(str)
-    names, counts = np.unique(arr, return_counts=True)  # case-sensitive
-    # TODO switch the above line for case insensitive sorting below?
-    # from collections import Counter
-
-    # counts = Counter(map(str, children_names))
-    # parts = [f'{name}({counts[name]})' for name in sorted(counts, key=str.casefold)]
-    # return ''.join(parts) if parts else None
-
-    # Join in sorted order from np.unique
-    return ''.join(f'{name}({count})' for name, count in zip(names, counts))
+    counts = Counter(map(str, children_names))
+    parts = [
+        f'{name}({counts[name]})'
+        for name in sorted(counts, key=lambda s: (s.casefold(), s))
+    ]
+    return ''.join(parts) if parts else None
 
 
 def catch_not_implemented(func: 'Callable') -> 'Callable':
