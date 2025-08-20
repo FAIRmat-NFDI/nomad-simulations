@@ -41,6 +41,8 @@ from nomad.datamodel.metainfo.basesections.v2 import Entity, System
 from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
+from nomad_simulations.schema_packages.utils import log
+
 if TYPE_CHECKING:
     from collections.abc import Generator
     from typing import Any, Callable, Optional
@@ -343,7 +345,8 @@ class AtomicCell(Cell):
         """,
     )
 
-    def get_geometric_space_for_atomic_cell(self, logger: 'BoundLogger') -> None:
+    @log
+    def get_geometric_space_for_atomic_cell(self) -> None:
         """
         Get the real space parameters for the atomic cell using ASE.
         to_ase_atoms live under the parent ModelSystem.
@@ -351,6 +354,7 @@ class AtomicCell(Cell):
         Args:
             logger (BoundLogger): The logger to log messages.
         """
+        logger = self.get_geometric_space_for_atomic_cell.__annotations__['logger']
         parent = self.m_parent
         if not isinstance(parent, ModelSystem):
             logger.warning(
@@ -1055,7 +1059,8 @@ class ModelSystem(System):
         return self._is_atomic
 
     # ? Is it better to get symbols with logging or make a property without?
-    def get_symbols(self, logger: 'BoundLogger') -> list[str]:
+    @log
+    def get_symbols(self) -> list[str]:
         """
         Gets the symbols from the particle_states.
         Args:
@@ -1063,6 +1068,7 @@ class ModelSystem(System):
         Returns:
             list: The list of symbols of the particles.
         """
+        logger = self.get_symbols.__annotations__['logger']
         symbols = []
         for particle_state in self.particle_states:
             symbol = None
@@ -1088,7 +1094,8 @@ class ModelSystem(System):
         except KeyError:
             return False
 
-    def are_valid_chemical_symbols(self, logger: 'BoundLogger') -> bool:
+    @log
+    def are_valid_chemical_symbols(self) -> bool:
         """
         Validate that ASE can map all element symbols in the particle_states
         to atomic numbers.
@@ -1097,7 +1104,8 @@ class ModelSystem(System):
         Returns:
             bool: True if all chemical symbols are valid, False otherwise.
         """
-        symbols = self.get_symbols(logger)
+        logger = self.are_valid_chemical_symbols.__annotations__['logger']
+        symbols = self.get_symbols(logger=logger)
         if not symbols:
             return False
 
@@ -1107,7 +1115,8 @@ class ModelSystem(System):
         logger.error('Invalid or missing chemical symbols.')
         return False
 
-    def to_ase_atoms(self, logger: 'BoundLogger') -> 'Optional[ase.Atoms]':
+    @log
+    def to_ase_atoms(self) -> 'Optional[ase.Atoms]':
         """
         Generates an ASE Atoms object from ModelSystem data.
         Uses:
@@ -1115,7 +1124,8 @@ class ModelSystem(System):
           - positions from the top-level positions quantity,
           - periodic boundary conditions and lattice vectors from the first cell.
         """
-        symbols = self.get_symbols(logger)
+        logger = self.to_ase_atoms.__annotations__['logger']
+        symbols = self.get_symbols(logger=logger)
         if not symbols:
             logger.error('Cannot generate ASE Atoms without chemical symbols.')
             return None
@@ -1151,7 +1161,8 @@ class ModelSystem(System):
             ase_atoms.set_positions(self.positions.to('angstrom').magnitude)
         return ase_atoms
 
-    def from_ase_atoms(self, ase_atoms: ase.Atoms, logger: 'BoundLogger') -> None:
+    @log
+    def from_ase_atoms(self, ase_atoms: ase.Atoms) -> None:
         """
         Populates ModelSystem from an ASE Atoms object.
         Replaces the atom_states subsection with new entries based on the ASE chemical symbols,
@@ -1160,6 +1171,7 @@ class ModelSystem(System):
         # ? Should particle_states be cleared before populating?
         # ? self._clear_particle_states_inplace()
         # Iterate over chemical symbols and atomic numbers from the ASE Atoms object
+        logger = self.from_ase_atoms.__annotations__['logger']
         for symbol, atomic_number in zip(
             ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers()
         ):
@@ -1278,7 +1290,7 @@ class ModelSystem(System):
         ):
             return
 
-        labels = self.get_symbols(logger)
+        labels = self.get_symbols(logger=logger)
         to_atoms = bool(labels) and self._all_labels_are_elements(labels)
 
         self._clear_particle_states_inplace()
@@ -1322,7 +1334,7 @@ class ModelSystem(System):
         if not self._is_atomic:
             return
         # Generate ASE Atoms object from top-level ModelSystem data
-        ase_atoms = self.to_ase_atoms(logger)
+        ase_atoms = self.to_ase_atoms(logger=logger)
         if ase_atoms is None:
             logger.error('Could not generate ASE Atoms from ModelSystem.')
             return
