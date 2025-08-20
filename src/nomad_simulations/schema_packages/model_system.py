@@ -1060,7 +1060,7 @@ class ModelSystem(System):
         # root
         symbols: list[str] = []
         if self.is_root_system():
-            symbols: list[str] = [ps.get_label() for ps in self.particle_states]
+            symbols = [ps.get_label() for ps in self.particle_states]
             if not self.particle_states or None in symbols:
                 symbols = []
             self._cache['symbols'] = symbols

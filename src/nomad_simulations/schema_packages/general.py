@@ -214,7 +214,7 @@ class Simulation(BaseSimulation, Schema):
 
         def get_formula_from_particles(system: ModelSystem) -> str | None:
             if system.particle_indices is None:
-                return
+                return None
 
             names = (
                 system.get_symbols()
