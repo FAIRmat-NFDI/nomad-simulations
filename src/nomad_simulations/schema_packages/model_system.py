@@ -938,7 +938,7 @@ class ModelSystem(System):
 
     wyckoff_sites = Quantity(
         type=str,
-        shape=['*'],
+        shape=['*'],  # TODO: length of positions
         description="""
         Wyckoff site designation for each atomic position, formatted as `<letter><multiplicity>` (e.g., `a1`, `b2`).
         
@@ -976,7 +976,7 @@ class ModelSystem(System):
           • Only 1 of the 2 'b'-type atoms (multiplicity still 2, but only 1 present in primitive cell)
           • Only 1 of the 4 'c'-type atoms (multiplicity still 4, but only 1 present in primitive cell)
           
-        - In a supercell (2×2×2): ['a1', 'a1', 'a1', 'a1', 'a1', 'a1', 'a1', 'a1', 'b2', 'b2', ...] would show:
+        - In a supercell (2 x 2 x 2): ['a1', 'a1', 'a1', 'a1', 'a1', 'a1', 'a1', 'a1', 'b2', 'b2', ...] would show:
           • 8 copies of the 'a' position (multiplicity remains 1, but repeated due to supercell expansion)
 
         References:
@@ -1078,7 +1078,7 @@ class ModelSystem(System):
         """
         If explicitly set (True/False), use that.
         Otherwise compute from current particle_states every time (no caching),
-        so it can’t go stale.
+        so it cannot go stale.
         """
         if self.__is_atomic_flag is not None:
             return self.__is_atomic_flag
@@ -1378,6 +1378,9 @@ class ModelSystem(System):
         if self.type == 'bulk' and self.symmetry is not None:
             sec_symmetry = self.m_create(Symmetry)
             sec_symmetry.normalize(archive, logger)
+            
+            # Populate wyckoff_sites annotations after symmetry analysis
+            self._populate_wyckoff_sites_from_symmetry(sec_symmetry, logger)
 
         # Create and normalize ChemicalFormula section
         sec_chemical_formula = self.m_create(ChemicalFormula)
@@ -1507,3 +1510,63 @@ class ModelSystem(System):
                     return False
 
         return True
+    
+    def _populate_wyckoff_sites_from_symmetry(self, logger: 'BoundLogger') -> None:
+        """
+        Populates wyckoff_sites quantity with position annotations derived directly from symmetry analysis.
+        
+        Args:
+            logger (BoundLogger): The logger to log messages.
+        """
+        if not self.positions:
+            logger.debug('No positions available for Wyckoff site annotation.')
+            return
+            
+        # Create symmetry analyzer directly from ModelSystem
+        try:
+            ase_atoms = self.to_ase_atoms(logger=logger)
+            if not ase_atoms:
+                logger.debug('Could not generate ASE atoms for Wyckoff analysis.')
+                return
+                
+            symmetry_analyzer = SymmetryAnalyzer(
+                ase_atoms, symmetry_tol=configuration.symmetry_tolerance
+            )
+        except ValueError as e:
+            logger.debug(f'Symmetry analysis not available: {e}')
+            return
+        except Exception as e:
+            logger.warning(f'Failed to create symmetry analyzer: {e}')
+            return
+            
+        # Get Wyckoff letters directly from symmetry analyzer
+        try:
+            wyckoff_letters = symmetry_analyzer.get_wyckoff_letters_original()
+            if not wyckoff_letters:
+                logger.debug('No Wyckoff letters available from symmetry analysis.')
+                return
+                
+            # Get conventional cell Wyckoff letters to determine true multiplicities
+            conventional_wyckoff = symmetry_analyzer.get_wyckoff_letters_conventional()
+            if not conventional_wyckoff:
+                logger.debug('No conventional Wyckoff letters available for multiplicity calculation.')
+                return
+            
+        except Exception as e:
+            logger.warning(f'Failed to get Wyckoff letters from symmetry analyzer: {e}')
+            return
+        
+        # Calculate multiplicities from conventional unit cell
+        conventional_letter_counts = {}
+        for letter in conventional_wyckoff:
+            conventional_letter_counts[letter] = conventional_letter_counts.get(letter, 0) + 1
+        
+        # Create wyckoff_sites annotations in format '<letter><multiplicity>'
+        wyckoff_sites = []
+        for letter in wyckoff_letters:
+            # Use multiplicity from conventional unit cell, not current structure count
+            multiplicity = conventional_letter_counts.get(letter, 1)  # fallback to 1 if not found
+            wyckoff_sites.append(f'{letter}{multiplicity}')
+            
+        self.wyckoff_sites = wyckoff_sites
+        logger.debug(f'Populated {len(wyckoff_sites)} Wyckoff site annotations.')
