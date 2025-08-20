@@ -9,6 +9,7 @@ from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import ElectronicDensityOfStates
 from nomad_simulations.schema_packages.utils import log
 
+# TODO make this a function to check required number of tasks
 INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
 
 m_package = SchemaPackage()
@@ -114,6 +115,13 @@ class SimulationWorkflow(Workflow, SimulationTask):
         if not archive.data or not archive.data.outputs:
             return
 
+        # do not overwrite if tasks are set but give out a warning that it maybe
+        # inconsistent with the outputs
+        logger = self.map_tasks.__annotations__['logger']
+        if self.tasks:
+            logger.warning('Tasks are predefined and will not generate from outputs.')
+            return
+
         outputs = list(archive.data.outputs)
         outputs.sort(key=lambda x: x.wall_start or 0)
         tasks = []
@@ -194,10 +202,32 @@ class SerialWorkflow(SimulationWorkflow):
 
             task.inputs.extend([inp for inp in inputs if inp not in task.inputs])
 
-        # add oututs of last task to outputs
+        # add outputs of last task to outputs
         self.outputs.extend(
             [out for out in self.tasks[-1].outputs if out not in self.outputs]
         )
+
+
+class ParallelWorkflow(SimulationWorkflow):
+    """
+    Base class for workflows where tasks are executed concurrently.
+    """
+
+    @log
+    def map_tasks(self, archive: EntryArchive) -> None:
+        logger = self.map_tasks.__annotations__['logger']
+        super().map_tasks(archive, logger=logger)
+
+        if not self.tasks:
+            logger.error(INCORRECT_N_TASKS)
+            return
+
+        # link inputs and outputs to all tasks
+        for n, task in enumerate(self.tasks):
+            if not task.inputs:
+                task.inputs.extend(self.inputs)
+            if not task.outputs:
+                task.outputs.extend(self.outputs)
 
 
 class ElectronicStructureResults(SimulationWorkflowResults):

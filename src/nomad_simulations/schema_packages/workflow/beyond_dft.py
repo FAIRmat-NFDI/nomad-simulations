@@ -28,7 +28,7 @@ class BeyondDFTResults(SimulationWorkflowResults):
 
     dft = SubSection(sub_section=ElectronicStructureResults)
 
-    ext = SubSection(sub_section=ElectronicStructureResults)
+    ext = SubSection(sub_section=ElectronicStructureResults, repeats=True)
 
 
 class BeyondDFTWorkflow(SerialWorkflow):
@@ -56,7 +56,7 @@ class BeyondDFTWorkflow(SerialWorkflow):
         """
         super().normalize(archive, logger)
 
-        if len(self.tasks) != 2:
+        if len(self.tasks) < 2:
             logger.error(INCORRECT_N_TASKS)
             return
 
@@ -65,58 +65,6 @@ class BeyondDFTWorkflow(SerialWorkflow):
 
         if not self.tasks[0].name:
             self.tasks[0].name = 'DFT'
-
-
-class DFTGWModel(BeyondDFTModel):
-    label = 'DFT+GW workflow parameters'
-
-
-class DFTGWResults(BeyondDFTResults):
-    label = 'DFT+GW workflow results'
-
-
-class DFTGWWorkflow(BeyondDFTWorkflow):
-    """
-    Definitions for GW calculations based on DFT.
-    """
-
-    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if not self.model:
-            self.model = DFTGWModel()
-
-        if not self.results:
-            self.results = DFTGWResults()
-
-        super().normalize(archive, logger)
-
-        if self.task and not self.task[-1].name:
-            self.task[-1].name = 'GW'
-
-
-class DFTTBModel(BeyondDFTModel):
-    label = 'DFT+TB workflow parameters'
-
-
-class DFTTBResults(BeyondDFTResults):
-    label = 'DFT+TB worklfow results'
-
-
-class DFTTBWorkflow(BeyondDFTWorkflow):
-    """
-    Definitions for TB calculations based on DFT.
-    """
-
-    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if not self.model:
-            self.model = DFTTBModel()
-
-        if not self.results:
-            self.results = DFTTBResults()
-
-        super().normalize(archive, logger)
-
-        if self.tasks and not self.tasks[-1].name:
-            self.tasks[-1].name = 'TB'
 
 
 m_package.__init_metainfo__()
