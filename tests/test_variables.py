@@ -30,7 +30,7 @@ class TestVariables:
             n_points=n_points,
             points=points,
         )
-        assert variable.get_n_points(logger=logger) == result
+        assert variable.get_n_points(logger) == result
         variable.normalize(EntryArchive(), logger)
         assert variable.n_points == result
 

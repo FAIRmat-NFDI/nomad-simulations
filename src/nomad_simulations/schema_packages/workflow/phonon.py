@@ -3,7 +3,7 @@ from nomad.datamodel.metainfo.workflow import Link, TaskReference
 from nomad.metainfo import Quantity
 from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.utils import log
+from nomad_simulations.schema_packages.properties.spectral_profile import DOSProfile
 
 from .general import (
     INCORRECT_N_TASKS,
@@ -145,19 +145,15 @@ class Phonon(SimulationWorkflow):
 
     task_label = 'Force calculation'
 
-    @log
-    def map_inputs(self, archive: EntryArchive) -> None:
+    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not self.model:
             self.model = PhononModel()
-        logger = self.map_inputs.__annotations__['logger']
-        super().map_inputs(archive, logger=logger)
+        super().map_inputs(archive, logger)
 
-    @log
-    def map_outputs(self, archive: EntryArchive) -> None:
+    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not self.results:
             self.results = PhononResults()
-        logger = self.map_outputs.__annotations__['logger']
-        super().map_outputs(archive, logger=logger)
+        super().map_outputs(archive, logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)

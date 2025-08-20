@@ -6,7 +6,6 @@ from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
 from nomad.metainfo import URL, Quantity, Reference, SectionProxy, SubSection
 
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
-from nomad_simulations.schema_packages.utils import log
 
 logger = utils.get_logger(__name__)
 
@@ -155,8 +154,7 @@ class PhysicalProperty(PlotSection):
                     return True
         return False
 
-    @log
-    def _validate_contributions_structure(self) -> bool:
+    def _validate_contributions_structure(self, logger: 'BoundLogger') -> bool:
         """
         Validates that contributions do not contain nested contributions.
         This prevents recursive contribution structures which are not intended.
@@ -168,7 +166,6 @@ class PhysicalProperty(PlotSection):
         Returns:
             (bool): True if validation passes, False if nested contributions are found.
         """
-        logger = self._validate_contributions_structure.__annotations__['logger']
         # Skip validation for contribution instances
         if self._is_contribution():
             return True
@@ -268,7 +265,7 @@ class PhysicalProperty(PlotSection):
 
         # validate contributions structure and contribution_type usage
         logger_arg = args[1] if len(args) > 1 else logger
-        self._validate_contributions_structure(logger=logger_arg)
+        self._validate_contributions_structure(logger_arg)
         self._validate_contribution_type(logger_arg)
 
         for contribution in self.contributions:

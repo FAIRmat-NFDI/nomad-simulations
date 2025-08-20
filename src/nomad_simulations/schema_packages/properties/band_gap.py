@@ -10,7 +10,6 @@ if TYPE_CHECKING:
 
 from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
-from nomad_simulations.schema_packages.utils import log
 
 
 class ElectronicBandGap(PhysicalProperty):
@@ -58,8 +57,7 @@ class ElectronicBandGap(PhysicalProperty):
         """,
     )
 
-    @log
-    def resolve_type(self) -> Optional[str]:
+    def resolve_type(self, logger: 'BoundLogger') -> Optional[str]:
         """
         Resolves the `type` of the electronic band gap based on the stored `momentum_transfer` values.
 
@@ -69,7 +67,6 @@ class ElectronicBandGap(PhysicalProperty):
         Returns:
             (Optional[str]): The resolved `type` of the electronic band gap.
         """
-        logger = self.resolve_type.__annotations__['logger']
         mtr = self.momentum_transfer if self.momentum_transfer is not None else []
 
         # Check if the `momentum_transfer` is [], and return the type and a warning in the log for `indirect` band gaps
@@ -99,4 +96,4 @@ class ElectronicBandGap(PhysicalProperty):
 
         # Resolve the `type` of the electronic band gap from `momentum_transfer`, ONLY for scalar `value`
         if self.value is not None:
-            self.type = self.resolve_type(logger=logger)
+            self.type = self.resolve_type(logger)

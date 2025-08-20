@@ -3,8 +3,6 @@ from nomad.datamodel.metainfo.workflow import Link, Task
 from nomad.metainfo import SchemaPackage
 from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.utils import log
-
 from .general import (
     INCORRECT_N_TASKS,
     SimulationWorkflow,
@@ -38,10 +36,8 @@ class SinglePoint(SimulationWorkflow):
 
     task_label = 'Calculation'
 
-    @log
-    def map_inputs(self, archive: EntryArchive):
-        logger = self.map_inputs.__annotations__['logger']
-        super().map_inputs(archive, logger=logger)
+    def map_inputs(self, archive: EntryArchive, logger: BoundLogger):
+        super().map_inputs(archive, logger)
         if archive.data:
             if archive.data.model_method:
                 self.inputs.append(

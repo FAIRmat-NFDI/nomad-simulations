@@ -55,19 +55,19 @@ class TestElectronicDensityOfStates:
         simulation.outputs.append(outputs)
 
         # No `model_system_ref`
-        assert electronic_dos.resolve_normalization_factor(logger=logger) is None
+        assert electronic_dos.resolve_normalization_factor(logger) is None
 
         # No `model_system_ref.cell`
         model_system = ModelSystem()
         simulation.model_system.append(model_system)
         outputs.model_system_ref = simulation.model_system[0]
-        assert electronic_dos.resolve_normalization_factor(logger=logger) is None
+        assert electronic_dos.resolve_normalization_factor(logger) is None
 
         # model_system_ref has a cell but no particle_states
         atomic_cell = AtomicCell(type='original')
         model_system.cell.append(atomic_cell)
         # Do not set particle_states (or leave it empty)
-        assert electronic_dos.resolve_normalization_factor(logger=logger) is None
+        assert electronic_dos.resolve_normalization_factor(logger) is None
 
         # add required particle_states into the ModelSystem
         particle_states = [AtomsState() for _ in range(2)]
@@ -78,17 +78,13 @@ class TestElectronicDensityOfStates:
         model_system.particle_states = particle_states
 
         # Non spin-polarized: normalization factor is 1 / (sum of atomic numbers)
-        normalization_factor = electronic_dos.resolve_normalization_factor(
-            logger=logger
-        )
+        normalization_factor = electronic_dos.resolve_normalization_factor(logger)
         expected = 1.0 / (31 + 33)
         assert np.isclose(normalization_factor, expected)
 
         # Spin-polarized: normalization factor is 1 / (2 * sum of atomic numbers)
         electronic_dos.spin_channel = 0
-        normalization_factor_spin = electronic_dos.resolve_normalization_factor(
-            logger=logger
-        )
+        normalization_factor_spin = electronic_dos.resolve_normalization_factor(logger)
         expected_spin = 1.0 / (2 * (31 + 33))
         assert np.isclose(normalization_factor_spin, expected_spin)
 
@@ -110,7 +106,7 @@ class TestElectronicDensityOfStates:
         assert len(projected_dos) == 3
         pdos_names = ['orbital s Ga', 'orbital px As', 'orbital py As']
         for i, pdos in enumerate(projected_dos):
-            name = pdos.resolve_pdos_name(logger=logger)
+            name = pdos.resolve_pdos_name(logger)
             assert name == pdos_names[i]
 
     def test_extract_projected_dos(self, simulation_electronic_dos: Simulation):
@@ -251,7 +247,7 @@ class TestXASSpectrum:
             exafs_spectrum.energies = Energy(points=exafs_energies * ureg.joule)
             exafs_spectrum.value = [0.2, 0.4, 0.6]
             xas_spectrum.exafs_spectrum = exafs_spectrum
-        xas_spectrum.generate_from_contributions(logger=logger)
+        xas_spectrum.generate_from_contributions(logger)
         if xas_spectrum.value is None:
             assert xas_values is None
         else:
