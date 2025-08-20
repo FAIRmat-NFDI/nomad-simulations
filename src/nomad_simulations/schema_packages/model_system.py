@@ -1378,16 +1378,10 @@ class ModelSystem(System):
         A node is root if its parent is not a ModelSystem section.
         Prefer isinstance for robustness; fall back to m_def identity.
         """
-        parent = self.m_parent
-        if parent is None:
-            return True
-        try:
-            if isinstance(parent, ModelSystem):
-                return False
-        except Exception:
-            pass
 
-        return parent.m_def is not ModelSystem.m_def
+        return (self.m_parent is None) or getattr(
+            self.m_parent, 'm_def', None
+        ) is not ModelSystem.m_def
 
     def get_root_system(self) -> 'ModelSystem':
         """
