@@ -1388,20 +1388,12 @@ class ModelSystem(System):
         Walk up through parents while the parent behaves like a ModelSystem.
         """
         system = self
-        while True:
+        while not system.is_root_system():
             parent = system.m_parent
             if parent is None:
                 break
-            try:
-                if isinstance(parent, ModelSystem):
-                    system = parent
-                    continue
-            except Exception:
-                pass
-            if parent.m_def is ModelSystem.m_def:
-                system = parent
-                continue
-            break
+            system = parent
+
         return system
 
     # functions for working with molecules
