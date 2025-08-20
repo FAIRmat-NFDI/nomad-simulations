@@ -1052,37 +1052,29 @@ class ModelSystem(System):
         if self._cache.get('symbols') is not None:
             return self._cache['symbols']
 
-        def _root_symbols(ms: 'ModelSystem') -> list[str]:
-            if not ms.particle_states:
-                return []
-
-            symbols: list[str] = [ps.get_label() for ps in ms.particle_states]
-            if None in symbols:
-                return []
-
+        # root
+        symbols: list[str] = []
+        if self.is_root_system():
+            symbols: list[str] = [ps.get_label() for ps in self.particle_states]
+            if not self.particle_states or None in symbols:
+                symbols = []
             self._cache['symbols'] = symbols
-            return symbols
 
-        if self.is_root_system():  # ? How to deal with cache?
-            return _root_symbols(self)
+            return symbols
 
         # child: slice the labels from root with particle_indices
         root = self.get_root_system()
-        root_syms = _root_symbols(root)
+        root_syms = root.get_symbols()
         if not root_syms or self.particle_indices is None:
-            self._cache['symbols'] = []
-            return []
-
+            symbols = []
         # Validate indices: must be ints and 0 <= i < len(root_syms)
-        if any(i < 0 or i >= len(root_syms) for i in self.particle_indices):
-            self._cache['symbols'] = []
-            return []
-
-        try:
-            symbols = [root_syms[i] for i in self.particle_indices]
-        except Exception:
-            self._cache['symbols'] = []
-            return []
+        elif any(i < 0 or i >= len(root_syms) for i in self.particle_indices):
+            symbols = []
+        else:
+            try:
+                symbols = [root_syms[i] for i in self.particle_indices]
+            except Exception:
+                symbols = []
 
         self._cache['symbols'] = symbols
         return symbols
