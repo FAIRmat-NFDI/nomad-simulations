@@ -945,7 +945,7 @@ class ModelSystem(System):
         Wyckoff positions are the crystallographically distinct positions in a space group, as defined in the
         International Tables for Crystallography and accessible through resources like the Bilbao 
         Crystallographic Server (https://www.cryst.ehu.es/) and the International Union of Crystallography 
-        databases. Each position is characterized by its site symmetry and multiplicity within the 
+        databases (https://www.iucr.org/resources/data). Each position is characterized by its site symmetry and multiplicity within the 
         conventional unit cell.
         
         This annotation maps Wyckoff position assignments from the crystallographic conventional unit cell
