@@ -1053,7 +1053,8 @@ class ModelSystem(System):
 
         Returns [] if any particle lacks a usable label/symbol.
         """
-        logger = self.get_symbols.__annotations__['logger']
+        # TODO Should we log something here?
+        # logger = self.get_symbols.__annotations__['logger']
         if self._cache.get('symbols') is not None:
             return self._cache['symbols']
 
