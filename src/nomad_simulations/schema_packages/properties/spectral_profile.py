@@ -14,7 +14,7 @@ from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsSt
 from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
-from nomad_simulations.schema_packages.utils import get_sibling_section
+from nomad_simulations.schema_packages.utils import get_sibling_section, log
 from nomad_simulations.schema_packages.variables import Energy2 as Energy
 
 configuration = config.get_plugin_entry_point(
@@ -65,7 +65,8 @@ class DOSProfile(SpectralProfile):
         """,
     )
 
-    def resolve_pdos_name(self, logger: 'BoundLogger') -> Optional[str]:
+    @log
+    def resolve_pdos_name(self) -> Optional[str]:
         """
         Resolve the `name` of the projected `DOSProfile` from the `entity_ref` section. This is resolved as:
             - `'atom X'` with 'X' being the chemical symbol for `AtomsState` references.
@@ -77,6 +78,7 @@ class DOSProfile(SpectralProfile):
         Returns:
             (Optional[str]): The resolved `name` of the projected DOS profile.
         """
+        logger = self.resolve_pdos_name.__annotations__['logger']
         if self.entity_ref is None and not self.name == 'ElectronicDensityOfStates':
             logger.warning(
                 'The `entity_ref` is not set for the DOS profile. Could not resolve the `name`.'
@@ -119,7 +121,7 @@ class DOSProfile(SpectralProfile):
         super().normalize(archive, logger)
 
         # We resolve
-        self.name = self.resolve_pdos_name(logger)
+        self.name = self.resolve_pdos_name(logger=logger)
 
 
 class ElectronicDensityOfStates(DOSProfile):
@@ -302,7 +304,8 @@ class ElectronicDensityOfStates(DOSProfile):
             energies_origin = fermi_level
         return energies_origin
 
-    def resolve_normalization_factor(self, logger: 'BoundLogger') -> Optional[float]:
+    @log
+    def resolve_normalization_factor(self) -> Optional[float]:
         """
         Resolve the `normalization_factor` for the electronic DOS to get a cell-independent intensive DOS.
 
@@ -312,6 +315,7 @@ class ElectronicDensityOfStates(DOSProfile):
         Returns:
             (Optional[float]): The normalization factor.
         """
+        logger = self.resolve_normalization_factor.__annotations__['logger']
         model_system = get_sibling_section(
             section=self, sibling_section_name='model_system_ref', logger=logger
         )
@@ -468,7 +472,7 @@ class ElectronicDensityOfStates(DOSProfile):
 
         # Resolve `normalization_factor`
         if self.normalization_factor is None:
-            self.normalization_factor = self.resolve_normalization_factor(logger)
+            self.normalization_factor = self.resolve_normalization_factor(logger=logger)
 
         # `ElectronicBandGap` extraction
         band_gap = self.extract_band_gap()
@@ -517,7 +521,8 @@ class XASSpectrum(AbsorptionSpectrum):
         repeats=False,
     )
 
-    def generate_from_contributions(self, logger: 'BoundLogger') -> None:
+    @log
+    def generate_from_contributions(self) -> None:
         """
         Generate the `value` of the XAS spectrum by concatenating the XANES and EXAFS contributions. It also concatenates
         the `Energy` grid points of the XANES and EXAFS parts.
@@ -525,6 +530,7 @@ class XASSpectrum(AbsorptionSpectrum):
         Args:
             logger (BoundLogger): The logger to log messages.
         """
+        logger = self.generate_from_contributions.__annotations__['logger']
         # TODO check if this method is general enough
         if self.xanes_spectrum is not None and self.exafs_spectrum is not None:
             # Concatenate XANE and EXAFS `Energy` grid points
@@ -562,4 +568,4 @@ class XASSpectrum(AbsorptionSpectrum):
             logger.info(
                 'The `XASSpectrum.value` is not stored. We will attempt to obtain it by combining the XANES and EXAFS parts if these are present.'
             )
-            self.generate_from_contributions(logger)
+            self.generate_from_contributions(logger=logger)

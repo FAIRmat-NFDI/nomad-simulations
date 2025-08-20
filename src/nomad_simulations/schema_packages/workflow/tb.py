@@ -5,46 +5,43 @@ from structlog.stdlib import BoundLogger
 from nomad_simulations.schema_packages.utils import log
 
 from .beyond_dft import BeyondDFTModel, BeyondDFTResults, BeyondDFTWorkflow
+from .general import INCORRECT_N_TASKS
 
 m_package = SchemaPackage()
 
 
-class DFTGWModel(BeyondDFTModel):
-    label = 'DFT+GW workflow parameters'
+class DFTTBModel(BeyondDFTModel):
+    label = 'DFT+TB workflow parameters'
 
 
-class DFTGWResults(BeyondDFTResults):
-    label = 'DFT+GW workflow results'
+class DFTTBResults(BeyondDFTResults):
+    label = 'DFT+TB worklfow results'
 
 
-class DFTGWWorkflow(BeyondDFTWorkflow):
+class DFTTBWorkflow(BeyondDFTWorkflow):
     """
-    Definitions for GW calculations based on DFT.
+    Definitions for TB calculations based on DFT.
     """
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
-            self.model = DFTGWModel()
+            self.model = DFTTBModel()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            self.results = DFTGWResults()
+            self.results = DFTTBResults()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        """
-        Link the DFT and GW single point workflows in the DFT-GW workflow.
-        """
-
         super().normalize(archive, logger)
 
-        if self.task and not self.task[-1].name:
-            self.task[-1].name = 'GW'
+        if self.tasks and not self.tasks[-1].name:
+            self.tasks[-1].name = 'TB'
 
 
 m_package.__init_metainfo__()
