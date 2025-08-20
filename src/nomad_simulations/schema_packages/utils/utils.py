@@ -6,13 +6,8 @@ from collections import Counter
 
 import numpy as np
 from nomad.config import config
+from nomad.datamodel.data import ArchiveSection
 from nomad.utils import get_logger
-
-# if TYPE_CHECKING:
-#     from typing import Callable, Optional
-
-#     from nomad.datamodel.data import ArchiveSection
-#     from structlog.stdlib import BoundLogger
 
 
 DEFAULT_LOGGER = get_logger(__name__)
@@ -70,7 +65,7 @@ def get_sibling_section(
     sibling_section_name: str,
     logger: 'BoundLogger',
     index_sibling: int = 0,
-) -> Optional[ArchiveSection]:
+) -> ArchiveSection | None:
     """
     Gets the sibling section of a section by performing a seesaw move by going to the parent
     of the section and then going down to the sibling section. This is used, e.g., to get
