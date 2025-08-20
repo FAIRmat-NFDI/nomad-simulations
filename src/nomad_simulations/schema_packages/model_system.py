@@ -1252,7 +1252,7 @@ class ModelSystem(System):
 
         return system_type, dimensionality
 
-    # ! Needs to be checked !
+    # TODO thorough check
     def _copy_common_quantities(self, src, dst, *, exclude: set[str] = None) -> None:
         exclude = exclude or set()
 
@@ -1450,46 +1450,6 @@ class ModelSystem(System):
         self._cache['bond_list'] = bond_list
 
         return bond_list
-
-    # def get_bond_list(self, set_local: bool = False) -> np.ndarray:
-    #     """
-    #     Retrieves the bond list for this subsystem by filtering the root bond_list
-    #     using the subsystem's `particle_indices`. The bond indices remain in root-level
-    #     coordinates (no reindexing).
-
-    #     Args:
-    #         set_local (bool): If True, sets `self.bond_list` to the filtered bonds.
-
-    #     Returns:
-    #         np.ndarray: Filtered bond list for this subsystem (root-level indices).
-    #     """
-    #     empty_return = np.empty((0, 2), dtype=np.int32)
-    #     if self.is_root_system():
-    #         return self.bond_list if self.bond_list is not None else empty_return
-
-    #     if self.particle_indices is None:
-    #         return empty_return
-
-    #     root = self.get_root_system()
-    #     if root.bond_list is None:
-    #         return empty_return
-
-    #     idx: np.ndarray = (
-    #         np.asarray(self.particle_indices, dtype=np.int32).ravel()
-    #         if self.particle_indices is not None
-    #         else np.empty(0, dtype=np.int32)
-    #     )
-
-    #     mask = np.isin(root.bond_list, idx).all(axis=1)
-    #     root_bonds = np.asarray(root.bond_list, dtype=np.int32).reshape(-1, 2)
-    #     bond_list = root_bonds[mask]
-    #     bond_list = np.unique(bond_list, axis=0)
-
-    #     # TODO - separate setting from getting
-    #     if set_local:
-    #         self.bond_list = bond_list
-
-    #     return bond_list
 
     def is_molecule(self) -> bool:
         """
