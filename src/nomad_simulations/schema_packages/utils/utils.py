@@ -1,8 +1,8 @@
 import functools
 import inspect
+from collections import Counter
 from math import factorial
 from typing import TYPE_CHECKING, Any
-from collections import Counter
 
 import numpy as np
 from nomad.config import config
