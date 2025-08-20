@@ -7,11 +7,10 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 from nomad.config import config
 from nomad.utils import get_logger
+from nomad.datamodel.data import ArchiveSection
 
 if TYPE_CHECKING:
     from typing import Callable, Optional
-
-    from nomad.datamodel.data import ArchiveSection
     from structlog.stdlib import BoundLogger
 
 DEFAULT_LOGGER = get_logger(__name__)
