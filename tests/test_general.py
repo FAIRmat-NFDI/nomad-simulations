@@ -285,3 +285,32 @@ class TestSimulation:
             return ctr_comp
 
         _ = get_system_recurs(systems=model_system.sub_systems, ctr_comp=ctr_comp)
+
+    def test_root_leaf_composition_from_symbols_no_subsystems(self):
+        """
+        Root with no subsystems/particle_indices derives composition from its own symbols.
+        """
+        root = ModelSystem(is_representative=True)
+        root.cell.append(AtomicCell())  # minimal cell so normalize doesn't bail
+        for sym in ['H', 'H', 'O']:
+            root.particle_states.append(AtomsState(chemical_symbol=sym))
+
+        sim = Simulation(model_system=[root])
+        sim.normalize(EntryArchive(), logger=logger)
+
+        assert root.particle_indices is None  # root doesn't store indices
+        assert root.composition_formula == 'H(2)O(1)'
+
+    def test_root_leaf_custom_composition_preserved(self):
+        """
+        Pre-set custom composition on root is not overwritten during normalize.
+        """
+        root = ModelSystem(is_representative=True, composition_formula='Custom(1)')
+        root.cell.append(AtomicCell())
+        for sym in ['H', 'H', 'O']:
+            root.particle_states.append(AtomsState(chemical_symbol=sym))
+
+        sim = Simulation(model_system=[root])
+        sim.normalize(EntryArchive(), logger=logger)
+
+        assert root.composition_formula == 'Custom(1)'

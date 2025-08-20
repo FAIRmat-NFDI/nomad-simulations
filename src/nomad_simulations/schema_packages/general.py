@@ -226,13 +226,12 @@ class Simulation(BaseSimulation, Schema):
 
         # LEAF NODE or all children have no branch_label
         if not formula:
-            if system.particle_indices is None:
+            if system.particle_indices is None and not system.is_root_system():
                 return None
 
             names = (
                 system.get_symbols()
             )  # already slices from root via particle_indices
-
             formula = get_composition(children_names=names) if names else None
 
         return formula
@@ -280,6 +279,7 @@ class Simulation(BaseSimulation, Schema):
         # Setting up the `branch_depth` in the parent-child tree
         for system_parent in self.model_system:
             system_parent.branch_depth = 0
+            self.set_composition_formula(system_parent=system_parent)
             if len(system_parent.sub_systems) == 0:
                 continue
             self._set_system_branch_depth(system_parent=system_parent)
@@ -287,7 +287,6 @@ class Simulation(BaseSimulation, Schema):
             # TODO Address when we know the role of is_representative
             # if is_not_representative(model_system=system_parent, logger=logger):
             #     continue
-            self.set_composition_formula(system_parent=system_parent)
 
 
 m_package.__init_metainfo__()
