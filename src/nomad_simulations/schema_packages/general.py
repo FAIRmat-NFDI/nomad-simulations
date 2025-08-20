@@ -212,16 +212,6 @@ class Simulation(BaseSimulation, Schema):
         if system.composition_formula is not None:
             return system.composition_formula
 
-        def get_formula_from_particles(system: ModelSystem) -> str | None:
-            if system.particle_indices is None:
-                return None
-
-            names = (
-                system.get_symbols()
-            )  # already slices from root via particle_indices
-
-            return get_composition(children_names=names) if names else None
-
         formula = None
         subsystems = system.sub_systems
         # INTERNAL NODE: use child branch labels
@@ -236,7 +226,14 @@ class Simulation(BaseSimulation, Schema):
 
         # LEAF NODE or all children have no branch_label
         if not formula:
-            formula = get_formula_from_particles(system)
+            if system.particle_indices is None:
+                return None
+
+            names = (
+                system.get_symbols()
+            )  # already slices from root via particle_indices
+
+            formula = get_composition(children_names=names) if names else None
 
         return formula
 
