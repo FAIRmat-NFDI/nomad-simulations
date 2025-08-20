@@ -40,7 +40,6 @@ from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity, System
 from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
-from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -1397,7 +1396,7 @@ class ModelSystem(System):
         return system
 
     # functions for working with molecules
-    def get_bond_list(self, set_local: bool = False) -> np.ndarray:
+    def get_bond_list(self) -> np.ndarray:
         """
         Retrieves the bond list for this subsystem by filtering the root bond_list
         using the subsystem's `particle_indices`. The bond indices remain in root-level
@@ -1409,19 +1408,23 @@ class ModelSystem(System):
         Returns:
             np.ndarray: Filtered bond list for this subsystem (root-level indices).
         """
-        empty_return = np.empty((0, 2), dtype=np.int32)
+        if self._cache.get('bond_list') is not None:
+            return self._cache['bond_list']
+
+        bond_list = np.empty((0, 2), dtype=np.int32)
+        # root
         if self.is_root_system():
-            return self.bond_list if self.bond_list is not None else empty_return
+            bond_list = self.bond_list if self.bond_list is not None else bond_list
+            self._cache['bond_list'] = bond_list
 
-        if self.particle_indices is None:
-            return empty_return
+            return bond_list
 
+        # child
         root = self.get_root_system()
-        if root.bond_list is None:
-            return empty_return
+        if self.particle_indices is None or root.bond_list is None:
+            return bond_list
 
-        idx: NDArray[np.int32]
-        idx = (
+        idx: np.ndarray = (
             np.asarray(self.particle_indices, dtype=np.int32).ravel()
             if self.particle_indices is not None
             else np.empty(0, dtype=np.int32)
@@ -1431,12 +1434,49 @@ class ModelSystem(System):
         root_bonds = np.asarray(root.bond_list, dtype=np.int32).reshape(-1, 2)
         bond_list = root_bonds[mask]
         bond_list = np.unique(bond_list, axis=0)
-
-        # TODO - separate setting from getting
-        if set_local:
-            self.bond_list = bond_list
+        self._cache['bond_list'] = bond_list
 
         return bond_list
+
+    # def get_bond_list(self, set_local: bool = False) -> np.ndarray:
+    #     """
+    #     Retrieves the bond list for this subsystem by filtering the root bond_list
+    #     using the subsystem's `particle_indices`. The bond indices remain in root-level
+    #     coordinates (no reindexing).
+
+    #     Args:
+    #         set_local (bool): If True, sets `self.bond_list` to the filtered bonds.
+
+    #     Returns:
+    #         np.ndarray: Filtered bond list for this subsystem (root-level indices).
+    #     """
+    #     empty_return = np.empty((0, 2), dtype=np.int32)
+    #     if self.is_root_system():
+    #         return self.bond_list if self.bond_list is not None else empty_return
+
+    #     if self.particle_indices is None:
+    #         return empty_return
+
+    #     root = self.get_root_system()
+    #     if root.bond_list is None:
+    #         return empty_return
+
+    #     idx: np.ndarray = (
+    #         np.asarray(self.particle_indices, dtype=np.int32).ravel()
+    #         if self.particle_indices is not None
+    #         else np.empty(0, dtype=np.int32)
+    #     )
+
+    #     mask = np.isin(root.bond_list, idx).all(axis=1)
+    #     root_bonds = np.asarray(root.bond_list, dtype=np.int32).reshape(-1, 2)
+    #     bond_list = root_bonds[mask]
+    #     bond_list = np.unique(bond_list, axis=0)
+
+    #     # TODO - separate setting from getting
+    #     if set_local:
+    #         self.bond_list = bond_list
+
+    #     return bond_list
 
     def is_molecule(self) -> bool:
         """
@@ -1450,7 +1490,7 @@ class ModelSystem(System):
         import networkx as nx
 
         # Internal bonds for this subsystem
-        bonds = self.get_bond_list(set_local=False)
+        bonds = self.get_bond_list()
 
         # Handle case: no bonds
         if bonds.size == 0:

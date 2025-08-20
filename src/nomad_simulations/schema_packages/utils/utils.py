@@ -144,7 +144,7 @@ def get_composition(children_names: list[str]) -> str | None:
     # Ensure string dtype; np.unique returns sorted unique names and counts
     arr = np.asarray(children_names, dtype=object).astype(str)
     names, counts = np.unique(arr, return_counts=True)  # case-sensitive
-    # ? switch the above line for case insensitive sorting below?
+    # TODO switch the above line for case insensitive sorting below?
     # from collections import Counter
 
     # counts = Counter(map(str, children_names))
