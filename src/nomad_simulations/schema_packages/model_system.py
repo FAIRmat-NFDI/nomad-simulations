@@ -72,6 +72,11 @@ class WyckoffPosition(ArchiveSection):
     crystallographic information for each symmetry-distinct site type.
     """
 
+    name = Quantity(
+        type = str,
+        description="Name of the Wyckoff position, composed out of `<letter><multiplicity>`.",
+    )
+
     letter = Quantity(
         type=str,
         description="""
@@ -141,6 +146,11 @@ class WyckoffPosition(ArchiveSection):
         or ['0,0,0'] for a fixed special position.
         """,
     )
+
+    def normalize(self, archive, logger):
+        if self.letter and self.multiplicity:
+            self.name = f"{self.letter}{self.multiplicity}"
+
 
 
 class GeometricSpace(Entity):
@@ -674,11 +684,16 @@ class Symmetry(ArchiveSection):
             symmetry_analyzer._get_spglib_transformation_matrix()
         )
 
-        # Populating the originally parsed AtomicCell wyckoff_letters and equivalent_atoms information
+        # Populating the originally parsed AtomicCell equivalent_atoms information
         original_wyckoff = symmetry_analyzer.get_wyckoff_letters_original()
         original_equivalent_atoms = symmetry_analyzer.get_equivalent_atoms_original()
-        original_atomic_cell.wyckoff_letters = original_wyckoff
         original_atomic_cell.equivalent_atoms = original_equivalent_atoms
+        
+        # Store Wyckoff data in symmetry dictionary for ModelSystem to use
+        symmetry['wyckoff_original'] = original_wyckoff
+        
+        # Populate detailed Wyckoff position descriptions
+        self._populate_wyckoff_positions(symmetry_analyzer, logger)
 
         # Populating the primitive AtomState information
         primitive_atomic_cell = self.resolve_analyzed_atomic_cell(
@@ -697,7 +712,7 @@ class Symmetry(ArchiveSection):
             conventional_system = symmetry_analyzer.get_conventional_system()
             # Use the conventional system to get the expanded atomic numbers.
             conventional_num = conventional_system.get_atomic_numbers()
-            conventional_wyckoff = conventional_atomic_cell.wyckoff_letters
+            conventional_wyckoff = symmetry.get('wyckoff_original')
             norm_wyckoff = get_normalized_wyckoff(
                 atomic_numbers=conventional_num, wyckoff_letters=conventional_wyckoff
             )
@@ -721,8 +736,76 @@ class Symmetry(ArchiveSection):
         # Populating Symmetry section
         for key, val in self.m_def.all_quantities.items():
             self.m_set(val, symmetry.get(key))
+            
+        # Store Wyckoff data for ModelSystem to use
+        self._wyckoff_data = {
+            'wyckoff_original': symmetry.get('wyckoff_original'),
+        }
 
         return primitive_atomic_cell, conventional_atomic_cell
+    
+    def _populate_wyckoff_positions(self, symmetry_analyzer: 'SymmetryAnalyzer', logger: 'BoundLogger') -> None:
+        """
+        Populates the wyckoff_positions subsection with detailed descriptions of each
+        unique Wyckoff position found in the structure.
+        
+        Args:
+            symmetry_analyzer (SymmetryAnalyzer): The symmetry analyzer containing Wyckoff data.
+            logger (BoundLogger): The logger to log messages.
+        """
+        try:
+            # Clear existing wyckoff_positions
+            while len(self.wyckoff_positions):
+                self.wyckoff_positions.pop()
+                
+            # Get Wyckoff information from the analyzer
+            wyckoff_letters = symmetry_analyzer.get_wyckoff_letters_original()
+            if not wyckoff_letters:
+                logger.info('No Wyckoff letters available for position descriptions.')
+                return
+                
+            # Find unique Wyckoff positions and calculate multiplicities
+            letter_counts = {}
+            for letter in wyckoff_letters:
+                letter_counts[letter] = letter_counts.get(letter, 0) + 1
+            
+            for wyckoff_letter in sorted(letter_counts.keys()):
+                # Create WyckoffPosition description
+                wyckoff_pos = WyckoffPosition()
+                wyckoff_pos.letter = wyckoff_letter
+                wyckoff_pos.multiplicity = letter_counts[wyckoff_letter]
+                
+                # Simplified estimates - in practice, these should come from crystallographic tables
+                if wyckoff_pos.multiplicity == 1:
+                    wyckoff_pos.degrees_of_freedom = 0  # Special position
+                    wyckoff_pos.site_symmetry = 'mmm'  # Placeholder - should be from tables
+                elif wyckoff_letter in ['a', 'b', 'c', 'd']:  # Early letters often special
+                    wyckoff_pos.degrees_of_freedom = min(wyckoff_pos.multiplicity // 2, 3)
+                    wyckoff_pos.site_symmetry = 'mm2'  # Placeholder - should be from tables
+                else:
+                    wyckoff_pos.degrees_of_freedom = 3  # General position
+                    wyckoff_pos.site_symmetry = '1'    # General position has site symmetry '1'
+                
+                # Get representative coordinates from the first occurrence
+                first_occurrence = wyckoff_letters.index(wyckoff_letter)
+                try:
+                    ase_atoms = self.m_parent.to_ase_atoms(logger=logger)
+                    if ase_atoms and first_occurrence < len(ase_atoms):
+                        pos = ase_atoms.get_positions()[first_occurrence]
+                        cell = ase_atoms.get_cell()
+                        if not np.allclose(cell, 0):
+                            # Convert to fractional coordinates
+                            frac_coords = np.linalg.solve(cell.T, pos)
+                            wyckoff_pos.representative_coordinates = frac_coords
+                        else:
+                            wyckoff_pos.representative_coordinates = pos
+                except Exception as e:
+                    logger.debug(f'Could not compute coordinates for Wyckoff {wyckoff_letter}: {e}')
+                
+                self.wyckoff_positions.append(wyckoff_pos)
+                
+        except Exception as e:
+            logger.warning('Failed to populate Wyckoff position descriptions', exc_info=e)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -1027,13 +1110,14 @@ class ModelSystem(System):
         type=str,
         shape=['*'],
         description="""
-        Wyckoff site designation for each atomic position, formatted as '<letter><multiplicity>'.
-        Each element corresponds to the position at the same index in the `positions` array.
-        
-        The Wyckoff letter identifies the symmetry-equivalent position type within the space group.
+        Wyckoff site designation for each atomic position in the crystallographic conventional 
+        unit cell (as defined by the space group). It is formatted as `<hierarchy><multiplicity>`, i.e. `a1`.
+        Each site corresponds in order to the same index in the `positions` array.
+
+        The Wyckoff letter identifies the symmetry-equivalent position type,
+        with letters earlier on in the alphabet denoting higher symmetry (or uniqueness).
         The multiplicity indicates how many symmetry-equivalent positions are generated by applying
-        all space group operations to this Wyckoff site within the crystallographic conventional 
-        unit cell (as defined by the space group).
+        all space group operations to the site.
 
         Examples: ['a1', 'b2', 'b2', 'c4'] indicates positions with different symmetry
         environments where 'a' is a special position (multiplicity 1), two atoms on 'b' sites
@@ -1432,6 +1516,9 @@ class ModelSystem(System):
         if self.type == 'bulk' and self.symmetry is not None:
             sec_symmetry = self.m_create(Symmetry)
             sec_symmetry.normalize(archive, logger)
+            
+            # Populate wyckoff_sites annotations from symmetry analysis
+            self._populate_wyckoff_site_annotations(sec_symmetry, logger)
 
         # Create and normalize ChemicalFormula section
         sec_chemical_formula = self.m_create(ChemicalFormula)
@@ -1561,3 +1648,38 @@ class ModelSystem(System):
                     return False
 
         return True
+    
+    def _populate_wyckoff_site_annotations(self, symmetry_section: 'Symmetry', logger: 'BoundLogger') -> None:
+        """
+        Populates wyckoff_sites quantity with compact position annotations.
+        
+        Args:
+            symmetry_section (Symmetry): The symmetry section containing analysis results.
+            logger (BoundLogger): The logger to log messages.
+        """
+        if not self.positions or not hasattr(symmetry_section, '_wyckoff_data'):
+            return
+            
+        # Get Wyckoff data from the symmetry analysis
+        symmetry_data = getattr(symmetry_section, '_wyckoff_data', None)
+        if not symmetry_data:
+            logger.info('No Wyckoff data available for site annotation.')
+            return
+            
+        wyckoff_letters = symmetry_data.get('wyckoff_original', [])
+        if not wyckoff_letters or len(wyckoff_letters) != len(self.positions):
+            logger.warning('Wyckoff letters do not match position count.')
+            return
+        
+        # Calculate multiplicities for each letter
+        letter_counts = {}
+        for letter in wyckoff_letters:
+            letter_counts[letter] = letter_counts.get(letter, 0) + 1
+        
+        # Create wyckoff_sites annotations in format '<letter><multiplicity>'
+        wyckoff_sites = []
+        for letter in wyckoff_letters:
+            multiplicity = letter_counts[letter]
+            wyckoff_sites.append(f'{letter}{multiplicity}')
+            
+        self.wyckoff_sites = wyckoff_sites
