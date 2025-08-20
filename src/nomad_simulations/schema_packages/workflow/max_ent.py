@@ -9,42 +9,42 @@ from .beyond_dft import BeyondDFTModel, BeyondDFTResults, BeyondDFTWorkflow
 m_package = SchemaPackage()
 
 
-class DFTGWModel(BeyondDFTModel):
-    label = 'DFT+GW workflow parameters'
+class DMTMaxEntModel(BeyondDFTModel):
+    label = 'DMFT+MaxEnt workflow parameters'
 
 
-class DFTGWResults(BeyondDFTResults):
-    label = 'DFT+GW workflow results'
+class DMTMaxEntResults(BeyondDFTResults):
+    label = 'DMFT+MaxEnt workflow results'
 
 
-class DFTGWWorkflow(BeyondDFTWorkflow):
+class DMFTMaxEntWorkflow(BeyondDFTWorkflow):
     """
-    Definitions for GW calculations based on DFT.
+    Definitions for MaxEnt (Maximum Entropy) worklow based on DMFT.
     """
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
-            self.model = DFTGWModel()
+            self.model = DMTMaxEntModel()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            self.results = DFTGWResults()
+            self.results = DMTMaxEntResults()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         """
-        Link the DFT and GW single point workflows in the DFT-GW workflow.
+        Link the DMFT and MaxEnt single point workflows in the DMFT-MaxEnt workflow.
         """
 
         super().normalize(archive, logger)
 
         if self.task and not self.task[-1].name:
-            self.task[-1].name = 'GW'
+            self.task[-1].name = 'MaxEnt'
 
 
 m_package.__init_metainfo__()

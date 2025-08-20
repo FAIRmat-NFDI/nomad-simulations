@@ -1,3 +1,4 @@
+import numpy as np
 from nomad.datamodel import EntryArchive
 from nomad.metainfo import SchemaPackage
 from structlog.stdlib import BoundLogger
@@ -9,15 +10,15 @@ from .beyond_dft import BeyondDFTModel, BeyondDFTResults, BeyondDFTWorkflow
 m_package = SchemaPackage()
 
 
-class DFTGWModel(BeyondDFTModel):
+class XSModel(BeyondDFTModel):
     label = 'DFT+GW workflow parameters'
 
 
-class DFTGWResults(BeyondDFTResults):
+class XSResults(BeyondDFTResults):
     label = 'DFT+GW workflow results'
 
 
-class DFTGWWorkflow(BeyondDFTWorkflow):
+class XSWorkflow(BeyondDFTWorkflow):
     """
     Definitions for GW calculations based on DFT.
     """
@@ -25,14 +26,14 @@ class DFTGWWorkflow(BeyondDFTWorkflow):
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
-            self.model = DFTGWModel()
+            self.model = XSModel()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            self.results = DFTGWResults()
+            self.results = XSResults()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)
 
@@ -43,8 +44,13 @@ class DFTGWWorkflow(BeyondDFTWorkflow):
 
         super().normalize(archive, logger)
 
-        if self.task and not self.task[-1].name:
-            self.task[-1].name = 'GW'
+        if self.task:
+            if not self.task[-1].name:
+                self.task[-1].name = 'PhotonPolarization'
+            if len(self.task) == 3 and not self.tasks[1].name:
+                self.task[1].name = 'GW'
+
+        # TODO fill in results and model
 
 
 m_package.__init_metainfo__()

@@ -16,7 +16,7 @@ from nomad_simulations.schema_packages.numerical_settings import KSpace
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
 from nomad_simulations.schema_packages.properties.fermi_surface import FermiSurface
-from nomad_simulations.schema_packages.utils import get_sibling_section
+from nomad_simulations.schema_packages.utils import get_sibling_section, log
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -205,7 +205,8 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         return band_gap
 
     # TODO fix this method once `FermiSurface` property is implemented
-    def extract_fermi_surface(self, logger: 'BoundLogger') -> Optional[FermiSurface]:
+    @log
+    def extract_fermi_surface(self) -> Optional[FermiSurface]:
         """
         Extract the Fermi surface for metal systems and using the `FermiLevel.value`.
 
@@ -215,6 +216,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         Returns:
             (Optional[FermiSurface]): The extracted Fermi surface section to be stored in `Outputs`.
         """
+        logger = self.extract_fermi_surface.__annotations__['logger']
         # Check if the system has a finite band gap
         homo, lumo = self.resolve_homo_lumo_eigenvalues()
         if (homo and lumo) and (lumo - homo).magnitude > 0:
