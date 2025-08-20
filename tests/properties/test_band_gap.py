@@ -54,7 +54,7 @@ class TestElectronicBandGap:
             momentum_transfer=momentum_transfer,
             type=type,
         )
-        assert electronic_band_gap.resolve_type(logger=logger) == result
+        assert electronic_band_gap.resolve_type(logger) == result
 
     def test_normalize(self):
         """

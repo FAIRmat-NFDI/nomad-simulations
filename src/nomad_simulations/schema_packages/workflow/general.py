@@ -7,9 +7,7 @@ from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import ElectronicDensityOfStates
-from nomad_simulations.schema_packages.utils import log
 
-# TODO make this a function to check required number of tasks
 INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
 
 m_package = SchemaPackage()
@@ -90,36 +88,24 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     results = SubSection(sub_section=SimulationWorkflowResults.m_def)
 
-    @log
-    def map_inputs(self, archive: EntryArchive) -> None:
+    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if self.model:
-            logger = self.map_inputs.__annotations__['logger']
             self.model.normalize(archive, logger)
             # add method to inputs
             self.inputs.append(Link(name=self.model.label, section=self.model))
 
-    @log
-    def map_outputs(self, archive: EntryArchive) -> None:
+    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if self.results:
-            logger = self.map_outputs.__annotations__['logger']
             self.results.normalize(archive, logger)
             # add results to outputs
             self.outputs.append(Link(name=self.results.label, section=self.results))
 
-    @log
-    def map_tasks(self, archive: EntryArchive) -> None:
+    def map_tasks(self, archive: EntryArchive, logger: BoundLogger) -> None:
         """
         Generate tasks from archive data outputs. Tasks are ordered and linked based
         on the execution time of the calculation corresponding to the output.
         """
         if not archive.data or not archive.data.outputs:
-            return
-
-        # do not overwrite if tasks are set but give out a warning that it maybe
-        # inconsistent with the outputs
-        logger = self.map_tasks.__annotations__['logger']
-        if self.tasks:
-            logger.warning('Tasks are predefined and will not generate from outputs.')
             return
 
         outputs = list(archive.data.outputs)
@@ -154,13 +140,13 @@ class SimulationWorkflow(Workflow, SimulationTask):
             self.name: str = self.m_def.name
 
         if not self.inputs:
-            self.map_inputs(archive, logger=logger)
+            self.map_inputs(archive, logger)
 
         if not self.outputs:
-            self.map_outputs(archive, logger=logger)
+            self.map_outputs(archive, logger)
 
         if not self.tasks:
-            self.map_tasks(archive, logger=logger)
+            self.map_tasks(archive, logger)
 
 
 class SerialWorkflow(SimulationWorkflow):
@@ -168,10 +154,8 @@ class SerialWorkflow(SimulationWorkflow):
     Base class for workflows where tasks are executed sequentially.
     """
 
-    @log
-    def map_tasks(self, archive: EntryArchive) -> None:
-        logger = self.map_tasks.__annotations__['logger']
-        super().map_tasks(archive, logger=logger)
+    def map_tasks(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        super().map_tasks(archive, logger)
         for n, task in enumerate(self.tasks):
             if not task.name:
                 task.name = f'{self.task_label} {n}'
@@ -202,32 +186,10 @@ class SerialWorkflow(SimulationWorkflow):
 
             task.inputs.extend([inp for inp in inputs if inp not in task.inputs])
 
-        # add outputs of last task to outputs
+        # add oututs of last task to outputs
         self.outputs.extend(
             [out for out in self.tasks[-1].outputs if out not in self.outputs]
         )
-
-
-class ParallelWorkflow(SimulationWorkflow):
-    """
-    Base class for workflows where tasks are executed concurrently.
-    """
-
-    @log
-    def map_tasks(self, archive: EntryArchive) -> None:
-        logger = self.map_tasks.__annotations__['logger']
-        super().map_tasks(archive, logger=logger)
-
-        if not self.tasks:
-            logger.error(INCORRECT_N_TASKS)
-            return
-
-        # link inputs and outputs to all tasks
-        for n, task in enumerate(self.tasks):
-            if not task.inputs:
-                task.inputs.extend(self.inputs)
-            if not task.outputs:
-                task.outputs.extend(self.outputs)
 
 
 class ElectronicStructureResults(SimulationWorkflowResults):
