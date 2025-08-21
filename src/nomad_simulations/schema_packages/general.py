@@ -20,10 +20,7 @@ from nomad_simulations.schema_packages.atoms_state import (
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
-from nomad_simulations.schema_packages.utils import (
-    get_composition,
-    is_not_representative,
-)
+from nomad_simulations.schema_packages.utils import get_composition
 
 from .common import Time
 
@@ -265,16 +262,13 @@ class Simulation(BaseSimulation, Schema):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super(Schema, self).normalize(archive, logger)
 
-        # Finding which is the representative system of a calculation: typically, we will
-        # define it as the last system reported (TODO CHECK THIS!).
         # TODO extend adding the proper representative system extraction using `normalizer.py`
         if not self.model_system:
             logger.error('No system information reported.')
             return
-        system_ref = self.model_system[-1]
-        # * We define is_representative in the parser
-        # system_ref.is_representative = True
-        self.m_cache['system_ref'] = system_ref
+        # Set the representative system to last in list if not already set
+        if all(not system.is_representative for system in self.model_system):
+            self.model_system[-1].is_representative = True
 
         # Setting up the `branch_depth` in the parent-child tree
         for system_parent in self.model_system:
@@ -284,10 +278,6 @@ class Simulation(BaseSimulation, Schema):
             if len(system_parent.sub_systems) == 0:
                 continue
             self._set_system_branch_depth(system_parent=system_parent)
-
-            # TODO Address when we know the role of is_representative
-            # if is_not_representative(model_system=system_parent, logger=logger):
-            #     continue
 
 
 m_package.__init_metainfo__()

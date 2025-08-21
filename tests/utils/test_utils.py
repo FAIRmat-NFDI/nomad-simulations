@@ -13,7 +13,6 @@ from nomad_simulations.schema_packages.model_system import (
 )
 from nomad_simulations.schema_packages.utils import (
     get_sibling_section,
-    is_not_representative,
     log,
 )
 from nomad_simulations.schema_packages.variables import Energy2 as Energy
@@ -130,15 +129,6 @@ def test_get_sibling_section():
         get_sibling_section(sibling_section, 'cell', logger, index_sibling=1).type
         == 'primitive'
     )
-
-
-def test_is_not_representative():
-    """
-    Test the `is_not_representative` utility function.
-    """
-    assert is_not_representative(None, logger) is None
-    assert is_not_representative(ModelSystem(), logger)
-    assert not is_not_representative(ModelSystem(is_representative=True), logger)
 
 
 # ! Missing test for RusselSandersState (but this class will probably be deprecated)
