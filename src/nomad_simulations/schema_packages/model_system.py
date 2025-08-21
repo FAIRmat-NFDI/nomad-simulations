@@ -524,20 +524,18 @@ class Symmetry(ArchiveSection):
         return resolved_cell
 
     def resolve_bulk_symmetry(
-        self, original_cell: 'Cell', logger: 'BoundLogger'
+        self, logger: 'BoundLogger'
     ) -> 'tuple[Optional[Cell], Optional[Cell]]':
         """
         Resolves the symmetry of the material being simulated using MatID and the
-        originally parsed data under original_cell. It generates two other
-        `Cell` sections (the primitive and standardized cells), as well as populating
+        parent ModelSystem's structural data. It generates two other
+        `Cell` sections (the primitive and conventional cells), as well as populating
         the `Symmetry` section.
 
         Args:
-            original_cell (Cell): The `Cell` section that the symmetry
-            uses to in MatID.SymmetryAnalyzer().
             logger (BoundLogger): The logger to log messages.
         Returns:
-            primitive_cell, conventional_cell (tuple[Optional[Cell], Optional[Cell]]): The primitive and standardized `Cell` sections.
+            primitive_cell, conventional_cell (tuple[Optional[Cell], Optional[Cell]]): The primitive and conventional `Cell` sections.
         """
         symmetry = {}
         try:
@@ -578,12 +576,10 @@ class Symmetry(ArchiveSection):
         )
 
         # Getting prototype_formula, prototype_aflow_id, and strukturbericht designation from
-        # standarized Wyckoff numbers and the space group number
         if symmetry.get('space_group_number'):
-            # Retrieve the expanded conventional system (an ASE.Atoms object) from the analyzer.
-            conventional_system = symmetry_analyzer.get_conventional_system()
-            # Use the conventional system to get the expanded atomic numbers.
-            conventional_num = conventional_system.get_atomic_numbers()
+            conventional_num = (
+                symmetry_analyzer.get_conventional_system().get_atomic_numbers()
+            )
             conventional_wyckoff = symmetry_analyzer.get_wyckoff_letters_conventional()
             norm_wyckoff = get_normalized_wyckoff(
                 atomic_numbers=conventional_num, wyckoff_letters=conventional_wyckoff
@@ -614,9 +610,6 @@ class Symmetry(ArchiveSection):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        cell = get_sibling_section(
-            section=self, sibling_section_name='cell', logger=logger
-        )
         # TODO : the following is a temporary fix, and it might break again
         # when there are systems with deeper hierarchies.
         if self.m_parent.m_parent is not None and self.m_parent.type == 'bulk':
@@ -624,7 +617,7 @@ class Symmetry(ArchiveSection):
             (
                 primitive_cell,
                 conventional_cell,
-            ) = self.resolve_bulk_symmetry(original_cell=cell, logger=logger)
+            ) = self.resolve_bulk_symmetry(logger=logger)
             self.m_parent.m_add_sub_section(ModelSystem.cell, primitive_cell)
             self.m_parent.m_add_sub_section(ModelSystem.cell, conventional_cell)
             # Reference to the standarized cell, and if not, fallback to the originally parsed one
@@ -747,7 +740,7 @@ class ModelSystem(System):
     `time_step` can be defined.
 
     It is composed of the sub-sections:
-        - `Symmetry` containing the information of the (conventional) atomic cell symmetry
+        - `Symmetry` containing the information of the (conventional) cell symmetry
         in bulk ModelSystem,
         - `ChemicalFormula` containing the information of the chemical formulas in different
         formats.

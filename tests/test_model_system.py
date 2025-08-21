@@ -1,5 +1,3 @@
-from typing import Optional
-
 import ase
 import numpy as np
 import pytest
@@ -30,10 +28,10 @@ class TestSymmetry:
 
     def test_resolve_bulk_symmetry_empty(self):
         """
-        Check what happens if original_atomic_cell is None or minimal.
+        Check what happens if there is no parent ModelSystem or minimal data.
         """
         sym = Symmetry()
-        primitive, conv = sym.resolve_bulk_symmetry(None, logger=logger)
+        primitive, conv = sym.resolve_bulk_symmetry(logger=logger)
         assert primitive is None
         assert conv is None
 
