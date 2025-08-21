@@ -1,13 +1,10 @@
-import logging
-from io import StringIO
-
 import pytest
 import structlog
 from nomad.utils import get_logger
 from structlog.testing import LogCapture
 
 from nomad_simulations.schema_packages.model_system import (
-    AtomicCell,
+    Cell,
     ModelSystem,
     Symmetry,
 )
@@ -16,8 +13,6 @@ from nomad_simulations.schema_packages.utils import (
     is_not_representative,
     log,
 )
-from nomad_simulations.schema_packages.variables import Energy2 as Energy
-from nomad_simulations.schema_packages.variables import Temperature
 
 from . import logger
 
@@ -99,12 +94,12 @@ def test_log(func, logger_kwarg, logger_name, log_output):
     )
 
 
-def test_get_sibling_section():
+def test_get_sibling_section():  # TODO: should not depend on specific section types
     """
     Test the `get_sibling_section` utility function.
     """
     parent_section = ModelSystem()
-    section = AtomicCell(type='original')
+    section = Cell(type='original')
     parent_section.cell.append(section)
     sibling_section = Symmetry()
     parent_section.symmetry.append(sibling_section)
@@ -112,7 +107,7 @@ def test_get_sibling_section():
     assert get_sibling_section(section, 'symmetry', logger) == sibling_section
     assert get_sibling_section(sibling_section, 'cell', logger).type == section.type
     assert get_sibling_section(section, 'symmetry', logger, index_sibling=2) is None
-    section2 = AtomicCell(type='primitive')
+    section2 =  Cell(type='primitive')
     parent_section.cell.append(section2)
     assert (
         get_sibling_section(sibling_section, 'cell', logger, index_sibling=0).type

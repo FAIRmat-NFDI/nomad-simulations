@@ -22,8 +22,8 @@ from nomad_simulations.schema_packages.basis_set import (
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
-from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
-from tests.conftest import refs_apw
+from nomad_simulations.schema_packages.model_system import Cell, ModelSystem
+from tests.conftest import Cell
 
 from . import logger
 
@@ -139,7 +139,7 @@ def test_full_apw(
         data=Simulation(
             model_system=[
                 ModelSystem(
-                    cell=[AtomicCell()],
+                    cell=[Cell()],
                     particle_states=[AtomsState(chemical_symbol='H')],
                 )
             ],
@@ -151,7 +151,7 @@ def test_full_apw(
     numerical_settings.append(generate_apw(species_def, cutoff=cutoff))
 
     # test structure
-    assert numerical_settings[0].m_to_dict() == refs_apw[ref_index]
+    assert numerical_settings[0].m_to_dict() == cell[ref_index]
 
 
 @pytest.mark.parametrize(

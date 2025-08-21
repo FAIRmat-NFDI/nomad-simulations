@@ -5,7 +5,7 @@ from nomad.datamodel import EntryArchive
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
-    AtomicCell,
+    Cell,
     ModelSystem,
 )
 
@@ -202,8 +202,8 @@ class TestSimulation:
         model_system.is_representative = is_representative
         model_system.composition_formula = custom_formulas[0]
         ctr_comp = 1
-        # Create an AtomicCell (cell geometry only)
-        atomic_cell = AtomicCell()
+        # Create an Cell (cell geometry only)
+        atomic_cell = Cell()
         model_system.cell.append(atomic_cell)
         if has_atom_indices:
             model_system.particle_indices = []
