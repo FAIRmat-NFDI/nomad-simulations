@@ -60,7 +60,7 @@ class EOSFit(ArchiveSection):
     m_def = Section(validate=False)
 
     function_name = Quantity(
-        type=MEnum(**tuple(FUNCTION_NAMES.keys())),
+        type=MEnum(*tuple(FUNCTION_NAMES.keys())),
         shape=[],
         description="""
         Specifies the function used to perform the fitting of the volume-energy data. Value
