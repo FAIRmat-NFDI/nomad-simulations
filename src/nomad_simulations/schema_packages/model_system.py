@@ -1346,10 +1346,11 @@ class ModelSystem(System):
 
         parent = self.m_parent
         if parent.is_root_system():
-            particle_array = (
-                parent.positions or parent.particle_states or parent.velocities
+            n_particles = (
+                len(parent.particle_states)
+                if parent.particle_states is not None
+                else None
             )
-            n_particles = len(particle_array) if particle_array is not None else None
             if not n_particles:
                 logger.error(
                     'Cannot validate ModelSystem subsystem without root particle info.'
