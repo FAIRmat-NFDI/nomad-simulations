@@ -815,3 +815,205 @@ class TestModelSystemSymbols:
         mid.particle_indices = [0, 1, 2, 3, 4]  # whole set
         leaf.particle_indices = [3, 4, 0]  # pick from root order via leaf
         assert leaf.get_symbols() == ['O', 'Cu', 'H']
+
+
+class TestModelSystemSubsystemValidation:
+    """
+    Tests for ModelSystem._validate_subsystem() covering:
+      - root no-op
+      - child with no particle_indices (warn)
+      - root parent: count-based validation (ok / invalid negative / OOB)
+      - non-root parent: membership-based validation (ok / parent missing indices / not-a-subset)
+    """
+
+    def _mk_root_with_particles(self, n: int) -> ModelSystem:
+        root = ModelSystem(is_representative=True)
+        for _ in range(n):
+            root.particle_states.append(AtomsState(chemical_symbol='H'))
+        return root
+
+    def test_root_is_noop(self, caplog):
+        root = self._mk_root_with_particles(3)
+        with caplog.at_level('WARNING'):
+            root._validate_subsystem(logger)
+        # no exception, nothing logged (it's a no-op for root)
+        assert not caplog.records
+
+    def test_child_no_indices_warns(self, caplog):
+        root = self._mk_root_with_particles(2)
+        child = ModelSystem()
+        child.particle_indices = None
+        root.sub_systems.append(child)
+
+        with caplog.at_level('WARNING'):
+            child._validate_subsystem(logger)
+
+        assert any(
+            'Cannot validate ModelSystem subsystem without particle_indices'
+            in rec.message
+            for rec in caplog.records
+        )
+
+    def test_root_parent_valid_indices_pass(self):
+        root = self._mk_root_with_particles(4)
+        child = ModelSystem()
+        child.particle_indices = [0, 3]
+        root.sub_systems.append(child)
+
+        # Should not raise
+        child._validate_subsystem(logger)
+
+    def test_root_parent_negative_index_asserts(self):
+        """
+        Negative indices must be rejected under root-parent path.
+        (If this test fails, check the condition: it should be 'i >= 0 and i < n_particles'.)
+        """
+        root = self._mk_root_with_particles(3)
+        child = ModelSystem()
+        child.particle_indices = [-1, 1]
+        root.sub_systems.append(child)
+
+        with pytest.raises(AssertionError):
+            child._validate_subsystem(logger)
+
+    def test_root_parent_oor_index_asserts(self):
+        """
+        Out-of-range indices must be rejected under root-parent path.
+        """
+        root = self._mk_root_with_particles(3)  # valid indices: 0,1,2
+        child = ModelSystem()
+        child.particle_indices = [0, 3]  # 3 is OOB
+        root.sub_systems.append(child)
+
+        with pytest.raises(AssertionError):
+            child._validate_subsystem(logger)
+
+    def test_nonroot_parent_missing_indices_errors(self, caplog):
+        """
+        For non-root parents, if the parent's particle_indices is None, log an error and return.
+        """
+        root = self._mk_root_with_particles(3)
+        mid = ModelSystem()
+        leaf = ModelSystem()
+        # Parent (mid) has no indices:
+        mid.particle_indices = None
+        # Leaf does have indices:
+        leaf.particle_indices = [0]
+
+        root.sub_systems.append(mid)
+        mid.sub_systems.append(leaf)
+
+        with caplog.at_level('ERROR'):
+            leaf._validate_subsystem(logger)
+
+        assert any(
+            'Cannot validate ModelSystem subsystem without parent particle_indices'
+            in rec.message
+            for rec in caplog.records
+        )
+
+    def test_nonroot_parent_subset_passes(self):
+        """
+        For non-root parents, child's indices must be a subset of parent's indices.
+        """
+        root = self._mk_root_with_particles(4)  # valid: 0,1,2,3
+        mid = ModelSystem()
+        mid.particle_indices = [1, 2, 3]
+        leaf = ModelSystem()
+        leaf.particle_indices = [2]
+
+        root.sub_systems.append(mid)
+        mid.sub_systems.append(leaf)
+
+        # Should not raise
+        leaf._validate_subsystem(logger)
+
+    def test_nonroot_parent_not_subset_asserts(self):
+        """
+        For non-root parents, indices not contained in parent's indices must assert.
+        """
+        root = self._mk_root_with_particles(4)
+        mid = ModelSystem()
+        mid.particle_indices = [0, 1]  # parent subset
+        leaf = ModelSystem()
+        leaf.particle_indices = [2]  # not in parent subset
+
+        root.sub_systems.append(mid)
+        mid.sub_systems.append(leaf)
+
+        with pytest.raises(AssertionError):
+            leaf._validate_subsystem(logger)
+
+    def test_root_parent_without_any_particle_info_errors(self, caplog):
+        """
+        Root has no positions/particle_states/velocities → log error and return.
+        """
+        root = ModelSystem(is_representative=True)
+        # Explicitly ensure all three are missing/empty:
+        root.positions = None
+        root.velocities = None
+        # Leave particle_states empty
+
+        child = ModelSystem()
+        child.particle_indices = [0]
+        root.sub_systems.append(child)
+
+        with caplog.at_level('ERROR'):
+            child._validate_subsystem(logger)
+
+        assert any(
+            'Cannot validate ModelSystem subsystem without root particle info.'
+            in rec.message
+            for rec in caplog.records
+        )
+
+
+class TestGetRootSystemCycleDetection:
+    def test_root_returns_self(self):
+        """A root should return itself."""
+        root = ModelSystem(branch_label='A')
+        assert root.get_root_system() is root
+
+    def test_nested_returns_root(self):
+        """A deep child should resolve to the top-most root."""
+        a = ModelSystem(branch_label='A')
+        b = ModelSystem(branch_label='B')
+        c = ModelSystem(branch_label='C')
+
+        a.sub_systems.append(b)  # sets b.m_parent = a
+        b.sub_systems.append(c)  # sets c.m_parent = b
+
+        assert c.get_root_system() is a
+
+    def test_self_cycle_raises(self):
+        """Direct self-cycle must be detected and raise."""
+        a = ModelSystem(branch_label='A')
+        a.m_parent = a  # create self-cycle
+
+        with pytest.raises(RuntimeError, match='Cycle'):
+            a.get_root_system()
+
+    def test_long_cycle_raises(self):
+        """Longer cycle A -> B -> C -> A must be detected and raise."""
+        a = ModelSystem(branch_label='A')
+        b = ModelSystem(branch_label='B')
+        c = ModelSystem(branch_label='C')
+
+        a.sub_systems.append(b)  # b.m_parent = a
+        b.sub_systems.append(c)  # c.m_parent = b
+        a.m_parent = c  # close the loop: a -> b -> c -> a
+
+        with pytest.raises(RuntimeError, match='Cycle'):
+            c.get_root_system()
+
+    def test_two_node_cycle_raises(self):
+        """Two-node cycle B <-> C must be detected and raise."""
+        b = ModelSystem(branch_label='B')
+        c = ModelSystem(branch_label='C')
+
+        # Create 2-node cycle directly
+        b.m_parent = c
+        c.m_parent = b
+
+        with pytest.raises(RuntimeError, match='Cycle'):
+            b.get_root_system()
