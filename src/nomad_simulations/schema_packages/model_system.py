@@ -346,7 +346,7 @@ class AtomicCell(Cell):
     )
 
     @log
-    def get_geometric_space_for_atomic_cell(self) -> None:
+    def set_geometric_space_for_atomic_cell(self) -> None:
         """
         Get the real space parameters for the atomic cell using ASE.
         to_ase_atoms live under the parent ModelSystem.
@@ -354,7 +354,7 @@ class AtomicCell(Cell):
         Args:
             logger (BoundLogger): The logger to log messages.
         """
-        logger = self.get_geometric_space_for_atomic_cell.__annotations__['logger']
+        logger = self.set_geometric_space_for_atomic_cell.__annotations__['logger']
         parent = self.m_parent
         if not isinstance(parent, ModelSystem):
             logger.warning(
@@ -388,15 +388,20 @@ class AtomicCell(Cell):
         self.name = self.m_def.name if self.name is None else self.name
 
         # extract all the geometric‐space quantities; errors are logged inside
-        self.get_geometric_space_for_atomic_cell(logger=logger)
+        self.set_geometric_space_for_atomic_cell(logger=logger)
 
 
-class Symmetry(ArchiveSection):
+class GlobalSymmetry(ArchiveSection):
     """
-    A base section used to specify the symmetry of the `AtomicCell`.
+    A base section specifying the global symmetry of the corresponding `ModelSystem` at large,
+    which can be used for categorization and lookup. It does not define local, site-specific symmetry.
+    """
 
-    Note: this information can be extracted via normalization using the MatID package, if `AtomicCell`
-    is specified.
+class GlobalCrystalSymmetry(GlobalSymmetry):
+    """
+    A symmetry section specialized for identifying bulk crystal space groups.
+    All symmetry operators are defined with respect to the **standard crystallographic unit cell**.
+    A definition of the orientation of the reference cell is given via `origin_shift` and `transformation_matrix`.
     """
 
     bravais_lattice = Quantity(
@@ -492,13 +497,6 @@ class Symmetry(ArchiveSection):
         """,
     )
 
-    atomic_cell_ref = Quantity(
-        type=Cell,
-        description="""
-        Reference to the AtomicCell section that the symmetry refers to.
-        """,
-    )
-
     def resolve_analyzed_atomic_cell(
         self,
         symmetry_analyzer: 'SymmetryAnalyzer',
@@ -553,7 +551,7 @@ class Symmetry(ArchiveSection):
         # ! Positions are stored directly under model_system in nomad-simulations>=0.4.
         atomic_cell.wyckoff_letters = wyckoff
         atomic_cell.equivalent_atoms = equivalent_atoms
-        atomic_cell.get_geometric_space_for_atomic_cell(logger=logger)
+        atomic_cell.set_geometric_space_for_atomic_cell(logger=logger)
         return atomic_cell
 
     def resolve_bulk_symmetry(
@@ -788,8 +786,7 @@ class ModelSystem(System):
     `time_step` can be defined.
 
     It is composed of the sub-sections:
-        - `Symmetry` containing the information of the (conventional) atomic cell symmetry
-        in bulk ModelSystem,
+        - `GlobalSymmetry` containing the information of (sub)system-wide symmetry
         - `ChemicalFormula` containing the information of the chemical formulas in different
         formats.
 
@@ -810,27 +807,24 @@ class ModelSystem(System):
     Note: `normalize()` can be called at any time for each of the classes without being re-triggered
     by the NOMAD normalization.
 
-    Examples for the parent-child hierarchical trees:
+    Examples for the subsystem hierarchical trees:
 
-        - Example 1, a crystal Si has: 3 AtomicCell sections (named 'original', 'primitive',
-        and 'conventional'), 1 Symmetry section, and 0 nested ModelSystem trees.
+        - Example 1, a crystal Si setup has 0 subsystems.
 
-        - Example 2, an heterostructure Si/GaAs has: 1 parent ModelSystem section (for
-        Si/GaAs together) and 2 nested child ModelSystem sections (for Si and GaAs); each
-        child has 3 AtomicCell sections and 1 Symmetry section. The parent ModelSystem section
-        could also have 3 AtomicCell and 1 Symmetry section (if it is possible to extract them).
+        - Example 2, a Si/GaAs heterostructure has:
+          - 1 top-level `ModelSystem` section (Si/GaAs together)
+          - 2 subsystem sections of type `ModelSystem` (for Si and GaAs each).
+            As these are considered independent systems, they will have their own `GlobalSymmetry` section.
+            A new `AtomicCell` section is defined only when simulation box changes.
 
-        - Example 3, a solution of C800H3200Cu has: 1 parent ModelSystem section (for
-        800*(CH4)+Cu) and 2 nested child ModelSystem sections (for CH4 and Cu); each child
-        has 1 AtomicCell section.
+        - Example 3, a solution of C800H3200Cu has: 1 top-level `ModelSystem` section (for
+        800*(CH4)+Cu) and 2 nested subsystem `ModelSystem` sections (for CH4 and Cu).
 
         - Example 4, a passivated surface GaAs-CO2 has --> similar to the example 2.
 
-        - Example 5, a passivated heterostructure Si/(GaAs-CO2) has: 1 parent ModelSystem
-        section (for Si/(GaAs-CO2)), 2 child ModelSystem sections (for Si and GaAs-CO2),
-        and 2 additional children sections in one of the children (for GaAs and CO2). The number
-        of AtomicCell and Symmetry sections can be inferred using a combination of example
-        2 and 3.
+        - Example 5, a passivated heterostructure Si/(GaAs-CO2) has: 1 top-level `ModelSystem`
+        section (for Si/(GaAs-CO2)), 2 mid-level subsystem sections (for Si and GaAs-CO2),
+        and 2 low-level subsystem sections in the GaAs-CO2 system.
     """
 
     __is_atomic_flag: Optional[bool] = None
@@ -840,7 +834,7 @@ class ModelSystem(System):
     name = Quantity(
         type=str,
         description="""
-        Any verbose naming refering to the ModelSystem. Can be left empty if it is a simple
+        Any verbose naming referring to the ModelSystem. Can be left empty if it is a simple
         crystal or it can be filled up. For example, an heterostructure of graphene (G) sandwiched
         in between hexagonal boron nitrides (hBN) slabs could be named 'hBN/G/hBN'.
         """,
@@ -898,9 +892,9 @@ class ModelSystem(System):
         """,
     )
 
-    cell = SubSection(sub_section=Cell.m_def, repeats=True)
+    cell = SubSection(sub_section=Cell.m_def)
 
-    symmetry = SubSection(sub_section=Symmetry.m_def, repeats=True)
+    symmetry = SubSection(sub_section=GlobalSymmetry.m_def)
 
     chemical_formula = SubSection(sub_section=ChemicalFormula.m_def, repeats=False)
 
@@ -1346,7 +1340,7 @@ class ModelSystem(System):
 
         # Create and normalize Symmetry section if applicable
         if self.type == 'bulk' and self.symmetry is not None:
-            sec_symmetry = self.m_create(Symmetry)
+            sec_symmetry = self.m_create(GlobalCrystalSymmetry)
             sec_symmetry.normalize(archive, logger)
 
         # Create and normalize ChemicalFormula section

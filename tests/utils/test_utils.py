@@ -9,7 +9,7 @@ from structlog.testing import LogCapture
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
     ModelSystem,
-    Symmetry,
+    GlobalCrystalSymmetry,
 )
 from nomad_simulations.schema_packages.utils import (
     get_sibling_section,
@@ -106,7 +106,7 @@ def test_get_sibling_section():
     parent_section = ModelSystem()
     section = AtomicCell(type='original')
     parent_section.cell.append(section)
-    sibling_section = Symmetry()
+    sibling_section = GlobalCrystalSymmetry()
     parent_section.symmetry.append(sibling_section)
     assert get_sibling_section(section, '', logger) is None
     assert get_sibling_section(section, 'symmetry', logger) == sibling_section

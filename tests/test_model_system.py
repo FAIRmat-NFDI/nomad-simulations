@@ -17,7 +17,7 @@ from nomad_simulations.schema_packages.model_system import (
     Cell,
     ChemicalFormula,
     ModelSystem,
-    Symmetry,
+    GlobalCrystalSymmetry,
 )
 
 from . import logger
@@ -33,7 +33,7 @@ class TestSymmetry:
         """
         Check what happens if original_atomic_cell is None or minimal.
         """
-        sym = Symmetry()
+        sym = GlobalCrystalSymmetry()
         primitive, conv = sym.resolve_bulk_symmetry(None, logger=logger)
         assert primitive is None
         assert conv is None
@@ -185,7 +185,7 @@ class TestModelSystem:
         )
         sys.cell.append(ac)
         # Add a Symmetry, ChemicalFormula
-        sym = Symmetry()
+        sym = GlobalCrystalSymmetry()
         sys.symmetry.append(sym)
         chem = ChemicalFormula()
         sys.chemical_formula = chem
