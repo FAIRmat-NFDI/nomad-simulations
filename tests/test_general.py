@@ -98,22 +98,37 @@ class TestSimulation:
                 ['group_H20(1)', 'H20(3)', 'H(1)O(2)', 'H(1)O(2)', 'H(1)O(2)'],
                 [None, None, None, None, None],
             ),  # pure system
-            (
+            # (
+            #     False,
+            #     True,
+            #     ['H20'],
+            #     [3],
+            #     [['H', 'O', 'O']],
+            #     [None, None, None, None, None],
+            #     [None, None, None, None, None],
+            # ),  # non-representative system
+            (  # TODO - decide between tests above or below depending on scope of is_representative
                 False,
                 True,
                 ['H20'],
                 [3],
                 [['H', 'O', 'O']],
+                [
+                    'group_H20(1)',
+                    'H20(3)',
+                    'H(1)O(2)',
+                    'H(1)O(2)',
+                    'H(1)O(2)',
+                ],  # compute even if not representative
                 [None, None, None, None, None],
-                [None, None, None, None, None],
-            ),  # non-representative system
+            ),
             (
                 True,
                 True,
                 [None],
                 [3],
                 [['H', 'O', 'O']],
-                ['Unknown(1)', 'Unknown(3)', 'H(1)O(2)', 'H(1)O(2)', 'H(1)O(2)'],
+                ['H(3)O(6)', 'H(3)O(6)', 'H(1)O(2)', 'H(1)O(2)', 'H(1)O(2)'],
                 [None, None, None, None, None],
             ),  # missing branch labels
             (
@@ -122,7 +137,7 @@ class TestSimulation:
                 ['H20'],
                 [3],
                 [[None, None, None]],
-                ['group_H20(1)', 'H20(3)', 'Unknown(3)', 'Unknown(3)', 'Unknown(3)'],
+                ['group_H20(1)', 'H20(3)', None, None, None],
                 [None, None, None, None, None],
             ),  # missing atom labels
             (
@@ -206,7 +221,7 @@ class TestSimulation:
         atomic_cell = AtomicCell()
         model_system.cell.append(atomic_cell)
         if has_atom_indices:
-            model_system.particle_indices = []
+            model_system.particle_indices = np.empty(0, dtype=np.int32)
 
         # add the atoms to the ModelSystem's particle_states.
         for mol_label, n_mol, atom_labels in zip(
@@ -215,7 +230,7 @@ class TestSimulation:
             # Create a branch (group) for this molecule type.
             model_system_mol_group = ModelSystem()
             if has_atom_indices:
-                model_system_mol_group.particle_indices = []
+                model_system_mol_group.particle_indices = np.empty(0, dtype=np.int32)
             model_system_mol_group.branch_label = (
                 f'group_{mol_label}' if mol_label is not None else None
             )
@@ -270,3 +285,32 @@ class TestSimulation:
             return ctr_comp
 
         _ = get_system_recurs(systems=model_system.sub_systems, ctr_comp=ctr_comp)
+
+    def test_root_leaf_composition_from_symbols_no_subsystems(self):
+        """
+        Root with no subsystems/particle_indices derives composition from its own symbols.
+        """
+        root = ModelSystem(is_representative=True)
+        root.cell.append(AtomicCell())  # minimal cell so normalize doesn't bail
+        for sym in ['H', 'H', 'O']:
+            root.particle_states.append(AtomsState(chemical_symbol=sym))
+
+        sim = Simulation(model_system=[root])
+        sim.normalize(EntryArchive(), logger=logger)
+
+        assert root.particle_indices is None  # root doesn't store indices
+        assert root.composition_formula == 'H(2)O(1)'
+
+    def test_root_leaf_custom_composition_preserved(self):
+        """
+        Pre-set custom composition on root is not overwritten during normalize.
+        """
+        root = ModelSystem(is_representative=True, composition_formula='Custom(1)')
+        root.cell.append(AtomicCell())
+        for sym in ['H', 'H', 'O']:
+            root.particle_states.append(AtomsState(chemical_symbol=sym))
+
+        sim = Simulation(model_system=[root])
+        sim.normalize(EntryArchive(), logger=logger)
+
+        assert root.composition_formula == 'Custom(1)'

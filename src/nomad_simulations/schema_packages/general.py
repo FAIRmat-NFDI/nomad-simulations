@@ -206,98 +206,61 @@ class Simulation(BaseSimulation, Schema):
                 system_parent=system_child, branch_depth=branch_depth + 1
             )
 
-    def resolve_composition_formula(self, system_parent: ModelSystem) -> None:
-        """Determine and set the composition formula for `system_parent` and all of its
-        descendants.
+    @staticmethod
+    def get_composition_formula(system: ModelSystem) -> str | None:
+        # Honor custom formulas
+        if system.composition_formula is not None:
+            return system.composition_formula
+
+        formula = None
+        subsystems = system.sub_systems
+        # INTERNAL NODE: use child branch labels
+        if subsystems:
+            children_names = [(child.branch_label or 'Unknown') for child in subsystems]
+            children_names = (
+                children_names
+                if not all([name == 'Unknown' for name in children_names])
+                else []
+            )
+            formula = get_composition(children_names=children_names)
+
+        # LEAF NODE or all children have no branch_label
+        if not formula:
+            if system.particle_indices is None and not system.is_root_system():
+                return None
+
+            names = (
+                system.get_symbols()
+            )  # already slices from root via particle_indices
+            formula = get_composition(children_names=names) if names else None
+
+        return formula
+
+    @staticmethod
+    def set_composition_formula(system_parent: ModelSystem) -> None:
+        """
+        Determine and set the composition_formula for `system_parent` and all descendants.
+
+        Rules
+        -----
+        - Never overwrite a pre-set custom composition_formula (only set when None).
+        - Internal nodes (with children):
+            * Formula counts child branch labels when available, using 'Unknown' otherwise.
+            * If no children have branch labels, falls back to using particle labels.
+        - Leaves (no children):
+            * Uses particle labels.
+            * If particle_indices or symbols are missing → leave as None.
 
         Args:
+        ----
             system_parent (ModelSystem): The upper-most level of the system hierarchy to consider.
+
         """
-
-        def set_composition_formula(
-            system: ModelSystem, subsystems: list[ModelSystem], labels: list[str]
-        ) -> None:
-            """Determine the composition formula for `system` based on its `subsystems`.
-            If `system` has no children, the labels are used to determine the formula.
-
-            Args:
-                system (ModelSystem): The system under consideration.
-                subsystems (list[ModelSystem]): The children of system.
-                labels (list[str]): The global list of labels corresponding
-                to the particle indices stored in system.
-            """
-            if not subsystems:
-                idx = getattr(system, 'particle_indices', None)
-                if idx is not None:
-                    if labels:
-                        try:
-                            arr = np.asarray(labels, dtype=object)
-                            subsystem_labels = [str(x) for x in arr[idx]]
-                        except Exception:
-                            subsystem_labels = [
-                                labels[i] if 0 <= i < len(labels) else 'Unknown'
-                                for i in idx
-                            ]
-                    else:
-                        subsystem_labels = ['Unknown'] * len(idx)
-                else:
-                    subsystem_labels = []
-            else:
-                subsystem_labels = [
-                    subsystem.branch_label
-                    if subsystem.branch_label is not None
-                    else 'Unknown'
-                    for subsystem in subsystems
-                ]
-            if system.composition_formula is None:
-                system.composition_formula = get_composition(
-                    children_names=subsystem_labels
-                )
-
-        def get_composition_recurs(system: ModelSystem, labels: list[str]) -> None:
-            """Traverse the system hierarchy downward and set the branch composition for
-            all (sub)systems at each level.
-
-            Args:
-                system (ModelSystem): The system to traverse downward.
-                labels (list[str]): The global list of labels corresponding
-                to the particle indices stored in system.
-            """
-            subsystems = system.sub_systems
-            set_composition_formula(system=system, subsystems=subsystems, labels=labels)
-            if subsystems:
-                for subsystem in subsystems:
-                    get_composition_recurs(system=subsystem, labels=labels)
-
-        def _label_from_particle_state(p: ParticleState) -> str:
-            if isinstance(p, AtomsState):
-                return p.chemical_symbol or p.label or 'Unknown'
-            if CGBeadState is not None and isinstance(p, CGBeadState):
-                bs = getattr(p, 'bead_symbol', None)
-                if bs:
-                    return bs
-                lab = getattr(p, 'label', None)
-                if lab:
-                    return lab
-                alt = getattr(p, 'alt_labels', None)
-                if alt:
-                    try:
-                        return alt[0]
-                    except Exception:
-                        pass
-                return 'Unknown'
-            return getattr(p, 'label', None) or 'Unknown'
-
-        labels: list[str] = []
-        if getattr(system_parent, 'particle_states', None):
-            try:
-                labels = [
-                    _label_from_particle_state(p) for p in system_parent.particle_states
-                ]  # type: ignore[attr-defined]
-            except Exception:
-                labels = []
-
-        get_composition_recurs(system=system_parent, labels=labels)
+        system_parent.composition_formula = Simulation.get_composition_formula(
+            system_parent
+        )
+        for child in system_parent.sub_systems:
+            Simulation.set_composition_formula(system_parent=child)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super(Schema, self).normalize(archive, logger)
@@ -316,13 +279,14 @@ class Simulation(BaseSimulation, Schema):
         # Setting up the `branch_depth` in the parent-child tree
         for system_parent in self.model_system:
             system_parent.branch_depth = 0
+            self.set_composition_formula(system_parent=system_parent)
             if len(system_parent.sub_systems) == 0:
                 continue
             self._set_system_branch_depth(system_parent=system_parent)
 
-            if is_not_representative(model_system=system_parent, logger=logger):
-                continue
-            self.resolve_composition_formula(system_parent=system_parent)
+            # TODO Address when we know the role of is_representative
+            # if is_not_representative(model_system=system_parent, logger=logger):
+            #     continue
 
 
 m_package.__init_metainfo__()

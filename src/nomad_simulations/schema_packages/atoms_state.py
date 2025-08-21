@@ -569,6 +569,12 @@ class ParticleState(Entity):
         """,
     )
 
+    def get_label(self) -> str:
+        """
+        Returns the label of the particle.
+        """
+        return self.label
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
@@ -632,7 +638,13 @@ class AtomsState(ParticleState):
     )
 
     @log
-    def resolve_chemical_symbol(self) -> Optional[str]:
+    def get_label(self) -> str:
+        """
+        Returns the label of the particle.
+        """
+        return self.chemical_symbol if self.chemical_symbol else self.label
+
+    def resolve_chemical_symbol(self, logger: 'BoundLogger') -> str | None:
         """
         Resolves the `chemical_symbol` from the `atomic_number`.
 
@@ -766,6 +778,17 @@ class CGBeadState(ParticleState):
     #     image: int #! advance PBC stuff would go in cell I guess
     #         The number of times each particle has wrapped around the box (i_x, i_y, i_z).
     #         Default: 0, 0, 0
+
+    def get_label(self) -> str:
+        """
+        Returns the label of the particle.
+        """
+        symbol = self.bead_symbol if self.bead_symbol else self.label
+        if not symbol:
+            alts = self.alt_labels
+            symbol = alts[0] if alts else None
+
+        return symbol
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)

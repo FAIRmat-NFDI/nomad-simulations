@@ -1,18 +1,18 @@
 import functools
 import inspect
+from collections import Counter
 from math import factorial
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from nomad.config import config
+from nomad.datamodel.data import ArchiveSection
 from nomad.utils import get_logger
 
 if TYPE_CHECKING:
     from typing import Callable, Optional
 
-    from nomad.datamodel.data import ArchiveSection
     from structlog.stdlib import BoundLogger
-
 
 DEFAULT_LOGGER = get_logger(__name__)
 
@@ -69,7 +69,7 @@ def get_sibling_section(
     sibling_section_name: str,
     logger: 'BoundLogger',
     index_sibling: int = 0,
-) -> 'Optional[ArchiveSection]':
+) -> ArchiveSection | None:
     """
     Gets the sibling section of a section by performing a seesaw move by going to the parent
     of the section and then going down to the sibling section. This is used, e.g., to get
@@ -172,14 +172,47 @@ def is_not_representative(model_system, logger: 'BoundLogger'):
 
 
 # TODO remove function in nomad.atomutils
-def get_composition(children_names: 'list[str]') -> str:
+def get_composition(children_names: list[str]) -> str | None:
     """
-    Generates a generalized "chemical formula" based on the provided list `children_names`,
-    with the format X(m)Y(n) for children_names X and Y of quantities m and n, respectively.
+    Build a canonical composition string like ``X(m)Y(n)`` from child names.
+
+    Notes
+    -----
+    - Names are **counted case-sensitively** (``"A"`` and ``"a"`` are distinct).
+    - Output terms are ordered by a **case-insensitive** primary sort
+      (using ``str.casefold()``), with a **deterministic tie-breaker** on the
+      original string (i.e., sorted by ``(name.casefold(), name)``).
+      This makes the result independent of the input order while preserving
+      distinct case variants as separate terms.
+    - All items are converted to strings via ``str(...)`` before counting.
+    - Returns ``None`` if the input list is empty.
+
+    Parameters
+    ----------
+    children_names : list[str]
+        Child names to count.
+
+    Returns
+    -------
+    str | None
+        Canonical composition string, or ``None`` if no names were provided.
+
+    Examples
+    --------
+    >>> get_composition(['H', 'O', 'H'])
+    'H(2)O(1)'
+    >>> get_composition(['a', 'A', 'b'])
+    'A(1)a(1)b(1)'
     """
-    children_count_tup = np.unique(children_names, return_counts=True)
-    formula = ''.join([f'{name}({count})' for name, count in zip(*children_count_tup)])
-    return formula if formula else None
+    if not children_names:
+        return None
+
+    counts = Counter(map(str, children_names))
+    parts = [
+        f'{name}({counts[name]})'
+        for name in sorted(counts, key=lambda s: (s.casefold(), s))
+    ]
+    return ''.join(parts) if parts else None
 
 
 def catch_not_implemented(func: 'Callable') -> 'Callable':
