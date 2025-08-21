@@ -1357,7 +1357,7 @@ class ModelSystem(System):
                 )
                 return
 
-            assert all(i >= 0 and i < n_particles for i in self.particle_indices), (
+            assert all(0 <= i < n_particles for i in self.particle_indices), (
                 'Invalid particle_indices in ModelSystem subsystem.'
             )
             return
