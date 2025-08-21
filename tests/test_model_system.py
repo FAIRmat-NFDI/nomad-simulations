@@ -1018,3 +1018,34 @@ class TestGetRootSystemCycleDetection:
 
         with pytest.raises(RuntimeError, match='Cycle'):
             b.get_root_system()
+
+
+class TestRepresentativeFlagOnSubsystem:
+    def test_subsystem_representative_flag_is_cleared_on_normalize(self):
+        """
+        If a child ModelSystem is marked as representative, normalize() must
+        clear it (set to False) since only the root may be representative.
+        """
+        root = ModelSystem(is_representative=True)
+        child = ModelSystem(is_representative=True)  # incorrectly representative
+        root.sub_systems.append(child)  # establishes parent-child relationship
+
+        # sanity pre-condition
+        assert child.is_representative is True
+
+        # normalize only the child; it should un-set its representative flag
+        child.normalize(EntryArchive(), logger=logger)
+        assert child.is_representative is False
+
+    def test_root_representative_flag_is_preserved_on_normalize(self):
+        """
+        The root ModelSystem may be representative; normalize() must not
+        clear this flag on the root.
+        """
+        root = ModelSystem(is_representative=True)
+
+        # sanity pre-condition
+        assert root.is_representative is True
+
+        root.normalize(EntryArchive(), logger=logger)
+        assert root.is_representative is True

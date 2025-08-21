@@ -1376,6 +1376,13 @@ class ModelSystem(System):
         # Validate the ModelSystem subsystem
         self._validate_subsystem(logger)
 
+        # Prevent representative subsystems
+        if self.is_representative and not self.is_root_system():
+            logger.warning(
+                'ModelSystem.is_representative is set to True for a subsystem. '
+                'Setting to False'
+            )
+            self.is_representative = False
         # Skip the following normalization if system is not representative
         if not self.is_representative:
             return
