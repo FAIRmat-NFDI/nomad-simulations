@@ -1,5 +1,5 @@
 import numpy as np
-from noamd.datamodel.data import ArchiveSection
+from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, TaskReference
 from nomad.metainfo import (
