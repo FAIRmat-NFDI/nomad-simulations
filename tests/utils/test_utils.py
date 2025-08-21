@@ -107,7 +107,7 @@ def test_get_sibling_section():  # TODO: should not depend on specific section t
     assert get_sibling_section(section, 'symmetry', logger) == sibling_section
     assert get_sibling_section(sibling_section, 'cell', logger).type == section.type
     assert get_sibling_section(section, 'symmetry', logger, index_sibling=2) is None
-    section2 =  Cell(type='primitive')
+    section2 = Cell(type='primitive')
     parent_section.cell.append(section2)
     assert (
         get_sibling_section(sibling_section, 'cell', logger, index_sibling=0).type
