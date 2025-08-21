@@ -1120,27 +1120,6 @@ class ModelSystem(System):
         except KeyError:
             return False
 
-    # @log
-    # def are_valid_chemical_symbols(self) -> bool:
-    #     """
-    #     Validate that ASE can map all element symbols in the particle_states
-    #     to atomic numbers.
-    #     Args:
-    #         logger (BoundLogger): The logger to log messages.
-    #     Returns:
-    #         bool: True if all chemical symbols are valid, False otherwise.
-    #     """
-    #     logger = self.are_valid_chemical_symbols.__annotations__['logger']
-    #     symbols = self.get_symbols(logger=logger)
-    #     if not symbols:
-    #         return False
-
-    #     if self._all_labels_are_elements(symbols):
-    #         return True
-
-    #     logger.error('Invalid or missing chemical symbols.')
-    #     return False
-
     @log
     def to_ase_atoms(self) -> 'Optional[ase.Atoms]':
         """
