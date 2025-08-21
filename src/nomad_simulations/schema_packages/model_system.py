@@ -269,7 +269,7 @@ class Cell(GeometricSpace):
         type=str,
         description="""
         Name of the specific cell section. This is typically used to easy identification of the
-        `Cell` section. Possible values: "AtomicCell".
+        `Cell` section. Possible values: "original", "primitive", "conventional".
         """,
     )
 
@@ -319,31 +319,13 @@ class Cell(GeometricSpace):
         """,
     )
 
-
-class AtomicCell(Cell):
-    """
-    A base section used to specify the atomic cell information of a system.
-    """
-
-    equivalent_atoms = Quantity(
-        type=np.int32,
-        shape=['*'],
-        description="""
-        List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
-        then the list is simply the index of each element, e.g.:
-            - [0, 1, 2, 3] all four atoms are non-equivalent.
-            - [0, 0, 0, 3] three equivalent atoms and one non-equivalent.
-        """,
-    )
-
     @log
-    def get_geometric_space_for_atomic_cell(self) -> None:
+    def get_geometric_space(self) -> None:
         """
-        Get the real space parameters for the atomic cell using ASE.
-        to_ase_atoms live under the parent ModelSystem.
+        Get the real space parameters for the cell using ASE.
+        Requires parent ModelSystem with to_ase_atoms method.
         """
-
-        logger = self.get_geometric_space_for_atomic_cell.__annotations__['logger']
+        logger = self.get_geometric_space.__annotations__['logger']
         parent = self.m_parent
         if not isinstance(parent, ModelSystem):
             logger.warning(
@@ -377,14 +359,14 @@ class AtomicCell(Cell):
         self.name = self.m_def.name if self.name is None else self.name
 
         # extract all the geometric‐space quantities; errors are logged inside
-        self.get_geometric_space_for_atomic_cell(logger=logger)
+        self.get_geometric_space(logger=logger)
 
 
 class Symmetry(ArchiveSection):
     """
-    A base section used to specify the symmetry of the `AtomicCell`.
+    A base section used to specify the symmetry of the `Cell`.
 
-    Note: this information can be extracted via normalization using the MatID package, if `AtomicCell`
+    Note: this information can be extracted via normalization using the MatID package, if `Cell`
     is specified.
     """
 
@@ -481,21 +463,21 @@ class Symmetry(ArchiveSection):
         """,
     )
 
-    atomic_cell_ref = Quantity(
+    cell_ref = Quantity(
         type=Cell,
         description="""
-        Reference to the AtomicCell section that the symmetry refers to.
+        Reference to the Cell section that the symmetry refers to.
         """,
     )
 
-    def resolve_analyzed_atomic_cell(
+    def resolve_analyzed_cell(
         self,
         symmetry_analyzer: 'SymmetryAnalyzer',
         cell_type: str,
         logger: 'BoundLogger',
     ) -> 'Optional[Cell]':
         """
-        Resolves the `AtomicCell` section from the `SymmetryAnalyzer` object and the cell_type
+        Resolves the `Cell` section from the `SymmetryAnalyzer` object and the cell_type
         (primitive or conventional).
 
         Args:
@@ -504,7 +486,7 @@ class Symmetry(ArchiveSection):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (Optional[AtomicCell]): The resolved `AtomicCell` section or None if the cell_type
+            (Optional[Cell]): The resolved `Cell` section or None if the cell_type
             is not recognized.
         """
         # Define a mapping for each supported cell type
@@ -527,8 +509,6 @@ class Symmetry(ArchiveSection):
             return None
 
         try:
-            wyckoff = mapping['wyckoff']()
-            equivalent_atoms = mapping['equivalent']()
             system = mapping['system']()
         except Exception as e:
             logger.error('Error extracting symmetry data', exc_info=e)
@@ -536,30 +516,28 @@ class Symmetry(ArchiveSection):
 
         cell = system.get_cell()
 
-        # Create the cell (or atomic cell) for geometry only
-        atomic_cell = AtomicCell(type=cell_type)
-        atomic_cell.lattice_vectors = cell * ureg.angstrom
+        # Create the cell for geometry only
+        resolved_cell = Cell(type=cell_type)
+        resolved_cell.lattice_vectors = cell * ureg.angstrom
         # ! Positions are stored directly under model_system in nomad-simulations>=0.4.
-        atomic_cell.wyckoff_letters = wyckoff
-        atomic_cell.equivalent_atoms = equivalent_atoms
-        atomic_cell.get_geometric_space_for_atomic_cell(logger=logger)
-        return atomic_cell
+        resolved_cell.get_geometric_space(logger=logger)
+        return resolved_cell
 
     def resolve_bulk_symmetry(
-        self, original_atomic_cell: 'AtomicCell', logger: 'BoundLogger'
-    ) -> 'tuple[Optional[AtomicCell], Optional[AtomicCell]]':
+        self, original_cell: 'Cell', logger: 'BoundLogger'
+    ) -> 'tuple[Optional[Cell], Optional[Cell]]':
         """
         Resolves the symmetry of the material being simulated using MatID and the
-        originally parsed data under original_atomic_cell. It generates two other
-        `AtomicCell` sections (the primitive and standarized cells), as well as populating
+        originally parsed data under original_cell. It generates two other
+        `Cell` sections (the primitive and standardized cells), as well as populating
         the `Symmetry` section.
 
         Args:
-            original_atomic_cell (AtomicCell): The `AtomicCell` section that the symmetry
+            original_cell (Cell): The `Cell` section that the symmetry
             uses to in MatID.SymmetryAnalyzer().
             logger (BoundLogger): The logger to log messages.
         Returns:
-            primitive_atomic_cell, conventional_atomic_cell (tuple[Optional[AtomicCell], Optional[AtomicCell]]): The primitive and standardized `AtomicCell` sections.
+            primitive_cell, conventional_cell (tuple[Optional[Cell], Optional[Cell]]): The primitive and standardized `Cell` sections.
         """
         symmetry = {}
         try:
@@ -589,19 +567,13 @@ class Symmetry(ArchiveSection):
             symmetry_analyzer._get_spglib_transformation_matrix()
         )
 
-        # Populating the originally parsed AtomicCell wyckoff_letters and equivalent_atoms information
-        original_wyckoff = symmetry_analyzer.get_wyckoff_letters_original()
-        original_equivalent_atoms = symmetry_analyzer.get_equivalent_atoms_original()
-        original_atomic_cell.wyckoff_letters = original_wyckoff
-        original_atomic_cell.equivalent_atoms = original_equivalent_atoms
-
-        # Populating the primitive AtomState information
-        primitive_atomic_cell = self.resolve_analyzed_atomic_cell(
+        # Populating the primitive Cell information
+        primitive_cell = self.resolve_analyzed_cell(
             symmetry_analyzer=symmetry_analyzer, cell_type='primitive', logger=logger
         )
 
-        # Populating the conventional AtomState information
-        conventional_atomic_cell = self.resolve_analyzed_atomic_cell(
+        # Populating the conventional Cell information
+        conventional_cell = self.resolve_analyzed_cell(
             symmetry_analyzer=symmetry_analyzer, cell_type='conventional', logger=logger
         )
 
@@ -612,7 +584,7 @@ class Symmetry(ArchiveSection):
             conventional_system = symmetry_analyzer.get_conventional_system()
             # Use the conventional system to get the expanded atomic numbers.
             conventional_num = conventional_system.get_atomic_numbers()
-            conventional_wyckoff = conventional_atomic_cell.wyckoff_letters
+            conventional_wyckoff = symmetry_analyzer.get_wyckoff_letters_conventional()
             norm_wyckoff = get_normalized_wyckoff(
                 atomic_numbers=conventional_num, wyckoff_letters=conventional_wyckoff
             )
@@ -637,12 +609,12 @@ class Symmetry(ArchiveSection):
         for key, val in self.m_def.all_quantities.items():
             self.m_set(val, symmetry.get(key))
 
-        return primitive_atomic_cell, conventional_atomic_cell
+        return primitive_cell, conventional_cell
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        atomic_cell = get_sibling_section(
+        cell = get_sibling_section(
             section=self, sibling_section_name='cell', logger=logger
         )
         # TODO : the following is a temporary fix, and it might break again
@@ -650,15 +622,13 @@ class Symmetry(ArchiveSection):
         if self.m_parent.m_parent is not None and self.m_parent.type == 'bulk':
             # Adding the newly calculated primitive and conventional cells to the ModelSystem
             (
-                primitive_atomic_cell,
-                conventional_atomic_cell,
-            ) = self.resolve_bulk_symmetry(
-                original_atomic_cell=atomic_cell, logger=logger
-            )
-            self.m_parent.m_add_sub_section(ModelSystem.cell, primitive_atomic_cell)
-            self.m_parent.m_add_sub_section(ModelSystem.cell, conventional_atomic_cell)
+                primitive_cell,
+                conventional_cell,
+            ) = self.resolve_bulk_symmetry(original_cell=cell, logger=logger)
+            self.m_parent.m_add_sub_section(ModelSystem.cell, primitive_cell)
+            self.m_parent.m_add_sub_section(ModelSystem.cell, conventional_cell)
             # Reference to the standarized cell, and if not, fallback to the originally parsed one
-            self.atomic_cell_ref = self.m_parent.cell[-1]
+            self.cell_ref = self.m_parent.cell[-1]
 
 
 class ChemicalFormula(ArchiveSection):
@@ -791,7 +761,7 @@ class ModelSystem(System):
         2. `CoreHole.normalize()` in atoms_state.py under `AtomsState`
         3. `HubbardInteractions.normalize()` in atoms_state.py under `AtomsState`
         4. `AtomsState.normalize()` in atoms_state.py
-        5. `AtomicCell.normalize()` in atomic_cell.py
+        5. `Cell.normalize()` in model_system.py
         6. `Symmetry.normalize()` in this class
         7. `ChemicalFormula.normalize()` in this class
         8. `ModelSystem.normalize()` in this class
@@ -801,24 +771,24 @@ class ModelSystem(System):
 
     Examples for the parent-child hierarchical trees:
 
-        - Example 1, a crystal Si has: 3 AtomicCell sections (named 'original', 'primitive',
+        - Example 1, a crystal Si has: 3 Cell sections (named 'original', 'primitive',
         and 'conventional'), 1 Symmetry section, and 0 nested ModelSystem trees.
 
         - Example 2, an heterostructure Si/GaAs has: 1 parent ModelSystem section (for
         Si/GaAs together) and 2 nested child ModelSystem sections (for Si and GaAs); each
-        child has 3 AtomicCell sections and 1 Symmetry section. The parent ModelSystem section
-        could also have 3 AtomicCell and 1 Symmetry section (if it is possible to extract them).
+        child has 3 Cell sections and 1 Symmetry section. The parent ModelSystem section
+        could also have 3 Cell and 1 Symmetry section (if it is possible to extract them).
 
         - Example 3, a solution of C800H3200Cu has: 1 parent ModelSystem section (for
         800*(CH4)+Cu) and 2 nested child ModelSystem sections (for CH4 and Cu); each child
-        has 1 AtomicCell section.
+        has 1 Cell section.
 
         - Example 4, a passivated surface GaAs-CO2 has --> similar to the example 2.
 
         - Example 5, a passivated heterostructure Si/(GaAs-CO2) has: 1 parent ModelSystem
         section (for Si/(GaAs-CO2)), 2 child ModelSystem sections (for Si and GaAs-CO2),
         and 2 additional children sections in one of the children (for GaAs and CO2). The number
-        of AtomicCell and Symmetry sections can be inferred using a combination of example
+        of Cell and Symmetry sections can be inferred using a combination of example
         2 and 3.
     """
 

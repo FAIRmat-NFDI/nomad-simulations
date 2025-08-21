@@ -73,7 +73,7 @@ def get_sibling_section(
     """
     Gets the sibling section of a section by performing a seesaw move by going to the parent
     of the section and then going down to the sibling section. This is used, e.g., to get
-    the `AtomicCell` section from the `Symmetry` section and by passing through the `ModelSystem`.
+    the `Cell` section from the `Symmetry` section and by passing through the `ModelSystem`.
 
     Example of the sections structure:
 

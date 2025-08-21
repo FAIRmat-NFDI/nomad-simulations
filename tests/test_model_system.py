@@ -13,7 +13,6 @@ from nomad_simulations.schema_packages.atoms_state import (
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
-    AtomicCell,
     Cell,
     ChemicalFormula,
     ModelSystem,
@@ -46,7 +45,7 @@ class TestChemicalFormula:
 
     def test_normalize_no_cell(self):
         """
-        If no sibling AtomicCell is found, the formula fields should remain None.
+        If no sibling Cell is found, the formula fields should remain None.
         """
         chem = ChemicalFormula()
         chem.normalize(EntryArchive(), logger)
@@ -56,7 +55,7 @@ class TestChemicalFormula:
     def test_normalize_default_chemical_formula(self):
         """
         Test that ChemicalFormula.normalize() correctly sets the formulas (e.g. 'H2O')
-        when no sibling AtomicCell is provided.
+        when no sibling Cell is provided.
         """
         chem = ChemicalFormula()
         chem.normalize(EntryArchive(), logger)
@@ -174,7 +173,7 @@ class TestModelSystem:
         Test the full normalization sequence for ModelSystem:
           - If representative, run type/dimensionality, symmetry, chemical formula, etc.
         """
-        # Build a minimal model system with top-level positions and an AtomicCell
+        # Build a minimal model system with top-level positions and a Cell
         sys = ModelSystem(is_representative=True)
         sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5], [1, 1, 1]]) * ureg.angstrom
         ac = generate_atomic_cell(
@@ -238,8 +237,8 @@ def make_water_cu_system(n_h2o: int) -> ModelSystem:
     and with proper particle_states and particle_indices.
     """
     root = ModelSystem(is_representative=True)
-    # Add a trivial AtomicCell so normalization doesn't bail out
-    ac = AtomicCell(periodic_boundary_conditions=[False, False, False])
+    # Add a trivial Cell so normalization doesn't bail out
+    ac = Cell(periodic_boundary_conditions=[False, False, False])
     ac.positions = np.zeros((0, 3)) * ureg.angstrom
     root.cell.append(ac)
 
