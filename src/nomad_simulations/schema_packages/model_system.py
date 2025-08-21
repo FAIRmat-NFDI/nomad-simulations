@@ -774,8 +774,12 @@ class ModelSystem(System):
     """
     Model system used as an input for simulating the material.
 
-    Atom positions at the top level in the quantity “positions”
-    and the per‐atom state (including electronic state information) in the subsection “particle_states”.
+    Particle positions are held at the top level in the quantity “positions”
+    and more detailed per‐particle information, e.g., electronic state information,
+    are stored in the subsection “particle_states”. The particle state can be of type
+    AtomState or CGBeadState, but the list of particle states must be homogeneous in type.
+    Mixed systems should be treated with multiple ModelSystem sections.
+
     Downstream subsystems refer to atoms via particle_indices.
 
     Definitions:
@@ -1033,16 +1037,37 @@ class ModelSystem(System):
         super().__init__(m_def, m_context, **kwargs)
         self._cache: dict[str, Any] = {}
 
+    # TODO this could be wrong if executed before normalization
     def is_atomic(self) -> bool:
         """
-        Determine if system has only AtomStates.
+        Determine if the system can be classified as "atomic".
+
+        Criterion:
+          - ASE must be able to map all labels/symbols in the particle_states subsection
+        to atomic numbers.
+          - The particle_states cannot contain any CGBeadState objects.
+
+        Example Usages:
+          - Decide whether to use AtomState. `is_atomic` must return True for all downstream functionalities to work properly.
+
+        Args:
+            logger (BoundLogger): The logger to log messages.
+        Returns:
+            bool: True if all chemical symbols are valid, False otherwise.
         """
+
         if self._cache.get('is_atomic') is not None:
             return self._cache['is_atomic']
 
-        is_atomic = bool(self.particle_states) and all(
-            isinstance(p, AtomsState) for p in self.particle_states
+        symbols = self.get_symbols()
+        is_atomic = self._all_labels_are_elements(symbols)
+
+        is_atomic = (
+            not any(isinstance(p, CGBeadState) for p in self.particle_states)
+            if is_atomic
+            else False
         )
+
         self._cache['is_atomic'] = is_atomic
         return is_atomic
 
@@ -1095,26 +1120,26 @@ class ModelSystem(System):
         except KeyError:
             return False
 
-    @log
-    def are_valid_chemical_symbols(self) -> bool:
-        """
-        Validate that ASE can map all element symbols in the particle_states
-        to atomic numbers.
-        Args:
-            logger (BoundLogger): The logger to log messages.
-        Returns:
-            bool: True if all chemical symbols are valid, False otherwise.
-        """
-        logger = self.are_valid_chemical_symbols.__annotations__['logger']
-        symbols = self.get_symbols(logger=logger)
-        if not symbols:
-            return False
+    # @log
+    # def are_valid_chemical_symbols(self) -> bool:
+    #     """
+    #     Validate that ASE can map all element symbols in the particle_states
+    #     to atomic numbers.
+    #     Args:
+    #         logger (BoundLogger): The logger to log messages.
+    #     Returns:
+    #         bool: True if all chemical symbols are valid, False otherwise.
+    #     """
+    #     logger = self.are_valid_chemical_symbols.__annotations__['logger']
+    #     symbols = self.get_symbols(logger=logger)
+    #     if not symbols:
+    #         return False
 
-        if self._all_labels_are_elements(symbols):
-            return True
+    #     if self._all_labels_are_elements(symbols):
+    #         return True
 
-        logger.error('Invalid or missing chemical symbols.')
-        return False
+    #     logger.error('Invalid or missing chemical symbols.')
+    #     return False
 
     @log
     def to_ase_atoms(self) -> 'Optional[ase.Atoms]':
@@ -1278,31 +1303,25 @@ class ModelSystem(System):
 
     def _reassign_generic_particle_states(self, archive, logger) -> None:
         """
-        If the parser populated only generic ParticleState entries, convert *all* to:
+        If the parser populated any generic ParticleState entries,
+         or if mixed AtomState/CGBeadState systems, convert *all* to:
         - AtomsState if all labels are valid element symbols, else
         - CGBeadState.
-        If any AtomsState/CGBeadState is already present, do nothing (trust parser).
+        Notes: Mixed systems are not allowed.
         """
         if not self.particle_states:
             return
 
         ps_list = list(self.particle_states)
 
-        # Only act if *every* entry is plain ParticleState (no AA/CG mixed in)
-        if not all(
-            isinstance(p, ParticleState)
-            and not isinstance(p, (AtomsState, CGBeadState))
-            for p in ps_list
-        ):
-            return
-
         labels = self.get_symbols(logger=logger)
-        to_atoms = bool(labels) and self._all_labels_are_elements(labels)
+        is_atomic = self._all_labels_are_elements(labels)
 
-        self._clear_particle_states_inplace()
-
-        if to_atoms:
+        if is_atomic and not all(
+            isinstance(p, (AtomsState, CGBeadState)) for p in ps_list
+        ):
             # Map one-to-one using validated element labels
+            self._clear_particle_states_inplace()
             for old, lab in zip(ps_list, labels):
                 new = AtomsState()
                 new.chemical_symbol = lab  # validated by symbols2numbers + MEnum on set
@@ -1310,8 +1329,9 @@ class ModelSystem(System):
                 self._copy_common_quantities(old, new, exclude={'chemical_symbol'})
                 new.normalize(archive, logger)
                 self.particle_states.append(new)
-        else:
+        elif not is_atomic and not all(isinstance(p, CGBeadState) for p in ps_list):
             # Fall back to CG; use each original ParticleState.label (may be None)
+            self._clear_particle_states_inplace()
             for old in ps_list:
                 lab = old.label
                 new = CGBeadState()

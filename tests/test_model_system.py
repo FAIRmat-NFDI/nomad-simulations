@@ -620,6 +620,136 @@ class TestGenericParticleReassignment:
         # Non-atomic → early return; chemical_formula should not be created
         assert not ms.chemical_formula  # remains None/empty
 
+    def test_noop_when_already_all_atoms(self):
+        """
+        If parser already provided only AtomsState entries, normalization is a no-op.
+        Preserve identity, order, and symbols.
+        """
+        ms = ModelSystem(is_representative=True)
+        a1 = AtomsState(chemical_symbol='C')
+        a2 = AtomsState(chemical_symbol='O')
+        ms.particle_states.extend([a1, a2])
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        assert [type(p) for p in ms.particle_states] == [AtomsState, AtomsState]
+        assert ms.particle_states[0] is a1 and ms.particle_states[1] is a2
+        assert [p.chemical_symbol for p in ms.particle_states] == ['C', 'O']
+
+    def test_noop_when_already_all_cg(self):
+        """
+        If parser already provided only CGBeadState entries, normalization is a no-op.
+        """
+        ms = ModelSystem(is_representative=True)
+        c1 = CGBeadState(bead_symbol='B1')
+        c2 = CGBeadState(bead_symbol='X')
+        ms.particle_states.extend([c1, c2])
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        assert [type(p) for p in ms.particle_states] == [CGBeadState, CGBeadState]
+        assert ms.particle_states[0] is c1 and ms.particle_states[1] is c2
+        assert [p.bead_symbol for p in ms.particle_states] == ['B1', 'X']
+
+    def test_generic_with_invalid_label_falls_back_to_cg(self):
+        """
+        If any generic label is not a valid element, convert *all* to CG,
+        preserving order and labels where present.
+        """
+        ms = ModelSystem(is_representative=True)
+        ms.particle_states.append(ParticleState(label='H'))  # element-like
+        ms.particle_states.append(ParticleState(label='B1'))  # not an element
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        assert [type(p) for p in ms.particle_states] == [CGBeadState, CGBeadState]
+        assert [getattr(p, 'bead_symbol', None) for p in ms.particle_states] == [
+            'H',
+            'B1',
+        ]
+        assert ms.is_atomic() is False
+
+    def test_generic_with_empty_string_falls_back_to_cg(self):
+        """
+        Empty-string labels should trigger CG fallback, with None bead_symbol
+        for the empty one (since falsy labels are not assigned).
+        """
+        ms = ModelSystem(is_representative=True)
+        ms.particle_states.append(ParticleState(label='H'))
+        ms.particle_states.append(ParticleState(label=''))  # empty
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        assert [type(p) for p in ms.particle_states] == [CGBeadState, CGBeadState]
+        assert [getattr(p, 'bead_symbol', None) for p in ms.particle_states] == [
+            'H',
+            None,
+        ]
+
+    def test_order_preserved_on_generic_to_atoms_promotion(self):
+        """
+        All-generic, all valid element labels → promote to AtomsState
+        with the same order and count.
+        """
+        ms = ModelSystem(is_representative=True)
+        ms.particle_states.extend(
+            [
+                ParticleState(label='O'),
+                ParticleState(label='H'),
+                ParticleState(label='H'),
+            ]
+        )
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        assert [type(p) for p in ms.particle_states] == [
+            AtomsState,
+            AtomsState,
+            AtomsState,
+        ]
+        assert [p.chemical_symbol for p in ms.particle_states] == ['O', 'H', 'H']
+        assert ms.is_atomic() is True
+
+    def test_cg_plus_generic_element_labels_promotes_all_to_atoms(self):
+        """
+        If any generic entries and all labels are valid elements, convert *all*
+        (including existing CGBeadState) to AtomsState.
+        """
+        ms = ModelSystem(is_representative=True)
+        ms.particle_states.append(CGBeadState(bead_symbol='H'))
+        ms.particle_states.append(ParticleState(label='O'))  # generic but element-like
+
+        ms.normalize(EntryArchive(), logger=logger)
+
+        assert [type(p) for p in ms.particle_states] == [AtomsState, AtomsState]
+        assert [p.chemical_symbol for p in ms.particle_states] == ['H', 'O']
+        assert ms.is_atomic() is True
+
+    def test_idempotent_normalize_reassignment(self):
+        """
+        Normalizing twice should be stable (no further changes after first pass).
+        """
+        ms = ModelSystem(is_representative=True)
+        ms.particle_states.extend([ParticleState(label='H'), ParticleState(label='O')])
+
+        ms.normalize(EntryArchive(), logger=logger)
+        first_types = tuple(type(p) for p in ms.particle_states)
+        first_labels = tuple(
+            getattr(p, 'chemical_symbol', getattr(p, 'bead_symbol', None))
+            for p in ms.particle_states
+        )
+
+        # second normalize shouldn't change anything
+        ms.normalize(EntryArchive(), logger=logger)
+        second_types = tuple(type(p) for p in ms.particle_states)
+        second_labels = tuple(
+            getattr(p, 'chemical_symbol', getattr(p, 'bead_symbol', None))
+            for p in ms.particle_states
+        )
+
+        assert first_types == second_types
+        assert first_labels == second_labels
+
 
 class TestModelSystemSymbols:
     """
@@ -685,21 +815,6 @@ class TestModelSystemSymbols:
         child.particle_indices = [-1, 0]
         root.sub_systems.append(child)
         assert child.get_symbols() == []
-
-    def test_are_valid_chemical_symbols_true_false(self):
-        """
-        are_valid_chemical_symbols() returns True for pure element symbols and
-        False when any non-element (e.g., CG bead) is present.
-        """
-        ms = ModelSystem()
-        ms.particle_states.extend(
-            [AtomsState(chemical_symbol='Na'), AtomsState(chemical_symbol='Cl')]
-        )
-        assert ms.are_valid_chemical_symbols(logger=logger) is True
-
-        ms2 = ModelSystem()
-        ms2.particle_states.append(CGBeadState(bead_symbol='B1'))
-        assert ms2.are_valid_chemical_symbols(logger=logger) is False
 
     def test_symbols_nested_child_depth_two(self):
         """
