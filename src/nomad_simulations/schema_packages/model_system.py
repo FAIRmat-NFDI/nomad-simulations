@@ -1340,7 +1340,7 @@ class ModelSystem(System):
 
         if self.particle_indices is None:
             logger.warning(
-                f'Cannot validate ModelSystem subsystem without particle_indices.'
+                'Cannot validate ModelSystem subsystem without particle_indices.'
             )
             return
 
@@ -1352,24 +1352,24 @@ class ModelSystem(System):
             n_particles = len(particle_array) if particle_array is not None else None
             if not n_particles:
                 logger.error(
-                    f'Cannot validate ModelSystem subsystem without root particle info.'
+                    'Cannot validate ModelSystem subsystem without root particle info.'
                 )
                 return
 
-            assert all(
-                i >= 0 and i < n_particles for i in self.particle_indices
-            ), 'Invalid particle_indices in ModelSystem subsystem.'
+            assert all(i >= 0 and i < n_particles for i in self.particle_indices), (
+                'Invalid particle_indices in ModelSystem subsystem.'
+            )
             return
 
         if parent.particle_indices is None:
             logger.error(
-                f'Cannot validate ModelSystem subsystem without parent particle_indices.'
+                'Cannot validate ModelSystem subsystem without parent particle_indices.'
             )
             return
 
-        assert all(
-            pi in parent.particle_indices for pi in self.particle_indices
-        ), 'Invalid particle_indices in ModelSystem subsystem.'
+        assert all(pi in parent.particle_indices for pi in self.particle_indices), (
+            'Invalid particle_indices in ModelSystem subsystem.'
+        )
 
         # TODO logger.warning or logger.error in each case?
 
