@@ -20,9 +20,7 @@ from nomad_simulations.schema_packages.atoms_state import (
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
-from nomad_simulations.schema_packages.utils import get_composition
-
-from nomad_simulations.schema_packages.utils import log
+from nomad_simulations.schema_packages.utils import get_composition, log
 
 from .common import Time
 
