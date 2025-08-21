@@ -22,6 +22,8 @@ from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.utils import get_composition
 
+from nomad_simulations.schema_packages.utils import log
+
 from .common import Time
 
 configuration = config.get_plugin_entry_point(
@@ -188,6 +190,13 @@ class Simulation(BaseSimulation, Schema):
         - computation
     """
 
+    representative_system_index = Quantity(
+        type=np.int32,
+        description="""
+        The index of the "representative system" in the `model_system` list.
+        """,
+    )
+
     model_system = SubSection(sub_section=ModelSystem.m_def, repeats=True)
 
     model_method = SubSection(sub_section=ModelMethod.m_def, repeats=True)
@@ -259,13 +268,81 @@ class Simulation(BaseSimulation, Schema):
         for child in system_parent.sub_systems:
             Simulation.set_composition_formula(system_parent=child)
 
+    @log
+    def _validate_and_set_representative_system(self) -> None:
+        """
+        Ensure exactly one representative `ModelSystem` exists in `self.model_system`,
+        and update `self.representative_system_index` to point to it.
+
+        Behavior
+        --------
+        - **Zero representatives:** Mark the *last* item in `self.model_system` as
+        representative and set `self.representative_system_index = -1`
+        (Python’s negative index for the last element).
+        - **Multiple representatives:** Log a warning, demote all, then keep the
+        *last* representative encountered. Store its (non-negative) index in
+        `self.representative_system_index`.
+        - **Exactly one representative:** Leave flags as is and set
+        `self.representative_system_index` to that item’s index.
+
+        Side Effects
+        ------------
+        - Mutates `is_representative` on elements of `self.model_system`.
+        - Sets `self.representative_system_index`.
+        - Emits a warning if multiple representatives are found.
+
+        Requirements / Notes
+        --------------------
+        - Assumes `self.model_system` is **non-empty**. If it can be empty in your
+        context, guard against `IndexError` before calling or extend this method
+        to handle the empty case explicitly.
+        - Runs in O(n) over the number of systems.
+
+        Returns
+        -------
+        None
+        """
+        logger = self._validate_and_set_representative_system.__annotations__['logger']
+
+        # indices of representative systems
+        rep_idx = [i for i, ms in enumerate(self.model_system) if ms.is_representative]
+
+        if len(rep_idx) == 0:
+            self.model_system[-1].is_representative = True
+            self.representative_system_index = -1
+        elif len(rep_idx) > 1:
+            logger.warning(
+                'Multiple representative systems found, one allowed.'
+                ' Will use the last one found.'
+            )
+            for idx in rep_idx:
+                self.model_system[idx].is_representative = False
+            self.model_system[rep_idx[-1]].is_representative = True
+            self.representative_system_index = rep_idx[-1]
+        else:
+            self.representative_system_index = rep_idx[0]
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+
+        Normalize the `Simulation` section:
+        - Validate and set the representative system.
+            - Certain normalization steps are only applied to the representative system to avoid redundancy.
+            - The representative system is then used to power some downstream tools.
+
+        Args:
+            archive (EntryArchive): _description_
+            logger (BoundLogger): _description_
+        """
         super(Schema, self).normalize(archive, logger)
 
         # TODO extend adding the proper representative system extraction using `normalizer.py`
         if not self.model_system:
             logger.error('No system information reported.')
             return
+        # Validate that there is exactly one representative system and set the index
+        self._validate_and_set_representative_system()
+
         # Set the representative system to last in list if not already set
         if all(not system.is_representative for system in self.model_system):
             self.model_system[-1].is_representative = True
