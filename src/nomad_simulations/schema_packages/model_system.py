@@ -1045,7 +1045,7 @@ class ModelSystem(System):
         Criterion:
           - ASE must be able to map all labels/symbols in the particle_states subsection
         to atomic numbers.
-          - The particle_states cannot contain any CGBeadState objects.
+          - The particle_states cannot contain only CGBeadState objects.
 
         Example Usages:
           - Decide whether to use AtomState. `is_atomic` must return True for all downstream functionalities to work properly.
@@ -1063,7 +1063,7 @@ class ModelSystem(System):
         is_atomic = self._all_labels_are_elements(symbols)
 
         is_atomic = (
-            not any(isinstance(p, CGBeadState) for p in self.particle_states)
+            not all(isinstance(p, CGBeadState) for p in self.particle_states)
             if is_atomic
             else False
         )
@@ -1303,11 +1303,19 @@ class ModelSystem(System):
 
     def _reassign_generic_particle_states(self, archive, logger) -> None:
         """
-        If the parser populated any generic ParticleState entries,
-         or if mixed AtomState/CGBeadState systems, convert *all* to:
-        - AtomsState if all labels are valid element symbols, else
-        - CGBeadState.
-        Notes: Mixed systems are not allowed.
+        Cases for particle state reassignment:
+          1. The parser populated any generic ParticleState entries
+          2. The parser populated mixed AtomState/CGBeadState particle state lists
+          3. The parser incorrected populated AtomState instances when *any* of the
+          particle labels are not valid element symbols.
+
+        The reassignment will convert *all* particle states to either:
+          - AtomsState if all labels are valid element symbols, else
+          - CGBeadState.
+
+        Notes:
+          - Mixed systems are not allowed.
+          - If the parser populates all CGBeadState instances, no reassignment is done regardless of the particle labels.
         """
         if not self.particle_states:
             return
@@ -1316,6 +1324,9 @@ class ModelSystem(System):
 
         labels = self.get_symbols(logger=logger)
         is_atomic = self._all_labels_are_elements(labels)
+        is_cg = all(isinstance(p, CGBeadState) for p in ps_list)
+        if is_cg:
+            return
 
         if is_atomic and not all(
             isinstance(p, (AtomsState, CGBeadState)) for p in ps_list
@@ -1329,7 +1340,7 @@ class ModelSystem(System):
                 self._copy_common_quantities(old, new, exclude={'chemical_symbol'})
                 new.normalize(archive, logger)
                 self.particle_states.append(new)
-        elif not is_atomic and not all(isinstance(p, CGBeadState) for p in ps_list):
+        elif not is_atomic and not is_cg:
             # Fall back to CG; use each original ParticleState.label (may be None)
             self._clear_particle_states_inplace()
             for old in ps_list:

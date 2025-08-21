@@ -417,23 +417,6 @@ class TestModelSystemBondFunctions:
         assert isinstance(out, np.ndarray)
         assert out.shape == (0, 2)
 
-    # def test_get_bond_list_set_local_updates_child(self):
-    #     """
-    #     When called with set_local=True, get_bond_list() stores the filtered bonds
-    #     in the child subsystem's bond_list, preserving shape and dtype.
-    #     """
-    #     root = ModelSystem()
-    #     for s in ['H', 'O', 'O', 'H']:
-    #         root.particle_states.append(AtomsState(chemical_symbol=s))
-    #     root.bond_list = [(0, 1), (1, 2), (2, 3)]
-    #     child = ModelSystem()
-    #     child.particle_indices = [1, 2]
-    #     root.sub_systems.append(child)
-    #     _ = child.get_bond_list(set_local=True)
-    #     assert isinstance(child.bond_list, np.ndarray)  # TODO Check/change this
-    #     assert child.bond_list.shape == (1, 2)
-    #     assert (child.bond_list == np.array([[1, 2]])).all()
-
     def test_is_molecule(self):
         """
         is_molecule() is True only when the subsystem is internally connected and
@@ -497,7 +480,8 @@ class TestModelSystemBondFunctions:
             ([AtomsState(chemical_symbol='H')], True),
             ([AtomsState(chemical_symbol='H'), AtomsState(chemical_symbol='O')], True),
             ([CGBeadState(bead_symbol='B')], False),
-            ([AtomsState(chemical_symbol='H'), CGBeadState(bead_symbol='B')], False),
+            ([AtomsState(chemical_symbol='H'), CGBeadState(bead_symbol='B')], True),
+            ([CGBeadState(chemical_symbol='H'), CGBeadState(bead_symbol='B')], False),
         ],
     )
     def test_is_atomic_flag(self, states, expected):
