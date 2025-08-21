@@ -481,7 +481,7 @@ class TestModelSystemBondFunctions:
             ([AtomsState(chemical_symbol='H'), AtomsState(chemical_symbol='O')], True),
             ([CGBeadState(bead_symbol='B')], False),
             ([AtomsState(chemical_symbol='H'), CGBeadState(bead_symbol='B')], True),
-            ([CGBeadState(chemical_symbol='H'), CGBeadState(bead_symbol='B')], False),
+            ([CGBeadState(bead_symbol='H'), CGBeadState(bead_symbol='B')], False),
         ],
     )
     def test_is_atomic_flag(self, states, expected):
