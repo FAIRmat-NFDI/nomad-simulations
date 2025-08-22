@@ -42,7 +42,6 @@ def log_output():
 
 
 def f_kernel(f, a):
-    logger = f.__annotations__['logger']
     logger.info('Executing func.')
     return int(a)
 
