@@ -311,22 +311,24 @@ class Simulation(BaseSimulation, Schema):
         elif len(rep_idx) > 1:
             logger.warning(
                 'Multiple representative systems found, one allowed.'
-                ' Will use the last one found.'
+                ' Will use the last `ModelSystem` found.'
             )
             for idx in rep_idx:
                 self.model_system[idx].is_representative = False
             self.model_system[rep_idx[-1]].is_representative = True
             self.representative_system_index = rep_idx[-1]
-        else:
+        else:  ## len(rep_idx) == 1
             self.representative_system_index = rep_idx[0]
 
+    # TODO enumerate normalization steps relevant to rep system in docstring
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         """
 
         Normalize the `Simulation` section:
         - Validate and set the representative system.
             - Certain normalization steps are only applied to the representative system to avoid redundancy.
-            - The representative system is then used to power some downstream tools.
+            - The representative system is used to power some downstream tools.
+            - The representative system should be the primary source of information for the user.
 
         Args:
             archive (EntryArchive): _description_
@@ -334,16 +336,12 @@ class Simulation(BaseSimulation, Schema):
         """
         super(Schema, self).normalize(archive, logger)
 
-        # TODO extend adding the proper representative system extraction using `normalizer.py`
         if not self.model_system:
             logger.error('No system information reported.')
             return
+
         # Validate that there is exactly one representative system and set the index
         self._validate_and_set_representative_system()
-
-        # Set the representative system to last in list if not already set
-        if all(not system.is_representative for system in self.model_system):
-            self.model_system[-1].is_representative = True
 
         # Setting up the `branch_depth` in the parent-child tree
         for system_parent in self.model_system:

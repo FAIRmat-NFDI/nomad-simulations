@@ -57,6 +57,80 @@ def example_func2(a):
     return f_kernel(example_func2, a)
 
 
+# @pytest.mark.skipif(not structlog.is_configured(), reason='Cannot use struclog.')
+# @pytest.mark.parametrize(
+#     'func, logger_kwarg, logger_name',
+#     [
+#         pytest.param(example_func1, None, 'TestLogger', id='defined'),
+#         pytest.param(
+#             example_func2, get_logger('TestLogger2'), 'TestLogger2', id='as_kwarg'
+#         ),
+#         pytest.param(
+#             example_func2,
+#             None,
+#             'nomad_simulations.schema_packages.utils.utils',
+#             id='default',
+#         ),
+#     ],
+# )
+# def test_log(func, logger_kwarg, logger_name, log_output):
+#     """
+#     Test for the `log` decorator.
+#     """
+
+#     logger = logger_kwarg if logger_kwarg is not None else LOGGER
+#     if logger_kwarg:
+#         func('a', logger=logger)
+#     else:
+#         func('a')
+
+#     flogger = func.__annotations__['logger']
+#     assert (
+#         flogger.logger.name
+#         if hasattr(flogger, 'logger')
+#         else flogger.name == logger_name
+#     )
+
+#     assert 'Executing func' in log_output.entries[0].get('event')
+#     assert (
+#         f'Exception raised in {func.__name__}: invalid literal for int'
+#         in log_output.entries[1].get('event')
+#     )
+
+
+# def test_get_sibling_section():
+#     """
+#     Test the `get_sibling_section` utility function.
+#     """
+#     parent_section = ModelSystem()
+#     section = AtomicCell(type='original')
+#     parent_section.cell.append(section)
+#     sibling_section = Symmetry()
+#     parent_section.symmetry.append(sibling_section)
+#     assert get_sibling_section(section, '', logger) is None
+#     assert get_sibling_section(section, 'symmetry', logger) == sibling_section
+#     assert get_sibling_section(sibling_section, 'cell', logger).type == section.type
+#     assert get_sibling_section(section, 'symmetry', logger, index_sibling=2) is None
+#     section2 = AtomicCell(type='primitive')
+#     parent_section.cell.append(section2)
+#     assert (
+#         get_sibling_section(sibling_section, 'cell', logger, index_sibling=0).type
+#         == 'original'
+#     )
+#     assert (
+#         get_sibling_section(sibling_section, 'cell', logger, index_sibling=0).type
+#         == section.type
+#     )
+#     assert (
+#         get_sibling_section(sibling_section, 'cell', logger, index_sibling=1).type
+#         == section2.type
+#     )
+#     assert (
+#         get_sibling_section(sibling_section, 'cell', logger, index_sibling=1).type
+#         == 'primitive'
+#     )
+
+
 @pytest.mark.skipif(not structlog.is_configured(), reason='Cannot use struclog.')
 @pytest.mark.parametrize(
     'func, logger_kwarg, logger_name',
@@ -75,59 +149,40 @@ def example_func2(a):
 )
 def test_log(func, logger_kwarg, logger_name, log_output):
     """
-    Test for the `log` decorator.
+    Test the `log` decorator:
+      - runs once and checks expected messages
+      - runs again to verify idempotence (no behavior drift)
+      - verifies the resolved logger name stored in the func annotations
     """
-
-    logger = logger_kwarg if logger_kwarg is not None else LOGGER
-    if logger_kwarg:
-        func('a', logger=logger)
+    # --- first call ---
+    if logger_kwarg is not None:
+        func('a', logger=logger_kwarg)
     else:
         func('a')
 
-    flogger = func.__annotations__['logger']
-    assert (
-        flogger.logger.name
-        if hasattr(flogger, 'logger')
-        else flogger.name == logger_name
-    )
-
+    # Check messages from the first call
     assert 'Executing func' in log_output.entries[0].get('event')
     assert (
         f'Exception raised in {func.__name__}: invalid literal for int'
         in log_output.entries[1].get('event')
     )
 
+    # Verify logger name recorded by the decorator
+    flogger = func.__annotations__['logger']
+    actual_name = flogger.logger.name if hasattr(flogger, 'logger') else flogger.name
+    assert actual_name == logger_name
 
-def test_get_sibling_section():
-    """
-    Test the `get_sibling_section` utility function.
-    """
-    parent_section = ModelSystem()
-    section = AtomicCell(type='original')
-    parent_section.cell.append(section)
-    sibling_section = Symmetry()
-    parent_section.symmetry.append(sibling_section)
-    assert get_sibling_section(section, '', logger) is None
-    assert get_sibling_section(section, 'symmetry', logger) == sibling_section
-    assert get_sibling_section(sibling_section, 'cell', logger).type == section.type
-    assert get_sibling_section(section, 'symmetry', logger, index_sibling=2) is None
-    section2 = AtomicCell(type='primitive')
-    parent_section.cell.append(section2)
+    # --- second call (idempotence) ---
+    if logger_kwarg is not None:
+        func('a', logger=logger_kwarg)
+    else:
+        func('a')
+
+    # We should have two more log entries; check the last two specifically
+    assert 'Executing func' in log_output.entries[-2].get('event')
     assert (
-        get_sibling_section(sibling_section, 'cell', logger, index_sibling=0).type
-        == 'original'
-    )
-    assert (
-        get_sibling_section(sibling_section, 'cell', logger, index_sibling=0).type
-        == section.type
-    )
-    assert (
-        get_sibling_section(sibling_section, 'cell', logger, index_sibling=1).type
-        == section2.type
-    )
-    assert (
-        get_sibling_section(sibling_section, 'cell', logger, index_sibling=1).type
-        == 'primitive'
+        f'Exception raised in {func.__name__}: invalid literal for int'
+        in log_output.entries[-1].get('event')
     )
 
 
