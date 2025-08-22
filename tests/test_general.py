@@ -316,124 +316,39 @@ class TestSimulation:
         assert root.composition_formula == 'Custom(1)'
 
 
-# class TestSimulationRepresentativeSelection:
-# def test_zero_representatives_promotes_last(self):
-#     """
-#     When no system is marked representative, mark the last one and set index to -1.
-#     """
-#     s0 = ModelSystem(name='A', is_representative=False)
-#     s1 = ModelSystem(name='B', is_representative=False)
-#     s2 = ModelSystem(name='C', is_representative=False)
-#     sim = Simulation(model_system=[s0, s1, s2])
-
-#     sim._validate_and_set_representative_system()
-
-#     assert sim.representative_system_index == -1
-#     assert sim.model_system[-1].is_representative is True
-#     assert all(ms.is_representative is False for ms in sim.model_system[:-1])
-
-# def test_multiple_representatives_keeps_last(self):
-#     """
-#     When multiple systems are marked, demote all and keep the last encountered.
-#     """
-#     s0 = ModelSystem(name='A', is_representative=True)
-#     s1 = ModelSystem(name='B', is_representative=False)
-#     s2 = ModelSystem(name='C', is_representative=True)
-#     s3 = ModelSystem(name='D', is_representative=False)
-#     sim = Simulation(model_system=[s0, s1, s2, s3])
-
-#     sim._validate_and_set_representative_system()
-
-#     assert sim.representative_system_index == 2
-#     assert [ms.is_representative for ms in sim.model_system] == [
-#         False,
-#         False,
-#         True,
-#         False,
-#     ]
-
-# def test_exactly_one_representative_preserved(self):
-#     """
-#     When exactly one system is representative, preserve it and set its index.
-#     """
-#     s0 = ModelSystem(name='A', is_representative=False)
-#     s1 = ModelSystem(name='B', is_representative=True)
-#     s2 = ModelSystem(name='C', is_representative=False)
-#     sim = Simulation(model_system=[s0, s1, s2])
-
-#     sim._validate_and_set_representative_system()
-
-#     assert sim.representative_system_index == 1
-#     assert [ms.is_representative for ms in sim.model_system] == [False, True, False]
-
-# def test_idempotent(self):
-#     """
-#     Calling the method twice should not change the outcome after the first pass.
-#     """
-#     s0 = ModelSystem(name='A', is_representative=False)
-#     s1 = ModelSystem(name='B', is_representative=True)
-#     s2 = ModelSystem(name='C', is_representative=False)
-#     sim = Simulation(model_system=[s0, s1, s2])
-
-#     sim._validate_and_set_representative_system()
-#     first_idx = sim.representative_system_index
-#     first_flags = [ms.is_representative for ms in sim.model_system]
-
-#     sim._validate_and_set_representative_system()
-#     second_idx = sim.representative_system_index
-#     second_flags = [ms.is_representative for ms in sim.model_system]
-
-#     assert first_idx == second_idx
-#     assert first_flags == second_flags
-
-# def test_singleton_promotes_self(self):
-#     """
-#     Single system with no representative flag gets promoted and index is -1.
-#     """
-#     sim = Simulation(
-#         model_system=[ModelSystem(name='only', is_representative=False)]
-#     )
-
-#     sim._validate_and_set_representative_system()
-
-#     assert sim.representative_system_index == -1
-#     assert sim.model_system[0].is_representative is True
-
-
-class TestSimulationRepresentativeSelection:
-    @pytest.mark.parametrize(
-        'initial_flags, expected_index, expected_flags',
-        [
-            # 1) zero representatives → promote last, index -1 on first pass
-            ([False, False, False], -1, [False, False, True]),
-            # 2) multiple representatives → keep the last
-            ([True, False, True, False], 2, [False, False, True, False]),
-            # 3) exactly one representative → preserve it
-            ([False, True, False], 1, [False, True, False]),
-            # 4) singleton without representative → promote itself, index -1 on first pass
-            ([False], -1, [True]),
-        ],
+@pytest.mark.parametrize(
+    'initial_flags, expected_index, expected_flags',
+    [
+        # 1) zero representatives → promote last, index -1 (first pass)
+        ([False, False, False], -1, [False, False, True]),
+        # 2) multiple representatives → keep the last
+        ([True, False, True, False], 2, [False, False, True, False]),
+        # 3) exactly one representative → preserve it
+        ([False, True, False], 1, [False, True, False]),
+        # 4) singleton without representative → promote itself, index -1 (first pass)
+        ([False], -1, [True]),
+    ],
+)
+def test_representative_selection(initial_flags, expected_index, expected_flags):
+    sim = Simulation(
+        model_system=[
+            ModelSystem(name=f'S{i}', is_representative=flag)
+            for i, flag in enumerate(initial_flags)
+        ]
     )
-    def test_representative_selection(
-        self, initial_flags, expected_index, expected_flags
-    ):
-        sim = Simulation(
-            model_system=[
-                ModelSystem(name=f'S{i}', is_representative=flag)
-                for i, flag in enumerate(initial_flags)
-            ]
-        )
 
-        # First pass: keep your original expectations
-        sim._validate_and_set_representative_system()
-        assert sim.representative_system_index == expected_index
-        assert [ms.is_representative for ms in sim.model_system] == expected_flags
+    # First pass: preserves the API’s special-casing (-1 means “last element”)
+    sim.normalize(EntryArchive(), logger)
+    assert sim.representative_system_index == expected_index
+    assert [ms.is_representative for ms in sim.model_system] == expected_flags
 
-        # Second pass: flags must be unchanged; index becomes canonical (non-negative)
-        sim._validate_and_set_representative_system()
-        assert [ms.is_representative for ms in sim.model_system] == expected_flags
+    # Second pass: flags unchanged; index becomes canonical (non-negative)
+    sim.normalize(EntryArchive(), logger)
+    assert [ms.is_representative for ms in sim.model_system] == expected_flags
+    expected_canonical_index = expected_flags.index(True)
+    assert sim.representative_system_index == expected_canonical_index
 
-        true_idx = next(
-            i for i, ms in enumerate(sim.model_system) if ms.is_representative
-        )
-        assert sim.representative_system_index == true_idx
+    # Third pass: idempotent (no further changes)
+    sim.normalize(EntryArchive(), logger)
+    assert [ms.is_representative for ms in sim.model_system] == expected_flags
+    assert sim.representative_system_index == expected_canonical_index

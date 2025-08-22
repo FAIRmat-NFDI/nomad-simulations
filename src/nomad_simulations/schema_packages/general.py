@@ -294,13 +294,21 @@ class Simulation(BaseSimulation, Schema):
         - Assumes `self.model_system` is **non-empty**. If it can be empty in your
         context, guard against `IndexError` before calling or extend this method
         to handle the empty case explicitly.
+        - In case of multiple or no representatives, the last one in the list is taken
+        since it is common that the list of model systems links to some serial workflow,
+        e.g., Geometry Optimization or Molecular Dynamics.
         - Runs in O(n) over the number of systems.
 
         Returns
         -------
         None
         """
+        # TODO consider adding programmatic enforcement of model_system natural ordering
         logger = self._validate_and_set_representative_system.__annotations__['logger']
+
+        if not self.model_system:
+            logger.error('No system information reported.')
+            return
 
         # indices of representative systems
         rep_idx = [i for i, ms in enumerate(self.model_system) if ms.is_representative]
@@ -335,10 +343,6 @@ class Simulation(BaseSimulation, Schema):
             logger (BoundLogger): _description_
         """
         super(Schema, self).normalize(archive, logger)
-
-        if not self.model_system:
-            logger.error('No system information reported.')
-            return
 
         # Validate that there is exactly one representative system and set the index
         self._validate_and_set_representative_system()
