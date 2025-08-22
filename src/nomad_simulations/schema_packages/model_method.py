@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 from nomad_simulations.schema_packages.atoms_state import CoreHole, OrbitalsState
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
-from nomad_simulations.schema_packages.utils import is_not_representative
 
 
 class BaseModelMethod(ArchiveSection):
@@ -506,7 +505,7 @@ class TB(ModelMethodElectronic):
             return None
 
         # If the system is not representative, bail out of normalization
-        if is_not_representative(model_system=model_system, logger=logger):
+        if not model_system.is_representative:
             return None
 
         # If no child ModelSystem sections exist, bail out of normalization

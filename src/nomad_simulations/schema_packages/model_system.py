@@ -57,11 +57,7 @@ from nomad_simulations.schema_packages.atoms_state import (
     CGBeadState,
     ParticleState,
 )
-from nomad_simulations.schema_packages.utils import (
-    catch_not_implemented,
-    get_sibling_section,
-    is_not_representative,
-)
+from nomad_simulations.schema_packages.utils import get_sibling_section
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -1380,11 +1376,16 @@ class ModelSystem(System):
         # Validate the ModelSystem subsystem
         self._validate_subsystem(logger)
 
-        # We don't need to normalize if the system is not representative
-        # TODO decide the meaning and exact usage of a system being representative
-        # TODO before avoiding normalization
-        # if is_not_representative(model_system=self, logger=logger):
-        #     return
+        # Prevent representative subsystems
+        if self.is_representative and not self.is_root_system():
+            logger.warning(
+                'ModelSystem.is_representative is set to True for a subsystem. '
+                'Setting to False'
+            )
+            self.is_representative = False
+        # Skip the following normalization if system is not representative
+        if not self.is_representative:
+            return
 
         ## ATOMIC NORMALIZATION
         if not self.is_atomic():

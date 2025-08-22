@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.model_system import ModelSystem
-from nomad_simulations.schema_packages.utils import is_not_representative, log
+from nomad_simulations.schema_packages.utils import log
 
 
 class NumericalSettings(ArchiveSection):
@@ -210,7 +210,7 @@ class KSpaceFunctionalities:
         lattice = None
         for model_system in model_systems:
             # General checks to proceed with normalization
-            if is_not_representative(model_system=model_system, logger=logger):
+            if not model_system.is_representative:
                 continue
             if model_system.symmetry is None:
                 logger.warning('Could not find `ModelSystem.symmetry`.')
@@ -448,7 +448,7 @@ class KMesh(Mesh):
 
         for model_system in model_systems:
             # General checks to proceed with normalization
-            if is_not_representative(model_system=model_system, logger=logger):
+            if not model_system.is_representative:
                 continue
             # TODO extend this for other dimensions (@ndaelman-hu)
             if model_system.type != 'bulk':
@@ -807,7 +807,7 @@ class KSpace(NumericalSettings):
         """
         for model_system in model_systems:
             # General checks to proceed with normalization
-            if is_not_representative(model_system=model_system, logger=logger):
+            if not model_system.is_representative:
                 continue
 
             # TODO extend this for other dimensions (@ndaelman-hu)

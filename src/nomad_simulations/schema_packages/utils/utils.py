@@ -152,25 +152,6 @@ class RussellSaundersState:
         )
 
 
-def is_not_representative(model_system, logger: 'BoundLogger'):
-    """
-    Checks if the given `ModelSystem` is not representative and logs a warning.
-
-    Args:
-        model_system (ModelSystem): The `ModelSystem` to check.
-        logger (BoundLogger): The logger to log messages.
-
-    Returns:
-        (bool): True if the `ModelSystem` is not representative, False otherwise.
-    """
-    if model_system is None:
-        logger.warning('The `ModelSystem` is empty.')
-        return None
-    if not model_system.is_representative:
-        return True
-    return False
-
-
 # TODO remove function in nomad.atomutils
 def get_composition(children_names: list[str]) -> str | None:
     """
