@@ -85,7 +85,7 @@ class TestModelSystem:
             lattice_vectors=np.eye(3) * 4.0 * ureg.angstrom,
             periodic_boundary_conditions=[True, True, True],
         )
-        sys.cell.append(c)
+        sys.cell = c
         # Add AtomsState entries for 2 atoms
         a1 = AtomsState(chemical_symbol='Na')
         a2 = AtomsState(chemical_symbol='Cl')
@@ -108,11 +108,9 @@ class TestModelSystem:
             pbc=[True, True, True],
         )
         sys = ModelSystem()
-        sys.cell.append(
-            Cell(
-                lattice_vectors=(np.eye(3) * 4.0 * ureg.angstrom),
-                periodic_boundary_conditions=[True, True, True],
-            )
+        sys.cell = Cell(
+            lattice_vectors=(np.eye(3) * 4.0 * ureg.angstrom),
+            periodic_boundary_conditions=[True, True, True],
         )
         sys.from_ase_atoms(ase_atoms, logger=logger)
 
@@ -121,12 +119,12 @@ class TestModelSystem:
         # Check that the first cell has its lattice_vectors updated; using complete_cell from ASE
         expected_cell = ase.geometry.complete_cell(ase_atoms.get_cell()) * ureg.angstrom
         assert np.allclose(
-            sys.cell[0].lattice_vectors.to('angstrom').magnitude,
+            sys.cell.lattice_vectors.to('angstrom').magnitude,
             expected_cell.to('angstrom').magnitude,
         )
         # Check PBC
         assert np.array_equal(
-            np.array(sys.cell[0].periodic_boundary_conditions),
+            np.array(sys.cell.periodic_boundary_conditions),
             np.array(ase_atoms.get_pbc()),
         )
         # Check particle_states references
@@ -158,7 +156,7 @@ class TestModelSystem:
             lattice_vectors=np.eye(3) * 3.0 * ureg.angstrom,
             periodic_boundary_conditions=pbc,
         )
-        sys.cell.append(c)
+        sys.cell = c
         # Add enough AtomsState entries to match len(positions)
         for _ in range(len(positions)):
             sys.particle_states.append(AtomsState(chemical_symbol='H'))
@@ -183,10 +181,9 @@ class TestModelSystem:
             chemical_symbols=['H', 'H', 'O'],
             atomic_numbers=[1, 1, 8],
         )
-        sys.cell.append(ac)
+        sys.cell = ac
         # Add a Symmetry, ChemicalFormula
-        sym = GlobalCrystalSymmetry()
-        sys.symmetry.append(sym)
+        sys.symmetry = GlobalCrystalSymmetry()
         chem = ChemicalFormula()
         sys.chemical_formula = chem
         # Add 3 AtomsState entries for H,H,O
@@ -201,14 +198,9 @@ class TestModelSystem:
         if sys.chemical_formula is not None:
             # If the formula is expected "H2O," check that:
             assert sys.chemical_formula.descriptive == 'H2O'
-        # Extra cells (primitive/conventional) are added only if there is a parent ModelSystem.
-        # For a top-level ModelSystem (with no parent), we expect only the originally appended cell.
-        if sys.m_parent is not None:
-            if len(sys.cell) >= 2:
-                assert sys.cell[1].type in ['primitive', 'conventional']
-        else:
-            # Top-level system: expect only one cell.
-            assert len(sys.cell) == 1
+        # Cell normalization creates a single cell
+        # For a top-level ModelSystem, we expect the cell to be present
+        assert sys.cell is not None
 
 
 @pytest.mark.parametrize('branching', [True, False])
@@ -241,7 +233,7 @@ def make_water_cu_system(n_h2o: int) -> ModelSystem:
     # Add a trivial AtomicCell so normalization doesn't bail out
     ac = AtomicCell(periodic_boundary_conditions=[False, False, False])
     ac.positions = np.zeros((0, 3)) * ureg.angstrom
-    root.cell.append(ac)
+    root.cell = ac
 
     # group_H2O branch
     group = ModelSystem(branch_label='group_H2O', is_representative=False)

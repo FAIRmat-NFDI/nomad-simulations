@@ -1267,9 +1267,9 @@ class ModelSystem(System):
 
         ase_atoms = ase.Atoms(symbols=symbols)
 
-        # Use cell data (from the first cell) for periodic boundary conditions and lattice
-        if self.cell and len(self.cell) > 0:
-            cell_section = self.cell[0]
+        # Use cell data for periodic boundary conditions and lattice
+        if self.cell:
+            cell_section = self.cell
             if cell_section.periodic_boundary_conditions is None:
                 logger.info(
                     'Cell periodic_boundary_conditions not found; using default [False, False, False].'
@@ -1284,7 +1284,7 @@ class ModelSystem(System):
                     cell_section.lattice_vectors.to('angstrom').magnitude
                 )
             else:
-                logger.info('No lattice_vectors found in cell[0].')
+                logger.info('No lattice_vectors found in cell.')
         else:
             logger.warning('No cell section available in ModelSystem.')
 
@@ -1321,12 +1321,12 @@ class ModelSystem(System):
         self.n_particles = len(self.positions)
 
         # Update cell information from ASE
-        if self.cell and len(self.cell) > 0:
+        if self.cell:
             cell = ase_atoms.get_cell()
-            self.cell[0].lattice_vectors = ase.geometry.complete_cell(cell) * ureg(
+            self.cell.lattice_vectors = ase.geometry.complete_cell(cell) * ureg(
                 'angstrom'
             )
-            self.cell[0].periodic_boundary_conditions = ase_atoms.get_pbc()
+            self.cell.periodic_boundary_conditions = ase_atoms.get_pbc()
 
     def resolve_system_type_and_dimensionality(
         self, ase_atoms: ase.Atoms, logger: 'BoundLogger'
@@ -1480,8 +1480,9 @@ class ModelSystem(System):
         )
 
         # Create and normalize Symmetry section if applicable
-        if self.type == 'bulk' and self.symmetry is not None:
-            sec_symmetry = self.m_create(GlobalCrystalSymmetry)
+        if self.type == 'bulk' and self.symmetry is None:
+            sec_symmetry = GlobalCrystalSymmetry()
+            self.symmetry = sec_symmetry
             sec_symmetry.normalize(archive, logger)
 
         # Create and normalize ChemicalFormula section
