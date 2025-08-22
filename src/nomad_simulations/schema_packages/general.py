@@ -171,6 +171,14 @@ class BaseSimulation(Activity, Time):
         """,
     )
 
+    finished_without_errors = Quantity(
+        type=bool,
+        description="""
+        Indicates whether this code run terminated without error (true), 
+        or if it exited with an error code unequal to zero (false).
+        """
+    )
+
     program = SubSection(sub_section=Program.m_def, repeats=False)
 
 
