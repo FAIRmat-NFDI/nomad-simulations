@@ -206,7 +206,8 @@ class KSpaceFunctionalities:
         Returns:
             (Optional[dict]): The resolved `high_symmetry_points`.
         """
-        # Extracting `bravais_lattice` from `ModelSystem.symmetry` section and `ASE.cell` from `ModelSystem.cell`
+        # Extracting `bravais_lattice` (Pearson notation) from `ModelSystem.symmetry` section and `ASE.cell` from `ModelSystem.cell`
+        # Note: bravais_lattice is now a computed property from lattice_type and lattice_centering
         lattice = None
         for model_system in model_systems:
             # General checks to proceed with normalization

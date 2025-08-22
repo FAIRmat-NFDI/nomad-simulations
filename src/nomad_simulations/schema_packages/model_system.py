@@ -162,7 +162,7 @@ class GeometricSpace(Entity):
 
         | name       | description | dimensionalities | coordinates |
         |------------|-------------|------------------|-------------|
-        | cartesian  | coordinate system with fixed angles between the axes (not necessarily 90°) | 1, 2, 3 | x, y, z |
+        | cartesian  | coordinate system with fixed angles between the axes (not necessarily 90^{\circ}) | 1, 2, 3 | x, y, z |
         | cylindrical| cylindrical symmetry | 3 | r, theta, z |
         | spherical  | spherical symmetry | 3 | r, theta, phi |
         | ellipsoidal| spherically elongated system | 3 | r, theta, phi |
@@ -397,6 +397,7 @@ class GlobalSymmetry(ArchiveSection):
     which can be used for categorization and lookup. It does not define local, site-specific symmetry.
     """
 
+
 class GlobalCrystalSymmetry(GlobalSymmetry):
     """
     A symmetry section specialized for identifying bulk crystal space groups.
@@ -404,17 +405,97 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
     A definition of the orientation of the reference cell is given via `origin_shift` and `transformation_matrix`.
     """
 
-    bravais_lattice = Quantity(
-        type=str,
+    lattice_type = Quantity(  # called `crystal_system` in `results`
+        type=MEnum(
+            'a - triclinic',
+            'm - monoclinic',
+            'o - orthorhombic',
+            't - tetragonal',
+            'r - trigonal',
+            'h - hexagonal',
+            'c - cubic',
+            'mp - oblique',
+            'op - rectangular',
+            'oc - centered rectangular',
+            'tp - square',
+            'hp - hexagonal 2D',
+            'ap - linear',
+        ),
         description="""
-        Bravais lattice in Pearson notation.
+        Bravais lattice type according to the crystal family classification in crystallography.
+        This follows the Pearson notation system where the first lowercase letter identifies the
+        crystal family based on lattice symmetry (Hahn, 2005):
+        
+        | Symbol | Crystal Family | Lattice Parameters | Dimensionality |
+        |--------|----------------|--------------------|-----------------|
+        | a      | triclinic / anorthic | $a \neq b \neq c$, $\alpha \neq \beta \neq \gamma \neq 90^{\circ}$ | 3D |
+        | m      | monoclinic     | $a \neq b \neq c$, $\alpha = \gamma = 90^{\circ} \neq \beta$ | 3D |
+        | o      | orthorhombic   | $a \neq b \neq c$, $\alpha = \beta = \gamma = 90^{\circ}$ | 3D |
+        | t      | tetragonal     | $a = b \neq c$, $\alpha = \beta = \gamma = 90^{\circ}$ | 3D |
+        | r      | trigonal       | $a = b = c$, $\alpha = \beta = \gamma \neq 90^{\circ}$ (rhombohedral) or $a = b \neq c$, $\alpha = \beta = 90^{\circ}$, $\gamma = 120^{\circ}$ (hexagonal) | 3D |
+        | h      | hexagonal      | $a = b \neq c$, $\alpha = \beta = 90^{\circ}$, $\gamma = 120^{\circ}$ | 3D |
+        | c      | cubic          | $a = b = c$, $\alpha = \beta = \gamma = 90^{\circ}$ | 3D |
+        | mp     | oblique        | $a \neq b$, $\gamma \neq 90^{\circ}$ | 2D |
+        | op     | rectangular    | $a \neq b$, $\gamma = 90^{\circ}$ | 2D |
+        | oc     | centered rectangular | $a \neq b$, $\gamma = 90^{\circ}$ | 2D |
+        | tp     | square         | $a = b$, $\gamma = 90^{\circ}$ | 2D |
+        | hp     | hexagonal 2D   | $a = b$, $\gamma = 120^{\circ}$ | 2D |
+        | ap     | linear         | lattice parameter $a$ | 1D |
 
-        The first lowercase letter identifies the
-        crystal family: a (triclinic), b (monoclinic), o (orthorhombic), t (tetragonal),
-        h (hexagonal), c (cubic).
+        **Dimensionality applicability:**
+        - 3D: a, b, o, t, r, h, c
+        - 2D: mp, op, oc, tp, hp
+        - 1D: ap
 
-        The second uppercase letter identifies the centring: P (primitive), S (face centered),
-        I (body centred), R (rhombohedral centring), F (all faces centred).
+        **Note:** This quantity is setting-dependent and determined through symmetry analysis.
+        For 2D and 1D systems, equivalent notation may be used with appropriate modifications.
+
+        **Reference:** Hahn, T. (2005). International Tables for Crystallography, Volume A: Space-group symmetry. Springer.
+        """,
+    )
+
+    lattice_centering = Quantity(
+        type=MEnum(
+            'P - primitive',
+            'R - rhombohedral',
+            'S - face centred',
+            'I - body centred',
+            'F - all faces centred',
+            'c - centered 2D',
+            'p - primitive 2D/1D',
+        ),
+        description="""
+        Lattice centering type according to the International Union of Crystallography (IUCr) notation.
+        This describes how lattice points are distributed within the conventional unit cell (Hahn, 2005):
+
+        | Symbol | Centering Type | Description | Lattice Points | Dimensionality |
+        |--------|----------------|-------------|----------------|----------------|
+        | P      | primitive      | lattice points only at cell corners | $(0,0,0)$ | 3D |
+        | R      | rhombohedral   | rhombohedral centering (hexagonal setting) | $(0,0,0)$, $(2/3,1/3,1/3)$, $(1/3,2/3,2/3)$ | 3D |
+        | S      | face centered  | one pair of opposite faces centered | $(0,0,0)$, $(1/2,1/2,0)$ | 3D |
+        | I      | body centered  | body center | $(0,0,0)$, $(1/2,1/2,1/2)$ | 3D |
+        | F      | all faces centered | all faces centered | $(0,0,0)$, $(1/2,1/2,0)$, $(1/2,0,1/2)$, $(0,1/2,1/2)$ | 3D |
+        | c      | centered 2D    | centered rectangular lattice | $(0,0)$, $(1/2,1/2)$ | 2D |
+        | p      | primitive 2D/1D | primitive lattice | $(0,0)$ (2D), $(0)$ (1D) | 2D/1D |
+
+        **Dimensionality applicability:**
+        - 3D: P, R, S, I, F
+        - 2D: p, c
+        - 1D: p
+
+        **Compatibility with lattice types:**
+        - Triclinic (a): P only
+        - Monoclinic (b): P, S
+        - Orthorhombic (o): P, S, I, F
+        - Tetragonal (t): P, I
+        - Trigonal (r): P, R (in hexagonal setting)
+        - Hexagonal (h): P only
+        - Cubic (c): P, I, F
+
+        **Note:** This quantity is setting-dependent and automatically determined through symmetry analysis.
+        For lower-dimensional systems, the centering is interpreted in the context of the reduced dimensionality.
+
+        **Reference:** Hahn, T. (2005). International Tables for Crystallography, Volume A: Space-group symmetry. Springer.
         """,
     )
 
@@ -427,17 +508,6 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             - `F -4 2 3`,
             - `-P 4 2`,
             - `-F 4 2 3`.
-        """,
-    )
-
-    point_group_symbol = Quantity(
-        type=str,
-        description="""
-        Symbol of the crystallographic point group in the Hermann-Mauguin notation. See
-        https://en.wikipedia.org/wiki/Crystallographic_point_group. Examples:
-            - `-43m`,
-            - `4/mmm`,
-            - `m-3m`.
         """,
     )
 
@@ -496,6 +566,71 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             http://www.aflowlib.org/prototype-encyclopedia/index.html
         """,
     )
+
+    def _parse_bravais_lattice_pearson(self, pearson_notation: str) -> tuple[str, str]:
+        """
+        Parse Pearson notation (e.g., 'cF', 'oP') into lattice_type and lattice_centering.
+
+        Args:
+            pearson_notation (str): Pearson notation from MatID (e.g., 'cF', 'oP', 'hP')
+
+        Returns:
+            tuple[str, str]: (lattice_type, lattice_centering) formatted for the MEnum values
+        """
+        if not pearson_notation or len(pearson_notation) != 2:
+            return None, None
+
+        lattice_symbol = pearson_notation[0].lower()
+        centering_symbol = pearson_notation[1].upper()
+
+        # Map lattice symbols to full names
+        lattice_map = {
+            'a': 'a - triclinic',
+            'm': 'm - monoclinic',
+            'o': 'o - orthorhombic',
+            't': 't - tetragonal',
+            'h': 'h - hexagonal',
+            'r': 'r - trigonal',
+            'c': 'c - cubic',
+        }
+
+        # Map centering symbols to full names
+        centering_map = {
+            'P': 'P - primitive',
+            'S': 'S - face centred',
+            'I': 'I - body centred',
+            'F': 'F - all faces centred',
+            'R': 'R - rhombohedral',
+        }
+
+        lattice_type = lattice_map.get(lattice_symbol)
+        lattice_centering = centering_map.get(centering_symbol)
+
+        return lattice_type, lattice_centering
+
+    @property
+    def bravais_lattice(self) -> Optional[str]:
+        """
+        Reconstruct Pearson notation from lattice_type and lattice_centering for backward compatibility.
+
+        Returns:
+            str: Pearson notation (e.g., 'cF', 'oP')
+        """
+        if not self.lattice_type or not self.lattice_centering:
+            return None
+
+        lattice_symbol = (
+            self.lattice_type.split(' - ')[0]
+            if ' - ' in self.lattice_type
+            else self.lattice_type
+        )
+        centering_symbol = (
+            self.lattice_centering.split(' - ')[0]
+            if ' - ' in self.lattice_centering
+            else self.lattice_centering
+        )
+
+        return f'{lattice_symbol}{centering_symbol}'
 
     def resolve_analyzed_atomic_cell(
         self,
@@ -586,7 +721,13 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             return None, None
 
         # We store symmetry_analyzer info in a dictionary
-        symmetry['bravais_lattice'] = symmetry_analyzer.get_bravais_lattice()
+        bravais_lattice_pearson = symmetry_analyzer.get_bravais_lattice()
+        # Parse Pearson notation (e.g., 'cF' -> lattice_type='c - cubic', lattice_centering='F - all faces centred')
+        lattice_type, lattice_centering = self._parse_bravais_lattice_pearson(
+            bravais_lattice_pearson
+        )
+        symmetry['lattice_type'] = lattice_type
+        symmetry['lattice_centering'] = lattice_centering
         symmetry['hall_symbol'] = symmetry_analyzer.get_hall_symbol()
         symmetry['point_group_symbol'] = symmetry_analyzer.get_point_group()
         symmetry['space_group_number'] = symmetry_analyzer.get_space_group_number()
@@ -1340,7 +1481,7 @@ class ModelSystem(System):
 
         # Create and normalize Symmetry section if applicable
         if self.type == 'bulk' and self.symmetry is not None:
-            sec_symmetry = self.m_create(GlobalCrystalSymmetry)
+            sec_symmetry = self.m_create(GlobalSymmetry)
             sec_symmetry.normalize(archive, logger)
 
         # Create and normalize ChemicalFormula section
