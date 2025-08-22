@@ -452,7 +452,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
 
         **Reference:** Hahn, T. (2005). International Tables for Crystallography, Volume A: Space-group symmetry. Springer.
         """,
-    )
+    )  # TODO: leverage text search for query suggestions
 
     lattice_centering = Quantity(
         type=MEnum(
@@ -497,7 +497,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
 
         **Reference:** Hahn, T. (2005). International Tables for Crystallography, Volume A: Space-group symmetry. Springer.
         """,
-    )
+    )  # TODO: leverage text search for query suggestions
 
     hall_symbol = Quantity(
         type=str,
@@ -1481,7 +1481,7 @@ class ModelSystem(System):
 
         # Create and normalize Symmetry section if applicable
         if self.type == 'bulk' and self.symmetry is not None:
-            sec_symmetry = self.m_create(GlobalSymmetry)
+            sec_symmetry = self.m_create(GlobalCrystalSymmetry)
             sec_symmetry.normalize(archive, logger)
 
         # Create and normalize ChemicalFormula section
