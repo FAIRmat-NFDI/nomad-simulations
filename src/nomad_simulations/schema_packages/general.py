@@ -129,6 +129,53 @@ class BaseSimulation(Activity, SimulationTime):
         links=['https://liusemweb.github.io/mdo/core/1.1/index.html#Calculation']
     )
 
+    datetime_end = Quantity(
+        type=Datetime,
+        description="""
+        The date and time when this computation ended.
+        """,
+    )
+
+    cpu1_start = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The starting time of the computation on the (first) CPU 1.
+        """,
+    )
+
+    cpu1_end = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The end time of the computation on the (first) CPU 1.
+        """,
+    )
+
+    wall_start = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The internal wall-clock time from the starting of the computation.
+        """,
+    )
+
+    wall_end = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The internal wall-clock time from the end of the computation.
+        """,
+    )
+
+    finished_without_errors = Quantity(
+        type=bool,
+        description="""
+        Indicates whether this code run terminated without error (true), 
+        or if it exited with an error code unequal to zero (false).
+        """
+    )
+
     program = SubSection(sub_section=Program.m_def, repeats=False)
 
 

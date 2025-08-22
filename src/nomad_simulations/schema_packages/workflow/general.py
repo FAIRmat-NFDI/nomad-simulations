@@ -139,6 +139,30 @@ class SimulationTaskReference(TaskReference, SimulationTask):
     pass
 
 
+class WorkflowConvergenceTarget(ArchiveSection):
+    """
+    A section for defining convergence targets.
+
+    Calculations are converged w.r.t. to different parameters. This section holds the parameter name
+    and the respective convergence goal.
+
+    TODO: How to deal with units? Should this be an enum?
+    """
+
+    convergence_target = Quantity(
+        type=str,
+        description="""
+        Name of the parameter that is converged.
+        """
+    )
+
+    convergence_threshold = Quantity(
+        type=float,
+        description="""
+        Numerical value of the parameter that is converged.
+        """
+    )
+
 class SimulationWorkflow(Workflow, SimulationTask):
     """
     Base class for simulation workflows.
@@ -153,18 +177,15 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     results = SubSection(sub_section=SimulationWorkflowResults.m_def)
 
+    convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
+
     @log
-    def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.method:
-            self.method = SimulationWorkflowMethod()
-
-        if self.method in [inp.section for inp in self.inputs]:
-            return
-
-        logger = self.map_inputs.__annotations__['logger']
-        self.method.normalize(archive, logger)
-        # add method to inputs
-        self.inputs.append(Link(name=self.method._label, section=self.method))
+    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        if self.model:
+            logger = self.map_inputs.__annotations__['logger']
+            self.model.normalize(archive, logger)
+            # add method to inputs
+            self.inputs.append(Link(name=self.model.label, section=self.model))
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
