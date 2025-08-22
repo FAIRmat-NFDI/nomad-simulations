@@ -22,7 +22,6 @@ from hashlib import sha1
 from typing import TYPE_CHECKING, Optional
 
 import ase
-from nomad_simulations.schema_packages.data_types import Bound, m_int_bounded
 import numpy as np
 from ase.symbols import symbols2numbers
 from matid import Classifier, SymmetryAnalyzer  # pylint: disable=import-error
@@ -42,6 +41,7 @@ from nomad.datamodel.metainfo.basesections.v2 import Entity, System
 from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
+from nomad_simulations.schema_packages.data_types import Bound, m_int_bounded
 from nomad_simulations.schema_packages.utils import log
 
 if TYPE_CHECKING:
@@ -404,6 +404,15 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
     A symmetry section specialized for identifying bulk crystal space groups.
     All symmetry operators are defined with respect to the **standard crystallographic unit cell**.
     A definition of the orientation of the reference cell is given via `origin_shift` and `transformation_matrix`.
+
+    **References:**
+    - Hahn, T. (Ed.). (2005). *International Tables for Crystallography, Volume A: Space-group symmetry* (5th ed.). Springer. https://doi.org/10.1107/97809553602060000001
+    - Hall, S.R. (1981). Space-group notation with an explicit origin. *Acta Crystallographica Section A*, 37(4), 517-525. https://doi.org/10.1107/S0108767381001228
+    - Togo, A. (2024). Spglib: A Software Library for Crystal Symmetry Search. *arXiv March 13, 2024*. https://doi.org/10.48550/arXiv.1808.01590
+    - Curtarolo, S., et al. (2012). AFLOW: An automatic framework for high-throughput materials discovery. *Computational Materials Science*, 58, 218-226.
+    - Mehl, M.J., et al. (2017). The AFLOW library of crystallographic prototypes: part 1. *Computational Materials Science*, 136, S1-S828.
+    - Strukturbericht volumes (1913-1943). Historical crystallographic structure classification.
+    - Pearson's Crystal Data. Comprehensive crystallographic database.
     """
 
     lattice_type = Quantity(  # called `crystal_system` in `results`
@@ -538,7 +547,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         """,
     )
 
-    hall_symbol_long = Quantity(  #? remove
+    hall_symbol_long = Quantity(  # ? remove
         type=str,
         description="""
         Extended Hall space group symbol providing **complete explicit specification** of the
@@ -645,36 +654,83 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         """,
     )  # TODO: leverage text search for query suggestions
 
-    strukturbericht_designation = Quantity(
+    strukturbericht_designation = Quantity(  # ? drop `designation`
         type=str,
         description="""
-        Classification of the material according to the historically grown and similar crystal
-        structures ('strukturbericht'). Useful when using altogether with `space_group_symbol`.
-        Examples:
-            - `C1B`, `B3`, `C15b`,
-            - `L10`, `L60`,
-            - `L21`.
-
+        Classification of the material according to the Strukturbericht system, a historical
+        classification scheme that groups crystal structures by their structural type and
+        coordination environments. This system predates modern space group analysis and
+        provides a complementary structural categorization based on prototypical compounds.
         Extracted from the AFLOW encyclopedia of crystallographic prototypes.
+
+        The designation consists of a letter (A, B, C, D, L, etc.) indicating the general
+        structural family, followed by a number and sometimes additional letters:
+        
+        **Common Structure Types:**
+        - **A-type**: Simple structures (A1: Cu, A2: W, A3: Mg, A4: diamond)
+        - **B-type**: Binary compounds with simple ratios (B1: NaCl, B2: CsCl, B3: ZnS)
+        - **C-type**: More complex binary compounds (C1: CaF₂, C15: Cu₂Mg Laves phase)
+        - **D-type**: Complex structures (D0₁₉: Ni₃Sn)
+        - **L-type**: Ordered alloy structures (L1₀: AuCu, L1₂: Cu₃Au, L2₁: Heusler)
+        
+        **References:**
+        - Strukturbericht volumes (1913-1943)
+        - Pearson's Crystal Data
+        - AFLOW prototype encyclopedia: https://www.aflowlib.org/prototype-encyclopedia/
         """,
     )
 
     prototype_formula = Quantity(
         type=str,
         description="""
-        The formula of the prototypical material for this structure as extracted from the
-        AFLOW encyclopedia of crystallographic prototypes. It is a string with the chemical
-        symbols:
-            - https://aflowlib.org/prototype-encyclopedia/chemical_symbols.html
+        Chemical formula of the prototypical material that exemplifies this crystal structure
+        type, as catalogued in the AFLOW encyclopedia of crystallographic prototypes. This
+        represents the historically first or most well-known compound that exhibits this
+        particular structural arrangement.
+        
+        The formula follows standard chemical notation, with structural
+        information encoded through the specific elemental composition and stoichiometry
+        of the prototype compound.
+        
+        **Examples:**
+        - `Cu`: Face-centered cubic metals (A1 structure type)
+        - `CsCl`: Cesium chloride structure (B2 structure type)
+        - `CaF2`: Fluorite structure (C1 structure type)
+        - `Cu2MgAl`: Heusler alloy structure (L21 structure type)
+        - `Ni3Sn`: D019 structure type
+        
+        **Reference:**
+        - Curtarolo, S., et al. "AFLOW: An automatic framework for high-throughput materials
+        discovery." Computational Materials Science 58 (2012): 218-226.
+        - AFLOW prototype encyclopedia: https://www.aflowlib.org/prototype-encyclopedia/
         """,
     )
 
     prototype_aflow_id = Quantity(
         type=str,
         description="""
-        The identifier of this structure in the AFLOW encyclopedia of crystallographic prototypes:
-            http://www.aflowlib.org/prototype-encyclopedia/index.html
-        """,
+        Unique identifier for the `prototype_formula` as indexed in the AFLOW encyclopedia of
+        crystallographic prototypes. This ID provides direct linkage to the comprehensive
+        structural database maintained by the AFLOW consortium.
+        
+        AFLOW prototype IDs typically follow a systematic naming convention that encodes
+        structural information including:
+        - Prototype formula
+        - Space group information
+        - Structural parameters
+        - Variant designations
+        
+        **Examples:**
+        - `A1_cF4_225_a`: Face-centered cubic (Cu-type)
+        - `B1_cF8_225_a_b`: Rock salt structure (NaCl-type)
+        - `C1_cF12_225_a_c`: Fluorite structure (CaF₂-type)
+        - `L21_cF16_225_a_b_c`: Heusler structure (Cu₂MnAl-type)
+        
+        **Reference:**
+        - Mehl, M.J., et al. "The AFLOW library of crystallographic prototypes: part 1."
+        - Computational Materials Science 136 (2017): S1-S828.
+        - AFLOW prototype encyclopedia: https://www.aflowlib.org/prototype-encyclopedia/
+        """,  # use more up-to-date AFLOW properties reference
     )
 
     origin_shift = Quantity(
@@ -767,117 +823,121 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
     ) -> dict[str, str | int | None]:
         """
         Process Hall symbols from SymmetryAnalyzer and convert to the new field structure.
-        
+
         Args:
             symmetry_analyzer: The MatID SymmetryAnalyzer object
             logger: Logger for error reporting
-            
+
         Returns:
             dict: Dictionary with hall_symbol_short, hall_symbol_long, and hall_number
         """
-        hall_data = {}
-        
+        hall_data: dict[str, str | int | None] = {}
+
         try:
             # Get the raw Hall symbol from the analyzer
             hall_symbol_raw = symmetry_analyzer.get_hall_symbol()
-            
+
             if hall_symbol_raw:
                 # Convert raw Hall symbol to short form by removing origin specifications
                 # and simplifying notation following the conversion rules
                 hall_short = self._convert_hall_long_to_short(hall_symbol_raw)
                 hall_data['hall_symbol_short'] = hall_short
-                
+
                 # The raw symbol from spglib is typically already in short form,
                 # so we construct a more detailed long form if possible
-                hall_long = self._construct_hall_long_form(hall_symbol_raw, symmetry_analyzer)
+                hall_long = self._construct_hall_long_form(
+                    hall_symbol_raw, symmetry_analyzer
+                )
                 hall_data['hall_symbol_long'] = hall_long
-                
+
                 # Get Hall number if available (requires mapping from spglib data)
                 hall_number = self._get_hall_number(symmetry_analyzer)
                 hall_data['hall_number'] = hall_number
-                
+
             else:
                 hall_data['hall_symbol_short'] = None
                 hall_data['hall_symbol_long'] = None
                 hall_data['hall_number'] = None
-                
+
         except Exception as e:
             logger.warning(f'Error processing Hall symbols: {e}')
             hall_data['hall_symbol_short'] = None
             hall_data['hall_symbol_long'] = None
             hall_data['hall_number'] = None
-            
+
         return hall_data
 
     def _convert_hall_long_to_short(self, hall_symbol: str) -> str:
         """
         Convert a long Hall symbol to short form by applying conversion rules.
-        
+
         Args:
             hall_symbol: Input Hall symbol (potentially in long form)
-            
+
         Returns:
             str: Short form Hall symbol
         """
         if not hall_symbol:
             return hall_symbol
-            
+
         # Apply conversion rules:
         # 1. Remove origin shift specifications (text in parentheses)
         short_form = re.sub(r'\s*\([^)]*\)', '', hall_symbol)
-        
+
         # 2. Remove explanatory text in brackets
         short_form = re.sub(r'\s*\[[^\]]*\]', '', short_form)
-        
+
         # 3. Simplify explicit screw axis notations (e.g., 4₃ -> 4 if standard)
         # This is space group dependent, so we keep the subscripts for now
-        
+
         # 4. Remove redundant generator specifications
         # This requires more sophisticated space group knowledge
-        
+
         # 5. Clean up extra whitespace
         short_form = re.sub(r'\s+', ' ', short_form.strip())
-        
+
         return short_form
 
-    def _construct_hall_long_form(self, hall_symbol: str, symmetry_analyzer: 'SymmetryAnalyzer') -> str:
+    def _construct_hall_long_form(
+        self, hall_symbol: str, symmetry_analyzer: 'SymmetryAnalyzer'
+    ) -> str:
         """
         Construct a more detailed long form Hall symbol with additional setting information.
-        
+
         Args:
             hall_symbol: Base Hall symbol
             symmetry_analyzer: SymmetryAnalyzer for additional data
-            
+
         Returns:
             str: Enhanced long form Hall symbol
         """
         if not hall_symbol:
             return hall_symbol
-            
+
         long_form = hall_symbol
-        
+
         try:
             # Add origin shift information if available
             origin_shift = symmetry_analyzer._get_spglib_origin_shift()
             if origin_shift is not None and not all(x == 0 for x in origin_shift):
                 # Format origin shift as fractional coordinates
-                origin_str = f"({origin_shift[0]:.3g} {origin_shift[1]:.3g} {origin_shift[2]:.3g})"
-                long_form += f" {origin_str}"
-                
+                origin_str = f'({origin_shift[0]:.3g} {origin_shift[1]:.3g} {origin_shift[2]:.3g})'
+                long_form += f' {origin_str}'
+
         except Exception:
             # If origin shift is not available, just return the base symbol
             pass
-            
+
         return long_form
 
     @log
     def _get_hall_number(self, symmetry_analyzer: 'SymmetryAnalyzer') -> int | None:
         """
         Get the Hall number from the space group mapping in `spglib`.
-        
+
         Args:
             symmetry_analyzer: `SymmetryAnalyzer` for space group data, preferably run beforehand
-            
+
         Returns:
             (int | None): Hall number if available (1-530 range)
         """
@@ -885,6 +945,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         space_group_number = symmetry_analyzer.get_space_group_number()
         if space_group_number:
             import spglib
+
             # Get the space group type info which includes the Hall number
             sg_type = spglib.get_spacegroup_type(space_group_number)
             if sg_type and hasattr(sg_type, 'hall_number'):
@@ -892,7 +953,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
                 # Validate hall_number is in expected range
                 if isinstance(hall_number, int):
                     return hall_number
-            
+
         return None
 
     def resolve_bulk_symmetry(
@@ -928,13 +989,13 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         )
         self.lattice_type = lattice_type
         self.lattice_centering = lattice_centering
-        
+
         # Process Hall symbols using the specialized method
         hall_data = self._process_hall_symbols(symmetry_analyzer, logger)
         self.hall_symbol_short = hall_data.get('hall_symbol_short')
         self.hall_symbol_long = hall_data.get('hall_symbol_long')
         self.hall_number = hall_data.get('hall_number')
-        
+
         self.point_group_symbol = symmetry_analyzer.get_point_group()
         self.space_group_number = symmetry_analyzer.get_space_group_number()
         self.space_group_symbol = (
@@ -988,9 +1049,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         # when there are systems with deeper hierarchies.
         if self.m_parent.m_parent is not None and self.m_parent.type == 'bulk':
             # Populate symmetry properties
-            self.resolve_bulk_symmetry(
-                original_atomic_cell=atomic_cell, logger=logger
-            )
+            self.resolve_bulk_symmetry(original_atomic_cell=atomic_cell, logger=logger)
 
 
 class ChemicalFormula(ArchiveSection):
