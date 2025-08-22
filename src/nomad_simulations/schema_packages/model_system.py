@@ -1332,11 +1332,53 @@ class ModelSystem(System):
                 new.normalize(archive, logger)
                 self.particle_states.append(new)
 
+    def _validate_subsystem(self, logger: 'BoundLogger') -> None:
+        """ """
+
+        if self.is_root_system():
+            return
+
+        if self.particle_indices is None:
+            logger.warning(
+                'Cannot validate ModelSystem subsystem without particle_indices.'
+            )
+            return
+
+        parent = self.m_parent
+        if parent.is_root_system():
+            n_particles = (
+                len(parent.positions) if parent.positions is not None else None
+            )
+            if not n_particles:
+                logger.error(
+                    'Cannot validate ModelSystem subsystem without root particle positions.'
+                )
+                return
+
+            assert all(0 <= i < n_particles for i in self.particle_indices), (
+                'Invalid particle_indices in ModelSystem subsystem.'
+            )
+            return
+
+        if parent.particle_indices is None:
+            logger.error(
+                'Cannot validate ModelSystem subsystem without parent particle_indices.'
+            )
+            return
+
+        assert all(pi in parent.particle_indices for pi in self.particle_indices), (
+            'Invalid particle_indices in ModelSystem subsystem.'
+        )
+
+        # TODO logger.warning or logger.error in each case?
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
         # reassign particle states according to label validity
         self._reassign_generic_particle_states(archive, logger)
+        # Validate the ModelSystem subsystem
+        self._validate_subsystem(logger)
 
         # We don't need to normalize if the system is not representative
         # TODO decide the meaning and exact usage of a system being representative
@@ -1401,22 +1443,35 @@ class ModelSystem(System):
         Prefer isinstance for robustness; fall back to m_def identity.
         """
 
-        return (self.m_parent is None) or getattr(
-            self.m_parent, 'm_def', None
-        ) is not ModelSystem.m_def
+        return (self.m_parent is None) or (self.m_parent.m_def is not ModelSystem.m_def)
 
     def get_root_system(self) -> 'ModelSystem':
         """
-        Walk up through parents while the parent behaves like a ModelSystem.
+        Walk up through parents until reaching the root. Detect and fail on cycles.
+
+        Returns
+        -------
+        ModelSystem
+            The root system.
+
+        Raises
+        ------
+        RuntimeError
+            If a cycle is detected in the parent chain.
         """
-        system = self
-        while not system.is_root_system():
-            parent = system.m_parent
+        node = self
+        seen = {id(node)}
+
+        while not node.is_root_system():
+            parent = node.m_parent
             if parent is None:
                 break
-            system = parent
+            if id(parent) in seen:
+                raise RuntimeError('Cycle detected in ModelSystem parent chain.')
+            seen.add(id(parent))
+            node = parent
 
-        return system
+        return node
 
     # functions for working with molecules
     def get_bond_list(self) -> np.ndarray:

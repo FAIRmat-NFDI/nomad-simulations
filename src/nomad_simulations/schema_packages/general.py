@@ -278,6 +278,7 @@ class Simulation(BaseSimulation, Schema):
 
         # Setting up the `branch_depth` in the parent-child tree
         for system_parent in self.model_system:
+            _ = system_parent.get_root_system()  # ensure no cycles in the tree
             system_parent.branch_depth = 0
             self.set_composition_formula(system_parent=system_parent)
             if len(system_parent.sub_systems) == 0:
