@@ -828,6 +828,7 @@ class TestModelSystemSubsystemValidation:
 
     def _mk_root_with_particles(self, n: int) -> ModelSystem:
         root = ModelSystem(is_representative=True)
+        root.positions = np.zeros((n, 3)) * ureg.angstrom
         for _ in range(n):
             root.particle_states.append(AtomsState(chemical_symbol='H'))
         return root
@@ -962,7 +963,7 @@ class TestModelSystemSubsystemValidation:
             child._validate_subsystem(logger)
 
         assert any(
-            'Cannot validate ModelSystem subsystem without root particle info.'
+            'Cannot validate ModelSystem subsystem without root particle positions.'
             in rec.message
             for rec in caplog.records
         )

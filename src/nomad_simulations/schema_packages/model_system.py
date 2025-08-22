@@ -1347,19 +1347,17 @@ class ModelSystem(System):
         parent = self.m_parent
         if parent.is_root_system():
             n_particles = (
-                len(parent.particle_states)
-                if parent.particle_states is not None
-                else None
+                len(parent.positions) if parent.positions is not None else None
             )
             if not n_particles:
                 logger.error(
-                    'Cannot validate ModelSystem subsystem without root particle info.'
+                    'Cannot validate ModelSystem subsystem without root particle positions.'
                 )
                 return
 
-            assert all(0 <= i < n_particles for i in self.particle_indices), (
-                'Invalid particle_indices in ModelSystem subsystem.'
-            )
+            assert all(
+                0 <= i < n_particles for i in self.particle_indices
+            ), 'Invalid particle_indices in ModelSystem subsystem.'
             return
 
         if parent.particle_indices is None:
@@ -1368,9 +1366,9 @@ class ModelSystem(System):
             )
             return
 
-        assert all(pi in parent.particle_indices for pi in self.particle_indices), (
-            'Invalid particle_indices in ModelSystem subsystem.'
-        )
+        assert all(
+            pi in parent.particle_indices for pi in self.particle_indices
+        ), 'Invalid particle_indices in ModelSystem subsystem.'
 
         # TODO logger.warning or logger.error in each case?
 
