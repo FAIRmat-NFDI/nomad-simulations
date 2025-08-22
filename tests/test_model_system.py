@@ -34,9 +34,12 @@ class TestSymmetry:
         Check what happens if original_atomic_cell is None or minimal.
         """
         sym = GlobalCrystalSymmetry()
-        primitive, conv = sym.resolve_bulk_symmetry(None, logger=logger)
-        assert primitive is None
-        assert conv is None
+        # Should return None (early exit) when m_parent is None
+        result = sym.resolve_bulk_symmetry(None, logger=logger)
+        assert result is None
+        # Properties should remain unset
+        assert sym.space_group_number is None
+        assert sym.lattice_type is None
 
 
 class TestChemicalFormula:
@@ -182,10 +185,7 @@ class TestModelSystem:
             atomic_numbers=[1, 1, 8],
         )
         sys.cell = ac
-        # Add a Symmetry, ChemicalFormula
-        sys.symmetry = GlobalCrystalSymmetry()
-        chem = ChemicalFormula()
-        sys.chemical_formula = chem
+        # ChemicalFormula and Symmetry will be created during normalization
         # Add 3 AtomsState entries for H,H,O
         for s, num in zip(['H', 'H', 'O'], [1, 1, 8]):
             sys.particle_states.append(AtomsState(chemical_symbol=s, atomic_number=num))

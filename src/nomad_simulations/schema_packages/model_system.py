@@ -22,6 +22,7 @@ from hashlib import sha1
 from typing import TYPE_CHECKING, Optional
 
 import ase
+from nomad_simulations.schema_packages.data_types import Bound, m_int_bounded
 import numpy as np
 from ase.symbols import symbols2numbers
 from matid import Classifier, SymmetryAnalyzer  # pylint: disable=import-error
@@ -180,7 +181,7 @@ class GeometricSpace(Entity):
         given by:
             `x` = `P` `X` + `p`.
         """,
-    )
+    )  # remove?
 
     transformation_matrix = Quantity(
         type=np.float64,
@@ -191,7 +192,7 @@ class GeometricSpace(Entity):
         the custom coordinates `x` and global coordinates `X` is then given by:
             `x` = `P` `X` + `p`.
         """,
-    )
+    )  # remove?
 
 
 def _check_implemented(func: 'Callable'):
@@ -499,41 +500,150 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         """,
     )  # TODO: leverage text search for query suggestions
 
-    hall_symbol = Quantity(
-        type=str,
-        description="""
-        Hall symbol for this system describing the minimum number of symmetry operations
-        needed to uniquely define a space group. See https://cci.lbl.gov/sginfo/hall_symbols.html.
-        Examples:
-            - `F -4 2 3`,
-            - `-P 4 2`,
-            - `-F 4 2 3`.
-        """,
-    )
-
-    space_group_number = Quantity(
-        type=np.int32,
-        description="""
-        Specifies the International Union of Crystallography (IUC) space group number of the 3D
-        space group of this system. See https://en.wikipedia.org/wiki/List_of_space_groups.
-        Examples:
-            - `216`,
-            - `123`,
-            - `225`.
-        """,
-    )
-
     space_group_symbol = Quantity(
         type=str,
         description="""
-        Specifies the International Union of Crystallography (IUC) space group symbol of the 3D
-        space group of this system. See https://en.wikipedia.org/wiki/List_of_space_groups.
-        Examples:
-            - `F-43m`,
-            - `P4/mmm`,
-            - `Fm-3m`.
+        Hermann-Mauguin space group symbol specifying the 3D space group symmetry of this system.
+        This notation describes the symmetry operations and lattice type in a standardized format
+        established by the International Union of Crystallography (IUCr). The symbol encodes
+        the lattice centering (P, A, B, C, I, F, R) followed by point group symmetry elements
+        along crystallographic directions.
+        
+        **Examples:**
+            - `P63/mmc`: Primitive hexagonal lattice with 6₃ screw axis and mirror planes
+            - `Fm-3m`: Face-centered cubic with inversion and mirror symmetry  
+            - `P4/mmm`: Primitive tetragonal with 4-fold rotation and perpendicular mirror planes
+            - `Ia-3d`: Body-centered cubic with glide planes and diamond-type symmetry
+        
+        **Reference:** Hahn, T. (Ed.). (2005). *International Tables for Crystallography, Volume A: Space-group symmetry* (5th ed.). Springer. https://doi.org/10.1107/97809553602060000001
+        """,
+    )  # TODO: leverage text search for query suggestions
+
+    space_group_number = Quantity(
+        type=m_int_bounded(dtype=np.int32, bound=Bound('[1,230]')),
+        description="""
+        International Union of Crystallography (IUCr) space group number uniquely identifying
+        the 3D space group symmetry of this system. These numbers range from 1 to 230,
+        corresponding to the complete enumeration of crystallographic space groups in 3D.
+        The numbering follows the standard sequence established in the International Tables
+        for Crystallography.
+        
+        **Examples:**
+            - `194`: P6₃/mmc (hexagonal)
+            - `225`: Fm-3m (face-centered cubic)
+            - `123`: P4/mmm (tetragonal)
+            - `230`: Ia-3d (body-centered cubic)
+        
+        **Reference:** Hahn, T. (Ed.). (2005). *International Tables for Crystallography, Volume A: Space-group symmetry* (5th ed.). Springer. https://doi.org/10.1107/97809553602060000001
         """,
     )
+
+    hall_symbol_long = Quantity(  #? remove
+        type=str,
+        description="""
+        Extended Hall space group symbol providing **complete explicit specification** of the
+        space group generators and setting. This expanded notation includes all details about
+        generator operations, coordinate systems, and alternative representations that get
+        simplified out when creating the short form. The long form serves as the **source**
+        from which short Hall symbols are derived.
+        
+        **Long Hall symbols contain all available information:**
+        1. **Complete generator specifications** - full screw/glide details (e.g., `4₃`, `2₁`)
+        2. **Explicit origin coordinates** - setting info like `(0 0 1/4)`, `(1/8 1/8 1/8)`
+        3. **Axis orientation details** - crystallographic direction assignments
+        4. **Alternative generator sets** - equivalent but different generating operations
+        5. **Coordinate transformation info** - relationships between settings
+        6. **Matrix representations** - explicit rotation and translation components
+        
+        **Relationship to Short Form:**
+        - **Long → Short conversion**: Remove setting info, simplify notation, keep minimal generators
+        - **Short → Long expansion**: Add origin choice, explicit screw/glide types, coordinate details
+        
+        **Conversion Examples:**
+        - **Long**: `P 6₃c 2c (0 0 1/4) [c-glides ⊥ to 6₃ axis]` → **Short**: `P 6c 2c`
+        - **Long**: `-F 4₃ 2₁ 3₁ (1/8 1/8 1/8) [origin at body center]` → **Short**: `-F 4 2 3`
+        - **Long**: `P 4/m 2ab/m 2/m (0 1/2 0) [multiple mirror specs]` → **Short**: `P 4 2`
+        
+        **Examples:**
+        - `P 6₃c 2c (0 0 1/4)`: P6₃/mmc with explicit origin shift and screw axis details
+        - `-F 4₃ 2₁ 3₁ (1/8 1/8 1/8)`: Fm-3m with complete screw specifications and origin
+        - `P 4ab 2ab -1ab (1/4 1/4 0)`: P4/mmm with detailed glide plane types and origin
+        - `-I 4bd 2c 3 (1/4 1/4 1/4) [Alt: -I 4cd 2b 3]`: Ia-3d with alternative generator sets
+        
+        **Reference:** Hall, S.R. (1981). Space-group notation with an explicit origin. *Acta Crystallographica Section A*, 37(4), 517-525. https://doi.org/10.1107/S0108767381001228
+        """,
+    )  # TODO: leverage text search for query suggestions
+
+    hall_symbol_short = Quantity(
+        type=str,
+        description="""
+        Hall space group symbol defining the **minimum set of symmetry generators** needed to
+        completely specify the space group symmetry and its setting. Unlike Hermann-Mauguin
+        symbols which describe symmetry elements along conventional directions, Hall symbols
+        explicitly define generator operations and their geometric relationships, making them
+        **unambiguous** for computational purposes.
+        
+        **Short Hall symbols are derived from long forms by:**
+        1. **Keeping lattice centering** (P, A, B, C, I, F, R) - always essential
+        2. **Extracting minimal generator set** - removing derivable operations  
+        3. **Removing origin specifications** - setting info like `(0 0 1/4)`
+        4. **Simplifying generator notation** - e.g., `4₃` → `4` if screw type is standard
+        5. **Removing alternative notations** - keeping only primary generator form
+        6. **Preserving essential glide/screw info** - when it distinguishes the space group
+        
+        The Hall notation specifies:
+        - **Lattice type**: P (primitive), A/B/C (face-centered), I (body-centered), F (face-centered), R (rhombohedral)
+        - **Generator operations**: Rotation axes (2, 3, 4, 6), screw axes (2₁, 3₁, 4₁, 6₁, etc.), inversion (-), mirror planes (m), glide planes (a, b, c, n, d)
+        - **Setting choice**: Origin and axis orientation that defines the coordinate system
+        
+        **Conversion Examples:**
+        - **Long**: `P 6₃c 2c (0 0 1/4) [c-glides ⊥ to 6₃ axis]` → **Short**: `P 6c 2c`
+        - **Long**: `-F 4₃ 2₁ 3₁ (1/8 1/8 1/8) [origin at body center]` → **Short**: `-F 4 2 3`
+        - **Long**: `P 4/m 2ab/m 2/m (0 1/2 0) [multiple mirror specs]` → **Short**: `P 4 2`
+        
+        **Examples:**
+        - `P 6c 2c`: P6₃/mmc with c-glide generators along specific directions
+        - `-F 4 2 3`: Fm-3m with inversion, 4-fold axis, and 2-fold axes along ⟨110⟩ directions  
+        - `P 4 2`: P422 with 4-fold rotation and 2-fold rotations
+        - `-I 4bd 2c 3`: Ia-3d with body-centered lattice and specific glide/rotation generators
+        
+        **Reference:** Hall, S.R. (1981). Space-group notation with an explicit origin. *Acta Crystallographica Section A*, 37(4), 517-525. https://doi.org/10.1107/S0108767381001228
+        """,
+    )
+
+    hall_number = Quantity(
+        type=np.int32,
+        description="""
+        Hall-type number providing a unique numerical identifier for each distinct
+        Hall symbol and its associated setting across all dimensionalities. Unlike
+        space/plane/line group numbers which identify the group type, Hall numbers
+        distinguish between different settings and origin choices for the same group.
+        
+        **3D Space Groups**: 
+        - 530 distinct Hall symbols (Togo, A. (2024)) corresponding to the 230 space group types
+        - Multiple Hall numbers possible for groups with different conventional settings
+        - Examples: `525` (Ia-3d), `424` (P6₃/mmc), `123` (Fm-3m setting)
+        
+        **2D Plane Groups**:
+        - Each of the 17 plane groups may have multiple settings
+        - Examples: `12` (p4mm), `5` (c2mm setting)
+        
+        **1D Line Groups**:
+        - Each of the 7 line groups typically has one primary setting
+        - Examples: `7` (p2mm), `3` (pm)
+        
+        The numbering system accounts for:
+        - **Origin choices**: Different positions of coordinate system origin
+        - **Axis orientations**: Various conventional orientations of crystallographic axes
+        - **Cell choices**: Alternative unit cell definitions for the same lattice
+        - **Setting transformations**: Mathematical relationships between different settings
+        
+        **Reference:**
+        - Hall, S.R. (1981). Space-group notation with an explicit origin. *Acta Crystallographica Section A*, 37(4), 517-525. https://doi.org/10.1107/S0108767381001228
+        - Togo, A. (2024): Spglib: A Software Library for Crystal Symmetry Search. *arXiv March 13, 2024*. https://doi.org/10.48550/arXiv.1808.01590
+
+        """,
+    )  # TODO: leverage text search for query suggestions
 
     strukturbericht_designation = Quantity(
         type=str,
@@ -564,6 +674,26 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         description="""
         The identifier of this structure in the AFLOW encyclopedia of crystallographic prototypes:
             http://www.aflowlib.org/prototype-encyclopedia/index.html
+        """,
+    )
+
+    origin_shift = Quantity(
+        type=np.float64,
+        shape=[3],
+        description="""
+        Translation of the origin of `ModelSystem.cell` to the conventional unit cell
+        that was used to derive the space group symmetry. Is particularly necessary for defining the symmetry operations.
+        Is expressed as a vector in the global coordinates system.
+        """,
+    )
+
+    transformation_matrix = Quantity(
+        type=np.float64,
+        shape=[3, 3],
+        description="""
+        Transformation matrix to produce (along with the `origin_shift`) the conventional unit cell
+        that was used to derive the space group symmetry. Is particularly necessary for defining the symmetry operations.
+        Is expressed as a $3 \times 3$ matrix in the global coordinates system.
         """,
     )
 
@@ -632,80 +762,152 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
 
         return f'{lattice_symbol}{centering_symbol}'
 
-    def resolve_analyzed_atomic_cell(
-        self,
-        symmetry_analyzer: 'SymmetryAnalyzer',
-        cell_type: str,
-        logger: 'BoundLogger',
-    ) -> 'Optional[Cell]':
+    def _process_hall_symbols(
+        self, symmetry_analyzer: 'SymmetryAnalyzer', logger: 'BoundLogger'
+    ) -> dict[str, str | int | None]:
         """
-        Resolves the `AtomicCell` section from the `SymmetryAnalyzer` object and the cell_type
-        (primitive or conventional).
-
+        Process Hall symbols from SymmetryAnalyzer and convert to the new field structure.
+        
         Args:
-            symmetry_analyzer (SymmetryAnalyzer): The `SymmetryAnalyzer` object used to resolve.
-            cell_type (str): The type of cell to resolve, either 'primitive' or 'conventional'.
-            logger (BoundLogger): The logger to log messages.
-
+            symmetry_analyzer: The MatID SymmetryAnalyzer object
+            logger: Logger for error reporting
+            
         Returns:
-            (Optional[AtomicCell]): The resolved `AtomicCell` section or None if the cell_type
-            is not recognized.
+            dict: Dictionary with hall_symbol_short, hall_symbol_long, and hall_number
         """
-        # Define a mapping for each supported cell type
-        cell_type_map = {
-            'primitive': {
-                'wyckoff': symmetry_analyzer.get_wyckoff_letters_primitive,
-                'equivalent': symmetry_analyzer.get_equivalent_atoms_primitive,
-                'system': symmetry_analyzer.get_primitive_system,
-            },
-            'conventional': {
-                'wyckoff': symmetry_analyzer.get_wyckoff_letters_conventional,
-                'equivalent': symmetry_analyzer.get_equivalent_atoms_conventional,
-                'system': symmetry_analyzer.get_conventional_system,
-            },
-        }
-
-        mapping = cell_type_map.get(cell_type)
-        if mapping is None:
-            logger.error(f'Cell type {cell_type} is not supported.')
-            return None
-
+        hall_data = {}
+        
         try:
-            wyckoff = mapping['wyckoff']()
-            equivalent_atoms = mapping['equivalent']()
-            system = mapping['system']()
+            # Get the raw Hall symbol from the analyzer
+            hall_symbol_raw = symmetry_analyzer.get_hall_symbol()
+            
+            if hall_symbol_raw:
+                # Convert raw Hall symbol to short form by removing origin specifications
+                # and simplifying notation following the conversion rules
+                hall_short = self._convert_hall_long_to_short(hall_symbol_raw)
+                hall_data['hall_symbol_short'] = hall_short
+                
+                # The raw symbol from spglib is typically already in short form,
+                # so we construct a more detailed long form if possible
+                hall_long = self._construct_hall_long_form(hall_symbol_raw, symmetry_analyzer)
+                hall_data['hall_symbol_long'] = hall_long
+                
+                # Get Hall number if available (requires mapping from spglib data)
+                hall_number = self._get_hall_number(symmetry_analyzer)
+                hall_data['hall_number'] = hall_number
+                
+            else:
+                hall_data['hall_symbol_short'] = None
+                hall_data['hall_symbol_long'] = None
+                hall_data['hall_number'] = None
+                
         except Exception as e:
-            logger.error('Error extracting symmetry data', exc_info=e)
-            return None
+            logger.warning(f'Error processing Hall symbols: {e}')
+            hall_data['hall_symbol_short'] = None
+            hall_data['hall_symbol_long'] = None
+            hall_data['hall_number'] = None
+            
+        return hall_data
 
-        cell = system.get_cell()
+    def _convert_hall_long_to_short(self, hall_symbol: str) -> str:
+        """
+        Convert a long Hall symbol to short form by applying conversion rules.
+        
+        Args:
+            hall_symbol: Input Hall symbol (potentially in long form)
+            
+        Returns:
+            str: Short form Hall symbol
+        """
+        if not hall_symbol:
+            return hall_symbol
+            
+        # Apply conversion rules:
+        # 1. Remove origin shift specifications (text in parentheses)
+        short_form = re.sub(r'\s*\([^)]*\)', '', hall_symbol)
+        
+        # 2. Remove explanatory text in brackets
+        short_form = re.sub(r'\s*\[[^\]]*\]', '', short_form)
+        
+        # 3. Simplify explicit screw axis notations (e.g., 4₃ -> 4 if standard)
+        # This is space group dependent, so we keep the subscripts for now
+        
+        # 4. Remove redundant generator specifications
+        # This requires more sophisticated space group knowledge
+        
+        # 5. Clean up extra whitespace
+        short_form = re.sub(r'\s+', ' ', short_form.strip())
+        
+        return short_form
 
-        # Create the cell (or atomic cell) for geometry only
-        atomic_cell = AtomicCell(type=cell_type)
-        atomic_cell.lattice_vectors = cell * ureg.angstrom
-        # ! Positions are stored directly under model_system in nomad-simulations>=0.4.
-        atomic_cell.wyckoff_letters = wyckoff
-        atomic_cell.equivalent_atoms = equivalent_atoms
-        atomic_cell.set_geometric_space_for_atomic_cell(logger=logger)
-        return atomic_cell
+    def _construct_hall_long_form(self, hall_symbol: str, symmetry_analyzer: 'SymmetryAnalyzer') -> str:
+        """
+        Construct a more detailed long form Hall symbol with additional setting information.
+        
+        Args:
+            hall_symbol: Base Hall symbol
+            symmetry_analyzer: SymmetryAnalyzer for additional data
+            
+        Returns:
+            str: Enhanced long form Hall symbol
+        """
+        if not hall_symbol:
+            return hall_symbol
+            
+        long_form = hall_symbol
+        
+        try:
+            # Add origin shift information if available
+            origin_shift = symmetry_analyzer._get_spglib_origin_shift()
+            if origin_shift is not None and not all(x == 0 for x in origin_shift):
+                # Format origin shift as fractional coordinates
+                origin_str = f"({origin_shift[0]:.3g} {origin_shift[1]:.3g} {origin_shift[2]:.3g})"
+                long_form += f" {origin_str}"
+                
+        except Exception:
+            # If origin shift is not available, just return the base symbol
+            pass
+            
+        return long_form
+
+    @log
+    def _get_hall_number(self, symmetry_analyzer: 'SymmetryAnalyzer') -> int | None:
+        """
+        Get the Hall number from the space group mapping in `spglib`.
+        
+        Args:
+            symmetry_analyzer: `SymmetryAnalyzer` for space group data, preferably run beforehand
+            
+        Returns:
+            (int | None): Hall number if available (1-530 range)
+        """
+        # Hall numbers are determined by space group, not atom types
+        space_group_number = symmetry_analyzer.get_space_group_number()
+        if space_group_number:
+            import spglib
+            # Get the space group type info which includes the Hall number
+            sg_type = spglib.get_spacegroup_type(space_group_number)
+            if sg_type and hasattr(sg_type, 'hall_number'):
+                hall_number = sg_type.hall_number
+                # Validate hall_number is in expected range
+                if isinstance(hall_number, int):
+                    return hall_number
+            
+        return None
 
     def resolve_bulk_symmetry(
         self, original_atomic_cell: 'AtomicCell', logger: 'BoundLogger'
-    ) -> 'tuple[Optional[AtomicCell], Optional[AtomicCell]]':
+    ) -> None:
         """
-        Resolves the symmetry of the material being simulated using MatID and the
-        originally parsed data under original_atomic_cell. It generates two other
-        `AtomicCell` sections (the primitive and standarized cells), as well as populating
-        the `Symmetry` section.
+        Resolves the symmetry of the material being simulated via MatID.
+        Uses both geometric (lattice) and atomic arrangement (positions + types) data.
+        Populates the symmetry properties in `self`.
 
         Args:
             original_atomic_cell (AtomicCell): The `AtomicCell` section that the symmetry
             uses to in MatID.SymmetryAnalyzer().
             logger (BoundLogger): The logger to log messages.
-        Returns:
-            primitive_atomic_cell, conventional_atomic_cell (tuple[Optional[AtomicCell], Optional[AtomicCell]]): The primitive and standardized `AtomicCell` sections.
         """
-        symmetry = {}
         try:
             ase_atoms = self.m_parent.to_ase_atoms(logger=logger)
             symmetry_analyzer = SymmetryAnalyzer(
@@ -715,27 +917,31 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             logger.debug(
                 'Symmetry analysis with MatID is not available.', details=str(e)
             )
-            return None, None
+            return
         except Exception as e:
             logger.warning('Symmetry analysis with MatID failed.', exc_info=e)
-            return None, None
+            return
 
-        # We store symmetry_analyzer info in a dictionary
         bravais_lattice_pearson = symmetry_analyzer.get_bravais_lattice()
-        # Parse Pearson notation (e.g., 'cF' -> lattice_type='c - cubic', lattice_centering='F - all faces centred')
         lattice_type, lattice_centering = self._parse_bravais_lattice_pearson(
             bravais_lattice_pearson
         )
-        symmetry['lattice_type'] = lattice_type
-        symmetry['lattice_centering'] = lattice_centering
-        symmetry['hall_symbol'] = symmetry_analyzer.get_hall_symbol()
-        symmetry['point_group_symbol'] = symmetry_analyzer.get_point_group()
-        symmetry['space_group_number'] = symmetry_analyzer.get_space_group_number()
-        symmetry['space_group_symbol'] = (
+        self.lattice_type = lattice_type
+        self.lattice_centering = lattice_centering
+        
+        # Process Hall symbols using the specialized method
+        hall_data = self._process_hall_symbols(symmetry_analyzer, logger)
+        self.hall_symbol_short = hall_data.get('hall_symbol_short')
+        self.hall_symbol_long = hall_data.get('hall_symbol_long')
+        self.hall_number = hall_data.get('hall_number')
+        
+        self.point_group_symbol = symmetry_analyzer.get_point_group()
+        self.space_group_number = symmetry_analyzer.get_space_group_number()
+        self.space_group_symbol = (
             symmetry_analyzer.get_space_group_international_short()
         )
-        symmetry['origin_shift'] = symmetry_analyzer._get_spglib_origin_shift()
-        symmetry['transformation_matrix'] = (
+        self.origin_shift = symmetry_analyzer._get_spglib_origin_shift()
+        self.transformation_matrix = (
             symmetry_analyzer._get_spglib_transformation_matrix()
         )
 
@@ -745,29 +951,18 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         original_atomic_cell.wyckoff_letters = original_wyckoff
         original_atomic_cell.equivalent_atoms = original_equivalent_atoms
 
-        # Populating the primitive AtomState information
-        primitive_atomic_cell = self.resolve_analyzed_atomic_cell(
-            symmetry_analyzer=symmetry_analyzer, cell_type='primitive', logger=logger
-        )
-
-        # Populating the conventional AtomState information
-        conventional_atomic_cell = self.resolve_analyzed_atomic_cell(
-            symmetry_analyzer=symmetry_analyzer, cell_type='conventional', logger=logger
-        )
-
         # Getting prototype_formula, prototype_aflow_id, and strukturbericht designation from
         # standarized Wyckoff numbers and the space group number
-        if symmetry.get('space_group_number'):
+        if self.space_group_number:
             # Retrieve the expanded conventional system (an ASE.Atoms object) from the analyzer.
             conventional_system = symmetry_analyzer.get_conventional_system()
-            # Use the conventional system to get the expanded atomic numbers.
             conventional_num = conventional_system.get_atomic_numbers()
-            conventional_wyckoff = conventional_atomic_cell.wyckoff_letters
+            conventional_wyckoff = symmetry_analyzer.get_wyckoff_letters_conventional()
             norm_wyckoff = get_normalized_wyckoff(
                 atomic_numbers=conventional_num, wyckoff_letters=conventional_wyckoff
             )
             aflow_prototype = search_aflow_prototype(
-                space_group=symmetry.get('space_group_number'),
+                space_group=self.space_group_number,
                 norm_wyckoff=norm_wyckoff,
             )
             if aflow_prototype:
@@ -779,15 +974,9 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
                 )
                 prototype_aflow_id = aflow_prototype.get('aflow_prototype_id')
                 prototype_formula = aflow_prototype.get('Prototype')
-                symmetry['strukturbericht_designation'] = strukturbericht
-                symmetry['prototype_aflow_id'] = prototype_aflow_id
-                symmetry['prototype_formula'] = prototype_formula
-
-        # Populating Symmetry section
-        for key, val in self.m_def.all_quantities.items():
-            self.m_set(val, symmetry.get(key))
-
-        return primitive_atomic_cell, conventional_atomic_cell
+                self.strukturbericht_designation = strukturbericht
+                self.prototype_aflow_id = prototype_aflow_id
+                self.prototype_formula = prototype_formula
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -798,17 +987,10 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         # TODO : the following is a temporary fix, and it might break again
         # when there are systems with deeper hierarchies.
         if self.m_parent.m_parent is not None and self.m_parent.type == 'bulk':
-            # Adding the newly calculated primitive and conventional cells to the ModelSystem
-            (
-                primitive_atomic_cell,
-                conventional_atomic_cell,
-            ) = self.resolve_bulk_symmetry(
+            # Populate symmetry properties
+            self.resolve_bulk_symmetry(
                 original_atomic_cell=atomic_cell, logger=logger
             )
-            self.m_parent.m_add_sub_section(ModelSystem.cell, primitive_atomic_cell)
-            self.m_parent.m_add_sub_section(ModelSystem.cell, conventional_atomic_cell)
-            # Reference to the standarized cell, and if not, fallback to the originally parsed one
-            self.atomic_cell_ref = self.m_parent.cell[-1]
 
 
 class ChemicalFormula(ArchiveSection):
@@ -1486,7 +1668,7 @@ class ModelSystem(System):
             sec_symmetry.normalize(archive, logger)
 
         # Create and normalize ChemicalFormula section
-        sec_chemical_formula = self.m_create(ChemicalFormula)
+        sec_chemical_formula = ChemicalFormula()
         sec_chemical_formula.normalize(archive, logger)
         if sec_chemical_formula.m_cache:
             self.elemental_composition = sec_chemical_formula.m_cache.get(
