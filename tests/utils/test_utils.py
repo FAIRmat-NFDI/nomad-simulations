@@ -8,8 +8,8 @@ from structlog.testing import LogCapture
 
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
-    ModelSystem,
     GlobalCrystalSymmetry,
+    ModelSystem,
 )
 from nomad_simulations.schema_packages.utils import (
     get_sibling_section,
