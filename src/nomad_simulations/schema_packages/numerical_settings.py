@@ -392,7 +392,7 @@ class KMesh(Mesh):
 
     def get_k_line_density(
         self, reciprocal_lattice_vectors: Optional[pint.Quantity], logger: 'BoundLogger'
-    ) -> Optional[np.float64]:
+    ) -> Optional[pint.Quantity]:
         """
         Gets the k-line density of the `KMesh`. This quantity is used as a precision measure
         of the `KMesh` sampling.
@@ -663,7 +663,7 @@ class KLinePath(ArchiveSection):
     def resolve_points(
         self,
         points_norm: Union[np.ndarray, list[float]],
-        reciprocal_lattice_vectors: Optional[np.ndarray],
+        reciprocal_lattice_vectors: Optional[pint.Quantity],
         logger: 'BoundLogger',
     ) -> None:
         """
@@ -672,7 +672,7 @@ class KLinePath(ArchiveSection):
 
         Args:
             points_norm (list[float]): List of points norms in the k-line path.
-            reciprocal_lattice_vectors (Optional[np.ndarray]): The reciprocal lattice vectors of the atomic cell.
+            reciprocal_lattice_vectors (Optional[pint.Quantity]): The reciprocal lattice vectors of the atomic cell.
             logger (BoundLogger): The logger to log messages.
         """
         # General checks for quantities
