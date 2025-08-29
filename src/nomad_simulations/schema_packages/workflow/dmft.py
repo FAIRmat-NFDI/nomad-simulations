@@ -17,7 +17,7 @@ class DFTTBDMFTResults(BeyondDFTResults):
     label = 'DMFT+MaxEnt workflow results'
 
 
-class DFTTBDMFTWoklow(BeyondDFTWorkflow):
+class DFTTBDMFTWorkflow(BeyondDFTWorkflow):
     """
     Definitions for DMFT worklow based on DFT and TB.
     """
