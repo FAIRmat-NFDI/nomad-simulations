@@ -86,8 +86,12 @@ class TestKSpaceFunctionalities:
         Test the `validate_reciprocal_lattice_vectors` method.
         """
         # Convert raw list data to pint.Quantity if not None
-        rlv_quantity = None if reciprocal_lattice_vectors is None else np.array(reciprocal_lattice_vectors) / ureg.angstrom
-        
+        rlv_quantity = (
+            None
+            if reciprocal_lattice_vectors is None
+            else np.array(reciprocal_lattice_vectors) / ureg.angstrom
+        )
+
         check = KSpaceFunctionalities().validate_reciprocal_lattice_vectors(
             reciprocal_lattice_vectors=rlv_quantity,
             logger=logger,
