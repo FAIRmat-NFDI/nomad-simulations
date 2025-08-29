@@ -35,9 +35,9 @@ class TestKSpace:
     )
     def test_normalize(
         self,
-        system_type: Optional[str],
+        system_type: str | None,
         is_representative: bool,
-        reciprocal_lattice_vectors: Optional[list[list[float]]],
+        reciprocal_lattice_vectors: list[list[float]] | None,
         result: list[list[float]],
     ):
         """
@@ -77,16 +77,19 @@ class TestKSpaceFunctionalities:
     )
     def test_validate_reciprocal_lattice_vectors(
         self,
-        reciprocal_lattice_vectors: Optional[list[list[float]]],
+        reciprocal_lattice_vectors: list[list[float]] | None,
         check_grid: bool,
-        grid: Optional[list[int]],
+        grid: list[int] | None,
         result: bool,
     ):
         """
         Test the `validate_reciprocal_lattice_vectors` method.
         """
+        # Convert raw list data to pint.Quantity if not None
+        rlv_quantity = None if reciprocal_lattice_vectors is None else np.array(reciprocal_lattice_vectors) / ureg.angstrom
+        
         check = KSpaceFunctionalities().validate_reciprocal_lattice_vectors(
-            reciprocal_lattice_vectors=reciprocal_lattice_vectors,
+            reciprocal_lattice_vectors=rlv_quantity,
             logger=logger,
             check_grid=check_grid,
             grid=grid,
@@ -217,12 +220,12 @@ class TestKMesh:
     )
     def test_resolve_k_line_density(
         self,
-        system_type: Optional[str],
+        system_type: str | None,
         is_representative: bool,
-        grid: Optional[list[int]],
-        reciprocal_lattice_vectors: Optional[list[list[float]]],
-        result_get_k_line_density: Optional[float],
-        result_k_line_density: Optional[float],
+        grid: list[int] | None,
+        reciprocal_lattice_vectors: list[list[float]] | None,
+        result_get_k_line_density: float | None,
+        result_k_line_density: float | None,
     ):
         """
         Test the `resolve_k_line_density` and `get_k_line_density` methods
@@ -305,7 +308,7 @@ class TestKLinePath:
     )
     def test_resolve_high_symmetry_path_values(
         self,
-        reciprocal_lattice_vectors: Optional[list[list[float]]],
+        reciprocal_lattice_vectors: list[list[float]] | None,
         high_symmetry_path_names: list[str],
         result: list[float],
     ):
