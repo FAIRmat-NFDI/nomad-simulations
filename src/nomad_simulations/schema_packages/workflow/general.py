@@ -130,6 +130,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
         outputs.sort(key=lambda x: x.wall_start or 0)
         tasks = []
         parent_n = 0
+        root_n = 0
         for n, output in enumerate(outputs):
             task = SimulationTask(
                 name=f'{self.task_label} {n}',
@@ -144,9 +145,15 @@ class SimulationWorkflow(Workflow, SimulationTask):
                 task.inputs.extend(
                     [Link(name='Linked task', section=t) for t in tasks[parent_n:n]]
                 )
+                root_n = parent_n
                 parent_n = n
             elif n != parent_n:
-                task.inputs.append(Link(name='Linked task', section=tasks[parent_n]))
+                task.inputs.extend(
+                    [
+                        Link(name='Linked task', section=t)
+                        for t in tasks[root_n:parent_n]
+                    ]
+                )
 
         self.tasks.extend(tasks)
 
@@ -217,21 +224,22 @@ class ParallelWorkflow(SimulationWorkflow):
     Base class for workflows where tasks are executed concurrently.
     """
 
-    @log
-    def map_tasks(self, archive: EntryArchive) -> None:
-        logger = self.map_tasks.__annotations__['logger']
-        super().map_tasks(archive, logger=logger)
+    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger=logger)
 
         if not self.tasks:
             logger.error(INCORRECT_N_TASKS)
             return
 
-        # link inputs and outputs to all tasks
-        for n, task in enumerate(self.tasks):
+        for task in self.tasks:
             if not task.inputs:
+                # link inputs to all tasks
                 task.inputs.extend(self.inputs)
-            if not task.outputs:
-                task.outputs.extend(self.outputs)
+
+                # link tasks outputs to outputs
+                self.outputs.extend(
+                    [out for out in task.outputs if out not in self.outputs]
+                )
 
 
 class ElectronicStructureResults(SimulationWorkflowResults):
