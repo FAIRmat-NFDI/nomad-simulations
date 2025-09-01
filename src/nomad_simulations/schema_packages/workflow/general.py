@@ -92,19 +92,23 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if self.model:
-            logger = self.map_inputs.__annotations__['logger']
-            self.model.normalize(archive, logger)
-            # add method to inputs
-            self.inputs.append(Link(name=self.model.label, section=self.model))
+        if not self.model:
+            self.model = SimulationWorkflowModel()
+
+        logger = self.map_inputs.__annotations__['logger']
+        self.model.normalize(archive, logger)
+        # add method to inputs
+        self.inputs.append(Link(name=self.model.label, section=self.model))
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
-        if self.results:
-            logger = self.map_outputs.__annotations__['logger']
-            self.results.normalize(archive, logger)
-            # add results to outputs
-            self.outputs.append(Link(name=self.results.label, section=self.results))
+        if not self.results:
+            self.results = SimulationWorkflowResults()
+
+        logger = self.map_outputs.__annotations__['logger']
+        self.results.normalize(archive, logger)
+        # add results to outputs
+        self.outputs.append(Link(name=self.results.label, section=self.results))
 
     @log
     def map_tasks(self, archive: EntryArchive) -> None:
