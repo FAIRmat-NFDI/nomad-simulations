@@ -43,8 +43,8 @@ class DFTGWWorkflow(BeyondDFTWorkflow):
 
         super().normalize(archive, logger)
 
-        if self.task and not self.task[-1].name:
-            self.task[-1].name = 'GW'
+        if self.tasks and not self.tasks[-1].name:
+            self.tasks[-1].name = 'GW'
 
 
 m_package.__init_metainfo__()
