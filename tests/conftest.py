@@ -3,30 +3,21 @@ from typing import Optional
 
 import numpy as np
 import pytest
+import structlog
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
+from structlog.testing import LogCapture
 
-from nomad_simulations.schema_packages.atoms_state import (
-    AtomsState,
-    OrbitalsState,
-)
+from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import (
     KLinePath as KLinePathSettings,
 )
-from nomad_simulations.schema_packages.numerical_settings import (
-    KMesh as KMeshSettings,
-)
-from nomad_simulations.schema_packages.numerical_settings import (
-    KSpace,
-    SelfConsistency,
-)
-from nomad_simulations.schema_packages.outputs import (
-    Outputs,
-    SCFOutputs,
-)
+from nomad_simulations.schema_packages.numerical_settings import KMesh as KMeshSettings
+from nomad_simulations.schema_packages.numerical_settings import KSpace, SelfConsistency
+from nomad_simulations.schema_packages.outputs import Outputs, SCFOutputs
 from nomad_simulations.schema_packages.properties import (
     DOSProfile,
     ElectronicBandGap,
@@ -441,3 +432,21 @@ refs_apw = [
         ],
     },
 ]
+
+
+@pytest.fixture
+def log_output():
+    capture = LogCapture()
+    processors = structlog.get_config()['processors']
+    old_processors = processors.copy()
+    try:
+        # clear processors list and use LogCapture for testing
+        processors.clear()
+        processors.append(capture)
+        structlog.configure(processors=processors)
+        yield capture
+    finally:
+        # remove LogCapture and restore original processors
+        processors.clear()
+        processors.extend(old_processors)
+        structlog.configure(processors=processors)

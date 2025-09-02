@@ -1,10 +1,6 @@
-import logging
-from io import StringIO
-
 import pytest
 import structlog
 from nomad.utils import get_logger
-from structlog.testing import LogCapture
 
 from nomad_simulations.schema_packages.model_system import (
     AtomicCell,
@@ -18,24 +14,6 @@ from nomad_simulations.schema_packages.variables import Temperature
 from . import logger
 
 LOGGER = get_logger('TestLogger')
-
-
-@pytest.fixture
-def log_output():
-    capture = LogCapture()
-    processors = structlog.get_config()['processors']
-    old_processors = processors.copy()
-    try:
-        # clear processors list and use LogCapture for testing
-        processors.clear()
-        processors.append(capture)
-        structlog.configure(processors=processors)
-        yield capture
-    finally:
-        # remove LogCapture and restore original processors
-        processors.clear()
-        processors.extend(old_processors)
-        structlog.configure(processors=processors)
 
 
 def f_kernel(f, a):
