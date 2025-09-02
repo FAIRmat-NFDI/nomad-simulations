@@ -179,14 +179,6 @@ class SerialWorkflow(SimulationWorkflow):
     Base class for workflows where tasks are executed sequentially.
     """
 
-    @log
-    def map_tasks(self, archive: EntryArchive) -> None:
-        logger = self.map_tasks.__annotations__['logger']
-        super().map_tasks(archive, logger=logger)
-        for n, task in enumerate(self.tasks):
-            if not task.name:
-                task.name = f'{self.task_label} {n}'
-
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
 
