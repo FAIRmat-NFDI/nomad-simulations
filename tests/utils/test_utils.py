@@ -11,10 +11,7 @@ from nomad_simulations.schema_packages.model_system import (
     ModelSystem,
     Symmetry,
 )
-from nomad_simulations.schema_packages.utils import (
-    get_sibling_section,
-    log,
-)
+from nomad_simulations.schema_packages.utils import get_sibling_section, log
 from nomad_simulations.schema_packages.variables import Energy2 as Energy
 from nomad_simulations.schema_packages.variables import Temperature
 
@@ -42,6 +39,7 @@ def log_output():
 
 
 def f_kernel(f, a):
+    logger = f.__annotations__['logger']
     logger.info('Executing func.')
     return int(a)
 
@@ -54,6 +52,47 @@ def example_func1(a):
 @log
 def example_func2(a):
     return f_kernel(example_func2, a)
+
+
+@pytest.mark.skipif(not structlog.is_configured(), reason='Cannot use struclog.')
+@pytest.mark.parametrize(
+    'func, logger_kwarg, logger_name',
+    [
+        pytest.param(example_func1, None, 'TestLogger', id='defined'),
+        pytest.param(
+            example_func2, get_logger('TestLogger2'), 'TestLogger2', id='as_kwarg'
+        ),
+        pytest.param(
+            example_func2,
+            None,
+            'nomad_simulations.schema_packages.utils.utils',
+            id='default',
+        ),
+    ],
+)
+def test_log(func, logger_kwarg, logger_name, log_output):
+    """
+    Test for the `log` decorator.
+    """
+
+    logger = logger_kwarg if logger_kwarg is not None else LOGGER
+    if logger_kwarg:
+        func('a', logger=logger)
+    else:
+        func('a')
+
+    flogger = func.__annotations__['logger']
+    assert (
+        flogger.logger.name
+        if hasattr(flogger, 'logger')
+        else flogger.name == logger_name
+    )
+
+    assert 'Executing func' in log_output.entries[0].get('event')
+    assert (
+        f'Exception raised in {func.__name__}: invalid literal for int'
+        in log_output.entries[1].get('event')
+    )
 
 
 def test_get_sibling_section_result_idempotent_and_no_mutation():
