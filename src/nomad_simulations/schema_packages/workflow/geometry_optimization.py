@@ -175,6 +175,7 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
                     energies_l.append(outputs.total_energies[-1].value.magnitude)
                 except Exception:
                     logger.error('Energy not found in outputs.')
+                    energies_l = []
                     break
             if energies_l:
                 energies = np.array(energies_l)
