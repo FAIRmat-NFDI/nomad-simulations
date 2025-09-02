@@ -1,5 +1,4 @@
 from nomad.datamodel import EntryArchive
-from nomad.datamodel.metainfo.workflow import Link, Task
 from nomad.metainfo import SchemaPackage
 from structlog.stdlib import BoundLogger
 
@@ -40,18 +39,19 @@ class SinglePoint(SimulationWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive):
+        if not self.model:
+            self.model = SinglePointModel()
+
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
-        if archive.data:
-            if archive.data.model_method:
-                self.inputs.append(
-                    Link(name='Input method', section=archive.data.model_method[0])
-                )
 
-            if archive.data.model_system:
-                self.inputs.append(
-                    Link(name='Input system', section=archive.data.model_system[0])
-                )
+    @log
+    def map_outputs(self, archive: EntryArchive):
+        if not self.results:
+            self.results = SinglePointResults()
+
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
