@@ -13,6 +13,7 @@ from nomad.metainfo import (
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.general import Program
+from nomad_simulations.schema_packages.utils import log
 
 from .general import INCORRECT_N_TASKS, SimulationWorkflow, SimulationWorkflowModel
 from .thermodynamics import ThermodynamicsResults
@@ -21,6 +22,8 @@ m_package = SchemaPackage()
 
 
 class ElasticModel(SimulationWorkflowModel):
+    label = 'Elastic model'
+
     program = Quantity(
         type=Reference(Program),
         shape=[],
@@ -129,6 +132,8 @@ class StrainDiagrams(ArchiveSection):
 
 
 class ElasticResults(ThermodynamicsResults):
+    label = 'Elastic results'
+
     n_deformations = Quantity(
         type=np.int32,
         shape=[],
@@ -384,15 +389,19 @@ class Elastic(SimulationWorkflow):
 
     task_label = 'Deformation'
 
-    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
             self.model = ElasticModel()
-        super().map_inputs(archive, logger)
+        logger = self.map_inputs.__annotations__['logger']
+        super().map_inputs(archive, logger=logger)
 
-    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             self.results = ElasticResults()
-        super().map_outputs(archive, logger)
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
