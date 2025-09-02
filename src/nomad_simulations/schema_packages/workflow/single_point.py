@@ -19,7 +19,7 @@ class SinglePointModel(SimulationWorkflowModel):
     Contains definitions for the input model of a single point workflow.
     """
 
-    label = 'Single point model'
+    _label = 'Single point model'
 
 
 class SinglePointResults(SimulationWorkflowResults):
@@ -27,7 +27,7 @@ class SinglePointResults(SimulationWorkflowResults):
     Contains defintions for the results of a single point workflow.
     """
 
-    label = 'Single point results'
+    _label = 'Single point results'
 
 
 class SinglePoint(SimulationWorkflow):
@@ -35,7 +35,7 @@ class SinglePoint(SimulationWorkflow):
     Definitions for single point workflow.
     """
 
-    task_label = 'Calculation'
+    _task_label = 'Calculation'
 
     @log
     def map_inputs(self, archive: EntryArchive):
@@ -58,7 +58,7 @@ class SinglePoint(SimulationWorkflow):
         if len(self.tasks) != 1:
             logger.error(INCORRECT_N_TASKS)
             return
-        self.tasks[0].name = self.task_label
+        self.tasks[0].name = self._task_label
 
         # add inputs to calculation inputs
         self.tasks[0].inputs.extend(

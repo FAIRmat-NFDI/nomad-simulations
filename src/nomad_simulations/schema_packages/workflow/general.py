@@ -24,7 +24,7 @@ class SimulationWorkflowModel(ArchiveSection):
     Base class for simulation workflow model sub-section definition.
     """
 
-    label = 'Input model'
+    _label = 'Input model'
 
     initial_system = Quantity(
         type=ModelSystem,
@@ -55,7 +55,7 @@ class SimulationWorkflowResults(ArchiveSection):
     Base class for simulation workflow results sub-section definition.
     """
 
-    label = 'Output results'
+    _label = 'Output results'
 
     final_outputs = Quantity(
         type=Outputs,
@@ -84,7 +84,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
     outputs, respectively.
     """
 
-    task_label = 'Task'
+    _task_label = 'Task'
 
     model = SubSection(sub_section=SimulationWorkflowModel.m_def)
 
@@ -101,7 +101,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
         logger = self.map_inputs.__annotations__['logger']
         self.model.normalize(archive, logger)
         # add method to inputs
-        self.inputs.append(Link(name=self.model.label, section=self.model))
+        self.inputs.append(Link(name=self.model._label, section=self.model))
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
@@ -114,7 +114,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
         logger = self.map_outputs.__annotations__['logger']
         self.results.normalize(archive, logger)
         # add results to outputs
-        self.outputs.append(Link(name=self.results.label, section=self.results))
+        self.outputs.append(Link(name=self.results._label, section=self.results))
 
     @log
     def map_tasks(self, archive: EntryArchive) -> None:
@@ -143,7 +143,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
         root_n = 0
         for n, output in enumerate(outputs):
             task = SimulationTask(
-                name=f'{self.task_label} {n}',
+                name=f'{self._task_label} {n}',
                 outputs=[Link(name='Outputs', section=output)],
             )
             tasks.append(task)

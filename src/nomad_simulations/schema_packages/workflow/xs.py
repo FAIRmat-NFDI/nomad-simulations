@@ -11,11 +11,11 @@ m_package = SchemaPackage()
 
 
 class XSModel(BeyondDFTModel):
-    label = 'DFT+GW workflow parameters'
+    _label = 'DFT+GW workflow parameters'
 
 
 class XSResults(BeyondDFTResults):
-    label = 'DFT+GW workflow results'
+    _label = 'DFT+GW workflow results'
 
 
 class XSWorkflow(BeyondDFTWorkflow):

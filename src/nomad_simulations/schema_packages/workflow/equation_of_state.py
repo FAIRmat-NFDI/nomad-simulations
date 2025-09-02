@@ -212,7 +212,7 @@ class EquationOfState(ParallelWorkflow):
     Definitions for equation of state workflow.
     """
 
-    task_label = 'Volume'
+    _task_label = 'Volume'
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

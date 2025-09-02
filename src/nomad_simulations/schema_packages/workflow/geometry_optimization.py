@@ -12,7 +12,7 @@ m_package = SchemaPackage()
 
 
 class GeometryOptimizationModel(SimulationWorkflowModel):
-    label = 'Geometry optimization parameters'
+    _label = 'Geometry optimization parameters'
 
     optimization_type = Quantity(
         type=MEnum('static', 'atomic', 'cell_shape', 'cell_volume'),
@@ -100,7 +100,7 @@ class GeometryOptimizationModel(SimulationWorkflowModel):
 
 
 class GeometryOptimizationResults(SimulationWorkflowResults):
-    label = 'Geometry optimiztation results'
+    _label = 'Geometry optimiztation results'
 
     n_steps = Quantity(
         type=int,
@@ -191,7 +191,7 @@ class GeometryOptimization(SerialWorkflow):
     Definitions for geometry optimization workflow.
     """
 
-    task_label = 'Step'
+    _task_label = 'Step'
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

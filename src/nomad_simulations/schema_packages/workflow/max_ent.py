@@ -10,11 +10,11 @@ m_package = SchemaPackage()
 
 
 class DMTMaxEntModel(BeyondDFTModel):
-    label = 'DMFT+MaxEnt workflow parameters'
+    _label = 'DMFT+MaxEnt workflow parameters'
 
 
 class DMTMaxEntResults(BeyondDFTResults):
-    label = 'DMFT+MaxEnt workflow results'
+    _label = 'DMFT+MaxEnt workflow results'
 
 
 class DMFTMaxEntWorkflow(BeyondDFTWorkflow):

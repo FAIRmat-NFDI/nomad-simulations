@@ -22,7 +22,7 @@ m_package = SchemaPackage()
 
 
 class ElasticModel(SimulationWorkflowModel):
-    label = 'Elastic model'
+    _label = 'Elastic model'
 
     program = Quantity(
         type=Reference(Program),
@@ -132,7 +132,7 @@ class StrainDiagrams(ArchiveSection):
 
 
 class ElasticResults(ThermodynamicsResults):
-    label = 'Elastic results'
+    _label = 'Elastic results'
 
     n_deformations = Quantity(
         type=np.int32,
@@ -387,7 +387,7 @@ class Elastic(SimulationWorkflow):
     Definitions for an elastic workflow.
     """
 
-    task_label = 'Deformation'
+    _task_label = 'Deformation'
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

@@ -10,11 +10,11 @@ m_package = SchemaPackage()
 
 
 class DFTGWModel(BeyondDFTModel):
-    label = 'DFT+GW workflow parameters'
+    _label = 'DFT+GW workflow parameters'
 
 
 class DFTGWResults(BeyondDFTResults):
-    label = 'DFT+GW workflow results'
+    _label = 'DFT+GW workflow results'
 
 
 class DFTGWWorkflow(BeyondDFTWorkflow):
