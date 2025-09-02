@@ -95,6 +95,9 @@ class SimulationWorkflow(Workflow, SimulationTask):
         if not self.model:
             self.model = SimulationWorkflowModel()
 
+        if self.model in [inp.section for inp in self.inputs]:
+            return
+
         logger = self.map_inputs.__annotations__['logger']
         self.model.normalize(archive, logger)
         # add method to inputs
@@ -104,6 +107,9 @@ class SimulationWorkflow(Workflow, SimulationTask):
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             self.results = SimulationWorkflowResults()
+
+        if self.results in [out.section for out in self.outputs]:
+            return
 
         logger = self.map_outputs.__annotations__['logger']
         self.results.normalize(archive, logger)
@@ -116,6 +122,10 @@ class SimulationWorkflow(Workflow, SimulationTask):
         Generate tasks from archive data outputs. Tasks are ordered and linked based
         on the execution time of the calculation corresponding to the output.
         """
+        # do not overwrite assigned tasks
+        if self.tasks:
+            return
+
         if not archive.data or not archive.data.outputs:
             return
 
@@ -164,14 +174,11 @@ class SimulationWorkflow(Workflow, SimulationTask):
         if not self.name:
             self.name: str = self.m_def.name
 
-        if not self.inputs:
-            self.map_inputs(archive, logger=logger)
+        self.map_inputs(archive, logger=logger)
 
-        if not self.outputs:
-            self.map_outputs(archive, logger=logger)
+        self.map_outputs(archive, logger=logger)
 
-        if not self.tasks:
-            self.map_tasks(archive, logger=logger)
+        self.map_tasks(archive, logger=logger)
 
 
 class SerialWorkflow(SimulationWorkflow):
