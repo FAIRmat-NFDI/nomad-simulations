@@ -1,6 +1,6 @@
 keycloak:
-  server_url: 'http://localhost:8080/'
-  public_server_url: 'http://localhost:8080/'
+  server_url: 'http://localhost:8008/'
+  public_server_url: 'http://localhost:8008/'
   realm_name: 'fairdi_nomad_test'
   username: 'admin'
   password: 'password'

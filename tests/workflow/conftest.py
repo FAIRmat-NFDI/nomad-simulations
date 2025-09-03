@@ -1,4 +1,4 @@
-import json
+import os
 
 import pytest
 from nomad import infrastructure
@@ -50,37 +50,21 @@ def upload_files():
 
 
 @pytest.fixture(scope='session')
-def upload_archives(upload_files, main_author, upload_id):
-    archives = []
-    for mainfile, parser in upload_files.items():
-        entry_id = create_uuid()
-        archive = EntryArchive(metadata=EntryMetadata())
-        with open(mainfile) as f:
-            archive.m_update_from_dict(json.load(f))
-        archive.metadata.main_author = main_author
-        archive.metadata.parser_name = parser
-        archive.metadata.upload_id = upload_id
-        archive.metadata.entry_id = entry_id
-        archive.metadata.mainfile = mainfile
-        archives.append(archive)
-    return archives
-
-
-@pytest.fixture(scope='session')
-def upload_data(upload_id, main_author, upload_archives):
+def upload_data(upload_id, main_author, upload_files):
     infrastructure.setup_mongo()
     infrastructure.setup_elastic()
 
     data = ExampleData(main_author=main_author)
     data.create_upload(upload_id=upload_id)
-    for archive in upload_archives:
-        archive = data.create_entry(
-            entry_archive=archive,
-            entry_id=archive.metadata.entry_id,
+    for mainfile, parser in upload_files.items():
+        _ = data.create_entry_from_file(
+            mainfile=mainfile,
             upload_id=upload_id,
-            mainfile=archive.metadata.mainfile,
+            parser_name=parser,
+            entry_id=f'test_entry_{os.path.basename(mainfile).split(".")[0]}',
         )
     data.save()
+    return data
 
 
 @pytest.fixture(scope='session')

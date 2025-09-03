@@ -77,26 +77,11 @@ services:
     platform: linux/amd64
     container_name: keycloak
     environment:
-      # clashes with imported admin user in master realm
-      # - KC_BOOTSTRAP_ADMIN_USERNAME=admin
-      # - KC_BOOTSTRAP_ADMIN_PASSWORD=password
-      - KC_LOG_LEVEL=info
-      - KC_HOSTNAME_DEBUG=true
-      - KC_METRICS_ENABLED=true
-      - KC_HEALTH_ENABLED=true
-    command:
-      - start-dev
-      - --import-realm
-      - --verbose
+      - KC_HTTP_PORT=8008
+      - KC_HOSTNAME=http://localhost:8008
     ports:
-      - 8080:8080
+      - 8008:8008
       - 9000:9000
-    healthcheck:
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
-      test: bash /opt/keycloak/bin/healthcheck_keycloak.sh || exit 1
 
 volumes:
   mongo:

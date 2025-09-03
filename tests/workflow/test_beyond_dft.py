@@ -26,11 +26,16 @@ class TestBeyondDFT:
         workflow = BeyondDFTWorkflow()
         # attach workflow to archive inorder for archive resolution to work
         archive.workflow2 = workflow
-
-        entry_ids = {val.mainfile: key for key, val in upload_data.entries.items()}
-        dft_archive = archive.m_context.load_archive(
-            upload_id, entry_ids['tests/workflow/data/dft.json'], None
-        )
-
-        print(dft_archive)
-        workflow.tasks = [TaskReference(task=dft_archive.workflow2)]
+        workflow.tasks = [
+            TaskReference(
+                task=f'/uploads/{upload_id}/archive/test_entry_dft#/workflow2'
+            ),
+            TaskReference(
+                task=f'/uploads/{upload_id}/archive/test_entry_single_point#/workflow2'
+            ),
+        ]
+        workflow.normalize(archive, logger)
+        assert workflow.tasks[0].name == 'DFT'
+        assert workflow.tasks[0].task in [
+            inp.section for inp in workflow.tasks[1].inputs
+        ]
