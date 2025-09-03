@@ -37,7 +37,7 @@ jobs:
         uv run python -m mypy --ignore-missing-imports --follow-imports=silent --no-strict-optional src/nomad_simulations/schema_packages tests
     - name: Test with pytest
       run: |
-        uv run --with-coverage run -m pytest -sv tests
+        uv run --with coverage coverage run -m pytest -sv tests
     - name: Submit to coveralls
       continue-on-error: true
       env:
