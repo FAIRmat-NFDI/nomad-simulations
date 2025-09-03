@@ -21,7 +21,7 @@ class TestHoppingMatrix:
             (3, [3, 3]),
         ],
     )
-    def test_default_quantities(self, n_orbitals: Optional[int], rank: Optional[list]):
+    def test_default_quantities(self, n_orbitals: int | None, rank: list | None):
         """
         Test the default quantities assigned when creating an instance of the `HoppingMatrix` class.
         """
@@ -42,7 +42,7 @@ class TestCrystalFieldSplitting:
             (3, [3]),
         ],
     )
-    def test_default_quantities(self, n_orbitals: Optional[int], rank: Optional[list]):
+    def test_default_quantities(self, n_orbitals: int | None, rank: list | None):
         """
         Test the default quantities assigned when creating an instance of the `CrystalFieldSplitting` class.
         """

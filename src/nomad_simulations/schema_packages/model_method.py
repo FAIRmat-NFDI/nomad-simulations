@@ -141,7 +141,7 @@ class XCFunctional(ArchiveSection):
 
     # ? add method to extract `name` from `libxc_name`
 
-    def get_weight_name(self, weight: Optional[np.float64]) -> Optional[str]:
+    def get_weight_name(self, weight: np.float64 | None) -> str | None:
         """
         Returns the `weight` as a string with a "*" added at the end.
 
@@ -264,7 +264,7 @@ class DFT(ModelMethodElectronic):
 
     def resolve_libxc_names(
         self, xc_functionals: list[XCFunctional]
-    ) -> Optional[list[str]]:
+    ) -> list[str] | None:
         """
         Resolves the `libxc_names` and sorts them from the list of `XCFunctional` sections.
 
@@ -320,7 +320,7 @@ class DFT(ModelMethodElectronic):
 
     def resolve_exact_exchange_mixing_factor(
         self, xc_functionals: list[XCFunctional], libxc_names: list[str]
-    ) -> Optional[float]:
+    ) -> float | None:
         """
         Resolves the `exact_exchange_mixing_factor` from the `xc_functionals` and `libxc_names`.
 
@@ -461,7 +461,7 @@ class TB(ModelMethodElectronic):
         """,
     )
 
-    def resolve_type(self) -> Optional[str]:
+    def resolve_type(self) -> str | None:
         """
         Resolves the `type` of the `TB` section if it is not already defined, and from the
         `m_def.name` of the section.
@@ -480,7 +480,7 @@ class TB(ModelMethodElectronic):
         model_systems: list[ModelSystem],
         logger: 'BoundLogger',
         model_index: int = -1,
-    ) -> Optional[list[OrbitalsState]]:
+    ) -> list[OrbitalsState] | None:
         """
         Resolves references to the `OrbitalsState` sections from the top-level `ModelSystem`
         that has child system(s) typed 'active_atom'. This uses the new design:
@@ -705,11 +705,11 @@ class SlaterKosterBond(ArchiveSection):
 
     def resolve_bond_name_from_references(
         self,
-        orbital_1: Optional[OrbitalsState],
-        orbital_2: Optional[OrbitalsState],
-        bravais_vector: Optional[tuple],
+        orbital_1: OrbitalsState | None,
+        orbital_2: OrbitalsState | None,
+        bravais_vector: tuple | None,
         logger: 'BoundLogger',
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Resolves the `name` of the `SlaterKosterBond` from the references to the `OrbitalsState` sections.
 

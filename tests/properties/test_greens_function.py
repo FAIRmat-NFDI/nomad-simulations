@@ -24,7 +24,7 @@ from . import logger
 def set_variables(
     gfs: BaseGreensFunction,
     variables: list[
-        Union[WignerSeitz, KMesh, Time, ImaginaryTime, Frequency, MatsubaraFrequency]
+        WignerSeitz | KMesh | Time | ImaginaryTime | Frequency | MatsubaraFrequency
     ],
 ) -> BaseGreensFunction:
     """
@@ -74,9 +74,7 @@ class TestBaseGreensFunction:
     def test_resolve_space_id(
         self,
         variables: list[
-            Union[
-                WignerSeitz, KMesh, Time, ImaginaryTime, Frequency, MatsubaraFrequency
-            ]
+            WignerSeitz | KMesh | Time | ImaginaryTime | Frequency | MatsubaraFrequency
         ],
         result: str,
     ):
@@ -113,11 +111,9 @@ class TestBaseGreensFunction:
         self,
         space_id: str,
         variables: list[
-            Union[
-                WignerSeitz, KMesh, Time, ImaginaryTime, Frequency, MatsubaraFrequency
-            ]
+            WignerSeitz | KMesh | Time | ImaginaryTime | Frequency | MatsubaraFrequency
         ],
-        result: Optional[str],
+        result: str | None,
     ):
         """
         Test the `normalize` method of the `BaseGreensFunction` class.
@@ -145,7 +141,7 @@ class TestQuasiparticleWeight:
         ],
     )
     def test_resolve_system_correlation_strengths(
-        self, value: list[float], result: Optional[str]
+        self, value: list[float], result: str | None
     ):
         """
         Test the `resolve_system_correlation_strengths` method of the `QuasiparticleWeight` class.

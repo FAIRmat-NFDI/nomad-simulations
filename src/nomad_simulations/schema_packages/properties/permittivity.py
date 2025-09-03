@@ -60,7 +60,7 @@ class Permittivity(PhysicalProperty):
 
     def extract_absorption_spectra(
         self, logger: 'BoundLogger'
-    ) -> Optional[list[AbsorptionSpectrum]]:
+    ) -> list[AbsorptionSpectrum] | None:
         """
         Extract the absorption spectrum from the imaginary part of the permittivity tensor.
         """

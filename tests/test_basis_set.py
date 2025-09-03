@@ -61,7 +61,7 @@ def test_cutoff(
         ([MuffinTinRegion(radius=r * ureg.angstrom) for r in (1.0, 2.0, 3.0)], 1.0),
     ],
 )
-def test_mt_r_min(mts: list[Optional[MuffinTinRegion]], ref_mt_r_min: float) -> None:
+def test_mt_r_min(mts: list[MuffinTinRegion | None], ref_mt_r_min: float) -> None:
     """
     Test the computation of the minimum muffin-tin radius.
     """
@@ -132,7 +132,7 @@ def test_cutoff_failure(
     ],
 )
 def test_full_apw(
-    ref_index: int, species_def: dict[str, dict[str, Any]], cutoff: Optional[float]
+    ref_index: int, species_def: dict[str, dict[str, Any]], cutoff: float | None
 ) -> None:
     """Test the composite structure of APW basis sets."""
     entry = EntryArchive(
@@ -164,14 +164,14 @@ def test_full_apw(
         (2, 2 * [0.0], [0, 1]),  # lapw
     ],
 )
-def test_apw_base_orbital(ref_n_terms: Optional[int], e: list[float], d_o: list[int]):
+def test_apw_base_orbital(ref_n_terms: int | None, e: list[float], d_o: list[int]):
     orb = APWBaseOrbital(energy_parameter=e, differential_order=d_o)
     assert orb.get_n_terms() == ref_n_terms
 
 
 @pytest.mark.parametrize('n_terms, ref_n_terms', [(None, 1), (1, 1), (2, None)])
 def test_apw_base_orbital_normalize(
-    n_terms: Optional[int], ref_n_terms: Optional[int]
+    n_terms: int | None, ref_n_terms: int | None
 ) -> None:
     orb = APWBaseOrbital(
         n_terms=n_terms,
@@ -193,7 +193,7 @@ def test_apw_base_orbital_normalize(
         ('slapw', [0, 2]),
     ],
 )
-def test_apw_orbital(ref_type: Optional[str], do: Optional[int]) -> None:
+def test_apw_orbital(ref_type: str | None, do: int | None) -> None:
     orb = APWOrbital(differential_order=do)
     assert orb.do_to_type(orb.differential_order) == ref_type
 
@@ -209,7 +209,7 @@ def test_apw_orbital(ref_type: Optional[str], do: Optional[int]) -> None:
     ],
 )
 def test_apw_local_orbital(
-    ref_n_terms: Optional[int],
+    ref_n_terms: int | None,
     e: list[float],
     d_o: list[int],
 ) -> None:
@@ -342,7 +342,7 @@ def test_determine_apw(
     ref_mt_counts: list[list[int]],
     ref_l_counts: list[list[list[int]]],
     species_def: dict[str, dict[str, Any]],
-    cutoff: Optional[float],
+    cutoff: float | None,
 ) -> None:
     """Test the L-channel APW structure."""
     ref_keys = ('apw', 'lapw', 'slapw', 'lo', 'other')

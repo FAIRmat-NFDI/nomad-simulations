@@ -184,7 +184,7 @@ class OrbitalsState(Entity):
 
     def resolve_number_and_symbol(
         self, quantum_name: str, quantum_type: str, logger: 'BoundLogger'
-    ) -> Optional[Union[str, int]]:
+    ) -> str | int | None:
         """
         Resolves the quantum number or symbol from the `self._orbitals_map` on the passed `quantum_type`.
         `quantum_type` can be either 'number' or 'symbol'. If the quantum type is not found, then the countertype
@@ -235,7 +235,7 @@ class OrbitalsState(Entity):
             )
         return quantity
 
-    def resolve_degeneracy(self) -> Optional[int]:
+    def resolve_degeneracy(self) -> int | None:
         """
         Resolves the degeneracy of the orbital state. If `j_quantum_number` is not defined, then the
         degeneracy is computed from the `l_quantum_number` and `ml_quantum_number`. If `j_quantum_number`
@@ -334,7 +334,7 @@ class CoreHole(ArchiveSection):
     )
 
     @log
-    def resolve_occupation(self) -> Optional[np.float64]:
+    def resolve_occupation(self) -> np.float64 | None:
         """
         Resolves the occupation of the orbital state. The occupation is resolved from the degeneracy
         and the number of excited electrons.
@@ -478,7 +478,7 @@ class HubbardInteractions(ArchiveSection):
     )
 
     @log
-    def resolve_u_interactions(self) -> Optional[tuple]:
+    def resolve_u_interactions(self) -> tuple | None:
         """
         Resolves the Hubbard interactions (u_interaction, u_interorbital_interaction, j_hunds_coupling)
         from the Slater integrals (F0, F2, F4) in the units defined for the Quantity.
@@ -508,7 +508,7 @@ class HubbardInteractions(ArchiveSection):
         return u_interaction, u_interorbital_interaction, j_hunds_coupling
 
     @log
-    def resolve_u_effective(self) -> Optional[pint.Quantity]:
+    def resolve_u_effective(self) -> pint.Quantity | None:
         """
         Resolves the effective U parameter (u_interaction - j_local_exchange_interaction).
 
@@ -665,7 +665,7 @@ class AtomsState(ParticleState):
         return None
 
     @log
-    def resolve_atomic_number(self) -> Optional[int]:
+    def resolve_atomic_number(self) -> int | None:
         """
         Resolves the `atomic_number` from the `chemical_symbol`.
 

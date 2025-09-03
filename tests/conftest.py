@@ -73,7 +73,7 @@ def generate_model_system(
     orbitals_symbols: list[list[str]] = [['s'], ['px', 'py']],
     is_representative: bool = True,
     pbc: list[bool] = [False, False, False],
-) -> Optional[ModelSystem]:
+) -> ModelSystem | None:
     """
     Generate a `ModelSystem` section with the given parameters.
     """
@@ -132,8 +132,8 @@ def generate_atomic_cell(
 
 def generate_scf_electronic_band_gap_template(
     n_scf_steps: int = 5,
-    threshold_change: Optional[float] = 1e-3,
-    threshold_change_unit: Optional[str] = 'joule',
+    threshold_change: float | None = 1e-3,
+    threshold_change_unit: str | None = 'joule',
 ) -> SCFOutputs:
     """
     Generate a `SCFOutputs` section with a template for the electronic_band_gap property.
@@ -234,7 +234,7 @@ def generate_k_space_simulation(
     chemical_symbols: list[str] = ['Ga', 'As'],
     orbitals_symbols: list[list[str]] = [['s'], ['px', 'py']],
     pbc: list[bool] = [False, False, False],
-    reciprocal_lattice_vectors: Optional[list[list[float]]] = [
+    reciprocal_lattice_vectors: list[list[float]] | None = [
         [1, 0, 0],
         [0, 1, 0],
         [0, 0, 1],
@@ -246,7 +246,7 @@ def generate_k_space_simulation(
         [0, 0.5, 0],
         [0, 0, 0],
     ],
-    klinepath_points: Optional[list[float]] = None,
+    klinepath_points: list[float] | None = None,
     grid=[6, 6, 6],
 ) -> Simulation:
     model_system = generate_model_system(
@@ -282,12 +282,12 @@ def generate_k_space_simulation(
 
 
 def generate_electronic_eigenvalues(
-    reciprocal_lattice_vectors: Optional[list[list[float]]] = [
+    reciprocal_lattice_vectors: list[list[float]] | None = [
         [1, 0, 0],
         [0, 1, 0],
         [0, 0, 1],
     ],
-    value: Optional[list] = [
+    value: list | None = [
         [3, -2],
         [3, 1],
         [4, -2],
@@ -297,7 +297,7 @@ def generate_electronic_eigenvalues(
         [2, 1],
         [4, -3],
     ],
-    occupation: Optional[list] = [
+    occupation: list | None = [
         [0, 2],
         [0, 1],
         [0, 2],
@@ -307,8 +307,8 @@ def generate_electronic_eigenvalues(
         [0, 1],
         [0, 2],
     ],
-    highest_occupied: Optional[float] = None,
-    lowest_unoccupied: Optional[float] = None,
+    highest_occupied: float | None = None,
+    lowest_unoccupied: float | None = None,
 ) -> ElectronicEigenvalues:
     """
     Generate an `ElectronicEigenvalues` section with the given parameters.

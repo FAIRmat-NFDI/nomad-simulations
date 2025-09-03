@@ -24,7 +24,7 @@ class TestElectronicEigenvalues:
             (10),
         ],
     )
-    def test_default_quantities(self, n_bands: Optional[int]):
+    def test_default_quantities(self, n_bands: int | None):
         """
         Test the default quantities assigned when creating an instance of the `HoppingMatrix` class.
         """
@@ -124,8 +124,8 @@ class TestElectronicEigenvalues:
     )
     def test_order_eigenvalues(
         self,
-        occupation: Optional[list],
-        value: Optional[list],
+        occupation: list | None,
+        value: list | None,
         result_validation: bool,
         result: tuple[list, list],
     ):
@@ -212,11 +212,11 @@ class TestElectronicEigenvalues:
     )
     def test_homo_lumo_eigenvalues(
         self,
-        occupation: Optional[list],
-        value: Optional[list],
-        highest_occupied: Optional[float],
-        lowest_unoccupied: Optional[float],
-        result: tuple[Optional[float], Optional[float]],
+        occupation: list | None,
+        value: list | None,
+        highest_occupied: float | None,
+        lowest_unoccupied: float | None,
+        result: tuple[float | None, float | None],
     ):
         """
         Test the `resolve_homo_lumo_eigenvalues` method.
@@ -308,11 +308,11 @@ class TestElectronicEigenvalues:
     )
     def test_extract_band_gap(
         self,
-        occupation: Optional[list],
-        value: Optional[list],
-        highest_occupied: Optional[float],
-        lowest_unoccupied: Optional[float],
-        band_gap_result: Optional[float],
+        occupation: list | None,
+        value: list | None,
+        highest_occupied: float | None,
+        lowest_unoccupied: float | None,
+        band_gap_result: float | None,
     ):
         """
         Test the `extract_band_gap` method.
@@ -346,8 +346,8 @@ class TestElectronicEigenvalues:
     )
     def test_resolve_reciprocal_cell(
         self,
-        reciprocal_lattice_vectors: Optional[list[list[float]]],
-        result: Optional[list[list[float]]],
+        reciprocal_lattice_vectors: list[list[float]] | None,
+        result: list[list[float]] | None,
     ):
         """
         Test the `resolve_reciprocal_cell` method. This is done via the `normalize` function because `reciprocal_cell` is a

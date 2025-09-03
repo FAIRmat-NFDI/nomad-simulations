@@ -127,7 +127,7 @@ class TestOutputs:
         'model_method',
         [(None), (ModelMethod(name='example'))],
     )
-    def test_set_model_method_ref(self, model_method: Optional[ModelMethod]):
+    def test_set_model_method_ref(self, model_method: ModelMethod | None):
         """
         Test the `set_model_method_ref` method.
 
@@ -156,7 +156,7 @@ class TestOutputs:
         ],
     )
     def test_normalize(
-        self, model_system: Optional[ModelSystem], model_method: Optional[ModelMethod]
+        self, model_system: ModelSystem | None, model_method: ModelMethod | None
     ):
         """
         Test the `normalize` method.
@@ -257,7 +257,7 @@ class TestSCFOutputs:
         scf_last_steps: list[Outputs],
         i_property: int,
         values: list[float],
-        scf_parameters: Optional[SelfConsistency],
+        scf_parameters: SelfConsistency | None,
         result: list[float],
     ):
         scf_outputs = SCFOutputs()
@@ -292,7 +292,7 @@ class TestSCFOutputs:
     def test_resolve_is_scf_converged(
         self,
         n_scf_steps: int,
-        threshold_change: Optional[float],
+        threshold_change: float | None,
         property_name: str,
         i_property: int,
         result: bool,

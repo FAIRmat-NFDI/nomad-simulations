@@ -47,7 +47,7 @@ class Variables(ArchiveSection):
 
     # ? Do we need to add `points_error`?
     @log
-    def get_n_points(self) -> Optional[int]:
+    def get_n_points(self) -> int | None:
         """
         Get the number of grid points from the `points` list. If `n_points` is previously defined
         and does not coincide with the length of `points`, a warning is issued and this function re-assigns `n_points`

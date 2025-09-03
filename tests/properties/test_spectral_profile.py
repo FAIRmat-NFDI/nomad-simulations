@@ -161,7 +161,7 @@ class TestElectronicDensityOfStates:
     def test_generate_from_pdos(
         self,
         simulation_electronic_dos: Simulation,
-        value: Optional[list[float]],
+        value: list[float] | None,
         result: list[float],
     ):
         """
@@ -233,9 +233,9 @@ class TestXASSpectrum:
     )
     def test_generate_from_contributions(
         self,
-        xanes_energies: Optional[list[float]],
-        exafs_energies: Optional[list[float]],
-        xas_values: Optional[list[float]],
+        xanes_energies: list[float] | None,
+        exafs_energies: list[float] | None,
+        xas_values: list[float] | None,
     ):
         """
         Test the `generate_from_contributions` method.

@@ -88,13 +88,13 @@ def assert_dict_equal(d1, d2):
         for i, l1_item in enumerate(l1):
             if isinstance(l1_item, dict) and isinstance(l2[i], dict):
                 assert_dict_equal(l1_item, l2[i])
-            elif isinstance(l1_item, (str, bool)) and isinstance(l2[i], (str, bool)):
+            elif isinstance(l1_item, str | bool) and isinstance(l2[i], str | bool):
                 compare_string(f'{key}-{i}', l1_item, l2[i])
             elif isinstance(l1_item, list) and isinstance(l2[i], list):
                 compare_lists(f'{key}-{i}', l1_item, l2[i])
             elif isinstance(l1_item, np.ndarray) and isinstance(l2[i], np.ndarray):
                 compare_arrays(f'{key}-{i}', l1_item, l2[i])
-            elif isinstance(l1_item, (float, int)) and isinstance(l2[i], (float, int)):
+            elif isinstance(l1_item, float | int) and isinstance(l2[i], float | int):
                 compare_float(f'{key}-{i}', l1_item, l2[i])
             else:
                 compare_unknown(f'{key}-{i}', l1_item, l2[i])
@@ -103,13 +103,13 @@ def assert_dict_equal(d1, d2):
         print(f'key: {key}', d1[key], d2[key])
         if isinstance(d1[key], dict) and isinstance(d2[key], dict):
             assert_dict_equal(d1[key], d2[key])
-        elif isinstance(d1[key], (str, bool)) and isinstance(d2[key], (str, bool)):
+        elif isinstance(d1[key], str | bool) and isinstance(d2[key], str | bool):
             compare_string(key, d1[key], d2[key])
         elif isinstance(d1[key], list) and isinstance(d2[key], list):
             compare_lists(key, d1[key], d2[key])
         elif isinstance(d1[key], np.ndarray) and isinstance(d2[key], np.ndarray):
             compare_arrays(key, d1[key], d2[key])
-        elif isinstance(d1[key], (float, int)) and isinstance(d2[key], (float, int)):
+        elif isinstance(d1[key], float | int) and isinstance(d2[key], float | int):
             compare_float(key, d1[key], d2[key])
         else:
             compare_unknown(key, d1[key], d2[key])
