@@ -450,3 +450,11 @@ def log_output():
         processors.clear()
         processors.extend(old_processors)
         structlog.configure(processors=processors)
+
+
+@pytest.fixture
+def approx():
+    def func(expected, abs: float = 0.0, rel=1e-6):
+        return pytest.approx(expected, abs=abs, rel=rel)
+
+    return func
