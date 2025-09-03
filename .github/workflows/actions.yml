@@ -6,6 +6,9 @@ on: [push]
 # `pull-requests` is for permission to pull request
 permissions:
   contents: write
+  packages: write
+  attestations: write
+  id-token: write
   checks: write
   pull-requests: write
 
@@ -20,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python_version: ["3.10", "3.11", "3.12"]
+        python_version: ["3.12"]
     steps:
     - uses: actions/checkout@v4
 
@@ -43,7 +46,7 @@ jobs:
         version: ${{ env.UV_VERSION }}
     - name: Install dependencies
       run: |
-        uv sync --all-extras
+        uv sync --all-extras --no-cache
     - name: mypy
       run: |
         uv run python -m mypy --ignore-missing-imports --follow-imports=silent --no-strict-optional src/nomad_simulations/schema_packages tests
