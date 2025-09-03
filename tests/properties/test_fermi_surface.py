@@ -18,7 +18,7 @@ class TestFermiSurface:
             (10),
         ],
     )
-    def test_default_quantities(self, n_bands: Optional[int]):
+    def test_default_quantities(self, n_bands: int | None):
         """
         Test the default quantities assigned when creating an instance of the `HoppingMatrix` class.
         """

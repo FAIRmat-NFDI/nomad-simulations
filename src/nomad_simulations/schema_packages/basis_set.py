@@ -104,8 +104,8 @@ class PlaneWaveBasisSet(BasisSetComponent, KMesh):
     )
 
     def compute_cutoff_radius(
-        self, cutoff_energy: Optional[pint.Quantity]
-    ) -> Optional[pint.Quantity]:
+        self, cutoff_energy: pint.Quantity | None
+    ) -> pint.Quantity | None:
         """
         Compute the cutoff radius for the plane-wave basis set, expressed in reciprocal coordinates.
         """
@@ -147,8 +147,8 @@ class APWPlaneWaveBasisSet(PlaneWaveBasisSet):
     )
 
     def compute_cutoff_fractional(
-        self, cutoff_radius: Optional[pint.Quantity], mt_r_min: Optional[pint.Quantity]
-    ) -> Optional[pint.Quantity]:
+        self, cutoff_radius: pint.Quantity | None, mt_r_min: pint.Quantity | None
+    ) -> pint.Quantity | None:
         """
         Compute the fractional cutoff parameter for the interstitial plane waves in the LAPW family.
 
@@ -276,7 +276,7 @@ class APWBaseOrbital(ArchiveSection):
             'energy_parameter_n',
             'differential_order',
         },
-    ) -> Optional[int]:
+    ) -> int | None:
         """Determine the value of `n_terms` based on the lengths of the representative quantities."""
         lengths = self._get_lengths(representative_quantities)
         if not self._of_equal_length(lengths) or len(lengths) == 0:
@@ -354,7 +354,7 @@ class APWOrbital(APWBaseOrbital):
         """,
     )
 
-    def do_to_type(self, do: Optional[list[int]]) -> Optional[str]:
+    def do_to_type(self, do: list[int] | None) -> str | None:
         """
         Set the type of the APW orbital based on the differential order.
         """
@@ -545,7 +545,7 @@ class BasisSetContainer(NumericalSettings):
 
     basis_set_components = SubSection(sub_section=BasisSetComponent.m_def, repeats=True)
 
-    def _determine_apw(self) -> Optional[str]:
+    def _determine_apw(self) -> str | None:
         """
         Derive the basis set name for a (S)(L)APW case, including local orbitals.
         Invokes `normalize` on `basis_set_components`.
@@ -579,7 +579,7 @@ class BasisSetContainer(NumericalSettings):
 
         return type_str if has_plane_wave else None
 
-    def _find_mt_r_min(self) -> Optional[pint.Quantity]:
+    def _find_mt_r_min(self) -> pint.Quantity | None:
         """
         Scan the container for the smallest muffin-tin region.
         """
@@ -611,7 +611,7 @@ class BasisSetContainer(NumericalSettings):
 
 def generate_apw(
     species: dict[str, dict[str, Any]],
-    cutoff: Optional[float] = None,
+    cutoff: float | None = None,
 ) -> BasisSetContainer:  # TODO: extend to cover all parsing use cases (maybe split up?)
     """
     Generate a mock APW basis set with the following structure:

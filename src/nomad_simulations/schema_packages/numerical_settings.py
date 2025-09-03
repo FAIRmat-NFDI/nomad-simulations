@@ -662,7 +662,7 @@ class KLinePath(ArchiveSection):
 
     def resolve_points(
         self,
-        points_norm: Union[np.ndarray, list[float]],
+        points_norm: np.ndarray | list[float],
         reciprocal_lattice_vectors: pint.Quantity | None,
         logger: 'BoundLogger',
     ) -> None:

@@ -44,8 +44,8 @@ from nomad.units import ureg
 from nomad_simulations.schema_packages.utils import log
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
-    from typing import Any, Callable, Optional
+    from collections.abc import Callable, Generator
+    from typing import Any, Optional
 
     import pint
     from nomad.datamodel.datamodel import EntryArchive
@@ -500,7 +500,7 @@ class Symmetry(ArchiveSection):
         symmetry_analyzer: 'SymmetryAnalyzer',
         cell_type: str,
         logger: 'BoundLogger',
-    ) -> 'Optional[Cell]':
+    ) -> 'Cell | None':
         """
         Resolves the `AtomicCell` section from the `SymmetryAnalyzer` object and the cell_type
         (primitive or conventional).
@@ -554,7 +554,7 @@ class Symmetry(ArchiveSection):
 
     def resolve_bulk_symmetry(
         self, original_atomic_cell: 'AtomicCell', logger: 'BoundLogger'
-    ) -> 'tuple[Optional[AtomicCell], Optional[AtomicCell]]':
+    ) -> 'tuple[AtomicCell | None, AtomicCell | None]':
         """
         Resolves the symmetry of the material being simulated using MatID and the
         originally parsed data under original_atomic_cell. It generates two other
@@ -1117,7 +1117,7 @@ class ModelSystem(System):
             return False
 
     @log
-    def to_ase_atoms(self) -> 'Optional[ase.Atoms]':
+    def to_ase_atoms(self) -> 'ase.Atoms | None':
         """
         Generates an ASE Atoms object from ModelSystem data.
         Uses:
@@ -1242,7 +1242,7 @@ class ModelSystem(System):
             elif isinstance(classification, Surface):
                 system_type = 'surface'
                 dimensionality = 2
-            elif isinstance(classification, (Class2D, Material2D)):
+            elif isinstance(classification, Class2D | Material2D):
                 system_type = '2D'
                 dimensionality = 2
         else:
@@ -1304,7 +1304,7 @@ class ModelSystem(System):
             return
 
         if is_atomic and not all(
-            isinstance(p, (AtomsState, CGBeadState)) for p in ps_list
+            isinstance(p, AtomsState | CGBeadState) for p in ps_list
         ):
             # Map one-to-one using validated element labels
             self._clear_particle_states_inplace()

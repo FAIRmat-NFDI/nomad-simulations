@@ -59,7 +59,7 @@ class ElectronicBandGap(PhysicalProperty):
     )
 
     @log
-    def resolve_type(self) -> Optional[str]:
+    def resolve_type(self) -> str | None:
         """
         Resolves the `type` of the electronic band gap based on the stored `momentum_transfer` values.
 

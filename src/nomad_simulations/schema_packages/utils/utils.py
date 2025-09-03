@@ -10,7 +10,8 @@ from nomad.datamodel.data import ArchiveSection
 from nomad.utils import get_logger
 
 if TYPE_CHECKING:
-    from typing import Callable, Optional
+    from collections.abc import Callable
+    from typing import Optional
 
     from structlog.stdlib import BoundLogger
 

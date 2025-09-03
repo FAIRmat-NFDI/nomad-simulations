@@ -66,7 +66,7 @@ class DOSProfile(SpectralProfile):
     )
 
     @log
-    def resolve_pdos_name(self) -> Optional[str]:
+    def resolve_pdos_name(self) -> str | None:
         """
         Resolve the `name` of the projected `DOSProfile` from the `entity_ref` section. This is resolved as:
             - `'atom X'` with 'X' being the chemical symbol for `AtomsState` references.
@@ -191,9 +191,9 @@ class ElectronicDensityOfStates(DOSProfile):
     def resolve_energies_origin(
         self,
         energies_points: pint.Quantity,
-        fermi_level: Optional[pint.Quantity],
+        fermi_level: pint.Quantity | None,
         logger: 'BoundLogger',
-    ) -> Optional[pint.Quantity]:
+    ) -> pint.Quantity | None:
         """
         Resolve the origin of reference for the energies from the sibling `ElectronicEigenvalues` section and its
         `highest_occupied` level, or if this does not exist, from the `fermi_level` value as extracted from the sibling property, `FermiLevel`.
@@ -305,7 +305,7 @@ class ElectronicDensityOfStates(DOSProfile):
         return energies_origin
 
     @log
-    def resolve_normalization_factor(self) -> Optional[float]:
+    def resolve_normalization_factor(self) -> float | None:
         """
         Resolve the `normalization_factor` for the electronic DOS to get a cell-independent intensive DOS.
 
@@ -344,7 +344,7 @@ class ElectronicDensityOfStates(DOSProfile):
             normalization_factor = 1 / sum(atomic_numbers)
         return normalization_factor
 
-    def extract_band_gap(self) -> Optional[ElectronicBandGap]:
+    def extract_band_gap(self) -> ElectronicBandGap | None:
         """
         Extract the electronic band gap from the `highest_occupied_energy` and `lowest_unoccupied_energy` stored
         in `m_cache` from `resolve_energies_origin()`. If the difference of `highest_occupied_energy` and
@@ -369,7 +369,7 @@ class ElectronicDensityOfStates(DOSProfile):
 
     def extract_projected_dos(
         self, type: str, logger: 'BoundLogger'
-    ) -> list[Optional[DOSProfile]]:
+    ) -> list[DOSProfile | None]:
         """
         Extract the projected DOS from the `projected_dos` section and the specified `type`.
 
@@ -397,7 +397,7 @@ class ElectronicDensityOfStates(DOSProfile):
 
     def generate_from_projected_dos(
         self, logger: 'BoundLogger'
-    ) -> Optional[pint.Quantity]:
+    ) -> pint.Quantity | None:
         """
         Generate the total `value` of the electronic DOS from the `projected_dos` contributions. If the `projected_dos`
         is not present, it returns `None`.
