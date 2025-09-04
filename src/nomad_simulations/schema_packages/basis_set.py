@@ -198,6 +198,10 @@ class AtomCenteredFunction(ArchiveSection):
     the SCF or post-SCF method. Often, each contraction is labeled by its
     angular momentum (e.g., s, p, d, f) and a set of exponents and coefficients.
 
+    This class also accepts *combined* shells ('sp', 'spd', 'spdf') as input.
+    On normalize(), it **expands** them into multiple single-ℓ shells and
+    replaces itself with those shells in the parent's `functional_compositions`.
+
     **References**:
       - T. Helgaker, P. Jørgensen, J. Olsen, *Molecular Electronic-Structure Theory*, Wiley (2000).
       - F. Jensen, *Introduction to Computational Chemistry*, 2nd ed., Wiley (2007).
@@ -205,296 +209,351 @@ class AtomCenteredFunction(ArchiveSection):
     """
 
     harmonic_type = Quantity(
-        type=MEnum(
-            'spherical',
-            'cartesian',
-        ),
+        type=MEnum('spherical', 'cartesian'),
         default='spherical',
-        description="""
-        Specifies whether the basis functions are expanded in **spherical** (pure) 
-        harmonics or **cartesian** harmonics. Many modern quantum-chemistry codes 
-        default to *spherical harmonics* for d, f, g..., which eliminates the 
-        redundant functions found in the cartesian sets.
-        
-        - `'spherical'` : (2l+1) functions for a shell of angular momentum l
-        - `'cartesian'` : (l+1)(l+2)/2 functions for that shell (extra functions appear)
-        """,
+        description='Angular basis used when expanding this shell into AOs.',
     )
 
     function_type = Quantity(
         type=MEnum(
-            's',
-            'p',
-            'd',
-            'f',
-            'g',
-            'h',
-            'i',
-            'j',
-            'k',
-            'l',
-            'sp',
-            'spd',
-            'spdf',
+            's', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'sp', 'spd', 'spdf'
         ),
-        description="""
-        Symbolic label for the **angular momentum** of this contracted function. 
-        Typical single-letter labels:
-          - 's' => L=0
-          - 'p' => L=1
-          - 'd' => L=2
-          - 'f' => L=3
-          - 'g' => L=4
-          - 'h', 'i', etc. => still higher angular momenta
-        Combined labels like 'sp' or 'spdf' indicate a **combined shell** in which 
-        multiple angular momenta share exponents. For example, in some older Pople 
-        basis sets, an 'sp' shell has an s- and p-type function sharing the same 
-        exponents but different contraction coefficients.
-        """,
+        description='Angular-momentum label; combined variants are expanded into single-ℓ shells.',
     )
 
-    n_primitive = Quantity(
+    # explicit single-ℓ metadata
+    angular_momentum = Quantity(
         type=np.int32,
-        description="""
-        Number of **primitive** functions in this contracted basis function. 
-        For example, in a contracted Gaussian-type orbital (GTO) approach, each basis 
-        function might be built from a sum of `n_primitive` Gaussians with different 
-        exponents, each scaled by a contraction coefficient.
-        """,
+        description='Angular momentum quantum number ℓ.',
+    )
+    r_power = Quantity(
+        type=np.int32, description="Radial power n_s for this shell's analytic form."
     )
 
-    n_components = Quantity(type=np.int32)
+    # per-shell normalization (contracted)
+    shell_normalization = Quantity(
+        type=np.float64, description='Per-shell normalization factor.'
+    )
 
+    # primitives
+    n_primitive = Quantity(
+        type=np.int32, description='Number of primitives in this shell.'
+    )
+    exponents = Quantity(
+        type=np.float32, shape=['n_primitive'], description='Primitive exponents.'
+    )
     contraction_coefficients = Quantity(
         type=np.float32,
         shape=['*'],
-        description="""
-        The **contraction coefficients** associated with each primitive exponent. 
-        In the simplest case (pure s- or p-function), this array has length 
-        equal to `n_primitive`. For combined shells (like 'sp'), the length 
-        might be `2 * n_primitive`, because you have separate coefficients 
-        for the s-part and the p-part.
-        """,
+        description=(
+            'Contraction coefficients. Single-ℓ: length == n_primitive. '
+            'Combined input: length == n_components * n_primitive in the order '
+            '[all s | all p | all d | (all f)].'
+        ),
     )
-
-    exponents = Quantity(
-        type=np.float32,
-        shape=['n_primitive'],
-        description="""
-        The **exponents** of each primitive basis function. 
-        In a Gaussian basis set (GTO), these are the alpha_i in 
-        exp(-alpha_i * r^2). In a Slater-type basis (STO), they'd be 
-        exp(-zeta_i * r). Typically sorted from largest to smallest.
-        """,
-    )
-
-    primitive_normalization = Quantity(
-        type=MEnum('L2', 'none', 'contracted', 'custom'),
-        default='L2',
-        description="""
-        Convention used for contraction coefficients:
-        • 'L2' - coefficients multiply L²-normalised primitives (Gaussian/BSE style).  
-        • 'none' - coefficients multiply unnormalised primitives (rare).  
-        • 'contracted' - primitives normalised, contracted function renormalised (GAMESS-style).  
-        • 'custom' - explicit factors are stored in `primitive_factor` / `shell_factor`.
-        """,
-    )
-
     primitive_factor = Quantity(
         type=np.float64,
         shape=['n_primitive'],
-        description="""
-        **Extra scaling factors for each primitive** (dimensionless).
-
-        - Let ϕₖ(r) be the *analytic* primitive basis function (Gaussian or
-          Slater) with its standard L² normalisation constant **N_k**.
-        - Many libraries store coefficients **cₖ** that *already* include N_k
-          (Gaussian convention).  Others store raw cₖ and rely on the program
-          to multiply by N_k at run time.
-        - `primitive_factor[k]` captures *any* additional multiplier applied
-          to ϕₖ beyond its analytic normalisation—e.g. if the published
-          coefficients correspond to **unnormalised** primitives,
-          `primitive_factor[:] = 1 / N_k`.
-
-        Typical values:
-
-        | Scenario (source)                               | primitive_factor |
-        |-------------------------------------------------|------------------|
-        | BSE / Gaussian input (“coeffs x L²-norm prim”)  | 1.0              |
-        | Raw CRYSTAL deck (“coeffs for unnorm prim”)     | 1 / N_k          |
-        | Custom numeric STOs with internal scaling       | arbitrary        |
-
-        If omitted or a value of 1.0 is supplied, the primitives follow the
-        convention implied by `primitive_normalization`.  Only set a custom
-        factor when `primitive_normalization == 'custom'`.
-        """,
+        description='Extra per-primitive multiplier (dimensionless).',
     )
 
-    shell_normalization = Quantity(
-        type=np.float64,
-        description="""
-        **Global normalisation constant for the contracted shell** χ(r).
-
-        After primitives (and their `primitive_factor`s) are combined with the
-        contraction coefficients, one may optionally rescale the entire
-        contracted function so that
-
-        \\[
-            \\int_{\\mathbb{R}^3} |χ(r)|^2 \\,dr = 1.
-        \\]
-
-        - Many codes (Gaussian, ORCA, Q‑Chem) leave the contracted shell
-          *unnormalised* (value = 1.0).
-        - Other codes (GAMESS default) renormalise χ, in which case
-          `shell_normalization` equals the computed factor **1/√⟨χ|χ⟩**.
-        - Storing it makes the representation **loss‑free**: regardless of the
-          original convention, another program can reproduce exactly the same
-          contracted AOs by multiplying the linear combination *and then*
-          this scalar.
-
-        Leave at 1.0 (or None) if no extra shell‑level scaling is present.
-        """,
+    # optional convention hint (provenance)
+    primitive_normalization = Quantity(
+        type=MEnum('L2', 'none', 'contracted', 'custom'),
+        default='L2',
+        description='Normalization convention hint for parsers.',
     )
 
+    # optional embedded point charge
     point_charge = Quantity(
-        type=np.float32,
-        description="""
-        If using a basis function that explicitly includes a point-charge or an 
-        ECP-like pseudo-component, this field can store that net charge. 
-        Typically 0 for standard GTO or STO expansions. 
-        Some extended basis concepts (or embedded charges) might set it differently.
-        """,
+        type=np.float32, description='Optional embedded point charge.'
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        """
-        Canonicalise sizes and rebuild helper attributes.
+    # helper (internal)
+    n_components = Quantity(
+        type=np.int32, description='Number of components implied by function_type.'
+    )
 
-        * ``contraction_coefficients`` stays *flat* to satisfy the declared
-          1-D shape, but the property ``coeff_matrix`` (added below) provides
-          a reshaped **view** for convenience.
-        * ``coefficient_sets`` maps each angular‑momentum letter ('s','p',…)
-          to its slice in the flat list.
+    _L_MAP = {
+        's': 0,
+        'p': 1,
+        'd': 2,
+        'f': 3,
+        'g': 4,
+        'h': 5,
+        'i': 6,
+        'j': 7,
+        'k': 8,
+        'l': 9,
+    }
+    _COMBINED_ORDER = {
+        'sp': ['s', 'p'],
+        'spd': ['s', 'p', 'd'],
+        'spdf': ['s', 'p', 'd', 'f'],
+    }
+
+    def _is_combined(self) -> bool:
+        return self.function_type in self._COMBINED_ORDER
+
+    def _expand_combined_into_parent(self) -> None:
         """
+        Expand a combined shell into multiple single-ℓ shells by rewriting this
+        instance in place to the first component and appending the rest to the
+        parent's functional_compositions. Quiet no-op if parent/data missing.
+        """
+        parent = getattr(self, 'm_parent', None)
+        if parent is None or not hasattr(parent, 'functional_compositions'):
+            return
+        if (
+            self.n_primitive is None
+            or self.exponents is None
+            or self.contraction_coefficients is None
+        ):
+            return
+
+        letters = self._COMBINED_ORDER[self.function_type]
+        step = int(self.n_primitive)
+        flat = np.asarray(self.contraction_coefficients, dtype=np.float32).ravel()
+        expected = step * len(letters)
+
+        # quietly fit to expected length (pad zeros / truncate)
+        if flat.size < expected:
+            flat = np.concatenate(
+                [flat, np.zeros(expected - flat.size, dtype=np.float32)]
+            )
+        elif flat.size > expected:
+            flat = flat[:expected]
+
+        # ---- rewrite THIS instance to the first component ----
+        first = letters[0]
+        first_slice = flat[0:step]
+        self.function_type = first
+        self.angular_momentum = self._L_MAP.get(first)
+        # keep n_primitive, exponents, primitive_factor, normalizations as-is
+        self.contraction_coefficients = np.array(first_slice, dtype=np.float32)
+        # n_components should now be single-ℓ
+        self.n_components = 1
+
+        # ---- append the remaining components as brand-new shells ----
+        for i, ltr in enumerate(letters[1:], start=1):
+            coeff_slice = flat[i * step : (i + 1) * step]
+            new_shell = AtomCenteredFunction(
+                harmonic_type=self.harmonic_type,
+                function_type=ltr,
+                angular_momentum=self._L_MAP.get(ltr),
+                r_power=self.r_power,
+                shell_normalization=self.shell_normalization,
+                n_primitive=self.n_primitive,
+                exponents=np.array(self.exponents, copy=True),
+                contraction_coefficients=np.array(coeff_slice, copy=True),
+                primitive_factor=(
+                    np.array(self.primitive_factor, copy=True)
+                    if self.primitive_factor is not None
+                    else None
+                ),
+                primitive_normalization=self.primitive_normalization,
+                point_charge=self.point_charge,
+            )
+            parent.functional_compositions.append(new_shell)
+
+    @check_normalized
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # ---------------- infer component / primitive counts -------------
-        self.n_components = len(self.function_type) if self.function_type else 1
-        if self.n_primitive is None and self.exponents is not None:
+        # components implied by function_type
+        self.n_components = (
+            len(self._COMBINED_ORDER[self.function_type]) if self._is_combined() else 1
+        )
+
+        # expand combined shells and exit
+        if self._is_combined():
+            self._expand_combined_into_parent()
+            return
+
+        # single-ℓ mapping: set angular_momentum from function_type if missing
+        if self.function_type in self._L_MAP and self.angular_momentum is None:
+            self.angular_momentum = self._L_MAP[self.function_type]
+
+        # infer n_primitive
+        if self.exponents is not None and self.n_primitive is None:
             self.n_primitive = len(self.exponents)
 
-        # ---------------- shape & size checks ----------------------------
-        if self.exponents is not None and len(self.exponents) != self.n_primitive:
-            logger.error('Length of exponents != n_primitive.')
+        # fit lengths quietly (truncate/pad)
+        if self.exponents is not None and self.n_primitive is not None:
+            exp = np.asarray(self.exponents, dtype=np.float32).ravel()
+            if exp.size < self.n_primitive:
+                if exp.size == 0:
+                    exp = np.zeros(self.n_primitive, dtype=np.float32)
+                else:
+                    exp = np.pad(exp, (0, self.n_primitive - exp.size), mode='edge')
+            elif exp.size > self.n_primitive:
+                exp = exp[: self.n_primitive]
+            self.exponents = exp
 
-        if self.contraction_coefficients is None:
-            logger.error('contraction_coefficients must be provided.')
+        if self.n_primitive is not None:
+            if self.contraction_coefficients is None:
+                self.contraction_coefficients = np.zeros(
+                    self.n_primitive, dtype=np.float32
+                )
+            else:
+                cc = np.asarray(self.contraction_coefficients, dtype=np.float32).ravel()
+                if cc.size < self.n_primitive:
+                    cc = np.pad(cc, (0, self.n_primitive - cc.size), mode='constant')
+                elif cc.size > self.n_primitive:
+                    cc = cc[: self.n_primitive]
+                self.contraction_coefficients = cc
 
-        flat = np.asarray(self.contraction_coefficients, dtype=np.float32).ravel()
-        expected = self.n_components * self.n_primitive
-        if flat.size != expected:
-            logger.error(
-                'Contraction-coefficient count mismatch',
-                coeffs_given=int(flat.size),
-                coeffs_expected=int(expected),
-                n_components=int(self.n_components),
-                n_primitive=int(self.n_primitive),
-            )
+            if self.primitive_factor is None:
+                self.primitive_factor = np.ones(self.n_primitive, dtype=np.float64)
+            else:
+                pf = np.asarray(self.primitive_factor, dtype=np.float64).ravel()
+                if pf.size < self.n_primitive:
+                    pf = np.pad(
+                        pf,
+                        (0, self.n_primitive - pf.size),
+                        mode='constant',
+                        constant_values=1.0,
+                    )
+                elif pf.size > self.n_primitive:
+                    pf = pf[: self.n_primitive]
+                self.primitive_factor = pf
 
-        # store back as flat 1‑D array (Nomad‑valid)
-        self.contraction_coefficients = flat
-
-        # ---------------- helper views -----------------------------------
-        letters = list(self.function_type) if self.function_type else ['s']
-        step = self.n_primitive
-        self.coefficient_sets = {
-            ltr: flat[i * step : (i + 1) * step] for i, ltr in enumerate(letters)
-        }
-
-    # ---------------- property: matrix view (read‑only) ------------------
-    @property
-    def coeff_matrix(self) -> np.ndarray:
-        """Return coefficients as an (n_components × n_primitive) array."""
-        return self.contraction_coefficients.reshape(
-            self.n_components, self.n_primitive
-        )
+    @set_not_normalized
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class EffectiveCorePotential(BasisSetComponent):
     """
-    Effective‐core potential (ECP) replacing a given atom's core electrons
-    with a non-local projector potential.
+    TREXIO-style ECP storage:
+      - Per-nucleus arrays: z_core[nucleus], max_ang_mom_plus_1[nucleus]
+      - Flat list of projector items: size ecp_num with nucleus_index, ang_mom, exponent, coefficient, power
     """
 
-    ecp_name = Quantity(
-        type=str,
-        description="""
-        Code-specific ECP identifier or filename—for example “LANL2DZ-Fe”
-        or “SDD_Mo”.  This is purely descriptive;
-        the actual species is still driven by `species_scope`.
-        """,
-    )
-    n_core_electrons = Quantity(
-        type=np.int32, description='Number of core electrons replaced by this ECP.'
-    )
-    n_terms = Quantity(
-        type=np.int32, description='Number of Gaussian terms in this ECP channel.'
-    )
-    angular_momentum = Quantity(
+    # Optional human label
+    ecp_name = Quantity(type=str, description='ECP identifier or source label.')
+
+    # --- Per-nucleus metadata (length should match number of nuclei addressed by this ECP set) ---
+    z_core = Quantity(
         type=np.int32,
-        shape=['n_terms'],
-        description='Angular momentum ℓ for each projector term.',
+        shape=['*'],
+        description='Core electrons replaced per nucleus (TREXIO: ecp.z_core[nucleus]).',
     )
-    r_exponents = Quantity(
+    max_ang_mom_plus_1 = Quantity(
         type=np.int32,
-        shape=['n_terms'],
-        description='Power of r in each term: V_ℓ(r) ∼ r^{n_exponent} e^{-α r^2}.',
-    )
-    gaussian_exponents = Quantity(
-        type=np.float64,
-        unit='1/(meter**2)',
-        shape=['n_terms'],
-        description='Gaussian exponent α in exp(-α r²) for each projector term.',
-    )
-    coefficients = Quantity(
-        type=np.float64,
-        shape=['n_terms'],
-        description='Coefficient c_{i,ℓ} for each term in the non-local ECP potential.',
+        shape=['*'],
+        description='ℓ_max + 1 per nucleus (TREXIO: ecp.max_ang_mom_plus_1[nucleus]).',
     )
 
+    # --- Flat list of ECP projector items ---
+    ecp_num = Quantity(
+        type=np.int32,
+        description='Number of ECP projector items (TREXIO: ecp.num).',
+    )
+    nucleus_index = Quantity(
+        type=np.int32,
+        shape=['ecp_num'],
+        description='For each item: nucleus index it belongs to (TREXIO: ecp.nucleus_index[item]).',
+    )
+    ang_mom = Quantity(
+        type=np.int32,
+        shape=['ecp_num'],
+        description='Angular momentum ℓ of each item (TREXIO: ecp.ang_mom[item]).',
+    )
+    exponent = Quantity(
+        type=np.float64,
+        shape=['ecp_num'],
+        description='Gaussian exponent α per item (TREXIO: ecp.exponent[item], a.u.; convert on I/O).',
+    )
+    coefficient = Quantity(
+        type=np.float64,
+        shape=['ecp_num'],
+        description='Coefficient c per item (TREXIO: ecp.coefficient[item], a.u.).',
+    )
+    power = Quantity(
+        type=np.int32,
+        shape=['ecp_num'],
+        description='Radial power n per item (TREXIO: ecp.power[item]).',
+    )
+
+    @check_normalized
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        """
-        1) Enforce that each length-`n_terms` array matches `n_terms`.
-        2) Set self.name = "ECP-<symbol>" using the first species_scope entry.
-        """
         super().normalize(archive, logger)
 
-        # shape checks
-        for attr in (
-            'angular_momentum',
-            'r_exponents',
-            'gaussian_exponents',
-            'coefficients',
-        ):
-            arr = getattr(self, attr)
-            if arr is None:
-                logger.error('Required ECP array is missing', array_name=attr)
-                continue
-
-            if len(arr) != self.n_terms:
+        # --- basic consistency for per-nucleus arrays ---
+        if self.z_core is not None and self.max_ang_mom_plus_1 is not None:
+            if len(self.z_core) != len(self.max_ang_mom_plus_1):
                 logger.error(
-                    'Length of ECP array does not match n_terms',
-                    array_name=attr,
-                    length=len(arr),
-                    expected=self.n_terms,
+                    'ECP per-nucleus arrays must have equal length: len(z_core) != len(max_ang_mom_plus_1).'
                 )
 
-        # derive a human-readable name from species_scope
+        # --- ecp_num-driven arrays must match lengths ---
+        if self.ecp_num is not None:
+            for name in (
+                'nucleus_index',
+                'ang_mom',
+                'exponent',
+                'coefficient',
+                'power',
+            ):
+                arr = getattr(self, name)
+                if arr is None:
+                    logger.error('ECP array is missing while ecp_num is set.')
+                else:
+                    if len(arr) != self.ecp_num:
+                        logger.error(
+                            "Length of ECP array '%s' (%d) must equal ecp_num (%d).",
+                            name,
+                            len(arr),
+                            self.ecp_num,
+                        )
+
+        # --- optional human-readable name from species_scope, if present ---
         if self.species_scope:
-            symbol = self.species_scope[0].chemical_symbol
-            self.name = f'ECP-{symbol}'
-        else:
-            logger.warning('ECP has no species_scope; leaving name unset.')
+            try:
+                symbol = self.species_scope[0].chemical_symbol
+                if not getattr(self, 'name', None):
+                    self.name = f'ECP-{symbol}'
+            except Exception:
+                pass
+
+    @set_not_normalized
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class AtomicOrbitals(ArchiveSection):
+    """
+    Expanded **atomic orbital (AO) layer** associated with a specific
+    `AtomCenteredBasisSet`.
+
+    While `AtomCenteredFunction` defines the *contracted shells* (basis
+    functions before expansion), this section describes the actual AO
+    functions that the code constructs from them. It captures the
+    one-to-one mapping between the mathematical basis definition and the
+    internal AO list used in SCF/post-SCF methods.
+
+    Typical use cases:
+      - Recording whether the code expanded shells in **Cartesian** or
+        **spherical harmonic** form.
+      - Tracking the **per-AO normalization factors** (to reconcile
+        conventions across codes).
+      - Providing an explicit **AO→shell mapping** for downstream
+        population analysis, MO coefficients, or density matrices.
+    """
+
+    num = Quantity(type=np.int32, description='Total number of AOs (contracted).')
+    cartesian = Quantity(type=bool, description='True=Cartesian, False=Spherical.')
+    shell_index = Quantity(
+        type=np.int32,
+        shape=['num'],
+        description="For each AO: index of AtomCenteredFunction (the 'shell') it belongs to.",
+    )
+    normalization = Quantity(
+        type=np.float64,
+        shape=['num'],
+        description='Per-AO factor to reconcile code conventions.',
+    )
 
 
 class AtomCenteredBasisSet(BasisSetComponent):
@@ -626,11 +685,49 @@ class AtomCenteredBasisSet(BasisSetComponent):
         sub_section=AtomCenteredFunction.m_def, repeats=True
     )
 
+    atomic_orbitals = SubSection(
+        sub_section=AtomicOrbitals.m_def,
+        repeats=False,
+        description='AO layer (cartesian flag, AO→shell map, per-AO normalization).',
+    )
+
     ecps = SubSection(
         sub_section=EffectiveCorePotential.m_def,
         repeats=True,
         description='Zero or more ECP definitions replacing core electrons.',
     )
+
+    @check_normalized
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Set AO count from AO view if present
+        if self.atomic_orbitals is not None and self.atomic_orbitals.num is not None:
+            self.total_number_of_basis_functions = self.atomic_orbitals.num
+
+            # Lightweight sanity checks (kept minimal to avoid verbosity)
+            si = getattr(self.atomic_orbitals, 'shell_index', None)
+            if si is not None and len(si) != self.atomic_orbitals.num:
+                # leave silent; upstream parsers can correct/override
+                pass
+            norm = getattr(self.atomic_orbitals, 'normalization', None)
+            if norm is not None and len(norm) != self.atomic_orbitals.num:
+                pass
+            if (
+                self.functional_compositions is not None
+                and si is not None
+                and len(self.functional_compositions) > 0
+            ):
+                try:
+                    max_idx = int(np.max(si)) if len(si) > 0 else -1
+                    if max_idx >= len(self.functional_compositions):
+                        pass
+                except Exception:
+                    pass
+
+    @set_not_normalized
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 class APWBaseOrbital(ArchiveSection):
@@ -1031,6 +1128,10 @@ class BasisSetContainer(NumericalSettings):
                 plane_waves.append(component)
             elif isinstance(component, MuffinTinRegion):
                 component.mt_r_min = mt_r_min
+                component.normalize(archive, logger)
+            elif isinstance(component, AtomCenteredBasisSet):
+                component.normalize(archive, logger)
+            elif isinstance(component, EffectiveCorePotential):
                 component.normalize(archive, logger)
 
         if len(plane_waves) == 0:

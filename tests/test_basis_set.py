@@ -15,7 +15,10 @@ from nomad_simulations.schema_packages.basis_set import (
     APWOrbital,
     APWPlaneWaveBasisSet,
     AtomCenteredBasisSet,
+    AtomCenteredFunction,
+    AtomicOrbitals,
     BasisSetContainer,
+    EffectiveCorePotential,
     MuffinTinRegion,
     PlaneWaveBasisSet,
     generate_apw,
@@ -419,3 +422,489 @@ def test_quick_step() -> None:
         ],
     }
     # TODO: generate a QuickStep generator in the CP2K plugin
+
+
+# -------------------------------
+# AtomCenteredFunction (combined shells, padding/truncation, inference)
+# -------------------------------
+
+
+def test_acf_combined_sp_expands_into_two_single_l_shells() -> None:
+    """
+    Combined 'sp' shell should expand into two single-ℓ shells in the parent
+    AtomCenteredBasisSet.functional_compositions, with coefficients split correctly
+    and ℓ inferred (s→0, p→1).
+    """
+    bs = AtomCenteredBasisSet()
+    acf = AtomCenteredFunction(
+        function_type='sp',
+        n_primitive=3,
+        exponents=[1.0, 2.0, 3.0],
+        contraction_coefficients=[10, 11, 12, 20, 21, 22],  # [s ... | p ...]
+        shell_normalization=1.0,
+        r_power=0,
+    )
+    bs.functional_compositions.append(acf)
+
+    # trigger expansion
+    acf.normalize(None, logger)
+
+    # the combined shell replaces itself with 2 single-ℓ shells
+    assert len(bs.functional_compositions) == 2
+    kinds = [sh.function_type for sh in bs.functional_compositions]
+    assert set(kinds) == {'s', 'p'}
+
+    # coefficients were split as blocks of n_primitive
+    s_shell = next(sh for sh in bs.functional_compositions if sh.function_type == 's')
+    p_shell = next(sh for sh in bs.functional_compositions if sh.function_type == 'p')
+    np.testing.assert_allclose(s_shell.contraction_coefficients, [10, 11, 12])
+    np.testing.assert_allclose(p_shell.contraction_coefficients, [20, 21, 22])
+
+    # ℓ inference
+    assert s_shell.angular_momentum == 0
+    assert p_shell.angular_momentum == 1
+
+
+def test_acf_padding_and_truncation_silent() -> None:
+    """
+    Undersized/oversized arrays are padded/truncated silently during normalize().
+    """
+    bs = AtomCenteredBasisSet()
+
+    # too few coeffs -> pad with zeros
+    acf_pad = AtomCenteredFunction(
+        function_type='s',
+        n_primitive=4,
+        exponents=[1.0, 2.0, 3.0, 4.0],
+        contraction_coefficients=[0.5],
+    )
+    bs.functional_compositions.append(acf_pad)
+    acf_pad.normalize(None, logger)
+    assert len(acf_pad.contraction_coefficients) == 4
+    np.testing.assert_allclose(acf_pad.contraction_coefficients, [0.5, 0.0, 0.0, 0.0])
+
+    # too many exponents -> truncate
+    acf_trunc = AtomCenteredFunction(
+        function_type='p',
+        n_primitive=2,
+        exponents=[9.0, 8.0, 7.0],  # will be truncated to 2
+        contraction_coefficients=[1.0, 2.0],
+    )
+    bs.functional_compositions.append(acf_trunc)
+    acf_trunc.normalize(None, logger)
+    np.testing.assert_allclose(acf_trunc.exponents, [9.0, 8.0])
+    assert acf_trunc.angular_momentum == 1  # p → ℓ=1
+
+
+def test_acf_infers_n_primitive_and_ell() -> None:
+    """
+    If n_primitive is omitted, it is inferred from exponents length; ℓ inferred from function_type.
+    """
+    bs = AtomCenteredBasisSet()
+    acf = AtomCenteredFunction(
+        function_type='d',
+        exponents=[0.3, 0.2, 0.1],
+        contraction_coefficients=[1.0, 1.0, 1.0],
+    )
+    bs.functional_compositions.append(acf)
+    acf.normalize(None, logger)
+
+    assert acf.n_primitive == 3
+    assert acf.angular_momentum == 2  # d → ℓ=2
+
+
+# -------------------------------
+# AtomCenteredBasisSet + AO layer
+# -------------------------------
+
+
+def test_acb_sets_total_from_ao_layer() -> None:
+    """
+    total_number_of_basis_functions should be taken from atomic_orbitals.num.
+    """
+    bs = AtomCenteredBasisSet()
+    bs.atomic_orbitals = AtomicOrbitals(
+        num=5,
+        cartesian=False,
+        shell_index=np.array([0, 0, 1, 1, 1], dtype=np.int32),
+        normalization=np.ones(5),
+    )
+    bs.normalize(None, logger)
+    assert bs.total_number_of_basis_functions == 5
+
+
+# -------------------------------
+# EffectiveCorePotential (length consistency)
+# -------------------------------
+
+
+def test_ecp_basic_consistency_ok() -> None:
+    """
+    ECP arrays with lengths matching ecp_num should pass normalize().
+    """
+    ecp = EffectiveCorePotential(
+        ecp_name='Test-ECP',
+        z_core=[10, 18],
+        max_ang_mom_plus_1=[3, 4],
+        ecp_num=3,
+        nucleus_index=[0, 0, 1],
+        ang_mom=[0, 1, 2],
+        exponent=[1.2, 2.3, 3.4],
+        coefficient=[-5.0, 6.0, -7.0],
+        power=[2, 2, 2],
+    )
+    ecp.normalize(None, logger)
+
+    assert ecp.ecp_num == 3
+    assert len(ecp.nucleus_index) == 3
+    assert len(ecp.ang_mom) == 3
+    assert len(ecp.exponent) == 3
+    assert len(ecp.coefficient) == 3
+    assert len(ecp.power) == 3
+
+
+def test_ecp_h2_ccecp_gamess_numbers() -> None:
+    """
+    Real-number smoke test using the ECP example
+    (GAMESS-style lines). We don't assert physics here; we just ensure that
+    the values can be stored 1:1 in our TREXIO-like arrays without shape errors.
+    """
+    # H2: two nuclei; dummy ℓ_max+1 chosen consistently for both
+    z_core = [0, 0]
+    max_ang_mom_plus_1 = [3, 3]
+
+    # One H nucleus worth of lines:
+    #   3
+    #   1.00000000000000    1 21.24359508259891
+    #   21.24359508259891   3 21.24359508259891
+    #   -10.85192405303825  2 21.77696655044365
+    #   1
+    #   0.00000000000000    2 1.000000000000000
+    coeff_block = [
+        1.00000000000000,
+        21.24359508259891,
+        -10.85192405303825,
+        0.00000000000000,
+    ]
+    power_block = [1, 3, 2, 2]
+    exponent_block = [
+        21.24359508259891,
+        21.24359508259891,
+        21.77696655044365,
+        1.000000000000000,
+    ]
+    # For this smoke test, assign all to ℓ=0; in a real parser you’d map
+    # non-local vs local channels appropriately.
+    ang_mom_block = [0, 0, 0, 0]
+
+    # Duplicate for the second H nucleus
+    coefficient = coeff_block + coeff_block
+    power = power_block + power_block
+    exponent = exponent_block + exponent_block
+    ang_mom = ang_mom_block + ang_mom_block
+
+    nucleus_index = [0, 0, 0, 0, 1, 1, 1, 1]
+    ecp_num = len(nucleus_index)
+
+    ecp = EffectiveCorePotential(
+        ecp_name='H-ccECP',
+        z_core=z_core,
+        max_ang_mom_plus_1=max_ang_mom_plus_1,
+        ecp_num=ecp_num,
+        nucleus_index=nucleus_index,
+        ang_mom=ang_mom,
+        exponent=exponent,
+        coefficient=coefficient,
+        power=power,
+    )
+    ecp.normalize(None, logger)
+
+    assert ecp.ecp_num == 8
+    assert (
+        len(ecp.nucleus_index)
+        == len(ecp.ang_mom)
+        == len(ecp.exponent)
+        == len(ecp.coefficient)
+        == len(ecp.power)
+        == ecp_num
+    )
+    # spot-check a couple of literal values
+    assert np.isclose(ecp.exponent[0], 21.24359508259891)
+    assert np.isclose(ecp.coefficient[2], -10.85192405303825)
+    # ensure both nuclei are represented
+    assert set(ecp.nucleus_index) == {0, 1}
+
+
+def test_acf_sp_shell_from_pople_like_numbers() -> None:
+    exps = [3047.5249, 457.3695, 103.9487]
+    s_coeff = [0.15432897, 0.53532814, 0.44463454]
+    p_coeff = [0.09996723, 0.39951283, 0.70011547]
+    coeffs = s_coeff + p_coeff
+
+    acb = AtomCenteredBasisSet(functional_compositions=[])
+
+    sp = AtomCenteredFunction(
+        function_type='sp',
+        harmonic_type='spherical',
+        n_primitive=len(exps),
+        exponents=exps,
+        contraction_coefficients=coeffs,
+    )
+    acb.functional_compositions.append(sp)
+
+    # Normalize the child (expands in-place to 's' and appends 'p')
+    sp.normalize(None, logger)
+
+    assert len(acb.functional_compositions) == 2
+    s_shell, p_shell = acb.functional_compositions
+
+    assert s_shell.function_type == 's'
+    assert p_shell.function_type == 'p'
+    assert s_shell.n_primitive == 3 and p_shell.n_primitive == 3
+    assert np.allclose(s_shell.contraction_coefficients, s_coeff)
+    assert np.allclose(p_shell.contraction_coefficients, p_coeff)
+    assert np.allclose(s_shell.exponents, exps)
+    assert np.allclose(p_shell.exponents, exps)
+
+
+def test_additional_basis_functions_assigned_to_subset_of_atoms() -> None:
+    entry = EntryArchive(
+        data=Simulation(
+            model_system=[
+                ModelSystem(
+                    cell=[AtomicCell()],
+                    particle_states=[
+                        AtomsState(chemical_symbol='O'),  # idx 0
+                        AtomsState(chemical_symbol='H'),  # idx 1
+                        AtomsState(chemical_symbol='H'),  # idx 2
+                    ],
+                )
+            ],
+            model_method=[ModelMethod(numerical_settings=[])],
+        )
+    )
+    numerical_settings = entry.data.model_method[0].numerical_settings
+
+    o_ref = '/data/model_system/0/particle_states/0'
+    h1_ref = '/data/model_system/0/particle_states/1'
+    h2_ref = '/data/model_system/0/particle_states/2'
+
+    acb_oxygen_extra = AtomCenteredBasisSet(
+        species_scope=[entry.data.model_system[0].particle_states[0]],
+        basis_set='user-extra-O',
+        type='GTO',
+        role='orbital',
+        functional_compositions=[
+            AtomCenteredFunction(
+                function_type='d',
+                harmonic_type='spherical',
+                n_primitive=1,
+                exponents=[0.8],
+                contraction_coefficients=[1.0],
+            )
+        ],
+    )
+
+    acb_hydrogen_extra = AtomCenteredBasisSet(
+        species_scope=[
+            entry.data.model_system[0].particle_states[1],
+            entry.data.model_system[0].particle_states[2],
+        ],
+        basis_set='user-extra-H',
+        type='GTO',
+        role='orbital',
+        functional_compositions=[
+            AtomCenteredFunction(
+                function_type='p',
+                harmonic_type='spherical',
+                n_primitive=1,
+                exponents=[0.3],
+                contraction_coefficients=[1.0],
+            )
+        ],
+    )
+
+    container = BasisSetContainer(
+        basis_set_components=[acb_oxygen_extra, acb_hydrogen_extra]
+    )
+    numerical_settings.append(container)
+    container.normalize(None, logger)
+
+    d = numerical_settings[0].m_to_dict()
+    assert d['m_def'] == 'nomad_simulations.schema_packages.basis_set.BasisSetContainer'
+    assert len(d['basis_set_components']) == 2
+
+    by_name = {c['basis_set']: c for c in d['basis_set_components']}
+    cO = by_name['user-extra-O']
+    cH = by_name['user-extra-H']
+
+    # oxygen component
+    assert cO['type'] == 'GTO'
+    assert cO['role'] == 'orbital'
+    assert cO['species_scope'] == [o_ref]
+    assert len(cO['functional_compositions']) == 1
+    s0 = cO['functional_compositions'][0]
+    assert s0['function_type'] == 'd'
+    assert s0['n_primitive'] == 1
+    assert np.allclose(s0['exponents'], [0.8])
+    assert np.allclose(s0['contraction_coefficients'], [1.0])
+
+    # hydrogen component (both H atoms)
+    assert cH['type'] == 'GTO'
+    assert cH['role'] == 'orbital'
+    assert cH['species_scope'] == [h1_ref, h2_ref]
+    assert len(cH['functional_compositions']) == 1
+    s1 = cH['functional_compositions'][0]
+    assert s1['function_type'] == 'p'
+    assert s1['n_primitive'] == 1
+    assert np.allclose(s1['exponents'], [0.3])
+    assert np.allclose(s1['contraction_coefficients'], [1.0])
+
+
+def test_mixed_orbital_aux_ecp() -> None:
+    """
+    Mixed atom-centered setup:
+      - Orbital GTO basis for H and O
+      - Auxiliary_scf GTO basis for H and O
+      - ECP only for O
+    Verifies component wiring, roles, species_scope mapping (via m_to_dict), and ECP consistency.
+    """
+    entry = EntryArchive(
+        data=Simulation(
+            model_system=[
+                ModelSystem(
+                    cell=[AtomicCell()],
+                    particle_states=[
+                        AtomsState(
+                            chemical_symbol='H'
+                        ),  # /data/model_system/0/particle_states/0
+                        AtomsState(
+                            chemical_symbol='O'
+                        ),  # /data/model_system/0/particle_states/1
+                    ],
+                )
+            ],
+            model_method=[
+                ModelMethod(
+                    contributions=[
+                        BaseModelMethod(name='kinetic'),
+                        BaseModelMethod(name='electron-ion'),
+                        BaseModelMethod(name='hartree'),
+                    ],
+                    numerical_settings=[],
+                )
+            ],
+        )
+    )
+
+    h_ref = '/data/model_system/0/particle_states/0'
+    o_ref = '/data/model_system/0/particle_states/1'
+
+    orbital_bs = AtomCenteredBasisSet(
+        basis_set='def2-SVP',
+        type='GTO',
+        role='orbital',
+        species_scope=[
+            entry.data.model_system[0].particle_states[0],
+            entry.data.model_system[0].particle_states[1],
+        ],
+        functional_compositions=[
+            AtomCenteredFunction(
+                function_type='s',
+                n_primitive=3,
+                exponents=[3.42525, 0.62391, 0.16886],
+                contraction_coefficients=[0.15433, 0.53533, 0.44463],
+            ),
+        ],
+        atomic_orbitals=AtomicOrbitals(
+            num=1, cartesian=False, shell_index=[0], normalization=[1.0]
+        ),
+    )
+
+    aux_bs = AtomCenteredBasisSet(
+        basis_set='def2/JKfit',
+        type='GTO',
+        role='auxiliary_scf',
+        species_scope=[
+            entry.data.model_system[0].particle_states[0],
+            entry.data.model_system[0].particle_states[1],
+        ],
+        functional_compositions=[
+            AtomCenteredFunction(
+                function_type='s',
+                n_primitive=2,
+                exponents=[1.0, 0.2],
+                contraction_coefficients=[1.0, 0.5],
+            ),
+        ],
+        atomic_orbitals=AtomicOrbitals(
+            num=1, cartesian=False, shell_index=[0], normalization=[1.0]
+        ),
+    )
+
+    ecp_o = EffectiveCorePotential(
+        ecp_name='ccECP-O',
+        species_scope=[entry.data.model_system[0].particle_states[1]],
+        z_core=[10],
+        max_ang_mom_plus_1=[3],
+        ecp_num=2,
+        nucleus_index=[0, 0],
+        ang_mom=[0, 2],
+        exponent=[20.0, 21.0],
+        coefficient=[1.0, -0.5],
+        power=[1, 2],
+    )
+
+    container = BasisSetContainer(basis_set_components=[orbital_bs, aux_bs, ecp_o])
+    entry.data.model_method[0].numerical_settings.append(container)
+
+    container.normalize(None, logger)
+
+    # 3 components
+    assert len(container.basis_set_components) == 3
+
+    # roles present
+    roles = [
+        c.role
+        for c in container.basis_set_components
+        if isinstance(c, AtomCenteredBasisSet)
+    ]
+    assert 'orbital' in roles and 'auxiliary_scf' in roles
+
+    # species_scope: compare via paths in m_to_dict()
+    d = container.m_to_dict()
+    acb_items = [
+        c
+        for c in d['basis_set_components']
+        if c['m_def'].endswith('AtomCenteredBasisSet')
+    ]
+    ecp_items = [
+        c
+        for c in d['basis_set_components']
+        if c['m_def'].endswith('EffectiveCorePotential')
+    ]
+
+    assert len(acb_items) == 2
+    for acb in acb_items:
+        assert acb['species_scope'] == [h_ref, o_ref]
+
+    assert len(ecp_items) == 1
+    assert ecp_items[0]['species_scope'] == [o_ref]
+
+    # ECP array consistency
+    ecp = [
+        c
+        for c in container.basis_set_components
+        if isinstance(c, EffectiveCorePotential)
+    ][0]
+    assert len(ecp.z_core) == len(ecp.max_ang_mom_plus_1) == 1
+    assert ecp.ecp_num == 2
+    for name in ('nucleus_index', 'ang_mom', 'exponent', 'coefficient', 'power'):
+        arr = getattr(ecp, name)
+        assert arr is not None and len(arr) == ecp.ecp_num
+
+    # AO layers provide totals
+    acb_sections = [
+        c for c in container.basis_set_components if isinstance(c, AtomCenteredBasisSet)
+    ]
+    assert [c.total_number_of_basis_functions for c in acb_sections] == [1, 1]
