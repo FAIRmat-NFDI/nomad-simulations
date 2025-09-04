@@ -43,8 +43,9 @@ class DMFTMaxEntWorkflow(BeyondDFTWorkflow):
 
         super().normalize(archive, logger)
 
-        if self.task and not self.task[-1].name:
-            self.task[-1].name = 'MaxEnt'
+        if self.tasks:
+            if not self.tasks[-1].name:
+                self.tasks[-1].name = 'MaxEnt'
 
 
 m_package.__init_metainfo__()
