@@ -37,13 +37,13 @@ jobs:
         uv run python -m mypy --ignore-missing-imports --follow-imports=silent --no-strict-optional src/nomad_simulations/schema_packages tests
     - name: Test with pytest
       run: |
-        uv run python -m coverage run -m pytest -sv tests
+        uv run --with coverage coverage run -m pytest -sv tests
     - name: Submit to coveralls
       continue-on-error: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        coveralls --service=github
+        uv run --with coveralls coveralls --service=github
 
   build-and-install:
     runs-on: ubuntu-latest
