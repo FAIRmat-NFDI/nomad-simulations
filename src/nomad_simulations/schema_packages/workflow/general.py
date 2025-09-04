@@ -24,7 +24,7 @@ class SimulationWorkflowModel(ArchiveSection):
     Base class for simulation workflow model sub-section definition.
     """
 
-    label = 'Input model'
+    _label = 'Input model'
 
     initial_system = Quantity(
         type=ModelSystem,
@@ -55,7 +55,7 @@ class SimulationWorkflowResults(ArchiveSection):
     Base class for simulation workflow results sub-section definition.
     """
 
-    label = 'Output results'
+    _label = 'Output results'
 
     final_outputs = Quantity(
         type=Outputs,
@@ -84,7 +84,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
     outputs, respectively.
     """
 
-    task_label = 'Task'
+    _task_label = 'Task'
 
     model = SubSection(sub_section=SimulationWorkflowModel.m_def)
 
@@ -92,19 +92,29 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if self.model:
-            logger = self.map_inputs.__annotations__['logger']
-            self.model.normalize(archive, logger)
-            # add method to inputs
-            self.inputs.append(Link(name=self.model.label, section=self.model))
+        if not self.model:
+            self.model = SimulationWorkflowModel()
+
+        if self.model in [inp.section for inp in self.inputs]:
+            return
+
+        logger = self.map_inputs.__annotations__['logger']
+        self.model.normalize(archive, logger)
+        # add method to inputs
+        self.inputs.append(Link(name=self.model._label, section=self.model))
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
-        if self.results:
-            logger = self.map_outputs.__annotations__['logger']
-            self.results.normalize(archive, logger)
-            # add results to outputs
-            self.outputs.append(Link(name=self.results.label, section=self.results))
+        if not self.results:
+            self.results = SimulationWorkflowResults()
+
+        if self.results in [out.section for out in self.outputs]:
+            return
+
+        logger = self.map_outputs.__annotations__['logger']
+        self.results.normalize(archive, logger)
+        # add results to outputs
+        self.outputs.append(Link(name=self.results._label, section=self.results))
 
     @log
     def map_tasks(self, archive: EntryArchive) -> None:
@@ -112,6 +122,10 @@ class SimulationWorkflow(Workflow, SimulationTask):
         Generate tasks from archive data outputs. Tasks are ordered and linked based
         on the execution time of the calculation corresponding to the output.
         """
+        # do not overwrite assigned tasks
+        if self.tasks:
+            return
+
         if not archive.data or not archive.data.outputs:
             return
 
@@ -126,9 +140,10 @@ class SimulationWorkflow(Workflow, SimulationTask):
         outputs.sort(key=lambda x: x.wall_start or 0)
         tasks = []
         parent_n = 0
+        root_n = 0
         for n, output in enumerate(outputs):
             task = SimulationTask(
-                name=f'{self.task_label} {n}',
+                name=f'{self._task_label} {n}',
                 outputs=[Link(name='Outputs', section=output)],
             )
             tasks.append(task)
@@ -140,9 +155,15 @@ class SimulationWorkflow(Workflow, SimulationTask):
                 task.inputs.extend(
                     [Link(name='Linked task', section=t) for t in tasks[parent_n:n]]
                 )
+                root_n = parent_n
                 parent_n = n
             elif n != parent_n:
-                task.inputs.append(Link(name='Linked task', section=tasks[parent_n]))
+                task.inputs.extend(
+                    [
+                        Link(name='Linked task', section=t)
+                        for t in tasks[root_n:parent_n]
+                    ]
+                )
 
         self.tasks.extend(tasks)
 
@@ -153,28 +174,17 @@ class SimulationWorkflow(Workflow, SimulationTask):
         if not self.name:
             self.name: str = self.m_def.name
 
-        if not self.inputs:
-            self.map_inputs(archive, logger=logger)
+        self.map_inputs(archive, logger=logger)
 
-        if not self.outputs:
-            self.map_outputs(archive, logger=logger)
+        self.map_outputs(archive, logger=logger)
 
-        if not self.tasks:
-            self.map_tasks(archive, logger=logger)
+        self.map_tasks(archive, logger=logger)
 
 
 class SerialWorkflow(SimulationWorkflow):
     """
     Base class for workflows where tasks are executed sequentially.
     """
-
-    @log
-    def map_tasks(self, archive: EntryArchive) -> None:
-        logger = self.map_tasks.__annotations__['logger']
-        super().map_tasks(archive, logger=logger)
-        for n, task in enumerate(self.tasks):
-            if not task.name:
-                task.name = f'{self.task_label} {n}'
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
@@ -213,21 +223,22 @@ class ParallelWorkflow(SimulationWorkflow):
     Base class for workflows where tasks are executed concurrently.
     """
 
-    @log
-    def map_tasks(self, archive: EntryArchive) -> None:
-        logger = self.map_tasks.__annotations__['logger']
-        super().map_tasks(archive, logger=logger)
+    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger=logger)
 
         if not self.tasks:
             logger.error(INCORRECT_N_TASKS)
             return
 
-        # link inputs and outputs to all tasks
-        for n, task in enumerate(self.tasks):
+        for task in self.tasks:
             if not task.inputs:
+                # link inputs to all tasks
                 task.inputs.extend(self.inputs)
-            if not task.outputs:
-                task.outputs.extend(self.outputs)
+
+                # link tasks outputs to outputs
+                self.outputs.extend(
+                    [out for out in task.outputs if out not in self.outputs]
+                )
 
 
 class ElectronicStructureResults(SimulationWorkflowResults):

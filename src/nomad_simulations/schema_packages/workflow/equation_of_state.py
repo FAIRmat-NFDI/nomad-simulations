@@ -36,6 +36,8 @@ FUNCTION_NAMES = {
 
 
 class EquationOfStateModel(SimulationWorkflowModel):
+    _label = 'EquationOfState workflow parameters'
+
     program = Quantity(
         type=Reference(Program),
         shape=[],
@@ -123,6 +125,8 @@ class EOSFit(ArchiveSection):
 
 
 class EquationOfStateResults(SimulationWorkflowResults):
+    _label = 'EquationOfState workflow results'
+
     n_points = Quantity(
         type=np.int32,
         shape=[],
@@ -153,14 +157,19 @@ class EquationOfStateResults(SimulationWorkflowResults):
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if self.n_points is None:
-            self.n_points = len(archive.data.outputs)
+            try:
+                self.n_points = len(archive.data.outputs)
+            except Exception:
+                logger.error('No Outputs found.')
 
         if self.energies is None:
             try:
-                self.energies = [
+                energies = [
                     outputs.total_energies[-1].value.to('joule').magnitude
                     for outputs in archive.data.outputs
                 ]
+                if energies:
+                    self.energies = energies
             except Exception:
                 logger.error('Total energy not found in outputs.')
 
@@ -168,26 +177,28 @@ class EquationOfStateResults(SimulationWorkflowResults):
             try:
                 volumes = []
                 for system in archive.data.model_system:
+                    lattice_vectors = None
                     for cell in system.cell:
                         if cell.lattice_vectors is not None:
-                            cell = system.atoms.lattice_vectors.to('m').magnitude
-                            volumes.append(get_volume(cell))
+                            lattice_vectors = cell.lattice_vectors.to('m').magnitude
                             break
-                self.volumes = volumes
+                    volumes.append(get_volume(lattice_vectors))
+                if volumes:
+                    self.volumes = volumes
             except Exception:
-                pass
+                logger.error('Error getting volume from model_system.')
+                return
 
-        if self.n_points != len(self.energies) != len(self.volumes):
-            logger.error('Iconsistent size of energies and volumes.')
+        to_fit = self.energies is not None and self.volumes is not None
 
-        if (
-            not self.eos_fit
-            and self.results.volumes is not None
-            and self.results.energies is not None
-        ):
+        if to_fit and not (self.n_points == len(self.energies) == len(self.volumes)):
+            logger.error('Inconsistent size of energies and volumes.')
+            to_fit = False
+
+        if not self.eos_fit and to_fit:
             # convert to ase units in order for function optimization to work
-            volumes = self.results.volumes.to('angstrom ** 3').magnitude
-            energies = self.results.energies.to('eV').magnitude
+            volumes = self.volumes.to('angstrom ** 3').magnitude
+            energies = self.energies.to('eV').magnitude
             for function_name, ase_name in FUNCTION_NAMES.items():
                 try:
                     eos = aseEOS(volumes, energies, ase_name)
@@ -202,7 +213,7 @@ class EquationOfStateResults(SimulationWorkflowResults):
                         equilibrium_energy=eos.e0 * ureg.eV,
                         rms_error=rms_error,
                     )
-                    self.results.eos_fit.append(eos_fit)
+                    self.eos_fit.append(eos_fit)
                 except Exception:
                     logger.warning('EOS fit unsuccesful.')
 
@@ -212,7 +223,7 @@ class EquationOfState(ParallelWorkflow):
     Definitions for equation of state workflow.
     """
 
-    task_label = 'Volume'
+    _task_label = 'Volume'
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

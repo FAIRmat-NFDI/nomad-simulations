@@ -16,7 +16,7 @@ m_package = SchemaPackage()
 
 
 class BeyondDFTModel(SimulationWorkflowModel):
-    label = 'DFT+ workflow parameters'
+    _label = 'DFT+ workflow parameters'
 
 
 class BeyondDFTResults(SimulationWorkflowResults):
@@ -24,7 +24,7 @@ class BeyondDFTResults(SimulationWorkflowResults):
     Contains reference to DFT outputs.
     """
 
-    label = 'DFT+ workflow results'
+    _label = 'DFT+ workflow results'
 
     dft = SubSection(sub_section=ElectronicStructureResults)
 

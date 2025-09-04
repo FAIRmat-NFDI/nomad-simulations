@@ -10,11 +10,11 @@ m_package = SchemaPackage()
 
 
 class DFTGWModel(BeyondDFTModel):
-    label = 'DFT+GW workflow parameters'
+    _label = 'DFT+GW workflow parameters'
 
 
 class DFTGWResults(BeyondDFTResults):
-    label = 'DFT+GW workflow results'
+    _label = 'DFT+GW workflow results'
 
 
 class DFTGWWorkflow(BeyondDFTWorkflow):
@@ -43,8 +43,8 @@ class DFTGWWorkflow(BeyondDFTWorkflow):
 
         super().normalize(archive, logger)
 
-        if self.task and not self.task[-1].name:
-            self.task[-1].name = 'GW'
+        if self.tasks and not self.tasks[-1].name:
+            self.tasks[-1].name = 'GW'
 
 
 m_package.__init_metainfo__()
