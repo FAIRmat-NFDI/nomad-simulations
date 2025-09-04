@@ -1,7 +1,7 @@
 import numpy as np
 from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflow
-from nomad.metainfo import Datetime, Quantity, SchemaPackage, SubSection
+from nomad.metainfo import MEnum, Quantity, SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.common import SimulationTime
@@ -27,7 +27,66 @@ class SimulationTask(Task):
     pass
 
 
-class SimulationWorkflowMethod(ArchiveSection):
+class WorkflowConvergenceTarget(ArchiveSection):
+    """
+    A section for defining convergence targets.
+
+    Calculations are converged w.r.t. to different parameters. This section holds the parameter name
+    and the unit of the convergence parameter.
+    """
+
+    # TODO: This most probably needs more explanation, and/or needs to be changed to an Enum to reduce ambiguity when populating.
+    convergence_parameter_name = Quantity(
+        type=str,
+        description="""
+        Name of the parameter that is converged, e.g., energy, forces, electron density, ...
+        """
+    )
+
+    convergence_threshold = Quantity(
+        type=np.float64,
+        description="""
+        Numerical value of the parameter that is converged.
+        """
+    )
+
+    # This is copied from PR #191 https://github.com/nomad-coe/nomad-simulations/pull/191
+    threshold_type = Quantity(
+        type=MEnum('absolute', 'relative', 'maximum', 'rms', 'residuum'),
+        description="""
+            Specifies the mathematical method used to evaluate convergence between successive self-consistent field (SCF) iterations. 
+    This determines how differences between iterations are calculated and compared against the convergence threshold.
+    
+    The available comparison modes are:
+    
+    | Mode | Description |
+    | --------- | -------------------------------- |
+    | `'absolute'` | Measures the absolute difference between two subsequent iterations (e.g., |E_n - E_{n-1}|). Most common for energy convergence. |
+    | `'relative'` | Calculates the relative difference as a fraction of the total property value (e.g., |E_n - E_{n-1}|/|E_n|). Useful when the magnitude of the property varies widely across systems. |
+    | `'residuum'` | Computes the absolute difference between the current value and the value estimated from the wavefunction at the start of the step. Often used for evaluating convergence of the electron density. |
+    | `'maximum'` | Reports the maximum absolute difference across all components of a multi-component property (e.g., max|F_i,n - F_i,{n-1}| for forces). Suitable for vector quantities like forces or stress tensor elements. |
+    | `'rms'` | Calculates the root mean square of differences across all components (e.g., √(∑|F_i,n - F_i,{n-1}|²/N)). Provides a statistical measure of overall convergence for multi-component properties. |
+    
+    The mode used affects both convergence behavior and computational efficiency. Different codes may default to different comparison modes for the same physical property.
+        """,
+    )
+
+    convergence_threshold_unit = Quantity(
+        type=str,
+        description="""
+        Unit using the pint UnitRegistry() notation for the `convergence_threshold`.
+        """
+    )
+
+    is_reached = Quantity(
+        type=bool,
+        description="""
+        Represents if the convergence target was reached (True) or not (False).
+        """
+    )
+
+
+class SimulationWorkflowModel(ArchiveSection):
     """
     Base class for simulation workflow model sub-section definition.
     """
@@ -48,15 +107,28 @@ class SimulationWorkflowMethod(ArchiveSection):
         """,
     )
 
+    is_converged = Quantity(
+        type=bool,
+        description="""
+        Indicates if all convergence targets have been reached (true)
+        or not (false)
+        """
+    )
+
+    convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
+
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not archive.data:
             return
 
+        # set references to initial system and method
         if not self.initial_system and archive.data.model_system:
             self.initial_system = archive.data.model_system[0]
         if not self.initial_method and archive.data.model_method:
             self.initial_method = archive.data.model_method[0]
 
+        # set convergence
+        self.is_converged = all(convergence_target.is_reached for convergence_target in self.convergence)
 
 class WorkflowTime(ArchiveSection):
     """
@@ -139,30 +211,6 @@ class SimulationTaskReference(TaskReference, SimulationTask):
     pass
 
 
-class WorkflowConvergenceTarget(ArchiveSection):
-    """
-    A section for defining convergence targets.
-
-    Calculations are converged w.r.t. to different parameters. This section holds the parameter name
-    and the respective convergence goal.
-
-    TODO: How to deal with units? Should this be an enum?
-    """
-
-    convergence_target = Quantity(
-        type=str,
-        description="""
-        Name of the parameter that is converged.
-        """
-    )
-
-    convergence_threshold = Quantity(
-        type=float,
-        description="""
-        Numerical value of the parameter that is converged.
-        """
-    )
-
 class SimulationWorkflow(Workflow, SimulationTask):
     """
     Base class for simulation workflows.
@@ -176,8 +224,6 @@ class SimulationWorkflow(Workflow, SimulationTask):
     method = SubSection(sub_section=SimulationWorkflowMethod.m_def)
 
     results = SubSection(sub_section=SimulationWorkflowResults.m_def)
-
-    convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
 
     @log
     def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:

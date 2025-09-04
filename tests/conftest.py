@@ -21,9 +21,16 @@ from nomad_simulations.schema_packages.model_system import ModelSystem, Represen
 from nomad_simulations.schema_packages.numerical_settings import (
     KLinePath as KLinePathSettings,
 )
-from nomad_simulations.schema_packages.numerical_settings import KMesh as KMeshSettings
-from nomad_simulations.schema_packages.numerical_settings import KSpace, SelfConsistency
-from nomad_simulations.schema_packages.outputs import Outputs, SCFOutputs
+from nomad_simulations.schema_packages.numerical_settings import (
+    KMesh as KMeshSettings,
+)
+from nomad_simulations.schema_packages.numerical_settings import (
+    KSpace,
+)
+from nomad_simulations.schema_packages.outputs import (
+    Outputs,
+    SCFOutputs,
+)
 from nomad_simulations.schema_packages.properties import (
     DOSProfile,
     ElectronicBandGap,
