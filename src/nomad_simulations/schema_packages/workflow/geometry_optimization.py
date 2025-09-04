@@ -1,17 +1,26 @@
 import numpy as np
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import MEnum, Quantity, SchemaPackage
+from nomad.metainfo import MEnum, Quantity, SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.properties.energies import BaseEnergy
 from nomad_simulations.schema_packages.utils import log
 
-from .general import SerialWorkflow, SimulationWorkflowModel, SimulationWorkflowResults
+from .general import (
+    SerialWorkflow,
+    SimulationWorkflowModel,
+    SimulationWorkflowResults,
+    WorkflowConvergenceTarget,
+)
 
 m_package = SchemaPackage()
 
 
 class GeometryOptimizationModel(SimulationWorkflowModel):
+    """
+    Workflow model describing a geometry optimization.
+    """
+
     label = 'Geometry optimization parameters'
 
     optimization_type = Quantity(
@@ -43,42 +52,6 @@ class GeometryOptimizationModel(SimulationWorkflowModel):
         description="""
         The method used for geometry optimization. Some known possible values are:
         `"steepest_descent"`, `"conjugant_gradient"`, `"low_memory_broyden_fletcher_goldfarb_shanno"`.
-        """,
-    )
-
-    convergence_tolerance_energy_difference = Quantity(
-        type=float,
-        shape=[],
-        unit='joule',
-        description="""
-        The input energy difference tolerance criterion.
-        """,
-    )
-
-    convergence_tolerance_force_maximum = Quantity(
-        type=float,
-        shape=[],
-        unit='newton',
-        description="""
-        The input maximum net force tolerance criterion.
-        """,
-    )
-
-    convergence_tolerance_stress_maximum = Quantity(
-        type=float,
-        shape=[],
-        unit='pascal',
-        description="""
-        The input maximum stress tolerance criterion.
-        """,
-    )
-
-    convergence_tolerance_displacement_maximum = Quantity(
-        type=float,
-        shape=[],
-        unit='meter',
-        description="""
-        The input maximum displacement tolerance criterion.
         """,
     )
 

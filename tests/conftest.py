@@ -21,7 +21,6 @@ from nomad_simulations.schema_packages.numerical_settings import (
 )
 from nomad_simulations.schema_packages.numerical_settings import (
     KSpace,
-    SelfConsistency,
 )
 from nomad_simulations.schema_packages.outputs import (
     Outputs,
