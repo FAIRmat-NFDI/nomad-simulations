@@ -184,22 +184,453 @@ class APWPlaneWaveBasisSet(PlaneWaveBasisSet):
 
 class AtomCenteredFunction(ArchiveSection):
     """
-    Specifies a single function (term) in an atom-centered basis set.
+    Specifies a single contracted basis function in an atom-centered basis set.
+
+    In many quantum-chemistry codes, an atom-centered basis set is composed of
+    several "shells," each shell containing one or more basis functions of a certain
+    angular momentum. For instance, a shell of p-type orbitals (L=1) typically
+    consists of 3 degenerate functions (p_x, p_y, p_z) if `harmonic_type='cartesian'`
+    or 3 spherical harmonics if `harmonic_type='spherical'`.
+
+    A single "atom-centered function" can be a linear combination of multiple
+    primitive Gaussians (or Slater-type orbitals, STOs).
+    In practice, these contract together to form the final basis function used by
+    the SCF or post-SCF method. Often, each contraction is labeled by its
+    angular momentum (e.g., s, p, d, f) and a set of exponents and coefficients.
+
+    **References**:
+      - T. Helgaker, P. Jørgensen, J. Olsen, *Molecular Electronic-Structure Theory*, Wiley (2000).
+      - F. Jensen, *Introduction to Computational Chemistry*, 2nd ed., Wiley (2007).
+      - J. B. Foresman, Æ. Frisch, *Exploring Chemistry with Electronic Structure Methods*, Gaussian Inc.
     """
 
-    pass
+    harmonic_type = Quantity(
+        type=MEnum(
+            'spherical',
+            'cartesian',
+        ),
+        default='spherical',
+        description="""
+        Specifies whether the basis functions are expanded in **spherical** (pure) 
+        harmonics or **cartesian** harmonics. Many modern quantum-chemistry codes 
+        default to *spherical harmonics* for d, f, g..., which eliminates the 
+        redundant functions found in the cartesian sets.
+        
+        - `'spherical'` : (2l+1) functions for a shell of angular momentum l
+        - `'cartesian'` : (l+1)(l+2)/2 functions for that shell (extra functions appear)
+        """,
+    )
 
-    # TODO: design system for writing basis functions like gaussian or slater orbitals
+    function_type = Quantity(
+        type=MEnum(
+            's',
+            'p',
+            'd',
+            'f',
+            'g',
+            'h',
+            'i',
+            'j',
+            'k',
+            'l',
+            'sp',
+            'spd',
+            'spdf',
+        ),
+        description="""
+        Symbolic label for the **angular momentum** of this contracted function. 
+        Typical single-letter labels:
+          - 's' => L=0
+          - 'p' => L=1
+          - 'd' => L=2
+          - 'f' => L=3
+          - 'g' => L=4
+          - 'h', 'i', etc. => still higher angular momenta
+        Combined labels like 'sp' or 'spdf' indicate a **combined shell** in which 
+        multiple angular momenta share exponents. For example, in some older Pople 
+        basis sets, an 'sp' shell has an s- and p-type function sharing the same 
+        exponents but different contraction coefficients.
+        """,
+    )
+
+    n_primitive = Quantity(
+        type=np.int32,
+        description="""
+        Number of **primitive** functions in this contracted basis function. 
+        For example, in a contracted Gaussian-type orbital (GTO) approach, each basis 
+        function might be built from a sum of `n_primitive` Gaussians with different 
+        exponents, each scaled by a contraction coefficient.
+        """,
+    )
+
+    n_components = Quantity(type=np.int32)
+
+    contraction_coefficients = Quantity(
+        type=np.float32,
+        shape=['*'],
+        description="""
+        The **contraction coefficients** associated with each primitive exponent. 
+        In the simplest case (pure s- or p-function), this array has length 
+        equal to `n_primitive`. For combined shells (like 'sp'), the length 
+        might be `2 * n_primitive`, because you have separate coefficients 
+        for the s-part and the p-part.
+        """,
+    )
+
+    exponents = Quantity(
+        type=np.float32,
+        shape=['n_primitive'],
+        description="""
+        The **exponents** of each primitive basis function. 
+        In a Gaussian basis set (GTO), these are the alpha_i in 
+        exp(-alpha_i * r^2). In a Slater-type basis (STO), they'd be 
+        exp(-zeta_i * r). Typically sorted from largest to smallest.
+        """,
+    )
+
+    primitive_normalization = Quantity(
+        type=MEnum('L2', 'none', 'contracted', 'custom'),
+        default='L2',
+        description="""
+        Convention used for contraction coefficients:
+        • 'L2' - coefficients multiply L²-normalised primitives (Gaussian/BSE style).  
+        • 'none' - coefficients multiply unnormalised primitives (rare).  
+        • 'contracted' - primitives normalised, contracted function renormalised (GAMESS-style).  
+        • 'custom' - explicit factors are stored in `primitive_factor` / `shell_factor`.
+        """,
+    )
+
+    primitive_factor = Quantity(
+        type=np.float64,
+        shape=['n_primitive'],
+        description="""
+        **Extra scaling factors for each primitive** (dimensionless).
+
+        - Let ϕₖ(r) be the *analytic* primitive basis function (Gaussian or
+          Slater) with its standard L² normalisation constant **N_k**.
+        - Many libraries store coefficients **cₖ** that *already* include N_k
+          (Gaussian convention).  Others store raw cₖ and rely on the program
+          to multiply by N_k at run time.
+        - `primitive_factor[k]` captures *any* additional multiplier applied
+          to ϕₖ beyond its analytic normalisation—e.g. if the published
+          coefficients correspond to **unnormalised** primitives,
+          `primitive_factor[:] = 1 / N_k`.
+
+        Typical values:
+
+        | Scenario (source)                               | primitive_factor |
+        |-------------------------------------------------|------------------|
+        | BSE / Gaussian input (“coeffs x L²-norm prim”)  | 1.0              |
+        | Raw CRYSTAL deck (“coeffs for unnorm prim”)     | 1 / N_k          |
+        | Custom numeric STOs with internal scaling       | arbitrary        |
+
+        If omitted or a value of 1.0 is supplied, the primitives follow the
+        convention implied by `primitive_normalization`.  Only set a custom
+        factor when `primitive_normalization == 'custom'`.
+        """,
+    )
+
+    shell_normalization = Quantity(
+        type=np.float64,
+        description="""
+        **Global normalisation constant for the contracted shell** χ(r).
+
+        After primitives (and their `primitive_factor`s) are combined with the
+        contraction coefficients, one may optionally rescale the entire
+        contracted function so that
+
+        \\[
+            \\int_{\\mathbb{R}^3} |χ(r)|^2 \\,dr = 1.
+        \\]
+
+        - Many codes (Gaussian, ORCA, Q‑Chem) leave the contracted shell
+          *unnormalised* (value = 1.0).
+        - Other codes (GAMESS default) renormalise χ, in which case
+          `shell_normalization` equals the computed factor **1/√⟨χ|χ⟩**.
+        - Storing it makes the representation **loss‑free**: regardless of the
+          original convention, another program can reproduce exactly the same
+          contracted AOs by multiplying the linear combination *and then*
+          this scalar.
+
+        Leave at 1.0 (or None) if no extra shell‑level scaling is present.
+        """,
+    )
+
+    point_charge = Quantity(
+        type=np.float32,
+        description="""
+        If using a basis function that explicitly includes a point-charge or an 
+        ECP-like pseudo-component, this field can store that net charge. 
+        Typically 0 for standard GTO or STO expansions. 
+        Some extended basis concepts (or embedded charges) might set it differently.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        Canonicalise sizes and rebuild helper attributes.
+
+        * ``contraction_coefficients`` stays *flat* to satisfy the declared
+          1-D shape, but the property ``coeff_matrix`` (added below) provides
+          a reshaped **view** for convenience.
+        * ``coefficient_sets`` maps each angular‑momentum letter ('s','p',…)
+          to its slice in the flat list.
+        """
+        super().normalize(archive, logger)
+
+        # ---------------- infer component / primitive counts -------------
+        self.n_components = len(self.function_type) if self.function_type else 1
+        if self.n_primitive is None and self.exponents is not None:
+            self.n_primitive = len(self.exponents)
+
+        # ---------------- shape & size checks ----------------------------
+        if self.exponents is not None and len(self.exponents) != self.n_primitive:
+            logger.error('Length of exponents != n_primitive.')
+
+        if self.contraction_coefficients is None:
+            logger.error('contraction_coefficients must be provided.')
+
+        flat = np.asarray(self.contraction_coefficients, dtype=np.float32).ravel()
+        expected = self.n_components * self.n_primitive
+        if flat.size != expected:
+            logger.error(
+                'Contraction-coefficient count mismatch',
+                coeffs_given=int(flat.size),
+                coeffs_expected=int(expected),
+                n_components=int(self.n_components),
+                n_primitive=int(self.n_primitive),
+            )
+
+        # store back as flat 1‑D array (Nomad‑valid)
+        self.contraction_coefficients = flat
+
+        # ---------------- helper views -----------------------------------
+        letters = list(self.function_type) if self.function_type else ['s']
+        step = self.n_primitive
+        self.coefficient_sets = {
+            ltr: flat[i * step : (i + 1) * step] for i, ltr in enumerate(letters)
+        }
+
+    # ---------------- property: matrix view (read‑only) ------------------
+    @property
+    def coeff_matrix(self) -> np.ndarray:
+        """Return coefficients as an (n_components × n_primitive) array."""
+        return self.contraction_coefficients.reshape(
+            self.n_components, self.n_primitive
+        )
+
+
+class EffectiveCorePotential(BasisSetComponent):
+    """
+    Effective‐core potential (ECP) replacing a given atom's core electrons
+    with a non-local projector potential.
+    """
+
+    ecp_name = Quantity(
+        type=str,
+        description="""
+        Code-specific ECP identifier or filename—for example “LANL2DZ-Fe”
+        or “SDD_Mo”.  This is purely descriptive;
+        the actual species is still driven by `species_scope`.
+        """,
+    )
+    n_core_electrons = Quantity(
+        type=np.int32, description='Number of core electrons replaced by this ECP.'
+    )
+    n_terms = Quantity(
+        type=np.int32, description='Number of Gaussian terms in this ECP channel.'
+    )
+    angular_momentum = Quantity(
+        type=np.int32,
+        shape=['n_terms'],
+        description='Angular momentum ℓ for each projector term.',
+    )
+    r_exponents = Quantity(
+        type=np.int32,
+        shape=['n_terms'],
+        description='Power of r in each term: V_ℓ(r) ∼ r^{n_exponent} e^{-α r^2}.',
+    )
+    gaussian_exponents = Quantity(
+        type=np.float64,
+        unit='1/(meter**2)',
+        shape=['n_terms'],
+        description='Gaussian exponent α in exp(-α r²) for each projector term.',
+    )
+    coefficients = Quantity(
+        type=np.float64,
+        shape=['n_terms'],
+        description='Coefficient c_{i,ℓ} for each term in the non-local ECP potential.',
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        1) Enforce that each length-`n_terms` array matches `n_terms`.
+        2) Set self.name = "ECP-<symbol>" using the first species_scope entry.
+        """
+        super().normalize(archive, logger)
+
+        # shape checks
+        for attr in (
+            'angular_momentum',
+            'r_exponents',
+            'gaussian_exponents',
+            'coefficients',
+        ):
+            arr = getattr(self, attr)
+            if arr is None:
+                logger.error('Required ECP array is missing', array_name=attr)
+                continue
+
+            if len(arr) != self.n_terms:
+                logger.error(
+                    'Length of ECP array does not match n_terms',
+                    array_name=attr,
+                    length=len(arr),
+                    expected=self.n_terms,
+                )
+
+        # derive a human-readable name from species_scope
+        if self.species_scope:
+            symbol = self.species_scope[0].chemical_symbol
+            self.name = f'ECP-{symbol}'
+        else:
+            logger.warning('ECP has no species_scope; leaving name unset.')
 
 
 class AtomCenteredBasisSet(BasisSetComponent):
     """
-    Defines an atom-centered basis set.
+    Defines an **atom-centered basis set** for quantum chemistry calculations.
+    Unlike plane-wave methods, these expansions are typically built around each atom's
+    position, using either:
+      - Slater-type orbitals (STO)
+      - Gaussian-type orbitals (GTO)
+      - Numerical atomic orbitals (NAO)
+      - Effective-core potentials or point-charges (PC, cECP, etc.)
+
+    This section references multiple `AtomCenteredFunction` objects, each describing
+    a single contracted function or shell. Additionally, one can label the overall
+    basis set name (e.g., "cc-pVTZ", "def2-SVP", "6-31G**") and specify the high-level
+    role of the basis set in the calculation.
+
+    **Common examples**:
+      - **Pople basis** (3-21G, 6-31G(d), 6-311++G(2df,2pd), etc.)
+      - **Dunning correlation-consistent** (cc-pVDZ, cc-pVTZ, aug-cc-pVTZ, etc.)
+      - **Slater basis** used in ADF, for instance
+      - **ECP** (Effective Core Potential) expansions like LANL2DZ or SDD for transition metals
+
+    **References**:
+      - F. Jensen, *Introduction to Computational Chemistry*, 2nd ed., Wiley (2007).
+      - A. Szabo, N. S. Ostlund, *Modern Quantum Chemistry*, McGraw-Hill (1989).
+      - T. H. Dunning Jr., J. Chem. Phys. 90, 1007 (1989) for correlation-consistent basis sets.
     """
 
-    functional_composition = SubSection(
+    basis_set = Quantity(
+        type=str,
+        description="""
+        **Name** or label of the basis set as recognized by the code or standard 
+        library. Examples: "6-31G*", "cc-pVTZ", "def2-SVP", "STO-3G", "LANL2DZ" (ECP).
+        """,
+    )
+
+    type = Quantity(
+        type=MEnum(
+            'STO',  # Slater-type orbitals
+            'GTO',  # Gaussian-type orbitals
+            'NAO',  # Numerical atomic orbitals
+            'PC',  # Point charges
+        ),
+        description="""
+        The **functional form** of the basis set:
+          - 'STO': Slater-type orbitals
+          - 'GTO': Gaussian-type orbitals
+          - 'NAO': Numerical atomic orbitals
+          - 'PC': Point charges (or ghost basis centers)
+
+        If a code uses a mixture (e.g., GTO + ECP), store them as separate `AtomCenteredBasisSet` sections, 
+        while referring to the relevant AtomsState.
+        """,
+    )
+
+    role = Quantity(
+        type=MEnum(
+            'orbital',
+            'auxiliary_scf',
+            'auxiliary_post_hf',
+            'cabs',
+        ),
+        description="""
+        The role of this basis set in the calculation:
+          - 'orbital': main orbital basis for the SCF
+          - 'auxiliary_scf': used for RI-J or density fitting in SCF
+          - 'auxiliary_post_hf': used in MP2, CC, etc. 
+          - 'cabs': complementary auxiliary basis for explicitly correlated (F12) methods.
+        """,
+    )
+
+    ao_ordering_convention = Quantity(
+        type=MEnum(
+            # the most frequently encountered conventions
+            'Gaussian',  # (px, py, pz)  5D,7F,9G… as in Gaussian FChk
+            'Molden',  # (pz, px, py)  and separate order for spherical
+            'QChem',  # same as Gaussian for Cartesian; spherical ≠
+            'TREXIO',  # explicit via ao.cartesian + see trexio docs
+            'CP2K',  # CP2K/QuickStep (pz, px, py) by default
+            'PySCF',  # follows libcint (px, py, pz) Cartesian
+            'Custom',  # user‑defined; see `ao_custom_order`
+        ),
+        default='Gaussian',
+        description="""
+        **Ordering convention for the magnetic sub-functions** (Cartesian
+        polynomials or spherical harmonics) within each angular-momentum shell.
+
+        Examples for a *p* shell:
+
+        | Convention | Cartesian order | Spherical order (m=0,+1,-1) |
+        |------------|-----------------|------------------------------|
+        | Gaussian   | (px, py, pz)    | (p₀, p₊₁, p₋₁)              |
+        | Molden     | (pz, px, py)    | (p₀, p₊₁, p₋₁)              |
+        | CP2K       | (pz, px, py)    | (p₀, p₊₁, p₋₁)              |
+
+        If you select `'Custom'`, specify the explicit order for each ℓ ≥ 1
+        in the optional field `ao_custom_order` below.  Otherwise parsers and
+        writers will assume the canonical order embedded in the named
+        convention.
+        """,
+    )
+
+    ao_custom_order = Quantity(
+        type=str,  # mapping: int ℓ  -> list[str] names
+        description="""
+        JSON-encoded mapping *ℓ → list-of-labels* that defines a user-specific
+        AO ordering.  Only used when `ao_ordering_convention == "Custom"`.
+
+        Example value::
+
+            {"1": ["pz", "px", "py"],
+            "2": ["d0", "d+1", "d-1", "d+2", "d-2"]}
+
+        Parsers/writers should `json.loads(...)` this string.
+        """,
+    )
+
+    total_number_of_basis_functions = Quantity(
+        type=np.int32,
+        description="""
+        The **total** number of contracted basis functions in this entire set. 
+        This is typically the sum of all `(2l+1)` or cartesian expansions across
+        all shells on all relevant atoms (within the scope of this section).
+        """,
+    )
+
+    functional_compositions = SubSection(
         sub_section=AtomCenteredFunction.m_def, repeats=True
-    )  # TODO change name
+    )
+
+    ecps = SubSection(
+        sub_section=EffectiveCorePotential.m_def,
+        repeats=True,
+        description='Zero or more ECP definitions replacing core electrons.',
+    )
 
 
 class APWBaseOrbital(ArchiveSection):
