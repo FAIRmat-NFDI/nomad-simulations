@@ -20,6 +20,8 @@ class PhotonPolarizationModel(SimulationWorkflowModel):
 
     # TODO add TDDFT methodology reference.
 
+    _label = 'Photon polarization workflow parameters'
+
     bse_method_ref = Quantity(
         type=Reference(BSEMethodology),
         description="""
@@ -30,6 +32,8 @@ class PhotonPolarizationModel(SimulationWorkflowModel):
 
 class PhotonPolarizationResults(SimulationWorkflowResults):
     """Groups all polarization outputs: spectrum."""
+
+    _label = 'Photon polarization workflow results'
 
     n_polarizations = Quantity(
         type=np.int32,
