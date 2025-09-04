@@ -117,6 +117,28 @@ class Program(Entity):
         """,
     )
 
+    compiler_name = Quantity(
+        type=str,
+        description="""
+        Name of the compiler that was used to compile the program code.
+        """
+    )
+
+    compiler_version = Quantity(
+        type=str,
+        description="""
+        Version of the compiler that was used to compile the program code.
+        """
+    )
+
+    warnings = Quantity(
+        type=str,
+        shape=["*"],
+        description="""
+        Warnings emitted by the code.
+        """
+    )
+
 
 class BaseSimulation(Activity, Time):
     """
