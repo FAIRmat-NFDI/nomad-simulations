@@ -316,13 +316,9 @@ class AtomCenteredFunction(ArchiveSection):
         flat = np.asarray(self.contraction_coefficients, dtype=np.float32).ravel()
         expected = step * len(letters)
 
-        # quietly fit to expected length (pad zeros / truncate)
-        if flat.size < expected:
-            flat = np.concatenate(
-                [flat, np.zeros(expected - flat.size, dtype=np.float32)]
-            )
-        elif flat.size > expected:
-            flat = flat[:expected]
+        # check expected length consistency, bail out if mismatch
+        if flat.size != expected:
+            return
 
         # ---- rewrite THIS instance to the first component ----
         first = letters[0]
@@ -378,45 +374,20 @@ class AtomCenteredFunction(ArchiveSection):
         if self.exponents is not None and self.n_primitive is None:
             self.n_primitive = len(self.exponents)
 
-        # fit lengths quietly (truncate/pad)
-        if self.exponents is not None and self.n_primitive is not None:
-            exp = np.asarray(self.exponents, dtype=np.float32).ravel()
-            if exp.size < self.n_primitive:
-                if exp.size == 0:
-                    exp = np.zeros(self.n_primitive, dtype=np.float32)
-                else:
-                    exp = np.pad(exp, (0, self.n_primitive - exp.size), mode='edge')
-            elif exp.size > self.n_primitive:
-                exp = exp[: self.n_primitive]
-            self.exponents = exp
-
+        # consistency check
         if self.n_primitive is not None:
-            if self.contraction_coefficients is None:
-                self.contraction_coefficients = np.zeros(
-                    self.n_primitive, dtype=np.float32
-                )
-            else:
-                cc = np.asarray(self.contraction_coefficients, dtype=np.float32).ravel()
-                if cc.size < self.n_primitive:
-                    cc = np.pad(cc, (0, self.n_primitive - cc.size), mode='constant')
-                elif cc.size > self.n_primitive:
-                    cc = cc[: self.n_primitive]
-                self.contraction_coefficients = cc
-
-            if self.primitive_factor is None:
-                self.primitive_factor = np.ones(self.n_primitive, dtype=np.float64)
-            else:
-                pf = np.asarray(self.primitive_factor, dtype=np.float64).ravel()
-                if pf.size < self.n_primitive:
-                    pf = np.pad(
-                        pf,
-                        (0, self.n_primitive - pf.size),
-                        mode='constant',
-                        constant_values=1.0,
-                    )
-                elif pf.size > self.n_primitive:
-                    pf = pf[: self.n_primitive]
-                self.primitive_factor = pf
+            if self.exponents is not None and len(self.exponents) != self.n_primitive:
+                self.m_set(self.m_def.all_quantities['exponents'], None)
+            if (
+                self.contraction_coefficients is not None
+                and len(self.contraction_coefficients) != self.n_primitive
+            ):
+                self.m_set(self.m_def.all_quantities['contraction_coefficients'], None)
+            if (
+                self.primitive_factor is not None
+                and len(self.primitive_factor) != self.n_primitive
+            ):
+                self.m_set(self.m_def.all_quantities['primitive_factor'], None)
 
     @set_not_normalized
     def __init__(self, *args, **kwargs):

@@ -465,37 +465,6 @@ def test_acf_combined_sp_expands_into_two_single_l_shells() -> None:
     assert p_shell.angular_momentum == 1
 
 
-def test_acf_padding_and_truncation_silent() -> None:
-    """
-    Undersized/oversized arrays are padded/truncated silently during normalize().
-    """
-    bs = AtomCenteredBasisSet()
-
-    # too few coeffs -> pad with zeros
-    acf_pad = AtomCenteredFunction(
-        function_type='s',
-        n_primitive=4,
-        exponents=[1.0, 2.0, 3.0, 4.0],
-        contraction_coefficients=[0.5],
-    )
-    bs.functional_compositions.append(acf_pad)
-    acf_pad.normalize(None, logger)
-    assert len(acf_pad.contraction_coefficients) == 4
-    np.testing.assert_allclose(acf_pad.contraction_coefficients, [0.5, 0.0, 0.0, 0.0])
-
-    # too many exponents -> truncate
-    acf_trunc = AtomCenteredFunction(
-        function_type='p',
-        n_primitive=2,
-        exponents=[9.0, 8.0, 7.0],  # will be truncated to 2
-        contraction_coefficients=[1.0, 2.0],
-    )
-    bs.functional_compositions.append(acf_trunc)
-    acf_trunc.normalize(None, logger)
-    np.testing.assert_allclose(acf_trunc.exponents, [9.0, 8.0])
-    assert acf_trunc.angular_momentum == 1  # p → ℓ=1
-
-
 def test_acf_infers_n_primitive_and_ell() -> None:
     """
     If n_primitive is omitted, it is inferred from exponents length; ℓ inferred from function_type.
