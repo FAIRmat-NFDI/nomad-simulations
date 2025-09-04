@@ -11,16 +11,16 @@ m_package = SchemaPackage()
 
 
 class XSModel(BeyondDFTModel):
-    _label = 'DFT+GW workflow parameters'
+    _label = 'XS workflow parameters'
 
 
 class XSResults(BeyondDFTResults):
-    _label = 'DFT+GW workflow results'
+    _label = 'XS workflow results'
 
 
 class XSWorkflow(BeyondDFTWorkflow):
     """
-    Definitions for GW calculations based on DFT.
+    Definitions for XS workflow based in DFT, GW and PhotonPolarizationWorkflow.
     """
 
     @log
@@ -38,17 +38,13 @@ class XSWorkflow(BeyondDFTWorkflow):
         super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        """
-        Link the DFT and GW single point workflows in the DFT-GW workflow.
-        """
-
         super().normalize(archive, logger)
 
-        if self.task:
-            if not self.task[-1].name:
-                self.task[-1].name = 'PhotonPolarization'
-            if len(self.task) == 3 and not self.tasks[1].name:
-                self.task[1].name = 'GW'
+        if self.tasks:
+            if not self.tasks[-1].name:
+                self.tasks[-1].name = 'PhotonPolarization'
+            if len(self.tasks) >= 3 and not self.tasks[1].name:
+                self.tasks[1].name = 'GW'
 
         # TODO fill in results and model
 
