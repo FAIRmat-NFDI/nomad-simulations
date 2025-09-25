@@ -296,86 +296,79 @@ class AtomCenteredFunction(ArchiveSection):
     def _is_combined(self) -> bool:
         return self.function_type in self._COMBINED_ORDER
 
-    def _expand_combined_into_parent(self) -> None:
-        """
-        Expand a combined shell into multiple single-ℓ shells by rewriting this
-        instance in place to the first component and appending the rest to the
-        parent's functional_compositions. Quiet no-op if parent/data missing.
-        """
+    def _letters(self) -> list[str]:
+        return self._COMBINED_ORDER.get(self.function_type, [])
+
+    def _expected_combined_len(self, n_primitive: int, letters: list[str]) -> int:
+        return int(n_primitive) * len(letters)
+
+    def _expand_combined_into_parent(self, logger: 'BoundLogger') -> None:
         parent = self.m_parent
-        if not isinstance(parent, AtomCenteredFunction):
-            return
-        if (
-            self.n_primitive is None
-            or self.exponents is None
-            or self.contraction_coefficients is None
-        ):
+        if not isinstance(parent, AtomCenteredBasisSet):
             return
 
-        letters = self._COMBINED_ORDER[self.function_type]
-        step = int(self.n_primitive)
-        flat = np.asarray(self.contraction_coefficients, dtype=np.float32).ravel()
-        expected = step * len(letters)
+        letters = self._letters()
+        step = int(self.n_primitive) if self.n_primitive is not None else 0
+        flat = None
+        if self.contraction_coefficients is not None:
+            flat = np.asarray(self.contraction_coefficients, dtype=np.float32).ravel()
+            if self.n_primitive is not None:
+                expected = self._expected_combined_len(step, letters)
+                if flat.size != expected:
+                    logger.error(
+                        'Combined shell coefficients length mismatch: got %d, expected %d '
+                        '(function_type=%s, n_primitive=%s).',
+                        int(flat.size),
+                        int(expected),
+                        self.function_type,
+                        str(self.n_primitive),
+                    )
+                    # continue expansion, but coeff slices may be incomplete
 
-        # check expected length consistency, bail out if mismatch
-        if flat.size != expected:
-            logger.error('Combined shell coefficients length mismatch.')
+        for n, ltr in enumerate(letters):
+            coeff_slice = None
+            if flat is not None and step > 0 and flat.size >= (n + 1) * step:
+                coeff_slice = flat[n * step : (n + 1) * step]
 
-        # ---- rewrite THIS instance to the first component ----
-        first = letters[0]
-        first_slice = flat[0:step]
-        self.function_type = first
-        self.angular_momentum = self._L_MAP.get(first)
-        # keep n_primitive, exponents, primitive_factor, normalizations as-is
-        self.contraction_coefficients = np.array(first_slice, dtype=np.float32)
-        # n_components should now be single-ℓ
-        self.n_components = 1
+            if n == 0:
+                shell = self
+            else:
+                shell = AtomCenteredFunction()
+                parent.functional_compositions.append(shell)
 
-        # ---- append the remaining components as brand-new shells ----
-        for i, ltr in enumerate(letters[1:], start=1):
-            coeff_slice = flat[i * step : (i + 1) * step]
-            new_shell = AtomCenteredFunction(
-                angular_type=self.angular_type,
-                function_type=ltr,
-                angular_momentum=self._L_MAP.get(ltr),
-                r_power=self.r_power,
-                shell_normalization=self.shell_normalization,
-                n_primitive=self.n_primitive,
-                exponents=np.array(self.exponents, copy=True),
-                contraction_coefficients=np.array(coeff_slice, copy=True),
-                primitive_factor=(
-                    np.array(self.primitive_factor, copy=True)
-                    if self.primitive_factor is not None
-                    else None
-                ),
-                primitive_normalization=self.primitive_normalization,
-                point_charge=self.point_charge,
+            shell.angular_type = self.angular_type
+            shell.function_type = ltr
+            shell.angular_momentum = self._L_MAP.get(ltr)
+            shell.r_power = self.r_power
+            shell.shell_normalization = self.shell_normalization
+            shell.n_primitive = self.n_primitive
+            shell.exponents = np.array(self.exponents, copy=True)
+            shell.contraction_coefficients = (
+                np.array(coeff_slice, copy=True) if coeff_slice is not None else None
             )
-            parent.functional_compositions.append(new_shell)
+            shell.primitive_factor = (
+                np.array(self.primitive_factor, copy=True)
+                if self.primitive_factor is not None
+                else None
+            )
+            shell.primitive_normalization = self.primitive_normalization
+            shell.point_charge = self.point_charge
 
     @check_normalized
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # components implied by function_type
-        self.n_components = (
-            len(self._COMBINED_ORDER[self.function_type]) if self._is_combined() else 1
-        )
-
-        # expand combined shells and exit
+        # expand combined shells and stop
         if self._is_combined():
-            self._expand_combined_into_parent()
+            self._expand_combined_into_parent(logger)
             return
 
-        # single-ℓ mapping: set angular_momentum from function_type if missing
         if self.function_type in self._L_MAP and self.angular_momentum is None:
             self.angular_momentum = self._L_MAP[self.function_type]
 
-        # infer n_primitive
         if self.exponents is not None and self.n_primitive is None:
             self.n_primitive = len(self.exponents)
 
-        # consistency check
         if self.n_primitive is not None:
             if self.exponents is not None and len(self.exponents) != self.n_primitive:
                 self.m_set(self.m_def.all_quantities['exponents'], None)
@@ -672,6 +665,11 @@ class AtomCenteredBasisSet(BasisSetComponent):
     @check_normalized
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+        # # Ensure child shells are normalized first so combined shells split
+        # if self.functional_compositions:
+        #     for func in list(self.functional_compositions):
+        #         func.normalize(archive, logger)
 
         # Set AO count from AO view if present
         if self.atomic_orbitals is not None and self.atomic_orbitals.num is not None:
