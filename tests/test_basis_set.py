@@ -457,14 +457,13 @@ def test_acf_invalid_length_reset() -> None:
         exponents=[1.0, 2.0],  # Actual length 2 (Mismatch)
         contraction_coefficients=[1.0, 1.0, 1.0, 1.0],  # Actual length 4 (Mismatch)
     )
-    # The parent (AtomCenteredBasisSet) needs to exist for the errors to be logged
-    # and the m_set operations to execute cleanly, but we call the child's normalize.
+
     acf.normalize(None, logger)
 
     # The mismatch resets the invalid arrays.
     assert acf.exponents is None
     assert acf.contraction_coefficients is None
-    assert acf.n_primitive == 3  # The declared primitive count remains the reference
+    assert acf.n_primitive == 3
 
 
 # -------------------------------
@@ -843,8 +842,18 @@ def test_mixed_orbital_aux_ecp() -> None:
     ][0]
     assert len(ecp.z_core) == len(ecp.max_ang_mom_plus_1) == 1
     assert ecp.ecp_num == 2
-    for name in ('nucleus_index', 'ang_mom', 'exponent', 'coefficient', 'power'):
-        arr = getattr(ecp, name)
+
+    #  Iterate over the attribute values directly for consistency check
+    projector_arrays = [
+        ecp.nucleus_index,
+        ecp.ang_mom,
+        ecp.exponent,
+        ecp.coefficient,
+        ecp.power,
+    ]
+
+    for arr in projector_arrays:
+        # Check if the array exists (is not None) and its length matches ecp_num
         assert arr is not None and len(arr) == ecp.ecp_num
 
     # AO layers provide totals

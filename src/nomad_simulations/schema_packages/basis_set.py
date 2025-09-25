@@ -250,14 +250,17 @@ class AtomCenteredFunction(ArchiveSection):
     n_primitive = Quantity(
         type=np.int32, description='Number of primitives in this shell.'
     )
+
     exponents = Quantity(
         type=np.float32, shape=['n_primitive'], description='Primitive exponents.'
     )
+
     contraction_coefficients = Quantity(
         type=np.float32,
         shape=['n_primitive'],
         description='Contraction coefficients for the primitives in this single-ℓ shell.',
     )
+
     primitive_factor = Quantity(
         type=np.float64,
         shape=['n_primitive'],
@@ -395,30 +398,27 @@ class EffectiveCorePotential(BasisSetComponent):
 
         # --- ecp_num-driven arrays must match lengths ---
         if self.ecp_num is not None:
-            for name in (
-                'nucleus_index',
-                'ang_mom',
-                'exponent',
-                'coefficient',
-                'power',
-            ):
-                arr = getattr(self, name)
+            # List of (attribute, attribute_name) tuples for checking
+            projector_arrays = [
+                (self.nucleus_index, 'nucleus_index'),
+                (self.ang_mom, 'ang_mom'),
+                (self.exponent, 'exponent'),
+                (self.coefficient, 'coefficient'),
+                (self.power, 'power'),
+            ]
+
+            for arr, name in projector_arrays:
                 if arr is None:
-                    logger.error('ECP array is missing while ecp_num is set.')
+                    logger.error('ECP array name is missing while ecp_num is set.')
                 else:
                     if len(arr) != self.ecp_num:
-                        logger.error(
-                            "Length of ECP array '%s' (%d) must equal ecp_num (%d).",
-                            name,
-                            len(arr),
-                            self.ecp_num,
-                        )
+                        logger.error('Length of ECP array name must equal ecp_num.')
 
         # --- optional human-readable name from species_scope, if present ---
         if self.species_scope:
             try:
                 symbol = self.species_scope[0].chemical_symbol
-                if not getattr(self, 'name', None):
+                if self.name is None:
                     self.name = f'ECP-{symbol}'
             except Exception:
                 pass
@@ -607,34 +607,27 @@ class AtomCenteredBasisSet(BasisSetComponent):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # # Ensure child shells are normalized first so combined shells split
-        # if self.functional_compositions:
-        #     for func in list(self.functional_compositions):
-        #         func.normalize(archive, logger)
-
         # Set AO count from AO view if present
         if self.atomic_orbitals is not None and self.atomic_orbitals.num is not None:
             self.total_number_of_basis_functions = self.atomic_orbitals.num
 
-            # Lightweight sanity checks (kept minimal to avoid verbosity)
-            si = getattr(self.atomic_orbitals, 'shell_index', None)
-            if si is not None and len(si) != self.atomic_orbitals.num:
-                # leave silent; upstream parsers can correct/override
-                pass
-            norm = getattr(self.atomic_orbitals, 'normalization', None)
-            if norm is not None and len(norm) != self.atomic_orbitals.num:
-                pass
             if (
                 self.functional_compositions is not None
-                and si is not None
+                and self.atomic_orbitals.shell_index is not None
                 and len(self.functional_compositions) > 0
             ):
+                si = self.atomic_orbitals.shell_index
                 try:
                     max_idx = int(np.max(si)) if len(si) > 0 else -1
                     if max_idx >= len(self.functional_compositions):
-                        pass
+                        logger.warning(
+                            'shell_index contains index values outside the bounds of functional_compositions.'
+                        )
                 except Exception:
-                    pass
+                    # Log an error for unexpected exception during max_idx check
+                    logger.error(
+                        'Failed to perform max_idx sanity check on shell_index.'
+                    )
 
     @set_not_normalized
     def __init__(self, *args, **kwargs):
