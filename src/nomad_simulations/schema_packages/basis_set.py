@@ -407,15 +407,6 @@ class EffectiveCorePotential(BasisSetComponent):
                     if len(arr) != self.ecp_num:
                         logger.error('Length of ECP array name must equal ecp_num.')
 
-        # --- optional human-readable name from species_scope, if present ---
-        if self.species_scope:
-            try:
-                symbol = self.species_scope[0].chemical_symbol
-                if self.name is None:
-                    self.name = f'ECP-{symbol}'
-            except Exception:
-                pass
-
     @set_not_normalized
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -465,7 +456,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
       - Numerical atomic orbitals (NAO)
       - Effective-core potentials or point-charges (PC, cECP, etc.)
 
-    This section references multiple `AtomCenteredFunction` objects, each describing
+    This section may reference multiple `AtomCenteredFunction` objects, each describing
     a single contracted function or shell. Additionally, one can label the overall
     basis set name (e.g., "cc-pVTZ", "def2-SVP", "6-31G**") and specify the high-level
     role of the basis set in the calculation.
