@@ -225,7 +225,7 @@ class AtomCenteredFunction(ArchiveSection):
             'i',
             'j',
             'k',
-            'l',  # Combined types removed.
+            'l',
         ),
         description='Angular-momentum label (s, p, d, f, etc.).',
     )
@@ -265,13 +265,6 @@ class AtomCenteredFunction(ArchiveSection):
         type=np.float64,
         shape=['n_primitive'],
         description='Extra per-primitive multiplier (dimensionless).',
-    )
-
-    # optional convention hint (provenance)
-    primitive_normalization = Quantity(
-        type=MEnum('L2', 'none', 'contracted', 'custom'),
-        default='L2',
-        description='Normalization convention hint for parsers.',
     )
 
     # optional embedded point charge
