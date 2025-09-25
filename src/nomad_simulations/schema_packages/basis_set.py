@@ -216,9 +216,18 @@ class AtomCenteredFunction(ArchiveSection):
 
     function_type = Quantity(
         type=MEnum(
-            's', 'p', 'd', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'sp', 'spd', 'spdf'
+            's',
+            'p',
+            'd',
+            'f',
+            'g',
+            'h',
+            'i',
+            'j',
+            'k',
+            'l',  # Combined types removed.
         ),
-        description='Angular-momentum label; combined variants are expanded into single-ℓ shells.',
+        description='Angular-momentum label (s, p, d, f, etc.).',
     )
 
     # explicit single-ℓ metadata
@@ -228,7 +237,8 @@ class AtomCenteredFunction(ArchiveSection):
     )
 
     r_power = Quantity(
-        type=np.int32, description="Radial power n_s for this shell's analytic form."
+        type=np.int32,
+        description="Radial power n_s for this shell's analytic form (typically 0 for GTOs).",
     )
 
     # per-shell normalization (contracted)
@@ -245,12 +255,8 @@ class AtomCenteredFunction(ArchiveSection):
     )
     contraction_coefficients = Quantity(
         type=np.float32,
-        shape=['*'],
-        description=(
-            'Contraction coefficients. Single-ℓ: length == n_primitive. '
-            'Combined input: length == n_components * n_primitive in the order '
-            '[all s | all p | all d | (all f)].'
-        ),
+        shape=['n_primitive'],
+        description='Contraction coefficients for the primitives in this single-ℓ shell.',
     )
     primitive_factor = Quantity(
         type=np.float64,
@@ -270,11 +276,6 @@ class AtomCenteredFunction(ArchiveSection):
         type=np.float32, description='Optional embedded point charge.'
     )
 
-    # helper (internal)
-    n_components = Quantity(
-        type=np.int32, description='Number of components implied by function_type.'
-    )
-
     _L_MAP = {
         's': 0,
         'p': 1,
@@ -287,100 +288,40 @@ class AtomCenteredFunction(ArchiveSection):
         'k': 8,
         'l': 9,
     }
-    _COMBINED_ORDER = {
-        'sp': ['s', 'p'],
-        'spd': ['s', 'p', 'd'],
-        'spdf': ['s', 'p', 'd', 'f'],
-    }
-
-    def _is_combined(self) -> bool:
-        return self.function_type in self._COMBINED_ORDER
-
-    def _letters(self) -> list[str]:
-        return self._COMBINED_ORDER.get(self.function_type, [])
-
-    def _expected_combined_len(self, n_primitive: int, letters: list[str]) -> int:
-        return int(n_primitive) * len(letters)
-
-    def _expand_combined_into_parent(self, logger: 'BoundLogger') -> None:
-        parent = self.m_parent
-        if not isinstance(parent, AtomCenteredBasisSet):
-            return
-
-        letters = self._letters()
-        step = int(self.n_primitive) if self.n_primitive is not None else 0
-        flat = None
-        if self.contraction_coefficients is not None:
-            flat = np.asarray(self.contraction_coefficients, dtype=np.float32).ravel()
-            if self.n_primitive is not None:
-                expected = self._expected_combined_len(step, letters)
-                if flat.size != expected:
-                    logger.error(
-                        'Combined shell coefficients length mismatch: got %d, expected %d '
-                        '(function_type=%s, n_primitive=%s).',
-                        int(flat.size),
-                        int(expected),
-                        self.function_type,
-                        str(self.n_primitive),
-                    )
-                    # continue expansion, but coeff slices may be incomplete
-
-        for n, ltr in enumerate(letters):
-            coeff_slice = None
-            if flat is not None and step > 0 and flat.size >= (n + 1) * step:
-                coeff_slice = flat[n * step : (n + 1) * step]
-
-            if n == 0:
-                shell = self
-            else:
-                shell = AtomCenteredFunction()
-                parent.functional_compositions.append(shell)
-
-            shell.angular_type = self.angular_type
-            shell.function_type = ltr
-            shell.angular_momentum = self._L_MAP.get(ltr)
-            shell.r_power = self.r_power
-            shell.shell_normalization = self.shell_normalization
-            shell.n_primitive = self.n_primitive
-            shell.exponents = np.array(self.exponents, copy=True)
-            shell.contraction_coefficients = (
-                np.array(coeff_slice, copy=True) if coeff_slice is not None else None
-            )
-            shell.primitive_factor = (
-                np.array(self.primitive_factor, copy=True)
-                if self.primitive_factor is not None
-                else None
-            )
-            shell.primitive_normalization = self.primitive_normalization
-            shell.point_charge = self.point_charge
 
     @check_normalized
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # expand combined shells and stop
-        if self._is_combined():
-            self._expand_combined_into_parent(logger)
-            return
-
+        # 1. Infer L quantum number
         if self.function_type in self._L_MAP and self.angular_momentum is None:
             self.angular_momentum = self._L_MAP[self.function_type]
 
+        # 2. Infer number of primitives
         if self.exponents is not None and self.n_primitive is None:
             self.n_primitive = len(self.exponents)
 
+        # 3. Sanity check: Ensure arrays match n_primitive for a single-ℓ shell
         if self.n_primitive is not None:
             if self.exponents is not None and len(self.exponents) != self.n_primitive:
+                logger.warning('Exponents length mismatch. Resetting.')
                 self.m_set(self.m_def.all_quantities['exponents'], None)
+
+            # Crucial check: For a single-ℓ shell, coeffs must match primitives count.
             if (
                 self.contraction_coefficients is not None
                 and len(self.contraction_coefficients) != self.n_primitive
             ):
+                logger.error(
+                    'Contraction coefficients length mismatch for single-ℓ shell.'
+                )
                 self.m_set(self.m_def.all_quantities['contraction_coefficients'], None)
+
             if (
                 self.primitive_factor is not None
                 and len(self.primitive_factor) != self.n_primitive
             ):
+                logger.warning('Primitive factor length mismatch. Resetting.')
                 self.m_set(self.m_def.all_quantities['primitive_factor'], None)
 
     @set_not_normalized

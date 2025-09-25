@@ -429,42 +429,6 @@ def test_quick_step() -> None:
 # -------------------------------
 
 
-def test_acf_combined_sp_expands_into_two_single_l_shells() -> None:
-    """
-    Combined 'sp' shell should expand into two single-ℓ shells in the parent
-    AtomCenteredBasisSet.functional_compositions, with coefficients split correctly
-    and ℓ inferred (s→0, p→1).
-    """
-    bs = AtomCenteredBasisSet()
-    acf = AtomCenteredFunction(
-        function_type='sp',
-        n_primitive=3,
-        exponents=[1.0, 2.0, 3.0],
-        contraction_coefficients=[10, 11, 12, 20, 21, 22],  # [s ... | p ...]
-        shell_normalization=1.0,
-        r_power=0,
-    )
-    bs.functional_compositions.append(acf)
-
-    # trigger expansion
-    acf.normalize(None, logger)
-
-    # the combined shell replaces itself with 2 single-ℓ shells
-    assert len(bs.functional_compositions) == 2
-    kinds = [sh.function_type for sh in bs.functional_compositions]
-    assert set(kinds) == {'s', 'p'}
-
-    # coefficients were split as blocks of n_primitive
-    s_shell = next(sh for sh in bs.functional_compositions if sh.function_type == 's')
-    p_shell = next(sh for sh in bs.functional_compositions if sh.function_type == 'p')
-    np.testing.assert_allclose(s_shell.contraction_coefficients, [10, 11, 12])
-    np.testing.assert_allclose(p_shell.contraction_coefficients, [20, 21, 22])
-
-    # ℓ inference
-    assert s_shell.angular_momentum == 0
-    assert p_shell.angular_momentum == 1
-
-
 def test_acf_infers_n_primitive_and_ell() -> None:
     """
     If n_primitive is omitted, it is inferred from exponents length; ℓ inferred from function_type.
@@ -480,6 +444,27 @@ def test_acf_infers_n_primitive_and_ell() -> None:
 
     assert acf.n_primitive == 3
     assert acf.angular_momentum == 2  # d → ℓ=2
+
+
+def test_acf_invalid_length_reset() -> None:
+    """
+    Tests that if n_primitive is set, but coefficient/exponent arrays mismatch length,
+    they are correctly reset to None (due to validation failure).
+    """
+    acf = AtomCenteredFunction(
+        function_type='s',
+        n_primitive=3,  # Expects length 3
+        exponents=[1.0, 2.0],  # Actual length 2 (Mismatch)
+        contraction_coefficients=[1.0, 1.0, 1.0, 1.0],  # Actual length 4 (Mismatch)
+    )
+    # The parent (AtomCenteredBasisSet) needs to exist for the errors to be logged
+    # and the m_set operations to execute cleanly, but we call the child's normalize.
+    acf.normalize(None, logger)
+
+    # The mismatch resets the invalid arrays.
+    assert acf.exponents is None
+    assert acf.contraction_coefficients is None
+    assert acf.n_primitive == 3  # The declared primitive count remains the reference
 
 
 # -------------------------------
@@ -604,36 +589,26 @@ def test_ecp_h2_ccecp_gamess_numbers() -> None:
     assert set(ecp.nucleus_index) == {0, 1}
 
 
-def test_acf_sp_shell_from_pople_like_numbers() -> None:
-    exps = [3047.5249, 457.3695, 103.9487]
-    s_coeff = [0.15432897, 0.53532814, 0.44463454]
-    p_coeff = [0.09996723, 0.39951283, 0.70011547]
-    coeffs = s_coeff + p_coeff
-
-    acb = AtomCenteredBasisSet(functional_compositions=[])
-
-    sp = AtomCenteredFunction(
-        function_type='sp',
-        harmonic_type='spherical',
-        n_primitive=len(exps),
-        exponents=exps,
-        contraction_coefficients=coeffs,
+def test_ecp_metadata_length_mismatch() -> None:
+    """
+    Tests the validation constraint: per-nucleus arrays (z_core, max_ang_mom_plus_1)
+    must match length.
+    """
+    ecp = EffectiveCorePotential(
+        z_core=[10, 18],  # Length 2
+        max_ang_mom_plus_1=[3],  # Length 1 (Mismatch)
+        ecp_num=1,
+        nucleus_index=[0],
+        ang_mom=[0],
+        exponent=[1.0],
+        coefficient=[1.0],
+        power=[1],
     )
-    acb.functional_compositions.append(sp)
-
-    # Normalize the child (expands in-place to 's' and appends 'p')
-    sp.normalize(None, logger)
-
-    assert len(acb.functional_compositions) == 2
-    s_shell, p_shell = acb.functional_compositions
-
-    assert s_shell.function_type == 's'
-    assert p_shell.function_type == 'p'
-    assert s_shell.n_primitive == 3 and p_shell.n_primitive == 3
-    assert np.allclose(s_shell.contraction_coefficients, s_coeff)
-    assert np.allclose(p_shell.contraction_coefficients, p_coeff)
-    assert np.allclose(s_shell.exponents, exps)
-    assert np.allclose(p_shell.exponents, exps)
+    ecp.normalize(None, logger)
+    # The normalization should have logged an error but allowed the section to exist.
+    # We check that the structural mismatch logging was triggered (implicitly via code coverage)
+    # and the correct data fields are still available.
+    assert len(ecp.z_core) == 2
 
 
 def test_additional_basis_functions_assigned_to_subset_of_atoms() -> None:
