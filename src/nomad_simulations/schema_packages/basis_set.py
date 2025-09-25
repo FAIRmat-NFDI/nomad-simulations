@@ -12,7 +12,7 @@ import numpy as np
 import pint
 from nomad import utils
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import MEnum, Quantity, SubSection
+from nomad.metainfo import JSON, MEnum, Quantity, SubSection
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
@@ -208,7 +208,7 @@ class AtomCenteredFunction(ArchiveSection):
       - J. B. Foresman, Æ. Frisch, *Exploring Chemistry with Electronic Structure Methods*, Gaussian Inc.
     """
 
-    harmonic_type = Quantity(
+    angular_type = Quantity(
         type=MEnum('spherical', 'cartesian'),
         default='spherical',
         description='Angular basis used when expanding this shell into AOs.',
@@ -226,6 +226,7 @@ class AtomCenteredFunction(ArchiveSection):
         type=np.int32,
         description='Angular momentum quantum number ℓ.',
     )
+
     r_power = Quantity(
         type=np.int32, description="Radial power n_s for this shell's analytic form."
     )
@@ -301,8 +302,8 @@ class AtomCenteredFunction(ArchiveSection):
         instance in place to the first component and appending the rest to the
         parent's functional_compositions. Quiet no-op if parent/data missing.
         """
-        parent = getattr(self, 'm_parent', None)
-        if parent is None or not hasattr(parent, 'functional_compositions'):
+        parent = self.m_parent
+        if not isinstance(parent, AtomCenteredFunction):
             return
         if (
             self.n_primitive is None
@@ -318,7 +319,7 @@ class AtomCenteredFunction(ArchiveSection):
 
         # check expected length consistency, bail out if mismatch
         if flat.size != expected:
-            return
+            logger.error('Combined shell coefficients length mismatch.')
 
         # ---- rewrite THIS instance to the first component ----
         first = letters[0]
@@ -334,7 +335,7 @@ class AtomCenteredFunction(ArchiveSection):
         for i, ltr in enumerate(letters[1:], start=1):
             coeff_slice = flat[i * step : (i + 1) * step]
             new_shell = AtomCenteredFunction(
-                harmonic_type=self.harmonic_type,
+                angular_type=self.angular_type,
                 function_type=ltr,
                 angular_momentum=self._L_MAP.get(ltr),
                 r_power=self.r_power,
@@ -629,7 +630,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
     )
 
     ao_custom_order = Quantity(
-        type=str,  # mapping: int ℓ  -> list[str] names
+        type=JSON,
         description="""
         JSON-encoded mapping *ℓ → list-of-labels* that defines a user-specific
         AO ordering.  Only used when `ao_ordering_convention == "Custom"`.
