@@ -973,40 +973,6 @@ class EnsembleProperty(PhysicalProperty):
         """,
     )
 
-    # TODO move to definition only under h5md parser
-    bins_magnitude = Quantity(
-        type=np.float64,
-        shape=['n_bins'],
-        description="""
-        Values of the variable along which the property is calculated.
-        """,
-    )
-
-    bins_unit = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Unit of the given bins, using UnitRegistry() notation.
-        """,
-    )
-
-    # TODO move to definition only under h5md parser
-    value_magnitude = Quantity(
-        type=np.float64,
-        shape=['n_bins'],
-        description="""
-        Values of the property.
-        """,
-    )
-
-    value_unit = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Unit of the property, using UnitRegistry() notation.
-        """,
-    )
-
 
 class RadialDistributionFunction(EnsembleProperty):
     """
@@ -1081,23 +1047,6 @@ class CorrelationFunction(PhysicalProperty):
         """,
     )
 
-    # TODO move to definition only under h5md parser
-    value_magnitude = Quantity(
-        type=np.float64,
-        shape=['n_times'],
-        description="""
-        Values of the property.
-        """,
-    )
-
-    value_unit = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Unit of the property, using UnitRegistry() notation.
-        """,
-    )
-
 
 class MeanSquaredDisplacement(CorrelationFunction):
     """
@@ -1159,9 +1108,15 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
         sub_section=MeanSquaredDisplacement.m_def, repeats=True
     )
 
-    def normalize(self, archive, logger):
-        super().normalize(archive, logger)
+    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
+        super().__init__(m_def, m_context, **kwargs)
+        self._cache: dict[str, Any] = {}
+        self._universe = None
+        self._bead_groups = None
 
+    @log
+    def get_universe(self, archive) -> MDAnalysis.Universe:
+        logger = self.get_universe.__annotations__['logger']
         try:
             universe = archive_to_universe(archive)
         except Exception:
@@ -1169,66 +1124,70 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
             logger.warning(
                 'Could not convert archive to MDAnalysis Universe, skipping MD results normalization.'
             )
+        return universe
 
-        if universe is None:
+    @log
+    def get_molecular_rdfs(self, archive: EntryArchive) -> list(
+        RadialDistributionFunction
+    ):
+        logger = self.get_molecular_rdfs.__annotations__['logger']
+        if self.radial_distribution_functions is not None:
+            return self.radial_distribution_functions
+
+        n_traj_split = 10  # number of intervals to split trajectory into for averaging
+        interval_indices = []  # 2D array specifying the groups of the n_traj_split intervals to be averaged
+        # first 20% of trajectory
+        interval_indices.append(np.arange(int(n_traj_split * 0.20)))
+        # last 80% of trajectory
+        interval_indices.append(np.arange(n_traj_split)[len(interval_indices[0]) :])
+        # last 60% of trajectory
+        interval_indices.append(np.arange(n_traj_split)[len(interval_indices[0]) * 2 :])
+        # last 40% of trajectory
+        interval_indices.append(np.arange(n_traj_split)[len(interval_indices[0]) * 3 :])
+
+        n_prune = int(self._universe.trajectory.n_frames / len(archive.run[-1].system))
+        rdf_results = calc_molecular_rdf(
+            self._universe,
+            self._bead_groups,
+            n_traj_split=n_traj_split,
+            n_prune=n_prune,
+            interval_indices=interval_indices,
+        )
+        sec_rdfs = []
+        if rdf_results:
+            for i_pair, pair_type in enumerate(self.rdf_results.get('types', [])):
+                rdf = RadialDistributionFunction()
+                rdf.type = rdf_results.get(
+                    'type'
+                )  # TODO this no longer exists (atomic, molecular)
+                rdf.n_smooth = rdf_results.get('n_smooth')
+                rdf.n_prune = n_prune
+                rdf.n_variables = 1
+                rdf.variables_name = ['distance']
+
+                rdf.label = str(pair_type)
+                rdf.n_bins = len(self.rdf_results.get('bins', [[]] * i_pair)[i_pair])
+                rdf.bins = self.rdf_results.get('bins', [[]] * i_pair)[i_pair]
+                rdf.value = self.rdf_results.get('value', [[]] * i_pair)[i_pair]
+                rdf.frame_start = self.rdf_results.get('frame_start', [[]] * i_pair)[
+                    i_pair
+                ]
+                rdf.frame_end = self.rdf_results.get('frame_end', [[]] * i_pair)[i_pair]
+                sec_rdfs.append(rdf)
+
+        return sec_rdfs
+
+    def normalize(self, archive, logger):
+        super().normalize(archive, logger)
+
+        self._universe = self.get_universe(archive)
+        if self._universe is None:
             return
 
-        bead_groups = _get_molecular_bead_groups(universe)
+        self._bead_groups = _get_molecular_bead_groups(self._universe)
 
         # calculate molecular radial distribution functions
-        if not self.radial_distribution_functions:
-            n_traj_split = (
-                10  # number of intervals to split trajectory into for averaging
-            )
-            interval_indices = []  # 2D array specifying the groups of the n_traj_split intervals to be averaged
-            # first 20% of trajectory
-            interval_indices.append(np.arange(int(n_traj_split * 0.20)))
-            # last 80% of trajectory
-            interval_indices.append(np.arange(n_traj_split)[len(interval_indices[0]) :])
-            # last 60% of trajectory
-            interval_indices.append(
-                np.arange(n_traj_split)[len(interval_indices[0]) * 2 :]
-            )
-            # last 40% of trajectory
-            interval_indices.append(
-                np.arange(n_traj_split)[len(interval_indices[0]) * 3 :]
-            )
-
-            n_prune = int(universe.trajectory.n_frames / len(archive.run[-1].system))
-            rdf_results = calc_molecular_rdf(
-                universe,
-                bead_groups,
-                n_traj_split=n_traj_split,
-                n_prune=n_prune,
-                interval_indices=interval_indices,
-            )
-            if rdf_results:
-                sec_rdfs = []
-                for i_pair, pair_type in enumerate(self.rdf_results.get('types', [])):
-                    rdf = RadialDistributionFunction()
-                    rdf.type = rdf_results.get(
-                        'type'
-                    )  # TODO this no longer exists (atomic, molecular)
-                    rdf.n_smooth = rdf_results.get('n_smooth')
-                    rdf.n_prune = n_prune
-                    rdf.n_variables = 1
-                    rdf.variables_name = ['distance']
-
-                    rdf.label = str(pair_type)
-                    rdf.n_bins = len(
-                        self.rdf_results.get('bins', [[]] * i_pair)[i_pair]
-                    )
-                    rdf.bins = self.rdf_results.get('bins', [[]] * i_pair)[i_pair]
-                    rdf.value = self.rdf_results.get('value', [[]] * i_pair)[i_pair]
-                    rdf.frame_start = self.rdf_results.get(
-                        'frame_start', [[]] * i_pair
-                    )[i_pair]
-                    rdf.frame_end = self.rdf_results.get('frame_end', [[]] * i_pair)[
-                        i_pair
-                    ]
-                    sec_rdfs.append(rdf)
-
-                self.radial_distribution_functions = sec_rdfs
+        self.radial_distribution_functions = self.get_molecular_rdfs(archive)
 
         # calculate the molecular mean squared displacements
         if not self.mean_squared_displacements:
@@ -1280,23 +1239,23 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
 
         # calculate radius of gyration for polymers
         try:
-            sec_systems = archive.run[-1].system
-            sec_system = sec_systems[0]
-            sec_calc = archive.run[-1].calculation
-            sec_calc = sec_calc if sec_calc is not None else []
+            data = archive.data[-1]
+            sec_systems = data.system
+            sec_system = sec_systems[data.representative_system_index]
+            sec_outputs = data.outputs
         except Exception:
             return
 
         flag_rgs = False
-        for calc in sec_calc:
-            if calc.get('radius_of_gyration'):
+        for out in sec_outputs:
+            if out.get('radius_of_gyration'):
                 flag_rgs = True
                 break  # TODO Should transfer Rg's to workflow results if they are already supplied in calculation
 
-        if not flag_rgs:  # TODO move rg calculation to Simulation.normalize
+        if not flag_rgs:  # TODO move rg calculation to Simulation.normalize?
             sec_rgs_calc = None
-            system_topology = sec_system.atoms_group
-            rg_results = calc_molecular_radius_of_gyration(universe, system_topology)
+            system_hierarchy = sec_system.subsystems
+            rg_results = calc_molecular_radius_of_gyration(universe, system_hierarchy)
             for rg in rg_results:
                 n_frames = rg.get('n_frames')
                 if len(sec_systems) != n_frames:
@@ -1311,7 +1270,7 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
                 sec_rgs.normalize(archive, logger)
                 self.radius_of_gyration.append(sec_rgs)
 
-                for calc in sec_calc:
+                for calc in sec_outputs:
                     if not calc.system_ref:
                         continue
                     sys_ind = calc.system_ref.m_parent_index

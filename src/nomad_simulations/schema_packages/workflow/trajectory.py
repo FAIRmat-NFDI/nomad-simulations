@@ -41,23 +41,6 @@ class TrajectoryProperty(PhysicalProperty):
         """,
     )
 
-    # TODO move to definition only under h5md parser
-    value_magnitude = Quantity(
-        type=np.float64,
-        shape=['n_frames'],
-        description="""
-        Values of the property.
-        """,
-    )
-
-    value_unit = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Unit of the property, using UnitRegistry() notation.
-        """,
-    )
-
 
 class Temperatures(TrajectoryProperty):
     """

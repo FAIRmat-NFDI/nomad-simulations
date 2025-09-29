@@ -1,4 +1,35 @@
+from typing import Any, Callable, Optional
+from itertools import chain
+from collections import namedtuple
 import numpy as np
+from array import array
+from scipy import sparse
+from scipy.stats import linregress
+import networkx
+import numpy as np
+import MDAnalysis
+from MDAnalysis.core.topology import Topology
+from MDAnalysis.core.universe import Universe
+import MDAnalysis.analysis.rdf as MDA_RDF
+from MDAnalysis.core._get_readers import get_reader_for
+
+from nomad.utils import get_logger
+from nomad.units import ureg
+from nomad import atomutils
+
+from nomad.datamodel.data import ArchiveSection
+from nomad.metainfo import (
+    SubSection,
+    Section,
+    Quantity,
+    MEnum,
+    Reference,
+    MSection,
+)
+from nomad.datamodel.hdf5 import HDF5Dataset
+from nomad.datamodel.metainfo.workflow import Link
+
+from nomad_simulations.schema_packages.model_system import ModelSystem
 
 
 class BeadGroup(object):
@@ -1034,17 +1065,17 @@ def calc_molecular_mean_squared_displacements(
 
 
 def calc_radius_of_gyration(
-    universe: MDAnalysis.Universe, molecule_atom_indices: np.ndarray
+    universe: MDAnalysis.Universe, molecule_particle_indices: np.ndarray
 ) -> dict[str, Any]:
     """
-    Calculates the radius of gyration as a function of time for the atoms 'molecule_atom_indices'.
+    Calculates the radius of gyration as a function of time for the particles 'molecule_particle_indices'.
 
-    molecule_atom_indices : np.ndarray
-        The indices of the atoms corresponding to a single molecule for which the Rg will be calculated.
+    molecule_particle_indices : np.ndarray
+        The indices of the particles corresponding to a single molecule for which the Rg will be calculated.
     """
-    if molecule_atom_indices is None or len(molecule_atom_indices) == 0:
+    if molecule_particle_indices is None or len(molecule_particle_indices) == 0:
         LOGGER.warning(
-            'molecule_atom_indices is required to calculate radius of gyration'
+            'molecule_particle_indices is required to calculate radius of gyration'
         )
         return {}
 
@@ -1055,11 +1086,10 @@ def calc_radius_of_gyration(
     ):
         LOGGER.warning('universe is None. Cannot calculate radius of gyration.')
         return {}
-    selection = ' '.join([str(i) for i in molecule_atom_indices])
+    selection = ' '.join([str(i) for i in molecule_particle_indices])
     selection = f'index {selection}'
     molecule = universe.select_atoms(selection)
     rg_results: dict[str, Any] = {}
-    rg_results['type'] = 'molecular'
     rg_results['times'] = []
     rg_results['value'] = []
     time_unit = hasattr(universe.trajectory.time, 'units')
@@ -1082,7 +1112,7 @@ def calc_radius_of_gyration(
 
 
 def calc_molecular_radius_of_gyration(
-    universe: MDAnalysis.Universe, system_topology: MSection
+    universe: MDAnalysis.Universe, system_hierarchy: MSection
 ) -> list[dict[str, Any]]:
     """
     Calculates the radius of gyration as a function of time for each polymer in the system.
@@ -1090,22 +1120,26 @@ def calc_molecular_radius_of_gyration(
     if universe is None:
         LOGGER.warning('universe required to calculate molecular radius of gyration')
         return []
-    if system_topology is None or not system_topology:
+    if system_hierarchy is None or not system_hierarchy:
         LOGGER.warning(
             'system_topology require to calculate molecular radius of gyration.'
         )
         return []
 
     rg_results = []
-    for molgroup in system_topology:
-        for molecule in molgroup.get('atoms_group'):
-            sec_monomer_groups = molecule.get('atoms_group')
-            group_type = sec_monomer_groups[0].type if sec_monomer_groups else None
-            if group_type != 'monomer_group':
+    for molgroup in system_hierarchy:
+        for molecule, i_mol in enumerate(molgroup.subsystems):
+            sec_monomer_groups = molecule.subsystems
+            group_type = (
+                sec_monomer_groups[0].branch_label if sec_monomer_groups else None
+            )
+            if (
+                group_type != 'monomer_group'
+            ):  # TODO need a better way to identify polymers
                 continue
-            rg_result = calc_radius_of_gyration(universe, molecule.atom_indices)
-            rg_result['label'] = molecule.label + '-index_' + str(molecule.index)
-            rg_result['atomsgroup_ref'] = molecule
+            rg_result = calc_radius_of_gyration(universe, molecule.particle_indices)
+            rg_result['label'] = molecule.label + '-index_' + str(i_mol)
+            rg_result['system_ref'] = molecule
             rg_results.append(rg_result)
 
     return rg_results
