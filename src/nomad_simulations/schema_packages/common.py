@@ -4,7 +4,7 @@ from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.metainfo import Datetime, Quantity
 
 
-class Time(ArchiveSection):
+class SimulationOutputs(ArchiveSection):
     """
     Contains time-related quantities.
     """

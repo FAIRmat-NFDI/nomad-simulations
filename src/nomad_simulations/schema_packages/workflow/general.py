@@ -9,6 +9,9 @@ from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import ElectronicDensityOfStates
 from nomad_simulations.schema_packages.utils import log
 
+from nomad_simulations.schema_packages.common import SimulationOutputs
+from nomad_simulations.schema_packages.workflow.trajectory import SerialWorkflowOutputs
+
 # TODO make this a function to check required number of tasks
 INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
 
@@ -19,7 +22,7 @@ class SimulationTask(Task):
     pass
 
 
-class SimulationWorkflowModel(ArchiveSection):
+class SimulationWorkflowMethod(ArchiveSection):
     """
     Base class for simulation workflow model sub-section definition.
     """
@@ -50,26 +53,28 @@ class SimulationWorkflowModel(ArchiveSection):
             self.initial_method = archive.data.model_method[0]
 
 
-class SimulationWorkflowResults(ArchiveSection):
+class SimulationWorkflowOutputs(SimulationOutputs):
     """
-    Base class for simulation workflow results sub-section definition.
+    Base class for simulation workflow outputs sub-section definition.
     """
 
-    _label = 'Output results'
+    _label = 'Workflow outputs'
 
-    final_outputs = Quantity(
-        type=Outputs,
-        description="""
-        Reference to the final outputs.
-        """,
-    )
+    # TODO add generic convergence results here
 
-    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if not archive.data or not archive.data.outputs:
-            return
+    # final_outputs = Quantity(
+    #     type=Outputs,
+    #     description="""
+    #     Reference to the final outputs.
+    #     """,
+    # )
 
-        if not self.final_outputs:
-            self.final_outputs = archive.data.outputs[-1]
+    # def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    #     if not archive.data or not archive.data.outputs:
+    #         return
+
+    #     if not self.final_outputs:
+    #         self.final_outputs = archive.data.outputs[-1]
 
 
 class SimulationTaskReference(TaskReference, SimulationTask):
@@ -86,14 +91,14 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     _task_label = 'Task'
 
-    model = SubSection(sub_section=SimulationWorkflowModel.m_def)
+    method = SubSection(sub_section=SimulationWorkflowMethod.m_def)
 
-    results = SubSection(sub_section=SimulationWorkflowResults.m_def)
+    outputs = SubSection(sub_section=SimulationOutputs.m_def, repeats=True)
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
-            self.model = SimulationWorkflowModel()
+            self.model = SimulationWorkflowMethod()
 
         if self.model in [inp.section for inp in self.inputs]:
             return
@@ -106,7 +111,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            self.results = SimulationWorkflowResults()
+            self.results = SimulationWorkflowOutputs()
 
         if self.results in [out.section for out in self.outputs]:
             return
@@ -186,6 +191,14 @@ class SerialWorkflow(SimulationWorkflow):
     Base class for workflows where tasks are executed sequentially.
     """
 
+    # ? What is this mapping for exactly?
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
+        if not self.results:
+            self.results = SerialWorkflowOutputs()
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
+
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
 
@@ -241,7 +254,7 @@ class ParallelWorkflow(SimulationWorkflow):
                 )
 
 
-class ElectronicStructureResults(SimulationWorkflowResults):
+class ElectronicStructureResults(SimulationWorkflowOutputs):
     """
     Contains definitions for results of an electronic structure simulation.
     """

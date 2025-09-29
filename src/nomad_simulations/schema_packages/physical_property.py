@@ -6,6 +6,7 @@ from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
 from nomad.metainfo import URL, Quantity, Reference, SectionProxy, SubSection
 
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
+from nomad_simulations.schema_packages.errors import ErrorEstimate
 from nomad_simulations.schema_packages.utils import log
 
 logger = utils.get_logger(__name__)
@@ -126,6 +127,15 @@ class PhysicalProperty(PlotSection):
     # TODO: would be wishful to have `section_def` be a stripped down version of PhysicalProperty
     # that gets automatically updated when extending PhysicalProperty
     # should be discussed with @TLCFEM
+
+    errors = SubSection(
+        section_def=ErrorEstimate.m_def,
+        repeats=True,
+        description="""
+        Error and uncertainty estimates associated with this physical property.
+        Multiple entries are allowed (e.g., standard deviation and a confidence interval).
+        """,
+    )
 
     def _is_derived(self) -> bool:
         """
