@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 from typing import Any, Callable, Optional
 from itertools import chain
 from collections import namedtuple
@@ -12,6 +13,15 @@ from MDAnalysis.core.topology import Topology
 from MDAnalysis.core.universe import Universe
 import MDAnalysis.analysis.rdf as MDA_RDF
 from MDAnalysis.core._get_readers import get_reader_for
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
+    from typing import Any, Optional
+
+    import pint
+    from nomad.datamodel.datamodel import EntryArchive
+    from nomad.metainfo import Context, Section
+    from structlog.stdlib import BoundLogger
 
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import (
@@ -38,10 +48,11 @@ from nomad import atomutils
 from .general import (
     SimulationWorkflowMethod,
     SimulationWorkflowResults,
-    SerialSimulation,
+    SerialWorkflow,
     WORKFLOW_METHOD_NAME,
     WORKFLOW_RESULTS_NAME,
 )
+from .trajectory import RadiiOfGyration
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 from nomad_simulations.schema_packages.properties.structure import RadiusOfGyration
@@ -54,6 +65,7 @@ from nomad_simulations.schema_packages.utils.molecular_dynamics import (
     archive_to_universe,
 )
 
+from nomad_simulations.schema_packages.utils import log
 
 # LOGGER = get_logger(__name__)
 
@@ -84,125 +96,6 @@ class MDSettings(NumericalSettings):
         shape=[],
         description="""
         Trajectory frame number where the application of these settings end.
-        """,
-    )
-
-
-class GeneralParameters(MDSettings):
-    """
-    Section containing the generic parameters pertaining to a molecular dynamics run.
-    """
-
-    thermodynamic_ensemble = Quantity(
-        type=MEnum('NVE', 'NVT', 'NPT', 'NPH'),
-        shape=[],
-        description="""
-        The type of thermodynamic ensemble that was simulated.
-
-        Allowed values are:
-
-        | Thermodynamic Ensemble          | Description                               |
-
-        | ---------------------- | ----------------------------------------- |
-
-        | `"NVE"`           | Constant number of particles, volume, and energy |
-
-        | `"NVT"`           | Constant number of particles, volume, and temperature |
-
-        | `"NPT"`           | Constant number of particles, pressure, and temperature |
-
-        | `"NPH"`           | Constant number of particles, pressure, and enthalpy |
-        """,
-    )
-
-    integrator_type = Quantity(
-        type=MEnum(
-            'brownian',
-            'conjugant_gradient',
-            'langevin_goga',
-            'langevin_schneider',
-            'leap_frog',
-            'rRESPA_multitimescale',
-            'velocity_verlet',
-            'langevin_leap_frog',
-        ),
-        shape=[],
-        description="""
-        Name of the integrator.
-
-        Allowed values are:
-
-        | Integrator Name          | Description                               |
-
-        | ---------------------- | ----------------------------------------- |
-
-        | `"langevin_goga"`           | N. Goga, A. J. Rzepiela, A. H. de Vries,
-        S. J. Marrink, and H. J. C. Berendsen, [J. Chem. Theory Comput. **8**, 3637 (2012)]
-        (https://doi.org/10.1021/ct3000876) |
-
-        | `"langevin_schneider"`           | T. Schneider and E. Stoll,
-        [Phys. Rev. B **17**, 1302](https://doi.org/10.1103/PhysRevB.17.1302) |
-
-        | `"leap_frog"`          | R.W. Hockney, S.P. Goel, and J. Eastwood,
-        [J. Comp. Phys. **14**, 148 (1974)](https://doi.org/10.1016/0021-9991(74)90010-2) |
-
-        | `"velocity_verlet"` | W.C. Swope, H.C. Andersen, P.H. Berens, and K.R. Wilson,
-        [J. Chem. Phys. **76**, 637 (1982)](https://doi.org/10.1063/1.442716) |
-
-        | `"rRESPA_multitimescale"` | M. Tuckerman, B. J. Berne, and G. J. Martyna
-        [J. Chem. Phys. **97**, 1990 (1992)](https://doi.org/10.1063/1.463137) |
-
-        | `"langevin_leap_frog"` | J.A. Izaguirre, C.R. Sweet, and V.S. Pande
-        [Pac Symp Biocomput. **15**, 240-251 (2010)](https://doi.org/10.1142/9789814295291_0026) |
-        """,
-    )
-
-    integration_timestep = Quantity(
-        type=np.float64,
-        shape=[],
-        unit='s',
-        description="""
-        The timestep at which the numerical integration is performed.
-        """,
-    )
-
-    n_steps = Quantity(
-        type=int,
-        shape=[],
-        description="""
-        Number of timesteps performed.
-        """,
-    )
-
-    coordinate_save_frequency = Quantity(
-        type=int,
-        shape=[],
-        description="""
-        The number of timesteps between saving the coordinates.
-        """,
-    )
-
-    velocity_save_frequency = Quantity(
-        type=int,
-        shape=[],
-        description="""
-        The number of timesteps between saving the velocities.
-        """,
-    )
-
-    force_save_frequency = Quantity(
-        type=int,
-        shape=[],
-        description="""
-        The number of timesteps between saving the forces.
-        """,
-    )
-
-    thermodynamics_save_frequency = Quantity(
-        type=int,
-        shape=[],
-        description="""
-        The number of timesteps between saving the thermodynamic quantities.
         """,
     )
 
@@ -894,9 +787,118 @@ class FreeEnergyCalculationParameters(MDSettings):
 class MolecularDynamicsMethod(SimulationWorkflowMethod):
     _label = 'MD parameters'
 
-    # input_parameters = SubSection(sub_section=MDSettings.m_def, repeats=True)
+    thermodynamic_ensemble = Quantity(
+        type=MEnum('NVE', 'NVT', 'NPT', 'NPH'),
+        shape=[],
+        description="""
+        The type of thermodynamic ensemble that was simulated.
 
-    general_parameters = SubSection(sub_section=GeneralParameters.m_def, repeats=True)
+        Allowed values are:
+
+        | Thermodynamic Ensemble          | Description                               |
+
+        | ---------------------- | ----------------------------------------- |
+
+        | `"NVE"`           | Constant number of particles, volume, and energy |
+
+        | `"NVT"`           | Constant number of particles, volume, and temperature |
+
+        | `"NPT"`           | Constant number of particles, pressure, and temperature |
+
+        | `"NPH"`           | Constant number of particles, pressure, and enthalpy |
+        """,
+    )
+
+    integrator_type = Quantity(
+        type=MEnum(
+            'brownian',
+            'conjugant_gradient',
+            'langevin_goga',
+            'langevin_schneider',
+            'leap_frog',
+            'rRESPA_multitimescale',
+            'velocity_verlet',
+            'langevin_leap_frog',
+        ),
+        shape=[],
+        description="""
+        Name of the integrator.
+
+        Allowed values are:
+
+        | Integrator Name          | Description                               |
+
+        | ---------------------- | ----------------------------------------- |
+
+        | `"langevin_goga"`           | N. Goga, A. J. Rzepiela, A. H. de Vries,
+        S. J. Marrink, and H. J. C. Berendsen, [J. Chem. Theory Comput. **8**, 3637 (2012)]
+        (https://doi.org/10.1021/ct3000876) |
+
+        | `"langevin_schneider"`           | T. Schneider and E. Stoll,
+        [Phys. Rev. B **17**, 1302](https://doi.org/10.1103/PhysRevB.17.1302) |
+
+        | `"leap_frog"`          | R.W. Hockney, S.P. Goel, and J. Eastwood,
+        [J. Comp. Phys. **14**, 148 (1974)](https://doi.org/10.1016/0021-9991(74)90010-2) |
+
+        | `"velocity_verlet"` | W.C. Swope, H.C. Andersen, P.H. Berens, and K.R. Wilson,
+        [J. Chem. Phys. **76**, 637 (1982)](https://doi.org/10.1063/1.442716) |
+
+        | `"rRESPA_multitimescale"` | M. Tuckerman, B. J. Berne, and G. J. Martyna
+        [J. Chem. Phys. **97**, 1990 (1992)](https://doi.org/10.1063/1.463137) |
+
+        | `"langevin_leap_frog"` | J.A. Izaguirre, C.R. Sweet, and V.S. Pande
+        [Pac Symp Biocomput. **15**, 240-251 (2010)](https://doi.org/10.1142/9789814295291_0026) |
+        """,
+    )
+
+    integration_timestep = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='s',
+        description="""
+        The timestep at which the numerical integration is performed.
+        """,
+    )
+
+    n_steps = Quantity(
+        type=int,
+        shape=[],
+        description="""
+        Number of timesteps performed.
+        """,
+    )
+
+    coordinate_save_frequency = Quantity(
+        type=int,
+        shape=[],
+        description="""
+        The number of timesteps between saving the coordinates.
+        """,
+    )
+
+    velocity_save_frequency = Quantity(
+        type=int,
+        shape=[],
+        description="""
+        The number of timesteps between saving the velocities.
+        """,
+    )
+
+    force_save_frequency = Quantity(
+        type=int,
+        shape=[],
+        description="""
+        The number of timesteps between saving the forces.
+        """,
+    )
+
+    thermodynamics_save_frequency = Quantity(
+        type=int,
+        shape=[],
+        description="""
+        The number of timesteps between saving the thermodynamic quantities.
+        """,
+    )
 
     thermostat_parameters = SubSection(
         sub_section=ThermostatParameters.m_def, repeats=True
@@ -1100,12 +1102,15 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
         """,
     )
 
-    radial_distribution_functions = SubSection(
-        sub_section=RadialDistributionFunction.m_def, repeats=True
-    )
+    # Properties
+    diffusion_constants = SubSection(sub_section=DiffusionConstant.m_def, repeats=True)
 
     mean_squared_displacements = SubSection(
         sub_section=MeanSquaredDisplacement.m_def, repeats=True
+    )
+
+    radial_distribution_functions = SubSection(
+        sub_section=RadialDistributionFunction.m_def, repeats=True
     )
 
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
@@ -1127,14 +1132,21 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
         return universe
 
     @log
-    def get_molecular_rdfs(self, archive: EntryArchive) -> list(
-        RadialDistributionFunction
-    ):
+    def get_molecular_rdfs(
+        self, archive: EntryArchive
+    ) -> list[RadialDistributionFunction]:
         logger = self.get_molecular_rdfs.__annotations__['logger']
         if self.radial_distribution_functions is not None:
             return self.radial_distribution_functions
 
         n_traj_split = 10  # number of intervals to split trajectory into for averaging
+        try:
+            n_prune = int(
+                self._universe.trajectory.n_frames / len(archive.data[-1].model_system)
+            )
+        except Exception:
+            n_prune = 1
+
         interval_indices = []  # 2D array specifying the groups of the n_traj_split intervals to be averaged
         # first 20% of trajectory
         interval_indices.append(np.arange(int(n_traj_split * 0.20)))
@@ -1145,7 +1157,6 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
         # last 40% of trajectory
         interval_indices.append(np.arange(n_traj_split)[len(interval_indices[0]) * 3 :])
 
-        n_prune = int(self._universe.trajectory.n_frames / len(archive.run[-1].system))
         rdf_results = calc_molecular_rdf(
             self._universe,
             self._bead_groups,
@@ -1177,6 +1188,123 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
 
         return sec_rdfs
 
+    @log
+    def get_molecular_msds(
+        self,
+    ) -> tuple[list[MeanSquaredDisplacement], list[DiffusionConstant]]:
+        logger = self.get_molecular_msds.__annotations__['logger']
+        if self.mean_squared_displacements is not None:
+            return self.mean_squared_displacements
+
+        msd_results = calc_molecular_mean_squared_displacements(
+            self._universe, self._bead_groups
+        )
+        sec_msds = []
+        if msd_results:
+            sec_msds = []
+            sec_diffusion_constants = []
+            for i_type, moltype in enumerate(msd_results.get('types', [])):
+                msd = MeanSquaredDisplacement()
+                msd.type = msd_results.get('type')
+                msd.direction = msd_results.get('direction')
+                msd.label = str(moltype)
+                msd.n_times = len(msd_results.get('times', [[]] * i_type)[i_type])
+                msd.times = (
+                    msd_results['times'][i_type]
+                    if msd_results.get('times') is not None
+                    else []
+                )
+                msd.value = (
+                    msd_results['value'][i_type]
+                    if msd_results.get('value') is not None
+                    else []
+                )
+                diffusion_constant = DiffusionConstant()
+                diffusion_constant.value = (
+                    msd_results['diffusion_constant'][i_type]
+                    if msd_results.get('diffusion_constant') is not None
+                    else []
+                )
+                if diffusion_constant.value is not None:
+                    diffusion_constant.error_type = (
+                        'Pearson correlation coefficient'  # TODO Update treatment!
+                    )
+                    if msd_results.get('error_diffusion_constant') is not None:
+                        errors = msd_results['error_diffusion_constant'][i_type]
+                        diffusion_constant.errors = (
+                            list(errors)
+                            if isinstance(errors, (list, np.ndarray))
+                            else [errors]
+                        )
+                    diffusion_constant.is_derived = True
+                    diffusion_constant.physical_property_ref = [msd]
+                    sec_diffusion_constants.append(diffusion_constant)
+                sec_msds.append(msd)
+
+        return sec_msds, sec_diffusion_constants
+
+    @log
+    def get_molecular_rgs(
+        self,
+        archive: EntryArchive,
+    ) -> tuple[list[MeanSquaredDisplacement], list[DiffusionConstant]]:
+        try:
+            data = archive.data[-1]
+            sec_systems = data.system
+            sec_system = sec_systems[data.representative_system_index]
+            sec_outputs = data.outputs
+        except Exception:
+            return []
+
+        logger = self.get_molecular_rgs.__annotations__['logger']
+        flag_rgs = False
+        for out in sec_outputs:
+            if out.get('radius_of_gyration'):
+                flag_rgs = True
+                break  # TODO Should transfer Rg's to workflow results if they are already supplied in calculation
+
+        if not flag_rgs:  # TODO move rg calculation to Simulation.normalize?
+            sec_rgs_out = None
+            system_hierarchy = sec_system.subsystems
+            rg_results = calc_molecular_radius_of_gyration(
+                self._universe, system_hierarchy
+            )
+            for rg in rg_results:
+                n_frames = rg.get('n_frames')
+                if len(sec_systems) != n_frames:
+                    logger.warning(
+                        'Mismatch in length of system references in calculation and calculated Rg values.'
+                        'Will not store Rg values under calculation section'
+                    )
+                    continue
+
+                sec_rgs = RadiiOfGyration()
+                sec_rgs._rg_results = rg
+                sec_rgs.normalize(archive, logger)
+                self.radius_of_gyration.append(sec_rgs)  # TODO prob move norm here
+
+                for out in sec_outputs:
+                    if not out.system_ref:  # TODO check relevance
+                        continue
+                    sys_ind = out.system_ref.m_parent_index
+                    sec_rgs_out = out.radius_of_gyration
+                    if not sec_rgs_out:
+                        sec_rgs_out = out.m_create(RadiusOfGyration)
+                        sec_rgs_out.kind = rg.get('type')  # check quant names
+                    else:
+                        sec_rgs_out = sec_rgs_out[0]
+                    # sec_rg_values = sec_rgs_out.m_create(
+                    #     RadiusOfGyrationValuesCalculation
+                    # )
+
+                    # TODO Fix this assignment fails with TypeError
+                    try:
+                        sec_rgs_out.atomsgroup_ref = [rg.get('atomsgroup_ref')]
+                    except Exception:
+                        pass
+                    sec_rgs_out.label = rg.get('label')
+                    sec_rgs_out.value = rg.get('value')[sys_ind]
+
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
 
@@ -1190,107 +1318,12 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
         self.radial_distribution_functions = self.get_molecular_rdfs(archive)
 
         # calculate the molecular mean squared displacements
-        if not self.mean_squared_displacements:
-            msd_results = calc_molecular_mean_squared_displacements(
-                universe, bead_groups
-            )
-            if msd_results:
-                sec_msds = []
-                sec_Ds = []
-                for i_type, moltype in enumerate(msd_results.get('types', [])):
-                    msd = MeanSquaredDisplacement()
-                    msd.type = msd_results.get('type')
-                    msd.direction = msd_results.get('direction')
-                    msd.label = str(moltype)
-                    msd.n_times = len(msd_results.get('times', [[]] * i_type)[i_type])
-                    msd.times = (
-                        msd_results['times'][i_type]
-                        if msd_results.get('times') is not None
-                        else []
-                    )
-                    msd.value = (
-                        msd_results['value'][i_type]
-                        if msd_results.get('value') is not None
-                        else []
-                    )
-                    sec_D = DiffusionConstant()
-                    sec_D.value = (
-                        msd_results['diffusion_constant'][i_type]
-                        if msd_results.get('diffusion_constant') is not None
-                        else []
-                    )
-                    if sec_D.value is not None:
-                        sec_D.error_type = (
-                            'Pearson correlation coefficient'  # TODO Update treatment!
-                        )
-                        if msd_results.get('error_diffusion_constant') is not None:
-                            errors = msd_results['error_diffusion_constant'][i_type]
-                            sec_D.errors = (
-                                list(errors)
-                                if isinstance(errors, (list, np.ndarray))
-                                else [errors]
-                            )
-                        sec_D.is_derived = True
-                        sec_D.physical_property_ref = [msd]
-                        sec_Ds.append(sec_D)
-                    sec_msds.append(msd)
-
-                self.mean_squared_displacements = sec_msds
+        msds, diffusion_constants = self.get_molecular_msds()
+        self.mean_squared_displacements = msds
+        self.diffusion_constants = diffusion_constants
 
         # calculate radius of gyration for polymers
-        try:
-            data = archive.data[-1]
-            sec_systems = data.system
-            sec_system = sec_systems[data.representative_system_index]
-            sec_outputs = data.outputs
-        except Exception:
-            return
-
-        flag_rgs = False
-        for out in sec_outputs:
-            if out.get('radius_of_gyration'):
-                flag_rgs = True
-                break  # TODO Should transfer Rg's to workflow results if they are already supplied in calculation
-
-        if not flag_rgs:  # TODO move rg calculation to Simulation.normalize?
-            sec_rgs_calc = None
-            system_hierarchy = sec_system.subsystems
-            rg_results = calc_molecular_radius_of_gyration(universe, system_hierarchy)
-            for rg in rg_results:
-                n_frames = rg.get('n_frames')
-                if len(sec_systems) != n_frames:
-                    logger.warning(
-                        'Mismatch in length of system references in calculation and calculated Rg values.'
-                        'Will not store Rg values under calculation section'
-                    )
-                    continue
-
-                sec_rgs = RadiusOfGyration()
-                sec_rgs._rg_results = rg
-                sec_rgs.normalize(archive, logger)
-                self.radius_of_gyration.append(sec_rgs)
-
-                for calc in sec_outputs:
-                    if not calc.system_ref:
-                        continue
-                    sys_ind = calc.system_ref.m_parent_index
-                    sec_rgs_calc = calc.radius_of_gyration
-                    if not sec_rgs_calc:
-                        sec_rgs_calc = calc.m_create(RadiusOfGyrationCalculation)
-                        sec_rgs_calc.kind = rg.get('type')
-                    else:
-                        sec_rgs_calc = sec_rgs_calc[0]
-                    sec_rg_values = sec_rgs_calc.m_create(
-                        RadiusOfGyrationValuesCalculation
-                    )
-
-                    # TODO Fix this assignment fails with TypeError
-                    try:
-                        sec_rg_values.atomsgroup_ref = [rg.get('atomsgroup_ref')]
-                    except Exception:
-                        pass
-                    sec_rg_values.label = rg.get('label')
-                    sec_rg_values.value = rg.get('value')[sys_ind]
+        self.radii_of_gyration = self.get_molecular_rgs(archive)
 
 
 # class MolecularDynamics(SerialSimulation):
@@ -1321,13 +1354,13 @@ class MolecularDynamics(SerialWorkflow):
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
-            self.model = MolecularDynamicsModel()
+            self.model = MolecularDynamicsMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            self.results = MolecularDynamicsResults()
+            self.results = MolecularDynamicsOutputs()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)
