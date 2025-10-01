@@ -1,38 +1,33 @@
-from typing import Any, Callable, Optional
-from itertools import chain
-from collections import namedtuple
-import numpy as np
+from __future__ import annotations
+
 from array import array
-from scipy import sparse
-from scipy.stats import linregress
+from collections import namedtuple
+from collections.abc import Callable
+from itertools import chain
+from typing import Any
+
 import networkx
 import numpy as np
+from scipy import sparse
+from scipy.stats import linregress
+
 import MDAnalysis
-from MDAnalysis.core.topology import Topology
-from MDAnalysis.core.universe import Universe
 import MDAnalysis.analysis.rdf as MDA_RDF
 from MDAnalysis.core._get_readers import get_reader_for
+from MDAnalysis.core.topology import Topology
+from MDAnalysis.core.universe import Universe
 
-from nomad.utils import get_logger
-from nomad.units import ureg
 from nomad import atomutils
-
-from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import (
-    SubSection,
-    Section,
-    Quantity,
-    MEnum,
-    Reference,
-    MSection,
-)
-from nomad.datamodel.hdf5 import HDF5Dataset
-from nomad.datamodel.metainfo.workflow import Link
+from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
+from nomad.units import ureg
+from nomad.utils import get_logger
 
 from nomad_simulations.schema_packages.model_system import ModelSystem
 
+LOGGER = get_logger(__name__)
 
-class BeadGroup(object):
+
+class BeadGroup:
     """A helper class for calculating properties of groups of atoms ("beads") with the MDAnalysis package.
     See https://github.com/MDAnalysis/mdanalysis/issues/1891#issuecomment-387138110 by @richardjgowers with performance improvements.
 
@@ -117,12 +112,12 @@ def _create_empty_universe(
     n_frames: int = 1,
     n_residues: int = 1,
     n_segments: int = 1,
-    atom_resindex: Optional[np.ndarray] = None,
-    residue_segindex: Optional[np.ndarray] = None,
+    atom_resindex: np.ndarray | None = None,
+    residue_segindex: np.ndarray | None = None,
     flag_trajectory: bool = False,
     flag_velocities: bool = False,
     flag_forces: bool = False,
-    timestep: Optional[float] = None,
+    timestep: float | None = None,
 ) -> MDAnalysis.Universe:
     """Create a blank Universe
 
@@ -1149,7 +1144,7 @@ def get_molecules_from_bond_list(
     n_particles: int,
     bond_list: list[tuple],
     particle_types: list[str] = [],
-    particles_typeid: Optional[array] = None,
+    particles_typeid: array | None = None,
 ) -> list[dict[str, Any]]:
     """
     Returns a list of dictionaries with molecule info from each instance in the list of bonds.

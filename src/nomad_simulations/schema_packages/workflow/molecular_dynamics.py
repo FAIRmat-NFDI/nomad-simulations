@@ -1,79 +1,58 @@
-from typing import TYPE_CHECKING
-from typing import Any, Callable, Optional
-from itertools import chain
-from collections import namedtuple
-import numpy as np
+from __future__ import annotations
+
 from array import array
-from scipy import sparse
-from scipy.stats import linregress
+from collections import namedtuple
+from itertools import chain
+from typing import TYPE_CHECKING, Any
+
 import networkx
 import numpy as np
+from scipy import sparse
+from scipy.stats import linregress
+
 import MDAnalysis
-from MDAnalysis.core.topology import Topology
-from MDAnalysis.core.universe import Universe
 import MDAnalysis.analysis.rdf as MDA_RDF
 from MDAnalysis.core._get_readers import get_reader_for
+from MDAnalysis.core.topology import Topology
+from MDAnalysis.core.universe import Universe
+
+from nomad import atomutils
+from nomad.datamodel.data import ArchiveSection
+from nomad.datamodel.datamodel import EntryArchive
+from nomad.datamodel.hdf5 import HDF5Dataset
+from nomad.datamodel.metainfo.workflow import Link
+from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
+from nomad.units import ureg
+
+from nomad_simulations.schema_packages.model_system import ModelSystem
+from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
+from nomad_simulations.schema_packages.physical_property import PhysicalProperty
+from nomad_simulations.schema_packages.properties.structure import RadiusOfGyration
+from nomad_simulations.schema_packages.utils import log
+from nomad_simulations.schema_packages.utils.molecular_dynamics import (
+    _get_molecular_bead_groups,
+    archive_to_universe,
+    calc_molecular_mean_squared_displacements,
+    calc_molecular_radius_of_gyration,
+    calc_molecular_rdf,
+)
+from nomad_simulations.schema_packages.workflow.trajectory import (
+    RadiiOfGyration,
+    SerialWorkflowOutputs,
+)
+
+from .general import (
+    SerialWorkflow,
+    SimulationWorkflowMethod,
+    SimulationWorkflowOutputs,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
-    from typing import Any, Optional
 
     import pint
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
-
-from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.datamodel import EntryArchive
-from nomad.metainfo import (
-    SubSection,
-    Section,
-    Quantity,
-    MEnum,
-    Reference,
-    MSection,
-)
-from nomad.datamodel.hdf5 import HDF5Dataset
-from nomad.datamodel.metainfo.workflow import Link
-
-from nomad_simulations.schema_packages.model_system import ModelSystem
-
-# from runschema.system import System, AtomsGroup
-# from runschema.calculation import (
-#     RadiusOfGyration as RadiusOfGyrationCalculation,
-#     RadiusOfGyrationValues as RadiusOfGyrationValuesCalculation,
-# )
-from nomad.utils import get_logger
-from nomad.units import ureg
-from nomad import atomutils
-from .general import (
-    SimulationWorkflowMethod,
-    SimulationWorkflowOutputs,
-    SerialWorkflow,
-)
-from .trajectory import RadiiOfGyration
-from nomad_simulations.schema_packages.physical_property import PhysicalProperty
-from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
-from nomad_simulations.schema_packages.properties.structure import RadiusOfGyration
-from nomad_simulations.schema_packages.workflow.trajectory import SerialWorkflowOutputs
-from nomad_simulations.schema_packages.utils.molecular_dynamics import (
-    calc_molecular_mean_squared_displacements,
-    calc_molecular_radius_of_gyration,
-    calc_molecular_rdf,
-    _get_molecular_bead_groups,
-    archive_to_universe,
-)
-
-from nomad_simulations.schema_packages.utils import log
-
-# LOGGER = get_logger(__name__)
-
-
-# from structlog.stdlib import BoundLogger
-
-# from nomad_simulations.schema_packages.utils import log
-
-# from .general import SerialWorkflow, SimulationWorkflowModel, SimulationWorkflowResults
-# from .thermodynamics import ThermodynamicsResults
 
 
 class MDSettings(NumericalSettings):
@@ -1113,7 +1092,7 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
 
     radius_of_gyration = SubSection(sub_section=RadiiOfGyration.m_def, repeats=True)
 
-    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
+    def __init__(self, m_def: Section = None, m_context: Context = None, **kwargs):
         super().__init__(m_def, m_context, **kwargs)
         self._cache: dict[str, Any] = {}
         self._universe = None
@@ -1135,7 +1114,7 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
     def get_molecular_rdfs(
         self, archive: EntryArchive
     ) -> list[RadialDistributionFunction]:
-        logger = self.get_molecular_rdfs.__annotations__['logger']
+        # logger = self.get_molecular_rdfs.__annotations__['logger']
         if self.radial_distribution_functions is not None:
             return self.radial_distribution_functions
 
@@ -1190,7 +1169,7 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
     def get_molecular_msds(
         self,
     ) -> tuple[list[MeanSquaredDisplacement], list[DiffusionConstant]]:
-        logger = self.get_molecular_msds.__annotations__['logger']
+        # logger = self.get_molecular_msds.__annotations__['logger']
         if (
             self.mean_squared_displacements is not None
         ):  # TODO add check for diffusion_constants too?
@@ -1233,7 +1212,7 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
                         errors = msd_results['error_diffusion_constant'][i_type]
                         diffusion_constant.errors = (
                             list(errors)
-                            if isinstance(errors, (list, np.ndarray))
+                            if isinstance(errors, list | np.ndarray)
                             else [errors]
                         )
                     diffusion_constant.is_derived = True
