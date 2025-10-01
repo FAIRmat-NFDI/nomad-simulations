@@ -13,8 +13,8 @@ class TestMolecularDynamics:
         archive.data.outputs = [Outputs() for _ in range(self.n_outputs)]
         workflow = MolecularDynamics()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, MolecularDynamicsModel)
-        assert isinstance(workflow.results, MolecularDynamicsResults)
+        assert isinstance(workflow.model, MolecularDynamicsMethod)
+        assert isinstance(workflow.results, MolecularDynamicsOutputs)
         assert len(workflow.tasks) == self.n_outputs
         for n, task in enumerate(workflow.tasks):
             assert task.name == f'Step {n}'
