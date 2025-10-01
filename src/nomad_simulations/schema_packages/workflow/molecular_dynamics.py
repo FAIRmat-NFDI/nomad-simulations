@@ -47,10 +47,8 @@ from nomad.units import ureg
 from nomad import atomutils
 from .general import (
     SimulationWorkflowMethod,
-    SimulationWorkflowResults,
+    SimulationWorkflowOutputs,
     SerialWorkflow,
-    WORKFLOW_METHOD_NAME,
-    WORKFLOW_RESULTS_NAME,
 )
 from .trajectory import RadiiOfGyration
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty

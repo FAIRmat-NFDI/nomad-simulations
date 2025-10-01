@@ -7,13 +7,15 @@ from nomad_simulations.schema_packages.utils import log
 
 from .general import (
     INCORRECT_N_TASKS,
+    ParallelWorkflow,
+    SerialWorkflow,
     SimulationWorkflow,
-    SimulationWorkflowModel,
-    SimulationWorkflowResults,
+    SimulationWorkflowMethod,
+    SimulationWorkflowOutputs,
 )
 
 
-class PhononModel(SimulationWorkflowModel):
+class PhononModel(SimulationWorkflowMethod):
     _label = 'Phonon calculation parameters'
 
     force_calculator = Quantity(
@@ -66,7 +68,7 @@ class PhononModel(SimulationWorkflowModel):
     )
 
 
-class PhononResults(SimulationWorkflowResults):
+class PhononResults(SimulationWorkflowOutputs):
     _label = 'Phonon results'
 
     n_imaginary_frequencies = Quantity(

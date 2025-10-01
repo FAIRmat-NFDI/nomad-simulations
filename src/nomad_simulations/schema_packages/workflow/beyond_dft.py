@@ -8,18 +8,18 @@ from .general import (
     INCORRECT_N_TASKS,
     ElectronicStructureResults,
     SerialWorkflow,
-    SimulationWorkflowModel,
-    SimulationWorkflowResults,
+    SimulationWorkflowMethod,
+    SimulationWorkflowOutputs,
 )
 
 m_package = SchemaPackage()
 
 
-class BeyondDFTModel(SimulationWorkflowModel):
+class BeyondDFTModel(SimulationWorkflowMethod):
     _label = 'DFT+ workflow parameters'
 
 
-class BeyondDFTResults(SimulationWorkflowResults):
+class BeyondDFTResults(SimulationWorkflowOutputs):
     """
     Contains reference to DFT outputs.
     """

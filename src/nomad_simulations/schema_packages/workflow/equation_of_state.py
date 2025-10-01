@@ -19,8 +19,8 @@ from nomad_simulations.schema_packages.utils import log
 
 from .general import (
     ParallelWorkflow,
-    SimulationWorkflowModel,
-    SimulationWorkflowResults,
+    SimulationWorkflowMethod,
+    SimulationWorkflowOutputs,
 )
 
 m_package = SchemaPackage()
@@ -35,7 +35,7 @@ FUNCTION_NAMES = {
 }
 
 
-class EquationOfStateModel(SimulationWorkflowModel):
+class EquationOfStateModel(SimulationWorkflowMethod):
     _label = 'EquationOfState workflow parameters'
 
     program = Quantity(
@@ -124,7 +124,7 @@ class EOSFit(ArchiveSection):
     )
 
 
-class EquationOfStateResults(SimulationWorkflowResults):
+class EquationOfStateResults(SimulationWorkflowOutputs):
     _label = 'EquationOfState workflow results'
 
     n_points = Quantity(

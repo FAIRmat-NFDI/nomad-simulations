@@ -7,14 +7,14 @@ from nomad_simulations.schema_packages.utils import log
 from .general import (
     INCORRECT_N_TASKS,
     SimulationWorkflow,
-    SimulationWorkflowModel,
-    SimulationWorkflowResults,
+    SimulationWorkflowMethod,
+    SimulationWorkflowOutputs,
 )
 
 m_package = SchemaPackage()
 
 
-class SinglePointModel(SimulationWorkflowModel):
+class SinglePointModel(SimulationWorkflowMethod):
     """
     Contains definitions for the input model of a single point workflow.
     """
@@ -22,7 +22,7 @@ class SinglePointModel(SimulationWorkflowModel):
     _label = 'Single point model'
 
 
-class SinglePointResults(SimulationWorkflowResults):
+class SinglePointResults(SimulationWorkflowOutputs):
     """
     Contains defintions for the results of a single point workflow.
     """

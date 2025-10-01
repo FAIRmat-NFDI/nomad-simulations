@@ -6,12 +6,12 @@ from structlog.stdlib import BoundLogger
 from nomad_simulations.schema_packages.properties.energies import BaseEnergy
 from nomad_simulations.schema_packages.utils import log
 
-from .general import SerialWorkflow, SimulationWorkflowModel, SimulationWorkflowResults
+from .general import SerialWorkflow, SimulationWorkflowMethod, SimulationWorkflowOutputs
 
 m_package = SchemaPackage()
 
 
-class GeometryOptimizationModel(SimulationWorkflowModel):
+class GeometryOptimizationModel(SimulationWorkflowMethod):
     _label = 'Geometry optimization parameters'
 
     optimization_type = Quantity(
@@ -99,7 +99,7 @@ class GeometryOptimizationModel(SimulationWorkflowModel):
     )
 
 
-class GeometryOptimizationResults(SimulationWorkflowResults):
+class GeometryOptimizationResults(SimulationWorkflowOutputs):
     _label = 'Geometry optimiztation results'
 
     n_steps = Quantity(

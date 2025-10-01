@@ -1,8 +1,8 @@
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
     MolecularDynamics,
-    MolecularDynamicsModel,
-    MolecularDynamicsResults,
+    MolecularDynamicsMethod,
+    MolecularDynamicsOutputs,
 )
 
 

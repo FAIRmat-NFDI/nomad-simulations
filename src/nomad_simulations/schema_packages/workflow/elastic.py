@@ -15,13 +15,13 @@ from structlog.stdlib import BoundLogger
 from nomad_simulations.schema_packages.general import Program
 from nomad_simulations.schema_packages.utils import log
 
-from .general import INCORRECT_N_TASKS, SimulationWorkflow, SimulationWorkflowModel
+from .general import INCORRECT_N_TASKS, SimulationWorkflow, SimulationWorkflowMethod
 from .thermodynamics import ThermodynamicsResults
 
 m_package = SchemaPackage()
 
 
-class ElasticModel(SimulationWorkflowModel):
+class ElasticModel(SimulationWorkflowMethod):
     _label = 'Elastic model'
 
     program = Quantity(
