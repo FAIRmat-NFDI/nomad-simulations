@@ -19,11 +19,11 @@ if TYPE_CHECKING:
     from typing import Any, Optional
 
     import pint
-    from nomad.datamodel.datamodel import EntryArchive
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
 from nomad.datamodel.data import ArchiveSection
+from nomad.datamodel.datamodel import EntryArchive
 from nomad.metainfo import (
     SubSection,
     Section,
@@ -1113,6 +1113,8 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
         sub_section=RadialDistributionFunction.m_def, repeats=True
     )
 
+    radius_of_gyration = SubSection(sub_section=RadiiOfGyration.m_def, repeats=True)
+
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
         super().__init__(m_def, m_context, **kwargs)
         self._cache: dict[str, Any] = {}
@@ -1166,7 +1168,7 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
         )
         sec_rdfs = []
         if rdf_results:
-            for i_pair, pair_type in enumerate(self.rdf_results.get('types', [])):
+            for i_pair, pair_type in enumerate(rdf_results.get('types', [])):
                 rdf = RadialDistributionFunction()
                 rdf.type = rdf_results.get(
                     'type'
@@ -1177,13 +1179,11 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
                 rdf.variables_name = ['distance']
 
                 rdf.label = str(pair_type)
-                rdf.n_bins = len(self.rdf_results.get('bins', [[]] * i_pair)[i_pair])
-                rdf.bins = self.rdf_results.get('bins', [[]] * i_pair)[i_pair]
-                rdf.value = self.rdf_results.get('value', [[]] * i_pair)[i_pair]
-                rdf.frame_start = self.rdf_results.get('frame_start', [[]] * i_pair)[
-                    i_pair
-                ]
-                rdf.frame_end = self.rdf_results.get('frame_end', [[]] * i_pair)[i_pair]
+                rdf.n_bins = len(rdf_results.get('bins', [[]] * i_pair)[i_pair])
+                rdf.bins = rdf_results.get('bins', [[]] * i_pair)[i_pair]
+                rdf.value = rdf_results.get('value', [[]] * i_pair)[i_pair]
+                rdf.frame_start = rdf_results.get('frame_start', [[]] * i_pair)[i_pair]
+                rdf.frame_end = rdf_results.get('frame_end', [[]] * i_pair)[i_pair]
                 sec_rdfs.append(rdf)
 
         return sec_rdfs
@@ -1193,8 +1193,10 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
         self,
     ) -> tuple[list[MeanSquaredDisplacement], list[DiffusionConstant]]:
         logger = self.get_molecular_msds.__annotations__['logger']
-        if self.mean_squared_displacements is not None:
-            return self.mean_squared_displacements
+        if (
+            self.mean_squared_displacements is not None
+        ):  # TODO add check for diffusion_constants too?
+            return self.mean_squared_displacements, self.diffusion_constants or []
 
         msd_results = calc_molecular_mean_squared_displacements(
             self._universe, self._bead_groups
@@ -1243,67 +1245,100 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
 
         return sec_msds, sec_diffusion_constants
 
+    def _populate_output_rgs(
+        self, archive: EntryArchive, rg_results: list, logger
+    ) -> None:
+        """
+        Populate the radius of gyration data in the archive's output sections.
+        This is separated from the workflow calculation to maintain clean separation of concerns.
+        """
+        try:
+            data = archive.data[-1]
+            sec_systems = data.system
+            sec_outputs = data.outputs
+        except Exception:
+            logger.warning('Could not access archive data for populating output RGs')
+            return
+
+        for rg in rg_results:
+            n_frames = rg.get('n_frames')
+            if len(sec_systems) != n_frames:
+                logger.warning(
+                    'Mismatch in length of system references in calculation and calculated Rg values. '
+                    'Will not store Rg values under calculation section'
+                )
+                continue
+
+            for out in sec_outputs:
+                if not out.system_ref:  # TODO check relevance
+                    continue
+                sys_ind = out.system_ref.m_parent_index
+
+                # Use the correct property name from outputs.py (radii_of_gyration, plural)
+                if not hasattr(out, 'radii_of_gyration') or not out.radii_of_gyration:
+                    sec_rgs_out = out.m_create(RadiusOfGyration)
+                    sec_rgs_out.kind = rg.get('type')  # check quant names
+                else:
+                    sec_rgs_out = out.radii_of_gyration[0]
+
+                # TODO Fix this assignment fails with TypeError
+                try:
+                    sec_rgs_out.atomsgroup_ref = [rg.get('atomsgroup_ref')]
+                except Exception:
+                    pass
+                sec_rgs_out.label = rg.get('label')
+                sec_rgs_out.value = rg.get('value')[sys_ind]
+
     @log
     def get_molecular_rgs(
         self,
         archive: EntryArchive,
-    ) -> tuple[list[MeanSquaredDisplacement], list[DiffusionConstant]]:
+    ) -> list[RadiiOfGyration]:
+        """
+        Calculate and return radius of gyration data for the workflow.
+        Also populates the corresponding output sections in the archive.
+        """
+        logger = self.get_molecular_rgs.__annotations__['logger']
+
+        # Check if already calculated
+        if self.radius_of_gyration:
+            return self.radius_of_gyration
+
         try:
             data = archive.data[-1]
             sec_systems = data.system
             sec_system = sec_systems[data.representative_system_index]
             sec_outputs = data.outputs
         except Exception:
+            logger.warning('Could not access archive data for RG calculation')
             return []
 
-        logger = self.get_molecular_rgs.__annotations__['logger']
+        # Check if RGs are already present in outputs
         flag_rgs = False
         for out in sec_outputs:
-            if out.get('radius_of_gyration'):
+            if hasattr(out, 'radii_of_gyration') and out.radii_of_gyration:
                 flag_rgs = True
                 break  # TODO Should transfer Rg's to workflow results if they are already supplied in calculation
 
-        if not flag_rgs:  # TODO move rg calculation to Simulation.normalize?
-            sec_rgs_out = None
+        workflow_rgs = []
+
+        if not flag_rgs:  # Calculate RGs if not already present
             system_hierarchy = sec_system.subsystems
             rg_results = calc_molecular_radius_of_gyration(
                 self._universe, system_hierarchy
             )
-            for rg in rg_results:
-                n_frames = rg.get('n_frames')
-                if len(sec_systems) != n_frames:
-                    logger.warning(
-                        'Mismatch in length of system references in calculation and calculated Rg values.'
-                        'Will not store Rg values under calculation section'
-                    )
-                    continue
 
-                sec_rgs = RadiiOfGyration()
+            # Create workflow RG sections
+            for rg in rg_results:
+                sec_rgs = RadiiOfGyration()  # Use plural name for trajectory workflow
                 sec_rgs._rg_results = rg
                 sec_rgs.normalize(archive, logger)
-                self.radius_of_gyration.append(sec_rgs)  # TODO prob move norm here
+                workflow_rgs.append(sec_rgs)
 
-                for out in sec_outputs:
-                    if not out.system_ref:  # TODO check relevance
-                        continue
-                    sys_ind = out.system_ref.m_parent_index
-                    sec_rgs_out = out.radius_of_gyration
-                    if not sec_rgs_out:
-                        sec_rgs_out = out.m_create(RadiusOfGyration)
-                        sec_rgs_out.kind = rg.get('type')  # check quant names
-                    else:
-                        sec_rgs_out = sec_rgs_out[0]
-                    # sec_rg_values = sec_rgs_out.m_create(
-                    #     RadiusOfGyrationValuesCalculation
-                    # )
+            # Populate output sections separately
+            self._populate_output_rgs(archive, rg_results, logger)
 
-                    # TODO Fix this assignment fails with TypeError
-                    try:
-                        sec_rgs_out.atomsgroup_ref = [rg.get('atomsgroup_ref')]
-                    except Exception:
-                        pass
-                    sec_rgs_out.label = rg.get('label')
-                    sec_rgs_out.value = rg.get('value')[sys_ind]
+        return workflow_rgs
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
@@ -1323,7 +1358,7 @@ class MolecularDynamicsOutputs(SerialWorkflowOutputs):
         self.diffusion_constants = diffusion_constants
 
         # calculate radius of gyration for polymers
-        self.radii_of_gyration = self.get_molecular_rgs(archive)
+        self.radius_of_gyration = self.get_molecular_rgs(archive)
 
 
 # class MolecularDynamics(SerialSimulation):
