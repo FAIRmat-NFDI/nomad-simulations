@@ -10,7 +10,6 @@ from nomad_simulations.schema_packages.properties import ElectronicDensityOfStat
 from nomad_simulations.schema_packages.utils import log
 
 from nomad_simulations.schema_packages.common import SimulationOutputs
-from nomad_simulations.schema_packages.workflow.trajectory import SerialWorkflowOutputs
 
 # TODO make this a function to check required number of tasks
 INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
@@ -195,6 +194,8 @@ class SerialWorkflow(SimulationWorkflow):
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
+            # Import here to avoid circular import
+            from nomad_simulations.schema_packages.workflow.trajectory import SerialWorkflowOutputs
             self.results = SerialWorkflowOutputs()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)

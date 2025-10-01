@@ -5,7 +5,7 @@ from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties.energies import TotalEnergy
 from nomad_simulations.schema_packages.workflow.geometry_optimization import (
     GeometryOptimization,
-    GeometryOptimizationResults,
+    GeometryOptimizationOutputs,
 )
 
 
@@ -25,7 +25,7 @@ class TestGeometryOptimization:
         ]
         workflow = GeometryOptimization()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.results, GeometryOptimizationResults)
+        assert isinstance(workflow.results, GeometryOptimizationOutputs)
         if ref_energy:
             assert workflow.results.energies is not None
             assert workflow.results.energies[1].magnitude == ref_energy

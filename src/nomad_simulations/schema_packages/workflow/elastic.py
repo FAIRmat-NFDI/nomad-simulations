@@ -16,7 +16,7 @@ from nomad_simulations.schema_packages.general import Program
 from nomad_simulations.schema_packages.utils import log
 
 from .general import INCORRECT_N_TASKS, SimulationWorkflow, SimulationWorkflowMethod
-from .thermodynamics import ThermodynamicsResults
+from .thermodynamics import ThermodynamicsOutputs
 
 m_package = SchemaPackage()
 
@@ -131,7 +131,7 @@ class StrainDiagrams(ArchiveSection):
     )
 
 
-class ElasticResults(ThermodynamicsResults):
+class ElasticResults(ThermodynamicsOutputs):
     _label = 'Elastic results'
 
     n_deformations = Quantity(

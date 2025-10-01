@@ -11,7 +11,7 @@ from .general import SerialWorkflow, SimulationWorkflowMethod, SimulationWorkflo
 m_package = SchemaPackage()
 
 
-class GeometryOptimizationModel(SimulationWorkflowMethod):
+class GeometryOptimizationMethod(SimulationWorkflowMethod):
     _label = 'Geometry optimization parameters'
 
     optimization_type = Quantity(
@@ -99,7 +99,7 @@ class GeometryOptimizationModel(SimulationWorkflowMethod):
     )
 
 
-class GeometryOptimizationResults(SimulationWorkflowOutputs):
+class GeometryOptimizationOutputs(SimulationWorkflowOutputs):
     _label = 'Geometry optimiztation results'
 
     n_steps = Quantity(
@@ -196,14 +196,14 @@ class GeometryOptimization(SerialWorkflow):
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
-            self.model = GeometryOptimizationModel()
+            self.model = GeometryOptimizationMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            self.results = GeometryOptimizationResults()
+            self.results = GeometryOptimizationOutputs()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)
 

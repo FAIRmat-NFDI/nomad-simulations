@@ -5,9 +5,6 @@ from nomad.datamodel.hdf5 import HDF5Dataset
 from structlog.stdlib import BoundLogger
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.workflow.general import SimulationWorkflowOutputs
-from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
-    FreeEnergyCalculationParameters,
-)
 
 
 class TrajectoryProperty(PhysicalProperty):
@@ -85,13 +82,14 @@ class RadiiOfGyration(TrajectoryProperty):
 
     _rg_results = None
 
-    atomsgroup_ref = Quantity(
-        type=Reference(AtomsGroup.m_def),
-        shape=[1],
-        description="""
-        References to the atoms_group section containing the molecule for which Rg was calculated.
-        """,
-    )
+    # TODO remove or replace with system ref if nec
+    # atomsgroup_ref = Quantity(
+    #     type=Reference(AtomsGroup.m_def),
+    #     shape=[1],
+    #     description="""
+    #     References to the atoms_group section containing the molecule for which Rg was calculated.
+    #     """,
+    # )
 
     value = Quantity(
         type=np.float64,
@@ -127,7 +125,9 @@ class FreeEnergyCalculations(TrajectoryProperty):
     """
 
     method_ref = Quantity(
-        type=Reference(FreeEnergyCalculationParameters.m_def),
+        type=Reference(
+            'nomad_simulations.schema_packages.workflow.molecular_dynamics.FreeEnergyCalculationParameters'
+        ),
         shape=[],
         description="""
         Links the free energy results with the method parameters.

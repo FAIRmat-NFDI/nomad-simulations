@@ -5,8 +5,8 @@ from nomad_simulations.schema_packages.workflow.general import (
     ParallelWorkflow,
     SerialWorkflow,
     SimulationWorkflow,
-    SimulationWorkflowModel,
-    SimulationWorkflowResults,
+    SimulationWorkflowMethod,
+    SimulationWorkflowOutputs,
 )
 
 
@@ -39,7 +39,7 @@ class TestSimulationWorklow:
         archive.data.model_method = [ModelMethod(), ModelMethod()]
         archive.data.model_system = [ModelSystem()]
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, SimulationWorkflowModel)
+        assert isinstance(workflow.model, SimulationWorkflowMethod)
         assert workflow.inputs[0].name == 'Input model'
         assert len(workflow.inputs) == 1
         assert workflow.model.initial_method == archive.data.model_method[0]
@@ -48,7 +48,7 @@ class TestSimulationWorklow:
     def test_outputs(self, logger, archive, workflow):
         archive.data.outputs = [Outputs(), Outputs()]
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.results, SimulationWorkflowResults)
+        assert isinstance(workflow.results, SimulationWorkflowOutputs)
         assert len(workflow.outputs) == 1
         assert workflow.outputs[0].name == 'Output results'
         assert workflow.results.final_outputs == archive.data.outputs[-1]
