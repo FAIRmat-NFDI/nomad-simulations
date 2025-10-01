@@ -38,13 +38,13 @@ from nomad_simulations.schema_packages.utils.molecular_dynamics import (
 )
 from nomad_simulations.schema_packages.workflow.trajectory import (
     RadiiOfGyration,
-    SerialWorkflowOutputs,
+    SerialWorkflowResults,
 )
 
 from .general import (
     SerialWorkflow,
     SimulationWorkflowMethod,
-    SimulationWorkflowOutputs,
+    SimulationWorkflowResults,
 )
 
 if TYPE_CHECKING:
@@ -1053,7 +1053,7 @@ class MeanSquaredDisplacement(CorrelationFunction):
     )
 
 
-class MolecularDynamicsOutputs(SerialWorkflowOutputs):
+class MolecularDynamicsResults(SimulationWorkflowResults):
     _label = 'MD results'
 
     finished_normally = Quantity(
@@ -1365,14 +1365,14 @@ class MolecularDynamics(SerialWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = MolecularDynamicsMethod()
+        if not self.method:
+            self.method = MolecularDynamicsMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            self.results = MolecularDynamicsOutputs()
+            self.results = MolecularDynamicsResults()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)

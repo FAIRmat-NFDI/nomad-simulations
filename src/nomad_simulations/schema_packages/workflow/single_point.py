@@ -8,13 +8,13 @@ from .general import (
     INCORRECT_N_TASKS,
     SimulationWorkflow,
     SimulationWorkflowMethod,
-    SimulationWorkflowOutputs,
+    SimulationWorkflowResults,
 )
 
 m_package = SchemaPackage()
 
 
-class SinglePointModel(SimulationWorkflowMethod):
+class SinglePointMethod(SimulationWorkflowMethod):
     """
     Contains definitions for the input model of a single point workflow.
     """
@@ -22,7 +22,7 @@ class SinglePointModel(SimulationWorkflowMethod):
     _label = 'Single point model'
 
 
-class SinglePointResults(SimulationWorkflowOutputs):
+class SinglePointResults(SimulationWorkflowResults):
     """
     Contains defintions for the results of a single point workflow.
     """
@@ -39,8 +39,8 @@ class SinglePoint(SimulationWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive):
-        if not self.model:
-            self.model = SinglePointModel()
+        if not self.method:
+            self.method = SinglePointMethod()
 
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)

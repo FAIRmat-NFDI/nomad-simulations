@@ -1,10 +1,16 @@
 import numpy as np
 from nomad.datamodel import EntryArchive, SubSection
-from nomad.metainfo import Quantity, SchemaPackage, Reference
+from nomad.metainfo import Quantity, SchemaPackage, Reference, SectionProxy
 from nomad.datamodel.hdf5 import HDF5Dataset
 from structlog.stdlib import BoundLogger
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
-from nomad_simulations.schema_packages.workflow.general import SimulationWorkflowOutputs
+from nomad_simulations.schema_packages.workflow.general import SimulationWorkflowResults
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from nomad_simulations.schema_packages.workflow.molecular_dynamics import FreeEnergyCalculationParameters
+else:
+    FreeEnergyCalculationParameters = 'FreeEnergyCalculationParameters'
 
 
 class TrajectoryProperty(PhysicalProperty):
@@ -125,9 +131,7 @@ class FreeEnergyCalculations(TrajectoryProperty):
     """
 
     method_ref = Quantity(
-        type=Reference(
-            'nomad_simulations.schema_packages.workflow.molecular_dynamics.FreeEnergyCalculationParameters'
-        ),
+        type=Reference(FreeEnergyCalculationParameters),
         shape=[],
         description="""
         Links the free energy results with the method parameters.
@@ -195,7 +199,7 @@ class FreeEnergyCalculations(TrajectoryProperty):
     )
 
 
-class SerialWorkflowOutputs(SimulationWorkflowOutputs):
+class SerialWorkflowResults(SimulationWorkflowResults):
     _label = 'Thermodynamics ouputs'
 
     temperatures = SubSection(sub_section=Temperatures.m_def, repeats=True)

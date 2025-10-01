@@ -2,7 +2,7 @@ from nomad.datamodel.metainfo.workflow import Link
 
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.workflow.dmft import (
-    DFTTBDDMFTModel,
+    DFTTBDDMFTMethod,
     DFTTBDMFTResults,
     DFTTBDMFTWorkflow,
 )
@@ -13,7 +13,7 @@ class TestDFTTBDMFTWorkflow:
     def test_inputs_outputs(self, logger, archive, log_output):
         workflow = DFTTBDMFTWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, DFTTBDDMFTModel)
+        assert isinstance(workflow.model, DFTTBDDMFTMethod)
         assert workflow.inputs[0].name == 'DFT+TB+DMFT workflow parameters'
         assert isinstance(workflow.results, DFTTBDMFTResults)
         assert workflow.outputs[0].name == 'DFT+TB+DMFT workflow results'

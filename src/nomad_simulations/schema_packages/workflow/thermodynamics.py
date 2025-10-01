@@ -11,10 +11,10 @@ from nomad_simulations.schema_packages.utils import log
 from .general import (
     SimulationWorkflow,
     SimulationWorkflowMethod,
-    SimulationWorkflowOutputs,
+    SimulationWorkflowResults,
 )
 
-from nomad_simulations.schema_packages.workflow.trajectory import SerialWorkflowOutputs
+from nomad_simulations.schema_packages.workflow.trajectory import SerialWorkflowResults
 
 m_package = SchemaPackage()
 
@@ -23,7 +23,7 @@ class ThermodynamicsMethod(SimulationWorkflowMethod):
     _label = 'Thermodynamics method'
 
 
-class ThermodynamicsOutputs(SerialWorkflowOutputs):
+class ThermodynamicsResults(SerialWorkflowResults):
     _label = 'Thermodynamics ouputs'
     pass
 
@@ -31,15 +31,15 @@ class ThermodynamicsOutputs(SerialWorkflowOutputs):
 class Thermodynamics(SimulationWorkflow):
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = ThermodynamicsMethod()
+        if not self.method:
+            self.method = ThermodynamicsMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            self.results = ThermodynamicsOutputs()
+            self.results = ThermodynamicsResults()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)
 

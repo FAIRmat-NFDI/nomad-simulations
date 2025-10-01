@@ -1,7 +1,7 @@
 from nomad_simulations.schema_packages.workflow.single_point import SinglePoint
 from nomad_simulations.schema_packages.workflow.tb import (
-    DFTTBModel,
-    DFTTBResults,
+    DFTTBMethod,
+    DFTTBOutputs,
     DFTTBWorkflow,
 )
 
@@ -10,8 +10,8 @@ class TestDFTTBWorkflow:
     def test_inputs_outputs(self, archive, logger, log_output):
         workflow = DFTTBWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, DFTTBModel)
-        assert isinstance(workflow.results, DFTTBResults)
+        assert isinstance(workflow.model, DFTTBMethod)
+        assert isinstance(workflow.results, DFTTBOutputs)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1
         assert workflow.inputs[0].name == 'DFT+TB workflow parameters'

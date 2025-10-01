@@ -52,12 +52,12 @@ class SimulationWorkflowMethod(ArchiveSection):
             self.initial_method = archive.data.model_method[0]
 
 
-class SimulationWorkflowOutputs(SimulationOutputs):
+class SimulationWorkflowResults(SimulationOutputs):
     """
-    Base class for simulation workflow outputs sub-section definition.
+    Base class for simulation workflow results sub-section definition.
     """
 
-    _label = 'Workflow outputs'
+    _label = 'Workflow results'
 
     # TODO add generic convergence results here
 
@@ -90,27 +90,27 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     _task_label = 'Task'
 
-    method = SubSection(sub_section=SimulationWorkflowMethod.m_def)
+    method = SubSection(sub_section=SimulationWorkflowMethod.m_def, repeats=True)
 
-    outputs = SubSection(sub_section=SimulationOutputs.m_def, repeats=True)
+    results = SubSection(sub_section=SimulationWorkflowResults.m_def, repeats=True)
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = SimulationWorkflowMethod()
+        if not self.method:
+            self.method = SimulationWorkflowMethod()
 
-        if self.model in [inp.section for inp in self.inputs]:
+        if self.method in [inp.section for inp in self.inputs]:
             return
 
         logger = self.map_inputs.__annotations__['logger']
-        self.model.normalize(archive, logger)
+        self.method.normalize(archive, logger)
         # add method to inputs
-        self.inputs.append(Link(name=self.model._label, section=self.model))
+        self.inputs.append(Link(name=self.method._label, section=self.method))
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            self.results = SimulationWorkflowOutputs()
+            self.results = SimulationWorkflowResults()
 
         if self.results in [out.section for out in self.outputs]:
             return
@@ -195,8 +195,11 @@ class SerialWorkflow(SimulationWorkflow):
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             # Import here to avoid circular import
-            from nomad_simulations.schema_packages.workflow.trajectory import SerialWorkflowOutputs
-            self.results = SerialWorkflowOutputs()
+            from nomad_simulations.schema_packages.workflow.trajectory import (
+                SerialWorkflowResults,
+            )
+
+            self.results = SerialWorkflowResults()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)
 
@@ -255,7 +258,7 @@ class ParallelWorkflow(SimulationWorkflow):
                 )
 
 
-class ElectronicStructureResults(SimulationWorkflowOutputs):
+class ElectronicStructureResults(SimulationWorkflowResults):
     """
     Contains definitions for results of an electronic structure simulation.
     """

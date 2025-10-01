@@ -6,7 +6,7 @@ from structlog.stdlib import BoundLogger
 from nomad_simulations.schema_packages.properties.energies import BaseEnergy
 from nomad_simulations.schema_packages.utils import log
 
-from .general import SerialWorkflow, SimulationWorkflowMethod, SimulationWorkflowOutputs
+from .general import SerialWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults
 
 m_package = SchemaPackage()
 
@@ -99,7 +99,7 @@ class GeometryOptimizationMethod(SimulationWorkflowMethod):
     )
 
 
-class GeometryOptimizationOutputs(SimulationWorkflowOutputs):
+class GeometryOptimizationResults(SimulationWorkflowResults):
     _label = 'Geometry optimiztation results'
 
     n_steps = Quantity(
@@ -195,15 +195,15 @@ class GeometryOptimization(SerialWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = GeometryOptimizationMethod()
+        if not self.method:
+            self.method = GeometryOptimizationMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            self.results = GeometryOptimizationOutputs()
+            self.results = GeometryOptimizationResults()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)
 

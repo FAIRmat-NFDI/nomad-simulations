@@ -1,7 +1,7 @@
 from nomad_simulations.schema_packages.workflow.max_ent import (
     DMFTMaxEntWorkflow,
-    DMTMaxEntModel,
-    DMTMaxEntResults,
+    DMTMaxEntMethod,
+    DMTMaxEntOutputs,
 )
 from nomad_simulations.schema_packages.workflow.single_point import SinglePoint
 
@@ -10,8 +10,8 @@ class TestDMFTMaxEntWorkflow:
     def test_inputs_outputs(self, archive, logger, log_output):
         workflow = DMFTMaxEntWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, DMTMaxEntModel)
-        assert isinstance(workflow.results, DMTMaxEntResults)
+        assert isinstance(workflow.model, DMTMaxEntMethod)
+        assert isinstance(workflow.results, DMTMaxEntOutputs)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1
         assert workflow.inputs[0].name == 'DMFT+MaxEnt workflow parameters'

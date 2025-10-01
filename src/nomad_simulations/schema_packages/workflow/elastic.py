@@ -16,12 +16,12 @@ from nomad_simulations.schema_packages.general import Program
 from nomad_simulations.schema_packages.utils import log
 
 from .general import INCORRECT_N_TASKS, SimulationWorkflow, SimulationWorkflowMethod
-from .thermodynamics import ThermodynamicsOutputs
+from .thermodynamics import ThermodynamicsResults
 
 m_package = SchemaPackage()
 
 
-class ElasticModel(SimulationWorkflowMethod):
+class ElasticMethod(SimulationWorkflowMethod):
     _label = 'Elastic model'
 
     program = Quantity(
@@ -131,7 +131,7 @@ class StrainDiagrams(ArchiveSection):
     )
 
 
-class ElasticResults(ThermodynamicsOutputs):
+class ElasticResults(ThermodynamicsResults):
     _label = 'Elastic results'
 
     n_deformations = Quantity(
@@ -391,8 +391,8 @@ class Elastic(SimulationWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = ElasticModel()
+        if not self.method:
+            self.method = ElasticMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 

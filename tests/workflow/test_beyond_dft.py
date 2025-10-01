@@ -2,7 +2,7 @@ from nomad.datamodel import EntryMetadata
 from nomad.datamodel.metainfo.workflow import TaskReference
 
 from nomad_simulations.schema_packages.workflow.beyond_dft import (
-    BeyondDFTModel,
+    BeyondDFTMethod,
     BeyondDFTResults,
     BeyondDFTWorkflow,
 )
@@ -12,8 +12,8 @@ class TestBeyondDFT:
     def test_inputs_outputs(self, logger, archive, log_output):
         workflow = BeyondDFTWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, BeyondDFTModel)
-        assert isinstance(workflow.results, BeyondDFTResults)
+        assert isinstance(workflow.model, BeyondDFTMethod)
+        assert isinstance(workflow.results, BeyondDFTOutputs)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1
         assert workflow.inputs[0].name == 'DFT+ workflow parameters'

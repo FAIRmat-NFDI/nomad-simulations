@@ -1,6 +1,6 @@
 from nomad_simulations.schema_packages.workflow.gw import (
-    DFTGWModel,
-    DFTGWResults,
+    DFTGWMethod,
+    DFTGWOutputs,
     DFTGWWorkflow,
 )
 from nomad_simulations.schema_packages.workflow.single_point import SinglePoint
@@ -10,8 +10,8 @@ class TestDFTGWWorkflow:
     def test_inputs_outputs(self, logger, archive, log_output):
         workflow = DFTGWWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, DFTGWModel)
-        assert isinstance(workflow.results, DFTGWResults)
+        assert isinstance(workflow.model, DFTGWMethod)
+        assert isinstance(workflow.results, DFTGWOutputs)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1
         assert workflow.inputs[0].name == 'DFT+GW workflow parameters'

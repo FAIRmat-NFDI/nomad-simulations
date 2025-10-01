@@ -11,11 +11,11 @@ from .general import (
     SerialWorkflow,
     SimulationWorkflow,
     SimulationWorkflowMethod,
-    SimulationWorkflowOutputs,
+    SimulationWorkflowResults,
 )
 
 
-class PhononModel(SimulationWorkflowMethod):
+class PhononMethod(SimulationWorkflowMethod):
     _label = 'Phonon calculation parameters'
 
     force_calculator = Quantity(
@@ -68,7 +68,7 @@ class PhononModel(SimulationWorkflowMethod):
     )
 
 
-class PhononResults(SimulationWorkflowOutputs):
+class PhononResults(SimulationWorkflowResults):
     _label = 'Phonon results'
 
     n_imaginary_frequencies = Quantity(
@@ -149,8 +149,8 @@ class Phonon(SimulationWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = PhononModel()
+        if not self.method:
+            self.method = PhononMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
