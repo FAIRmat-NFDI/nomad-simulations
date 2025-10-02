@@ -12,8 +12,8 @@ class TestBeyondDFT:
     def test_inputs_outputs(self, logger, archive, log_output):
         workflow = BeyondDFTWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, BeyondDFTMethod)
-        assert isinstance(workflow.results, BeyondDFTOutputs)
+        assert isinstance(workflow.method, BeyondDFTMethod)
+        assert isinstance(workflow.results, BeyondDFTResults)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1
         assert workflow.inputs[0].name == 'DFT+ workflow parameters'

@@ -2,7 +2,7 @@ from nomad.datamodel.metainfo.workflow import Link
 
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.workflow.dmft import (
-    DFTTBDDMFTMethod,
+    DFTTBDMFTMethod,
     DFTTBDMFTResults,
     DFTTBDMFTWorkflow,
 )
@@ -13,12 +13,12 @@ class TestDFTTBDMFTWorkflow:
     def test_inputs_outputs(self, logger, archive, log_output):
         workflow = DFTTBDMFTWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, DFTTBDDMFTMethod)
+        assert isinstance(workflow.method, DFTTBDMFTMethod)
         assert workflow.inputs[0].name == 'DFT+TB+DMFT workflow parameters'
         assert isinstance(workflow.results, DFTTBDMFTResults)
         assert workflow.outputs[0].name == 'DFT+TB+DMFT workflow results'
         assert len(workflow.inputs) == 1
-        assert workflow.inputs[0].section == workflow.model
+        assert workflow.inputs[0].section == workflow.method
         assert len(workflow.outputs) == 1
         assert workflow.outputs[0].section == workflow.results
         assert log_output.entries[0]['event'] == 'Incorrect number of tasks found.'

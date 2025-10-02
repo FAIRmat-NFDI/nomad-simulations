@@ -90,9 +90,9 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     _task_label = 'Task'
 
-    method = SubSection(sub_section=SimulationWorkflowMethod.m_def, repeats=True)
+    method = SubSection(sub_section=SimulationWorkflowMethod.m_def)
 
-    results = SubSection(sub_section=SimulationWorkflowResults.m_def, repeats=True)
+    results = SubSection(sub_section=SimulationWorkflowResults.m_def)
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

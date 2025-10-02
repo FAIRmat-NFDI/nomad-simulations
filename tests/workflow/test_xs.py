@@ -4,15 +4,19 @@ from nomad_simulations.schema_packages.workflow.photon_polarization import (
     PhotonPolarizationWorkflow,
 )
 from nomad_simulations.schema_packages.workflow.single_point import SinglePoint
-from nomad_simulations.schema_packages.workflow.xs import XSMethod, XSOutputs, XSWorkflow
+from nomad_simulations.schema_packages.workflow.xs import (
+    XSMethod,
+    XSResults,
+    XSWorkflow,
+)
 
 
 class TestXSWorkflow:
     def test_inputs_outputs(self, archive, logger, log_output):
         workflow = XSWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, XSMethod)
-        assert isinstance(workflow.results, XSOutputs)
+        assert isinstance(workflow.method, XSMethod)
+        assert isinstance(workflow.results, XSResults)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1
         assert workflow.inputs[0].name == 'XS workflow parameters'

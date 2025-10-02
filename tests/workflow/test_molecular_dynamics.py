@@ -2,7 +2,7 @@ from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
     MolecularDynamics,
     MolecularDynamicsMethod,
-    MolecularDynamicsOutputs,
+    MolecularDynamicsResults,
 )
 
 
@@ -13,8 +13,8 @@ class TestMolecularDynamics:
         archive.data.outputs = [Outputs() for _ in range(self.n_outputs)]
         workflow = MolecularDynamics()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, MolecularDynamicsMethod)
-        assert isinstance(workflow.results, MolecularDynamicsOutputs)
+        assert isinstance(workflow.method, MolecularDynamicsMethod)
+        assert isinstance(workflow.results, MolecularDynamicsResults)
         assert len(workflow.tasks) == self.n_outputs
         for n, task in enumerate(workflow.tasks):
             assert task.name == f'Step {n}'

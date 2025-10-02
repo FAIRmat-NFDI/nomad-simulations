@@ -1053,7 +1053,7 @@ class MeanSquaredDisplacement(CorrelationFunction):
     )
 
 
-class MolecularDynamicsResults(SimulationWorkflowResults):
+class MolecularDynamicsResults(SerialWorkflowResults):
     _label = 'MD results'
 
     finished_normally = Quantity(
