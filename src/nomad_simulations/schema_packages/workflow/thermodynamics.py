@@ -12,9 +12,8 @@ from .general import (
     SimulationWorkflow,
     SimulationWorkflowMethod,
     SimulationWorkflowResults,
+    SerialWorkflowResults,
 )
-
-from nomad_simulations.schema_packages.workflow.trajectory import SerialWorkflowResults
 
 m_package = SchemaPackage()
 

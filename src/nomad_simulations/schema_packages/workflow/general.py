@@ -10,6 +10,12 @@ from nomad_simulations.schema_packages.properties import ElectronicDensityOfStat
 from nomad_simulations.schema_packages.utils import log
 
 from nomad_simulations.schema_packages.common import SimulationOutputs
+from nomad_simulations.schema_packages.workflow.trajectory import (
+    FreeEnergyCalculations,
+    Pressures,
+    RadiiOfGyration,
+    Temperatures,
+)
 
 # TODO make this a function to check required number of tasks
 INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
@@ -185,6 +191,20 @@ class SimulationWorkflow(Workflow, SimulationTask):
         self.map_tasks(archive, logger=logger)
 
 
+class SerialWorkflowResults(SimulationWorkflowResults):
+    _label = 'Thermodynamics ouputs'
+
+    temperatures = SubSection(sub_section=Temperatures.m_def, repeats=True)
+
+    pressures = SubSection(sub_section=Pressures.m_def, repeats=True)
+
+    radii_of_gyration = SubSection(sub_section=RadiiOfGyration.m_def, repeats=True)
+
+    free_energy_calculations = SubSection(
+        sub_section=FreeEnergyCalculations.m_def, repeats=True
+    )
+
+
 class SerialWorkflow(SimulationWorkflow):
     """
     Base class for workflows where tasks are executed sequentially.
@@ -194,11 +214,6 @@ class SerialWorkflow(SimulationWorkflow):
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            # Import here to avoid circular import
-            from nomad_simulations.schema_packages.workflow.trajectory import (
-                SerialWorkflowResults,
-            )
-
             self.results = SerialWorkflowResults()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)

@@ -36,13 +36,11 @@ from nomad_simulations.schema_packages.utils.molecular_dynamics import (
     calc_molecular_radius_of_gyration,
     calc_molecular_rdf,
 )
-from nomad_simulations.schema_packages.workflow.trajectory import (
-    RadiiOfGyration,
-    SerialWorkflowResults,
-)
+from nomad_simulations.schema_packages.workflow.trajectory import RadiiOfGyration
 
 from .general import (
     SerialWorkflow,
+    SerialWorkflowResults,
     SimulationWorkflowMethod,
     SimulationWorkflowResults,
 )
@@ -1338,7 +1336,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         self.radius_of_gyration = self.get_molecular_rgs(archive)
 
 
-# class MolecularDynamics(SerialSimulation):
+# class MolecularDynamics(SerialWorkflow):
 #     method = SubSection(sub_section=MolecularDynamicsMethod)
 
 #     results = SubSection(sub_section=MolecularDynamicsResults)
@@ -1363,16 +1361,23 @@ class MolecularDynamicsResults(SerialWorkflowResults):
 class MolecularDynamics(SerialWorkflow):
     _task_label = 'Step'
 
-    @log
-    def map_inputs(self, archive: EntryArchive) -> None:
+    method = SubSection(sub_section=MolecularDynamicsMethod)
+
+    results = SubSection(sub_section=MolecularDynamicsResults)
+
+    def map_inputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
         if not self.method:
             self.method = MolecularDynamicsMethod()
-        logger = self.map_inputs.__annotations__['logger']
-        super().map_inputs(archive, logger=logger)
 
-    @log
-    def map_outputs(self, archive: EntryArchive) -> None:
+    def map_outputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
         if not self.results:
             self.results = MolecularDynamicsResults()
-        logger = self.map_outputs.__annotations__['logger']
-        super().map_outputs(archive, logger=logger)
+
+    def normalize(self, archive, logger):
+        super().normalize(archive, logger)
+
+        if not self.method:
+            self.method = MolecularDynamicsMethod()
+
+        if not self.results:
+            self.results = MolecularDynamicsResults()

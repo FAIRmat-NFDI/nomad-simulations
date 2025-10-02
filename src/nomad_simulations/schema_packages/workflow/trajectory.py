@@ -4,11 +4,13 @@ from nomad.metainfo import Quantity, SchemaPackage, Reference, SectionProxy
 from nomad.datamodel.hdf5 import HDF5Dataset
 from structlog.stdlib import BoundLogger
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
-from nomad_simulations.schema_packages.workflow.general import SimulationWorkflowResults
 
 from typing import TYPE_CHECKING
+
 if TYPE_CHECKING:
-    from nomad_simulations.schema_packages.workflow.molecular_dynamics import FreeEnergyCalculationParameters
+    from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
+        FreeEnergyCalculationParameters,
+    )
 else:
     FreeEnergyCalculationParameters = 'FreeEnergyCalculationParameters'
 
@@ -196,18 +198,4 @@ class FreeEnergyCalculations(TrajectoryProperty):
         lambda state. The expected dimensions are ["n_frames"].
         This quantity is a reference to the data (file+path), which is stored in an HDF5 file for efficiency.
         """,
-    )
-
-
-class SerialWorkflowResults(SimulationWorkflowResults):
-    _label = 'Thermodynamics ouputs'
-
-    temperatures = SubSection(sub_section=Temperatures.m_def, repeats=True)
-
-    pressures = SubSection(sub_section=Pressures.m_def, repeats=True)
-
-    radii_of_gyration = SubSection(sub_section=RadiiOfGyration.m_def, repeats=True)
-
-    free_energy_calculations = SubSection(
-        sub_section=FreeEnergyCalculations.m_def, repeats=True
     )
