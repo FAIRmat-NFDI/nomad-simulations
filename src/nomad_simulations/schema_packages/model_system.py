@@ -727,7 +727,70 @@ class ChemicalFormula(ArchiveSection):
             self.m_cache['elemental_composition'] = formula.elemental_composition
 
 
-class ModelSystem(System):
+class Representation(ArchiveSection):
+    """
+    A section containing the representation information of a system, including
+    lattice vectors, periodic boundary conditions, positions, and symmetry-related data.
+    """
+
+    lattice_vectors = Quantity(
+        type=np.float64,
+        shape=[3, 3],
+        unit='meter',
+        description="""
+        Lattice vectors of the simulated cell. The first index runs over each lattice vector.
+        The second index runs over the reference Cartesian coordinate system, in the order $x, y, z$.
+        """,
+    )
+
+    periodic_boundary_conditions = Quantity(
+        type=bool,
+        shape=[3],
+        description="""
+        Whether periodic boundary conditions are applied.
+        Runs over each direction of the crystal axes.
+        """,
+    )
+
+    positions = Quantity(
+        type=np.float64,
+        shape=['*', 3],
+        unit='meter',
+        description="""
+            Cartesian coordinates of all atoms in the system.
+        """,
+    )
+
+    fractional_coordinates = Quantity(
+        type=np.float64,
+        shape=['*', 3],
+        description="""
+            Fractional coordinates of all atoms in the system with respect to the
+            lattice vectors.
+        """,
+    )
+
+    wyckoff_letters = Quantity(
+        type=str,
+        shape=['*'],
+        description="""
+        Wyckoff letters associated with each atom.
+        """,
+    )
+
+    equivalent_atoms = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
+        then the list is simply the index of each element, e.g.:
+            - [0, 1, 2, 3] all four atoms are non-equivalent.
+            - [0, 0, 0, 3] three equivalent atoms and one non-equivalent.
+        """,
+    )
+
+
+class ModelSystem(System, Representation):
     """
     Model system used as an input for simulating the material.
 
@@ -749,6 +812,7 @@ class ModelSystem(System):
     `time_step` can be defined.
 
     It is composed of the sub-sections:
+        - `Representation` containing alternative representations of the system
         - `Symmetry` containing the information of the (conventional) atomic cell symmetry
         in bulk ModelSystem,
         - `ChemicalFormula` containing the information of the chemical formulas in different
@@ -898,44 +962,6 @@ class ModelSystem(System):
         """,
     )
 
-    lattice_vectors = Quantity(
-        type=np.float64,
-        shape=[3, 3],
-        unit='meter',
-        description="""
-        Lattice vectors of the simulated cell. The first index runs over each lattice vector.
-        The second index runs over the reference Cartesian coordinate system, in the order $x, y, z$.
-        """,
-    )
-
-    periodic_boundary_conditions = Quantity(
-        type=bool,
-        shape=[3],
-        description="""
-        Whether periodic boundary conditions are applied.
-        Runs over each direction of the crystal axes.
-        """,
-    )
-
-    positions = Quantity(
-        type=np.float64,
-        shape=['*', 3],
-        unit='meter',
-        description="""
-            Cartesian coordinates of all atoms in the top-level system.
-            All subsystems will reference these positions via particle_indices.
-        """,
-    )
-
-    fractional_coordinates = Quantity(
-        type=np.float64,
-        shape=['*', 3],
-        description="""
-            Fractional coordinates of all atoms in the top-level system with respect to the
-            lattice vectors. All subsystems will reference these positions via particle_indices.
-        """,
-    )
-
     velocities = Quantity(
         type=np.float64,
         shape=['*', 3],
@@ -1016,22 +1042,11 @@ class ModelSystem(System):
         """,
     )
 
-    wyckoff_letters = Quantity(
-        type=str,
-        shape=['*'],
+    representations = SubSection(
+        sub_section=Representation.m_def,
+        repeats=True,
         description="""
-        Wyckoff letters associated with each atom.
-        """,
-    )
-
-    equivalent_atoms = Quantity(
-        type=np.int32,
-        shape=['*'],
-        description="""
-        List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
-        then the list is simply the index of each element, e.g.:
-            - [0, 1, 2, 3] all four atoms are non-equivalent.
-            - [0, 0, 0, 3] three equivalent atoms and one non-equivalent.
+        Alternative representations of the system, e.g., in a different simulation box or crystal cell.
         """,
     )
 
