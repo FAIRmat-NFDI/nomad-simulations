@@ -256,16 +256,146 @@ class HashedPositions(PartialOrderElement):
         return np.allclose(self.representative_variable, other.representative_variable)
 
 
-class Cell(GeometricSpace):
+class Representation(ArchiveSection):
     """
-    A base section used to specify the cell quantities of a system at a given moment in time.
+    A comprehensive section containing all representation information of a system, including
+    lattice vectors, periodic boundary conditions, positions, and symmetry-related data.
+    
+    This class unifies properties from:
+    - GeometricSpace: geometric properties like vectors lengths, angles, volumes, coordinate systems
+    - Cell: lattice vectors, periodic boundary conditions, supercell information
+    - Structural data: atomic positions (Cartesian and fractional), Wyckoff positions, equivalent atoms
+    
+    This design allows for multiple representations of the same system (e.g., primitive, 
+    conventional, supercell) to coexist while maintaining a consistent interface.
     """
 
+    # From GeometricSpace
+    length_vector_a = Quantity(
+        type=np.float64,
+        unit='meter',
+        description="""
+        Length of the first basis vector.
+        """,
+    )
+
+    length_vector_b = Quantity(
+        type=np.float64,
+        unit='meter',
+        description="""
+        Length of the second basis vector.
+        """,
+    )
+
+    length_vector_c = Quantity(
+        type=np.float64,
+        unit='meter',
+        description="""
+        Length of the third basis vector.
+        """,
+    )
+
+    angle_vectors_b_c = Quantity(
+        type=np.float64,
+        unit='radian',
+        description="""
+        Angle between second and third basis vector.
+        """,
+    )
+
+    angle_vectors_a_c = Quantity(
+        type=np.float64,
+        unit='radian',
+        description="""
+        Angle between first and third basis vector.
+        """,
+    )
+
+    angle_vectors_a_b = Quantity(
+        type=np.float64,
+        unit='radian',
+        description="""
+        Angle between first and second basis vector.
+        """,
+    )
+
+    volume = Quantity(
+        type=np.float64,
+        unit='meter ** 3',
+        description="""
+        Volume of a 3D real space entity.
+        """,
+    )
+
+    surface_area = Quantity(
+        type=np.float64,
+        unit='meter ** 2',
+        description="""
+        Surface area of a 3D real space entity.
+        """,
+    )
+
+    area = Quantity(
+        type=np.float64,
+        unit='meter ** 2',
+        description="""
+        Area of a 2D real space entity.
+        """,
+    )
+
+    length = Quantity(
+        type=np.float64,
+        unit='meter',
+        description="""
+        Total length of a 1D real space entity.
+        """,
+    )
+
+    coordinates_system = Quantity(
+        type=MEnum('cartesian', 'cylindrical', 'spherical', 'ellipsoidal', 'polar'),
+        default='cartesian',
+        description="""
+        Coordinate system used to define geometrical primitives of a shape in real
+        space. Defaults to 'cartesian'.
+
+        | name       | description | dimensionalities | coordinates |
+        |------------|-------------|------------------|-------------|
+        | cartesian  | coordinate system with fixed angles between the axes (not necessarily 90°) | 1, 2, 3 | x, y, z |
+        | cylindrical| cylindrical symmetry | 3 | r, theta, z |
+        | spherical  | spherical symmetry | 3 | r, theta, phi |
+        | ellipsoidal| spherically elongated system | 3 | r, theta, phi |
+        | polar      | spherical symmetry | 2 | r, theta |
+        """,
+    )
+
+    origin_shift = Quantity(
+        type=np.float64,
+        shape=[3],
+        description="""
+        Vector `p` from the origin of a custom coordinates system to the origin of the
+        global coordinates system. Together with the matrix `P` (stored in transformation_matrix),
+        the transformation between the custom coordinates `x` and global coordinates `X` is then
+        given by:
+            `x` = `P` `X` + `p`.
+        """,
+    )
+
+    transformation_matrix = Quantity(
+        type=np.float64,
+        shape=[3, 3],
+        description="""
+        Matrix `P` used to transform the custom coordinates system to the global coordinates system.
+        Together with the vector `p` (stored in origin_shift), the transformation between
+        the custom coordinates `x` and global coordinates `X` is then given by:
+            `x` = `P` `X` + `p`.
+        """,
+    )
+
+    # From Cell
     name = Quantity(
         type=str,
         description="""
-        Name of the specific cell section. This is typically used to easy identification of the
-        `Cell` section. Possible values: "Cell".
+        Name of the specific representation. This can be used for easy identification.
         """,
     )
 
@@ -291,8 +421,8 @@ class Cell(GeometricSpace):
         shape=[3, 3],
         unit='meter',
         description="""
-        Lattice vectors of the simulated cell in Cartesian coordinates. The first index runs
-        over each lattice vector. The second index runs over the $x, y, z$ Cartesian coordinates.
+        Lattice vectors of the simulated cell. The first index runs over each lattice vector.
+        The second index runs over the reference Cartesian coordinate system, in the order $x, y, z$.
         """,
     )
 
@@ -300,7 +430,8 @@ class Cell(GeometricSpace):
         type=bool,
         shape=[3],
         description="""
-        If periodic boundary conditions are applied to each direction of the crystal axes.
+        Whether periodic boundary conditions are applied.
+        Runs over each direction of the crystal axes.
         """,
     )
 
@@ -314,6 +445,56 @@ class Cell(GeometricSpace):
         is a $3 x 3 x 3$ superlattice.
         """,
     )
+
+    positions = Quantity(
+        type=np.float64,
+        shape=['*', 3],
+        unit='meter',
+        description="""
+            Cartesian coordinates of all atoms in the system.
+        """,
+    )
+
+    fractional_coordinates = Quantity(
+        type=np.float64,
+        shape=['*', 3],
+        description="""
+            Fractional coordinates of all atoms in the system with respect to the
+            lattice vectors.
+        """,
+    )
+
+    wyckoff_letters = Quantity(
+        type=str,
+        shape=['*'],
+        description="""
+        Wyckoff letters associated with each atom.
+        """,
+    )
+
+    equivalent_atoms = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
+        then the list is simply the index of each element, e.g.:
+            - [0, 1, 2, 3] all four atoms are non-equivalent.
+            - [0, 0, 0, 3] three equivalent atoms and one non-equivalent.
+        """,
+    )
+
+
+class Cell(Representation):
+    """
+    A base section used to specify the cell quantities of a system at a given moment in time.
+    Now inherits from Representation which contains all geometric, cell, and positional properties.
+    This provides a unified interface for all structural representation data.
+    """
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        # Set the name of the section
+        self.name = self.m_def.name if self.name is None else self.name
 
 
 class AtomicCell(Cell):
@@ -725,69 +906,6 @@ class ChemicalFormula(ArchiveSection):
         if formula:
             self.resolve_chemical_formulas(formula=formula)
             self.m_cache['elemental_composition'] = formula.elemental_composition
-
-
-class Representation(ArchiveSection):
-    """
-    A section containing the representation information of a system, including
-    lattice vectors, periodic boundary conditions, positions, and symmetry-related data.
-    """
-
-    lattice_vectors = Quantity(
-        type=np.float64,
-        shape=[3, 3],
-        unit='meter',
-        description="""
-        Lattice vectors of the simulated cell. The first index runs over each lattice vector.
-        The second index runs over the reference Cartesian coordinate system, in the order $x, y, z$.
-        """,
-    )
-
-    periodic_boundary_conditions = Quantity(
-        type=bool,
-        shape=[3],
-        description="""
-        Whether periodic boundary conditions are applied.
-        Runs over each direction of the crystal axes.
-        """,
-    )
-
-    positions = Quantity(
-        type=np.float64,
-        shape=['*', 3],
-        unit='meter',
-        description="""
-            Cartesian coordinates of all atoms in the system.
-        """,
-    )
-
-    fractional_coordinates = Quantity(
-        type=np.float64,
-        shape=['*', 3],
-        description="""
-            Fractional coordinates of all atoms in the system with respect to the
-            lattice vectors.
-        """,
-    )
-
-    wyckoff_letters = Quantity(
-        type=str,
-        shape=['*'],
-        description="""
-        Wyckoff letters associated with each atom.
-        """,
-    )
-
-    equivalent_atoms = Quantity(
-        type=np.int32,
-        shape=['*'],
-        description="""
-        List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
-        then the list is simply the index of each element, e.g.:
-            - [0, 1, 2, 3] all four atoms are non-equivalent.
-            - [0, 0, 0, 3] three equivalent atoms and one non-equivalent.
-        """,
-    )
 
 
 class ModelSystem(System, Representation):
