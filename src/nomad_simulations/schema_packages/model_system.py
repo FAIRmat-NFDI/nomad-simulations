@@ -69,54 +69,6 @@ class GeometricSpace(Entity):
     A base section used to define geometrical spaces and their entities.
     """
 
-    length_vector_a = Quantity(
-        type=np.float64,
-        unit='meter',
-        description="""
-        Length of the first basis vector.
-        """,
-    )
-
-    length_vector_b = Quantity(
-        type=np.float64,
-        unit='meter',
-        description="""
-        Length of the second basis vector.
-        """,
-    )
-
-    length_vector_c = Quantity(
-        type=np.float64,
-        unit='meter',
-        description="""
-        Length of the third basis vector.
-        """,
-    )
-
-    angle_vectors_b_c = Quantity(
-        type=np.float64,
-        unit='radian',
-        description="""
-        Angle between second and third basis vector.
-        """,
-    )
-
-    angle_vectors_a_c = Quantity(
-        type=np.float64,
-        unit='radian',
-        description="""
-        Angle between first and third basis vector.
-        """,
-    )
-
-    angle_vectors_a_b = Quantity(
-        type=np.float64,
-        unit='radian',
-        description="""
-        Angle between first and second basis vector.
-        """,
-    )
-
     volume = Quantity(
         type=np.float64,
         unit='meter ** 3',
@@ -270,55 +222,7 @@ class Representation(ArchiveSection):
     conventional, supercell) to coexist while maintaining a consistent interface.
     """
 
-    # From GeometricSpace
-    length_vector_a = Quantity(
-        type=np.float64,
-        unit='meter',
-        description="""
-        Length of the first basis vector.
-        """,
-    )
-
-    length_vector_b = Quantity(
-        type=np.float64,
-        unit='meter',
-        description="""
-        Length of the second basis vector.
-        """,
-    )
-
-    length_vector_c = Quantity(
-        type=np.float64,
-        unit='meter',
-        description="""
-        Length of the third basis vector.
-        """,
-    )
-
-    angle_vectors_b_c = Quantity(
-        type=np.float64,
-        unit='radian',
-        description="""
-        Angle between second and third basis vector.
-        """,
-    )
-
-    angle_vectors_a_c = Quantity(
-        type=np.float64,
-        unit='radian',
-        description="""
-        Angle between first and third basis vector.
-        """,
-    )
-
-    angle_vectors_a_b = Quantity(
-        type=np.float64,
-        unit='radian',
-        description="""
-        Angle between first and second basis vector.
-        """,
-    )
-
+    # From GeometricSpace (geometric measurements)
     volume = Quantity(
         type=np.float64,
         unit='meter ** 3',
@@ -671,12 +575,6 @@ class Symmetry(ArchiveSection):
         # Note: wyckoff_letters and equivalent_atoms are now on ModelSystem
         # The cell section only holds geometric information
         try:
-            cell_section.length_vector_a, cell_section.length_vector_b, cell_section.length_vector_c = (
-                cell.lengths() * ureg.angstrom
-            )
-            cell_section.angle_vectors_b_c, cell_section.angle_vectors_a_c, cell_section.angle_vectors_a_b = (
-                cell.angles() * ureg.degree
-            )
             cell_section.volume = cell.volume * ureg.angstrom**3
         except Exception as exc:
             logger.warning(
@@ -1192,12 +1090,6 @@ class ModelSystem(System, Representation):
             cell = atoms.get_cell()
             if self.cell and len(self.cell) > 0:
                 cell_section = self.cell[0]
-                cell_section.length_vector_a, cell_section.length_vector_b, cell_section.length_vector_c = (
-                    cell.lengths() * ureg.angstrom
-                )
-                cell_section.angle_vectors_b_c, cell_section.angle_vectors_a_c, cell_section.angle_vectors_a_b = (
-                    cell.angles() * ureg.degree
-                )
                 cell_section.volume = cell.volume * ureg.angstrom**3
         except Exception as exc:
             logger.warning(
