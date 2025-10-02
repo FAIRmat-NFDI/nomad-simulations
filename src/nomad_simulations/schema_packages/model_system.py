@@ -44,8 +44,8 @@ from nomad.units import ureg
 from nomad_simulations.schema_packages.utils import log
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
-    from typing import Any, Optional
+    from collections.abc import Callable
+    from typing import Any
 
     import pint
     from nomad.datamodel.datamodel import EntryArchive
@@ -937,6 +937,25 @@ class ModelSystem(System):
         """,
     )
 
+    lattice_vectors = Quantity(
+        type=np.float64,
+        shape=[3, 3],
+        unit='meter',
+        description="""
+        Lattice vectors of the simulated cell. The first index runs over each lattice vector.
+        The second index runs over the reference Cartesian coordinate system, in the order $x, y, z$.
+        """,
+    )
+
+    periodic_boundary_conditions = Quantity(
+        type=bool,
+        shape=[3],
+        description="""
+        Whether periodic boundary conditions are applied.
+        Runs over each direction of the crystal axes.
+        """,
+    )
+
     positions = Quantity(
         type=np.float64,
         shape=['*', 3],
@@ -944,6 +963,15 @@ class ModelSystem(System):
         description="""
             Cartesian coordinates of all atoms in the top-level system.
             All subsystems will reference these positions via particle_indices.
+        """,
+    )
+
+    fractional_coordinates = Quantity(
+        type=np.float64,
+        shape=['*', 3],
+        description="""
+            Fractional coordinates of all atoms in the top-level system with respect to the
+            lattice vectors. All subsystems will reference these positions via particle_indices.
         """,
     )
 
