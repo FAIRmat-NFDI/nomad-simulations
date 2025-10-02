@@ -51,6 +51,7 @@ class TestSimulationWorklow:
         assert isinstance(workflow.results, SimulationWorkflowResults)
         assert len(workflow.outputs) == 1
         assert workflow.outputs[0].name == 'Workflow results'
+        # assert workflow.results.final_outputs == archive.data.outputs[-1]
 
     @pytest.mark.parametrize(
         'times, linked',
@@ -132,6 +133,10 @@ class TestParallelWorkflow:
         )
         assert len(parallel_workflow.outputs) == self.n_outputs + 1
         assert parallel_workflow.outputs[0].name == 'Workflow results'
+        # assert (
+        #     parallel_workflow.outputs[0].section.final_outputs
+        #     == archive.data.outputs[-1]
+        # )
         for n, output in enumerate(parallel_workflow.outputs[1:]):
             assert output.section == archive.data.outputs[n]
 
