@@ -222,36 +222,10 @@ class Representation(ArchiveSection):
     conventional, supercell) to coexist while maintaining a consistent interface.
     """
 
-    # From GeometricSpace (geometric measurements)
-    volume = Quantity(
-        type=np.float64,
-        unit='meter ** 3',
+    name = Quantity(
+        type=str,
         description="""
-        Volume of a 3D real space entity.
-        """,
-    )
-
-    surface_area = Quantity(
-        type=np.float64,
-        unit='meter ** 2',
-        description="""
-        Surface area of a 3D real space entity.
-        """,
-    )
-
-    area = Quantity(
-        type=np.float64,
-        unit='meter ** 2',
-        description="""
-        Area of a 2D real space entity.
-        """,
-    )
-
-    length = Quantity(
-        type=np.float64,
-        unit='meter',
-        description="""
-        Total length of a 1D real space entity.
+        Name of the specific representation. This can be used for easy identification.
         """,
     )
 
@@ -270,55 +244,7 @@ class Representation(ArchiveSection):
         | ellipsoidal| spherically elongated system | 3 | r, theta, phi |
         | polar      | spherical symmetry | 2 | r, theta |
         """,
-    )
-
-    origin_shift = Quantity(
-        type=np.float64,
-        shape=[3],
-        description="""
-        Vector `p` from the origin of a custom coordinates system to the origin of the
-        global coordinates system. Together with the matrix `P` (stored in transformation_matrix),
-        the transformation between the custom coordinates `x` and global coordinates `X` is then
-        given by:
-            `x` = `P` `X` + `p`.
-        """,
-    )
-
-    transformation_matrix = Quantity(
-        type=np.float64,
-        shape=[3, 3],
-        description="""
-        Matrix `P` used to transform the custom coordinates system to the global coordinates system.
-        Together with the vector `p` (stored in origin_shift), the transformation between
-        the custom coordinates `x` and global coordinates `X` is then given by:
-            `x` = `P` `X` + `p`.
-        """,
-    )
-
-    # From Cell
-    name = Quantity(
-        type=str,
-        description="""
-        Name of the specific representation. This can be used for easy identification.
-        """,
-    )
-
-    type = Quantity(
-        type=MEnum('original', 'primitive', 'conventional'),
-        description="""
-        Representation type of the cell structure. It might be:
-            - 'original' as in originally parsed,
-            - 'primitive' as the primitive unit cell,
-            - 'conventional' as the conventional cell used for referencing.
-        """,
-    )
-
-    n_cell_points = Quantity(
-        type=np.int32,
-        description="""
-        Number of cell points.
-        """,
-    )
+    )  # ? in practice we use cartesian only...
 
     lattice_vectors = Quantity(
         type=np.float64,
@@ -339,14 +265,43 @@ class Representation(ArchiveSection):
         """,
     )
 
-    supercell_matrix = Quantity(
-        type=np.int32,
-        shape=[3, 3],
+    volume = Quantity(
+        type=np.float64,
+        unit='meter ** 3',
         description="""
-        Specifies the matrix that transforms the primitive unit cell into the supercell in
-        which the actual calculation is performed. In the easiest example, it is a diagonal
-        matrix whose elements multiply the lattice_vectors, e.g., [[3, 0, 0], [0, 3, 0], [0, 0, 3]]
-        is a $3 x 3 x 3$ superlattice.
+        Volume of a 3D real space entity.
+        """,
+    )
+
+    area = Quantity(
+        type=np.float64,
+        unit='meter ** 2',
+        description="""
+        Area of a 2D real space entity.
+        """,
+    )
+
+    length = Quantity(
+        type=np.float64,
+        unit='meter',
+        description="""
+        Total length of a 1D real space entity.
+        """,
+    )
+
+    boundary_area = Quantity(
+        type=np.float64,
+        unit='meter ** 2',
+        description="""
+        Surface area of a 3D real space entity.
+        """,
+    )
+
+    boundary_length = Quantity(
+        type=np.float64,
+        unit='meter',
+        description="""
+        Length of the boundary of a 2D real space entity.
         """,
     )
 
@@ -384,6 +339,55 @@ class Representation(ArchiveSection):
         then the list is simply the index of each element, e.g.:
             - [0, 1, 2, 3] all four atoms are non-equivalent.
             - [0, 0, 0, 3] three equivalent atoms and one non-equivalent.
+        """,
+    )
+
+
+class RelativeRepresentation(Representation):
+    """
+    A representation relative to another, reference representation, typically the original computed system.
+    """
+
+    origin_shift = Quantity(
+        type=np.float64,
+        shape=[3],
+        description="""
+        Vector `p` from the origin of a custom coordinates system to the origin of the
+        global coordinates system. Together with the matrix `P` (stored in transformation_matrix),
+        the transformation between the custom coordinates `x` and global coordinates `X` is then
+        given by:
+            `x` = `P` `X` + `p`.
+        """,
+    )
+
+    transformation_matrix = Quantity(
+        type=np.float64,
+        shape=[3, 3],
+        description="""
+        Matrix `P` used to transform the custom coordinates system to the global coordinates system.
+        Together with the vector `p` (stored in origin_shift), the transformation between
+        the custom coordinates `x` and global coordinates `X` is then given by:
+            `x` = `P` `X` + `p`.
+        """,
+    )
+
+    crystal_cell_type = Quantity(
+        type=MEnum('primitive', 'conventional'),
+        description="""
+        Representation type of the cell structure. It might be:
+            - 'primitive' as the primitive unit cell,
+            - 'conventional' as the conventional cell used for referencing.
+        """,
+    )
+
+    supercell_matrix = Quantity(
+        type=np.int32,
+        shape=[3, 3],
+        description="""
+        Specifies the matrix that transforms the primitive unit cell into the supercell in
+        which the actual calculation is performed. In the easiest example, it is a diagonal
+        matrix whose elements multiply the lattice_vectors, e.g., [[3, 0, 0], [0, 3, 0], [0, 0, 3]]
+        is a $3 x 3 x 3$ superlattice.
         """,
     )
 
@@ -570,10 +574,11 @@ class Symmetry(ArchiveSection):
         cell = system.get_cell()
 
         # Create the cell for geometry only
-        cell_section = Cell(type=cell_type)
+        cell_section = Cell()
+        if cell_type is not None:
+            cell_section.name = cell_type
         cell_section.lattice_vectors = cell * ureg.angstrom
-        # Note: wyckoff_letters and equivalent_atoms are now on ModelSystem
-        # The cell section only holds geometric information
+
         try:
             cell_section.volume = cell.volume * ureg.angstrom**3
         except Exception as exc:
@@ -621,10 +626,6 @@ class Symmetry(ArchiveSection):
         symmetry['space_group_number'] = symmetry_analyzer.get_space_group_number()
         symmetry['space_group_symbol'] = (
             symmetry_analyzer.get_space_group_international_short()
-        )
-        symmetry['origin_shift'] = symmetry_analyzer._get_spglib_origin_shift()
-        symmetry['transformation_matrix'] = (
-            symmetry_analyzer._get_spglib_transformation_matrix()
         )
 
         # Populating the ModelSystem wyckoff_letters and equivalent_atoms information
@@ -1059,10 +1060,10 @@ class ModelSystem(System, Representation):
     )
 
     representations = SubSection(
-        sub_section=Representation.m_def,
+        sub_section=RelativeRepresentation.m_def,
         repeats=True,
         description="""
-        Alternative representations of the system, e.g., in a different simulation box or crystal cell.
+        Alternative representations of the original model system, e.g., in a different simulation box or crystal cell.
         """,
     )
 
