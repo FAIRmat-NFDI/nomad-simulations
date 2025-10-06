@@ -624,8 +624,11 @@ class AtomCenteredBasisSet(BasisSetComponent):
         super().normalize(archive, logger)
 
         # Set AO count from AO view if present
-        if self.atomic_orbitals is not None and self.atomic_orbitals.num is not None:
-            self.n_total_basis_functions = self.atomic_orbitals.num
+        if (
+            self.atomic_orbitals is not None
+            and self.atomic_orbitals.n_atomic_orbitals is not None
+        ):
+            self.n_total_basis_functions = self.atomic_orbitals.n_atomic_orbitals
 
             if (
                 self.functional_compositions is not None

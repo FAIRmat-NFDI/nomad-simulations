@@ -473,17 +473,17 @@ def test_acf_invalid_length_reset() -> None:
 
 def test_acb_sets_total_from_ao_layer() -> None:
     """
-    total_number_of_basis_functions should be taken from atomic_orbitals.num.
+    n_total_basis_functions should be taken from atomic_orbitals.n_atomic_orbitals.
     """
     bs = AtomCenteredBasisSet()
     bs.atomic_orbitals = AtomicOrbitals(
-        num=5,
-        cartesian=False,
+        n_atomic_orbitals=5,
+        type='spherical',
         shell_index=np.array([0, 0, 1, 1, 1], dtype=np.int32),
         normalization=np.ones(5),
     )
     bs.normalize(None, logger)
-    assert bs.total_number_of_basis_functions == 5
+    assert bs.n_total_basis_functions == 5
 
 
 # -------------------------------
@@ -760,7 +760,7 @@ def test_mixed_orbital_aux_ecp() -> None:
             ),
         ],
         atomic_orbitals=AtomicOrbitals(
-            num=1, cartesian=False, shell_index=[0], normalization=[1.0]
+            n_atomic_orbitals=1, type='spherical', shell_index=[0], normalization=[1.0]
         ),
     )
 
@@ -781,7 +781,7 @@ def test_mixed_orbital_aux_ecp() -> None:
             ),
         ],
         atomic_orbitals=AtomicOrbitals(
-            num=1, cartesian=False, shell_index=[0], normalization=[1.0]
+            n_atomic_orbitals=1, type='spherical', shell_index=[0], normalization=[1.0]
         ),
     )
 
@@ -860,4 +860,4 @@ def test_mixed_orbital_aux_ecp() -> None:
     acb_sections = [
         c for c in container.basis_set_components if isinstance(c, AtomCenteredBasisSet)
     ]
-    assert [c.total_number_of_basis_functions for c in acb_sections] == [1, 1]
+    assert [c.n_total_basis_functions for c in acb_sections] == [1, 1]
