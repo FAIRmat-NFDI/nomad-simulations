@@ -452,10 +452,17 @@ class AtomicOrbitals(ArchiveSection):
         shape=['n_atomic_orbitals'],
         description="For each AO: index of AtomCenteredFunction (the 'shell') it belongs to.",
     )
+
     normalization = Quantity(
         type=np.float64,
         shape=['n_atomic_orbitals'],
-        description='Per-AO factor to reconcile code conventions.',
+        description="""
+            Unitless normalization factor for each atomic orbital after shell expansion.
+            It may include additional scaling applied during AO orthogonalization or
+            transformation steps reported by the code.
+            Distinct from shell_normalization, which normalizes contracted functions
+            before expansion into individual AOs.
+            """,
     )
 
 
