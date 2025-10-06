@@ -239,12 +239,22 @@ class AtomCenteredFunction(ArchiveSection):
 
     # per-shell normalization (contracted)
     shell_normalization = Quantity(
-        type=np.float64, description='Per-shell normalization factor.'
+        type=np.float64,
+        description="""
+            Unitless normalization factor applied to each contracted atomic orbital 
+            (or shell) to satisfy the chosen normalization convention. 
+            It defines how normalized primitives are scaled when forming the final AO.
+            """,
     )
 
     # primitives
     n_primitive = Quantity(
-        type=np.int32, description='Number of primitives in this shell.'
+        type=np.int32,
+        description="""
+            Number of primitives in this shell.
+            A primitive is a single uncontracted radial basis function such as one
+            Gaussian or Slater-type orbital before contraction into a full atomic orbital.
+            """,
     )
 
     exponents = Quantity(
