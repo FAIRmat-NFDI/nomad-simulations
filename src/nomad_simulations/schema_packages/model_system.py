@@ -1513,27 +1513,72 @@ class ModelSystem(System, Representation):
 
 
 @log
-def from_ase_atoms(ase_atoms: ase.Atoms) -> tuple[ModelSystem, RelativeRepresentation]:
+def from_ase_atoms(ase_atoms: ase.Atoms) -> ModelSystem:
     """
-    Creates a ModelSystem and RelativeRepresentation from an ASE Atoms object.
+    Creates a clean ModelSystem from an ASE Atoms object without running normalization.
+    
+    This is a standalone function that ensures clean creation of a ModelSystem by building
+    it from scratch with only the essential data from the ASE Atoms object. Unlike methods
+    that modify existing ModelSystem instances, this function creates a fresh, unmodified
+    ModelSystem structure.
+    
+    The function maps the following ASE properties to ModelSystem:
+    - Particle states: chemical symbols, atomic numbers, initial charges, tags as labels
+    - Positions: Cartesian and fractional coordinates
+    - Cell data: lattice vectors, periodic boundary conditions, volume
+    - Dynamics: velocities (if available)
+    
+    The returned ModelSystem is NOT normalized and contains no derived data. To get 
+    primitive/conventional representations and other derived properties, call 
+    ModelSystem.normalize() afterwards, which will:
+    - Generate primitive and conventional representations for bulk systems
+    - Populate symmetry information
+    - Create chemical formulas
+    - Perform structural analysis and classification
     
     Args:
         ase_atoms: The ASE Atoms object to convert
         
     Returns:
-        tuple[ModelSystem, RelativeRepresentation]: The ModelSystem with particle data 
-        and a RelativeRepresentation with cell information
+        ModelSystem: A clean ModelSystem with basic particle and cell data (not normalized)
     """
     logger = from_ase_atoms.__annotations__['logger']
     
     # Create ModelSystem with particle states and positions
     model_system = ModelSystem()
     
-    # Add particle states from ASE atoms
-    for symbol, atomic_number in zip(
+    # Get ASE arrays for additional properties
+    has_initial_charges = ase_atoms.has('initial_charges')
+    has_tags = ase_atoms.has('tags')
+    has_velocities = ase_atoms.has('momenta') or hasattr(ase_atoms, '_velocities')
+    
+    # Add particle states from ASE atoms with additional properties
+    for i, (symbol, atomic_number) in enumerate(zip(
         ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers()
-    ):
+    )):
         state = AtomsState(chemical_symbol=symbol, atomic_number=atomic_number)
+        
+        # Map initial charges if available
+        if has_initial_charges:
+            try:
+                initial_charges = ase_atoms.get_initial_charges()
+                if len(initial_charges) > i:
+                    # Convert to integer charge (round to nearest integer)
+                    charge = int(round(initial_charges[i]))
+                    if charge != 0:  # Only set non-zero charges
+                        state.charge = charge
+            except Exception as e:
+                logger.debug(f'Could not map initial charges: {e}')
+        
+        # Map tags as labels if available
+        if has_tags:
+            try:
+                tags = ase_atoms.get_tags()
+                if len(tags) > i and tags[i] != 0:  # Only set non-zero tags
+                    state.label = f'{symbol}_{tags[i]}'
+            except Exception as e:
+                logger.debug(f'Could not map tags: {e}')
+        
         model_system.particle_states.append(state)
 
     # Set positions
@@ -1545,12 +1590,35 @@ def from_ase_atoms(ase_atoms: ase.Atoms) -> tuple[ModelSystem, RelativeRepresent
     model_system.positions = positions * ureg('angstrom')
     model_system.n_particles = len(model_system.positions)
 
-    # Create RelativeRepresentation with cell information
+    # Set cell information at ModelSystem level (original data)
     cell = ase_atoms.get_cell()
-    representation = RelativeRepresentation(
-        lattice_vectors=ase.geometry.complete_cell(cell) * ureg('angstrom'),
-        periodic_boundary_conditions=ase_atoms.get_pbc(),
-        name='original'
-    )
+    pbc = ase_atoms.get_pbc()
+    model_system.lattice_vectors = ase.geometry.complete_cell(cell) * ureg('angstrom')
+    model_system.periodic_boundary_conditions = pbc
     
-    return model_system, representation
+    # Set fractional coordinates if we have a proper cell
+    try:
+        if cell.volume > 1e-10:  # Check for non-degenerate cell
+            scaled_positions = ase_atoms.get_scaled_positions()
+            model_system.fractional_coordinates = scaled_positions
+    except Exception as e:
+        logger.debug(f'Could not compute fractional coordinates: {e}')
+    
+    # Set volume if available
+    try:
+        volume = ase_atoms.get_volume()
+        if volume > 1e-10:  # Check for reasonable volume
+            model_system.volume = volume * ureg('angstrom**3')
+    except Exception as e:
+        logger.debug(f'Could not compute volume: {e}')
+    
+    # Set velocities if available
+    if has_velocities:
+        try:
+            velocities = ase_atoms.get_velocities()
+            if velocities is not None and len(velocities) == len(positions):
+                model_system.velocities = velocities * ureg('angstrom/second')
+        except Exception as e:
+            logger.debug(f'Could not map velocities: {e}')
+    
+    return model_system
