@@ -188,7 +188,7 @@ class AtomCenteredFunction(ArchiveSection):
 
     In many quantum-chemistry codes, an atom-centered basis set is composed of
     several "shells," each shell containing one or more basis functions of a certain
-    angular momentum. For instance, a shell of p-type orbitals (L=1) typically
+    angular momentum. For instance, a shell of p-type orbitals (ℓ=1) typically
     consists of 3 degenerate functions (p_x, p_y, p_z) if `harmonic_type='cartesian'`
     or 3 spherical harmonics if `harmonic_type='spherical'`.
 
@@ -197,10 +197,6 @@ class AtomCenteredFunction(ArchiveSection):
     In practice, these contract together to form the final basis function used by
     the SCF or post-SCF method. Often, each contraction is labeled by its
     angular momentum (e.g., s, p, d, f) and a set of exponents and coefficients.
-
-    This class also accepts *combined* shells ('sp', 'spd', 'spdf') as input.
-    On normalize(), it **expands** them into multiple single-ℓ shells and
-    replaces itself with those shells in the parent's `functional_compositions`.
 
     **References**:
       - T. Helgaker, P. Jørgensen, J. Olsen, *Molecular Electronic-Structure Theory*, Wiley (2000).
@@ -449,8 +445,7 @@ class AtomicOrbitals(ArchiveSection):
 class AtomCenteredBasisSet(BasisSetComponent):
     """
     Defines an **atom-centered basis set** for quantum chemistry calculations.
-    Unlike plane-wave methods, these expansions are typically built around each atom's
-    position, using either:
+    These expansions are typically built around each atom's position, using either:
       - Slater-type orbitals (STO)
       - Gaussian-type orbitals (GTO)
       - Numerical atomic orbitals (NAO)
