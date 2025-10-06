@@ -473,8 +473,21 @@ class AtomCenteredBasisSet(BasisSetComponent):
     basis_set = Quantity(
         type=str,
         description="""
-        **Name** or label of the basis set as recognized by the code or standard 
+        **Name** or label of the basis set as recognized by the code or a standard
         library. Examples: "6-31G*", "cc-pVTZ", "def2-SVP", "STO-3G", "LANL2DZ" (ECP).
+
+        **Resolution policy**
+        - The name **alone is sufficient** iff it can be resolved unambiguously (given
+          the emitting code + version) to a complete, versioned definition for **all
+          species**, including any ECPs.
+        - Provide **explicit shell/ECP blocks** in addition to the name when there are
+          per-species mixtures, augmented/truncated/custom variants (e.g., added diffuse,
+          "no-f", edited exponents/coefficients), alias/variant ambiguity, partial
+          coverage, or when AO data would otherwise not match the canonical order.
+
+        Parsers perform the mapping from code order to the canonical AO order and
+        decide whether the name is uniquely resolvable; when uncertain, include explicit
+        blocks for reproducibility.
         """,
     )
 
