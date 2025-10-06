@@ -428,16 +428,18 @@ class AtomicOrbitals(ArchiveSection):
         population analysis, MO coefficients, or density matrices.
     """
 
-    num = Quantity(type=np.int32, description='Total number of AOs (contracted).')
+    n_atomic_orbitals = Quantity(
+        type=np.int32, description='Total number of AOs (contracted).'
+    )
     cartesian = Quantity(type=bool, description='True=Cartesian, False=Spherical.')
     shell_index = Quantity(
         type=np.int32,
-        shape=['num'],
+        shape=['n_atomic_orbitals'],
         description="For each AO: index of AtomCenteredFunction (the 'shell') it belongs to.",
     )
     normalization = Quantity(
         type=np.float64,
-        shape=['num'],
+        shape=['n_atomic_orbitals'],
         description='Per-AO factor to reconcile code conventions.',
     )
 
@@ -557,7 +559,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
         """,
     )
 
-    total_number_of_basis_functions = Quantity(
+    n_total_basis_functions = Quantity(
         type=np.int32,
         description="""
         The **total** number of contracted basis functions in this entire set. 
@@ -588,7 +590,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
 
         # Set AO count from AO view if present
         if self.atomic_orbitals is not None and self.atomic_orbitals.num is not None:
-            self.total_number_of_basis_functions = self.atomic_orbitals.num
+            self.n_total_basis_functions = self.atomic_orbitals.num
 
             if (
                 self.functional_compositions is not None
