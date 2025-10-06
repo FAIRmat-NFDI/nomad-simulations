@@ -428,10 +428,15 @@ class AtomicOrbitals(ArchiveSection):
         population analysis, MO coefficients, or density matrices.
     """
 
+    type = Quantity(
+        type=MEnum('spherical', 'cartesian'),
+        description='Angular representation of this atomic orbital.',
+    )
+
     n_atomic_orbitals = Quantity(
         type=np.int32, description='Total number of AOs (contracted).'
     )
-    cartesian = Quantity(type=bool, description='True=Cartesian, False=Spherical.')
+
     shell_index = Quantity(
         type=np.int32,
         shape=['n_atomic_orbitals'],
