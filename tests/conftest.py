@@ -11,7 +11,7 @@ from structlog.testing import LogCapture
 from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import ModelMethod
-from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
+from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
 from nomad_simulations.schema_packages.numerical_settings import (
     KLinePath as KLinePathSettings,
 )
@@ -75,14 +75,12 @@ def generate_model_system(
 
     model_system.positions = np.array(positions) * ureg.angstrom
 
-    atomic_cell = AtomicCell(
-        type=type,
+    atomic_cell = Representation(
         lattice_vectors=lattice_vectors * ureg.angstrom,
         periodic_boundary_conditions=pbc,
-    )
-    model_system.cell.append(atomic_cell)
-
-    # Add atoms_state to the model_system
+        )
+    atomic_cell.name = type
+    model_system.representations.append(atomic_cell)    # Add atoms_state to the model_system
     atoms_state = []
     for element, orbitals in zip(chemical_symbols, orbitals_symbols):
         # build each OrbitalsState exactly as before
@@ -106,13 +104,13 @@ def generate_atomic_cell(
     periodic_boundary_conditions: list[bool] = [False, False, False],
     chemical_symbols: list[str] = ['H', 'H', 'O'],
     atomic_numbers: list[int] = [1, 1, 8],
-) -> AtomicCell:
+) -> Representation:
     """
-    Generate an `AtomicCell` section with the given parameters.
+    Generate a `Representation` section with the given parameters.
     """
 
-    # Define the atomic cell solely with cell properties; positions are handled by ModelSystem.
-    atomic_cell = AtomicCell(periodic_boundary_conditions=periodic_boundary_conditions)
+    # Define the representation solely with cell properties; positions are handled by ModelSystem.
+    atomic_cell = Representation(periodic_boundary_conditions=periodic_boundary_conditions)
     if lattice_vectors:
         atomic_cell.lattice_vectors = np.array(lattice_vectors) * ureg('angstrom')
     # Removed assignment of positions to atomic_cell as of nomad-simulations>=0.4.
@@ -347,7 +345,7 @@ def model_system() -> ModelSystem:
 
 
 @pytest.fixture(scope='session')
-def atomic_cell() -> AtomicCell:
+def atomic_cell() -> Representation:
     return generate_atomic_cell()
 
 

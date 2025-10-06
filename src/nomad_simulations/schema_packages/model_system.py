@@ -57,89 +57,10 @@ from nomad_simulations.schema_packages.atoms_state import (
     CGBeadState,
     ParticleState,
 )
-from nomad_simulations.schema_packages.utils import get_sibling_section
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
 )
-
-
-class GeometricSpace(Entity):
-    """
-    A base section used to define geometrical spaces and their entities.
-    """
-
-    volume = Quantity(
-        type=np.float64,
-        unit='meter ** 3',
-        description="""
-        Volume of a 3D real space entity.
-        """,
-    )
-
-    surface_area = Quantity(
-        type=np.float64,
-        unit='meter ** 2',
-        description="""
-        Surface area of a 3D real space entity.
-        """,
-    )
-
-    area = Quantity(
-        type=np.float64,
-        unit='meter ** 2',
-        description="""
-        Area of a 2D real space entity.
-        """,
-    )
-
-    length = Quantity(
-        type=np.float64,
-        unit='meter',
-        description="""
-        Total length of a 1D real space entity.
-        """,
-    )
-
-    coordinates_system = Quantity(
-        type=MEnum('cartesian', 'cylindrical', 'spherical', 'ellipsoidal', 'polar'),
-        default='cartesian',
-        description="""
-        Coordinate system used to define geometrical primitives of a shape in real
-        space. Defaults to 'cartesian'.
-
-        | name       | description | dimensionalities | coordinates |
-        |------------|-------------|------------------|-------------|
-        | cartesian  | coordinate system with fixed angles between the axes (not necessarily 90°) | 1, 2, 3 | x, y, z |
-        | cylindrical| cylindrical symmetry | 3 | r, theta, z |
-        | spherical  | spherical symmetry | 3 | r, theta, phi |
-        | ellipsoidal| spherically elongated system | 3 | r, theta, phi |
-        | polar      | spherical symmetry | 2 | r, theta |
-        """,  # ? could this not be extended to the k-space
-    )
-
-    origin_shift = Quantity(
-        type=np.float64,
-        shape=[3],
-        description="""
-        Vector `p` from the origin of a custom coordinates system to the origin of the
-        global coordinates system. Together with the matrix `P` (stored in transformation_matrix),
-        the transformation between the custom coordinates `x` and global coordinates `X` is then
-        given by:
-            `x` = `P` `X` + `p`.
-        """,
-    )
-
-    transformation_matrix = Quantity(
-        type=np.float64,
-        shape=[3, 3],
-        description="""
-        Matrix `P` used to transform the custom coordinates system to the global coordinates system.
-        Together with the vector `p` (stored in origin_shift), the transformation between
-        the custom coordinates `x` and global coordinates `X` is then given by:
-            `x` = `P` `X` + `p`.
-        """,
-    )
 
 
 def _check_implemented(func: 'Callable'):
@@ -392,32 +313,6 @@ class RelativeRepresentation(Representation):
     )
 
 
-class Cell(Representation):
-    """
-    A base section used to specify the cell quantities of a system at a given moment in time.
-    Now inherits from Representation which contains all geometric, cell, and positional properties.
-    This provides a unified interface for all structural representation data.
-    """
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-        # Set the name of the section
-        self.name = self.m_def.name if self.name is None else self.name
-
-
-class AtomicCell(Cell):
-    """
-    A backward-compatible section for atomic cell information. 
-    Note: Wyckoff positions and equivalent atoms are now stored directly in ModelSystem.
-    This class is maintained for backward compatibility with existing parsers.
-    """
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-        # Set the name of the section
-        self.name = self.m_def.name if self.name is None else self.name
-
-
 class Symmetry(ArchiveSection):
     """
     A base section used to specify the symmetry of the `ModelSystem`.
@@ -520,9 +415,9 @@ class Symmetry(ArchiveSection):
     )
 
     atomic_cell_ref = Quantity(
-        type=Cell,
+        type=Representation,
         description="""
-        Reference to the Cell section that the symmetry refers to.
+        Reference to the Representation section that the symmetry refers to.
         """,
     )
 
@@ -531,9 +426,9 @@ class Symmetry(ArchiveSection):
         symmetry_analyzer: 'SymmetryAnalyzer',
         cell_type: str,
         logger: 'BoundLogger',
-    ) -> 'Cell | None':
+    ) -> 'Representation | None':
         """
-        Resolves the `Cell` section from the `SymmetryAnalyzer` object and the cell_type
+        Resolves the `Representation` section from the `SymmetryAnalyzer` object and the cell_type
         (primitive or conventional).
 
         Args:
@@ -542,7 +437,7 @@ class Symmetry(ArchiveSection):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (Optional[Cell]): The resolved `Cell` section or None if the cell_type
+            (Optional[Representation]): The resolved `Representation` section or None if the cell_type
             is not recognized.
         """
         # Define a mapping for each supported cell type
@@ -574,7 +469,7 @@ class Symmetry(ArchiveSection):
         cell = system.get_cell()
 
         # Create the cell for geometry only
-        cell_section = Cell()
+        cell_section = Representation()
         if cell_type is not None:
             cell_section.name = cell_type
         cell_section.lattice_vectors = cell * ureg.angstrom
@@ -590,11 +485,11 @@ class Symmetry(ArchiveSection):
 
     def resolve_bulk_symmetry(
         self, model_system: 'ModelSystem', logger: 'BoundLogger'
-    ) -> 'tuple[Cell | None, Cell | None]':
+    ) -> 'tuple[Representation | None, Representation | None]':
         """
         Resolves the symmetry of the material being simulated using MatID and the
         originally parsed data under ModelSystem. It generates two other
-        `Cell` sections (the primitive and standardized cells), as well as populating
+        `Representation` sections (the primitive and standardized cells), as well as populating
         the `Symmetry` section and updating the ModelSystem with Wyckoff and equivalent atoms data.
 
         Args:
@@ -602,11 +497,11 @@ class Symmetry(ArchiveSection):
             uses in MatID.SymmetryAnalyzer().
             logger (BoundLogger): The logger to log messages.
         Returns:
-            primitive_cell, conventional_cell (tuple[Optional[Cell], Optional[Cell]]): The primitive and standardized `Cell` sections.
+            primitive_cell, conventional_cell (tuple[Optional[Representation], Optional[Representation]]): The primitive and standardized `Representation` sections.
         """
         symmetry = {}
         try:
-            ase_atoms = model_system.to_ase_atoms(logger=logger)
+            ase_atoms = model_system.to_ase_atoms(representation_index=None, logger=logger)
             symmetry_analyzer = SymmetryAnalyzer(
                 ase_atoms, symmetry_tol=configuration.symmetry_tolerance
             )
@@ -701,12 +596,12 @@ class Symmetry(ArchiveSection):
                 model_system=model_system, logger=logger
             )
             if primitive_cell:
-                model_system.m_add_sub_section(ModelSystem.cell, primitive_cell)
+                model_system.representations.append(primitive_cell)
             if conventional_cell:
-                model_system.m_add_sub_section(ModelSystem.cell, conventional_cell)
+                model_system.representations.append(conventional_cell)
             # Reference to the standardized cell, and if not, fallback to the originally parsed one
-            if model_system.cell:
-                self.atomic_cell_ref = model_system.cell[-1]
+            if model_system.representations:
+                self.atomic_cell_ref = model_system.representations[-1]
 
 
 class ChemicalFormula(ArchiveSection):
@@ -788,7 +683,7 @@ class ChemicalFormula(ArchiveSection):
             return
 
         # Get the ASE Atoms using the ModelSystem.to_ase_atoms() method (which now gathers positions, cell, etc.)
-        ase_atoms = model_system.to_ase_atoms(logger=logger)
+        ase_atoms = model_system.to_ase_atoms(representation_index=0 if model_system.representations else None, logger=logger)
         if ase_atoms is None:
             logger.error('Could not generate ASE Atoms from the ModelSystem.')
             return
@@ -938,8 +833,6 @@ class ModelSystem(System, Representation):
         """,
     )
 
-    cell = SubSection(sub_section=Cell.m_def, repeats=True)
-
     symmetry = SubSection(sub_section=Symmetry.m_def, repeats=True)
 
     chemical_formula = SubSection(sub_section=ChemicalFormula.m_def, repeats=False)
@@ -1083,14 +976,14 @@ class ModelSystem(System, Representation):
         """
         logger = self.get_geometric_space_for_cell.__annotations__['logger']
         
-        atoms = self.to_ase_atoms(logger=logger)
+        atoms = self.to_ase_atoms(representation_index=0 if self.representations else None, logger=logger)
         if atoms is None:
             return  # parent already logged the problem
 
         try:
             cell = atoms.get_cell()
-            if self.cell and len(self.cell) > 0:
-                cell_section = self.cell[0]
+            if self.representations and len(self.representations) > 0:
+                cell_section = self.representations[0]
                 cell_section.volume = cell.volume * ureg.angstrom**3
         except Exception as exc:
             logger.warning(
@@ -1182,13 +1075,19 @@ class ModelSystem(System, Representation):
             return False
 
     @log
-    def to_ase_atoms(self) -> 'ase.Atoms | None':
+    def to_ase_atoms(self, representation_index: int | None = None) -> 'ase.Atoms | None':
         """
         Generates an ASE Atoms object from ModelSystem data.
+        
+        Args:
+            representation_index: Index of representation to use for cell data.
+                                 None uses original ModelSystem data (no representations),
+                                 int uses ModelSystem.representations[index]
+        
         Uses:
           - atom_states to obtain chemical symbols,
           - positions from the top-level positions quantity,
-          - periodic boundary conditions and lattice vectors from the first cell.
+          - periodic boundary conditions and lattice vectors from specified representation or original data.
         """
         logger = self.to_ase_atoms.__annotations__['logger']
         symbols = self.get_symbols(logger=logger)
@@ -1203,12 +1102,24 @@ class ModelSystem(System, Representation):
 
         ase_atoms = ase.Atoms(symbols=symbols)
 
-        # Use cell data (from the first cell) for periodic boundary conditions and lattice
-        if self.cell and len(self.cell) > 0:
-            cell_section = self.cell[0]
+        # Determine cell information source based on representation_index
+        if representation_index is None:
+            # Use original ModelSystem data (should have no representations or ignore them)
+            logger.info('Using original ModelSystem data (no representation specified).')
+            # For original data, we might not have cell info, so set minimal defaults
+            ase_atoms.set_pbc([False, False, False])
+        else:
+            # Use specified representation
+            if not self.representations:
+                raise ValueError('No representations available in ModelSystem.')
+            if representation_index >= len(self.representations):
+                raise ValueError(f'Representation index {representation_index} out of range. Available: 0-{len(self.representations)-1}')
+            
+            cell_section = self.representations[representation_index]
+            
             if cell_section.periodic_boundary_conditions is None:
                 logger.info(
-                    'Cell periodic_boundary_conditions not found; using default [False, False, False].'
+                    f'Representation[{representation_index}] periodic_boundary_conditions not found; using default [False, False, False].'
                 )
                 pbc = [False, False, False]
             else:
@@ -1220,9 +1131,7 @@ class ModelSystem(System, Representation):
                     cell_section.lattice_vectors.to('angstrom').magnitude
                 )
             else:
-                logger.info('No lattice_vectors found in cell[0].')
-        else:
-            logger.warning('No cell section available in ModelSystem.')
+                logger.info(f'No lattice_vectors found in representations[{representation_index}].')
 
         # Check that positions have been set on the ModelSystem
         if self.positions is None:
@@ -1231,38 +1140,6 @@ class ModelSystem(System, Representation):
         else:
             ase_atoms.set_positions(self.positions.to('angstrom').magnitude)
         return ase_atoms
-
-    @log
-    def from_ase_atoms(self, ase_atoms: ase.Atoms) -> None:
-        """
-        Populates ModelSystem from an ASE Atoms object.
-        Replaces the atom_states subsection with new entries based on the ASE chemical symbols,
-        and assigns ASE positions to the top-level positions quantity.
-        """
-        # ? Should particle_states be cleared before populating?
-        # ? self._clear_particle_states_inplace()
-        # Iterate over chemical symbols and atomic numbers from the ASE Atoms object
-        logger = self.from_ase_atoms.__annotations__['logger']
-        for symbol, atomic_number in zip(
-            ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers()
-        ):
-            state = AtomsState(chemical_symbol=symbol, atomic_number=atomic_number)
-            self.particle_states.append(state)
-
-        positions = ase_atoms.get_positions()
-        if not positions.tolist():
-            logger.error('ASE Atoms has no positions.')
-            return
-        self.positions = positions * ureg('angstrom')
-        self.n_particles = len(self.positions)
-
-        # Update cell information from ASE
-        if self.cell and len(self.cell) > 0:
-            cell = ase_atoms.get_cell()
-            self.cell[0].lattice_vectors = ase.geometry.complete_cell(cell) * ureg(
-                'angstrom'
-            )
-            self.cell[0].periodic_boundary_conditions = ase_atoms.get_pbc()
 
     def resolve_system_type_and_dimensionality(
         self, ase_atoms: ase.Atoms, logger: 'BoundLogger'
@@ -1456,7 +1333,7 @@ class ModelSystem(System, Representation):
         if not self.is_atomic():
             return
         # Generate ASE Atoms object from top-level ModelSystem data
-        ase_atoms = self.to_ase_atoms(logger=logger)
+        ase_atoms = self.to_ase_atoms(representation_index=0 if self.representations else None, logger=logger)
         if ase_atoms is None:
             logger.error('Could not generate ASE Atoms from ModelSystem.')
             return
@@ -1633,3 +1510,47 @@ class ModelSystem(System, Representation):
                     return False
 
         return True
+
+
+@log
+def from_ase_atoms(ase_atoms: ase.Atoms) -> tuple[ModelSystem, RelativeRepresentation]:
+    """
+    Creates a ModelSystem and RelativeRepresentation from an ASE Atoms object.
+    
+    Args:
+        ase_atoms: The ASE Atoms object to convert
+        
+    Returns:
+        tuple[ModelSystem, RelativeRepresentation]: The ModelSystem with particle data 
+        and a RelativeRepresentation with cell information
+    """
+    logger = from_ase_atoms.__annotations__['logger']
+    
+    # Create ModelSystem with particle states and positions
+    model_system = ModelSystem()
+    
+    # Add particle states from ASE atoms
+    for symbol, atomic_number in zip(
+        ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers()
+    ):
+        state = AtomsState(chemical_symbol=symbol, atomic_number=atomic_number)
+        model_system.particle_states.append(state)
+
+    # Set positions
+    positions = ase_atoms.get_positions()
+    if not positions.tolist():
+        logger.error('ASE Atoms has no positions.')
+        raise ValueError('ASE Atoms has no positions.')
+    
+    model_system.positions = positions * ureg('angstrom')
+    model_system.n_particles = len(model_system.positions)
+
+    # Create RelativeRepresentation with cell information
+    cell = ase_atoms.get_cell()
+    representation = RelativeRepresentation(
+        lattice_vectors=ase.geometry.complete_cell(cell) * ureg('angstrom'),
+        periodic_boundary_conditions=ase_atoms.get_pbc(),
+        name='original'
+    )
+    
+    return model_system, representation

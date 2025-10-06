@@ -13,11 +13,11 @@ from nomad_simulations.schema_packages.atoms_state import (
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
-    AtomicCell,
-    Cell,
     ChemicalFormula,
     ModelSystem,
+    Representation,
     Symmetry,
+    from_ase_atoms,
 )
 
 from . import logger
@@ -81,17 +81,17 @@ class TestModelSystem:
         """
         sys = ModelSystem(is_representative=True)
         sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5]]) * ureg.angstrom
-        c = Cell(
+        c = Representation(
             lattice_vectors=np.eye(3) * 4.0 * ureg.angstrom,
             periodic_boundary_conditions=[True, True, True],
         )
-        sys.cell.append(c)
+        sys.representations.append(c)
         # Add AtomsState entries for 2 atoms
         a1 = AtomsState(chemical_symbol='Na')
         a2 = AtomsState(chemical_symbol='Cl')
         sys.particle_states.extend([a1, a2])
 
-        ase_atoms = sys.to_ase_atoms(logger=logger)
+        ase_atoms = sys.to_ase_atoms(representation_index=0, logger=logger)
         assert ase_atoms is not None
         assert len(ase_atoms) == 2
         assert np.allclose(ase_atoms.get_cell(), np.eye(3) * 4.0)
@@ -105,18 +105,18 @@ class TestModelSystem:
         ms = ModelSystem()
         ms.particle_states.append(CGBeadState(bead_symbol='B1'))
         ms.positions = np.zeros((1, 3)) * ureg.angstrom
-        ms.cell.append(
-            Cell(
+        ms.representations.append(
+            Representation(
                 lattice_vectors=np.eye(3) * ureg.angstrom,
                 periodic_boundary_conditions=[False, False, False],
             )
         )
-        assert ms.to_ase_atoms(logger=logger) is None
+        assert ms.to_ase_atoms(representation_index=0, logger=logger) is None
 
     def test_from_ase_atoms(self):
         """
-        Verify that from_ase_atoms() populates positions, cell geometry/PBC, and
-        particle_states from a given ASE Atoms object.
+        Verify that from_ase_atoms() creates ModelSystem and RelativeRepresentation
+        from a given ASE Atoms object.
         """
         ase_atoms = ase.Atoms(
             'CO',
@@ -124,26 +124,21 @@ class TestModelSystem:
             cell=np.eye(3) * 4.0,
             pbc=[True, True, True],
         )
-        sys = ModelSystem()
-        sys.cell.append(
-            Cell(
-                lattice_vectors=(np.eye(3) * 4.0 * ureg.angstrom),
-                periodic_boundary_conditions=[True, True, True],
-            )
-        )
-        sys.from_ase_atoms(ase_atoms, logger=logger)
+        
+        sys, representation = from_ase_atoms(ase_atoms, logger=logger)
 
         assert sys.n_particles == 2
         assert sys.positions.shape == (2, 3)
-        # Check that the first cell has its lattice_vectors updated; using complete_cell from ASE
+        
+        # Check the returned representation has correct lattice_vectors and PBC
         expected_cell = ase.geometry.complete_cell(ase_atoms.get_cell()) * ureg.angstrom
         assert np.allclose(
-            sys.cell[0].lattice_vectors.to('angstrom').magnitude,
+            representation.lattice_vectors.to('angstrom').magnitude,
             expected_cell.to('angstrom').magnitude,
         )
         # Check PBC
         assert np.array_equal(
-            np.array(sys.cell[0].periodic_boundary_conditions),
+            np.array(representation.periodic_boundary_conditions),
             np.array(ase_atoms.get_pbc()),
         )
         # Check particle_states references
@@ -171,15 +166,15 @@ class TestModelSystem:
         """
         sys = ModelSystem()
         sys.positions = positions * ureg.angstrom
-        c = Cell(
+        c = Representation(
             lattice_vectors=np.eye(3) * 3.0 * ureg.angstrom,
             periodic_boundary_conditions=pbc,
         )
-        sys.cell.append(c)
+        sys.representations.append(c)
         # Add enough AtomsState entries to match len(positions)
         for _ in range(len(positions)):
             sys.particle_states.append(AtomsState(chemical_symbol='H'))
-        ase_atoms = sys.to_ase_atoms(logger=logger)
+        ase_atoms = sys.to_ase_atoms(representation_index=0, logger=logger)
         stype, dim = sys.resolve_system_type_and_dimensionality(
             ase_atoms, logger=logger
         )
@@ -200,7 +195,7 @@ class TestModelSystem:
             chemical_symbols=['H', 'H', 'O'],
             atomic_numbers=[1, 1, 8],
         )
-        sys.cell.append(ac)
+        sys.representations.append(ac)
         # Add a Symmetry, ChemicalFormula
         sym = Symmetry()
         sys.symmetry.append(sym)
@@ -218,14 +213,18 @@ class TestModelSystem:
         if sys.chemical_formula is not None:
             # If the formula is expected "H2O," check that:
             assert sys.chemical_formula.descriptive == 'H2O'
-        # Extra cells (primitive/conventional) are added only if there is a parent ModelSystem.
-        # For a top-level ModelSystem (with no parent), we expect only the originally appended cell.
+        # Extra primitive/conventional cells are added to the symmetry section only if there is a parent ModelSystem.
+        # For a top-level ModelSystem (with no parent), we expect only the originally appended representation.
         if sys.m_parent is not None:
-            if len(sys.cell) >= 2:
-                assert sys.cell[1].type in ['primitive', 'conventional']
+            # Check if primitive or conventional cells are present in the symmetry section
+            if sys.symmetry and (sys.symmetry.primitive_cell or sys.symmetry.conventional_cell):
+                if sys.symmetry.primitive_cell:
+                    assert sys.symmetry.primitive_cell.name == 'primitive'
+                if sys.symmetry.conventional_cell:
+                    assert sys.symmetry.conventional_cell.name == 'conventional'
         else:
-            # Top-level system: expect only one cell.
-            assert len(sys.cell) == 1
+            # Top-level system: expect only one representation.
+            assert len(sys.representations) == 1
 
 
 @pytest.mark.parametrize('branching', [True, False])
@@ -255,10 +254,10 @@ def make_water_cu_system(n_h2o: int) -> ModelSystem:
     and with proper particle_states and particle_indices.
     """
     root = ModelSystem(is_representative=True)
-    # Add a trivial AtomicCell so normalization doesn't bail out
-    ac = AtomicCell(periodic_boundary_conditions=[False, False, False])
+    # Add a trivial Representation so normalization doesn't bail out
+    ac = Representation(periodic_boundary_conditions=[False, False, False])
     ac.positions = np.zeros((0, 3)) * ureg.angstrom
-    root.cell.append(ac)
+    root.representations.append(ac)
 
     # group_H2O branch
     group = ModelSystem(branch_label='group_H2O', is_representative=False)

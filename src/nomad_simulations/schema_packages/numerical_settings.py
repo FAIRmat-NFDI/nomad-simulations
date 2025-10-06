@@ -206,7 +206,7 @@ class KSpaceFunctionalities:
         Returns:
             (dict | None): The resolved `high_symmetry_points`.
         """
-        # Extracting `bravais_lattice` from `ModelSystem.symmetry` section and `ASE.cell` from `ModelSystem.cell`
+        # Extracting `bravais_lattice` from `ModelSystem.symmetry` section and `ASE.cell` from `ModelSystem.representations`
         lattice = None
         for model_system in model_systems:
             # General checks to proceed with normalization
@@ -223,21 +223,21 @@ class KSpaceFunctionalities:
                 continue
             bravais_lattice = bravais_lattice[0]
 
-            if model_system.cell is None:
-                logger.warning('Could not find `ModelSystem.cell`.')
+            if model_system.representations is None:
+                logger.warning('Could not find `ModelSystem.representations`.')
                 continue
             prim_atomic_cell = None
-            for atomic_cell in model_system.cell:
-                if atomic_cell.type == 'primitive':
+            for atomic_cell in model_system.representations:
+                if atomic_cell.name == 'primitive':
                     prim_atomic_cell = atomic_cell
                     break
             if prim_atomic_cell is None:
                 logger.warning(
-                    'Could not find the primitive `AtomicCell` under `ModelSystem.cell`.'
+                    'Could not find the primitive representation under `ModelSystem.representations`.'
                 )
                 continue
             # function defined in ModelSystem
-            atoms = model_system.to_ase_atoms(logger=logger)
+            atoms = model_system.to_ase_atoms(representation_index=0 if model_system.representations else None, logger=logger)
             cell = atoms.get_cell()
             lattice = cell.get_bravais_lattice(eps=eps)
             break  # only cover the first representative `ModelSystem`
@@ -771,7 +771,7 @@ class KSpace(NumericalSettings):
     depending on the k-space sampling: `k_mesh` or `k_line_path`.
     """
 
-    # ! This needs to be normalized first in order to extract the `reciprocal_lattice_vectors` from the `ModelSystem.cell` information
+    # ! This needs to be normalized first in order to extract the `reciprocal_lattice_vectors` from the `ModelSystem.representations` information
     reciprocal_lattice_vectors = Quantity(
         type=np.float64,
         shape=[3, 3],
@@ -815,13 +815,13 @@ class KSpace(NumericalSettings):
                 logger.warning('`ModelSystem.type` is not describing a bulk system.')
                 continue
 
-            atomic_cell = model_system.cell
+            atomic_cell = model_system.representations
             if atomic_cell is None:
-                logger.warning('`ModelSystem.cell` was not found.')
+                logger.warning('`ModelSystem.representations` was not found.')
                 continue
 
             # Set the `reciprocal_lattice_vectors` using ASE
-            ase_atoms = model_system.to_ase_atoms(logger=logger)
+            ase_atoms = model_system.to_ase_atoms(representation_index=0 if model_system.representations else None, logger=logger)
             return 2 * np.pi * ase_atoms.get_reciprocal_cell() / ureg.angstrom
         return None
 

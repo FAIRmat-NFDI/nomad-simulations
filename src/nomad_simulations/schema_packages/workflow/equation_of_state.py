@@ -178,7 +178,7 @@ class EquationOfStateResults(SimulationWorkflowResults):
                 volumes = []
                 for system in archive.data.model_system:
                     lattice_vectors = None
-                    for cell in system.cell:
+                    for cell in system.representations:
                         if cell.lattice_vectors is not None:
                             lattice_vectors = cell.lattice_vectors.to('m').magnitude
                             break

@@ -22,7 +22,7 @@ from nomad_simulations.schema_packages.basis_set import (
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
-from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
+from nomad_simulations.schema_packages.model_system import Representation, ModelSystem
 from tests.conftest import refs_apw
 
 from . import logger
@@ -139,7 +139,7 @@ def test_full_apw(
         data=Simulation(
             model_system=[
                 ModelSystem(
-                    cell=[AtomicCell()],
+                    representations=[Representation()],
                     particle_states=[AtomsState(chemical_symbol='H')],
                 )
             ],

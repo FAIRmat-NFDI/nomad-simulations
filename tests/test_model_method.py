@@ -11,7 +11,7 @@ from nomad_simulations.schema_packages.model_method import (
     SlaterKosterBond,
     Wannier,
 )
-from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
+from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
 
 from . import logger
 from .conftest import generate_simulation
@@ -49,13 +49,13 @@ class TestTB:
             # (4) no `cell` section in `ModelSystem`
             ([ModelSystem(is_representative=True)], 0, None),
             # (5) no `particle_states` in `ModelSystem` – so no orbitals
-            ([ModelSystem(is_representative=True, cell=[AtomicCell()])], 0, None),
+            ([ModelSystem(is_representative=True, representations=[Representation()])], 0, None),
             # (6) no child systems in `model_system`
             (
                 [
                     ModelSystem(
                         is_representative=True,
-                        cell=[AtomicCell()],
+                        representations=[Representation()],
                         # no sub_systems, so can't find an 'active_atom' child
                     )
                 ],
@@ -67,7 +67,7 @@ class TestTB:
                 [
                     ModelSystem(
                         is_representative=True,
-                        cell=[AtomicCell()],
+                        representations=[Representation()],
                         sub_systems=[ModelSystem(type='bulk')],
                     )
                 ],
@@ -79,7 +79,7 @@ class TestTB:
                 [
                     ModelSystem(
                         is_representative=True,
-                        cell=[AtomicCell()],
+                        representations=[Representation()],
                         sub_systems=[
                             ModelSystem(type='active_atom', particle_indices=[2])
                         ],
@@ -94,7 +94,7 @@ class TestTB:
                 [
                     ModelSystem(
                         is_representative=True,
-                        cell=[AtomicCell()],
+                        representations=[Representation()],
                         particle_states=[AtomsState(orbitals_state=[])],
                         sub_systems=[
                             ModelSystem(type='active_atom', particle_indices=[0])
@@ -109,7 +109,7 @@ class TestTB:
             # (
             #     [ModelSystem(
             #         is_representative=True,
-            #         cell=[AtomicCell()],
+            #         representations=[Representation()],
             #         particle_states=[
             #             AtomsState(
             #                 orbitals_state=[OrbitalsState(l_quantum_symbol='s')])
@@ -164,7 +164,7 @@ class TestTB:
             (
                 Wannier(),
                 'Wannier',
-                [ModelSystem(is_representative=True, cell=[AtomicCell()])],
+                [ModelSystem(is_representative=True, representations=[Representation()])],
                 None,
             ),
             # (6) sub_system with type != 'active_atom'
@@ -174,7 +174,7 @@ class TestTB:
                 [
                     ModelSystem(
                         is_representative=True,
-                        cell=[AtomicCell()],
+                        representations=[Representation()],
                         sub_systems=[ModelSystem(type='bulk')],
                     )
                 ],
@@ -187,7 +187,7 @@ class TestTB:
                 [
                     ModelSystem(
                         is_representative=True,
-                        cell=[AtomicCell()],
+                        representations=[Representation()],
                         sub_systems=[
                             ModelSystem(type='active_atom', particle_indices=[99])
                         ],
@@ -203,7 +203,7 @@ class TestTB:
                 [
                     ModelSystem(
                         is_representative=True,
-                        cell=[AtomicCell()],
+                        representations=[Representation()],
                         sub_systems=[
                             ModelSystem(type='active_atom', particle_indices=[0])
                         ],
@@ -216,7 +216,7 @@ class TestTB:
             (
                 Wannier(orbitals_ref=[OrbitalsState(l_quantum_symbol='p')]),
                 'Wannier',
-                [ModelSystem(is_representative=True, cell=[AtomicCell()])],
+                [ModelSystem(is_representative=True, representations=[Representation()])],
                 [OrbitalsState(l_quantum_symbol='p')],
             ),
             # Commented out for now.
@@ -226,7 +226,7 @@ class TestTB:
             #     'Wannier',
             #     [ModelSystem(
             #         is_representative=True,
-            #         cell=[AtomicCell()],
+            #         representations=[Representation()],
             #         particle_states=[AtomsState(orbitals_state=[OrbitalsState(l_quantum_symbol='s')])],
             #         sub_systems=[ModelSystem(type='active_atom', particle_indices=[0])]
             #     )],
