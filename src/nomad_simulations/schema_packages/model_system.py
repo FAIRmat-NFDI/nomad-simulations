@@ -965,6 +965,9 @@ class ModelSystem(System, Representation):
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
 
+    # Backward compatibility: add cell as a subsection that references Representation
+    cell = SubSection(sub_section=Representation.m_def, repeats=False)
+
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
         super().__init__(m_def, m_context, **kwargs)
         self._cache: dict[str, Any] = {}
@@ -1680,3 +1683,12 @@ def from_ase_atoms(ase_atoms: ase.Atoms) -> ModelSystem:
             logger.debug(f'Could not map velocities: {e}')
 
     return model_system
+
+
+# Backward compatibility aliases for parser packages that still reference old classes
+AtomicCell = Representation
+
+# For Cell, we'll need to create a simple alias (assuming it maps to Representation for basic usage)
+Cell = Representation
+
+# AtomsState is already imported above, so it's available for import
