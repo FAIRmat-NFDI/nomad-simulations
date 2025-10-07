@@ -1525,7 +1525,8 @@ def from_ase_atoms(ase_atoms: ase.Atoms) -> ModelSystem:
     The function maps the following ASE properties to ModelSystem:
     - Particle states: chemical symbols, atomic numbers, initial charges, tags as labels
     - Positions: Cartesian and fractional coordinates
-    - Cell data: lattice vectors, periodic boundary conditions, volume
+    - Cell data: lattice vectors, periodic boundary conditions
+    - Geometric extents: volume (3D), area (2D), or length (1D) based on dimensionality
     - Dynamics: velocities (if available)
     
     The returned ModelSystem is NOT normalized and contains no derived data. To get 
@@ -1604,13 +1605,45 @@ def from_ase_atoms(ase_atoms: ase.Atoms) -> ModelSystem:
     except Exception as e:
         logger.debug(f'Could not compute fractional coordinates: {e}')
     
-    # Set volume if available
+    # Set volume/area/length based on dimensionality and cell structure
     try:
-        volume = ase_atoms.get_volume()
-        if volume > 1e-10:  # Check for reasonable volume
-            model_system.volume = volume * ureg('angstrom**3')
+        cell = ase_atoms.get_cell()
+        pbc = ase_atoms.get_pbc()
+        
+        # Count non-degenerate lattice vectors
+        lattice_vectors = [v for v in cell if np.linalg.norm(v) > 1e-10]
+        n_lattice_vectors = len(lattice_vectors)
+        n_periodic_dims = sum(pbc)
+        
+        if n_lattice_vectors >= 3 and n_periodic_dims >= 3:
+            # True 3D system - use volume
+            volume = ase_atoms.get_volume()
+            if volume > 1e-10:  # Check for reasonable volume
+                model_system.volume = volume * ureg('angstrom**3')
+        elif n_lattice_vectors >= 3 and n_periodic_dims == 2:
+            # 2D system with vacuum - still use volume (includes vacuum)
+            volume = ase_atoms.get_volume()
+            if volume > 1e-10:
+                model_system.volume = volume * ureg('angstrom**3')
+        elif n_lattice_vectors >= 3 and n_periodic_dims == 1:
+            # 1D system with vacuum - still use volume (includes vacuum)  
+            volume = ase_atoms.get_volume()
+            if volume > 1e-10:
+                model_system.volume = volume * ureg('angstrom**3')
+        elif n_lattice_vectors == 2 and n_periodic_dims <= 2:
+            # True 2D system - compute area from cross product
+            area = np.linalg.norm(np.cross(lattice_vectors[0], lattice_vectors[1]))
+            if area > 1e-10:
+                model_system.area = area * ureg('angstrom**2')
+        elif n_lattice_vectors == 1 and n_periodic_dims <= 1:
+            # True 1D system - use length of single lattice vector
+            length = np.linalg.norm(lattice_vectors[0])
+            if length > 1e-10:
+                model_system.length = length * ureg('angstrom')
+        # For 0D (molecular) systems, no geometric extent is set
+        
     except Exception as e:
-        logger.debug(f'Could not compute volume: {e}')
+        logger.debug(f'Could not compute geometric extents: {e}')
     
     # Set velocities if available
     if has_velocities:

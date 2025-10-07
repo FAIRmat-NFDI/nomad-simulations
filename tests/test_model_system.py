@@ -76,26 +76,44 @@ class TestModelSystem:
 
     def test_to_ase_atoms(self):
         """
-        Verify that a ModelSystem with positions, a first cell, and valid AtomsState
+        Verify that a ModelSystem with positions, lattice vectors, and valid AtomsState
         entries produces a valid ASE Atoms object with correct cell and symbols.
+        Tests both original data and representation data.
         """
         sys = ModelSystem(is_representative=True)
         sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5]]) * ureg.angstrom
-        c = Representation(
-            lattice_vectors=np.eye(3) * 4.0 * ureg.angstrom,
-            periodic_boundary_conditions=[True, True, True],
+        # Set original cell data at ModelSystem level
+        sys.lattice_vectors = np.eye(3) * 4.0 * ureg.angstrom
+        sys.periodic_boundary_conditions = [True, True, True]
+        
+        # Add a representation
+        rep = Representation(
+            lattice_vectors=np.eye(3) * 5.0 * ureg.angstrom,
+            periodic_boundary_conditions=[True, True, False],
+            name='modified'
         )
-        sys.representations.append(c)
+        sys.representations.append(rep)
+        
         # Add AtomsState entries for 2 atoms
         a1 = AtomsState(chemical_symbol='Na')
         a2 = AtomsState(chemical_symbol='Cl')
         sys.particle_states.extend([a1, a2])
 
-        ase_atoms = sys.to_ase_atoms(representation_index=0, logger=logger)
-        assert ase_atoms is not None
-        assert len(ase_atoms) == 2
-        assert np.allclose(ase_atoms.get_cell(), np.eye(3) * 4.0)
-        assert ase_atoms.get_chemical_symbols() == ['Na', 'Cl']
+        # Test using original data (representation_index=None)
+        ase_atoms_orig = sys.to_ase_atoms(representation_index=None, logger=logger)
+        assert ase_atoms_orig is not None
+        assert len(ase_atoms_orig) == 2
+        assert np.allclose(ase_atoms_orig.get_cell(), np.eye(3) * 4.0)
+        assert ase_atoms_orig.get_pbc().tolist() == [True, True, True]
+        assert ase_atoms_orig.get_chemical_symbols() == ['Na', 'Cl']
+        
+        # Test using representation data (representation_index=0)
+        ase_atoms_rep = sys.to_ase_atoms(representation_index=0, logger=logger)
+        assert ase_atoms_rep is not None
+        assert len(ase_atoms_rep) == 2
+        assert np.allclose(ase_atoms_rep.get_cell(), np.eye(3) * 5.0)
+        assert ase_atoms_rep.get_pbc().tolist() == [True, True, False]
+        assert ase_atoms_rep.get_chemical_symbols() == ['Na', 'Cl']
 
     def test_to_ase_atoms_blocks_non_element_symbols(self):
         """
@@ -105,18 +123,16 @@ class TestModelSystem:
         ms = ModelSystem()
         ms.particle_states.append(CGBeadState(bead_symbol='B1'))
         ms.positions = np.zeros((1, 3)) * ureg.angstrom
-        ms.representations.append(
-            Representation(
-                lattice_vectors=np.eye(3) * ureg.angstrom,
-                periodic_boundary_conditions=[False, False, False],
-            )
-        )
-        assert ms.to_ase_atoms(representation_index=0, logger=logger) is None
+        # Set cell data at ModelSystem level
+        ms.lattice_vectors = np.eye(3) * ureg.angstrom
+        ms.periodic_boundary_conditions = [False, False, False]
+        
+        assert ms.to_ase_atoms(representation_index=None, logger=logger) is None
 
     def test_from_ase_atoms(self):
         """
-        Verify that from_ase_atoms() creates ModelSystem and RelativeRepresentation
-        from a given ASE Atoms object.
+        Verify that from_ase_atoms() creates ModelSystem from ASE Atoms object.
+        Tests the updated function that returns only ModelSystem (no tuple).
         """
         ase_atoms = ase.Atoms(
             'CO',
@@ -125,26 +141,138 @@ class TestModelSystem:
             pbc=[True, True, True],
         )
         
-        sys, representation = from_ase_atoms(ase_atoms, logger=logger)
+        sys = from_ase_atoms(ase_atoms, logger=logger)
 
         assert sys.n_particles == 2
         assert sys.positions.shape == (2, 3)
         
-        # Check the returned representation has correct lattice_vectors and PBC
+        # Check the ModelSystem has correct lattice_vectors and PBC at top level
         expected_cell = ase.geometry.complete_cell(ase_atoms.get_cell()) * ureg.angstrom
         assert np.allclose(
-            representation.lattice_vectors.to('angstrom').magnitude,
+            sys.lattice_vectors.to('angstrom').magnitude,
             expected_cell.to('angstrom').magnitude,
         )
         # Check PBC
         assert np.array_equal(
-            np.array(representation.periodic_boundary_conditions),
+            np.array(sys.periodic_boundary_conditions),
             np.array(ase_atoms.get_pbc()),
         )
         # Check particle_states references
         assert len(sys.particle_states) == 2
         syms = [st.chemical_symbol for st in sys.particle_states]
         assert syms == ['C', 'O']
+        
+        # Check volume is set for 3D system
+        assert sys.volume is not None
+        assert sys.volume.magnitude == pytest.approx(64.0, rel=1e-6)  # 4^3
+
+    def test_from_ase_atoms_enhanced_properties(self):
+        """
+        Test that from_ase_atoms() correctly maps enhanced properties like 
+        charges, tags, velocities, and fractional coordinates.
+        """
+        # Create ASE atoms with additional properties
+        ase_atoms = ase.Atoms(
+            ['H', 'H', 'O'],
+            positions=[[0, 0, 0], [0.76, 0.59, 0], [0, 0.96, 0]],
+            cell=[10, 10, 10],
+            pbc=[True, True, True],
+        )
+        
+        # Set additional properties
+        ase_atoms.set_initial_charges([0.5, 0.5, -1.0])
+        ase_atoms.set_tags([1, 1, 2])
+        ase_atoms.set_velocities([[0.1, 0.2, 0.0], [0.0, -0.1, 0.0], [0.0, 0.0, 0.1]])
+        
+        sys = from_ase_atoms(ase_atoms, logger=logger)
+        
+        # Check basic properties
+        assert sys.n_particles == 3
+        assert len(sys.particle_states) == 3
+        
+        # Check charges were mapped (rounded to integers)
+        charges = [ps.charge for ps in sys.particle_states]
+        assert charges == [1, 1, -1]  # 0.5 rounds to 1, -1.0 rounds to -1
+        
+        # Check tags were mapped to labels
+        labels = [ps.label for ps in sys.particle_states]
+        assert labels == ['H_1', 'H_1', 'O_2']
+        
+        # Check velocities were mapped
+        assert sys.velocities is not None
+        assert sys.velocities.shape == (3, 3)
+        expected_velocities = np.array([[0.1, 0.2, 0.0], [0.0, -0.1, 0.0], [0.0, 0.0, 0.1]])
+        assert np.allclose(sys.velocities.to('angstrom/second').magnitude, expected_velocities)
+        
+        # Check fractional coordinates were computed
+        assert sys.fractional_coordinates is not None
+        assert sys.fractional_coordinates.shape == (3, 3)
+        
+        # Check volume for 3D system
+        assert sys.volume is not None
+        assert sys.volume.magnitude == pytest.approx(1000.0, rel=1e-6)  # 10^3
+
+    @pytest.mark.parametrize(
+        'cell, pbc, expected_property, expected_value',
+        [
+            # 3D system - should have volume
+            ([[2.7, 0, 0], [0, 2.7, 0], [0, 0, 2.7]], [True, True, True], 'volume', 19.683),
+            # 2D system with vacuum - should have volume (includes vacuum)
+            ([[2.84, 0, 0], [0, 2.46, 0], [0, 0, 10.0]], [True, True, False], 'volume', 69.864),
+            # 1D system with vacuum - should have volume (includes vacuum)
+            ([[1.48, 0, 0], [0, 10.0, 0], [0, 0, 10.0]], [True, False, False], 'volume', 148.0),
+            # True 2D system - should have area
+            ([[2.46, 0, 0], [1.23, 2.13, 0], [0, 0, 0]], [True, True, False], 'area', 5.2398),
+            # True 1D system - should have length
+            ([[1.48, 0, 0], [0, 0, 0], [0, 0, 0]], [True, False, False], 'length', 1.48),
+        ],
+    )
+    def test_from_ase_atoms_dimensionality(self, cell, pbc, expected_property, expected_value):
+        """
+        Test that from_ase_atoms() correctly handles different dimensionality systems
+        and sets the appropriate geometric property (volume/area/length).
+        """
+        ase_atoms = ase.Atoms(['C'], positions=[[0, 0, 0]], cell=cell, pbc=pbc)
+        
+        sys = from_ase_atoms(ase_atoms, logger=logger)
+        
+        # Check that the expected property is set
+        if expected_property == 'volume':
+            assert sys.volume is not None
+            assert sys.volume.magnitude == pytest.approx(expected_value, rel=1e-3)
+            assert sys.area is None
+            assert sys.length is None
+        elif expected_property == 'area':
+            assert sys.area is not None
+            assert sys.area.magnitude == pytest.approx(expected_value, rel=1e-3)
+            assert sys.volume is None
+            assert sys.length is None
+        elif expected_property == 'length':
+            assert sys.length is not None
+            assert sys.length.magnitude == pytest.approx(expected_value, rel=1e-3)
+            assert sys.volume is None
+            assert sys.area is None
+
+    def test_from_ase_atoms_molecule(self):
+        """
+        Test that from_ase_atoms() correctly handles 0D molecular systems
+        (no geometric extents set).
+        """
+        ase_atoms = ase.Atoms(['H', 'H'], positions=[[0, 0, 0], [0.74, 0, 0]])
+        
+        sys = from_ase_atoms(ase_atoms, logger=logger)
+        
+        assert sys.n_particles == 2
+        assert len(sys.particle_states) == 2
+        
+        # No geometric extents should be set for molecules
+        assert sys.volume is None
+        assert sys.area is None
+        assert sys.length is None
+        
+        # Should still have positions
+        assert sys.positions is not None
+        assert sys.positions.shape == (2, 3)
 
     @pytest.mark.parametrize(
         'positions, pbc, expected_type, expected_dim',
