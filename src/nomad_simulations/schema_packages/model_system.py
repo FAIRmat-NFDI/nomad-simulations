@@ -1216,7 +1216,9 @@ class ModelSystem(System, Representation):
         return system_type, dimensionality
 
     # TODO thorough check
-    def _copy_common_quantities(self, src, dst, *, exclude: set[str] = None) -> None:
+    def _copy_common_quantities(
+        self, src, dst, *, exclude: set[str] | None = None
+    ) -> None:
         exclude = exclude or set()
 
         def _qnames(section) -> set[str]:

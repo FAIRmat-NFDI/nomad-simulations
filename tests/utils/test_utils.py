@@ -3,8 +3,8 @@ import structlog
 from nomad.utils import get_logger
 
 from nomad_simulations.schema_packages.model_system import (
-    AtomicCell,
     ModelSystem,
+    Representation,
     Symmetry,
 )
 from nomad_simulations.schema_packages.utils import get_sibling_section, log
@@ -75,28 +75,28 @@ def test_log(func, logger_kwarg, logger_name, log_output):
 
 def test_get_sibling_section_result_idempotent_and_no_mutation():
     parent = ModelSystem()
-    c0 = AtomicCell(type='original')
-    c1 = AtomicCell(type='primitive')
-    parent.cell.extend([c0, c1])
+    c0 = Representation(name='original')
+    c1 = Representation(name='primitive')
+    parent.representations.extend([c0, c1])
     s = Symmetry()
     parent.symmetry.append(s)
 
     # First call
-    got0 = get_sibling_section(s, 'cell', logger, index_sibling=0)
-    got1 = get_sibling_section(s, 'cell', logger, index_sibling=1)
+    got0 = get_sibling_section(s, 'representations', logger, index_sibling=0)
+    got1 = get_sibling_section(s, 'representations', logger, index_sibling=1)
 
     assert got0 is c0
     assert got1 is c1
 
     # Second call (idempotent return values; we purposefully do NOT assert on logs)
-    got0_bis = get_sibling_section(s, 'cell', logger, index_sibling=0)
-    got1_bis = get_sibling_section(s, 'cell', logger, index_sibling=1)
+    got0_bis = get_sibling_section(s, 'representations', logger, index_sibling=0)
+    got1_bis = get_sibling_section(s, 'representations', logger, index_sibling=1)
 
     assert got0_bis is c0
     assert got1_bis is c1
 
     # Structure was not mutated by calls
-    assert parent.cell == [c0, c1]
+    assert parent.representations == [c0, c1]
     assert parent.symmetry == [s]
 
 
@@ -104,16 +104,16 @@ def test_get_sibling_section_result_idempotent_and_no_mutation():
     'sibling_section_name, index_sibling, expected',
     [
         ('', 0, None),  # empty name → None
-        ('cell', 5, None),  # OOB index → None
+        ('representations', 5, None),  # OOB index → None
     ],
 )
 def test_get_sibling_section_edge_cases_stable(
     sibling_section_name, index_sibling, expected
 ):
     parent = ModelSystem()
-    cell = AtomicCell(type='original')
+    representation = Representation(name='original')
     symm = Symmetry()
-    parent.cell.append(cell)
+    parent.representations.append(representation)
     parent.symmetry.append(symm)
 
     # Call twice; both should yield the same (None here)
@@ -128,7 +128,7 @@ def test_get_sibling_section_edge_cases_stable(
     assert out2 is expected
 
     # No mutation of structure
-    assert parent.cell == [cell]
+    assert parent.representations == [representation]
     assert parent.symmetry == [symm]
 
 

@@ -19,9 +19,9 @@ DEFAULT_LOGGER = get_logger(__name__)
 
 
 def log(
-    function: 'Callable' = None,
+    function: 'Callable' | None = None,
     logger: 'BoundLogger' = DEFAULT_LOGGER,
-    exc_msg: str = None,
+    exc_msg: str | None = None,
     exc_raise: bool = False,
     default: Any = None,
 ):
@@ -62,7 +62,7 @@ def log(
 
         return wrapper
 
-    return _log(function) if function else _log
+    return _log(function) if function is not None else _log
 
 
 def get_sibling_section(

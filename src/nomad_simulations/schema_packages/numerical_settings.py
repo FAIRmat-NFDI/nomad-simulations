@@ -407,11 +407,14 @@ class KMesh(Mesh):
             (np.float64): The k-line density of the `KMesh`.
         """
         # Initial check
-        if not KSpaceFunctionalities().validate_reciprocal_lattice_vectors(
-            reciprocal_lattice_vectors=reciprocal_lattice_vectors,
-            logger=logger,
-            check_grid=True,
-            grid=self.grid,
+        if (
+            reciprocal_lattice_vectors is None
+            or not KSpaceFunctionalities().validate_reciprocal_lattice_vectors(
+                reciprocal_lattice_vectors=reciprocal_lattice_vectors,
+                logger=logger,
+                check_grid=True,
+                grid=self.grid,
+            )
         ):
             return None
 
@@ -702,6 +705,8 @@ class KLinePath(ArchiveSection):
         high_symmetry_path_value_norms = self.get_high_symmetry_path_norms(
             reciprocal_lattice_vectors=reciprocal_lattice_vectors, logger=logger
         )
+        if high_symmetry_path_value_norms is None:
+            return None
         closest_indices = list(
             map(
                 lambda norm: (np.abs(points_norm - norm.magnitude)).argmin(),
