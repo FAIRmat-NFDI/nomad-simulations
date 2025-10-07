@@ -237,7 +237,10 @@ class KSpaceFunctionalities:
                 )
                 continue
             # function defined in ModelSystem
-            atoms = model_system.to_ase_atoms(representation_index=0 if model_system.representations else None, logger=logger)
+            atoms = model_system.to_ase_atoms(
+                representation_index=0 if model_system.representations else None,
+                logger=logger,
+            )
             cell = atoms.get_cell()
             lattice = cell.get_bravais_lattice(eps=eps)
             break  # only cover the first representative `ModelSystem`
@@ -821,7 +824,10 @@ class KSpace(NumericalSettings):
                 continue
 
             # Set the `reciprocal_lattice_vectors` using ASE
-            ase_atoms = model_system.to_ase_atoms(representation_index=0 if model_system.representations else None, logger=logger)
+            ase_atoms = model_system.to_ase_atoms(
+                representation_index=0 if model_system.representations else None,
+                logger=logger,
+            )
             return 2 * np.pi * ase_atoms.get_reciprocal_cell() / ureg.angstrom
         return None
 

@@ -7,7 +7,7 @@ from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.general import Simulation
-from nomad_simulations.schema_packages.model_system import Representation, ModelSystem
+from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import (
     AbsorptionSpectrum,

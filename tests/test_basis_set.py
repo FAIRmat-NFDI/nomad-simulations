@@ -22,7 +22,7 @@ from nomad_simulations.schema_packages.basis_set import (
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
-from nomad_simulations.schema_packages.model_system import Representation, ModelSystem
+from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
 from tests.conftest import refs_apw
 
 from . import logger

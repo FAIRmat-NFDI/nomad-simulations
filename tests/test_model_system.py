@@ -85,15 +85,15 @@ class TestModelSystem:
         # Set original cell data at ModelSystem level
         sys.lattice_vectors = np.eye(3) * 4.0 * ureg.angstrom
         sys.periodic_boundary_conditions = [True, True, True]
-        
+
         # Add a representation
         rep = Representation(
             lattice_vectors=np.eye(3) * 5.0 * ureg.angstrom,
             periodic_boundary_conditions=[True, True, False],
-            name='modified'
+            name='modified',
         )
         sys.representations.append(rep)
-        
+
         # Add AtomsState entries for 2 atoms
         a1 = AtomsState(chemical_symbol='Na')
         a2 = AtomsState(chemical_symbol='Cl')
@@ -106,7 +106,7 @@ class TestModelSystem:
         assert np.allclose(ase_atoms_orig.get_cell(), np.eye(3) * 4.0)
         assert ase_atoms_orig.get_pbc().tolist() == [True, True, True]
         assert ase_atoms_orig.get_chemical_symbols() == ['Na', 'Cl']
-        
+
         # Test using representation data (representation_index=0)
         ase_atoms_rep = sys.to_ase_atoms(representation_index=0, logger=logger)
         assert ase_atoms_rep is not None
@@ -126,7 +126,7 @@ class TestModelSystem:
         # Set cell data at ModelSystem level
         ms.lattice_vectors = np.eye(3) * ureg.angstrom
         ms.periodic_boundary_conditions = [False, False, False]
-        
+
         assert ms.to_ase_atoms(representation_index=None, logger=logger) is None
 
     def test_from_ase_atoms(self):
@@ -140,12 +140,12 @@ class TestModelSystem:
             cell=np.eye(3) * 4.0,
             pbc=[True, True, True],
         )
-        
+
         sys = from_ase_atoms(ase_atoms, logger=logger)
 
         assert sys.n_particles == 2
         assert sys.positions.shape == (2, 3)
-        
+
         # Check the ModelSystem has correct lattice_vectors and PBC at top level
         expected_cell = ase.geometry.complete_cell(ase_atoms.get_cell()) * ureg.angstrom
         assert np.allclose(
@@ -161,14 +161,15 @@ class TestModelSystem:
         assert len(sys.particle_states) == 2
         syms = [st.chemical_symbol for st in sys.particle_states]
         assert syms == ['C', 'O']
-        
+
         # Check volume is set for 3D system
         assert sys.volume is not None
-        assert sys.volume.magnitude == pytest.approx(64.0, rel=1e-6)  # 4^3
+        # Volume should be 64.0 Angstrom^3 = 64.0e-30 m^3 (since 1 Angstrom = 1e-10 m)
+        assert sys.volume.magnitude == pytest.approx(64.0e-30, rel=1e-6)
 
     def test_from_ase_atoms_enhanced_properties(self):
         """
-        Test that from_ase_atoms() correctly maps enhanced properties like 
+        Test that from_ase_atoms() correctly maps enhanced properties like
         charges, tags, velocities, and fractional coordinates.
         """
         # Create ASE atoms with additional properties
@@ -178,64 +179,100 @@ class TestModelSystem:
             cell=[10, 10, 10],
             pbc=[True, True, True],
         )
-        
+
         # Set additional properties
-        ase_atoms.set_initial_charges([0.5, 0.5, -1.0])
+        ase_atoms.set_initial_charges([0.6, 0.7, -1.0])
         ase_atoms.set_tags([1, 1, 2])
         ase_atoms.set_velocities([[0.1, 0.2, 0.0], [0.0, -0.1, 0.0], [0.0, 0.0, 0.1]])
-        
+
         sys = from_ase_atoms(ase_atoms, logger=logger)
-        
+
         # Check basic properties
         assert sys.n_particles == 3
         assert len(sys.particle_states) == 3
-        
+
         # Check charges were mapped (rounded to integers)
         charges = [ps.charge for ps in sys.particle_states]
-        assert charges == [1, 1, -1]  # 0.5 rounds to 1, -1.0 rounds to -1
-        
+        assert charges == [
+            1,
+            1,
+            -1,
+        ]  # 0.6 rounds to 1, 0.7 rounds to 1, -1.0 rounds to -1
+
         # Check tags were mapped to labels
         labels = [ps.label for ps in sys.particle_states]
         assert labels == ['H_1', 'H_1', 'O_2']
-        
+
         # Check velocities were mapped
         assert sys.velocities is not None
         assert sys.velocities.shape == (3, 3)
-        expected_velocities = np.array([[0.1, 0.2, 0.0], [0.0, -0.1, 0.0], [0.0, 0.0, 0.1]])
-        assert np.allclose(sys.velocities.to('angstrom/second').magnitude, expected_velocities)
-        
+        expected_velocities = np.array(
+            [[0.1, 0.2, 0.0], [0.0, -0.1, 0.0], [0.0, 0.0, 0.1]]
+        )
+        assert np.allclose(
+            sys.velocities.to('angstrom/second').magnitude, expected_velocities
+        )
+
         # Check fractional coordinates were computed
         assert sys.fractional_coordinates is not None
         assert sys.fractional_coordinates.shape == (3, 3)
-        
+
         # Check volume for 3D system
         assert sys.volume is not None
-        assert sys.volume.magnitude == pytest.approx(1000.0, rel=1e-6)  # 10^3
+        # Volume should be 1000 Angstrom^3 = 1e-27 m^3 (since 1 Angstrom = 1e-10 m)
+        assert sys.volume.magnitude == pytest.approx(1e-27, rel=1e-6)
 
     @pytest.mark.parametrize(
         'cell, pbc, expected_property, expected_value',
         [
             # 3D system - should have volume
-            ([[2.7, 0, 0], [0, 2.7, 0], [0, 0, 2.7]], [True, True, True], 'volume', 19.683),
+            (
+                [[2.7, 0, 0], [0, 2.7, 0], [0, 0, 2.7]],
+                [True, True, True],
+                'volume',
+                19.683e-30,  # 19.683 Angstrom^3 = 19.683e-30 m^3
+            ),
             # 2D system with vacuum - should have volume (includes vacuum)
-            ([[2.84, 0, 0], [0, 2.46, 0], [0, 0, 10.0]], [True, True, False], 'volume', 69.864),
+            (
+                [[2.84, 0, 0], [0, 2.46, 0], [0, 0, 10.0]],
+                [True, True, False],
+                'volume',
+                69.864e-30,  # 69.864 Angstrom^3 = 69.864e-30 m^3
+            ),
             # 1D system with vacuum - should have volume (includes vacuum)
-            ([[1.48, 0, 0], [0, 10.0, 0], [0, 0, 10.0]], [True, False, False], 'volume', 148.0),
+            (
+                [[1.48, 0, 0], [0, 10.0, 0], [0, 0, 10.0]],
+                [True, False, False],
+                'volume',
+                148.0e-30,  # 148.0 Angstrom^3 = 148.0e-30 m^3
+            ),
             # True 2D system - should have area
-            ([[2.46, 0, 0], [1.23, 2.13, 0], [0, 0, 0]], [True, True, False], 'area', 5.2398),
+            (
+                [[2.46, 0, 0], [1.23, 2.13, 0], [0, 0, 0]],
+                [True, True, False],
+                'area',
+                5.2398e-20,  # 5.2398 Angstrom^2 = 5.2398e-20 m^2
+            ),
             # True 1D system - should have length
-            ([[1.48, 0, 0], [0, 0, 0], [0, 0, 0]], [True, False, False], 'length', 1.48),
+            (
+                [[1.48, 0, 0], [0, 0, 0], [0, 0, 0]],
+                [True, False, False],
+                'length',
+                1.48e-10,  # 1.48 Angstrom = 1.48e-10 m
+            ),
         ],
     )
-    def test_from_ase_atoms_dimensionality(self, cell, pbc, expected_property, expected_value):
+    def test_from_ase_atoms_dimensionality(
+        self, cell, pbc, expected_property, expected_value
+    ):
         """
         Test that from_ase_atoms() correctly handles different dimensionality systems
         and sets the appropriate geometric property (volume/area/length).
         """
         ase_atoms = ase.Atoms(['C'], positions=[[0, 0, 0]], cell=cell, pbc=pbc)
-        
+
         sys = from_ase_atoms(ase_atoms, logger=logger)
-        
+
         # Check that the expected property is set
         if expected_property == 'volume':
             assert sys.volume is not None
@@ -259,17 +296,17 @@ class TestModelSystem:
         (no geometric extents set).
         """
         ase_atoms = ase.Atoms(['H', 'H'], positions=[[0, 0, 0], [0.74, 0, 0]])
-        
+
         sys = from_ase_atoms(ase_atoms, logger=logger)
-        
+
         assert sys.n_particles == 2
         assert len(sys.particle_states) == 2
-        
+
         # No geometric extents should be set for molecules
         assert sys.volume is None
         assert sys.area is None
         assert sys.length is None
-        
+
         # Should still have positions
         assert sys.positions is not None
         assert sys.positions.shape == (2, 3)
@@ -345,7 +382,9 @@ class TestModelSystem:
         # For a top-level ModelSystem (with no parent), we expect only the originally appended representation.
         if sys.m_parent is not None:
             # Check if primitive or conventional cells are present in the symmetry section
-            if sys.symmetry and (sys.symmetry.primitive_cell or sys.symmetry.conventional_cell):
+            if sys.symmetry and (
+                sys.symmetry.primitive_cell or sys.symmetry.conventional_cell
+            ):
                 if sys.symmetry.primitive_cell:
                     assert sys.symmetry.primitive_cell.name == 'primitive'
                 if sys.symmetry.conventional_cell:

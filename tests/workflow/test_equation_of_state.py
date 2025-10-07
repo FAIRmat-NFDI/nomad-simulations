@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.model_system import Representation, ModelSystem
+from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties.energies import TotalEnergy
 from nomad_simulations.schema_packages.workflow.equation_of_state import (
@@ -156,7 +156,11 @@ class TestEquationOfState:
         ]
         archive.data.model_system = [
             ModelSystem(
-                representations=[Representation(lattice_vectors=(np.eye(3) * v ** (1 / 3.0)) if v else v)]
+                representations=[
+                    Representation(
+                        lattice_vectors=(np.eye(3) * v ** (1 / 3.0)) if v else v
+                    )
+                ]
             )
             for v in volumes
         ]

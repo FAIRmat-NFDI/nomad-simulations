@@ -49,7 +49,15 @@ class TestTB:
             # (4) no `cell` section in `ModelSystem`
             ([ModelSystem(is_representative=True)], 0, None),
             # (5) no `particle_states` in `ModelSystem` – so no orbitals
-            ([ModelSystem(is_representative=True, representations=[Representation()])], 0, None),
+            (
+                [
+                    ModelSystem(
+                        is_representative=True, representations=[Representation()]
+                    )
+                ],
+                0,
+                None,
+            ),
             # (6) no child systems in `model_system`
             (
                 [
@@ -164,7 +172,11 @@ class TestTB:
             (
                 Wannier(),
                 'Wannier',
-                [ModelSystem(is_representative=True, representations=[Representation()])],
+                [
+                    ModelSystem(
+                        is_representative=True, representations=[Representation()]
+                    )
+                ],
                 None,
             ),
             # (6) sub_system with type != 'active_atom'
@@ -216,7 +228,11 @@ class TestTB:
             (
                 Wannier(orbitals_ref=[OrbitalsState(l_quantum_symbol='p')]),
                 'Wannier',
-                [ModelSystem(is_representative=True, representations=[Representation()])],
+                [
+                    ModelSystem(
+                        is_representative=True, representations=[Representation()]
+                    )
+                ],
                 [OrbitalsState(l_quantum_symbol='p')],
             ),
             # Commented out for now.

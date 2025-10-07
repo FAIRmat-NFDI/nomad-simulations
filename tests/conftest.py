@@ -78,9 +78,11 @@ def generate_model_system(
     atomic_cell = Representation(
         lattice_vectors=lattice_vectors * ureg.angstrom,
         periodic_boundary_conditions=pbc,
-        )
+    )
     atomic_cell.name = type
-    model_system.representations.append(atomic_cell)    # Add atoms_state to the model_system
+    model_system.representations.append(
+        atomic_cell
+    )  # Add atoms_state to the model_system
     atoms_state = []
     for element, orbitals in zip(chemical_symbols, orbitals_symbols):
         # build each OrbitalsState exactly as before
@@ -110,7 +112,9 @@ def generate_atomic_cell(
     """
 
     # Define the representation solely with cell properties; positions are handled by ModelSystem.
-    atomic_cell = Representation(periodic_boundary_conditions=periodic_boundary_conditions)
+    atomic_cell = Representation(
+        periodic_boundary_conditions=periodic_boundary_conditions
+    )
     if lattice_vectors:
         atomic_cell.lattice_vectors = np.array(lattice_vectors) * ureg('angstrom')
     # Removed assignment of positions to atomic_cell as of nomad-simulations>=0.4.
