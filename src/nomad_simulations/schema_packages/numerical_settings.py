@@ -198,6 +198,10 @@ class KSpaceFunctionalities:
         information in the sub-sections `Symmetry` and `AtomicCell`, and uses the ASE package to extract the
         special (high symmetry) points information.
 
+        Note:
+            This method should be called after `ModelSystem.normalize()` has been executed, as it depends on
+            normalized `symmetry` and `representations` data populated during ModelSystem normalization.
+
         Args:
             model_systems (list[ModelSystem]): The list of `ModelSystem` sections.
             logger (BoundLogger): The logger to log messages.
@@ -233,7 +237,7 @@ class KSpaceFunctionalities:
                     break
             if prim_atomic_cell is None:
                 logger.warning(
-                    'Could not find the primitive representation under `ModelSystem.representations`.'
+                    'Could not find primitive representation under `ModelSystem.representations`.'
                 )
                 continue
             # function defined in ModelSystem

@@ -243,6 +243,7 @@ def generate_k_space_simulation(
     grid=[6, 6, 6],
 ) -> Simulation:
     model_system = generate_model_system(
+        type='primitive',
         system_type=system_type,
         is_representative=is_representative,
         positions=positions,
