@@ -20,7 +20,10 @@ class TestBeyondDFT:
         assert workflow.outputs[0].name == 'DFT+ workflow results'
         assert log_output.entries[0]['event'] == 'Incorrect number of tasks found.'
 
-    def test_tasks(self, logger, archive, upload_data, context, upload_id, main_author):
+    # TODO enable once tests with infra is permitted
+    def _test_tasks(
+        self, logger, archive, upload_data, context, upload_id, main_author
+    ):
         archive.metadata = EntryMetadata(upload_id=upload_id, main_author=main_author)
         archive.m_context = context
         workflow = BeyondDFTWorkflow()
