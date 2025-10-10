@@ -960,7 +960,7 @@ class RadialDistributionFunction(EnsembleProperty):
     radial distribution functions (rdfs).
     """
 
-    _rdf_results = None
+    _rdf_results: dict[str, Any] | None = None
 
     bins = Quantity(
         type=np.float64,
@@ -1034,7 +1034,7 @@ class MeanSquaredDisplacement(CorrelationFunction):
     Section containing information about a calculation of any mean squared displacements (msds).
     """
 
-    _msd_results = None
+    _msd_results: dict[str, Any] | None = None
 
     value = Quantity(
         type=np.float64,

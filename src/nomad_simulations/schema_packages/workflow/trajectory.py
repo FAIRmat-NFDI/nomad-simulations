@@ -5,7 +5,7 @@ from nomad.datamodel.hdf5 import HDF5Dataset
 from structlog.stdlib import BoundLogger
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
@@ -88,7 +88,7 @@ class RadiiOfGyration(ConfigurationalProperty):
     radius of gyration (Rg).
     """
 
-    _rg_results = None
+    _rg_results: dict[str, Any] | None = None
 
     # TODO remove or replace with system ref if nec
     # atomsgroup_ref = Quantity(
