@@ -5,17 +5,13 @@ from collections import namedtuple
 from itertools import chain
 from typing import TYPE_CHECKING, Any
 
-import networkx
-import numpy as np
-from scipy import sparse
-from scipy.stats import linregress
-
 import MDAnalysis
 import MDAnalysis.analysis.rdf as MDA_RDF
+import networkx
+import numpy as np
 from MDAnalysis.core._get_readers import get_reader_for
 from MDAnalysis.core.topology import Topology
 from MDAnalysis.core.universe import Universe
-
 from nomad import atomutils
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.datamodel import EntryArchive
@@ -23,6 +19,8 @@ from nomad.datamodel.hdf5 import HDF5Dataset
 from nomad.datamodel.metainfo.workflow import Link
 from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
 from nomad.units import ureg
+from scipy import sparse
+from scipy.stats import linregress
 
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings

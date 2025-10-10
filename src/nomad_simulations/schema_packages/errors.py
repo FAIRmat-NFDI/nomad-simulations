@@ -1,6 +1,6 @@
-from nomad.metainfo import Quantity, Section, SubSection, MEnum
-from nomad.datamodel.data import ArchiveSection
 import numpy as np
+from nomad.datamodel.data import ArchiveSection
+from nomad.metainfo import MEnum, Quantity, Section, SubSection
 
 
 class ErrorEstimate(ArchiveSection):

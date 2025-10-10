@@ -6,21 +6,19 @@ from collections.abc import Callable
 from itertools import chain
 from typing import Any
 
-import networkx
-import numpy as np
-from scipy import sparse
-from scipy.stats import linregress
-
 import MDAnalysis
 import MDAnalysis.analysis.rdf as MDA_RDF
+import networkx
+import numpy as np
 from MDAnalysis.core._get_readers import get_reader_for
 from MDAnalysis.core.topology import Topology
 from MDAnalysis.core.universe import Universe
-
 from nomad import atomutils
 from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
 from nomad.units import ureg
 from nomad.utils import get_logger
+from scipy import sparse
+from scipy.stats import linregress
 
 from nomad_simulations.schema_packages.model_system import ModelSystem
 
@@ -985,7 +983,7 @@ def calc_molecular_mean_squared_displacements(
         return {}
     times = np.arange(n_frames) * dt
 
-    if bead_groups is {}:
+    if bead_groups == {}:
         return bead_groups
 
     moltypes = [moltype for moltype in bead_groups.keys()]

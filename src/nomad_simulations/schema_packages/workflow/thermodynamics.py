@@ -3,16 +3,16 @@ from nomad.datamodel import EntryArchive, SubSection
 from nomad.metainfo import Quantity, SchemaPackage
 from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.utils import log
 from nomad_simulations.schema_packages.workflow.trajectory import (
     ConfigurationalProperty,
 )
-from nomad_simulations.schema_packages.utils import log
 
 from .general import (
+    SerialWorkflowResults,
     SimulationWorkflow,
     SimulationWorkflowMethod,
     SimulationWorkflowResults,
-    SerialWorkflowResults,
 )
 
 m_package = SchemaPackage()

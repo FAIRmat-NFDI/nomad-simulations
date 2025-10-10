@@ -3,13 +3,12 @@ from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflo
 from nomad.metainfo import Quantity, SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.common import SimulationOutputs
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import ElectronicDensityOfStates
 from nomad_simulations.schema_packages.utils import log
-
-from nomad_simulations.schema_packages.common import SimulationOutputs
 from nomad_simulations.schema_packages.workflow.trajectory import (
     FreeEnergyCalculations,
     Pressures,

@@ -1,11 +1,12 @@
+from typing import TYPE_CHECKING, Any
+
 import numpy as np
 from nomad.datamodel import EntryArchive, SubSection
-from nomad.metainfo import Quantity, SchemaPackage, Reference, SectionProxy
 from nomad.datamodel.hdf5 import HDF5Dataset
+from nomad.metainfo import Quantity, Reference, SchemaPackage, SectionProxy
 from structlog.stdlib import BoundLogger
-from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
-from typing import TYPE_CHECKING, Any
+from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 if TYPE_CHECKING:
     from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
