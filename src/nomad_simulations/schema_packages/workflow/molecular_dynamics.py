@@ -30,6 +30,7 @@ from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.structure import RadiusOfGyration
 from nomad_simulations.schema_packages.utils import log
 from nomad_simulations.schema_packages.utils.molecular_dynamics import (
+    BeadGroup,
     _get_molecular_bead_groups,
     archive_to_universe,
     calc_molecular_mean_squared_displacements,
@@ -1083,6 +1084,10 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         sub_section=RadialDistributionFunction.m_def, repeats=True
     )
 
+    # Type annotations for private attributes
+    _universe: MDAnalysis.Universe | None
+    _bead_groups: dict[str, BeadGroup] | None
+
     def __init__(self, m_def: Section = None, m_context: Context = None, **kwargs):
         super().__init__(m_def, m_context, **kwargs)
         self._cache: dict[str, Any] = {}
@@ -1090,7 +1095,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         self._bead_groups = None
 
     @log
-    def get_universe(self, archive) -> MDAnalysis.Universe:
+    def get_universe(self, archive) -> MDAnalysis.Universe | None:
         logger = self.get_universe.__annotations__['logger']
         try:
             universe = archive_to_universe(archive)
@@ -1108,6 +1113,9 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         # logger = self.get_molecular_rdfs.__annotations__['logger']
         if self.radial_distribution_functions is not None:
             return self.radial_distribution_functions
+
+        if self._universe is None:
+            return []
 
         n_traj_split = 10  # number of intervals to split trajectory into for averaging
         try:
@@ -1166,13 +1174,15 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         ):  # TODO add check for diffusion_constants too?
             return self.mean_squared_displacements, self.diffusion_constants or []
 
+        if self._universe is None:
+            return [], []
+
         msd_results = calc_molecular_mean_squared_displacements(
             self._universe, self._bead_groups
         )
-        sec_msds = []
+        sec_msds: list[MeanSquaredDisplacement] = []
+        sec_diffusion_constants: list[DiffusionConstant] = []
         if msd_results:
-            sec_msds = []
-            sec_diffusion_constants = []
             for i_type, moltype in enumerate(msd_results.get('types', [])):
                 msd = MeanSquaredDisplacement()
                 msd.type = msd_results.get('type')
@@ -1291,6 +1301,10 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         workflow_rgs = []
 
         if not flag_rgs:  # Calculate RGs if not already present
+            if self._universe is None:
+                logger.warning('Universe is None, cannot calculate RGs')
+                return []
+
             system_hierarchy = sec_system.subsystems
             rg_results = calc_molecular_radius_of_gyration(
                 self._universe, system_hierarchy

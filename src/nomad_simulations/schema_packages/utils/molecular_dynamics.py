@@ -1123,7 +1123,7 @@ def calc_molecular_radius_of_gyration(
 
     rg_results = []
     for molgroup in system_hierarchy:
-        for molecule, i_mol in enumerate(molgroup.subsystems):
+        for i_mol, molecule in enumerate(molgroup.subsystems):
             sec_monomer_groups = molecule.subsystems
             group_type = (
                 sec_monomer_groups[0].branch_label if sec_monomer_groups else None
