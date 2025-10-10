@@ -15,10 +15,10 @@ else:
     FreeEnergyCalculationParameters = 'FreeEnergyCalculationParameters'
 
 
-class TrajectoryProperty(PhysicalProperty):
+class ConfigurationalProperty(PhysicalProperty):
     """
-    Generic section containing information about a calculation of any observable
-    defined and stored at each individual frame of a trajectory.
+    Abstract base section for observables calculated and stored at each individual frame of a trajectory.
+    This is an abstract class not intended to be directly populated. Use concrete implementations instead.
     """
 
     n_frames = Quantity(
@@ -47,7 +47,7 @@ class TrajectoryProperty(PhysicalProperty):
     )
 
 
-class Temperatures(TrajectoryProperty):
+class Temperatures(ConfigurationalProperty):
     """
     Temperature as a function of time.
     """
@@ -64,7 +64,7 @@ class Temperatures(TrajectoryProperty):
     )
 
 
-class Pressures(TrajectoryProperty):
+class Pressures(ConfigurationalProperty):
     """
     Pressure as a function of time.
     """
@@ -82,7 +82,7 @@ class Pressures(TrajectoryProperty):
 
 
 # TODO Rg + TrajectoryPropery should be removed from workflow. All properties dependent on a single configuration should be store in calculation
-class RadiiOfGyration(TrajectoryProperty):
+class RadiiOfGyration(ConfigurationalProperty):
     """
     Section containing information about the calculation of
     radius of gyration (Rg).
@@ -124,7 +124,7 @@ class RadiiOfGyration(TrajectoryProperty):
             self.value = self._rg_results.get('value')
 
 
-class FreeEnergyCalculations(TrajectoryProperty):
+class FreeEnergyCalculations(ConfigurationalProperty):
     """
     Section containing information regarding the instantaneous (i.e., for a single configuration)
     values of free energies calculated via thermodynamic perturbation.

@@ -890,7 +890,8 @@ class MolecularDynamicsMethod(SimulationWorkflowMethod):
 
 class EnsembleProperty(PhysicalProperty):
     """
-    Base section for static observables calculated from a trajectory (i.e., from an ensemble average).
+    Abstract base section for static observables calculated from a trajectory (i.e., from an ensemble average).
+    This is an abstract class not intended to be directly populated. Use concrete implementations instead.
     """
 
     n_smooth = Quantity(
@@ -933,6 +934,8 @@ class EnsembleProperty(PhysicalProperty):
         Number of bins.
         """,
     )
+
+    bins: Quantity = None
 
     frame_start = Quantity(
         type=int,
@@ -977,7 +980,7 @@ class RadialDistributionFunction(EnsembleProperty):
     )
 
 
-class DiffusionConstant(PhysicalProperty):
+class DiffusionConstant(EnsembleProperty):
     """
     Section containing information regarding the diffusion constants.
     """
@@ -996,7 +999,8 @@ class DiffusionConstant(PhysicalProperty):
 
 class CorrelationFunction(PhysicalProperty):
     """
-    Base section for time correlation functions calculated from a trajectory.
+    Abstract base section for time correlation functions calculated from a trajectory.
+    This is an abstract class not intended to be directly populated. Use concrete implementations instead.
     """
 
     direction = Quantity(
@@ -1031,15 +1035,6 @@ class MeanSquaredDisplacement(CorrelationFunction):
     """
 
     _msd_results = None
-
-    times = Quantity(
-        type=np.float64,
-        shape=['n_times'],
-        unit='s',
-        description="""
-        Time windows used for the calculation of the msds.
-        """,
-    )
 
     value = Quantity(
         type=np.float64,
@@ -1087,8 +1082,6 @@ class MolecularDynamicsResults(SerialWorkflowResults):
     radial_distribution_functions = SubSection(
         sub_section=RadialDistributionFunction.m_def, repeats=True
     )
-
-    radius_of_gyration = SubSection(sub_section=RadiiOfGyration.m_def, repeats=True)
 
     def __init__(self, m_def: Section = None, m_context: Context = None, **kwargs):
         super().__init__(m_def, m_context, **kwargs)
@@ -1276,8 +1269,8 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         logger = self.get_molecular_rgs.__annotations__['logger']
 
         # Check if already calculated
-        if self.radius_of_gyration:
-            return self.radius_of_gyration
+        if self.radii_of_gyration:
+            return self.radii_of_gyration
 
         try:
             data = archive.data[-1]
@@ -1333,29 +1326,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         self.diffusion_constants = diffusion_constants
 
         # calculate radius of gyration for polymers
-        self.radius_of_gyration = self.get_molecular_rgs(archive)
-
-
-# class MolecularDynamics(SerialWorkflow):
-#     method = SubSection(sub_section=MolecularDynamicsMethod)
-
-#     results = SubSection(sub_section=MolecularDynamicsResults)
-
-#     def normalize(self, archive, logger):
-#         super().normalize(archive, logger)
-
-#         if not self.method:
-#             self.method = MolecularDynamicsMethod()
-#             self.inputs.append(Link(name=WORKFLOW_METHOD_NAME, section=self.method))
-
-#         if not self.results:
-#             self.results = MolecularDynamicsResults()
-#             self.outputs.append(Link(name=WORKFLOW_RESULTS_NAME, section=self.results))
-
-#         if self.results.trajectory is None and self._systems:
-#             self.results.trajectory = self._systems
-
-#         SimulationWorkflowResults.normalize(self.results, archive, logger)
+        self.radii_of_gyration = self.get_molecular_rgs(archive)
 
 
 class MolecularDynamics(SerialWorkflow):

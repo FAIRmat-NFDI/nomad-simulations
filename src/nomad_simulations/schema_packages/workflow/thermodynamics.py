@@ -4,7 +4,7 @@ from nomad.metainfo import Quantity, SchemaPackage
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.workflow.trajectory import (
-    TrajectoryProperty,
+    ConfigurationalProperty,
 )
 from nomad_simulations.schema_packages.utils import log
 
