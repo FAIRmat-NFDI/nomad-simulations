@@ -191,57 +191,6 @@ class Outputs(Time):
             self.model_method_ref = self.set_model_method_ref()
 
 
-class SCFOutputs(Outputs):
-    """
-    This section contains the self-consistent (SCF) steps performed to converge an output property.
-
-    For simplicity, we contain the SCF steps of a simulation as part of the minimal workflow defined in NOMAD,
-    the `SinglePoint`, i.e., we do not split each SCF step in its own entry. Thus, each `SinglePoint`
-    `Simulation` entry in NOMAD contains the final output properties and all the SCF steps.
-    """
-
-    scf_steps = SubSection(
-        sub_section=Outputs.m_def,
-        repeats=True,
-        description="""
-        Self-consistent (SCF) steps performed for converging a given output property. Note that the SCF steps belong to
-        the same minimal `Simulation` workflow entry which is known as `SinglePoint`.
-        """,
-    )
-
-    is_converged = Quantity(
-        type=bool,
-        description="""
-        Shows if the SCF convergence targets have been met (true) or not (false).
-        """
-    )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        # Resolve the `is_scf_converged` flag for all SCF obtained properties
-        for property_name in self.m_def.all_sub_sections.keys():
-            # Skip the `scf_steps` and `custom_physical_property` sub-sections
-            if property_name == 'scf_steps':
-                continue
-
-            # Check if the physical property with that property name is populated
-            phys_properties = getattr(self, property_name)
-            if phys_properties is None:
-                continue
-            if not isinstance(phys_properties, list):
-                phys_properties = [phys_properties]
-
-            # Loop over the physical property of the same m_def type and set `is_scf_converged`
-            for i_property, phys_property in enumerate(phys_properties):
-                phys_property.is_scf_converged = self.resolve_is_scf_converged(
-                    property_name=property_name,
-                    i_property=i_property,
-                    physical_property=phys_property,
-                    logger=logger,
-                )
-
-
 class WorkflowOutputs(Outputs):
     """
     This section contains output properties that depend on a single system, but were
