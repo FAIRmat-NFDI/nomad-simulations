@@ -10,7 +10,8 @@ from nomad.datamodel.data import ArchiveSection
 from nomad.utils import get_logger
 
 if TYPE_CHECKING:
-    from typing import Callable, Optional
+    from collections.abc import Callable
+    from typing import Optional
 
     from structlog.stdlib import BoundLogger
 
@@ -150,25 +151,6 @@ class RussellSaundersState:
             factorial(int(self.multiplicity - self.occupation))
             * factorial(self.occupation)
         )
-
-
-def is_not_representative(model_system, logger: 'BoundLogger'):
-    """
-    Checks if the given `ModelSystem` is not representative and logs a warning.
-
-    Args:
-        model_system (ModelSystem): The `ModelSystem` to check.
-        logger (BoundLogger): The logger to log messages.
-
-    Returns:
-        (bool): True if the `ModelSystem` is not representative, False otherwise.
-    """
-    if model_system is None:
-        logger.warning('The `ModelSystem` is empty.')
-        return None
-    if not model_system.is_representative:
-        return True
-    return False
 
 
 # TODO remove function in nomad.atomutils

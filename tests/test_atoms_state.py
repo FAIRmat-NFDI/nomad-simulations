@@ -25,10 +25,10 @@ class TestOrbitalsState:
     def add_state(
         orbital_state: OrbitalsState,
         l_number: int,
-        ml_number: Optional[int],
-        ms_number: Optional[float],
-        j_number: Optional[list[float]],
-        mj_number: Optional[list[float]],
+        ml_number: int | None,
+        ms_number: float | None,
+        j_number: list[float] | None,
+        mj_number: list[float] | None,
     ) -> None:
         """Adds l and ml quantum numbers to the `OrbitalsState` section."""
         orbital_state.l_quantum_number = l_number
@@ -86,8 +86,8 @@ class TestOrbitalsState:
     def test_number_and_symbol(
         self,
         quantum_name: str,
-        value: Union[int, float],
-        expected_result: Optional[str],
+        value: int | float,
+        expected_result: str | None,
     ):
         """
         Test the number and symbol resolution for each of the quantum numbers defined in the parametrization.
@@ -131,10 +131,10 @@ class TestOrbitalsState:
     def test_degeneracy(
         self,
         l_quantum_number: int,
-        ml_quantum_number: Optional[int],
-        j_quantum_number: Optional[list[float]],
-        mj_quantum_number: Optional[list[float]],
-        ms_quantum_number: Optional[float],
+        ml_quantum_number: int | None,
+        j_quantum_number: list[float] | None,
+        mj_quantum_number: list[float] | None,
+        ms_quantum_number: float | None,
         degeneracy: int,
     ):
         """
@@ -189,10 +189,10 @@ class TestCoreHole:
     )
     def test_occupation(
         self,
-        orbital_ref: Optional[OrbitalsState],
-        degeneracy: Optional[int],
+        orbital_ref: OrbitalsState | None,
+        degeneracy: int | None,
         n_excited_electrons: float,
-        occupation: Optional[float],
+        occupation: float | None,
     ):
         """
         Test the occupation of a core hole for a given set of orbital reference and degeneracy.
@@ -232,10 +232,10 @@ class TestCoreHole:
     )
     def test_normalize(
         self,
-        orbital_ref: Optional[OrbitalsState],
-        n_excited_electrons: Optional[float],
-        dscf_state: Optional[str],
-        results: tuple[Optional[float], Optional[float], Optional[float]],
+        orbital_ref: OrbitalsState | None,
+        n_excited_electrons: float | None,
+        dscf_state: str | None,
+        results: tuple[float | None, float | None, float | None],
     ):
         """
         Test the normalization of the `CoreHole`. Inputs are defined as the quantities of the `CoreHole` section.
@@ -273,8 +273,8 @@ class TestHubbardInteractions:
     )
     def test_u_interactions(
         self,
-        slater_integrals: Optional[list[float]],
-        results: tuple[Optional[float], Optional[float], Optional[float]],
+        slater_integrals: list[float] | None,
+        results: tuple[float | None, float | None, float | None],
     ):
         """
         Test the Hubbard interactions `U`, `U'`, and `J` for a given set of Slater integrals.
@@ -317,9 +317,9 @@ class TestHubbardInteractions:
     )
     def test_u_effective(
         self,
-        u_interaction: Optional[float],
-        j_local_exchange_interaction: Optional[float],
-        u_effective: Optional[float],
+        u_interaction: float | None,
+        j_local_exchange_interaction: float | None,
+        u_effective: float | None,
     ):
         """
         Test the effective Hubbard interaction `U_eff` for a given set of Hubbard interactions `U` and `J`.

@@ -9,7 +9,7 @@ from .thermodynamics import ThermodynamicsResults
 
 
 class MolecularDynamicsModel(SimulationWorkflowModel):
-    label = 'MD parameters'
+    _label = 'MD parameters'
 
     thermodynamic_ensemble = Quantity(
         type=MEnum('NVE', 'NVT', 'NPT', 'NPH'),
@@ -130,11 +130,11 @@ class MolecularDynamicsResults(ThermodynamicsResults):
     Contains defintions for the results of a molecular dynamics calculation.
     """
 
-    label = 'MD results'
+    _label = 'MD results'
 
 
 class MolecularDynamics(SerialWorkflow):
-    task_label = 'Step'
+    _task_label = 'Step'
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

@@ -314,3 +314,41 @@ class TestSimulation:
         sim.normalize(EntryArchive(), logger=logger)
 
         assert root.composition_formula == 'Custom(1)'
+
+
+@pytest.mark.parametrize(
+    'initial_flags, expected_index, expected_flags',
+    [
+        # 1) zero representatives → promote last, index -1 (first pass)
+        ([False, False, False], -1, [False, False, True]),
+        # 2) multiple representatives → keep the last
+        ([True, False, True, False], 2, [False, False, True, False]),
+        # 3) exactly one representative → preserve it
+        ([False, True, False], 1, [False, True, False]),
+        # 4) singleton without representative → promote itself, index -1 (first pass)
+        ([False], -1, [True]),
+    ],
+)
+def test_representative_selection(initial_flags, expected_index, expected_flags):
+    sim = Simulation(
+        model_system=[
+            ModelSystem(name=f'S{i}', is_representative=flag)
+            for i, flag in enumerate(initial_flags)
+        ]
+    )
+
+    # First pass: preserves the API’s special-casing (-1 means “last element”)
+    sim.normalize(EntryArchive(), logger)
+    assert sim.representative_system_index == expected_index
+    assert [ms.is_representative for ms in sim.model_system] == expected_flags
+
+    # Second pass: flags unchanged; index becomes canonical (non-negative)
+    sim.normalize(EntryArchive(), logger)
+    assert [ms.is_representative for ms in sim.model_system] == expected_flags
+    expected_canonical_index = expected_flags.index(True)
+    assert sim.representative_system_index == expected_canonical_index
+
+    # Third pass: idempotent (no further changes)
+    sim.normalize(EntryArchive(), logger)
+    assert [ms.is_representative for ms in sim.model_system] == expected_flags
+    assert sim.representative_system_index == expected_canonical_index

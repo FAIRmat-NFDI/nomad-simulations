@@ -30,7 +30,7 @@ class TestTB:
             (TB(), None),
         ],
     )
-    def test_resolve_type(self, tb_section: TB, result: Optional[str]):
+    def test_resolve_type(self, tb_section: TB, result: str | None):
         """
         Test the `resolve_type` method of `TB`.
         E.g., Wannier => "Wannier", SlaterKoster => "SlaterKoster", TB => None.
@@ -126,7 +126,7 @@ class TestTB:
         self,
         model_systems: list[ModelSystem],
         model_index: int,
-        result: Optional[list[OrbitalsState]],
+        result: list[OrbitalsState] | None,
     ):
         """
         Test the `resolve_orbital_references` method of TB to find OrbitalsState objects
@@ -239,7 +239,7 @@ class TestTB:
         tb_section: TB,
         result_type: str,
         model_systems: list[ModelSystem],
-        expected_orbitals: Optional[list[OrbitalsState]],
+        expected_orbitals: list[OrbitalsState] | None,
     ):
         """
         Test TB.normalize() [including Wannier or SlaterKoster],
@@ -278,9 +278,9 @@ class TestWannier:
     )
     def test_normalize(
         self,
-        localization_type: Optional[str],
+        localization_type: str | None,
         is_maximally_localized: bool,
-        expected_type: Optional[str],
+        expected_type: str | None,
     ):
         """
         Test that Wannier.normalize() sets the correct localization_type
@@ -311,10 +311,10 @@ class TestSlaterKosterBond:
     )
     def test_resolve_bond_name_from_references(
         self,
-        orb1_symbol: Optional[str],
-        orb2_symbol: Optional[str],
-        bravais_vector: Optional[tuple],
-        expected_name: Optional[str],
+        orb1_symbol: str | None,
+        orb2_symbol: str | None,
+        bravais_vector: tuple | None,
+        expected_name: str | None,
     ):
         """
         Test SlaterKosterBond.resolve_bond_name_from_references with sample orbitals.
@@ -341,10 +341,10 @@ class TestSlaterKosterBond:
     )
     def test_normalize(
         self,
-        orb1_symbol: Optional[str],
-        orb2_symbol: Optional[str],
-        bravais_vector: Optional[tuple],
-        expected: Optional[str],
+        orb1_symbol: str | None,
+        orb2_symbol: str | None,
+        bravais_vector: tuple | None,
+        expected: str | None,
     ):
         """
         Test SlaterKosterBond.normalize() sets .name as we expect based on the orbitals.

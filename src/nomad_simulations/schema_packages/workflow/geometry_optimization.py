@@ -20,7 +20,7 @@ class GeometryOptimizationModel(SimulationWorkflowModel):
     Workflow model describing a geometry optimization.
     """
 
-    label = 'Geometry optimization parameters'
+    _label = 'Geometry optimization parameters'
 
     optimization_type = Quantity(
         type=MEnum('static', 'atomic', 'cell_shape', 'cell_volume'),
@@ -72,7 +72,7 @@ class GeometryOptimizationModel(SimulationWorkflowModel):
 
 
 class GeometryOptimizationResults(SimulationWorkflowResults):
-    label = 'Geometry optimiztation results'
+    _label = 'Geometry optimiztation results'
 
     n_steps = Quantity(
         type=int,
@@ -147,6 +147,7 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
                     energies_l.append(outputs.total_energies[-1].value.magnitude)
                 except Exception:
                     logger.error('Energy not found in outputs.')
+                    energies_l = []
                     break
             if energies_l:
                 energies = np.array(energies_l)
@@ -162,7 +163,7 @@ class GeometryOptimization(SerialWorkflow):
     Definitions for geometry optimization workflow.
     """
 
-    task_label = 'Step'
+    _task_label = 'Step'
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

@@ -11,11 +11,11 @@ m_package = SchemaPackage()
 
 
 class DFTTBModel(BeyondDFTModel):
-    label = 'DFT+TB workflow parameters'
+    _label = 'DFT+TB workflow parameters'
 
 
 class DFTTBResults(BeyondDFTResults):
-    label = 'DFT+TB worklfow results'
+    _label = 'DFT+TB worklfow results'
 
 
 class DFTTBWorkflow(BeyondDFTWorkflow):

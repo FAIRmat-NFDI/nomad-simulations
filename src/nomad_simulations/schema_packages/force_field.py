@@ -19,8 +19,6 @@ from nomad.units import ureg
 from scipy.interpolate import UnivariateSpline
 
 from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
-from nomad_simulations.schema_packages.model_system import ModelSystem
-from nomad_simulations.schema_packages.utils import is_not_representative
 
 MOL = 6.022140857e23
 FF_TOL = 1e-2

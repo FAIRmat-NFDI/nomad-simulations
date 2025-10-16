@@ -34,8 +34,8 @@ class TestPermittivity:
     )
     def test_resolve_type(
         self,
-        kmesh_grid: Optional[list[int]],
-        frequency: Optional[Variables],
+        kmesh_grid: list[int] | None,
+        frequency: Variables | None,
         result: str,
     ):
         """
@@ -96,10 +96,10 @@ class TestPermittivity:
     )
     def test_extract_absorption_spectra(
         self,
-        kmesh_grid: Optional[list[int]],
-        frequencies_points: Optional[list[float]],
-        value: Optional[np.ndarray],
-        result: Optional[list[float]],
+        kmesh_grid: list[int] | None,
+        frequencies_points: list[float] | None,
+        value: np.ndarray | None,
+        result: list[float] | None,
     ):
         """
         Test the `extract_absorption_spectra` method. The `result` in the last valid case corresponds to the imaginary part of

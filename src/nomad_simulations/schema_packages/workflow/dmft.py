@@ -10,14 +10,14 @@ m_package = SchemaPackage()
 
 
 class DFTTBDDMFTModel(BeyondDFTModel):
-    label = 'DMFT+MaxEnt workflow parameters'
+    _label = 'DFT+TB+DMFT workflow parameters'
 
 
 class DFTTBDMFTResults(BeyondDFTResults):
-    label = 'DMFT+MaxEnt workflow results'
+    _label = 'DFT+TB+DMFT workflow results'
 
 
-class DFTTBDMFTWoklow(BeyondDFTWorkflow):
+class DFTTBDMFTWorkflow(BeyondDFTWorkflow):
     """
     Definitions for DMFT worklow based on DFT and TB.
     """
@@ -43,8 +43,11 @@ class DFTTBDMFTWoklow(BeyondDFTWorkflow):
 
         super().normalize(archive, logger)
 
-        if self.task and not self.task[-1].name:
-            self.task[-1].name = 'DMFT'
+        if len(self.tasks) == 3 and not self.tasks[1].name:
+            self.tasks[1].name = 'TB'
+
+        if self.tasks and not self.tasks[-1].name:
+            self.tasks[-1].name = 'DMFT'
 
 
 m_package.__init_metainfo__()

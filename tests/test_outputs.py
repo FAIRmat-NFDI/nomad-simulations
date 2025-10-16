@@ -125,7 +125,7 @@ class TestOutputs:
         'model_method',
         [(None), (ModelMethod(name='example'))],
     )
-    def test_set_model_method_ref(self, model_method: Optional[ModelMethod]):
+    def test_set_model_method_ref(self, model_method: ModelMethod | None):
         """
         Test the `set_model_method_ref` method.
 
@@ -154,7 +154,7 @@ class TestOutputs:
         ],
     )
     def test_normalize(
-        self, model_system: Optional[ModelSystem], model_method: Optional[ModelMethod]
+        self, model_system: ModelSystem | None, model_method: ModelMethod | None
     ):
         """
         Test the `normalize` method.

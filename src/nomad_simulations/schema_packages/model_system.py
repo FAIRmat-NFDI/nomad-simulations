@@ -44,8 +44,8 @@ from nomad.units import ureg
 from nomad_simulations.schema_packages.utils import log
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
-    from typing import Any, Callable, Optional
+    from collections.abc import Callable, Generator
+    from typing import Any, Optional
 
     import pint
     from nomad.datamodel.datamodel import EntryArchive
@@ -57,11 +57,7 @@ from nomad_simulations.schema_packages.atoms_state import (
     CGBeadState,
     ParticleState,
 )
-from nomad_simulations.schema_packages.utils import (
-    catch_not_implemented,
-    get_sibling_section,
-    is_not_representative,
-)
+from nomad_simulations.schema_packages.utils import get_sibling_section
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -504,7 +500,7 @@ class Symmetry(ArchiveSection):
         symmetry_analyzer: 'SymmetryAnalyzer',
         cell_type: str,
         logger: 'BoundLogger',
-    ) -> 'Optional[Cell]':
+    ) -> 'Cell | None':
         """
         Resolves the `AtomicCell` section from the `SymmetryAnalyzer` object and the cell_type
         (primitive or conventional).
@@ -558,7 +554,7 @@ class Symmetry(ArchiveSection):
 
     def resolve_bulk_symmetry(
         self, original_atomic_cell: 'AtomicCell', logger: 'BoundLogger'
-    ) -> 'tuple[Optional[AtomicCell], Optional[AtomicCell]]':
+    ) -> 'tuple[AtomicCell | None, AtomicCell | None]':
         """
         Resolves the symmetry of the material being simulated using MatID and the
         originally parsed data under original_atomic_cell. It generates two other
@@ -1121,7 +1117,7 @@ class ModelSystem(System):
             return False
 
     @log
-    def to_ase_atoms(self) -> 'Optional[ase.Atoms]':
+    def to_ase_atoms(self) -> 'ase.Atoms | None':
         """
         Generates an ASE Atoms object from ModelSystem data.
         Uses:
@@ -1246,7 +1242,7 @@ class ModelSystem(System):
             elif isinstance(classification, Surface):
                 system_type = 'surface'
                 dimensionality = 2
-            elif isinstance(classification, (Class2D, Material2D)):
+            elif isinstance(classification, Class2D | Material2D):
                 system_type = '2D'
                 dimensionality = 2
         else:
@@ -1308,7 +1304,7 @@ class ModelSystem(System):
             return
 
         if is_atomic and not all(
-            isinstance(p, (AtomsState, CGBeadState)) for p in ps_list
+            isinstance(p, AtomsState | CGBeadState) for p in ps_list
         ):
             # Map one-to-one using validated element labels
             self._clear_particle_states_inplace()
@@ -1332,17 +1328,64 @@ class ModelSystem(System):
                 new.normalize(archive, logger)
                 self.particle_states.append(new)
 
+    def _validate_subsystem(self, logger: 'BoundLogger') -> None:
+        """ """
+
+        if self.is_root_system():
+            return
+
+        if self.particle_indices is None:
+            logger.warning(
+                'Cannot validate ModelSystem subsystem without particle_indices.'
+            )
+            return
+
+        parent = self.m_parent
+        if parent.is_root_system():
+            n_particles = (
+                len(parent.positions) if parent.positions is not None else None
+            )
+            if not n_particles:
+                logger.error(
+                    'Cannot validate ModelSystem subsystem without root particle positions.'
+                )
+                return
+
+            assert all(0 <= i < n_particles for i in self.particle_indices), (
+                'Invalid particle_indices in ModelSystem subsystem.'
+            )
+            return
+
+        if parent.particle_indices is None:
+            logger.error(
+                'Cannot validate ModelSystem subsystem without parent particle_indices.'
+            )
+            return
+
+        assert all(pi in parent.particle_indices for pi in self.particle_indices), (
+            'Invalid particle_indices in ModelSystem subsystem.'
+        )
+
+        # TODO logger.warning or logger.error in each case?
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
         # reassign particle states according to label validity
         self._reassign_generic_particle_states(archive, logger)
+        # Validate the ModelSystem subsystem
+        self._validate_subsystem(logger)
 
-        # We don't need to normalize if the system is not representative
-        # TODO decide the meaning and exact usage of a system being representative
-        # TODO before avoiding normalization
-        # if is_not_representative(model_system=self, logger=logger):
-        #     return
+        # Prevent representative subsystems
+        if self.is_representative and not self.is_root_system():
+            logger.warning(
+                'ModelSystem.is_representative is set to True for a subsystem. '
+                'Setting to False'
+            )
+            self.is_representative = False
+        # Skip the following normalization if system is not representative
+        if not self.is_representative:
+            return
 
         ## ATOMIC NORMALIZATION
         if not self.is_atomic():
@@ -1397,26 +1440,43 @@ class ModelSystem(System):
 
     def is_root_system(self) -> bool:
         """
-        A node is root if its parent is not a ModelSystem section.
-        Prefer isinstance for robustness; fall back to m_def identity.
+        True if this node has no parent or its parent is not a ModelSystem.
+        Prefer an ``isinstance`` check; fall back to comparing ``m_def`` to handle
+        proxy/wrapper parents that still expose a ModelSystem definition.
         """
 
-        return (self.m_parent is None) or getattr(
-            self.m_parent, 'm_def', None
-        ) is not ModelSystem.m_def
+        parent = self.m_parent
+        return (parent is None) or not (
+            isinstance(parent, ModelSystem) or parent.m_def is ModelSystem.m_def
+        )
 
     def get_root_system(self) -> 'ModelSystem':
         """
-        Walk up through parents while the parent behaves like a ModelSystem.
+        Walk up through parents until reaching the root. Detect and fail on cycles.
+
+        Returns
+        -------
+        ModelSystem
+            The root system.
+
+        Raises
+        ------
+        RuntimeError
+            If a cycle is detected in the parent chain.
         """
-        system = self
-        while not system.is_root_system():
-            parent = system.m_parent
+        node = self
+        seen = {id(node)}
+
+        while not node.is_root_system():
+            parent = node.m_parent
             if parent is None:
                 break
-            system = parent
+            if id(parent) in seen:
+                raise RuntimeError('Cycle detected in ModelSystem parent chain.')
+            seen.add(id(parent))
+            node = parent
 
-        return system
+        return node
 
     # functions for working with molecules
     def get_bond_list(self) -> np.ndarray:

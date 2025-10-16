@@ -10,11 +10,11 @@ m_package = SchemaPackage()
 
 
 class DMTMaxEntModel(BeyondDFTModel):
-    label = 'DMFT+MaxEnt workflow parameters'
+    _label = 'DMFT+MaxEnt workflow parameters'
 
 
 class DMTMaxEntResults(BeyondDFTResults):
-    label = 'DMFT+MaxEnt workflow results'
+    _label = 'DMFT+MaxEnt workflow results'
 
 
 class DMFTMaxEntWorkflow(BeyondDFTWorkflow):
@@ -43,8 +43,9 @@ class DMFTMaxEntWorkflow(BeyondDFTWorkflow):
 
         super().normalize(archive, logger)
 
-        if self.task and not self.task[-1].name:
-            self.task[-1].name = 'MaxEnt'
+        if self.tasks:
+            if not self.tasks[-1].name:
+                self.tasks[-1].name = 'MaxEnt'
 
 
 m_package.__init_metainfo__()

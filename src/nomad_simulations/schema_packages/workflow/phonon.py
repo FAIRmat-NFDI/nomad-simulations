@@ -14,7 +14,7 @@ from .general import (
 
 
 class PhononModel(SimulationWorkflowModel):
-    label = 'Phonon calculation parameters'
+    _label = 'Phonon calculation parameters'
 
     force_calculator = Quantity(
         type=str,
@@ -67,7 +67,7 @@ class PhononModel(SimulationWorkflowModel):
 
 
 class PhononResults(SimulationWorkflowResults):
-    label = 'Phonon results'
+    _label = 'Phonon results'
 
     n_imaginary_frequencies = Quantity(
         type=int,
@@ -143,7 +143,7 @@ class Phonon(SimulationWorkflow):
     Definitions for a phonon workflow.
     """
 
-    task_label = 'Force calculation'
+    _task_label = 'Force calculation'
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

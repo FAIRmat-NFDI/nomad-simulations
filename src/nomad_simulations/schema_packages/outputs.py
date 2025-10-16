@@ -146,7 +146,7 @@ class Outputs(Time):
             spin_polarized_properties.append(prop)
         return spin_polarized_properties
 
-    def set_model_system_ref(self) -> Optional[ModelSystem]:
+    def set_model_system_ref(self) -> ModelSystem | None:
         """
         Provide a suggested `ModelSystem` that corresponds to the output collection.
 
@@ -165,7 +165,7 @@ class Outputs(Time):
                 return model_systems[self.m_parent_index]
         return None
 
-    def set_model_method_ref(self) -> Optional[ModelMethod]:
+    def set_model_method_ref(self) -> ModelMethod | None:
         """
         Set the reference to the last `ModelMethod` if this is not set in the output. This is only
         valid if there is only one `ModelMethod` in the parent section.

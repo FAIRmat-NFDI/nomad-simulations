@@ -15,11 +15,11 @@ m_package = SchemaPackage()
 
 
 class ThermodynamicsModel(SimulationWorkflowModel):
-    label = 'Thermodynamics model'
+    _label = 'Thermodynamics model'
 
 
 class ThermodynamicsResults(SimulationWorkflowResults):
-    label = 'Thermodynamics results'
+    _label = 'Thermodynamics results'
 
     n_values = Quantity(
         type=int,
