@@ -10,7 +10,6 @@ from .general import (
     SerialWorkflow,
     SimulationWorkflowModel,
     SimulationWorkflowResults,
-    WorkflowConvergenceTarget,
 )
 
 m_package = SchemaPackage()

@@ -127,6 +127,7 @@ class SimulationWorkflowModel(ArchiveSection):
         if not self.initial_method and archive.data.model_method:
             self.initial_method = archive.data.model_method[0]
 
+        #TODO test
         # set convergence
         self.is_converged = all(convergence_target.is_reached for convergence_target in self.convergence)
 
