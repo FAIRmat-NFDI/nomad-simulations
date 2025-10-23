@@ -29,6 +29,8 @@ class SinglePointResults(SimulationWorkflowResults):
 
     _label = 'Single point results'
 
+    ## Add the ref to the Single point data here
+
 
 class SinglePoint(SimulationWorkflow):
     """
