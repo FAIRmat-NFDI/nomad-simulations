@@ -18,7 +18,7 @@ from nomad_simulations.schema_packages.model_system import (
 )
 
 from . import logger
-from .conftest import generate_atomic_representation
+from .conftest import generate_model_system
 
 
 class TestSymmetry:
@@ -349,26 +349,18 @@ class TestModelSystem:
           - If representative, run type/dimensionality, symmetry, chemical formula, etc.
         """
         # Build a minimal model system with top-level positions and an AtomicCell
-        sys = ModelSystem(is_representative=True)
-        sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5], [1, 1, 1]]) * ureg.angstrom
-        ac = generate_atomic_representation(
+        sys = generate_model_system(
+            positions=[[0, 0, 0], [0.5, 0, 0.5], [1, 1, 1]],
             lattice_vectors=[[3, 0, 0], [0, 3, 0], [0, 0, 3]],
             periodic_boundary_conditions=[True, True, True],
             chemical_symbols=['H', 'H', 'O'],
             atomic_numbers=[1, 1, 8],
         )
-        sys.representations.append(ac)
-        # Add a Symmetry, ChemicalFormula
         sym = Symmetry()
         sys.symmetry.append(sym)
-        chem = ChemicalFormula()
-        sys.chemical_formula = chem
-        # Add 3 AtomsState entries for H,H,O
-        for s, num in zip(['H', 'H', 'O'], [1, 1, 8]):
-            sys.particle_states.append(AtomsState(chemical_symbol=s, atomic_number=num))
 
-        # Normalize
         sys.normalize(EntryArchive(), logger=logger)
+
         # Check basic results
         assert sys.type in ['molecule / cluster', 'bulk']
         assert sys.dimensionality is not None

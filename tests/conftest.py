@@ -56,69 +56,72 @@ def generate_simulation(
 
 
 def generate_model_system(
-    type: str = 'original',
-    system_type: str = 'bulk',
-    positions: list[list[float]] = [[0, 0, 0], [0.5, 0.5, 0.5]],
-    lattice_vectors: list[list[float]] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-    chemical_symbols: list[str] = ['Ga', 'As'],
-    orbitals_symbols: list[list[str]] = [['s'], ['px', 'py']],
-    is_representative: bool = True,
-    pbc: list[bool] = [False, False, False],
+    type: str | None = None,
+    system_type: str | None = None,
+    positions: list[list[float]] | None = None,
+    lattice_vectors: list[list[float]] | None = None,
+    chemical_symbols: list[str] | None = None,
+    orbitals_symbols: list[list[str]] | None = None,
+    is_representative: bool | None = None,
+    pbc: list[bool] | None = None,
 ) -> ModelSystem | None:
     """
     Generate a `ModelSystem` section with the given parameters.
+    All parameters are optional and will only be set if explicitly provided.
+    Default values are not automatically applied.
     """
-    if len(chemical_symbols) != len(orbitals_symbols):
+    if (
+        chemical_symbols is not None
+        and orbitals_symbols is not None
+        and len(chemical_symbols) != len(orbitals_symbols)
+    ):
         return None
 
-    model_system = ModelSystem(type=system_type, is_representative=is_representative)
+    # Create model system with only provided values
+    model_system_kwargs = {}
+    if system_type is not None:
+        model_system_kwargs['type'] = system_type
+    if is_representative is not None:
+        model_system_kwargs['is_representative'] = is_representative
 
-    model_system.positions = np.array(positions) * ureg.angstrom
+    model_system = ModelSystem(**model_system_kwargs)
 
-    atomic_cell = Representation(
-        lattice_vectors=lattice_vectors * ureg.angstrom,
-        periodic_boundary_conditions=pbc,
-    )
-    atomic_cell.name = type
-    model_system.representations.append(
-        atomic_cell
-    )  # Add atoms_state to the model_system
-    atoms_state = []
-    for element, orbitals in zip(chemical_symbols, orbitals_symbols):
-        # build each OrbitalsState exactly as before
-        orbitals_state = [
-            OrbitalsState(l_quantum_symbol=o[0], ml_quantum_symbol=o[1:])
-            for o in orbitals
-        ]
-        # instantiate AtomsState directly with the chemical_symbol
-        atom_state = AtomsState(chemical_symbol=element, orbitals_state=orbitals_state)
-        # normalize() will resolve atomic_number from the symbol
-        atom_state.normalize(EntryArchive(), logger)
-        atoms_state.append(atom_state)
+    # Set positions if provided
+    if positions is not None:
+        model_system.positions = np.array(positions) * ureg.angstrom
 
-    for state in atoms_state:
-        model_system.particle_states.append(state)
+    # Create representation with only provided values
+    representation_kwargs = {}
+    if type is not None:
+        representation_kwargs['name'] = type
+    if lattice_vectors is not None:
+        representation_kwargs['lattice_vectors'] = (
+            np.array(lattice_vectors) * ureg.angstrom
+        )
+    if pbc is not None:
+        representation_kwargs['periodic_boundary_conditions'] = pbc
+    model_system.representations.append(Representation(**representation_kwargs))
+
+    # Add particle states only if both chemical_symbols and orbitals_symbols are provided
+    if chemical_symbols is not None and orbitals_symbols is not None:
+        atoms_state = []
+
+        for element, orbitals in zip(chemical_symbols, orbitals_symbols):
+            orbitals_state = [
+                OrbitalsState(l_quantum_symbol=o[0], ml_quantum_symbol=o[1:])
+                for o in orbitals
+            ]
+            atom_state = AtomsState(
+                chemical_symbol=element, orbitals_state=orbitals_state
+            )
+            # normalize() will resolve atomic_number from the symbol
+            atom_state.normalize(EntryArchive(), logger)
+            atoms_state.append(atom_state)
+
+        for state in atoms_state:
+            model_system.particle_states.append(state)
+
     return model_system
-
-
-def generate_atomic_representation(
-    lattice_vectors: list[list[float]] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-    periodic_boundary_conditions: list[bool] = [False, False, False],
-) -> Representation:
-    """
-    Generate a `Representation` section with the given parameters.
-    """
-
-    # Define the representation solely with cell properties; positions are handled by ModelSystem.
-    atomic_cell = Representation(
-        periodic_boundary_conditions=periodic_boundary_conditions
-    )
-    if lattice_vectors:
-        atomic_cell.lattice_vectors = np.array(lattice_vectors) * ureg('angstrom')
-    # Removed assignment of positions to atomic_cell as of nomad-simulations>=0.4.
-    # Also, the atoms_state information is now part of ModelSystem (particle_states) instead.
-
-    return atomic_cell
 
 
 def generate_scf_electronic_band_gap_template(
@@ -169,7 +172,16 @@ def generate_simulation_electronic_dos(
     the template of the model_system created with the `generate_model_system` function.
     """
     # Create the `Simulation` section to make refs work
-    model_system = generate_model_system()
+    model_system = generate_model_system(
+        type='original',
+        system_type='bulk',
+        positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
+        lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        chemical_symbols=['Ga', 'As'],
+        orbitals_symbols=[['s'], ['px', 'py']],
+        is_representative=True,
+        pbc=[False, False, False],
+    )
     outputs = Outputs()
     simulation = generate_simulation(model_system=[model_system], outputs=[outputs])
 
@@ -324,7 +336,18 @@ def generate_electronic_eigenvalues(
     if reciprocal_lattice_vectors:
         k_space.reciprocal_lattice_vectors = reciprocal_lattice_vectors
     _ = generate_simulation(
-        model_system=[generate_model_system()],
+        model_system=[
+            generate_model_system(
+                type='original',
+                system_type='bulk',
+                positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
+                lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                chemical_symbols=['Ga', 'As'],
+                orbitals_symbols=[['s'], ['px', 'py']],
+                is_representative=True,
+                pbc=[False, False, False],
+            )
+        ],
         model_method=[model_method],
         outputs=[outputs],
     )
@@ -344,12 +367,16 @@ def generate_electronic_eigenvalues(
 
 @pytest.fixture(scope='session')
 def model_system() -> ModelSystem:
-    return generate_model_system()
-
-
-@pytest.fixture(scope='session')
-def atomic_representation() -> Representation:
-    return generate_atomic_representation()
+    return generate_model_system(
+        type='original',
+        system_type='bulk',
+        positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
+        lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        chemical_symbols=['Ga', 'As'],
+        orbitals_symbols=[['s'], ['px', 'py']],
+        is_representative=True,
+        pbc=[False, False, False],
+    )
 
 
 @pytest.fixture(scope='session')

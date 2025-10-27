@@ -671,37 +671,6 @@ class ChemicalFormula(ArchiveSection):
         self.hill = formula.format(fmt='hill')
         self.anonymous = formula.format(fmt='anonymous')
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        # Instead of retrieving a sibling "cell", get the parent ModelSystem
-        model_system = self.m_parent
-        if model_system is None:
-            logger.warning('Could not resolve parent ModelSystem for ChemicalFormula.')
-            return
-
-        # Get the ASE Atoms using the ModelSystem.to_ase_atoms() method (which now gathers positions, cell, etc.)
-        ase_atoms = model_system.to_ase_atoms(
-            representation_index=0 if model_system.representations else None,
-            logger=logger,
-        )
-        if ase_atoms is None:
-            logger.error('Could not generate ASE Atoms from the ModelSystem.')
-            return
-
-        formula = None
-        try:
-            formula = Formula(formula=ase_atoms.get_chemical_formula())
-        except ValueError as e:
-            logger.warning(
-                'Could not extract the chemical formulas information.',
-                exc_info=e,
-                error=str(e),
-            )
-        if formula:
-            self.resolve_chemical_formulas(formula=formula)
-            self.m_cache['elemental_composition'] = formula.elemental_composition
-
 
 # Add backward compatibility property for surface_area -> boundary_area using lambdas
 setattr(
@@ -851,7 +820,7 @@ class ModelSystem(System, Representation):
 
     symmetry = SubSection(sub_section=Symmetry.m_def, repeats=True)
 
-    chemical_formula = SubSection(sub_section=ChemicalFormula.m_def, repeats=False)
+    chemical_formula = SubSection(sub_section=ChemicalFormula.m_def)
 
     branch_label = Quantity(
         type=str,
@@ -1399,11 +1368,10 @@ class ModelSystem(System, Representation):
             sec_symmetry.normalize(archive, logger)
 
         # Create and normalize ChemicalFormula section
-        sec_chemical_formula = self.m_create(ChemicalFormula)
-        sec_chemical_formula.normalize(archive, logger)
-        if sec_chemical_formula.m_cache:
-            self.elemental_composition = sec_chemical_formula.m_cache.get(
-                'elemental_composition', []
+        if atom_labels := self.get_symbols():
+            sec_chemical_formula = self.m_create(ChemicalFormula)
+            sec_chemical_formula.resolve_chemical_formulas(
+                Formula(formula=''.join(atom_labels))
             )
 
     def _generate_comparer(self):
