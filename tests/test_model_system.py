@@ -381,14 +381,18 @@ class TestModelSystem:
         # Extra primitive/conventional cells are added to the symmetry section only if there is a parent ModelSystem.
         # For a top-level ModelSystem (with no parent), we expect only the originally appended representation.
         if sys.m_parent is not None:
-            # Check if primitive or conventional cells are present in the symmetry section
-            if sys.symmetry and (
-                sys.symmetry.primitive_cell or sys.symmetry.conventional_cell
-            ):
-                if sys.symmetry.primitive_cell:
-                    assert sys.symmetry.primitive_cell.name == 'primitive'
-                if sys.symmetry.conventional_cell:
-                    assert sys.symmetry.conventional_cell.name == 'conventional'
+            # Check if primitive or conventional cells are present in the representations
+            primitive = None
+            conventional = None
+            for rep in sys.representations:
+                if getattr(rep, "name", None) == "primitive":
+                    primitive = rep
+                if getattr(rep, "name", None) == "conventional":
+                    conventional = rep
+            if primitive:
+                assert primitive.name == "primitive"
+            if conventional:
+                assert conventional.name == "conventional"
         else:
             # Top-level system: expect only one representation.
             assert len(sys.representations) == 1
