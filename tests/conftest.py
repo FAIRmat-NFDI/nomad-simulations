@@ -101,11 +101,9 @@ def generate_model_system(
     return model_system
 
 
-def generate_atomic_cell(
+def generate_atomic_representation(
     lattice_vectors: list[list[float]] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
     periodic_boundary_conditions: list[bool] = [False, False, False],
-    chemical_symbols: list[str] = ['H', 'H', 'O'],
-    atomic_numbers: list[int] = [1, 1, 8],
 ) -> Representation:
     """
     Generate a `Representation` section with the given parameters.
@@ -350,8 +348,8 @@ def model_system() -> ModelSystem:
 
 
 @pytest.fixture(scope='session')
-def atomic_cell() -> Representation:
-    return generate_atomic_cell()
+def atomic_representation() -> Representation:
+    return generate_atomic_representation()
 
 
 @pytest.fixture(scope='session')

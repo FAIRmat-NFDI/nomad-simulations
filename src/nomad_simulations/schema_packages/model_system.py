@@ -17,9 +17,8 @@
 #
 
 import re
-from functools import lru_cache
 from hashlib import sha1
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import ase
 import numpy as np
@@ -37,7 +36,7 @@ from matid.classification.classifications import (
 from nomad.atomutils import Formula, get_normalized_wyckoff, search_aflow_prototype
 from nomad.config import config
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.basesections.v2 import Entity, System
+from nomad.datamodel.metainfo.basesections.v2 import System
 from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
@@ -47,7 +46,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    import pint
     from nomad.datamodel.datamodel import EntryArchive
     from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
@@ -181,8 +179,8 @@ class Representation(ArchiveSection):
         type=bool,
         shape=[3],
         description="""
-        Whether periodic boundary conditions are applied.
-        Runs over each direction of the crystal axes.
+        Denotes whether periodic boundary conditions are applied. Runs over each axis.
+        Requires `lattice_vectors` to be defined, else it is left empty.
         """,
     )
 
@@ -264,7 +262,7 @@ class Representation(ArchiveSection):
     )
 
 
-class RelativeRepresentation(Representation):
+class AlternativeRepresentation(Representation):
     """
     A representation relative to another, reference representation, typically the original computed system.
     """
@@ -705,6 +703,17 @@ class ChemicalFormula(ArchiveSection):
             self.m_cache['elemental_composition'] = formula.elemental_composition
 
 
+# Add backward compatibility property for surface_area -> boundary_area using lambdas
+setattr(Representation, 'surface_area', property(
+    lambda self: self.boundary_area,
+    lambda self, value: setattr(self, 'boundary_area', value)
+))
+
+# Backward compatibility aliases for parser packages that still reference old classes
+AtomicCell = Representation
+Cell = Representation
+
+
 class ModelSystem(System, Representation):
     """
     Model system used as an input for simulating the material.
@@ -956,7 +965,7 @@ class ModelSystem(System, Representation):
     )
 
     representations = SubSection(
-        sub_section=RelativeRepresentation.m_def,
+        sub_section=AlternativeRepresentation.m_def,
         repeats=True,
         description="""
         Alternative representations of the original model system, e.g., in a different simulation box or crystal cell.
@@ -972,13 +981,10 @@ class ModelSystem(System, Representation):
         super().__init__(m_def, m_context, **kwargs)
         self._cache: dict[str, Any] = {}
 
-    @log
+    @log(exc_msg='Failed to extract geometric-space data from ASE cell')
     def get_geometric_space_for_cell(self) -> None:
         """
         Get the real space parameters for the cell using ASE.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
         """
         logger = self.get_geometric_space_for_cell.__annotations__['logger']
 
@@ -988,16 +994,10 @@ class ModelSystem(System, Representation):
         if atoms is None:
             return  # parent already logged the problem
 
-        try:
-            cell = atoms.get_cell()
-            if self.representations and len(self.representations) > 0:
-                cell_section = self.representations[0]
-                cell_section.volume = cell.volume * ureg.angstrom**3
-        except Exception as exc:
-            logger.warning(
-                'Failed to extract geometric-space data from ASE cell.',
-                exc_info=exc,
-            )
+        cell = atoms.get_cell()
+        if self.representations and len(self.representations) > 0:
+            cell_section = self.representations[0]
+            cell_section.volume = cell.volume * ureg.angstrom**3
 
     # TODO this could be wrong if executed before normalization
     def is_atomic(self) -> bool:
@@ -1033,15 +1033,12 @@ class ModelSystem(System, Representation):
         self._cache['is_atomic'] = is_atomic
         return is_atomic
 
-    @log
     def get_symbols(self) -> list[str]:
         """
         Access to particle labels, irrespective of specific child class.
 
         Returns [] if any particle lacks a usable label/symbol.
         """
-        # TODO Should we log something here?
-        # logger = self.get_symbols.__annotations__['logger']
         if self._cache.get('symbols') is not None:
             return self._cache['symbols']
 
@@ -1114,7 +1111,6 @@ class ModelSystem(System, Representation):
 
         # Determine cell information source based on representation_index
         if representation_index is None:
-            # Use original ModelSystem data (should have no representations or ignore them)
             logger.info(
                 'Using original ModelSystem data (no representation specified).'
             )
@@ -1131,10 +1127,12 @@ class ModelSystem(System, Representation):
         else:
             # Use specified representation
             if not self.representations:
-                raise ValueError('No representations available in ModelSystem.')
+                logger.info('No representations available in ModelSystem.')
             if representation_index >= len(self.representations):
-                raise ValueError(
-                    f'Representation index {representation_index} out of range. Available: 0-{len(self.representations) - 1}'
+                logger.debug(
+                    'Representation index out of range.',
+                    representation_index=representation_index,
+                    available_range=range(len(self.representations))
                 )
 
             cell_section = self.representations[representation_index]
@@ -1154,7 +1152,8 @@ class ModelSystem(System, Representation):
                 )
             else:
                 logger.info(
-                    f'No lattice_vectors found in representations[{representation_index}].'
+                    'No lattice_vectors found in representations.',
+                    representation_index=representation_index
                 )
 
         # Check that positions have been set on the ModelSystem
@@ -1337,7 +1336,21 @@ class ModelSystem(System, Representation):
         # TODO logger.warning or logger.error in each case?
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+        Tasks executed:
+
+        - Generate primitive and conventional representations for bulk systems
+        - Populate symmetry information
+        - Create chemical formulas
+        - Perform structural analysis and classification
+        """
+
         super().normalize(archive, logger)
+
+        # Check and normalize periodic boundary conditions based on lattice vectors
+        if not self.lattice_vectors and self.periodic_boundary_conditions:
+            logger.warning('Lattice vectors are not defined but periodic boundary conditions are set. Unsetting PBC.')
+            self.periodic_boundary_conditions = []
 
         # reassign particle states according to label validity
         self._reassign_generic_particle_states(archive, logger)
@@ -1539,154 +1552,142 @@ class ModelSystem(System, Representation):
 
         return True
 
+    @log
+    @staticmethod
+    def from_ase_atoms(ase_atoms: ase.Atoms) -> 'ModelSystem':
+        """
+        Creates a clean ModelSystem and populate it with data from an ASE Atoms object.
+        It does NOT modify the existing ModelSystem instance. Can be called from the class, without instantiating first.
 
-@log
-def from_ase_atoms(ase_atoms: ase.Atoms) -> ModelSystem:
-    """
-    Creates a clean ModelSystem from an ASE Atoms object without running normalization.
+        The function maps the following ASE properties to ModelSystem:
+        - Particle states: chemical symbols, atomic numbers, initial charges, tags as labels
+        - Positions: Cartesian and fractional coordinates
+        - Cell data: lattice vectors, periodic boundary conditions
+        - Geometric extents: volume (3D), area (2D), or length (1D) based on dimensionality
+        - Dynamics: velocities (if available)
 
-    This is a standalone function that ensures clean creation of a ModelSystem by building
-    it from scratch with only the essential data from the ASE Atoms object. Unlike methods
-    that modify existing ModelSystem instances, this function creates a fresh, unmodified
-    ModelSystem structure.
+        The returned ModelSystem is NOT normalized and contains no derived data. 
+        To get primitive/conventional representations and other derived properties, call
+        ModelSystem.normalize() afterwards.
 
-    The function maps the following ASE properties to ModelSystem:
-    - Particle states: chemical symbols, atomic numbers, initial charges, tags as labels
-    - Positions: Cartesian and fractional coordinates
-    - Cell data: lattice vectors, periodic boundary conditions
-    - Geometric extents: volume (3D), area (2D), or length (1D) based on dimensionality
-    - Dynamics: velocities (if available)
+        Args:
+            ase_atoms: The ASE Atoms object to convert
 
-    The returned ModelSystem is NOT normalized and contains no derived data. To get
-    primitive/conventional representations and other derived properties, call
-    ModelSystem.normalize() afterwards, which will:
-    - Generate primitive and conventional representations for bulk systems
-    - Populate symmetry information
-    - Create chemical formulas
-    - Perform structural analysis and classification
+        Returns:
+            ModelSystem: A clean ModelSystem with basic particle and cell data (not normalized)
+        """
 
-    Args:
-        ase_atoms: The ASE Atoms object to convert
+        logger = ModelSystem.from_ase_atoms.__annotations__['logger']
+        model_system = ModelSystem()
 
-    Returns:
-        ModelSystem: A clean ModelSystem with basic particle and cell data (not normalized)
-    """
-    logger = from_ase_atoms.__annotations__['logger']
+        # Get ASE arrays for additional properties
+        has_initial_charges = ase_atoms.has('initial_charges')
+        has_tags = ase_atoms.has('tags')
+        has_velocities = ase_atoms.has('momenta') or hasattr(ase_atoms, '_velocities')
 
-    # Create ModelSystem with particle states and positions
-    model_system = ModelSystem()
+        # Add particle states from ASE atoms with additional properties
+        for i, (symbol, atomic_number) in enumerate(
+            zip(ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers())
+        ):
+            state = AtomsState(chemical_symbol=symbol, atomic_number=atomic_number)
 
-    # Get ASE arrays for additional properties
-    has_initial_charges = ase_atoms.has('initial_charges')
-    has_tags = ase_atoms.has('tags')
-    has_velocities = ase_atoms.has('momenta') or hasattr(ase_atoms, '_velocities')
+            # Map initial charges if available
+            if has_initial_charges:
+                try:
+                    initial_charges = ase_atoms.get_initial_charges()
+                    if len(initial_charges) > i:
+                        # Convert to integer charge (round to nearest integer)
+                        charge = int(round(initial_charges[i]))
+                        if charge != 0:  # Only set non-zero charges
+                            state.charge = charge
+                except Exception as e:
+                    logger.debug('Could not map initial charges', error=str(e))
 
-    # Add particle states from ASE atoms with additional properties
-    for i, (symbol, atomic_number) in enumerate(
-        zip(ase_atoms.get_chemical_symbols(), ase_atoms.get_atomic_numbers())
-    ):
-        state = AtomsState(chemical_symbol=symbol, atomic_number=atomic_number)
+            # Map tags as labels if available
+            if has_tags:
+                try:
+                    tags = ase_atoms.get_tags()
+                    if len(tags) > i and tags[i] != 0:  # Only set non-zero tags
+                        state.label = f'{symbol}_{tags[i]}'
+                except Exception as e:
+                    logger.debug('Could not map tags', error=str(e))
 
-        # Map initial charges if available
-        if has_initial_charges:
-            try:
-                initial_charges = ase_atoms.get_initial_charges()
-                if len(initial_charges) > i:
-                    # Convert to integer charge (round to nearest integer)
-                    charge = int(round(initial_charges[i]))
-                    if charge != 0:  # Only set non-zero charges
-                        state.charge = charge
-            except Exception as e:
-                logger.debug(f'Could not map initial charges: {e}')
+            model_system.particle_states.append(state)
 
-        # Map tags as labels if available
-        if has_tags:
-            try:
-                tags = ase_atoms.get_tags()
-                if len(tags) > i and tags[i] != 0:  # Only set non-zero tags
-                    state.label = f'{symbol}_{tags[i]}'
-            except Exception as e:
-                logger.debug(f'Could not map tags: {e}')
+        # Set positions
+        positions = ase_atoms.get_positions()
+        if not positions.tolist():
+            logger.debug('ASE Atoms has no positions.')
 
-        model_system.particle_states.append(state)
+        model_system.positions = positions * ureg('angstrom')
+        model_system.n_particles = len(model_system.positions)
 
-    # Set positions
-    positions = ase_atoms.get_positions()
-    if not positions.tolist():
-        logger.error('ASE Atoms has no positions.')
-        raise ValueError('ASE Atoms has no positions.')
-
-    model_system.positions = positions * ureg('angstrom')
-    model_system.n_particles = len(model_system.positions)
-
-    # Set cell information at ModelSystem level (original data)
-    cell = ase_atoms.get_cell()
-    pbc = ase_atoms.get_pbc()
-    model_system.lattice_vectors = ase.geometry.complete_cell(cell) * ureg('angstrom')
-    model_system.periodic_boundary_conditions = pbc
-
-    # Set fractional coordinates if we have a proper cell
-    try:
-        if cell.volume > 1e-10:  # Check for non-degenerate cell
-            scaled_positions = ase_atoms.get_scaled_positions()
-            model_system.fractional_coordinates = scaled_positions
-    except Exception as e:
-        logger.debug(f'Could not compute fractional coordinates: {e}')
-
-    # Set volume/area/length based on dimensionality and cell structure
-    try:
+        # Set cell information at ModelSystem level (original data)
         cell = ase_atoms.get_cell()
         pbc = ase_atoms.get_pbc()
+        model_system.lattice_vectors = ase.geometry.complete_cell(cell) * ureg('angstrom')
+        model_system.periodic_boundary_conditions = pbc
 
-        # Count non-degenerate lattice vectors
-        lattice_vectors = [v for v in cell if np.linalg.norm(v) > 1e-10]
-        n_lattice_vectors = len(lattice_vectors)
-        n_periodic_dims = sum(pbc)
-
-        if n_lattice_vectors >= 3 and n_periodic_dims >= 3:
-            # True 3D system - use volume
-            volume = ase_atoms.get_volume()
-            if volume > 1e-10:  # Check for reasonable volume
-                model_system.volume = volume * ureg('angstrom**3')
-        elif n_lattice_vectors >= 3 and n_periodic_dims == 2:
-            # 2D system with vacuum - still use volume (includes vacuum)
-            volume = ase_atoms.get_volume()
-            if volume > 1e-10:
-                model_system.volume = volume * ureg('angstrom**3')
-        elif n_lattice_vectors >= 3 and n_periodic_dims == 1:
-            # 1D system with vacuum - still use volume (includes vacuum)
-            volume = ase_atoms.get_volume()
-            if volume > 1e-10:
-                model_system.volume = volume * ureg('angstrom**3')
-        elif n_lattice_vectors == 2 and n_periodic_dims <= 2:
-            # True 2D system - compute area from cross product
-            area = np.linalg.norm(np.cross(lattice_vectors[0], lattice_vectors[1]))
-            if area > 1e-10:
-                model_system.area = area * ureg('angstrom**2')
-        elif n_lattice_vectors == 1 and n_periodic_dims <= 1:
-            # True 1D system - use length of single lattice vector
-            length = np.linalg.norm(lattice_vectors[0])
-            if length > 1e-10:
-                model_system.length = length * ureg('angstrom')
-        # For 0D (molecular) systems, no geometric extent is set
-
-    except Exception as e:
-        logger.debug(f'Could not compute geometric extents: {e}')
-
-    # Set velocities if available
-    if has_velocities:
+        # Set fractional coordinates if we have a proper cell
         try:
-            velocities = ase_atoms.get_velocities()
-            if velocities is not None and len(velocities) == len(positions):
-                model_system.velocities = velocities * ureg('angstrom/second')
+            if cell.volume > 1e-10:  # Check for non-degenerate cell
+                scaled_positions = ase_atoms.get_scaled_positions()
+                model_system.fractional_coordinates = scaled_positions
         except Exception as e:
-            logger.debug(f'Could not map velocities: {e}')
+            logger.debug('Could not compute fractional coordinates', error=str(e))
 
-    return model_system
+        # Set volume/area/length based on dimensionality and cell structure
+        try:
+            cell = ase_atoms.get_cell()
+            pbc = ase_atoms.get_pbc()
+
+            # Count non-degenerate lattice vectors
+            lattice_vectors = [v for v in cell if np.linalg.norm(v) > 1e-10]
+            n_lattice_vectors = len(lattice_vectors)
+            n_periodic_dims = sum(pbc)
+
+            if n_lattice_vectors >= 3 and n_periodic_dims >= 3:
+                # True 3D system - use volume
+                volume = ase_atoms.get_volume()
+                if volume > 1e-10:  # Check for reasonable volume
+                    model_system.volume = volume * ureg('angstrom**3')
+            elif n_lattice_vectors >= 3 and n_periodic_dims == 2:
+                # 2D system with vacuum - still use volume (includes vacuum)
+                volume = ase_atoms.get_volume()
+                if volume > 1e-10:
+                    model_system.volume = volume * ureg('angstrom**3')
+            elif n_lattice_vectors >= 3 and n_periodic_dims == 1:
+                # 1D system with vacuum - still use volume (includes vacuum)
+                volume = ase_atoms.get_volume()
+                if volume > 1e-10:
+                    model_system.volume = volume * ureg('angstrom**3')
+            elif n_lattice_vectors == 2 and n_periodic_dims <= 2:
+                # True 2D system - compute area from cross product
+                area = np.linalg.norm(np.cross(lattice_vectors[0], lattice_vectors[1]))
+                if area > 1e-10:
+                    model_system.area = area * ureg('angstrom**2')
+            elif n_lattice_vectors == 1 and n_periodic_dims <= 1:
+                # True 1D system - use length of single lattice vector
+                length = np.linalg.norm(lattice_vectors[0])
+                if length > 1e-10:
+                    model_system.length = length * ureg('angstrom')
+        except Exception as e:
+            logger.debug(f'Could not compute geometric extents: {e}')
+
+        # Set velocities if available
+        if has_velocities:
+            try:
+                velocities = ase_atoms.get_velocities()
+                if velocities is not None and len(velocities) == len(positions):
+                    model_system.velocities = velocities * ureg('angstrom/second')
+            except Exception as e:
+                logger.debug(f'Could not map velocities: {e}')
+
+        return model_system
 
 
-# Backward compatibility aliases for parser packages that still reference old classes
-AtomicCell = Representation
-
-# For Cell, we'll need to create a simple alias (assuming it maps to Representation for basic usage)
-Cell = Representation
+# Add backward compatibility property for representations -> cell using lambdas
+setattr(ModelSystem, 'cell', property(
+    lambda self: self.representations,
+    lambda self, value: setattr(self, 'representations', value)
+))

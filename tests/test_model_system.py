@@ -21,7 +21,7 @@ from nomad_simulations.schema_packages.model_system import (
 )
 
 from . import logger
-from .conftest import generate_atomic_cell
+from .conftest import generate_atomic_representation
 
 
 class TestSymmetry:
@@ -354,7 +354,7 @@ class TestModelSystem:
         # Build a minimal model system with top-level positions and an AtomicCell
         sys = ModelSystem(is_representative=True)
         sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5], [1, 1, 1]]) * ureg.angstrom
-        ac = generate_atomic_cell(
+        ac = generate_atomic_representation(
             lattice_vectors=[[3, 0, 0], [0, 3, 0], [0, 0, 3]],
             periodic_boundary_conditions=[True, True, True],
             chemical_symbols=['H', 'H', 'O'],

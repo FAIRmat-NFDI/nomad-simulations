@@ -149,8 +149,8 @@ class KSpaceFunctionalities:
     A functionality class useful for defining methods shared between `KSpace`, `KMesh`, and `KLinePath`.
     """
 
+    @staticmethod
     def validate_reciprocal_lattice_vectors(
-        self,
         reciprocal_lattice_vectors: pint.Quantity | None,
         logger: 'BoundLogger',
         check_grid: bool | None = False,
