@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Any
 
 import numpy as np
 import pytest
@@ -78,7 +78,7 @@ def generate_model_system(
         return None
 
     # Create model system with only provided values
-    model_system_kwargs = {}
+    model_system_kwargs: dict[str, Any] = {}
     if system_type is not None:
         model_system_kwargs['type'] = system_type
     if is_representative is not None:
@@ -91,16 +91,17 @@ def generate_model_system(
         model_system.positions = np.array(positions) * ureg.angstrom
 
     # Create representation with only provided values
-    representation_kwargs = {}
-    if type is not None:
-        representation_kwargs['name'] = type
+    representation_kwargs: dict = {}
     if lattice_vectors is not None:
         representation_kwargs['lattice_vectors'] = (
             np.array(lattice_vectors) * ureg.angstrom
         )
-    if pbc is not None:
+    if pbc is not None and all(isinstance(x, bool) for x in pbc):
         representation_kwargs['periodic_boundary_conditions'] = pbc
-    model_system.representations.append(Representation(**representation_kwargs))
+
+    # Only append representation if we have at least one parameter
+    if representation_kwargs:
+        model_system.representations.append(Representation(**representation_kwargs))
 
     # Add particle states only if both chemical_symbols and orbitals_symbols are provided
     if chemical_symbols is not None and orbitals_symbols is not None:
