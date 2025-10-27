@@ -704,10 +704,14 @@ class ChemicalFormula(ArchiveSection):
 
 
 # Add backward compatibility property for surface_area -> boundary_area using lambdas
-setattr(Representation, 'surface_area', property(
-    lambda self: self.boundary_area,
-    lambda self, value: setattr(self, 'boundary_area', value)
-))
+setattr(
+    Representation,
+    'surface_area',
+    property(
+        lambda self: self.boundary_area,
+        lambda self, value: setattr(self, 'boundary_area', value),
+    ),
+)
 
 # Backward compatibility aliases for parser packages that still reference old classes
 AtomicCell = Representation
@@ -1097,7 +1101,7 @@ class ModelSystem(System, Representation):
           - periodic boundary conditions and lattice vectors from specified representation or original data.
         """
         logger = self.to_ase_atoms.__annotations__['logger']
-        symbols = self.get_symbols(logger=logger)
+        symbols = self.get_symbols()
         if not symbols:
             logger.error('Cannot generate ASE Atoms without chemical symbols.')
             return None
@@ -1132,7 +1136,7 @@ class ModelSystem(System, Representation):
                 logger.debug(
                     'Representation index out of range.',
                     representation_index=representation_index,
-                    available_range=range(len(self.representations))
+                    available_range=range(len(self.representations)),
                 )
 
             cell_section = self.representations[representation_index]
@@ -1153,7 +1157,7 @@ class ModelSystem(System, Representation):
             else:
                 logger.info(
                     'No lattice_vectors found in representations.',
-                    representation_index=representation_index
+                    representation_index=representation_index,
                 )
 
         # Check that positions have been set on the ModelSystem
@@ -1264,7 +1268,7 @@ class ModelSystem(System, Representation):
 
         ps_list = list(self.particle_states)
 
-        labels = self.get_symbols(logger=logger)
+        labels = self.get_symbols()
         is_atomic = self._all_labels_are_elements(labels)
         is_cg = all(isinstance(p, CGBeadState) for p in ps_list)
         if is_cg:
@@ -1349,7 +1353,9 @@ class ModelSystem(System, Representation):
 
         # Check and normalize periodic boundary conditions based on lattice vectors
         if not self.lattice_vectors and self.periodic_boundary_conditions:
-            logger.warning('Lattice vectors are not defined but periodic boundary conditions are set. Unsetting PBC.')
+            logger.warning(
+                'Lattice vectors are not defined but periodic boundary conditions are set. Unsetting PBC.'
+            )
             self.periodic_boundary_conditions = []
 
         # reassign particle states according to label validity
@@ -1534,7 +1540,7 @@ class ModelSystem(System, Representation):
             particle_indices = np.arange(n_particles, dtype=np.int32)
 
         # --- 1. Connectivity check ---
-        graph = nx.Graph()
+        graph: nx.Graph = nx.Graph()
         graph.add_nodes_from(particle_indices)
         graph.add_edges_from(bonds)
 
@@ -1566,7 +1572,7 @@ class ModelSystem(System, Representation):
         - Geometric extents: volume (3D), area (2D), or length (1D) based on dimensionality
         - Dynamics: velocities (if available)
 
-        The returned ModelSystem is NOT normalized and contains no derived data. 
+        The returned ModelSystem is NOT normalized and contains no derived data.
         To get primitive/conventional representations and other derived properties, call
         ModelSystem.normalize() afterwards.
 
@@ -1625,7 +1631,9 @@ class ModelSystem(System, Representation):
         # Set cell information at ModelSystem level (original data)
         cell = ase_atoms.get_cell()
         pbc = ase_atoms.get_pbc()
-        model_system.lattice_vectors = ase.geometry.complete_cell(cell) * ureg('angstrom')
+        model_system.lattice_vectors = ase.geometry.complete_cell(cell) * ureg(
+            'angstrom'
+        )
         model_system.periodic_boundary_conditions = pbc
 
         # Set fractional coordinates if we have a proper cell
@@ -1687,7 +1695,11 @@ class ModelSystem(System, Representation):
 
 
 # Add backward compatibility property for representations -> cell using lambdas
-setattr(ModelSystem, 'cell', property(
-    lambda self: self.representations,
-    lambda self, value: setattr(self, 'representations', value)
-))
+setattr(
+    ModelSystem,
+    'cell',
+    property(
+        lambda self: self.representations,
+        lambda self, value: setattr(self, 'representations', value),
+    ),
+)

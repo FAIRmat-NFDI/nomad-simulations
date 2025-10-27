@@ -1,5 +1,3 @@
-from typing import Optional
-
 import ase
 import numpy as np
 import pytest
@@ -17,7 +15,6 @@ from nomad_simulations.schema_packages.model_system import (
     ModelSystem,
     Representation,
     Symmetry,
-    from_ase_atoms,
 )
 
 from . import logger
@@ -131,8 +128,8 @@ class TestModelSystem:
 
     def test_from_ase_atoms(self):
         """
-        Verify that from_ase_atoms() creates ModelSystem from ASE Atoms object.
-        Tests the updated function that returns only ModelSystem (no tuple).
+        Verify that `from_ase_atoms` creates a `ModelSystem` from ASE Atoms object.
+        Tests the updated function that returns only `ModelSystem` (no tuple).
         """
         ase_atoms = ase.Atoms(
             'CO',
@@ -141,7 +138,7 @@ class TestModelSystem:
             pbc=[True, True, True],
         )
 
-        sys = from_ase_atoms(ase_atoms, logger=logger)
+        sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
 
         assert sys.n_particles == 2
         assert sys.positions.shape == (2, 3)
@@ -169,7 +166,7 @@ class TestModelSystem:
 
     def test_from_ase_atoms_enhanced_properties(self):
         """
-        Test that from_ase_atoms() correctly maps enhanced properties like
+        Test that `from_ase_atoms` correctly maps enhanced properties like
         charges, tags, velocities, and fractional coordinates.
         """
         # Create ASE atoms with additional properties
@@ -185,7 +182,7 @@ class TestModelSystem:
         ase_atoms.set_tags([1, 1, 2])
         ase_atoms.set_velocities([[0.1, 0.2, 0.0], [0.0, -0.1, 0.0], [0.0, 0.0, 0.1]])
 
-        sys = from_ase_atoms(ase_atoms, logger=logger)
+        sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
 
         # Check basic properties
         assert sys.n_particles == 3
@@ -266,12 +263,12 @@ class TestModelSystem:
         self, cell, pbc, expected_property, expected_value
     ):
         """
-        Test that from_ase_atoms() correctly handles different dimensionality systems
+        Test that `from_ase_atoms` correctly handles different dimensionality systems
         and sets the appropriate geometric property (volume/area/length).
         """
         ase_atoms = ase.Atoms(['C'], positions=[[0, 0, 0]], cell=cell, pbc=pbc)
 
-        sys = from_ase_atoms(ase_atoms, logger=logger)
+        sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
 
         # Check that the expected property is set
         if expected_property == 'volume':
@@ -292,12 +289,12 @@ class TestModelSystem:
 
     def test_from_ase_atoms_molecule(self):
         """
-        Test that from_ase_atoms() correctly handles 0D molecular systems
+        Test that `from_ase_atoms` correctly handles 0D molecular systems
         (no geometric extents set).
         """
         ase_atoms = ase.Atoms(['H', 'H'], positions=[[0, 0, 0], [0.74, 0, 0]])
 
-        sys = from_ase_atoms(ase_atoms, logger=logger)
+        sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
 
         assert sys.n_particles == 2
         assert len(sys.particle_states) == 2
@@ -385,14 +382,14 @@ class TestModelSystem:
             primitive = None
             conventional = None
             for rep in sys.representations:
-                if getattr(rep, "name", None) == "primitive":
+                if getattr(rep, 'name', None) == 'primitive':
                     primitive = rep
-                if getattr(rep, "name", None) == "conventional":
+                if getattr(rep, 'name', None) == 'conventional':
                     conventional = rep
             if primitive:
-                assert primitive.name == "primitive"
+                assert primitive.name == 'primitive'
             if conventional:
-                assert conventional.name == "conventional"
+                assert conventional.name == 'conventional'
         else:
             # Top-level system: expect only one representation.
             assert len(sys.representations) == 1
