@@ -56,7 +56,7 @@ def log(
                     },
                 )
             except Exception as e:
-                _logger.warning(f'{_exc_msg} {e}')
+                _logger.warning(f'{_exc_msg}', exc_info=e)
                 if _exc_raise:
                     raise e
                 return kwargs.get('default', default)
