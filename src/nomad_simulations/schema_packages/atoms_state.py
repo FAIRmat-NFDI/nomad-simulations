@@ -589,13 +589,13 @@ class CoreHole(ElectronicState):
             logger.warning(
                 'Cannot resolve occupation without `n_excited_electrons`.'
             )
-            return
-        if self.occupation is None:
-            degeneracy = self.resolve_degeneracy()
-            if degeneracy is None:
-                logger.warning('Cannot resolve occupation without `degeneracy`.')
-                return
-            return degeneracy - self.n_excited_electrons
+            return None
+        
+        try:
+            return self.resolve_degeneracy() - self.n_excited_electrons
+        except Exception as e:
+            logger.warning('Cannot resolve occupation', exc_info=e)
+            return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -744,9 +744,11 @@ class HubbardInteractions(ElectronicState):
         logger = self.resolve_u_effective.__annotations__['logger']
         if self.u_interaction is None:
             logger.warning('Could not find `HubbardInteractions.u_interaction`.')
-            return
+            return None
+        
         if self.j_local_exchange_interaction is None:
             self.j_local_exchange_interaction = 0.0 * ureg.eV
+
         return self.u_interaction - self.j_local_exchange_interaction
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
@@ -789,7 +791,7 @@ class ParticleState(Entity):
         """,
     )
 
-    def get_label(self) -> str:
+    def get_label(self) -> str | None:
         """
         Returns the label of the particle.
         """
@@ -849,7 +851,7 @@ class AtomsState(ParticleState):
     electronic_state = SubSection(sub_section=ElectronicState.m_def)
     
     @log
-    def get_label(self) -> str:
+    def get_label(self) -> str | None:
         """
         Returns the label of the particle.
         """
@@ -990,7 +992,7 @@ class CGBeadState(ParticleState):
     #         The number of times each particle has wrapped around the box (i_x, i_y, i_z).
     #         Default: 0, 0, 0
 
-    def get_label(self) -> str:
+    def get_label(self) -> str | None:
         """
         Returns the label of the particle.
         """

@@ -1556,7 +1556,7 @@ class ModelSystem(System):
             particle_indices = np.arange(n_particles, dtype=np.int32)
 
         # --- 1. Connectivity check ---
-        graph = nx.Graph()
+        graph: nx.Graph = nx.Graph()
         graph.add_nodes_from(particle_indices)
         graph.add_edges_from(bonds)
 
