@@ -2,12 +2,14 @@ from nomad.datamodel import EntryArchive
 from nomad.metainfo import MEnum, Quantity
 from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.utils import log
+
 from .general import SerialWorkflow, SimulationWorkflowModel, SimulationWorkflowResults
 from .thermodynamics import ThermodynamicsResults
 
 
 class MolecularDynamicsModel(SimulationWorkflowModel):
-    label = 'MD parameters'
+    _label = 'MD parameters'
 
     thermodynamic_ensemble = Quantity(
         type=MEnum('NVE', 'NVT', 'NPT', 'NPH'),
@@ -128,18 +130,22 @@ class MolecularDynamicsResults(ThermodynamicsResults):
     Contains defintions for the results of a molecular dynamics calculation.
     """
 
-    label = 'MD results'
+    _label = 'MD results'
 
 
 class MolecularDynamics(SerialWorkflow):
-    task_label = 'Step'
+    _task_label = 'Step'
 
-    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
             self.model = MolecularDynamicsModel()
-        super().map_inputs(archive, logger)
+        logger = self.map_inputs.__annotations__['logger']
+        super().map_inputs(archive, logger=logger)
 
-    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             self.results = MolecularDynamicsResults()
-        super().map_outputs(archive, logger)
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)

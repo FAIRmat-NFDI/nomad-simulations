@@ -1,0 +1,35 @@
+{
+    "data": {
+        "m_def": "nomad_simulations.schema_packages.general.Simulation",
+        "outputs": [
+            {
+                "wall_start": 0.0
+            }
+        ],
+        "model_system": [
+            {
+                "name": "Test system"
+            }
+        ],
+        "model_method": [
+            {
+                "name": "Test method"
+            }
+        ]
+    },
+    "workflow2": {
+        "m_def": "nomad_simulations.schema_packages.workflow.single_point.SinglePoint",
+        "inputs": [
+            {
+                "name": "System",
+                "section": "/model_system/0"
+            }
+        ],
+        "outputs": [
+            {
+                "name": "Output",
+                "section": "/outputs/0"
+            }
+        ]
+    }
+}

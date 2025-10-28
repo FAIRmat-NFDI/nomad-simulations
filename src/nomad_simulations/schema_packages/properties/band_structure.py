@@ -16,7 +16,7 @@ from nomad_simulations.schema_packages.numerical_settings import KSpace
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
 from nomad_simulations.schema_packages.properties.fermi_surface import FermiSurface
-from nomad_simulations.schema_packages.utils import get_sibling_section
+from nomad_simulations.schema_packages.utils import get_sibling_section, log
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -146,7 +146,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
 
     def resolve_homo_lumo_eigenvalues(
         self,
-    ) -> tuple[Optional[pint.Quantity], Optional[pint.Quantity]]:
+    ) -> tuple[pint.Quantity | None, pint.Quantity | None]:
         """
         Resolve the `highest_occupied` and `lowest_unoccupied` eigenvalues by performing a binary search on the
         flattened and sorted `value` and `occupation`. If these quantities already exist, overwrite them or return
@@ -185,7 +185,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
 
         return homo, lumo
 
-    def extract_band_gap(self) -> Optional[ElectronicBandGap]:
+    def extract_band_gap(self) -> ElectronicBandGap | None:
         """
         Extract the electronic band gap from the `highest_occupied` and `lowest_unoccupied` eigenvalues.
         If the difference of `highest_occupied` and `lowest_unoccupied` is negative, the band gap `value` is set to 0.0.
@@ -205,7 +205,8 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         return band_gap
 
     # TODO fix this method once `FermiSurface` property is implemented
-    def extract_fermi_surface(self, logger: 'BoundLogger') -> Optional[FermiSurface]:
+    @log
+    def extract_fermi_surface(self) -> FermiSurface | None:
         """
         Extract the Fermi surface for metal systems and using the `FermiLevel.value`.
 
@@ -215,6 +216,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         Returns:
             (Optional[FermiSurface]): The extracted Fermi surface section to be stored in `Outputs`.
         """
+        logger = self.extract_fermi_surface.__annotations__['logger']
         # Check if the system has a finite band gap
         homo, lumo = self.resolve_homo_lumo_eigenvalues()
         if (homo and lumo) and (lumo - homo).magnitude > 0:
@@ -250,7 +252,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         fermi_surface.value = fermi_values
         return fermi_surface
 
-    def resolve_reciprocal_cell(self) -> Optional[pint.Quantity]:
+    def resolve_reciprocal_cell(self) -> pint.Quantity | None:
         """
         Resolve the reciprocal cell from the `KSpace` numerical settings section.
 

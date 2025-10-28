@@ -3,7 +3,7 @@ from nomad.datamodel.metainfo.workflow import Link, TaskReference
 from nomad.metainfo import Quantity
 from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.properties.spectral_profile import DOSProfile
+from nomad_simulations.schema_packages.utils import log
 
 from .general import (
     INCORRECT_N_TASKS,
@@ -14,7 +14,7 @@ from .general import (
 
 
 class PhononModel(SimulationWorkflowModel):
-    label = 'Phonon calculation parameters'
+    _label = 'Phonon calculation parameters'
 
     force_calculator = Quantity(
         type=str,
@@ -67,7 +67,7 @@ class PhononModel(SimulationWorkflowModel):
 
 
 class PhononResults(SimulationWorkflowResults):
-    label = 'Phonon results'
+    _label = 'Phonon results'
 
     n_imaginary_frequencies = Quantity(
         type=int,
@@ -143,17 +143,21 @@ class Phonon(SimulationWorkflow):
     Definitions for a phonon workflow.
     """
 
-    task_label = 'Force calculation'
+    _task_label = 'Force calculation'
 
-    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
             self.model = PhononModel()
-        super().map_inputs(archive, logger)
+        logger = self.map_inputs.__annotations__['logger']
+        super().map_inputs(archive, logger=logger)
 
-    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             self.results = PhononResults()
-        super().map_outputs(archive, logger)
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)

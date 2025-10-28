@@ -1,0 +1,93 @@
+name: nomad-simulations-test
+services:
+  # broker for celery
+  rabbitmq:
+    restart: unless-stopped
+    image: rabbitmq:3.11.5
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=SWQOKODSQALRPCLNMEQG
+      - RABBITMQ_DEFAULT_USER=rabbitmq
+      - RABBITMQ_DEFAULT_PASS=rabbitmq
+      - RABBITMQ_DEFAULT_VHOST=/
+    ports:
+      - "5672:5672"
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "--silent", "--quiet", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+
+  # the search engine
+  elastic:
+    restart: unless-stopped
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.24
+    container_name: elastic
+    environment:
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - discovery.type=single-node
+    ports:
+      - "9200:9200"
+    volumes:
+      - elastic:/usr/share/elasticsearch/data
+    healthcheck:
+      test:
+        - "CMD"
+        - "curl"
+        - "--fail"
+        - "--silent"
+        - "http://elastic:9200/_cat/health"
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
+
+  # the user data db
+  mongo:
+    restart: unless-stopped
+    image: mongo:5.0.6
+    container_name: mongo
+    environment:
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/dev/null
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo:/data/db
+      - ./.volumes/mongo:/backup
+    command: mongod --logpath=/dev/null # --quiet
+    healthcheck:
+      test:
+        - "CMD"
+        - "mongo"
+        - "mongo:27017/test"
+        - "--quiet"
+        - "--eval"
+        - "'db.runCommand({ping:1}).ok'"
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 10s
+
+  keycloak:
+    image: gitlab-registry.mpcdf.mpg.de/nomad-lab/nomad-test-keycloak:v1.0
+    platform: linux/amd64
+    container_name: keycloak
+    environment:
+      - KC_HTTP_PORT=8008
+      - KC_HOSTNAME=http://localhost:8008
+    ports:
+      - 8008:8008
+      - 9000:9000
+
+volumes:
+  mongo:
+    name: "mongo"
+  elastic:
+    name: "elastic"
+  rabbitmq:
+    name: "rabbitmq"
+

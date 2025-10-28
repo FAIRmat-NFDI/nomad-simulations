@@ -68,9 +68,9 @@ class TestSimulation:
             simulation._set_system_branch_depth(system_parent=system_parent)
 
         # TODO move this into its own method to handle `ModelSystem` hierarchies (see below `get_system_recurs`)
-        def get_flat_depths(
-            system_parent: ModelSystem, quantity_name: str, value: list = []
-        ):
+        def get_flat_depths(system_parent: ModelSystem, quantity_name: str, value=None):
+            if value is None:
+                value = []
             for system_child in system_parent.sub_systems:
                 val = getattr(system_child, quantity_name)
                 value.append(val)
@@ -98,22 +98,37 @@ class TestSimulation:
                 ['group_H20(1)', 'H20(3)', 'H(1)O(2)', 'H(1)O(2)', 'H(1)O(2)'],
                 [None, None, None, None, None],
             ),  # pure system
-            (
+            # (
+            #     False,
+            #     True,
+            #     ['H20'],
+            #     [3],
+            #     [['H', 'O', 'O']],
+            #     [None, None, None, None, None],
+            #     [None, None, None, None, None],
+            # ),  # non-representative system
+            (  # TODO - decide between tests above or below depending on scope of is_representative
                 False,
                 True,
                 ['H20'],
                 [3],
                 [['H', 'O', 'O']],
+                [
+                    'group_H20(1)',
+                    'H20(3)',
+                    'H(1)O(2)',
+                    'H(1)O(2)',
+                    'H(1)O(2)',
+                ],  # compute even if not representative
                 [None, None, None, None, None],
-                [None, None, None, None, None],
-            ),  # non-representative system
+            ),
             (
                 True,
                 True,
                 [None],
                 [3],
                 [['H', 'O', 'O']],
-                ['Unknown(1)', 'Unknown(3)', 'H(1)O(2)', 'H(1)O(2)', 'H(1)O(2)'],
+                ['H(3)O(6)', 'H(3)O(6)', 'H(1)O(2)', 'H(1)O(2)', 'H(1)O(2)'],
                 [None, None, None, None, None],
             ),  # missing branch labels
             (
@@ -122,7 +137,7 @@ class TestSimulation:
                 ['H20'],
                 [3],
                 [[None, None, None]],
-                ['group_H20(1)', 'H20(3)', 'Unknown(3)', 'Unknown(3)', 'Unknown(3)'],
+                ['group_H20(1)', 'H20(3)', None, None, None],
                 [None, None, None, None, None],
             ),  # missing atom labels
             (
@@ -206,7 +221,7 @@ class TestSimulation:
         atomic_cell = AtomicCell()
         model_system.cell.append(atomic_cell)
         if has_atom_indices:
-            model_system.particle_indices = []
+            model_system.particle_indices = np.empty(0, dtype=np.int32)
 
         # add the atoms to the ModelSystem's particle_states.
         for mol_label, n_mol, atom_labels in zip(
@@ -215,7 +230,7 @@ class TestSimulation:
             # Create a branch (group) for this molecule type.
             model_system_mol_group = ModelSystem()
             if has_atom_indices:
-                model_system_mol_group.particle_indices = []
+                model_system_mol_group.particle_indices = np.empty(0, dtype=np.int32)
             model_system_mol_group.branch_label = (
                 f'group_{mol_label}' if mol_label is not None else None
             )
@@ -270,3 +285,70 @@ class TestSimulation:
             return ctr_comp
 
         _ = get_system_recurs(systems=model_system.sub_systems, ctr_comp=ctr_comp)
+
+    def test_root_leaf_composition_from_symbols_no_subsystems(self):
+        """
+        Root with no subsystems/particle_indices derives composition from its own symbols.
+        """
+        root = ModelSystem(is_representative=True)
+        root.cell.append(AtomicCell())  # minimal cell so normalize doesn't bail
+        for sym in ['H', 'H', 'O']:
+            root.particle_states.append(AtomsState(chemical_symbol=sym))
+
+        sim = Simulation(model_system=[root])
+        sim.normalize(EntryArchive(), logger=logger)
+
+        assert root.particle_indices is None  # root doesn't store indices
+        assert root.composition_formula == 'H(2)O(1)'
+
+    def test_root_leaf_custom_composition_preserved(self):
+        """
+        Pre-set custom composition on root is not overwritten during normalize.
+        """
+        root = ModelSystem(is_representative=True, composition_formula='Custom(1)')
+        root.cell.append(AtomicCell())
+        for sym in ['H', 'H', 'O']:
+            root.particle_states.append(AtomsState(chemical_symbol=sym))
+
+        sim = Simulation(model_system=[root])
+        sim.normalize(EntryArchive(), logger=logger)
+
+        assert root.composition_formula == 'Custom(1)'
+
+
+@pytest.mark.parametrize(
+    'initial_flags, expected_index, expected_flags',
+    [
+        # 1) zero representatives → promote last, index -1 (first pass)
+        ([False, False, False], -1, [False, False, True]),
+        # 2) multiple representatives → keep the last
+        ([True, False, True, False], 2, [False, False, True, False]),
+        # 3) exactly one representative → preserve it
+        ([False, True, False], 1, [False, True, False]),
+        # 4) singleton without representative → promote itself, index -1 (first pass)
+        ([False], -1, [True]),
+    ],
+)
+def test_representative_selection(initial_flags, expected_index, expected_flags):
+    sim = Simulation(
+        model_system=[
+            ModelSystem(name=f'S{i}', is_representative=flag)
+            for i, flag in enumerate(initial_flags)
+        ]
+    )
+
+    # First pass: preserves the API’s special-casing (-1 means “last element”)
+    sim.normalize(EntryArchive(), logger)
+    assert sim.representative_system_index == expected_index
+    assert [ms.is_representative for ms in sim.model_system] == expected_flags
+
+    # Second pass: flags unchanged; index becomes canonical (non-negative)
+    sim.normalize(EntryArchive(), logger)
+    assert [ms.is_representative for ms in sim.model_system] == expected_flags
+    expected_canonical_index = expected_flags.index(True)
+    assert sim.representative_system_index == expected_canonical_index
+
+    # Third pass: idempotent (no further changes)
+    sim.normalize(EntryArchive(), logger)
+    assert [ms.is_representative for ms in sim.model_system] == expected_flags
+    assert sim.representative_system_index == expected_canonical_index

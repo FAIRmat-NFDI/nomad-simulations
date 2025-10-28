@@ -12,14 +12,15 @@ from nomad.datamodel.data import Schema
 from nomad.datamodel.metainfo.basesections import Activity, Entity
 from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomsState,
+    CGBeadState,
+    ParticleState,
+)
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
-from nomad_simulations.schema_packages.utils import (
-    get_composition,
-    is_not_representative,
-)
+from nomad_simulations.schema_packages.utils import get_composition, log
 
 from .common import Time
 
@@ -187,6 +188,13 @@ class Simulation(BaseSimulation, Schema):
         - computation
     """
 
+    representative_system_index = Quantity(
+        type=np.int32,
+        description="""
+        The index of the "representative system" in the `model_system` list.
+        """,
+    )
+
     model_system = SubSection(sub_section=ModelSystem.m_def, repeats=True)
 
     model_method = SubSection(sub_section=ModelMethod.m_def, repeats=True)
@@ -202,99 +210,151 @@ class Simulation(BaseSimulation, Schema):
                 system_parent=system_child, branch_depth=branch_depth + 1
             )
 
-    def resolve_composition_formula(self, system_parent: ModelSystem) -> None:
-        """Determine and set the composition formula for `system_parent` and all of its
-        descendants.
+    @staticmethod
+    def get_composition_formula(system: ModelSystem) -> str | None:
+        # Honor custom formulas
+        if system.composition_formula is not None:
+            return system.composition_formula
+
+        formula = None
+        subsystems = system.sub_systems
+        # INTERNAL NODE: use child branch labels
+        if subsystems:
+            children_names = [(child.branch_label or 'Unknown') for child in subsystems]
+            children_names = (
+                children_names
+                if not all([name == 'Unknown' for name in children_names])
+                else []
+            )
+            formula = get_composition(children_names=children_names)
+
+        # LEAF NODE or all children have no branch_label
+        if not formula:
+            if system.particle_indices is None and not system.is_root_system():
+                return None
+
+            names = (
+                system.get_symbols()
+            )  # already slices from root via particle_indices
+            formula = get_composition(children_names=names) if names else None
+
+        return formula
+
+    @staticmethod
+    def set_composition_formula(system_parent: ModelSystem) -> None:
+        """
+        Determine and set the composition_formula for `system_parent` and all descendants.
+
+        Rules
+        -----
+        - Never overwrite a pre-set custom composition_formula (only set when None).
+        - Internal nodes (with children):
+            * Formula counts child branch labels when available, using 'Unknown' otherwise.
+            * If no children have branch labels, falls back to using particle labels.
+        - Leaves (no children):
+            * Uses particle labels.
+            * If particle_indices or symbols are missing → leave as None.
 
         Args:
+        ----
             system_parent (ModelSystem): The upper-most level of the system hierarchy to consider.
+
         """
-
-        def set_composition_formula(
-            system: ModelSystem, subsystems: list[ModelSystem], atom_labels: list[str]
-        ) -> None:
-            """Determine the composition formula for `system` based on its `subsystems`.
-            If `system` has no children, the atom_labels are used to determine the formula.
-
-            Args:
-                system (ModelSystem): The system under consideration.
-                subsystems (list[ModelSystem]): The children of system.
-                atom_labels (list[str]): The global list of atom labels corresponding
-                to the atom indices stored in system.
-            """
-            if not subsystems:
-                if system.particle_indices is not None and atom_labels:
-                    subsystem_labels = [atom_labels[i] for i in system.particle_indices]
-                elif system.particle_indices is not None:
-                    subsystem_labels = ['Unknown'] * len(system.particle_indices)
-                else:
-                    subsystem_labels = []
-            else:
-                subsystem_labels = [
-                    subsystem.branch_label
-                    if subsystem.branch_label is not None
-                    else 'Unknown'
-                    for subsystem in subsystems
-                ]
-            if system.composition_formula is None:
-                system.composition_formula = get_composition(
-                    children_names=subsystem_labels
-                )
-
-        def get_composition_recurs(system: ModelSystem, atom_labels: list[str]) -> None:
-            """Traverse the system hierarchy downward and set the branch composition for
-            all (sub)systems at each level.
-
-            Args:
-                system (ModelSystem): The system to traverse downward.
-                atom_labels (list[str]): The global list of atom labels corresponding
-                to the atom indices stored in system.
-            """
-            subsystems = system.sub_systems
-            set_composition_formula(
-                system=system, subsystems=subsystems, atom_labels=atom_labels
-            )
-            if subsystems:
-                for subsystem in subsystems:
-                    get_composition_recurs(system=subsystem, atom_labels=atom_labels)
-
-        # Pull chemical symbols straight from AtomsState.chemical_symbol
-        atom_labels = (
-            [
-                atom.chemical_symbol
-                for atom in system_parent.particle_states
-                if isinstance(atom, AtomsState) and atom.chemical_symbol is not None
-            ]
-            if system_parent.particle_states
-            else []
+        system_parent.composition_formula = Simulation.get_composition_formula(
+            system_parent
         )
+        for child in system_parent.sub_systems:
+            Simulation.set_composition_formula(system_parent=child)
 
-        get_composition_recurs(system=system_parent, atom_labels=atom_labels)
+    @log
+    def _validate_and_set_representative_system(self) -> None:
+        """
+        Ensure exactly one representative `ModelSystem` exists in `self.model_system`,
+        and update `self.representative_system_index` to point to it.
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super(Schema, self).normalize(archive, logger)
+        Behavior
+        --------
+        - **Zero representatives:** Mark the *last* item in `self.model_system` as
+        representative and set `self.representative_system_index = -1`
+        (Python’s negative index for the last element).
+        - **Multiple representatives:** Log a warning, demote all, then keep the
+        *last* representative encountered. Store its (non-negative) index in
+        `self.representative_system_index`.
+        - **Exactly one representative:** Leave flags as is and set
+        `self.representative_system_index` to that item’s index.
 
-        # Finding which is the representative system of a calculation: typically, we will
-        # define it as the last system reported (TODO CHECK THIS!).
-        # TODO extend adding the proper representative system extraction using `normalizer.py`
+        Side Effects
+        ------------
+        - Mutates `is_representative` on elements of `self.model_system`.
+        - Sets `self.representative_system_index`.
+        - Emits a warning if multiple representatives are found.
+
+        Requirements / Notes
+        --------------------
+        - Assumes `self.model_system` is **non-empty**. If it can be empty in your
+        context, guard against `IndexError` before calling or extend this method
+        to handle the empty case explicitly.
+        - In case of multiple or no representatives, the last one in the list is taken
+        since it is common that the list of model systems links to some serial workflow,
+        e.g., Geometry Optimization or Molecular Dynamics.
+        - Runs in O(n) over the number of systems.
+
+        Returns
+        -------
+        None
+        """
+        # TODO consider adding programmatic enforcement of model_system natural ordering
+        logger = self._validate_and_set_representative_system.__annotations__['logger']
+
         if not self.model_system:
             logger.error('No system information reported.')
             return
-        system_ref = self.model_system[-1]
-        # * We define is_representative in the parser
-        # system_ref.is_representative = True
-        self.m_cache['system_ref'] = system_ref
+
+        # indices of representative systems
+        rep_idx = [i for i, ms in enumerate(self.model_system) if ms.is_representative]
+
+        if len(rep_idx) == 0:
+            self.model_system[-1].is_representative = True
+            self.representative_system_index = -1
+        elif len(rep_idx) > 1:
+            logger.warning(
+                'Multiple representative systems found, one allowed.'
+                ' Will use the last `ModelSystem` found.'
+            )
+            for idx in rep_idx:
+                self.model_system[idx].is_representative = False
+            self.model_system[rep_idx[-1]].is_representative = True
+            self.representative_system_index = rep_idx[-1]
+        else:  ## len(rep_idx) == 1
+            self.representative_system_index = rep_idx[0]
+
+    # TODO enumerate normalization steps relevant to rep system in docstring
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """
+
+        Normalize the `Simulation` section:
+        - Validate and set the representative system.
+            - Certain normalization steps are only applied to the representative system to avoid redundancy.
+            - The representative system is used to power some downstream tools.
+            - The representative system should be the primary source of information for the user.
+
+        Args:
+            archive (EntryArchive): _description_
+            logger (BoundLogger): _description_
+        """
+        super(Schema, self).normalize(archive, logger)
+
+        # Validate that there is exactly one representative system and set the index
+        self._validate_and_set_representative_system()
 
         # Setting up the `branch_depth` in the parent-child tree
         for system_parent in self.model_system:
+            _ = system_parent.get_root_system()  # ensure no cycles in the tree
             system_parent.branch_depth = 0
+            self.set_composition_formula(system_parent=system_parent)
             if len(system_parent.sub_systems) == 0:
                 continue
             self._set_system_branch_depth(system_parent=system_parent)
-
-            if is_not_representative(model_system=system_parent, logger=logger):
-                continue
-            self.resolve_composition_formula(system_parent=system_parent)
 
 
 m_package.__init_metainfo__()

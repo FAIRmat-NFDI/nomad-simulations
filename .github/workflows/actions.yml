@@ -6,11 +6,16 @@ on: [push]
 # `pull-requests` is for permission to pull request
 permissions:
   contents: write
+  packages: write
+  attestations: write
+  id-token: write
   checks: write
   pull-requests: write
 
 env:
   UV_SYSTEM_PYTHON: true
+  REGISTRY: ghcr.io
+  UV_VERSION: 0.7
 
 jobs:
   install-and-test:
@@ -21,23 +26,40 @@ jobs:
         python_version: ["3.10", "3.11", "3.12"]
     steps:
     - uses: actions/checkout@v4
+
+    - uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    # - name: Start containers
+    #   run: |
+    #     docker compose up -d --quiet-pull
     - name: Set up Python ${{matrix.python_version}}
       uses: actions/setup-python@v5
       with:
         python-version: ${{matrix.python_version}}
     - name: Install uv
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: ${{ env.UV_VERSION }}
     - name: Install dependencies
       run: |
-        pip install --upgrade pip
-        uv pip install -e '.[dev]'
+        uv sync --all-extras
     - name: mypy
       run: |
-        python -m mypy --ignore-missing-imports --follow-imports=silent --no-strict-optional src/nomad_simulations/schema_packages tests
+        uv run python -m mypy --ignore-missing-imports --follow-imports=silent --no-strict-optional src/nomad_simulations/schema_packages tests
     - name: Test with pytest
       run: |
-        python -m pytest -sv tests
+        uv run --with coverage coverage run -m pytest -sv tests
+    - name: Submit to coveralls
+      continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        uv run --with coveralls coveralls --service=github
+
   build-and-install:
     runs-on: ubuntu-latest
     steps:
@@ -47,8 +69,9 @@ jobs:
       with:
         python-version: 3.11
     - name: Install uv
-      run: |
-        curl -LsSf https://astral.sh/uv/install.sh | sh
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: ${{ env.UV_VERSION }}
     - name: Build the package
       run: |
         uv pip install build

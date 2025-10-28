@@ -1,63 +1,50 @@
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import SchemaPackage, SubSection
+from nomad.metainfo import SchemaPackage
 from structlog.stdlib import BoundLogger
 
-from .general import (
-    INCORRECT_N_TASKS,
-    ElectronicStructureResults,
-    SerialWorkflow,
-    SimulationWorkflowModel,
-    SimulationWorkflowResults,
-)
+from nomad_simulations.schema_packages.utils import log
+
+from .beyond_dft import BeyondDFTModel, BeyondDFTResults, BeyondDFTWorkflow
 
 m_package = SchemaPackage()
 
-# TODO use defs in beyond_dft
+
+class DFTGWModel(BeyondDFTModel):
+    _label = 'DFT+GW workflow parameters'
 
 
-class DFTGWModel(SimulationWorkflowModel):
-    label = 'DFT+GW workflow parameters'
+class DFTGWResults(BeyondDFTResults):
+    _label = 'DFT+GW workflow results'
 
 
-class DFTGWResults(SimulationWorkflowResults):
+class DFTGWWorkflow(BeyondDFTWorkflow):
     """
-    Contains references to DFT and GW outputs.
-    """
-
-    label = 'DFT+GW workflow results'
-
-    dft = SubSection(sub_section=ElectronicStructureResults)
-
-    gw = SubSection(sub_section=ElectronicStructureResults)
-
-
-class DFTGWWorkflow(SerialWorkflow):
-    """
-    Definitions for GW calculation based on DFT workflow.
+    Definitions for GW calculations based on DFT.
     """
 
-    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
             self.model = DFTGWModel()
-        super().map_inputs(archive, logger)
+        logger = self.map_inputs.__annotations__['logger']
+        super().map_inputs(archive, logger=logger)
 
-    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             self.results = DFTGWResults()
-        super().map_outputs(archive, logger)
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         """
         Link the DFT and GW single point workflows in the DFT-GW workflow.
         """
+
         super().normalize(archive, logger)
 
-        if not self.name:
-            self.name: str = 'DFT+GW'
-
-        if len(self.tasks) != 2:
-            logger.error(INCORRECT_N_TASKS)
-            return
+        if self.tasks and not self.tasks[-1].name:
+            self.tasks[-1].name = 'GW'
 
 
 m_package.__init_metainfo__()

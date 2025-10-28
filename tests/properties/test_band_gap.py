@@ -45,7 +45,7 @@ class TestElectronicBandGap:
         ],
     )
     def test_resolve_type(
-        self, momentum_transfer: Optional[list[float]], type: str, result: Optional[str]
+        self, momentum_transfer: list[float] | None, type: str, result: str | None
     ):
         """
         Test the `resolve_type` method.
@@ -54,7 +54,7 @@ class TestElectronicBandGap:
             momentum_transfer=momentum_transfer,
             type=type,
         )
-        assert electronic_band_gap.resolve_type(logger) == result
+        assert electronic_band_gap.resolve_type(logger=logger) == result
 
     def test_normalize(self):
         """

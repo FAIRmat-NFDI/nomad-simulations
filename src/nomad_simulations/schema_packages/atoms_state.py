@@ -13,6 +13,10 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.data_types import positive_float, positive_int, strictly_positive_int, unit_float
+from nomad_simulations.schema_packages.utils import log
+
+# TODO rename this file particles_state.py or place ParticleState in model_system.py
+# TODO and make separate module files for AtomsState, CGBeadState, etc.
 
 
 class BaseSpinOrbitalState(Entity):
@@ -411,7 +415,8 @@ class ElectronicState(Entity):
             },
         }
 
-    def validate_quantum_numbers(self, logger: 'BoundLogger') -> bool:
+    @log
+    def validate_quantum_numbers(self) -> bool:
         """
         Validate the quantum numbers (`ml`, `ms`) by checking if they are physically sensible.
         Note: `n` and `l` quantum numbers are validated by the schema constraints.
@@ -422,7 +427,14 @@ class ElectronicState(Entity):
         Returns:
             (bool): True if the quantum numbers are physically sensible, False otherwise.
         """
-        if self.ml_quantum_number is not None and self.l_quantum_number is not None and (
+        logger = self.validate_quantum_numbers.__annotations__['logger']
+        if self.n_quantum_number is not None and self.n_quantum_number < 1:
+            logger.error('The `n_quantum_number` must be greater than 0.')
+            return False
+        if self.l_quantum_number is not None and self.l_quantum_number < 0:
+            logger.error('The `l_quantum_number` must be >= 0.')
+            return False
+        if self.ml_quantum_number is not None and (
             self.ml_quantum_number < -self.l_quantum_number
             or self.ml_quantum_number > self.l_quantum_number
         ):
@@ -434,7 +446,7 @@ class ElectronicState(Entity):
 
     def resolve_number_and_symbol(
         self, quantum_name: str, quantum_type: str, logger: 'BoundLogger'
-    ) -> Optional[Union[str, int]]:
+    ) -> str | int | None:
         """
         Resolves the quantum number or symbol from the `self._orbitals_map` on the passed `quantum_type`.
         `quantum_type` can be either 'number' or 'symbol'. If the quantum type is not found, then the countertype
@@ -485,7 +497,7 @@ class ElectronicState(Entity):
             )
         return quantity
 
-    def resolve_degeneracy(self) -> Optional[int]:
+    def resolve_degeneracy(self) -> int | None:
         """
         Resolves the degeneracy of the orbital state using the general formula:
         total_degeneracy = orbital_degeneracy × spin_degeneracy
@@ -559,7 +571,8 @@ class CoreHole(ElectronicState):
         """,
     )
 
-    def resolve_occupation(self, logger: 'BoundLogger') -> Optional[np.float64]:
+    @log
+    def resolve_occupation(self) -> np.float64 | None:
         """
         Resolves the occupation of the orbital state. The occupation is resolved from the degeneracy
         and the number of excited electrons.
@@ -570,7 +583,8 @@ class CoreHole(ElectronicState):
         Returns:
             (Optional[np.float64]): The occupation of the active orbital state.
         """
-        if self.n_excited_electrons is None:
+        logger = self.resolve_occupation.__annotations__['logger']
+        if self.orbital_ref is None or self.n_excited_electrons is None:
             logger.warning(
                 'Cannot resolve occupation without `n_excited_electrons`.'
             )
@@ -685,7 +699,8 @@ class HubbardInteractions(ElectronicState):
         """,
     )
 
-    def resolve_u_interactions(self, logger: 'BoundLogger') -> Optional[tuple]:
+    @log
+    def resolve_u_interactions(self) -> tuple | None:
         """
         Resolves the Hubbard interactions (u_interaction, u_interorbital_interaction, j_hunds_coupling)
         from the Slater integrals (F0, F2, F4) in the units defined for the Quantity.
@@ -696,6 +711,7 @@ class HubbardInteractions(ElectronicState):
         Returns:
             (Optional[tuple]): The Hubbard interactions (u_interaction, u_interorbital_interaction, j_hunds_coupling).
         """
+        logger = self.resolve_u_interactions.__annotations__['logger']
         if self.slater_integrals is None or len(self.slater_integrals) != 3:
             logger.warning(
                 'Could not find `slater_integrals` or the length is not three.'
@@ -713,7 +729,8 @@ class HubbardInteractions(ElectronicState):
         )
         return u_interaction, u_interorbital_interaction, j_hunds_coupling
 
-    def resolve_u_effective(self, logger: 'BoundLogger') -> Optional[pint.Quantity]:
+    @log
+    def resolve_u_effective(self) -> pint.Quantity | None:
         """
         Resolves the effective U parameter (u_interaction - j_local_exchange_interaction).
 
@@ -723,6 +740,7 @@ class HubbardInteractions(ElectronicState):
         Returns:
             (Optional[pint.Quantity]): The effective U parameter.
         """
+        logger = self.resolve_u_effective.__annotations__['logger']
         if self.u_interaction is None:
             logger.warning('Could not find `HubbardInteractions.u_interaction`.')
             return
@@ -768,7 +786,16 @@ class ParticleState(Entity):
         description="""
         User- or program-package-defined identifier for this particle.
         """,
-    )  # ? name
+    )
+
+    def get_label(self) -> str:
+        """
+        Returns the label of the particle.
+        """
+        return self.label
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
 
 
 class AtomsState(ParticleState):
@@ -822,8 +849,15 @@ class AtomsState(ParticleState):
     )
 
     electronic_state = SubSection(sub_section=ElectronicState.m_def)
+    
+    @log
+    def get_label(self) -> str:
+        """
+        Returns the label of the particle.
+        """
+        return self.chemical_symbol if self.chemical_symbol else self.label
 
-    def resolve_chemical_symbol(self, logger: 'BoundLogger') -> Optional[str]:
+    def resolve_chemical_symbol(self, logger: 'BoundLogger') -> str | None:
         """
         Resolves the `chemical_symbol` from the `atomic_number`.
 
@@ -833,6 +867,7 @@ class AtomsState(ParticleState):
         Returns:
             (Optional[str]): The resolved `chemical_symbol`.
         """
+        logger = self.resolve_chemical_symbol.__annotations__['logger']
         if self.atomic_number is not None:
             try:
                 return ase.data.chemical_symbols[self.atomic_number]
@@ -842,7 +877,8 @@ class AtomsState(ParticleState):
                 )
         return None
 
-    def resolve_atomic_number(self, logger: 'BoundLogger') -> Optional[int]:
+    @log
+    def resolve_atomic_number(self) -> int | None:
         """
         Resolves the `atomic_number` from the `chemical_symbol`.
 
@@ -852,6 +888,7 @@ class AtomsState(ParticleState):
         Returns:
             (Optional[int]): The resolved `atomic_number`.
         """
+        logger = self.resolve_atomic_number.__annotations__['logger']
         if self.chemical_symbol is not None:
             try:
                 return ase.data.atomic_numbers[self.chemical_symbol]
@@ -867,8 +904,14 @@ class AtomsState(ParticleState):
         # Get chemical_symbol from atomic_number and viceversa
         if self.chemical_symbol is None:
             self.chemical_symbol = self.resolve_chemical_symbol(logger=logger)
-        if self.atomic_number is None:
+        elif self.atomic_number is None:
             self.atomic_number = self.resolve_atomic_number(logger=logger)
+        else:
+            # If both are set, check if they match
+            if self.atomic_number != ase.data.atomic_numbers[self.chemical_symbol]:
+                logger.error(
+                    'The `AtomsState.atomic_number` and `chemical_symbol` do not match.'
+                )
 
 
 class CGBeadState(ParticleState):
@@ -948,6 +991,17 @@ class CGBeadState(ParticleState):
     #     image: int #! advance PBC stuff would go in cell I guess
     #         The number of times each particle has wrapped around the box (i_x, i_y, i_z).
     #         Default: 0, 0, 0
+
+    def get_label(self) -> str:
+        """
+        Returns the label of the particle.
+        """
+        symbol = self.bead_symbol if self.bead_symbol else self.label
+        if not symbol:
+            alts = self.alt_labels
+            symbol = alts[0] if alts else None
+
+        return symbol
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)

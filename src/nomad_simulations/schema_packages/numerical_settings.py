@@ -1,5 +1,5 @@
 from itertools import accumulate, chain, tee
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 import pint
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.model_system import ModelSystem
-from nomad_simulations.schema_packages.utils import is_not_representative
+from nomad_simulations.schema_packages.utils import log
 
 
 class NumericalSettings(ArchiveSection):
@@ -151,19 +151,19 @@ class KSpaceFunctionalities:
 
     def validate_reciprocal_lattice_vectors(
         self,
-        reciprocal_lattice_vectors: Optional[pint.Quantity],
+        reciprocal_lattice_vectors: pint.Quantity | None,
         logger: 'BoundLogger',
-        check_grid: Optional[bool] = False,
-        grid: Optional[list[int]] = [],
+        check_grid: bool | None = False,
+        grid: list[int] | None = [],
     ) -> bool:
         """
         Validate the `reciprocal_lattice_vectors` by checking if they exist and if they have the same dimensionality as `grid`.
 
         Args:
-            reciprocal_lattice_vectors (Optional[pint.Quantity]): The reciprocal lattice vectors of the atomic cell.
+            reciprocal_lattice_vectors (pint.Quantity | None): The reciprocal lattice vectors of the atomic cell.
             logger (BoundLogger): The logger to log messages.
             check_grid (bool, optional): Flag to check the `grid` is set to True. Defaults to False.
-            grid (Optional[list[int]], optional): The grid of the `KMesh`. Defaults to [].
+            grid (list[int] | None, optional): The grid of the `KMesh`. Defaults to [].
 
         Returns:
             (bool): True if the `reciprocal_lattice_vectors` exist. If `check_grid_too` is set to True, it also checks if the
@@ -192,7 +192,7 @@ class KSpaceFunctionalities:
         model_systems: list[ModelSystem],
         logger: 'BoundLogger',
         eps: float = 3e-3,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """
         Resolves the `high_symmetry_points` from the list of `ModelSystem`. This method relies on using the `ModelSystem`
         information in the sub-sections `Symmetry` and `AtomicCell`, and uses the ASE package to extract the
@@ -204,13 +204,13 @@ class KSpaceFunctionalities:
             eps (float, optional): Tolerance factor to define the `lattice` ASE object. Defaults to 3e-3.
 
         Returns:
-            (Optional[dict]): The resolved `high_symmetry_points`.
+            (dict | None): The resolved `high_symmetry_points`.
         """
         # Extracting `bravais_lattice` from `ModelSystem.symmetry` section and `ASE.cell` from `ModelSystem.cell`
         lattice = None
         for model_system in model_systems:
             # General checks to proceed with normalization
-            if is_not_representative(model_system=model_system, logger=logger):
+            if not model_system.is_representative:
                 continue
             if model_system.symmetry is None:
                 logger.warning('Could not find `ModelSystem.symmetry`.')
@@ -358,7 +358,7 @@ class KMesh(Mesh):
 
     def resolve_points_and_offset(
         self, logger: 'BoundLogger'
-    ) -> tuple[Optional[list[np.ndarray]], Optional[np.ndarray]]:
+    ) -> tuple[list[np.ndarray] | None, np.ndarray | None]:
         """
         Resolves the `points` and `offset` of the `KMesh` from the `grid` and the `center`.
 
@@ -366,7 +366,7 @@ class KMesh(Mesh):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (tuple[Optional[list[np.ndarray]], Optional[np.ndarray]]): The resolved `points` and `offset` of the `KMesh`.
+            (tuple[list[np.ndarray] | None, np.ndarray | None]): The resolved `points` and `offset` of the `KMesh`.
         """
         if self.grid is None:
             logger.warning('Could not find `KMesh.grid`.')
@@ -391,8 +391,8 @@ class KMesh(Mesh):
         return points, offset
 
     def get_k_line_density(
-        self, reciprocal_lattice_vectors: Optional[pint.Quantity], logger: 'BoundLogger'
-    ) -> Optional[np.float64]:
+        self, reciprocal_lattice_vectors: pint.Quantity | None, logger: 'BoundLogger'
+    ) -> pint.Quantity | None:
         """
         Gets the k-line density of the `KMesh`. This quantity is used as a precision measure
         of the `KMesh` sampling.
@@ -426,7 +426,7 @@ class KMesh(Mesh):
         model_systems: list[ModelSystem],
         reciprocal_lattice_vectors: pint.Quantity,
         logger: 'BoundLogger',
-    ) -> Optional[pint.Quantity]:
+    ) -> pint.Quantity | None:
         """
         Resolves the `k_line_density` of the `KMesh` from the the list of `ModelSystem`.
 
@@ -435,7 +435,7 @@ class KMesh(Mesh):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (Optional[pint.Quantity]): The resolved `k_line_density` of the `KMesh`.
+            (pint.Quantity | None): The resolved `k_line_density` of the `KMesh`.
         """
         # Initial check
         if not KSpaceFunctionalities().validate_reciprocal_lattice_vectors(
@@ -448,7 +448,7 @@ class KMesh(Mesh):
 
         for model_system in model_systems:
             # General checks to proceed with normalization
-            if is_not_representative(model_system=model_system, logger=logger):
+            if not model_system.is_representative:
                 continue
             # TODO extend this for other dimensions (@ndaelman-hu)
             if model_system.type != 'bulk':
@@ -542,7 +542,7 @@ class KLinePath(ArchiveSection):
         model_systems: list[ModelSystem],
         reciprocal_lattice_vectors: pint.Quantity,
         logger: 'BoundLogger',
-    ) -> Optional[list[float]]:
+    ) -> list[float] | None:
         """
         Resolves the `high_symmetry_path_values` of the `KLinePath` from the `high_symmetry_path_names`.
 
@@ -552,7 +552,7 @@ class KLinePath(ArchiveSection):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (Optional[list[float]]): The resolved `high_symmetry_path_values`.
+            (list[float] | None): The resolved `high_symmetry_path_values`.
         """
         # Initial check on the `reciprocal_lattice_vectors`
         if not KSpaceFunctionalities().validate_reciprocal_lattice_vectors(
@@ -578,7 +578,8 @@ class KLinePath(ArchiveSection):
         ]
         return high_symmetry_path_values
 
-    def validate_high_symmetry_path(self, logger: 'BoundLogger') -> bool:
+    @log
+    def validate_high_symmetry_path(self) -> bool:
         """
         Validate `high_symmetry_path_names` and `high_symmetry_path_values` by checking if they are defined and have the same length.
 
@@ -588,6 +589,7 @@ class KLinePath(ArchiveSection):
         Returns:
             (bool): True if the `high_symmetry_path_names` and `high_symmetry_path_values` are defined and have the same length, False otherwise.
         """
+        logger = self.validate_high_symmetry_path.__annotations__['logger']
         if (
             self.high_symmetry_path_names is None
             or self.high_symmetry_path_values is None
@@ -608,9 +610,9 @@ class KLinePath(ArchiveSection):
 
     def get_high_symmetry_path_norms(
         self,
-        reciprocal_lattice_vectors: Optional[pint.Quantity],
+        reciprocal_lattice_vectors: pint.Quantity | None,
         logger: 'BoundLogger',
-    ) -> Optional[list[pint.Quantity]]:
+    ) -> list[pint.Quantity] | None:
         """
         Get the high symmetry path points norms from the list of dictionaries of vectors in units of the `reciprocal_lattice_vectors`.
         The norms are accummulated, such that the first high symmetry point in the path list has a norm of 0, while the others sum the
@@ -618,11 +620,11 @@ class KLinePath(ArchiveSection):
         resolve `KLinePath.points`.
 
         Args:
-            reciprocal_lattice_vectors (Optional[np.ndarray]): The reciprocal lattice vectors of the atomic cell.
+            reciprocal_lattice_vectors (np.ndarray | None): The reciprocal lattice vectors of the atomic cell.
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (Optional[list[pint.Quantity]]): The high symmetry points norms list, e.g. in a cubic lattice:
+            (list[pint.Quantity] | None): The high symmetry points norms list, e.g. in a cubic lattice:
                 `high_symmetry_path_value_norms = [0, 0.5, 0.5 + 1 / np.sqrt(2), 1 + 1 / np.sqrt(2)]`
         """
         # Checking the high symmetry path quantities
@@ -660,8 +662,8 @@ class KLinePath(ArchiveSection):
 
     def resolve_points(
         self,
-        points_norm: Union[np.ndarray, list[float]],
-        reciprocal_lattice_vectors: Optional[np.ndarray],
+        points_norm: np.ndarray | list[float],
+        reciprocal_lattice_vectors: pint.Quantity | None,
         logger: 'BoundLogger',
     ) -> None:
         """
@@ -670,7 +672,7 @@ class KLinePath(ArchiveSection):
 
         Args:
             points_norm (list[float]): List of points norms in the k-line path.
-            reciprocal_lattice_vectors (Optional[np.ndarray]): The reciprocal lattice vectors of the atomic cell.
+            reciprocal_lattice_vectors (pint.Quantity | None): The reciprocal lattice vectors of the atomic cell.
             logger (BoundLogger): The logger to log messages.
         """
         # General checks for quantities
@@ -792,7 +794,7 @@ class KSpace(NumericalSettings):
 
     def resolve_reciprocal_lattice_vectors(
         self, model_systems: list[ModelSystem], logger: 'BoundLogger'
-    ) -> Optional[pint.Quantity]:
+    ) -> pint.Quantity | None:
         """
         Resolve the `reciprocal_lattice_vectors` of the `KSpace` from the representative `ModelSystem` section.
 
@@ -801,11 +803,11 @@ class KSpace(NumericalSettings):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (Optional[pint.Quantity]): The resolved `reciprocal_lattice_vectors` of the `KSpace`.
+            (pint.Quantity | None): The resolved `reciprocal_lattice_vectors` of the `KSpace`.
         """
         for model_system in model_systems:
             # General checks to proceed with normalization
-            if is_not_representative(model_system=model_system, logger=logger):
+            if not model_system.is_representative:
                 continue
 
             # TODO extend this for other dimensions (@ndaelman-hu)
@@ -881,3 +883,89 @@ class SelfConsistency(NumericalSettings):
         super().__init__(m_def, m_context, **kwargs)
         # Set the name of the section
         self.name = self.m_def.name
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+
+class ForceCalculations(NumericalSettings):
+    """
+    Section containing the parameters for force calculations according to a ForceField model.
+    """
+
+    vdw_cutoff = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='m',
+        description="""
+        Cutoff for calculating VDW forces.
+        """,
+    )
+
+    coulomb_type = Quantity(
+        type=MEnum(
+            'cutoff',
+            'ewald',
+            'multilevel_summation',
+            'particle_mesh_ewald',
+            'particle_particle_particle_mesh',
+            'reaction_field',
+        ),
+        shape=[],
+        description="""
+        Method used for calculating long-ranged Coulomb forces.
+
+        Allowed values are:
+
+        | Method Name          | Description                               |
+
+        | ---------------------- | ----------------------------------------- |
+
+        | `""`                   | No thermostat               |
+
+        | `"Cutoff"`          | Simple cutoff scheme. |
+
+        | `"Ewald"` | Standard Ewald summation as described in any solid-state physics text. |
+
+        | `"Multi-Level Summation"` |  D. Hardy, J.E. Stone, and K. Schulten,
+        [Parallel. Comput. **35**, 164](https://doi.org/10.1016/j.parco.2008.12.005)|
+
+        | `"Particle-Mesh-Ewald"`        | T. Darden, D. York, and L. Pedersen,
+        [J. Chem. Phys. **98**, 10089 (1993)](https://doi.org/10.1063/1.464397) |
+
+        | `"Particle-Particle Particle-Mesh"` | See e.g. Hockney and Eastwood, Computer Simulation Using Particles,
+        Adam Hilger, NY (1989). |
+
+        | `"Reaction-Field"` | J.A. Barker and R.O. Watts,
+        [Mol. Phys. **26**, 789 (1973)](https://doi.org/10.1080/00268977300102101)|
+        """,
+    )
+
+    coulomb_cutoff = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='m',
+        description="""
+        Cutoff for calculating short-ranged Coulomb forces.
+        """,
+    )
+
+    neighbor_update_frequency = Quantity(
+        type=int,
+        shape=[],
+        description="""
+        Number of timesteps between updating the neighbor list.
+        """,
+    )
+
+    neighbor_update_cutoff = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='m',
+        description="""
+        The distance cutoff for determining the neighbor list.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)

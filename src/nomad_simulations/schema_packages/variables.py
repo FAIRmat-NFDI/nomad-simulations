@@ -12,9 +12,8 @@ if TYPE_CHECKING:
 from nomad_simulations.schema_packages.numerical_settings import (
     KLinePath as KLinePathSettings,
 )
-from nomad_simulations.schema_packages.numerical_settings import (
-    KMesh as KMeshSettings,
-)
+from nomad_simulations.schema_packages.numerical_settings import KMesh as KMeshSettings
+from nomad_simulations.schema_packages.utils import log
 
 
 class Variables(ArchiveSection):
@@ -47,8 +46,8 @@ class Variables(ArchiveSection):
     )
 
     # ? Do we need to add `points_error`?
-
-    def get_n_points(self, logger: 'BoundLogger') -> Optional[int]:
+    @log
+    def get_n_points(self) -> int | None:
         """
         Get the number of grid points from the `points` list. If `n_points` is previously defined
         and does not coincide with the length of `points`, a warning is issued and this function re-assigns `n_points`
@@ -60,6 +59,7 @@ class Variables(ArchiveSection):
         Returns:
             (Optional[int]): The number of points.
         """
+        logger = self.get_n_points.__annotations__['logger']
         if self.points is not None and len(self.points) > 0:
             if self.n_points != len(self.points) and self.n_points is not None:
                 logger.warning(
@@ -73,7 +73,7 @@ class Variables(ArchiveSection):
         super().normalize(archive, logger)
 
         # Setting `n_points` if these are not defined
-        self.n_points = self.get_n_points(logger)
+        self.n_points = self.get_n_points(logger=logger)
 
         if self.m_def.name is not None:
             self.name = self.m_def.name

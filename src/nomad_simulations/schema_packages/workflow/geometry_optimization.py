@@ -4,6 +4,7 @@ from nomad.metainfo import MEnum, Quantity, SchemaPackage
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.properties.energies import BaseEnergy
+from nomad_simulations.schema_packages.utils import log
 
 from .general import SerialWorkflow, SimulationWorkflowModel, SimulationWorkflowResults
 
@@ -11,7 +12,7 @@ m_package = SchemaPackage()
 
 
 class GeometryOptimizationModel(SimulationWorkflowModel):
-    label = 'Geometry optimization parameters'
+    _label = 'Geometry optimization parameters'
 
     optimization_type = Quantity(
         type=MEnum('static', 'atomic', 'cell_shape', 'cell_volume'),
@@ -99,7 +100,7 @@ class GeometryOptimizationModel(SimulationWorkflowModel):
 
 
 class GeometryOptimizationResults(SimulationWorkflowResults):
-    label = 'Geometry optimiztation results'
+    _label = 'Geometry optimiztation results'
 
     n_steps = Quantity(
         type=int,
@@ -174,6 +175,7 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
                     energies_l.append(outputs.total_energies[-1].value.magnitude)
                 except Exception:
                     logger.error('Energy not found in outputs.')
+                    energies_l = []
                     break
             if energies_l:
                 energies = np.array(energies_l)
@@ -189,17 +191,21 @@ class GeometryOptimization(SerialWorkflow):
     Definitions for geometry optimization workflow.
     """
 
-    task_label = 'Step'
+    _task_label = 'Step'
 
-    def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_inputs(self, archive: EntryArchive) -> None:
         if not self.model:
             self.model = GeometryOptimizationModel()
-        super().map_inputs(archive, logger)
+        logger = self.map_inputs.__annotations__['logger']
+        super().map_inputs(archive, logger=logger)
 
-    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             self.results = GeometryOptimizationResults()
-        super().map_outputs(archive, logger)
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
 
 
 m_package.__init_metainfo__()
