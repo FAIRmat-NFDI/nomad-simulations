@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import ase
 import numpy as np
@@ -8,15 +8,16 @@ from nomad.metainfo import MEnum, Quantity, SubSection, SectionProxy
 from nomad.units import ureg
 
 if TYPE_CHECKING:
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.data_types import positive_float, positive_int, strictly_positive_int, unit_float
 from nomad_simulations.schema_packages.utils import log
 
-# TODO rename this file particles_state.py or place ParticleState in model_system.py
-# TODO and make separate module files for AtomsState, CGBeadState, etc.
+# @JFRudzinski: TODO rename this file particles_state.py or place ParticleState in model_system.py
+# @JFRudzinski: TODO and make separate module files for AtomsState, CGBeadState, etc.
 
 
 class BaseSpinOrbitalState(Entity):
@@ -93,7 +94,7 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
         description="How this j value was derived"
     )
 
-    def compute_kappa_from_j_l(self, j: float, l: int) -> int:
+    def compute_kappa_from_j_l(self, jqn: float, lqn: int) -> int:
         """
         Compute κ quantum number from j and l quantum numbers.
         
@@ -104,12 +105,12 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
         Returns:
             κ = -(j + 1/2) if j = l + 1/2, or κ = +(j + 1/2) if j = l - 1/2
         """
-        if abs(j - (l + 0.5)) < 1e-10:  # j = l + 1/2
-            return -(int(j + 0.5))
-        elif abs(j - (l - 0.5)) < 1e-10:  # j = l - 1/2  
-            return +(int(j + 0.5))
+        if abs(jqn - (lqn + 0.5)) < 1e-10:  # j = l + 1/2
+            return -(int(jqn + 0.5))
+        elif abs(jqn - (lqn - 0.5)) < 1e-10:  # j = l - 1/2  
+            return +(int(jqn + 0.5))
         else:
-            raise ValueError(f"Invalid j={j} for l={l}. Must be l±1/2")
+            raise ValueError(f"Invalid j={jqn} for l={lqn}. Must be l±1/2")
     
     def compute_j_from_kappa(self, kappa: int) -> float:
         """
@@ -793,9 +794,6 @@ class ParticleState(Entity):
         Returns the label of the particle.
         """
         return self.label
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class AtomsState(ParticleState):
