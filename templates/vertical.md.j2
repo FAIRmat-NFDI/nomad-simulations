@@ -1,27 +1,33 @@
 # {{ title }}
 
-{% if purpose -%}
+{% if purpose %}
 **Purpose.** {{ purpose }}
-{%- endif %}
-
-{%- if in_scope %}
+{% endif %}
+{% if in_scope %}
 **In scope:** {{ in_scope | join(", ") }}
-{%- endif %}
-
-{%- if out_of_scope %}
+{% endif %}
+{% if out_of_scope %}
 **Out of scope:** {{ out_of_scope | join(", ") }}
-{%- endif %}
+{% endif %}
 
 ## Relationship map
+
 {{ mermaid_block }}
 
 ## Key sections
-{%- for s in sections %}
-- `{{ s }}` — [open in MetaInfo browser]({{ metainfo_base }})
-{%- endfor %}
+
+{# Use a real Markdown table to avoid whitespace collapsing #}
+| Section | MetaInfo |
+|---|---|
+{% for s in sections %}
+| `{{ s }}` | [Open in MetaInfo browser]({{ metainfo_base }}) |
+{% endfor %}
+
 
 ## Micro-examples
 
 === "YAML"
-```yaml
-{{ example_yaml }}
+
+    ```yaml
+    {{ example_yaml | trim | indent(4) }}
+    ```
