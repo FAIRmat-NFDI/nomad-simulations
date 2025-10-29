@@ -57,6 +57,13 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
         """,
     )
 
+    l_quantum_symbol = Quantity(
+        type=MEnum('s', 'p', 'd', 'f'),
+        description="""
+        Symbolic representation of the `l` quantum number, i.e., 's', 'p', 'd', 'f'.
+        """,
+    )  # @EBB2675: do we want to serialize symbolic representations? or maybe just provide a setter / getter mapping?
+
     mj_quantum_number = Quantity(
         type=np.float64,
         shape=['*'],
@@ -73,6 +80,20 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
         """,
     )
 
+    ml_quantum_symbol = Quantity(
+        type=MEnum('x', 'y', 'z', 'xy', 'xz', 'z^2', 'yz', 'x^2-y^2', 'x(x^2-3y^2)',
+                        'xyz',
+                        'xz^2',
+                        'z^3',
+                        'yz^2',
+                        'z(x^2-y^2)',
+                        'y(3x^2-y^2)',
+            ),
+        description="""
+        Symbolic representation of the `ml` quantum number, e.g., 'y', 'xz', 'x^2-y^2'.
+        """
+    ) # @EBB2675: do we want to serialize symbolic representations? or maybe just provide a setter / getter mapping?
+
     s_quantum_number = Quantity(
         type=np.float64,
         default=0.5,
@@ -87,7 +108,14 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
         description="""
         Azimuthal projection of the $s$ vector.
         """
-    )  # this, `(-, +)`, `(-1/2, +1/2)`, or `(-1, 1)`?
+    )  # @EBB2675 this, `(-, +)`, `(-1/2, +1/2)`, or `(-1, 1)`?
+
+    ms_quantum_symbol = Quantity(
+        type=MEnum('down', 'up'),
+        description="""
+        Symbolic representation of the `ms` quantum number, e.g., 'down', 'up'.
+        """
+    ) # @EBB2675: do we want to serialize symbolic representations? or maybe just provide a setter / getter mapping?
 
     coupling_origin = Quantity(
         type=MEnum('pure_LS', 'pure_jj', 'intermediate', 'relativistic'),
@@ -306,12 +334,42 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
         # Remove duplicates and sort
         return sorted(list(set(all_j_combinations)))
 
+    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
+        super().__init__(m_def, m_context, **kwargs)
+        self._orbitals = {
+            -1: dict(zip(range(4), ('s', 'p', 'd', 'f'))),
+            0: {0: ''},
+            1: dict(zip(range(-1, 2), ('x', 'z', 'y'))),
+            2: dict(zip(range(-2, 3), ('xy', 'xz', 'z^2', 'yz', 'x^2-y^2'))),
+            3: dict(
+                zip(
+                    range(-3, 4),
+                    (
+                        'x(x^2-3y^2)',
+                        'xyz',
+                        'xz^2',
+                        'z^3',
+                        'yz^2',
+                        'z(x^2-y^2)',
+                        'y(3x^2-y^2)',
+                    ),
+                )
+            ),
+        }
+        self._orbitals_map: dict[str, Any] = {
+            'l_symbols': self._orbitals[-1],
+            'ml_symbols': {i: self._orbitals[i] for i in range(4)},
+            'l_numbers': {v: k for k, v in self._orbitals[-1].items()},
+            'ml_numbers': {
+                k: {v: k for k, v in self._orbitals[k].items()} for k in range(4)
+            },
+        }
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
         
-        # Validate and normalize κ-j relationship using factored computation
         if not self.validate_kappa_j_relationship(logger):
-            return
+            return None
         
         self.normalize_kappa_j_consistency()
 
@@ -377,6 +435,18 @@ class ElectronicState(Entity):
         """,
     )
 
+    @property
+    def n_sub_states(self) -> int:
+        """
+        The number of sub-states defined in `sub_states`.
+        """
+        try:
+            return sum(x.n_sub_states for x in self.sub_states)
+        except AttributeError:
+            return len(self.sub_states)
+        except TypeError:
+            return 0
+
     sub_states = SubSection(
         section_def=SectionProxy('ElectronicState').m_def,
         repeats=True,
@@ -385,36 +455,12 @@ class ElectronicState(Entity):
         """
     )
 
-    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
-        super().__init__(m_def, m_context, **kwargs)
-        self._orbitals = {
-            -1: dict(zip(range(4), ('s', 'p', 'd', 'f'))),
-            0: {0: ''},
-            1: dict(zip(range(-1, 2), ('x', 'z', 'y'))),
-            2: dict(zip(range(-2, 3), ('xy', 'xz', 'z^2', 'yz', 'x^2-y^2'))),
-            3: dict(
-                zip(
-                    range(-3, 4),
-                    (
-                        'x(x^2-3y^2)',
-                        'xyz',
-                        'xz^2',
-                        'z^3',
-                        'yz^2',
-                        'z(x^2-y^2)',
-                        'y(3x^2-y^2)',
-                    ),
-                )
-            ),
-        }
-        self._orbitals_map: dict[str, Any] = {
-            'l_symbols': self._orbitals[-1],
-            'ml_symbols': {i: self._orbitals[i] for i in range(4)},
-            'l_numbers': {v: k for k, v in self._orbitals[-1].items()},
-            'ml_numbers': {
-                k: {v: k for k, v in self._orbitals[k].items()} for k in range(4)
-            },
-        }
+    atoms_state = SubSection(
+        section_def=SectionProxy('AtomsState').m_def,
+        description="""
+        The atomic state information.
+        """
+    )
 
     @log
     def validate_quantum_numbers(self) -> bool:
