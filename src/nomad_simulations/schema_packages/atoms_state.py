@@ -4,7 +4,7 @@ import ase
 import numpy as np
 import pint
 from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import MEnum, Quantity, SubSection, SectionProxy
+from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
@@ -13,7 +13,12 @@ if TYPE_CHECKING:
     from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.data_types import positive_float, positive_int, strictly_positive_int, unit_float
+from nomad_simulations.schema_packages.data_types import (
+    positive_float,
+    positive_int,
+    strictly_positive_int,
+    unit_float,
+)
 from nomad_simulations.schema_packages.utils import log
 
 # @JFRudzinski: TODO rename this file particles_state.py or place ParticleState in model_system.py
@@ -23,22 +28,23 @@ from nomad_simulations.schema_packages.utils import log
 class BaseSpinOrbitalState(Entity):
     @property
     def _name(self) -> str:
-        raise NotImplementedError("Subclasses must implement this method.")
+        raise NotImplementedError('Subclasses must implement this method.')
 
     @property
     def _degeneracy(self) -> int:
-        raise NotImplementedError("Subclasses must implement this method.")
+        raise NotImplementedError('Subclasses must implement this method.')
 
 
-class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also split this section into 3 mutually inheriting sections
+class SphericalSymmetryState(
+    BaseSpinOrbitalState
+):  # @EBB2675 we could also split this section into 3 mutually inheriting sections
     """Describes a quantum state under spherical symmetry.
     Supports SOC and relativistic effects."""
 
     # TODO: define when these quantities are populated and `None` semantics
 
     kappa_quantum_number = Quantity(
-        type=np.int32,
-        description="κ = ±(j + 1/2), encodes l and j"
+        type=np.int32, description='κ = ±(j + 1/2), encodes l and j'
     )  # ? should this be mutually exclusive with j_quantum_number?
 
     j_quantum_number = Quantity(
@@ -81,25 +87,34 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
     )
 
     ml_quantum_symbol = Quantity(
-        type=MEnum('x', 'y', 'z', 'xy', 'xz', 'z^2', 'yz', 'x^2-y^2', 'x(x^2-3y^2)',
-                        'xyz',
-                        'xz^2',
-                        'z^3',
-                        'yz^2',
-                        'z(x^2-y^2)',
-                        'y(3x^2-y^2)',
-            ),
+        type=MEnum(
+            'x',
+            'y',
+            'z',
+            'xy',
+            'xz',
+            'z^2',
+            'yz',
+            'x^2-y^2',
+            'x(x^2-3y^2)',
+            'xyz',
+            'xz^2',
+            'z^3',
+            'yz^2',
+            'z(x^2-y^2)',
+            'y(3x^2-y^2)',
+        ),
         description="""
         Symbolic representation of the `ml` quantum number, e.g., 'y', 'xz', 'x^2-y^2'.
-        """
-    ) # @EBB2675: do we want to serialize symbolic representations? or maybe just provide a setter / getter mapping?
+        """,
+    )  # @EBB2675: do we want to serialize symbolic representations? or maybe just provide a setter / getter mapping?
 
     s_quantum_number = Quantity(
         type=np.float64,
         default=0.5,
         description="""
         Total spin quantum number $s = 0, 1/2, 1, ...$.
-        """
+        """,
     )
 
     ms_quantum_number = Quantity(
@@ -107,74 +122,74 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
         default=0.5,
         description="""
         Azimuthal projection of the $s$ vector.
-        """
+        """,
     )  # @EBB2675 this, `(-, +)`, `(-1/2, +1/2)`, or `(-1, 1)`?
 
     ms_quantum_symbol = Quantity(
         type=MEnum('down', 'up'),
         description="""
         Symbolic representation of the `ms` quantum number, e.g., 'down', 'up'.
-        """
-    ) # @EBB2675: do we want to serialize symbolic representations? or maybe just provide a setter / getter mapping?
+        """,
+    )  # @EBB2675: do we want to serialize symbolic representations? or maybe just provide a setter / getter mapping?
 
     coupling_origin = Quantity(
         type=MEnum('pure_LS', 'pure_jj', 'intermediate', 'relativistic'),
-        description="How this j value was derived"
+        description='How this j value was derived',
     )
 
     def compute_kappa_from_j_l(self, jqn: float, lqn: int) -> int:
         """
         Compute κ quantum number from j and l quantum numbers.
-        
+
         Args:
             j: Total angular momentum quantum number
             l: Orbital angular momentum quantum number
-            
+
         Returns:
             κ = -(j + 1/2) if j = l + 1/2, or κ = +(j + 1/2) if j = l - 1/2
         """
         if abs(jqn - (lqn + 0.5)) < 1e-10:  # j = l + 1/2
             return -(int(jqn + 0.5))
-        elif abs(jqn - (lqn - 0.5)) < 1e-10:  # j = l - 1/2  
+        elif abs(jqn - (lqn - 0.5)) < 1e-10:  # j = l - 1/2
             return +(int(jqn + 0.5))
         else:
-            raise ValueError(f"Invalid j={jqn} for l={lqn}. Must be l±1/2")
-    
+            raise ValueError(f'Invalid j={jqn} for l={lqn}. Must be l±1/2')
+
     def compute_j_from_kappa(self, kappa: int) -> float:
         """
         Compute j quantum number from κ.
-        
+
         Args:
             kappa: Relativistic quantum number (κ ≠ 0)
-            
+
         Returns:
             j = |κ| - 1/2
         """
         if kappa == 0:
-            raise ValueError("κ = 0 is unphysical")
+            raise ValueError('κ = 0 is unphysical')
         return abs(kappa) - 0.5
-    
+
     def compute_l_from_kappa(self, kappa: int) -> int:
         """
         Compute l quantum number from κ.
-        
+
         Args:
             kappa: Relativistic quantum number
-            
+
         Returns:
             l = |κ| - 1/2 if κ < 0, or l = κ for κ > 0
         """
         if kappa == 0:
-            raise ValueError("κ = 0 is unphysical")
+            raise ValueError('κ = 0 is unphysical')
         if kappa < 0:
             return abs(kappa) - 1  # l = |κ| - 1 for κ < 0
         else:
             return kappa  # l = κ for κ > 0
-    
+
     def validate_kappa_j_relationship(self, logger: 'BoundLogger') -> bool:
         """
         Validate consistency between κ and j quantum numbers using factored computation.
-        
+
         Returns:
             True if consistent or only one is defined, False if inconsistent
         """
@@ -182,20 +197,24 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
             try:
                 # Use factored computation for validation
                 expected_j = self.compute_j_from_kappa(self.kappa_quantum_number)
-                
+
                 # Check if any j value matches expected
-                j_values = self.j_quantum_number if isinstance(self.j_quantum_number, list) else [self.j_quantum_number]
+                j_values = (
+                    self.j_quantum_number
+                    if isinstance(self.j_quantum_number, list)
+                    else [self.j_quantum_number]
+                )
                 if not any(abs(j - expected_j) < 1e-10 for j in j_values):
                     logger.error(
-                        f"Inconsistent κ={self.kappa_quantum_number} and j={self.j_quantum_number}. "
-                        f"Expected j={expected_j}"
+                        f'Inconsistent κ={self.kappa_quantum_number} and j={self.j_quantum_number}. '
+                        f'Expected j={expected_j}'
                     )
                     return False
             except ValueError as e:
-                logger.error(f"Invalid quantum numbers: {e}")
+                logger.error(f'Invalid quantum numbers: {e}')
                 return False
         return True
-    
+
     def normalize_kappa_j_consistency(self):
         """
         Ensure κ and j are consistent during normalization using factored computation.
@@ -203,8 +222,10 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
         """
         if self.kappa_quantum_number is not None and self.j_quantum_number is None:
             # Compute j from κ
-            self.j_quantum_number = [self.compute_j_from_kappa(self.kappa_quantum_number)]
-        
+            self.j_quantum_number = [
+                self.compute_j_from_kappa(self.kappa_quantum_number)
+            ]
+
         elif self.j_quantum_number is not None and self.kappa_quantum_number is None:
             # Cannot uniquely determine κ from j alone (need l as well)
             # This would need orbital information
@@ -214,30 +235,32 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
     def validate_quantum_numbers(self) -> bool:
         """
         Validate the angular momentum quantum numbers (l, ml) by checking if they are physically sensible.
-        
+
         Args:
             logger (BoundLogger): The logger to log messages.
-            
+
         Returns:
             (bool): True if the quantum numbers are physically sensible, False otherwise.
         """
         logger = self.validate_quantum_numbers.__annotations__['logger']
-        
+
         if self.l_quantum_number is not None and self.l_quantum_number < 0:
             logger.error('The `l_quantum_number` must be >= 0.')
             return False
-            
+
         if self.ml_quantum_number is not None:
             if self.l_quantum_number is None:
                 logger.error('Cannot validate ml without l_quantum_number.')
                 return False
-            if (self.ml_quantum_number < -self.l_quantum_number
-                or self.ml_quantum_number > self.l_quantum_number):
+            if (
+                self.ml_quantum_number < -self.l_quantum_number
+                or self.ml_quantum_number > self.l_quantum_number
+            ):
                 logger.error(
                     'The `ml_quantum_number` must be between `-l_quantum_number` and `l_quantum_number`.'
                 )
                 return False
-                
+
         return True
 
     def resolve_number_and_symbol(
@@ -293,7 +316,9 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
             )
         return quantity
 
-    def _russel_saunders_j_values(self, l_quantum: float, s_quantum: float) -> list[float]:
+    def _russel_saunders_j_values(
+        self, l_quantum: float, s_quantum: float
+    ) -> list[float]:
         """Generate all possible j values: |l - s|, |l - s| + 1, ..., l + s"""
         j_min = abs(l_quantum - s_quantum)
         j_max = l_quantum + s_quantum
@@ -302,30 +327,32 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
     def _jj_coupling_single_electron(self, l_quantum: float) -> list[float]:
         """
         Compute j values for single electron jj-coupling: j = l ± 1/2
-        
+
         Args:
             l_quantum: Orbital angular momentum quantum number
-            
+
         Returns:
             List of possible j values [l - 1/2, l + 1/2] or [1/2] for l=0
         """
         s_quantum = 0.5  # Electron spin is always 1/2
-        
+
         if l_quantum == 0:
             return [s_quantum]  # Only j = 1/2 for s orbitals
         else:
             return [l_quantum - s_quantum, l_quantum + s_quantum]
-    
-    def _jj_coupling_multi_electron(self, electron_configs: list[tuple[float, float]]) -> list[float]:
+
+    def _jj_coupling_multi_electron(
+        self, electron_configs: list[tuple[float, float]]
+    ) -> list[float]:
         """
         Compute total J values for multi-electron jj-coupling.
-        
+
         Args:
             electron_configs: List of (l_i, j_i) pairs for each electron
-            
+
         Returns:
             List of possible total J values from coupling all j_i
-            
+
         Example:
             # Two electrons: (l1=1, j1=1/2) and (l2=2, j2=5/2)
             # Possible J = |1/2 - 5/2|, ..., 1/2 + 5/2 = 2, 3
@@ -334,13 +361,13 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
         """
         if not electron_configs:
             return []
-        
+
         if len(electron_configs) == 1:
             return [electron_configs[0][1]]  # Single electron: J = j
-        
+
         # Start with first electron
         current_J_values = [electron_configs[0][1]]
-        
+
         # Couple each subsequent electron
         for _, j_i in electron_configs[1:]:
             new_J_values = []
@@ -348,43 +375,43 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
                 # Couple J_current with j_i: |J_current - j_i| ≤ J_new ≤ J_current + j_i
                 J_min = abs(J_current - j_i)
                 J_max = J_current + j_i
-                
+
                 # Generate all possible J values (in steps of 1)
                 J_new = J_min
                 while J_new <= J_max + 1e-10:  # Small epsilon for float comparison
                     new_J_values.append(J_new)
                     J_new += 1.0
-            
+
             current_J_values = new_J_values
-        
+
         # Remove duplicates and sort
         return sorted(list(set(current_J_values)))
-    
+
     def _jj_coupling(self, electron_data: list[dict]) -> list[float]:
         """
         Unified jj-coupling method for single or multi-electron systems.
-        
+
         Args:
             electron_data: List of dicts with electron quantum numbers
                           [{'l': 1, 'j': 0.5}, {'l': 2, 'j': 2.5}, ...]
                           If 'j' not provided, computed from 'l'
-                          
+
         Returns:
             List of possible total J values
-            
+
         Examples:
             # Single electron
             j_values = _jj_coupling([{'l': 1}])  # Returns [0.5, 1.5]
-            
-            # Multi-electron with known j values  
+
+            # Multi-electron with known j values
             j_values = _jj_coupling([{'l': 1, 'j': 0.5}, {'l': 2, 'j': 2.5}])
-            
+
             # Multi-electron with computed j values
             j_values = _jj_coupling([{'l': 1}, {'l': 2}])  # Computes all combinations
         """
         if not electron_data:
             return []
-        
+
         # Handle single electron case
         if len(electron_data) == 1:
             electron = electron_data[0]
@@ -392,10 +419,10 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
                 return [electron['j']]
             else:
                 return self._jj_coupling_single_electron(electron['l'])
-        
+
         # Multi-electron case: need to handle all possible j combinations
         all_j_combinations = []
-        
+
         # Generate all possible j values for each electron
         electron_j_possibilities = []
         for electron in electron_data:
@@ -405,15 +432,18 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
                 electron_j_possibilities.append(
                     self._jj_coupling_single_electron(electron['l'])
                 )
-        
+
         # Generate all combinations of j values
         import itertools
+
         for j_combination in itertools.product(*electron_j_possibilities):
-            electron_configs = [(electron_data[i]['l'], j_combination[i]) 
-                              for i in range(len(electron_data))]
+            electron_configs = [
+                (electron_data[i]['l'], j_combination[i])
+                for i in range(len(electron_data))
+            ]
             total_J_values = self._jj_coupling_multi_electron(electron_configs)
             all_j_combinations.extend(total_J_values)
-        
+
         # Remove duplicates and sort
         return sorted(list(set(all_j_combinations)))
 
@@ -450,22 +480,21 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-        
+
         if not self.validate_kappa_j_relationship(logger):
             return None
-        
+
         self.normalize_kappa_j_consistency()
 
 
 class NonCollinearSpinState(SphericalSymmetryState):  # ? Move to `ElectronicState`
-
     axis = Quantity(
         type=np.float64,
         shape=['3'],  # add actual size restrictions
         description="""
         The projection axis for non-collinear spin systems.
         Expressed in the axis frame in which `ModelSystem` is defined.
-        """
+        """,
     )  # ? need to define orientation
 
     # ? particle_index
@@ -495,17 +524,17 @@ class ElectronicState(Entity):
         of electronic configurations where different sub-states may have different principal 
         quantum numbers. When used in conjunction with sub_states, it helps define the shell 
         structure of complex electronic configurations.
-        """
+        """,
     )
 
     point_group = Quantity(
         type=str,
-        description="Point-group symmetry based on the relevant nuclear environment."
+        description='Point-group symmetry based on the relevant nuclear environment.',
     )
 
     symmetry_label = Quantity(
         type=str,
-        description="Irreducible representation label under the point group: t2g, eg, a1g, etc."
+        description='Irreducible representation label under the point group: t2g, eg, a1g, etc.',
     )
 
     spin_orbit_state = SubSection(
@@ -513,7 +542,7 @@ class ElectronicState(Entity):
         description="""
         The spin-orbit state of the electronic system described.
         Acts as a reference for populating the overview quantities and `name`.
-        """
+        """,
     )
 
     degeneracy = Quantity(
@@ -549,21 +578,21 @@ class ElectronicState(Entity):
         repeats=True,
         description="""
         Sub-states of the electronic state, e.g., different orbital states.
-        """
+        """,
     )
 
     atoms_state_ref = SubSection(
         section_def=SectionProxy('AtomsState').m_def,
         description="""
         Reference to the corresponding atomic state definition.
-        """
+        """,
     )
 
     def resolve_degeneracy(self) -> int | None:
         """
         Resolves the degeneracy of the orbital state using the general formula:
         total_degeneracy = orbital_degeneracy × spin_degeneracy
-        
+
         The orbital degeneracy is 2*l + 1 (if ml not specified) or 1 (if ml specified).
         The spin degeneracy is delegated to the spin_state._degeneracy property, which
         handles simple spin (2 or 1) or J-coupling cases automatically.
@@ -574,12 +603,16 @@ class ElectronicState(Entity):
         # Calculate orbital degeneracy
         if self.l_quantum_number is None:
             return None
-        
-        orbital_degeneracy = 2 * self.l_quantum_number + 1 if self.ml_quantum_number is None else 1
-        spin_degeneracy = self.spin_state._degeneracy if self.spin_state is not None else 2
-            
+
+        orbital_degeneracy = (
+            2 * self.l_quantum_number + 1 if self.ml_quantum_number is None else 1
+        )
+        spin_degeneracy = (
+            self.spin_state._degeneracy if self.spin_state is not None else 2
+        )
+
         return orbital_degeneracy * spin_degeneracy
-    
+
     def populate_atoms_state_refs(self, atoms_state: 'AtomsState') -> None:
         """
         Populates the references to the corresponding `AtomsState` definition.
@@ -602,9 +635,10 @@ class ElectronicState(Entity):
         # Extract name
         if self.name is None:
             if self.n_quantum_number is not None and self.spin_orbit_state is not None:
-                self.name = f"{self.n_quantum_number}{self.spin_orbit_state._name}"
+                self.name = f'{self.n_quantum_number}{self.spin_orbit_state._name}'
             elif self.spin_orbit_state is not None:
-                self.name = f"{self.spin_orbit_state._name}"
+                self.name = f'{self.spin_orbit_state._name}'
+
 
 class CoreHole(ElectronicState):
     """
@@ -645,11 +679,9 @@ class CoreHole(ElectronicState):
         """
         logger = self.resolve_occupation.__annotations__['logger']
         if self.orbital_ref is None or self.n_excited_electrons is None:
-            logger.warning(
-                'Cannot resolve occupation without `n_excited_electrons`.'
-            )
+            logger.warning('Cannot resolve occupation without `n_excited_electrons`.')
             return None
-        
+
         try:
             return self.resolve_degeneracy() - self.n_excited_electrons
         except Exception as e:
@@ -804,7 +836,7 @@ class HubbardInteractions(ElectronicState):
         if self.u_interaction is None:
             logger.warning('Could not find `HubbardInteractions.u_interaction`.')
             return None
-        
+
         if self.j_local_exchange_interaction is None:
             self.j_local_exchange_interaction = 0.0 * ureg.eV
 
@@ -831,7 +863,9 @@ class HubbardInteractions(ElectronicState):
 
         # Check if length of `orbitals_ref` is the same as the length of `u_matrix`:
         if self.u_matrix is not None and self.orbitals_ref is not None:
-            if len(self.u_matrix) != len(self.orbitals_ref):  # TODO: move shape-check to schema
+            if len(self.u_matrix) != len(
+                self.orbitals_ref
+            ):  # TODO: move shape-check to schema
                 logger.error(
                     'The length of `HubbardInteractions.u_matrix` does not coincide with length of `HubbardInteractions.orbitals_ref`.'
                 )
@@ -908,7 +942,7 @@ class AtomsState(ParticleState):
     )
 
     electronic_state = SubSection(sub_section=ElectronicState.m_def)
-    
+
     @log
     def get_label(self) -> str | None:
         """

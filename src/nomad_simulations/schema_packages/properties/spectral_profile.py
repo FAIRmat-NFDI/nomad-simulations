@@ -93,8 +93,11 @@ class DOSProfile(SpectralProfile):
             return self.entity_ref.get_label()
 
         # Orbital‐projected DOS
-        if isinstance(self.entity_ref, ElectronicState) and self.entity_ref.atoms_state is not None:
-            return self.entity_ref.atoms_state.get_label() + " " + self.entity_ref.name 
+        if (
+            isinstance(self.entity_ref, ElectronicState)
+            and self.entity_ref.atoms_state is not None
+        ):
+            return self.entity_ref.atoms_state.get_label() + ' ' + self.entity_ref.name
         else:
             logger.warning('Could not find parent AtomsState with chemical_symbol.')
             return None
