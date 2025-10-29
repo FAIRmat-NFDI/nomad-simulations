@@ -455,10 +455,10 @@ class ElectronicState(Entity):
         """
     )
 
-    atoms_state = SubSection(
+    atoms_state_ref = SubSection(
         section_def=SectionProxy('AtomsState').m_def,
         description="""
-        The atomic state information.
+        Reference to the corresponding atomic state definition.
         """
     )
 
@@ -564,6 +564,18 @@ class ElectronicState(Entity):
         spin_degeneracy = self.spin_state._degeneracy if self.spin_state is not None else 2
             
         return orbital_degeneracy * spin_degeneracy
+    
+    def populate_atoms_state_refs(self, atoms_state: 'AtomsState') -> None:
+        """
+        Populates the references to the corresponding `AtomsState` definition.
+
+        Args:
+            atoms_state (AtomsState): The `AtomsState` instance to reference.
+        """
+        self.atoms_state_ref = atoms_state
+        if self.sub_states:
+            for sub_state in self.sub_states:
+                sub_state.populate_atoms_state_refs(atoms_state)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -946,6 +958,9 @@ class AtomsState(ParticleState):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+        if self.electronic_state:
+            self.electronic_state.populate_atoms_state_refs(self)
 
         # Get chemical_symbol from atomic_number and viceversa
         if self.chemical_symbol is None:
