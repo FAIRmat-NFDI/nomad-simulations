@@ -36,10 +36,10 @@ from nomad_simulations.schema_packages.properties import (
     XASSpectrum,
 )
 
-from .common import SimulationOutputs
+from .common import SimulationTime
 
 
-class Outputs(SimulationOutputs):
+class Outputs(SimulationTime):
     """
     Output properties of a simulation. This base class can be used for inheritance in any of the output properties
     defined in this schema.

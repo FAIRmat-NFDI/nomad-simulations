@@ -3,7 +3,7 @@ from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflo
 from nomad.metainfo import Quantity, SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.common import SimulationOutputs
+from nomad_simulations.schema_packages.common import Time
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
@@ -57,12 +57,76 @@ class SimulationWorkflowMethod(ArchiveSection):
             self.initial_method = archive.data.model_method[0]
 
 
-class SimulationWorkflowResults(SimulationOutputs):
+import numpy as np
+from nomad.datamodel.data import ArchiveSection
+from nomad.datamodel.metainfo.annotations import ELNAnnotation
+from nomad.metainfo import Datetime, Quantity
+
+
+class WorkflowTime(ArchiveSection):
+    """
+    Contains time-related quantities.
+    """
+
+    datetime_end = Quantity(
+        type=Datetime,
+        description="""
+        The date and time when the workflow ended.
+        """,
+        a_eln=ELNAnnotation(component='DateTimeEditQuantity'),
+    )
+
+    cpu1_start = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The starting time of the workflow on the (first) CPU 1.
+        """,
+        a_eln=ELNAnnotation(component='NumberEditQuantity'),
+    )
+
+    cpu1_end = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The end time of the workflow on the (first) CPU 1.
+        """,
+        a_eln=ELNAnnotation(component='NumberEditQuantity'),
+    )
+
+    wall_start = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The internal wall-clock time from the starting of the workflow.
+        """,
+        a_eln=ELNAnnotation(component='NumberEditQuantity'),
+    )
+
+    wall_end = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The internal wall-clock time from the end of the workflow.
+        """,
+        a_eln=ELNAnnotation(component='NumberEditQuantity'),
+    )
+
+
+class SimulationWorkflowResults(WorkflowTime):
     """
     Base class for simulation workflow results sub-section definition.
     """
 
     _label = 'Workflow results'
+
+    finished_normally = Quantity(
+        type=bool,
+        shape=[],
+        description="""
+        Indicates if calculation terminated normally.
+        """,
+    )
 
     # TODO add generic convergence results here
 
@@ -191,8 +255,6 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
 
 class SerialWorkflowResults(SimulationWorkflowResults):
-    _label = 'Thermodynamics ouputs'
-
     temperatures = SubSection(sub_section=Temperatures.m_def, repeats=True)
 
     pressures = SubSection(sub_section=Pressures.m_def, repeats=True)
@@ -209,7 +271,6 @@ class SerialWorkflow(SimulationWorkflow):
     Base class for workflows where tasks are executed sequentially.
     """
 
-    # ? What is this mapping for exactly?
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:

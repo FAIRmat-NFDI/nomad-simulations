@@ -5,22 +5,34 @@ from collections import namedtuple
 from collections.abc import Callable
 from itertools import chain
 from typing import Any
-
-import MDAnalysis
-import MDAnalysis.analysis.rdf as MDA_RDF
 import networkx
 import numpy as np
-from MDAnalysis.core._get_readers import get_reader_for
-from MDAnalysis.core.topology import Topology
-from MDAnalysis.core.universe import Universe
+from scipy import sparse
+from scipy.stats import linregress
+
+try:
+    import MDAnalysis
+    import MDAnalysis.analysis.rdf as MDA_RDF
+    from MDAnalysis.core._get_readers import get_reader_for
+    from MDAnalysis.core.topology import Topology
+    from MDAnalysis.core.universe import Universe
+
+    _HAS_MDA = True
+except ImportError:
+    _HAS_MDA = False
+
+if not _HAS_MDA:
+    raise ImportError(
+        'MDAnalysis is required for this functionality. '
+        'Please re-install the plugin with `pip install nomad-simulations[md]`.'
+    )
+
 from nomad import atomutils
 from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
 from nomad.units import ureg
 from nomad.utils import get_logger
-from scipy import sparse
-from scipy.stats import linregress
-
 from nomad_simulations.schema_packages.model_system import ModelSystem
+
 
 LOGGER = get_logger(__name__)
 
@@ -30,10 +42,10 @@ class BeadGroup:
     See https://github.com/MDAnalysis/mdanalysis/issues/1891#issuecomment-387138110 by @richardjgowers with performance improvements.
 
     Args:
-        object (MDAnalysis.AtomsGroup): complete set of atoms for consideration.
+        object (MDAnalysis.AtomGroup): complete set of atoms for consideration.
 
     Returns:
-        bead_groups: returns  bead group object that links and subdivides the MDAnalysis.AtomsGroup, when attributes are requested.
+        bead_groups: returns  bead group object that links and subdivides the MDAnalysis.AtomGroup, when attributes are requested.
     """
 
     def __init__(self, atoms, compound='fragments'):
@@ -74,6 +86,7 @@ class BeadGroup:
         return self._atoms.universe
 
 
+# TODO update from runschema to nomad-simulations
 def get_bond_list_from_model_contributions(
     sec_run: MSection, method_index: int = -1, model_index: int = -1
 ) -> list[tuple]:
@@ -121,7 +134,7 @@ def _create_empty_universe(
 
     This function was adapted from the function empty() within the MDA class Universe().
     The only difference is that the Universe() class is imported directly here, whereas in the
-    original function is is passed as a function argument, since the function there is a classfunction.
+    original function is passed as a function argument, since the function there is a class method.
 
     Useful for building a Universe without requiring existing files,
     for example for system building.
@@ -186,7 +199,7 @@ def _create_empty_universe(
 
     if residue_segindex is None:
         LOGGER.warning(
-            'Segments specified but no segment_resindex given.  '
+            'Segments specified but no residue_segindex given.  '
             'All residues will be placed in first Segment',
         )
 
@@ -398,7 +411,7 @@ def archive_to_universe(
                 atom.charge.magnitude, atom.charge.units, ureg.e
             )
 
-    # get the atom positions, velocites, and box dimensions
+    # get the atom positions, velocities, and box dimensions
     positions = np.empty(shape=(n_frames, n_atoms, 3))
     velocities = np.empty(shape=(n_frames, n_atoms, 3))
     dimensions = np.empty(shape=(n_frames, 6))
@@ -813,9 +826,9 @@ def shifted_correlation_average(
         tuple:
             A list of length N that contains the indices of the frames at which
             the time series was calculated and a numpy array of shape (segments, N)
-            that holds the (non-avaraged) correlation data
+            that holds the (non-averaged) correlation data
 
-            if has_counter == True: adds number of counts to output tupel.
+            if has_counter == True: adds number of counts to output tuple.
                                     if average is returned it will be weighted.
 
     Example:
@@ -1115,7 +1128,7 @@ def calc_molecular_radius_of_gyration(
         return []
     if system_hierarchy is None or not system_hierarchy:
         LOGGER.warning(
-            'system_topology require to calculate molecular radius of gyration.'
+            'system_topology required to calculate molecular radius of gyration.'
         )
         return []
 

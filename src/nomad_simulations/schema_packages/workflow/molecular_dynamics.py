@@ -5,13 +5,29 @@ from collections import namedtuple
 from itertools import chain
 from typing import TYPE_CHECKING, Any
 
-import MDAnalysis
-import MDAnalysis.analysis.rdf as MDA_RDF
 import networkx
 import numpy as np
-from MDAnalysis.core._get_readers import get_reader_for
-from MDAnalysis.core.topology import Topology
-from MDAnalysis.core.universe import Universe
+from scipy import sparse
+from scipy.stats import linregress
+
+
+try:
+    import MDAnalysis
+    import MDAnalysis.analysis.rdf as MDA_RDF
+    from MDAnalysis.core._get_readers import get_reader_for
+    from MDAnalysis.core.topology import Topology
+    from MDAnalysis.core.universe import Universe
+
+    _HAS_MDA = True
+except ImportError:
+    _HAS_MDA = False
+
+if not _HAS_MDA:
+    raise ImportError(
+        'MDAnalysis is required for this functionality. '
+        'Please re-install the plugin with `pip install nomad-simulations[md]`.'
+    )
+
 from nomad import atomutils
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.datamodel import EntryArchive
@@ -19,9 +35,6 @@ from nomad.datamodel.hdf5 import HDF5Dataset
 from nomad.datamodel.metainfo.workflow import Link
 from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
 from nomad.units import ureg
-from scipy import sparse
-from scipy.stats import linregress
-
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
@@ -1047,14 +1060,9 @@ class MeanSquaredDisplacement(CorrelationFunction):
 
 class MolecularDynamicsResults(SerialWorkflowResults):
     _label = 'MD results'
-
-    finished_normally = Quantity(
-        type=bool,
-        shape=[],
-        description="""
-        Indicates if calculation terminated normally.
-        """,
-    )
+    _cache: dict[str, Any] = {}
+    _universe: MDAnalysis.Universe | None
+    _bead_groups: dict[str, BeadGroup] | None
 
     n_steps = Quantity(
         type=np.int32,
@@ -1082,19 +1090,11 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         sub_section=RadialDistributionFunction.m_def, repeats=True
     )
 
-    # Type annotations for private attributes
-    _universe: MDAnalysis.Universe | None
-    _bead_groups: dict[str, BeadGroup] | None
-
-    def __init__(self, m_def: Section = None, m_context: Context = None, **kwargs):
-        super().__init__(m_def, m_context, **kwargs)
-        self._cache: dict[str, Any] = {}
-        self._universe = None
-        self._bead_groups = None
-
     @log
     def get_universe(self, archive) -> MDAnalysis.Universe | None:
         logger = self.get_universe.__annotations__['logger']
+        if self._universe:
+            return self._universe
         try:
             universe = archive_to_universe(archive)
         except Exception:
@@ -1105,15 +1105,12 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         return universe
 
     @log
-    def get_molecular_rdfs(
+    def _get_molecular_rdfs(
         self, archive: EntryArchive
     ) -> list[RadialDistributionFunction]:
-        # logger = self.get_molecular_rdfs.__annotations__['logger']
-        if self.radial_distribution_functions is not None:
+        # logger = self._get_molecular_rdfs.__annotations__['logger']
+        if not self.radial_distribution_functions:
             return self.radial_distribution_functions
-
-        if self._universe is None:
-            return []
 
         n_traj_split = 10  # number of intervals to split trajectory into for averaging
         try:
@@ -1163,10 +1160,10 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         return sec_rdfs
 
     @log
-    def get_molecular_msds(
+    def _get_molecular_msds(
         self,
     ) -> tuple[list[MeanSquaredDisplacement], list[DiffusionConstant]]:
-        # logger = self.get_molecular_msds.__annotations__['logger']
+        # logger = self._get_molecular_msds.__annotations__['logger']
         if (
             self.mean_squared_displacements is not None
         ):  # TODO add check for diffusion_constants too?
@@ -1330,12 +1327,14 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         self._bead_groups = _get_molecular_bead_groups(self._universe)
 
         # calculate molecular radial distribution functions
-        self.radial_distribution_functions = self.get_molecular_rdfs(archive)
+        # TODO remove if the below works
+        # self.radial_distribution_functions = self._get_molecular_rdfs(archive)
+        self.radial_distribution_functions.extend(self._get_molecular_rdfs(archive))
 
         # calculate the molecular mean squared displacements
-        msds, diffusion_constants = self.get_molecular_msds()
-        self.mean_squared_displacements = msds
-        self.diffusion_constants = diffusion_constants
+        msds, diffusion_constants = self._get_molecular_msds()
+        self.mean_squared_displacements.extend(msds)
+        self.diffusion_constants.extend(diffusion_constants)
 
         # calculate radius of gyration for polymers
         self.radii_of_gyration = self.get_molecular_rgs(archive)
@@ -1349,10 +1348,12 @@ class MolecularDynamics(SerialWorkflow):
     results = SubSection(sub_section=MolecularDynamicsResults)
 
     def map_inputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
+        super().map_inputs(archive, logger)
         if not self.method:
             self.method = MolecularDynamicsMethod()
 
     def map_outputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
+        super().map_outputs(archive, logger)
         if not self.results:
             self.results = MolecularDynamicsResults()
 
