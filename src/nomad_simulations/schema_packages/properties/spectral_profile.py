@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pint
@@ -7,10 +7,9 @@ from nomad.metainfo import MEnum, Quantity, SubSection
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
+from nomad_simulations.schema_packages.atoms_state import AtomsState, ElectronicState
 from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
@@ -70,7 +69,7 @@ class DOSProfile(SpectralProfile):
         """
         Resolve the `name` of the projected `DOSProfile` from the `entity_ref` section. This is resolved as:
             - `'atom X'` with 'X' being the chemical symbol for `AtomsState` references.
-            -  `'orbital Y X'` with 'X' being the chemical symbol and 'Y' the orbital label for `OrbitalsState` references.
+            -  `'orbital Y X'` with 'X' being the chemical symbol and 'Y' the orbital label for `ElectronicState` references.
 
         Args:
             logger (BoundLogger): The logger to log messages.
@@ -79,43 +78,26 @@ class DOSProfile(SpectralProfile):
             (Optional[str]): The resolved `name` of the projected DOS profile.
         """
         logger = self.resolve_pdos_name.__annotations__['logger']
-        if self.entity_ref is None and not self.name == 'ElectronicDensityOfStates':
-            logger.warning(
-                'The `entity_ref` is not set for the DOS profile. Could not resolve the `name`.'
-            )
-            return None
-
         if self.entity_ref is None:
-            logger.warning('No entity_ref on DOSProfile; cannot name it.')
-            return None
+            if not self.m_parent.name == 'ElectronicDensityOfStates':
+                logger.warning(
+                    'The `entity_ref` is not set for the DOS profile. Could not resolve the `name`.'
+                )
+                return None
+            else:
+                logger.warning('No entity_ref on DOSProfile; cannot name it.')
+                return None
 
         # Atom‐projected DOS
         if isinstance(self.entity_ref, AtomsState):
-            elem = self.entity_ref.chemical_symbol
-            if elem:
-                return f'atom {elem}'
-            else:
-                logger.warning('AtomsState missing chemical_symbol.')
-                return None
+            return self.entity_ref.get_label()
 
         # Orbital‐projected DOS
-        if isinstance(self.entity_ref, OrbitalsState):
-            # navigate up to the parent AtomsState
-            parent = getattr(self.entity_ref, 'm_parent', None)
-            if not isinstance(parent, AtomsState) or not parent.chemical_symbol:
-                logger.warning('Could not find parent AtomsState with chemical_symbol.')
-                return None
-
-            l_label = (
-                f'{self.entity_ref.l_quantum_symbol}{self.entity_ref.ml_quantum_symbol}'
-            )
-            return f'orbital {l_label} {parent.chemical_symbol}'
-
-        # other cases
-        logger.warning(
-            f'Unknown entity_ref type {type(self.entity_ref)}; cannot name PDOS.'
-        )
-        return None
+        if isinstance(self.entity_ref, ElectronicState) and self.entity_ref.atoms_state is not None:
+            return self.entity_ref.atoms_state.get_label() + " " + self.entity_ref.name 
+        else:
+            logger.warning('Could not find parent AtomsState with chemical_symbol.')
+            return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)

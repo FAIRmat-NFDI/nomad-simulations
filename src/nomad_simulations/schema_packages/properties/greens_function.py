@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
+from nomad_simulations.schema_packages.atoms_state import AtomsState, ElectronicState
 from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.variables import (
@@ -34,7 +34,7 @@ class BaseGreensFunction(PhysicalProperty):
     Further information in M. Wallerberger et al., Comput. Phys. Commun. 235, 2 (2019).
     """
 
-    # ! we use `atoms_state_ref` and `orbitals_state_ref` to enforce order in the matrices
+    # ! we use `atoms_state_ref` and `correlated_orbitals_ref` to enforce order in the matrices
 
     n_atoms = Quantity(
         type=np.int32,
@@ -51,18 +51,10 @@ class BaseGreensFunction(PhysicalProperty):
         """,
     )
 
-    n_correlated_orbitals = Quantity(
-        type=np.int32,
-        description="""
-        Number of orbitals involved in the correlations effect and used for the matrix representation of the property.
-        """,
-    )
-
     correlated_orbitals_ref = Quantity(
-        type=OrbitalsState,
-        shape=['n_correlated_orbitals'],
+        type=ElectronicState,
         description="""
-        Reference to the `OrbitalsState` section in which the Green's function properties are calculated.
+        Reference to the `ElectronicState` section in which the Green's function properties are calculated.
         """,
     )
 
@@ -234,7 +226,7 @@ class QuasiparticleWeight(PhysicalProperty):
     system, and Z = 0 the Mott state.
     """
 
-    # ! we use `atoms_state_ref` and `orbitals_state_ref` to enforce order in the matrices
+    # ! we use `atoms_state_ref` and `correlated_orbitals_ref` to enforce order in the matrices
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/HybridizationFunction'
 
@@ -280,10 +272,9 @@ class QuasiparticleWeight(PhysicalProperty):
     )
 
     correlated_orbitals_ref = Quantity(
-        type=OrbitalsState,
-        shape=['n_correlated_orbitals'],
+        type=ElectronicState,
         description="""
-        Reference to the `OrbitalsState` section in which the Green's function properties are calculated.
+        Reference to the `ElectronicState` section in which the Green's function properties are calculated.
         """,
     )
 
