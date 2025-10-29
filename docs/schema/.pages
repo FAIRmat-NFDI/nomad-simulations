@@ -1,0 +1,13 @@
+# docs/schema/.pages
+title: Generated schema
+index: index.md
+nav:
+  - methods.md
+  - basis.md
+  - system.md
+  - workflows.md
+  - results.md
+  - phonon_elastic.md
+  - spectroscopy.md
+  - thermo.md
+

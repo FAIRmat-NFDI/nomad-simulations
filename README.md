@@ -179,3 +179,27 @@ Pizarro, J.M., Boydas, E.B., Daelman, N., Ladines, A.N., Mohr, B. & Rudzinski, J
 | Dr. José M. Pizarro | [jose.pizarro@physik.hu-berlin.de](mailto:jose.pizarro@physik.hu-berlin.de) | GW, DMFT, BSE | [@JosePizarro3](https://github.com/JosePizarro3) |
 | Dr. Esma B. Boydas | [esma.boydas@physik.hu-berlin.de](mailto:esma.boydas@physik.hu-berlin.de) | Quantum Chemistry | [@EBB2675](https://github.com/EBB2675) |
 | Dr. Joseph F. Rudzinski (**Coordinator**) | [joseph.rudzinski@physik.hu-berlin.de](mailto:joseph.rudzinski@physik.hu-berlin.de) | General | [@JFRudzinski](https://github.com/JFRudzinski) |
+
+
+
+## 🧩 Updating the Auto-Generated Schema Docs
+
+The schema documentation is generated directly from the NOMAD-Simulations
+plugin source. Until CI automation is configured, you can update the pages
+manually using the helper scripts in `scripts/`.
+
+### 1. Regenerate diagrams
+From the repository root:
+```bash
+python scripts/gen_diagrams.py
+```
+
+### 2. Regenerate the schema docs
+
+```bash
+python scripts/gen_docs.py \
+  --pkg nomad_simulations \
+  --module-prefix nomad_simulations \
+  --templates-dir templates \
+  --out-dir docs/schema
+```

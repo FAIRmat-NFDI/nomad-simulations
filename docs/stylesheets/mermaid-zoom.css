@@ -1,0 +1,21 @@
+/* docs/stylesheets/mermaid-zoom.css */
+.mermaid { position: relative; }
+.mermaid-zoom-toolbar {
+  position: absolute;
+  top: .25rem;
+  right: .25rem;
+  display: flex;
+  gap: .25rem;
+  z-index: 2;
+}
+.mermaid-zoom-toolbar button {
+  font: inherit;
+  line-height: 1;
+  padding: .25rem .4rem;
+  border: 1px solid var(--md-default-fg-color--light, #ccc);
+  background: var(--md-default-bg-color, #fff);
+  border-radius: .25rem;
+  cursor: pointer;
+  opacity: .8;
+}
+.mermaid-zoom-toolbar button:hover { opacity: 1; }

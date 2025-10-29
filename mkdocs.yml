@@ -5,6 +5,16 @@ site_author: FAIRmat consortium
 repo_url: https://github.com/fairmat-nfdi/nomad-simulations
 nav:
   - Home: index.md
+  - Generated schema:
+      - Overview: schema/index.md
+      - Methods & Parameters: schema/methods.md
+      - Basis & Orbitals: schema/basis.md
+      - System & Geometry: schema/system.md
+      - Workflows: schema/workflows.md
+      - Results & Provenance: schema/results.md
+      - Vibrations, Phonons & Elastic: schema/phonon_elastic.md
+      - Spectroscopy & Excitations: schema/spectroscopy.md
+      - Thermodynamics: schema/thermo.md
   - Simulation schema:
     - Overview: general.md
     - ModelSystem:
@@ -46,6 +56,7 @@ theme:
         name: Switch to light mode
 plugins:
   - search
+  - awesome-pages
   # - bibtex:
       # bib_file: docs/assets/refs.bib
 markdown_extensions:
@@ -70,9 +81,12 @@ markdown_extensions:
       generic: true
 extra_css:
   - stylesheets/extra.css
+  - stylesheets/mermaid-zoom.css
 extra_javascript:
   - 'https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js'
   - 'https://unpkg.com/cytoscape@3.19.1/dist/cytoscape.min.js'
+  - https://unpkg.com/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js
+  - assets/mermaid-zoom.js
   # - assets/code/parse.js
 extra:
   version: 0.1

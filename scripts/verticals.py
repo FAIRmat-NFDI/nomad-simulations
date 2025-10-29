@@ -1,0 +1,211 @@
+# scripts/verticals.py
+"""
+Defines documentation/review 'verticals' for the auto-generated MkDocs pages.
+Each vertical has:
+  - title: display name
+  - sections: list of MSection class names (strings) to anchor the diagram/context
+  - optional: purpose, in_scope, out_of_scope (purely for page text)
+
+All section names below are drawn from the classes discovered in your run:
+APWBaseOrbital, APWLChannel, APWLocalOrbital, APWOrbital, APWPlaneWaveBasisSet,
+AbsorptionSpectrum, Activity, AngleDihedralCouplingPotential, AnglePotential,
+ArchiveSection, AtomCenteredBasisSet, AtomCenteredFunction, AtomicCell,
+AtomicOrbitals, AtomsState, BSE, BaseElectronicEigenvalues, BaseEnergy,
+BaseForce, BaseGreensFunction, BaseModelMethod, BaseSimulation, BasisSetComponent,
+BasisSetContainer, BeyondDFTModel, BeyondDFTResults, BeyondDFTWorkflow,
+BondAngleCouplingPotential, BondPotential, CGBeadState, Cell, ChemicalFormula,
+ChemicalPotential, CoreHole, CoreHoleSpectra, CosineAngle, CrystalFieldSplitting,
+CubicBond, DFT, DFTGWModel, DFTGWResults, DFTGWWorkflow, DFTTBDDMFTModel,
+DFTTBDMFTResults, DFTTBDMFTWorkflow, DFTTBModel, DFTTBResults, DFTTBWorkflow,
+DMFT, DMFTMaxEntWorkflow, DMTMaxEntModel, DMTMaxEntResults, DOSProfile,
+DihedralPotential, EOSFit, EffectiveCorePotential, Elastic, ElasticModel,
+ElasticResults, ElectronicBandGap, ElectronicBandStructure,
+ElectronicDensityOfStates, ElectronicEigenvalues, ElectronicGreensFunction,
+ElectronicSelfEnergy, ElectronicStructureResults, Energy2, Enthalpy, Entity,
+Entropy, EntryArchive, EntryData, EquationOfState, EquationOfStateModel,
+EquationOfStateResults, ExcitedStateMethodology, FeneBond, FermiSurface,
+ForceCalculations, ForceField, Frequency, GW, GeometricSpace, GeometryOptimization,
+GeometryOptimizationModel, GeometryOptimizationResults, GibbsFreeEnergy, HarmonicAngle,
+HarmonicAngleDihedralCoupling, HarmonicBond, HarmonicImproper, Heat, HeatCapacity,
+HelmholtzFreeEnergy, Hessian, HoppingMatrix, HubbardInteractions, HybridizationFunction,
+ImaginaryTime, ImproperDihedralPotential, InternalEnergy, KLinePath, KMesh, KSpace,
+KineticEnergy, LinearAngle, LinearBondAngleCoupling, Link, MassDensity, MatsubaraFrequency,
+Mesh, ModelMethod, ModelMethodElectronic, ModelSystem, MolecularDynamics,
+MolecularDynamicsModel, MolecularDynamicsResults, MorseBond, MuffinTinRegion,
+NumericalSettings, Occupancy, OrbitalsState, Outputs, Package, ParallelWorkflow,
+ParameterEntry, ParticleState, PeriodicDihedral, PeriodicImproper, Permittivity, Phonon,
+PhononModel, PhononResults, Photon, PhotonPolarizationModel, PhotonPolarizationResults,
+PhotonPolarizationWorkflow, PhysicalProperty, PlaneWaveBasisSet, PlotSection, PlotlyFigure,
+PolynomialAngle, PolynomialBond, PolynomialForceConstant, PolynomialPotential, Potential,
+PotentialEnergy, Pressure, Program, Quantity, QuasiparticleWeight, RestrictedCosineAngle,
+RyckaertBellemansDihedral, SCFOutputs, Screening, Section, SelfConsistency, SerialWorkflow,
+Simulation, SimulationTask, SimulationTaskReference, SimulationWorkflow, SimulationWorkflowModel,
+SimulationWorkflowResults, SinglePoint, SinglePointModel, SinglePointResults, SlaterKoster,
+SlaterKosterBond, Smearing, SpectralProfile, StrainDiagrams, SubSection, Symmetry, System, TB,
+TabulatedAngle, TabulatedBond, TabulatedDihedral, TabulatedPotential, Task, TaskReference,
+Temperature, Thermodynamics, ThermodynamicsModel, ThermodynamicsResults, Time, TotalEnergy,
+TotalForce, TrajectoryOutputs, UreyBradleyAngle, Variables, VirialTensor, Volume, Wannier,
+WignerSeitz, Work, Workflow, WorkflowOutputs, XASSpectrum, XCFunctional, XSModel, XSResults,
+XSWorkflow, xTB
+"""
+
+VERTICALS = {
+    # --- Core modeling choices ------------------------------------------------
+    'methods': {
+        'title': 'Methods & Parameters',
+        'purpose': 'Code-agnostic method choices and numerical controls that drive reproducibility.',
+        'sections': [
+            'ModelMethod',
+            'ModelMethodElectronic',
+            'DFT',
+            'TB',
+            'DMFT',
+            'GW',
+            'XCFunctional',
+            'NumericalSettings',
+            'Smearing',
+            'Program',
+        ],
+        'in_scope': [
+            'electronic-structure family',
+            'XC selection',
+            'smearing',
+            'numerical cutoffs/settings',
+        ],
+        'out_of_scope': ['runtime logs', 'post-processed properties'],
+    },
+    # --- Basis & orbitals -----------------------------------------------------
+    'basis': {
+        'title': 'Basis & Orbitals',
+        'purpose': 'Representations used to expand wavefunctions or Hamiltonians.',
+        'sections': [
+            'PlaneWaveBasisSet',
+            'AtomCenteredBasisSet',
+            'APWPlaneWaveBasisSet',
+            'APWLocalOrbital',
+            'APWOrbital',
+            'AtomCenteredFunction',
+            'SlaterKoster',
+            'SlaterKosterBond',
+        ],
+        'in_scope': [
+            'plane wave parameters',
+            'APW/APW+lo',
+            'localized atomic basis',
+            'tight-binding tables',
+        ],
+        'out_of_scope': ['results derived from the basis (e.g., DOS)'],
+    },
+    # --- System / geometry ----------------------------------------------------
+    'system': {
+        'title': 'System & Geometry',
+        'purpose': 'Atomic structure, cell, symmetry and reciprocal space definitions.',
+        'sections': [
+            'ModelSystem',
+            'System',
+            'AtomicCell',
+            'Cell',
+            'Symmetry',
+            'KSpace',
+            'KMesh',
+            'ChemicalFormula',
+        ],
+        'in_scope': [
+            'lattice, positions, periodicity',
+            'k-space definitions',
+            'symmetry',
+        ],
+        'out_of_scope': ['workflow states', 'simulation outputs'],
+    },
+    # --- Workflows ------------------------------------------------------------
+    'workflows': {
+        'title': 'Workflows',
+        'purpose': 'End-to-end procedures composed of tasks (e.g., SCF, MD, geometry optimization).',
+        'sections': [
+            'Workflow',
+            'SimulationWorkflow',
+            'ParallelWorkflow',
+            'SerialWorkflow',
+            'GeometryOptimization',
+            'MolecularDynamics',
+            'SinglePoint',
+            'Task',
+            'SimulationTask',
+            'SelfConsistency',
+        ],
+        'in_scope': ['task graphs', 'iteration loops', 'task references'],
+        'out_of_scope': ['final results (handled in Results)'],
+    },
+    # --- Results & provenance -------------------------------------------------
+    'results': {
+        'title': 'Results & Provenance',
+        'purpose': 'Canonical scientific outputs and provenance bundles.',
+        'sections': [
+            'Outputs',
+            'ElectronicStructureResults',
+            'ElectronicBandStructure',
+            'ElectronicDensityOfStates',
+            'ElectronicBandGap',
+            'FermiSurface',
+            'SCFOutputs',
+            'TrajectoryOutputs',
+            'ThermodynamicsResults',
+            'GeometryOptimizationResults',
+        ],
+        'in_scope': ['band structures', 'DOS', 'gaps', 'SCF history', 'trajectories'],
+        'out_of_scope': ['raw logs', 'plot styling'],
+    },
+    # --- Vibrations / elastic -------------------------------------------------
+    'phonon_elastic': {
+        'title': 'Vibrations, Phonons & Elastic',
+        'purpose': 'Lattice dynamics models and results, elastic tensors, and Hessians.',
+        'sections': [
+            'Phonon',
+            'PhononModel',
+            'PhononResults',
+            'Elastic',
+            'ElasticModel',
+            'ElasticResults',
+            'Hessian',
+        ],
+        'in_scope': ['phonon dispersions', 'force constants', 'elastic constants'],
+        'out_of_scope': ['thermo integration over phonons (see Thermodynamics)'],
+    },
+    # --- Spectroscopy / excitations ------------------------------------------
+    'spectroscopy': {
+        'title': 'Spectroscopy & Excitations',
+        'purpose': 'Excited-state methods and spectra.',
+        'sections': [
+            'AbsorptionSpectrum',
+            'XASSpectrum',
+            'BSE',
+            'Screening',
+            'ElectronicGreensFunction',
+            'ElectronicSelfEnergy',
+            'QuasiparticleWeight',
+            'DFTGWModel',
+            'DFTGWResults',
+            'DFTGWWorkflow',
+        ],
+        'in_scope': ['BSE/GW artifacts', 'response functions', 'quasiparticles'],
+        'out_of_scope': ['ground-state-only properties'],
+    },
+    # --- Thermodynamics -------------------------------------------------------
+    'thermo': {
+        'title': 'Thermodynamics',
+        'purpose': 'Thermodynamic state functions and models.',
+        'sections': [
+            'Thermodynamics',
+            'ThermodynamicsModel',
+            'ThermodynamicsResults',
+            'HeatCapacity',
+            'Entropy',
+            'HelmholtzFreeEnergy',
+            'GibbsFreeEnergy',
+            'Enthalpy',
+            'InternalEnergy',
+        ],
+        'in_scope': ['state functions', 'derived thermodynamic curves'],
+        'out_of_scope': ['MD raw trajectories (see Results)'],
+    },
+}

@@ -1,0 +1,17 @@
+```mermaid
+classDiagram
+    class GeometryOptimization
+    class MolecularDynamics
+    class ParallelWorkflow
+    class SelfConsistency
+    class SerialWorkflow
+    class SimulationTask
+    class SimulationWorkflow
+    class SimulationWorkflowModel
+    class SimulationWorkflowResults
+    class SinglePoint
+    class Task
+    class Workflow
+    SimulationWorkflow --> SimulationWorkflowModel : model
+    SimulationWorkflow --> SimulationWorkflowResults : results
+```
