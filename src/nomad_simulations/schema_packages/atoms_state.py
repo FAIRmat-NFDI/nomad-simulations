@@ -210,6 +210,89 @@ class SphericalSymmetryState(BaseSpinOrbitalState):  # @EBB2675 we could also sp
             # This would need orbital information
             pass
 
+    @log
+    def validate_quantum_numbers(self) -> bool:
+        """
+        Validate the angular momentum quantum numbers (l, ml) by checking if they are physically sensible.
+        
+        Args:
+            logger (BoundLogger): The logger to log messages.
+            
+        Returns:
+            (bool): True if the quantum numbers are physically sensible, False otherwise.
+        """
+        logger = self.validate_quantum_numbers.__annotations__['logger']
+        
+        if self.l_quantum_number is not None and self.l_quantum_number < 0:
+            logger.error('The `l_quantum_number` must be >= 0.')
+            return False
+            
+        if self.ml_quantum_number is not None:
+            if self.l_quantum_number is None:
+                logger.error('Cannot validate ml without l_quantum_number.')
+                return False
+            if (self.ml_quantum_number < -self.l_quantum_number
+                or self.ml_quantum_number > self.l_quantum_number):
+                logger.error(
+                    'The `ml_quantum_number` must be between `-l_quantum_number` and `l_quantum_number`.'
+                )
+                return False
+                
+        return True
+
+    def resolve_number_and_symbol(
+        self, quantum_name: str, quantum_type: str, logger: 'BoundLogger'
+    ) -> str | int | None:
+        """
+        Resolves the quantum number or symbol from the `self._orbitals_map` on the passed `quantum_type`.
+        `quantum_type` can be either 'number' or 'symbol'. If the quantum type is not found, then the countertype
+        (e.g., quantum_type == 'number' => countertype == 'symbol') is used to resolve it.
+
+        Args:
+            quantum_name (str): The quantum name to resolve. Can be 'l', 'ml'.
+            quantum_type (str): The type of the quantum name. Can be 'number' or 'symbol'.
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            (Optional[Union[str, int]]): The quantum number or symbol resolved from the orbitals_map.
+        """
+        if quantum_name not in ['l', 'ml']:
+            logger.warning("The quantum_name is not recognized. Try 'l', 'ml'.")
+            return None
+        if quantum_type not in ['number', 'symbol']:
+            logger.warning(
+                f"The quantum_type {quantum_type} is not recognized. Try 'number' or 'symbol'."
+            )
+            return None
+
+        # Check if quantity already exists
+        quantity = getattr(self, f'{quantum_name}_quantum_{quantum_type}')
+        if quantity is not None:
+            return quantity
+
+        # If not, check whether the countertype exists
+        _countertype_map = {
+            'number': 'symbol',
+            'symbol': 'number',
+        }
+        other_quantity = getattr(
+            self, f'{quantum_name}_quantum_{_countertype_map[quantum_type]}'
+        )
+        if other_quantity is None:
+            return None
+
+        # If the counterpart exists, then resolve the quantity from the orbitals_map
+        orbital_quantity = self._orbitals_map.get(f'{quantum_name}_{quantum_type}s', {})
+        if quantum_name == 'l':
+            quantity = orbital_quantity.get(other_quantity)
+        elif quantum_name == 'ml':
+            if self.l_quantum_number is None:
+                return None
+            quantity = orbital_quantity.get(self.l_quantum_number, {}).get(
+                other_quantity
+            )
+        return quantity
+
     def _russel_saunders_j_values(self, l_quantum: float, s_quantum: float) -> list[float]:
         """Generate all possible j values: |l - s|, |l - s| + 1, ..., l + s"""
         j_min = abs(l_quantum - s_quantum)
@@ -395,11 +478,25 @@ class ElectronicState(Entity):
     """
     A section to define the electronic state information.
     Assumes a hierarchical structure, where `sub_states` can be defined.
+
+    The class supports flexible representation through `sub_states`, which can be used
+    to represent nested electronic state hierarchies.
+    The `n_quantum_number` is optional and can be added to any level of the decomposition
+    to indicate the principal quantum number at that layer, when sensible.
     """
 
     name = Quantity(type=str)
 
-    n_quantum_number = Quantity(type=strictly_positive_int)
+    n_quantum_number = Quantity(
+        type=strictly_positive_int,
+        description="""
+        Principal quantum number (n) of the electronic state. This is optional and can be 
+        specified at any level in the sub_states hierarchy. This allows flexible representation 
+        of electronic configurations where different sub-states may have different principal 
+        quantum numbers. When used in conjunction with sub_states, it helps define the shell 
+        structure of complex electronic configurations.
+        """
+    )
 
     point_group = Quantity(
         type=str,
@@ -462,88 +559,6 @@ class ElectronicState(Entity):
         """
     )
 
-    @log
-    def validate_quantum_numbers(self) -> bool:
-        """
-        Validate the quantum numbers (`ml`, `ms`) by checking if they are physically sensible.
-        Note: `n` and `l` quantum numbers are validated by the schema constraints.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (bool): True if the quantum numbers are physically sensible, False otherwise.
-        """
-        logger = self.validate_quantum_numbers.__annotations__['logger']
-        if self.n_quantum_number is not None and self.n_quantum_number < 1:
-            logger.error('The `n_quantum_number` must be greater than 0.')
-            return False
-        if self.l_quantum_number is not None and self.l_quantum_number < 0:
-            logger.error('The `l_quantum_number` must be >= 0.')
-            return False
-        if self.ml_quantum_number is not None and (
-            self.ml_quantum_number < -self.l_quantum_number
-            or self.ml_quantum_number > self.l_quantum_number
-        ):
-            logger.error(
-                'The `ml_quantum_number` must be between `-l_quantum_number` and `l_quantum_number`.'
-            )
-            return False
-        return True
-
-    def resolve_number_and_symbol(
-        self, quantum_name: str, quantum_type: str, logger: 'BoundLogger'
-    ) -> str | int | None:
-        """
-        Resolves the quantum number or symbol from the `self._orbitals_map` on the passed `quantum_type`.
-        `quantum_type` can be either 'number' or 'symbol'. If the quantum type is not found, then the countertype
-        (e.g., quantum_type == 'number' => countertype == 'symbol') is used to resolve it.
-
-        Args:
-            quantum_name (str): The quantum name to resolve. Can be 'l', 'ml'.
-            quantum_type (str): The type of the quantum name. Can be 'number' or 'symbol'.
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[Union[str, int]]): The quantum number or symbol resolved from the orbitals_map.
-        """
-        if quantum_name not in ['l', 'ml']:
-            logger.warning("The quantum_name is not recognized. Try 'l', 'ml'.")
-            return None
-        if quantum_type not in ['number', 'symbol']:
-            logger.warning(
-                f"The quantum_type {quantum_type} is not recognized. Try 'number' or 'symbol'."
-            )
-            return None
-
-        # Check if quantity already exists
-        quantity = getattr(self, f'{quantum_name}_quantum_{quantum_type}')
-        if quantity is not None:
-            return quantity
-
-        # If not, check whether the countertype exists
-        _countertype_map = {
-            'number': 'symbol',
-            'symbol': 'number',
-        }
-        other_quantity = getattr(
-            self, f'{quantum_name}_quantum_{_countertype_map[quantum_type]}'
-        )
-        if other_quantity is None:
-            return None
-
-        # If the counterpart exists, then resolve the quantity from the orbitals_map
-        orbital_quantity = self._orbitals_map.get(f'{quantum_name}_{quantum_type}s', {})
-        if quantum_name == 'l':
-            quantity = orbital_quantity.get(other_quantity)
-        elif quantum_name == 'ml':
-            if self.l_quantum_number is None:
-                return None
-            quantity = orbital_quantity.get(self.l_quantum_number, {}).get(
-                other_quantity
-            )
-        return quantity
-
     def resolve_degeneracy(self) -> int | None:
         """
         Resolves the degeneracy of the orbital state using the general formula:
@@ -579,20 +594,6 @@ class ElectronicState(Entity):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-
-        # General checks for physical quantum numbers and symbols
-        if not self.validate_quantum_numbers(logger=logger):
-            logger.error('The quantum numbers are not physical.')
-            return
-
-        # Resolving the quantum numbers and symbols if not available
-        for quantum_name in ['l', 'ml']:
-            for quantum_type in ['number', 'symbol']:
-                quantity = self.resolve_number_and_symbol(
-                    quantum_name=quantum_name, quantum_type=quantum_type, logger=logger
-                )
-                if getattr(self, f'{quantum_name}_quantum_{quantum_type}') is None:
-                    setattr(self, f'{quantum_name}_quantum_{quantum_type}', quantity)
 
         # Resolve the degeneracy
         if self.degeneracy is None:
