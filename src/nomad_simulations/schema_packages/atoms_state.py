@@ -26,6 +26,14 @@ from nomad_simulations.schema_packages.utils import log
 
 
 class BaseSpinOrbitalState(Entity):
+
+    n_quantum_number = Quantity(
+        type=strictly_positive_int,
+        description="""
+        Principal quantum number (n) of the electronic state. Must be > 0.
+        """,
+    )
+
     @property
     def _name(self) -> str:
         raise NotImplementedError('Subclasses must implement this method.')
@@ -505,59 +513,119 @@ class NonCollinearSpinState(SphericalSymmetryState):  # ? Move to `ElectronicSta
 
 class ElectronicState(Entity):
     """
-    A section to define the electronic state information.
-    Assumes a hierarchical structure, where `sub_states` can be defined.
+    A navigation and projection structure for organizing electronic states in a hierarchical manner.
+    This section does NOT describe a quantum state itself - that role belongs to `spin_orbit_state` 
+    (a `BaseSpinOrbitalState` instance). Instead, `ElectronicState` provides a flexible framework for:
 
-    The class supports flexible representation through `sub_states`, which can be used
-    to represent nested electronic state hierarchies.
-    The `n_quantum_number` is optional and can be added to any level of the decomposition
-    to indicate the principal quantum number at that layer, when sensible.
+    1. **Hierarchical organization**: Decompose electronic structures into nested levels
+       (e.g., Cu atom → 3d manifold → individual d-orbitals)
+    
+    2. **Multiple decomposition schemes**: The same electrons can be organized differently
+       depending on the physics context:
+       - By orbital angular momentum (L-S coupling): dxy, dxz, dyz, dz², dx²-y²
+       - By total angular momentum (j-j coupling): j=3/2, j=5/2
+       - By crystal field symmetry: t2g, eg
+    
+    3. **Projection references**: Other schema sections (DOS, Green's functions, etc.) can 
+       reference specific parts of the electronic structure for projections and analysis.
+    
+    4. **Label inheritance**: Child states inherit partial information from parent levels,
+       building up complete quantum state descriptions hierarchically.
+
+    Example hierarchies:
+
+    **Non-correlated system (DFT)** - Full decomposition possible:
+    ```
+    ElectronicState(name="Cu 3d", spin_orbit_state=SphericalSymmetryState(n=3, l=2))
+        ├─ ElectronicState(name="dxy", spin_orbit_state=SphericalSymmetryState(ml=-2))
+        │   ├─ ElectronicState(name="dxy ↑", spin_orbit_state=SphericalSymmetryState(ms=+0.5), occupation=1.0)
+        │   └─ ElectronicState(name="dxy ↓", spin_orbit_state=SphericalSymmetryState(ms=-0.5), occupation=1.0)
+        ├─ ElectronicState(name="dxz", ...)
+        └─ ...
+    ```
+
+    **Correlated system (DMFT)** - No decomposition, just reference:
+    ```
+    ElectronicState(name="Cu 3d correlated", 
+                   spin_orbit_state=SphericalSymmetryState(n=3, l=2),
+                   occupation=8.5)  # Fractional occupation from many-body state
+        # NO sub_states - correlated electrons cannot be decomposed!
+    ```
+
+    **Crystal field splitting** - Symmetry-based decomposition:
+    ```
+    ElectronicState(name="3d in octahedral field")
+        ├─ ElectronicState(name="t2g", symmetry_label="t2g", degeneracy=6)
+        └─ ElectronicState(name="eg", symmetry_label="eg", degeneracy=4)
+    ```
+
+    Note: For strongly correlated systems, `sub_states` may be empty or minimal, as the 
+    many-body wavefunction cannot be expressed as a simple product of single-particle states.
     """
 
-    name = Quantity(type=str)
-
-    n_quantum_number = Quantity(
-        type=strictly_positive_int,
+    name = Quantity(
+        type=str,
         description="""
-        Principal quantum number (n) of the electronic state. This is optional and can be 
-        specified at any level in the sub_states hierarchy. This allows flexible representation 
-        of electronic configurations where different sub-states may have different principal 
-        quantum numbers. When used in conjunction with sub_states, it helps define the shell 
-        structure of complex electronic configurations.
+        Descriptive name for this electronic state or decomposition level.
+        May inherit information from parent levels (e.g., "3d xy spin-up").
         """,
     )
 
     point_group = Quantity(
         type=str,
-        description='Point-group symmetry based on the relevant nuclear environment.',
+        description="""
+        Point-group symmetry of the environment relevant for this electronic state.
+        Used when decomposing states by crystal field or ligand field symmetry.
+        """,
     )
 
     symmetry_label = Quantity(
         type=str,
-        description='Irreducible representation label under the point group: t2g, eg, a1g, etc.',
+        description="""
+        Irreducible representation label under the specified point group symmetry.
+        Examples: 't2g', 'eg' (octahedral), 'a1g', 'b1g' (tetragonal), etc.
+        Used for crystal field or symmetry-adapted decompositions.
+        """,
     )
 
     spin_orbit_state = SubSection(
         section_def=BaseSpinOrbitalState.m_def,
         description="""
-        The spin-orbit state of the electronic system described.
-        Acts as a reference for populating the overview quantities and `name`.
+        The actual quantum state descriptor at this level of the hierarchy.
+        This `BaseSpinOrbitalState` (typically `SphericalSymmetryState`) defines the 
+        quantum numbers and properties of the state in a modular fashion.
+        Child states in `sub_states` may inherit quantum numbers from this parent descriptor.
+        
+        For example, if parent has `spin_orbit_state=SphericalSymmetryState(n=3, l=2)`,
+        a child might only specify `spin_orbit_state=SphericalSymmetryState(ml=-2)`,
+        with n=3, l=2 implied from the parent.
         """,
     )
 
     degeneracy = Quantity(
         type=np.int32,
         description="""
-        The degeneracy of the orbital state, i.e. no. states with the same energy.
-        It is equal to $2 * l + 1$ for non-relativistic systems and $2 * j + 1$ for relativistic systems.
+        The degeneracy of this electronic state level.
+        - For single orbitals: typically 1 (if ml, ms specified) or 2*l+1 (orbital only)
+        - For manifolds: sum of constituent state degeneracies
+        - For symmetry-adapted states: dimension of irreducible representation
+        
+        Can be computed from `spin_orbit_state` or summed from `sub_states`.
+        For correlated systems, represents the many-body state degeneracy.
         """,
     )
 
     occupation = Quantity(
-        type=np.float64,
+        type=positive_float(),
         description="""
-        The number of electrons in the orbital state. The state is fully occupied if
-        occupation = degeneracy.
+        Electronic occupation of this state or manifold.
+        
+        - For decomposable states: sum of occupations in `sub_states`
+        - For correlated systems: effective occupation from many-body calculation (can be fractional)
+        - For non-interacting: integer or follows Fermi-Dirac distribution
+        
+        Note: For correlated electrons, fractional occupation does NOT mean partial occupancy
+        of individual orbitals, but rather reflects the many-body quantum state.
         """,
     )
 
@@ -577,14 +645,56 @@ class ElectronicState(Entity):
         section_def=SectionProxy('ElectronicState').m_def,
         repeats=True,
         description="""
-        Sub-states of the electronic state, e.g., different orbital states.
+        Hierarchical decomposition of this electronic state into finer-grained components.
+        
+        The decomposition can follow different schemes depending on physics context:
+        - **Orbital decomposition**: Split by ml quantum number (e.g., p → px, py, pz)
+        - **Spin decomposition**: Split by ms quantum number (e.g., orbital → spin up/down)
+        - **Symmetry decomposition**: Split by crystal field irreps (e.g., d → t2g, eg)
+        - **Coupling scheme**: Split by j,mj for j-j coupling vs. ml,ms for L-S coupling
+        
+        Multiple decomposition schemes can coexist for the same electrons - choose the one
+        appropriate for your analysis. For strongly correlated systems where electrons cannot
+        be assigned to individual orbitals, this may be empty or contain only a reference basis.
+        
+        Child states inherit quantum number information from parent's `spin_orbit_state`,
+        only specifying additional refinements (e.g., parent has l=2, child adds ml=-1).
         """,
     )
 
     atoms_state_ref = SubSection(
         section_def=SectionProxy('AtomsState').m_def,
         description="""
-        Reference to the corresponding atomic state definition.
+        Reference to the atomic species (`AtomsState`) to which this electronic state belongs.
+        Populated automatically during normalization to link electronic structure to atoms.
+        """,
+    )
+
+    basis_orbitals = SubSection(
+        section_def=BaseSpinOrbitalState.m_def, # @EBB2675: do you see numerical_settings.basis_set also fit here?
+        repeats=True,
+        description="""
+        References to basis orbitals (as `BaseSpinOrbitalState` instances) used to construct 
+        this state as a linear combination.
+        
+        Used when this electronic state cannot be described by a single quantum state but rather
+        as a superposition of simpler orbital states:
+        - Hybrid orbitals: sp³ = linear combination of s, px, py, pz orbitals
+        - Molecular orbitals: LCAO construction from atomic orbitals
+        - Wannier functions: linear combination of Bloch states
+        - Symmetry-adapted linear combinations (SALC)
+        
+        Each entry is a simple quantum state (e.g., `SphericalSymmetryState(n=2, l=0)` for 2s,
+        `SphericalSymmetryState(n=2, l=1, ml=1)` for 2px, etc.) without the navigation 
+        structure of `ElectronicState`.
+        
+        The actual expansion coefficients should be stored in the relevant electronic eigenvalue
+        sections (e.g., `BandStructure.eigenvectors`, `DOSElectronicNew.value_projection`, etc.)
+        rather than duplicated here. This field provides the ordered basis set definition that 
+        those coefficients correspond to.
+        
+        If this state has a simple symmetry description (`spin_orbit_state`), this field 
+        is typically empty. It's primarily for composite states that lack simple quantum number labels.
         """,
     )
 
@@ -645,6 +755,15 @@ class CoreHole(ElectronicState):
     A section used to define the core-hole state of an atom by extending the `ElectronicState`
     section with core-hole specific properties like excited electron count and DSCF state.
     """
+
+    orbital_ref = SubSection(
+        section_def=BaseSpinOrbitalState.m_def,
+        description="""
+        Reference to the orbital state where the core-hole is generated.
+        Can be a single-electron state (SphericalSymmetryState) or a multi-electron state,
+        depending on the level of description needed for the vacancy.
+        """,
+    )
 
     n_excited_electrons = Quantity(
         type=unit_float,  # ? too restrictive
@@ -714,13 +833,24 @@ class HubbardInteractions(ElectronicState):
         """,
     )
 
+    orbitals_ref = SubSection(
+        section_def=SectionProxy('ElectronicState').m_def,
+        repeats=True,
+        description="""
+        References to the `ElectronicState` sections that define the orbitals involved in
+        Hubbard interactions. The ordering matches the rows/columns of `u_matrix`.
+        Each reference can be a simple orbital (SphericalSymmetryState) or a more complex
+        multi-orbital state, depending on the level of decomposition needed.
+        """,
+    )
+
     u_matrix = Quantity(
         type=np.float64,
         shape=['n_orbitals', 'n_orbitals'],
         unit='joule',
         description="""
         Value of the local Hubbard interaction matrix.
-        The order of the rows and columns coincide with the elements in `orbital_ref`.
+        The order of the rows and columns coincide with the elements in `orbitals_ref`.
         """,
     )
 
