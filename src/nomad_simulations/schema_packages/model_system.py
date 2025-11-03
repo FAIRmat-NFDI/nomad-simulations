@@ -1357,9 +1357,9 @@ class ModelSystem(System):
                 )
                 return
 
-            assert all(0 <= i < n_particles for i in self.particle_indices), (
-                'Invalid particle_indices in ModelSystem subsystem.'
-            )
+            assert all(
+                0 <= i < n_particles for i in self.particle_indices
+            ), 'Invalid particle_indices in ModelSystem subsystem.'
             return
 
         if parent.particle_indices is None:
@@ -1368,9 +1368,9 @@ class ModelSystem(System):
             )
             return
 
-        assert all(pi in parent.particle_indices for pi in self.particle_indices), (
-            'Invalid particle_indices in ModelSystem subsystem.'
-        )
+        assert all(
+            pi in parent.particle_indices for pi in self.particle_indices
+        ), 'Invalid particle_indices in ModelSystem subsystem.'
 
         # TODO logger.warning or logger.error in each case?
 
@@ -1500,7 +1500,7 @@ class ModelSystem(System):
         if self._cache.get('bond_list') is not None:
             return self._cache['bond_list']
 
-        bond_list = np.empty((0, 2), dtype=np.int32)
+        bond_list: np.ndarray = np.empty((0, 2), dtype=np.int32)
         # root
         if self.is_root_system():
             bond_list = self.bond_list if self.bond_list is not None else bond_list
