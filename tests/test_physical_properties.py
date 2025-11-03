@@ -5,8 +5,9 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.plot import PlotlyFigure
 from nomad.metainfo import Quantity
-from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from plotly.graph_objects import Figure
+
+from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 from . import logger
 

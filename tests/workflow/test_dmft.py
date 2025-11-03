@@ -1,4 +1,5 @@
 from nomad.datamodel.metainfo.workflow import Link
+
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.workflow.dmft import (
     DFTTBDMFTMethod,

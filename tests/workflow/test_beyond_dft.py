@@ -1,6 +1,7 @@
 import pytest
 from nomad.datamodel import EntryMetadata
 from nomad.datamodel.metainfo.workflow import TaskReference
+
 from nomad_simulations.schema_packages.workflow.beyond_dft import (
     BeyondDFTMethod,
     BeyondDFTResults,
