@@ -18,12 +18,13 @@ from .general import (
 m_package = SchemaPackage()
 
 
+# TODO Can this class be removed and thermodynamic quantities simply added to SerialWorkflowResults?
 class ThermodynamicsMethod(SimulationWorkflowMethod):
     _label = 'Thermodynamics method'
 
 
 class ThermodynamicsResults(SerialWorkflowResults):
-    _label = 'Thermodynamics ouputs'
+    _label = 'Thermodynamics results'
     pass
 
 

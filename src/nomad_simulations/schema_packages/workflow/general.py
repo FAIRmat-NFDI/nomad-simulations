@@ -3,7 +3,7 @@ from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflo
 from nomad.metainfo import Quantity, SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.common import Time
+from nomad_simulations.schema_packages.common import SimulationTime
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs

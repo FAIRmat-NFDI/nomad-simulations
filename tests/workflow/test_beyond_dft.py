@@ -1,3 +1,4 @@
+import pytest
 from nomad.datamodel import EntryMetadata
 from nomad.datamodel.metainfo.workflow import TaskReference
 
@@ -6,6 +7,8 @@ from nomad_simulations.schema_packages.workflow.beyond_dft import (
     BeyondDFTResults,
     BeyondDFTWorkflow,
 )
+
+pytest_plugins = ('pytest_asyncio',)
 
 
 class TestBeyondDFT:
@@ -21,9 +24,8 @@ class TestBeyondDFT:
         assert log_output.entries[0]['event'] == 'Incorrect number of tasks found.'
 
     # TODO enable once tests with infra is permitted
-    def _test_tasks(
-        self, logger, archive, upload_data, context, upload_id, main_author
-    ):
+    @pytest.mark.skip(reason='Requires Keycloak/infrastructure setup')
+    def test_tasks(self, logger, archive, upload_data, context, upload_id, main_author):
         archive.metadata = EntryMetadata(upload_id=upload_id, main_author=main_author)
         archive.m_context = context
         workflow = BeyondDFTWorkflow()

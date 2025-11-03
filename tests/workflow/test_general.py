@@ -101,7 +101,7 @@ class TestSerialWorkflow:
             == archive.data.model_method[0]
         )
         assert len(serial_workflow.outputs) == 2
-        assert serial_workflow.outputs[0].name == 'Thermodynamics ouputs'
+        assert serial_workflow.outputs[0].name == 'Workflow results'
         assert serial_workflow.outputs[1].name == 'Outputs'
         assert serial_workflow.outputs[1].section == archive.data.outputs[-1]
 

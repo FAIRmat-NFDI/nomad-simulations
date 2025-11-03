@@ -15,4 +15,4 @@ class TestThermodynamics:
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1
         assert workflow.inputs[0].name == 'Thermodynamics method'
-        assert workflow.outputs[0].name == 'Thermodynamics ouputs'
+        assert workflow.outputs[0].name == 'Thermodynamics results'
