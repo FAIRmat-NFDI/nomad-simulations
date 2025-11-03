@@ -5,6 +5,7 @@ from collections import namedtuple
 from collections.abc import Callable
 from itertools import chain
 from typing import Any
+
 import networkx
 import numpy as np
 from scipy import sparse
@@ -31,8 +32,8 @@ from nomad import atomutils
 from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
 from nomad.units import ureg
 from nomad.utils import get_logger
-from nomad_simulations.schema_packages.model_system import ModelSystem
 
+from nomad_simulations.schema_packages.model_system import ModelSystem
 
 LOGGER = get_logger(__name__)
 

@@ -1,5 +1,4 @@
 import pytest
-
 from nomad_simulations.schema_packages.general import ModelMethod, ModelSystem, Outputs
 from nomad_simulations.schema_packages.workflow.general import (
     ParallelWorkflow,

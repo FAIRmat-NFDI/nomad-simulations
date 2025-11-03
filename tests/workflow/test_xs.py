@@ -1,5 +1,4 @@
 import pytest
-
 from nomad_simulations.schema_packages.workflow.photon_polarization import (
     PhotonPolarizationWorkflow,
 )

@@ -10,7 +10,6 @@ import numpy as np
 from scipy import sparse
 from scipy.stats import linregress
 
-
 try:
     import MDAnalysis
     import MDAnalysis.analysis.rdf as MDA_RDF
@@ -35,6 +34,7 @@ from nomad.datamodel.hdf5 import HDF5Dataset
 from nomad.datamodel.metainfo.workflow import Link
 from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
 from nomad.units import ureg
+
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
@@ -1120,7 +1120,9 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         except Exception:
             n_prune = 1
 
-        interval_indices: list[np.ndarray] = []  # 2D array specifying the groups of the n_traj_split intervals to be averaged
+        interval_indices: list[
+            np.ndarray
+        ] = []  # 2D array specifying the groups of the n_traj_split intervals to be averaged
         # first 20% of trajectory
         interval_indices.append(np.arange(int(n_traj_split * 0.20)))
         # last 80% of trajectory
