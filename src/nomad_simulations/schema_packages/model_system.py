@@ -1357,9 +1357,9 @@ class ModelSystem(System):
                 )
                 return
 
-            assert all(
-                0 <= i < n_particles for i in self.particle_indices
-            ), 'Invalid particle_indices in ModelSystem subsystem.'
+            assert all(0 <= i < n_particles for i in self.particle_indices), (
+                'Invalid particle_indices in ModelSystem subsystem.'
+            )
             return
 
         if parent.particle_indices is None:
@@ -1368,9 +1368,9 @@ class ModelSystem(System):
             )
             return
 
-        assert all(
-            pi in parent.particle_indices for pi in self.particle_indices
-        ), 'Invalid particle_indices in ModelSystem subsystem.'
+        assert all(pi in parent.particle_indices for pi in self.particle_indices), (
+            'Invalid particle_indices in ModelSystem subsystem.'
+        )
 
         # TODO logger.warning or logger.error in each case?
 
