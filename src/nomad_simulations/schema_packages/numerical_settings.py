@@ -381,8 +381,9 @@ class KMesh(Mesh):
             offset = np.array([0, 0, 0])
         elif self.center == 'Monkhorst-Pack':
             try:
-                points = monkhorst_pack(size=self.grid)
-                offset = get_monkhorst_pack_size_and_offset(kpts=points)[-1]
+                points_array = monkhorst_pack(size=self.grid)
+                points = list(points_array) if points_array is not None else None
+                offset = get_monkhorst_pack_size_and_offset(kpts=points_array)[-1]
             except ValueError:
                 logger.warning(
                     'Could not resolve `KMesh.points` and `KMesh.offset` from `KMesh.grid`. ASE `monkhorst_pack` failed.'

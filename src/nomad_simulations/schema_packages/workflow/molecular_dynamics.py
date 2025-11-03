@@ -1120,7 +1120,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         except Exception:
             n_prune = 1
 
-        interval_indices = []  # 2D array specifying the groups of the n_traj_split intervals to be averaged
+        interval_indices: list[np.ndarray] = []  # 2D array specifying the groups of the n_traj_split intervals to be averaged
         # first 20% of trajectory
         interval_indices.append(np.arange(int(n_traj_split * 0.20)))
         # last 80% of trajectory
