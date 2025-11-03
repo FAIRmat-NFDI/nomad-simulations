@@ -554,7 +554,7 @@ def _get_molecular_bead_groups(
 
     if not moltypes:
         atoms_moltypes = getattr(universe.atoms, 'moltypes', [])
-        moltypes = np.unique(atoms_moltypes)
+        moltypes = np.unique(atoms_moltypes).tolist()
     bead_groups = {}
     for moltype in moltypes:
         ags_by_moltype = universe.select_atoms('moltype ' + moltype)
