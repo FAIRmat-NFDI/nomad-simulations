@@ -8,8 +8,6 @@ from nomad_simulations.schema_packages.workflow.beyond_dft import (
     BeyondDFTWorkflow,
 )
 
-pytest_plugins = ('pytest_asyncio',)
-
 
 class TestBeyondDFT:
     def test_inputs_outputs(self, logger, archive, log_output):
