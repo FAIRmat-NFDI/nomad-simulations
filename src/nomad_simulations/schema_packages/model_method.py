@@ -1239,6 +1239,7 @@ class PerturbationMethod(ModelMethodElectronic):
         """,
     )
 
+    # TODO : later on, the details about custom scaling factors will be added
     spin_component_scaling = Quantity(
         type=MEnum('none', 'SCS', 'SOS', 'custom'),
         default='none',
