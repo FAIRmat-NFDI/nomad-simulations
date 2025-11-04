@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pint
@@ -11,7 +11,10 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomsState,
+    ElectronicState,
+)
 from nomad_simulations.schema_packages.numerical_settings import KSpace
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
@@ -112,7 +115,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         """,
     )
 
-    def order_eigenvalues(self) -> tuple[pint.Quantity, np.ndarray] | tuple[()]:
+    def order_eigenvalues(self) -> tuple[pint.Quantity, np.ndarray] | None:
         """
         Order the eigenvalues based on the `value` and `occupation`. The return `value` and
         `occupation` are flattened.
@@ -123,9 +126,9 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         """
         # Validation: check if both value and occupation exist and have same shape
         if self.value is None or self.occupation is None:
-            return ()
+            return None
         if self.value.shape != self.occupation.shape:
-            return ()
+            return None
 
         total_shape = np.prod(self.value.shape)
 
@@ -157,7 +160,8 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
             `lowest_unoccupied` eigenvalues.
         """
         # Sorting `value` and `occupation`
-        if ordered_results := self.order_eigenvalues():
+        ordered_results = self.order_eigenvalues()
+        if ordered_results is not None:
             sorted_value, sorted_occupation = ordered_results
             sorted_value_unit = sorted_value.u
             sorted_value = sorted_value.magnitude
@@ -324,9 +328,10 @@ class Occupancy(PhysicalProperty):
     )
 
     orbitals_state_ref = Quantity(
-        type=OrbitalsState,
+        type=ElectronicState,
         description="""
-        Reference to the `OrbitalsState` section in which the occupancy is calculated.
+        Reference to the `ElectronicState` section in which the occupancy is calculated.
+        This can reference individual orbitals, orbital manifolds, or hybrid/molecular orbitals.
         """,
     )
 

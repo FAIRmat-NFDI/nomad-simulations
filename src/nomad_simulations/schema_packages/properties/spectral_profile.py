@@ -167,7 +167,7 @@ class ElectronicDensityOfStates(DOSProfile):
         Note: the cover given by summing up contributions is not perfect, and will depend on the projection functions used.
 
         In `projected_dos`, `name` and `entity_ref` must be set in order for normalization to work:
-            - The `entity_ref` is the `OrbitalsState` or `AtomsState` sections.
+            - The `entity_ref` is the `ElectronicState` or `AtomsState` sections.
             - The `name` of the projected DOS should be `'atom X'` or `'orbital Y X'`, with 'X' being the chemical symbol and 'Y' the orbital label.
             These can be extracted from `entity_ref`.
         """,

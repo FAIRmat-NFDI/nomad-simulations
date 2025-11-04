@@ -28,7 +28,7 @@ from nomad_simulations.schema_packages.utils import log
 class BaseSpinOrbitalState(Entity):
 
     n_quantum_number = Quantity(
-        type=strictly_positive_int,
+        type=strictly_positive_int(),
         description="""
         Principal quantum number (n) of the electronic state. Must be > 0.
         """,
@@ -65,7 +65,7 @@ class SphericalSymmetryState(
     )
 
     l_quantum_number = Quantity(
-        type=positive_int,
+        type=positive_int(),
         description="""
         Angular quantum number of the orbital state. Must be >= 0.
         """,
@@ -144,6 +144,51 @@ class SphericalSymmetryState(
         type=MEnum('pure_LS', 'pure_jj', 'intermediate', 'relativistic'),
         description='How this j value was derived',
     )
+
+    @property
+    def _degeneracy(self) -> int:
+        """
+        Compute the degeneracy for this spherical-symmetry state using available
+        quantum numbers. If insufficient information is available, returns 0.
+
+        Rules:
+        - If j is present (especially as a list), use j-based calculation as it represents coupled states
+        - Otherwise, if l is known (and ml not), orbital degeneracy = 2*l + 1; if ml is known, = 1
+        - If neither j nor ms is known, default spin degeneracy to 1 (updated from 2)
+        """
+        lqn = getattr(self, 'l_quantum_number', None)
+        ml = getattr(self, 'ml_quantum_number', None)
+        ms = getattr(self, 'ms_quantum_number', None)
+        jqn = getattr(self, 'j_quantum_number', None)
+        mj = getattr(self, 'mj_quantum_number', None)
+
+        # Case A: j-based inference (prioritize when j is present)
+        if jqn is not None:
+            try:
+                # If mj is specified, degeneracy equals the number of mj states
+                if mj is not None:
+                    if hasattr(mj, '__len__'):
+                        return len(mj)
+                    else:
+                        return 1  # Single mj value
+                
+                # No mj specified: use j-based calculation for the full manifold
+                # Handle both lists and numpy arrays
+                if hasattr(jqn, '__len__') and len(jqn) > 1:
+                    return int(sum(int(2 * j + 1) for j in jqn))
+                # Single j value (scalar or single-element array)
+                j_val = jqn[0] if hasattr(jqn, '__len__') else jqn
+                return int(2 * j_val + 1)
+            except Exception:
+                return 0
+
+        # Case B: l-based inference (fallback when j is not present)
+        if lqn is not None:
+            orbital_degeneracy = 2 * lqn + 1 if ml is None else 1
+            spin_degeneracy = 1 if ms is not None else 1  # Default spin degeneracy to 1
+            return int(orbital_degeneracy * spin_degeneracy)
+
+        return 0
 
     def compute_kappa_from_j_l(self, jqn: float, lqn: int) -> int:
         """
@@ -642,7 +687,7 @@ class ElectronicState(Entity):
             return 0
 
     sub_states = SubSection(
-        section_def=SectionProxy('ElectronicState').m_def,
+        sub_section=SectionProxy('ElectronicState'),
         repeats=True,
         description="""
         Hierarchical decomposition of this electronic state into finer-grained components.
@@ -663,7 +708,7 @@ class ElectronicState(Entity):
     )
 
     atoms_state_ref = SubSection(
-        section_def=SectionProxy('AtomsState').m_def,
+        sub_section=SectionProxy('AtomsState'),
         description="""
         Reference to the atomic species (`AtomsState`) to which this electronic state belongs.
         Populated automatically during normalization to link electronic structure to atoms.
@@ -700,28 +745,24 @@ class ElectronicState(Entity):
 
     def resolve_degeneracy(self) -> int | None:
         """
-        Resolves the degeneracy of the orbital state using the general formula:
-        total_degeneracy = orbital_degeneracy × spin_degeneracy
-
-        The orbital degeneracy is 2*l + 1 (if ml not specified) or 1 (if ml specified).
-        The spin degeneracy is delegated to the spin_state._degeneracy property, which
-        handles simple spin (2 or 1) or J-coupling cases automatically.
+        Resolve degeneracy for this ElectronicState from `spin_orbit_state._degeneracy`.
 
         Returns:
-            (Optional[int]): The degeneracy of the orbital state.
+            int | None: Computed degeneracy, or None if insufficient information.
         """
-        # Calculate orbital degeneracy
-        if self.l_quantum_number is None:
+        so = getattr(self, 'spin_orbit_state', None)
+        if so is None:
             return None
-
-        orbital_degeneracy = (
-            2 * self.l_quantum_number + 1 if self.ml_quantum_number is None else 1
-        )
-        spin_degeneracy = (
-            self.spin_state._degeneracy if self.spin_state is not None else 2
-        )
-
-        return orbital_degeneracy * spin_degeneracy
+        
+        try:
+            deg = so._degeneracy  # Call the property
+            if isinstance(deg, int) and deg > 0:
+                return deg
+        except (AttributeError, Exception):
+            # _degeneracy property not implemented or failed
+            pass
+        
+        return None
 
     def populate_atoms_state_refs(self, atoms_state: 'AtomsState') -> None:
         """
@@ -744,10 +785,15 @@ class ElectronicState(Entity):
 
         # Extract name
         if self.name is None:
-            if self.n_quantum_number is not None and self.spin_orbit_state is not None:
-                self.name = f'{self.n_quantum_number}{self.spin_orbit_state._name}'
-            elif self.spin_orbit_state is not None:
-                self.name = f'{self.spin_orbit_state._name}'
+            if self.spin_orbit_state is not None:
+                try:
+                    if self.n_quantum_number is not None:
+                        self.name = f'{self.n_quantum_number}{self.spin_orbit_state._name}'
+                    else:
+                        self.name = f'{self.spin_orbit_state._name}'
+                except AttributeError:
+                    # _name property not implemented on this BaseSpinOrbitalState
+                    pass
 
 
 class CoreHole(ElectronicState):
@@ -763,14 +809,13 @@ class CoreHole(ElectronicState):
         Can be a single-electron state (SphericalSymmetryState) or a multi-electron state,
         depending on the level of description needed for the vacancy.
         """,
-    )
+    )  # ? to be merged into spin_orbit_state?
 
     n_excited_electrons = Quantity(
-        type=unit_float,  # ? too restrictive
+        type=unit_float(),  # ? too restrictive
         description="""
         The electron charge excited for modelling purposes. This is a number between 0 and 1 (Janak state).
-        If `dscf_state` is set to 'initial', then this quantity is set to None (but assumed to be excited
-        to an excited state).
+        If `dscf_state` is set to 'initial', then this quantity is set to None (but assumed as excited state).
         """,
     )
 
@@ -785,7 +830,29 @@ class CoreHole(ElectronicState):
     )
 
     @log
-    def resolve_occupation(self) -> np.float64 | None:
+    def resolve_degeneracy(self) -> int | None:
+        """
+        Resolve degeneracy for this CoreHole from `orbital_ref._degeneracy`.
+        Overrides ElectronicState.resolve_degeneracy() to use orbital_ref instead of spin_orbit_state.
+
+        Returns:
+            int | None: Computed degeneracy, or None if insufficient information.
+        """
+        orbital = getattr(self, 'orbital_ref', None)
+        if orbital is None:
+            return super().resolve_degeneracy()  # Fallback to parent method
+        
+        try:
+            deg = orbital._degeneracy  # Call the property
+            if isinstance(deg, int) and deg > 0:
+                return deg
+        except (AttributeError, Exception):
+            # _degeneracy property not implemented or failed
+            pass
+        
+        return None
+
+    def resolve_occupation(self, logger: 'BoundLogger') -> np.float64 | None:
         """
         Resolves the occupation of the orbital state. The occupation is resolved from the degeneracy
         and the number of excited electrons.
@@ -796,27 +863,26 @@ class CoreHole(ElectronicState):
         Returns:
             (Optional[np.float64]): The occupation of the active orbital state.
         """
-        logger = self.resolve_occupation.__annotations__['logger']
-        if self.orbital_ref is None or self.n_excited_electrons is None:
-            logger.warning('Cannot resolve occupation without `n_excited_electrons`.')
-            return None
 
-        try:
-            return self.resolve_degeneracy() - self.n_excited_electrons
-        except Exception as e:
-            logger.warning('Cannot resolve occupation', exc_info=e)
+        if (deg := self.resolve_degeneracy()) and self.n_excited_electrons is not None:
+            return deg - self.n_excited_electrons
+        else:
+            logger.warning('Could not resolve degeneracy to compute occupation.')
             return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
         # Resolve the occupation of the active orbital state
-        # If dscf_state is 'initial', then n_excited_electrons is set to 0
+        # If dscf_state is 'initial', then n_excited_electrons is set to 0 and occupation should not be set
         if self.dscf_state == 'initial':
             self.n_excited_electrons = 0
             self.degeneracy = 1
-        if self.occupation is None:
-            self.occupation = self.resolve_occupation(logger=logger)
+            # Don't set occupation for initial state
+        else:
+            # For other states, resolve occupation normally
+            if self.occupation is None:
+                self.occupation = self.resolve_occupation(logger=logger)
 
 
 class HubbardInteractions(ElectronicState):
@@ -834,7 +900,7 @@ class HubbardInteractions(ElectronicState):
     )
 
     orbitals_ref = SubSection(
-        section_def=SectionProxy('ElectronicState').m_def,
+        sub_section=SectionProxy('ElectronicState'),
         repeats=True,
         description="""
         References to the `ElectronicState` sections that define the orbitals involved in
@@ -855,7 +921,7 @@ class HubbardInteractions(ElectronicState):
     )
 
     u_interaction = Quantity(
-        type=positive_float,
+        type=positive_float(),
         unit='joule',
         description="""
         Value of the (intra-orbital) Hubbard interaction

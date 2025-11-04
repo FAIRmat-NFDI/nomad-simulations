@@ -770,9 +770,9 @@ class ModelSystem(System):
     """
     Model system used as an input for simulating the material.
 
-    Particle positions are held at the top level in the quantity “positions”
+    Particle positions are held at the top level in the quantity "positions"
     and more detailed per‐particle information, e.g., electronic state information,
-    are stored in the subsection “particle_states”. The particle state can be of type
+    are stored in the subsection "particle_states". The particle state can be of type
     AtomState or CGBeadState, but the list of particle states must be homogeneous in type.
     Mixed systems should be treated with multiple ModelSystem sections.
 
@@ -797,18 +797,15 @@ class ModelSystem(System):
     parent-child system trees. The quantities `branch_label`, `branch_depth`, `particle_indices`,
     and `bond_list` are used to define the parent-child tree.
 
-    The normalization is ran in the following order:
-        1. `OrbitalsState.normalize()` in atoms_state.py under `AtomsState`
-        2. `CoreHole.normalize()` in atoms_state.py under `AtomsState`
-        3. `HubbardInteractions.normalize()` in atoms_state.py under `AtomsState`
-        4. `AtomsState.normalize()` in atoms_state.py
-        5. `AtomicCell.normalize()` in atomic_cell.py
-        6. `Symmetry.normalize()` in this class
-        7. `ChemicalFormula.normalize()` in this class
-        8. `ModelSystem.normalize()` in this class
+    The normalization within ModelSystem.normalize() proceeds in the following order:
+        1. Parent System normalization
+        2. Particle state reassignment and validation
+        3. System type and dimensionality resolution (if representative and atomic)
+        4. Symmetry section creation and normalization (for bulk systems)
+        5. ChemicalFormula section creation and normalization
 
-    Note: `normalize()` can be called at any time for each of the classes without being re-triggered
-    by the NOMAD normalization.
+    Note: Other normalizations (AtomsState, ElectronicState, etc.) are handled automatically
+    by NOMAD's normalization system when their respective sections are processed.
 
     Examples for the parent-child hierarchical trees:
 
