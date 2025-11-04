@@ -376,12 +376,13 @@ class KMesh(Mesh):
         offset = None
         if self.center == 'Gamma-centered':  # ! fix this (@ndaelman-hu)
             grid_space = [np.linspace(0, 1, n) for n in self.grid]
-            points = np.meshgrid(grid_space)
+            points = list(np.meshgrid(grid_space))
             offset = np.array([0, 0, 0])
         elif self.center == 'Monkhorst-Pack':
             try:
-                points = monkhorst_pack(size=self.grid)
-                offset = get_monkhorst_pack_size_and_offset(kpts=points)[-1]
+                points_array = monkhorst_pack(size=self.grid)
+                points = [points_array]
+                offset = get_monkhorst_pack_size_and_offset(kpts=points_array)[-1]
             except ValueError:
                 logger.warning(
                     'Could not resolve `KMesh.points` and `KMesh.offset` from `KMesh.grid`. ASE `monkhorst_pack` failed.'
