@@ -1219,7 +1219,7 @@ class PerturbationMethod(ModelMethodElectronic):
         | Abbreviation | Description |
         | ------------ | ----------- |
         | `'MP'`       | Møller-Plesset |
-        | `'RS'`       | Rayleigh-Schrödigner |
+        | `'RS'`       | Rayleigh-Schrödinger |
         | `'BW'`       | Brillouin-Wigner |
         """,
     )
@@ -1234,7 +1234,7 @@ class PerturbationMethod(ModelMethodElectronic):
     density = Quantity(
         type=MEnum('relaxed', 'unrelaxed'),
         description="""
-        unrelaxed density: MP2 expectation value density.
+        unrelaxed density: no orbital-response terms.
         relaxed density  : incorporates orbital relaxation.
         """,
     )
@@ -1249,7 +1249,7 @@ class PerturbationMethod(ModelMethodElectronic):
           - SCS   : spin-component scaled (Grimme's approach, https://doi.org/10.1002/wcms.1110)
           - SOS   : spin-opposite scaled
           - custom: user-defined scaling factors
-        This is typically relevant only for MP2 calculations.
+        This is primarily used for MP2.
         """,
     )
 
@@ -1265,7 +1265,7 @@ class CoupledCluster(ModelMethodElectronic):
         description="""
         String labeling the Coupled Cluster flavor (e.g., CC2, CC3, CCD, CCSD, CCSDT, etc.).
         If a known standard approach, it might match these examples:
-          - CC2, CC3  : approximate methods for excited states
+          - CC2, CC3  : CC2, CC3: approximate CC models (commonly used for excited-state calculations)
           - CCD       : Coupled Cluster Doubles
           - CCSD      : Singles and Doubles
           - CCSDT     : Singles, Doubles, and Triples
@@ -1307,13 +1307,11 @@ class CoupledCluster(ModelMethodElectronic):
           - '(T0)'  : approximate version of (T)
           - '[T0]'  : approximate, typically for Brueckner references
           - '(Q)'   : perturbative quadruples, e.g., CCSDT(Q)
-          - 'none'  : no perturbative correction
         """,
     )
 
     explicit_correlation = Quantity(
         type=MEnum('F12', 'F12a', 'F12b', 'F12c', 'R12'),
-        default='',
         description="""
         Explicit correlation treatment.
         These methods introduce the interelectronic distance coordinate
