@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive

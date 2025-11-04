@@ -1,3 +1,5 @@
+from typing import Optional, Union
+
 import pytest
 from nomad.datamodel import EntryArchive
 

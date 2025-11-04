@@ -1,4 +1,5 @@
-import numpy as np
+from typing import Optional
+
 import pytest
 
 from nomad_simulations.schema_packages.properties import (

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from nomad.metainfo import MEnum, Quantity, SubSection
 from nomad.metainfo.data_type import m_complex128

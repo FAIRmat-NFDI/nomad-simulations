@@ -19,7 +19,7 @@
 import re
 from functools import lru_cache
 from hashlib import sha1
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import ase
 import numpy as np
@@ -45,7 +45,7 @@ from nomad_simulations.schema_packages.utils import log
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator
-    from typing import Any
+    from typing import Any, Optional
 
     import pint
     from nomad.datamodel.datamodel import EntryArchive
@@ -511,7 +511,7 @@ class Symmetry(ArchiveSection):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (AtomicCell | None): The resolved `AtomicCell` section or None if the cell_type
+            (Optional[AtomicCell]): The resolved `AtomicCell` section or None if the cell_type
             is not recognized.
         """
         # Define a mapping for each supported cell type
@@ -566,7 +566,7 @@ class Symmetry(ArchiveSection):
             uses to in MatID.SymmetryAnalyzer().
             logger (BoundLogger): The logger to log messages.
         Returns:
-            primitive_atomic_cell, conventional_atomic_cell (tuple[AtomicCell | None, AtomicCell | None]): The primitive and standardized `AtomicCell` sections.
+            primitive_atomic_cell, conventional_atomic_cell (tuple[Optional[AtomicCell], Optional[AtomicCell]]): The primitive and standardized `AtomicCell` sections.
         """
         symmetry = {}
         try:

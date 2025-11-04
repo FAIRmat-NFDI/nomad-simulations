@@ -1,4 +1,6 @@
 import os
+from typing import Optional
+
 import numpy as np
 import pytest
 import structlog
