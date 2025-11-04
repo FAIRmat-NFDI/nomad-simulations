@@ -1520,9 +1520,10 @@ class ModelSystem(System):
         )
 
         mask = np.isin(root.bond_list, idx).all(axis=1)
-        root_bonds = np.asarray(root.bond_list, dtype=np.int32).reshape(-1, 2)
-        bond_list = root_bonds[mask]
-        bond_list = np.unique(bond_list, axis=0)
+        root_bonds_temp = np.asarray(root.bond_list, dtype=np.int32).reshape(-1, 2)
+        root_bonds: np.ndarray = root_bonds_temp.astype(np.int32)
+        filtered_bonds: np.ndarray = root_bonds[mask].astype(np.int32)
+        bond_list = np.unique(filtered_bonds, axis=0).astype(np.int32)
         self._cache['bond_list'] = bond_list
 
         return bond_list
