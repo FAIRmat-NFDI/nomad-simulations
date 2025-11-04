@@ -134,15 +134,24 @@ class TestKMesh:
         'center, grid, result_points, result_offset',
         [
             # No `center` and `grid`
-            (None, None, None, None),
+            (None, None, [], []),
             # No `grid`
-            ('Gamma-centered', None, None, None),
-            ('Monkhorst-Pack', None, None, None),
+            ('Gamma-centered', None, [], []),
+            ('Monkhorst-Pack', None, [], []),
             # `center` is `'Gamma-centered'`
             (
                 'Gamma-centered',
                 [2, 2, 2],
-                [[0.0, 1.0, 0.0, 1.0, 0.0, 1.0]],  # ! this result is weird @ndaelman-hu
+                [
+                    [0.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, 1.0, 1.0],
+                    [1.0, 0.0, 0.0],
+                    [1.0, 0.0, 1.0],
+                    [1.0, 1.0, 0.0],
+                    [1.0, 1.0, 1.0],
+                ],
                 [0.0, 0.0, 0.0],
             ),
             # `center` is `'Monkhorst-Pack'`
@@ -162,7 +171,7 @@ class TestKMesh:
                 [0.0, 0.0, 0.0],
             ),
             # Invalid `grid`
-            ('Monkhorst-Pack', [-2, 2, 2], None, None),
+            ('Monkhorst-Pack', [-2, 2, 2], [], []),
         ],
     )
     def test_resolve_points_and_offset(
@@ -175,14 +184,14 @@ class TestKMesh:
         if grid is not None:
             k_mesh.grid = grid
         points, offset = k_mesh.resolve_points_and_offset(logger=logger)
-        if points is not None:
+        if len(points) > 0:
             assert np.allclose(points, result_points)
         else:
-            assert points == result_points
-        if offset is not None:
+            assert len(points) == len(result_points)
+        if len(offset) > 0:
             assert np.allclose(offset, result_offset)
         else:
-            assert offset == result_offset
+            assert len(offset) == len(result_offset)
 
     @pytest.mark.parametrize(
         'system_type, is_representative, grid, reciprocal_lattice_vectors, result_get_k_line_density, result_k_line_density',

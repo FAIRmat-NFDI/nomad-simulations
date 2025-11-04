@@ -358,7 +358,7 @@ class KMesh(Mesh):
 
     def resolve_points_and_offset(
         self, logger: 'BoundLogger'
-    ) -> tuple[list[np.ndarray] | None, np.ndarray | None]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Resolves the `points` and `offset` of the `KMesh` from the `grid` and the `center`.
 
@@ -366,17 +366,17 @@ class KMesh(Mesh):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (tuple[list[np.ndarray] | None, np.ndarray | None]): The resolved `points` and `offset` of the `KMesh`.
+            (tuple[np.ndarray, np.ndarray]): The resolved `points` and `offset` of the `KMesh`.
+            Returns empty arrays if resolution fails.
         """
         if self.grid is None:
             logger.warning('Could not find `KMesh.grid`.')
-            return None, None
+            return np.array([]), np.array([])
 
-        points = None
-        offset = None
         if self.center == 'Gamma-centered':  # ! fix this (@ndaelman-hu)
             grid_space = [np.linspace(0, 1, n) for n in self.grid]
-            points = np.meshgrid(grid_space)
+            points_meshgrid = np.meshgrid(*grid_space, indexing='ij')
+            points = np.column_stack([grid.ravel() for grid in points_meshgrid])
             offset = np.array([0, 0, 0])
         elif self.center == 'Monkhorst-Pack':
             try:
@@ -387,7 +387,12 @@ class KMesh(Mesh):
                     'Could not resolve `KMesh.points` and `KMesh.offset` from `KMesh.grid`. ASE `monkhorst_pack` failed.'
                 )
                 # this is a quick workaround: k_mesh.grid should be symmetry reduced
-                return None, None
+                return np.array([]), np.array([])
+        else:
+            # Unknown center type
+            logger.warning(f'Unknown center type: {self.center}')
+            return np.array([]), np.array([])
+        
         return points, offset
 
     def get_k_line_density(
