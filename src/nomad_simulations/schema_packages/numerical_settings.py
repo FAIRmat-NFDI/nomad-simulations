@@ -367,13 +367,11 @@ class KMesh(Mesh):
 
         Returns:
             (tuple[np.ndarray, np.ndarray]): The resolved `points` and `offset` of the `KMesh`.
-            Returns empty arrays with correct shape if resolution fails.
+            Returns empty arrays if resolution fails.
         """
-        if self.grid is None or len(self.grid) == 0:
+        if self.grid is None:
             logger.warning('Could not find `KMesh.grid`.')
-            # Return empty arrays with correct shape: (0, dimensionality) for points and (dimensionality,) for offset
-            dimensionality = 3  # Default to 3D k-space
-            return np.empty((0, dimensionality)), np.empty(dimensionality)
+            return np.array([]), np.array([])
 
         if self.center == 'Gamma-centered':  # ! fix this (@ndaelman-hu)
             grid_space = [np.linspace(0, 1, n) for n in self.grid]
@@ -389,15 +387,11 @@ class KMesh(Mesh):
                     'Could not resolve `KMesh.points` and `KMesh.offset` from `KMesh.grid`. ASE `monkhorst_pack` failed.'
                 )
                 # this is a quick workaround: k_mesh.grid should be symmetry reduced
-                # Return empty arrays with correct shape: (0, dimensionality) for points and (dimensionality,) for offset
-                dimensionality = len(self.grid) if self.grid else 3
-                return np.empty((0, dimensionality)), np.empty(dimensionality)
+                return np.array([]), np.array([])
         else:
             # Unknown center type
             logger.warning(f'Unknown center type: {self.center}')
-            # Return empty arrays with correct shape: (0, dimensionality) for points and (dimensionality,) for offset
-            dimensionality = len(self.grid) if self.grid else 3
-            return np.empty((0, dimensionality)), np.empty(dimensionality)
+            return np.array([]), np.array([])
 
         return points, offset
 
