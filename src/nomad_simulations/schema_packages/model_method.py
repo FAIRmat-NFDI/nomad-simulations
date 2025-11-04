@@ -1310,8 +1310,6 @@ class CoupledCluster(ModelMethodElectronic):
         """,
     )
 
-    perturbation_method = SubSection(sub_section=PerturbationMethod.m_def)
-
     explicit_correlation = Quantity(
         type=MEnum('F12', 'F12a', 'F12b', 'F12c', 'R12'),
         default='',
