@@ -614,7 +614,7 @@ class Symmetry(ArchiveSection):
 
         # Getting prototype_formula, prototype_aflow_id, and strukturbericht designation from
         # standarized Wyckoff numbers and the space group number
-        if symmetry.get('space_group_number'):
+        if symmetry.get('space_group_number') and conventional_atomic_cell is not None:
             # Retrieve the expanded conventional system (an ASE.Atoms object) from the analyzer.
             conventional_system = symmetry_analyzer.get_conventional_system()
             # Use the conventional system to get the expanded atomic numbers.
@@ -654,7 +654,7 @@ class Symmetry(ArchiveSection):
         )
         # TODO : the following is a temporary fix, and it might break again
         # when there are systems with deeper hierarchies.
-        if self.m_parent.m_parent is not None and self.m_parent.type == 'bulk':
+        if atomic_cell is not None and self.m_parent.m_parent is not None and self.m_parent.type == 'bulk':
             # Adding the newly calculated primitive and conventional cells to the ModelSystem
             (
                 primitive_atomic_cell,
@@ -1253,7 +1253,7 @@ class ModelSystem(System):
         return system_type, dimensionality
 
     # TODO thorough check
-    def _copy_common_quantities(self, src, dst, *, exclude: set[str] = None) -> None:
+    def _copy_common_quantities(self, src, dst, *, exclude: set[str] | None = None) -> None:
         exclude = exclude or set()
 
         def _qnames(section) -> set[str]:
@@ -1548,7 +1548,7 @@ class ModelSystem(System):
             particle_indices = np.arange(n_particles, dtype=np.int32)
 
         # --- 1. Connectivity check ---
-        graph = nx.Graph()
+        graph: nx.Graph = nx.Graph()
         graph.add_nodes_from(particle_indices)
         graph.add_edges_from(bonds)
 
