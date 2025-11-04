@@ -358,7 +358,7 @@ class KMesh(Mesh):
 
     def resolve_points_and_offset(
         self, logger: 'BoundLogger'
-    ) -> tuple[list[np.ndarray] | None, np.ndarray | None]:
+    ) -> tuple[np.ndarray | None, np.ndarray | None]:
         """
         Resolves the `points` and `offset` of the `KMesh` from the `grid` and the `center`.
 
