@@ -725,9 +725,17 @@ class SlaterKosterBond(ArchiveSection):
             return None
 
         # Check for `l_quantum_symbol` in `ElectronicState` sections
-        orbital_1_l_symbol = getattr(orbital_1.spin_orbit_state, 'l_quantum_symbol', None) if orbital_1.spin_orbit_state else None
-        orbital_2_l_symbol = getattr(orbital_2.spin_orbit_state, 'l_quantum_symbol', None) if orbital_2.spin_orbit_state else None
-        
+        orbital_1_l_symbol = (
+            getattr(orbital_1.spin_orbit_state, 'l_quantum_symbol', None)
+            if orbital_1.spin_orbit_state
+            else None
+        )
+        orbital_2_l_symbol = (
+            getattr(orbital_2.spin_orbit_state, 'l_quantum_symbol', None)
+            if orbital_2.spin_orbit_state
+            else None
+        )
+
         if orbital_1_l_symbol is None or orbital_2_l_symbol is None:
             logger.warning(
                 'The `l_quantum_symbol` of the `ElectronicState` bonds are not defined.'

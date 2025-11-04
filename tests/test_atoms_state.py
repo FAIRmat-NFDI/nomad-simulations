@@ -29,7 +29,7 @@ class TestSphericalSymmetryState:
 
     @staticmethod
     def add_state(
-    orbital_state: SphericalSymmetryState,
+        orbital_state: SphericalSymmetryState,
         l_number: int,
         ml_number: int | None,
         ms_number: float | None,
@@ -122,13 +122,55 @@ class TestSphericalSymmetryState:
     @pytest.mark.parametrize(
         'l_quantum_number, ml_quantum_number, j_quantum_number, mj_quantum_number, ms_quantum_number, degeneracy',
         [
-            (1, None, None, None, 0.5, 3),  # l=1, ms=0.5 -> orbital_deg=3, spin_deg=1 -> 3
-            (1, None, None, None, None, 3),  # l=1, no ms/j -> orbital_deg=3, spin_deg=1 (default) -> 3
-            (1, -1, None, None, 0.5, 1),   # l=1, ml=-1, ms=0.5 -> orbital_deg=1, spin_deg=1 -> 1
-            (1, -1, None, None, None, 1),  # l=1, ml=-1, no ms/j -> orbital_deg=1, spin_deg=1 (default) -> 1
+            (
+                1,
+                None,
+                None,
+                None,
+                0.5,
+                3,
+            ),  # l=1, ms=0.5 -> orbital_deg=3, spin_deg=1 -> 3
+            (
+                1,
+                None,
+                None,
+                None,
+                None,
+                3,
+            ),  # l=1, no ms/j -> orbital_deg=3, spin_deg=1 (default) -> 3
+            (
+                1,
+                -1,
+                None,
+                None,
+                0.5,
+                1,
+            ),  # l=1, ml=-1, ms=0.5 -> orbital_deg=1, spin_deg=1 -> 1
+            (
+                1,
+                -1,
+                None,
+                None,
+                None,
+                1,
+            ),  # l=1, ml=-1, no ms/j -> orbital_deg=1, spin_deg=1 (default) -> 1
             # j-based cases - when j is present, it takes priority and encodes total angular momentum
-            (1, None, [1 / 2, 3 / 2], None, None, 6),  # j=[0.5,1.5] -> 2*0.5+1 + 2*1.5+1 = 2+4 = 6 (j takes priority)
-            (1, -1, [1 / 2, 3 / 2], [-3 / 2, 1 / 2, 1 / 2, 3 / 2], None, 4),  # mj specified -> len(mj) = 4
+            (
+                1,
+                None,
+                [1 / 2, 3 / 2],
+                None,
+                None,
+                6,
+            ),  # j=[0.5,1.5] -> 2*0.5+1 + 2*1.5+1 = 2+4 = 6 (j takes priority)
+            (
+                1,
+                -1,
+                [1 / 2, 3 / 2],
+                [-3 / 2, 1 / 2, 1 / 2, 3 / 2],
+                None,
+                4,
+            ),  # mj specified -> len(mj) = 4
         ],
     )
     def test_degeneracy(
@@ -174,7 +216,9 @@ class TestSphericalSymmetryState:
         # The l_quantum_symbol should be 'd' for l=2, but it might not be set during normalization
         # Focus on the quantum number values which are the core functionality
         assert orbital_state.ml_quantum_number == -2
-        assert _degeneracy_from_orbital(orbital_state) == 1  # l=2, ml=-2 -> degeneracy=1
+        assert (
+            _degeneracy_from_orbital(orbital_state) == 1
+        )  # l=2, ml=-2 -> degeneracy=1
 
 
 class TestCoreHole:
@@ -185,8 +229,18 @@ class TestCoreHole:
     @pytest.mark.parametrize(
         'orbital_ref, degeneracy, n_excited_electrons, occupation',
         [
-            (SphericalSymmetryState(l_quantum_number=1), 3, 0.5, 2.5),  # Updated expected degeneracy and occupation
-            (SphericalSymmetryState(l_quantum_number=1, ml_quantum_number=-1), 1, 0.5, 0.5),  # Updated expected degeneracy and occupation
+            (
+                SphericalSymmetryState(l_quantum_number=1),
+                3,
+                0.5,
+                2.5,
+            ),  # Updated expected degeneracy and occupation
+            (
+                SphericalSymmetryState(l_quantum_number=1, ml_quantum_number=-1),
+                1,
+                0.5,
+                0.5,
+            ),  # Updated expected degeneracy and occupation
             (None, None, 0.5, None),
         ],
     )
@@ -220,16 +274,36 @@ class TestCoreHole:
     @pytest.mark.parametrize(
         'orbital_ref, n_excited_electrons, dscf_state, results',
         [
-            (SphericalSymmetryState(l_quantum_number=1), 0.5, None, (0.5, None, 2.5)),  # Valid n_excited_electrons, updated occupation
+            (
+                SphericalSymmetryState(l_quantum_number=1),
+                0.5,
+                None,
+                (0.5, None, 2.5),
+            ),  # Valid n_excited_electrons, updated occupation
             (
                 SphericalSymmetryState(l_quantum_number=1, ml_quantum_number=-1),
                 0.5,
                 None,
                 (0.5, None, 0.5),  # Updated occupation
             ),
-            (SphericalSymmetryState(l_quantum_number=1), 0.5, 'initial', (0, 1, None)),  # n_excited_electrons -> 0 for initial
-            (SphericalSymmetryState(l_quantum_number=1), 0.5, 'final', (0.5, None, 2.5)),  # Updated occupation
-            (None, 0.5, None, (0.5, None, None)),  # When orbital_ref is None, occupation should remain None
+            (
+                SphericalSymmetryState(l_quantum_number=1),
+                0.5,
+                'initial',
+                (0, 1, None),
+            ),  # n_excited_electrons -> 0 for initial
+            (
+                SphericalSymmetryState(l_quantum_number=1),
+                0.5,
+                'final',
+                (0.5, None, 2.5),
+            ),  # Updated occupation
+            (
+                None,
+                0.5,
+                None,
+                (0.5, None, None),
+            ),  # When orbital_ref is None, occupation should remain None
         ],
     )
     def test_normalize(

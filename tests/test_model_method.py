@@ -2,7 +2,12 @@ from typing import Optional
 
 import pytest
 from nomad.datamodel import EntryArchive
-from nomad_simulations.schema_packages.atoms_state import AtomsState, ElectronicState, SphericalSymmetryState
+
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomsState,
+    ElectronicState,
+    SphericalSymmetryState,
+)
 from nomad_simulations.schema_packages.model_method import (
     TB,
     SlaterKoster,
@@ -148,7 +153,7 @@ class TestTB:
                 assert orbitals_ref[0].name == result[0].name
 
     @pytest.mark.parametrize(
-    'tb_section, result_type, model_systems, expected_states',
+        'tb_section, result_type, model_systems, expected_states',
         [
             # (1) no method `type` extracted + no model systems
             (TB(), 'unavailable', [], None),
@@ -189,7 +194,14 @@ class TestTB:
                         sub_systems=[
                             ModelSystem(type='active_atom', particle_indices=[99])
                         ],
-                        particle_states=[AtomsState(electronic_state=ElectronicState(name='missing_index_state', basis_orbitals=[SphericalSymmetryState()]))],
+                        particle_states=[
+                            AtomsState(
+                                electronic_state=ElectronicState(
+                                    name='missing_index_state',
+                                    basis_orbitals=[SphericalSymmetryState()],
+                                )
+                            )
+                        ],
                     )
                 ],
                 None,
@@ -212,10 +224,24 @@ class TestTB:
             ),
             # (9) user gave Wannier.orbitals_ref => skip resolution
             (
-                Wannier(orbitals_ref=[ElectronicState(name='user_orbital_state', basis_orbitals=[SphericalSymmetryState(l_quantum_symbol='p')])]),
+                Wannier(
+                    orbitals_ref=[
+                        ElectronicState(
+                            name='user_orbital_state',
+                            basis_orbitals=[
+                                SphericalSymmetryState(l_quantum_symbol='p')
+                            ],
+                        )
+                    ]
+                ),
                 'Wannier',
                 [ModelSystem(is_representative=True, cell=[AtomicCell()])],
-                [ElectronicState(name='user_orbital_state', basis_orbitals=[SphericalSymmetryState(l_quantum_symbol='p')])],
+                [
+                    ElectronicState(
+                        name='user_orbital_state',
+                        basis_orbitals=[SphericalSymmetryState(l_quantum_symbol='p')],
+                    )
+                ],
             ),
             # Commented out for now.
             # (10) fully valid => single orbital
@@ -321,12 +347,12 @@ class TestSlaterKosterBond:
         if orb1_symbol:
             spherical_state = SphericalSymmetryState(l_quantum_symbol=orb1_symbol)
             orbit1 = ElectronicState(spin_orbit_state=spherical_state)
-        
+
         orbit2 = None
         if orb2_symbol:
             spherical_state = SphericalSymmetryState(l_quantum_symbol=orb2_symbol)
             orbit2 = ElectronicState(spin_orbit_state=spherical_state)
-            
+
         name = sk_bond.resolve_bond_name_from_references(
             orbital_1=orbit1,
             orbital_2=orbit2,

@@ -14,7 +14,7 @@ from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 class HoppingMatrix(PhysicalProperty):
     """
     Transition probability between two atomic orbitals in a tight-binding model.
-    
+
     Entity references for orbitals should use the `ElectronicState` navigation section.
     Individual quantum state objects (e.g., `SphericalSymmetryState`) are referenced within the basis_orbitals list of ElectronicState.
     """

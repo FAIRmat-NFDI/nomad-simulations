@@ -502,6 +502,7 @@ def approx():
 
     return func
 
+
 def make_spherical_state(
     n: int | None = 1,
     lqn: int | None = 0,

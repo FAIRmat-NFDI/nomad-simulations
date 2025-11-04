@@ -26,7 +26,6 @@ from nomad_simulations.schema_packages.utils import log
 
 
 class BaseSpinOrbitalState(Entity):
-
     n_quantum_number = Quantity(
         type=strictly_positive_int(),
         description="""
@@ -171,7 +170,7 @@ class SphericalSymmetryState(
                         return len(mj)
                     else:
                         return 1  # Single mj value
-                
+
                 # No mj specified: use j-based calculation for the full manifold
                 # Handle both lists and numpy arrays
                 if hasattr(jqn, '__len__') and len(jqn) > 1:
@@ -559,21 +558,21 @@ class NonCollinearSpinState(SphericalSymmetryState):  # ? Move to `ElectronicSta
 class ElectronicState(Entity):
     """
     A navigation and projection structure for organizing electronic states in a hierarchical manner.
-    This section does NOT describe a quantum state itself - that role belongs to `spin_orbit_state` 
+    This section does NOT describe a quantum state itself - that role belongs to `spin_orbit_state`
     (a `BaseSpinOrbitalState` instance). Instead, `ElectronicState` provides a flexible framework for:
 
     1. **Hierarchical organization**: Decompose electronic structures into nested levels
        (e.g., Cu atom → 3d manifold → individual d-orbitals)
-    
+
     2. **Multiple decomposition schemes**: The same electrons can be organized differently
        depending on the physics context:
        - By orbital angular momentum (L-S coupling): dxy, dxz, dyz, dz², dx²-y²
        - By total angular momentum (j-j coupling): j=3/2, j=5/2
        - By crystal field symmetry: t2g, eg
-    
-    3. **Projection references**: Other schema sections (DOS, Green's functions, etc.) can 
+
+    3. **Projection references**: Other schema sections (DOS, Green's functions, etc.) can
        reference specific parts of the electronic structure for projections and analysis.
-    
+
     4. **Label inheritance**: Child states inherit partial information from parent levels,
        building up complete quantum state descriptions hierarchically.
 
@@ -591,7 +590,7 @@ class ElectronicState(Entity):
 
     **Correlated system (DMFT)** - No decomposition, just reference:
     ```
-    ElectronicState(name="Cu 3d correlated", 
+    ElectronicState(name="Cu 3d correlated",
                    spin_orbit_state=SphericalSymmetryState(n=3, l=2),
                    occupation=8.5)  # Fractional occupation from many-body state
         # NO sub_states - correlated electrons cannot be decomposed!
@@ -604,7 +603,7 @@ class ElectronicState(Entity):
         └─ ElectronicState(name="eg", symmetry_label="eg", degeneracy=4)
     ```
 
-    Note: For strongly correlated systems, `sub_states` may be empty or minimal, as the 
+    Note: For strongly correlated systems, `sub_states` may be empty or minimal, as the
     many-body wavefunction cannot be expressed as a simple product of single-particle states.
     """
 
@@ -716,7 +715,7 @@ class ElectronicState(Entity):
     )
 
     basis_orbitals = SubSection(
-        section_def=BaseSpinOrbitalState.m_def, # @EBB2675: do you see numerical_settings.basis_set also fit here?
+        section_def=BaseSpinOrbitalState.m_def,  # @EBB2675: do you see numerical_settings.basis_set also fit here?
         repeats=True,
         description="""
         References to basis orbitals (as `BaseSpinOrbitalState` instances) used to construct 
@@ -753,7 +752,7 @@ class ElectronicState(Entity):
         so = getattr(self, 'spin_orbit_state', None)
         if so is None:
             return None
-        
+
         try:
             deg = so._degeneracy  # Call the property
             if isinstance(deg, int) and deg > 0:
@@ -761,7 +760,7 @@ class ElectronicState(Entity):
         except (AttributeError, Exception):
             # _degeneracy property not implemented or failed
             pass
-        
+
         return None
 
     def populate_atoms_state_refs(self, atoms_state: 'AtomsState') -> None:
@@ -788,7 +787,9 @@ class ElectronicState(Entity):
             if self.spin_orbit_state is not None:
                 try:
                     if self.n_quantum_number is not None:
-                        self.name = f'{self.n_quantum_number}{self.spin_orbit_state._name}'
+                        self.name = (
+                            f'{self.n_quantum_number}{self.spin_orbit_state._name}'
+                        )
                     else:
                         self.name = f'{self.spin_orbit_state._name}'
                 except AttributeError:
@@ -841,7 +842,7 @@ class CoreHole(ElectronicState):
         orbital = getattr(self, 'orbital_ref', None)
         if orbital is None:
             return super().resolve_degeneracy()  # Fallback to parent method
-        
+
         try:
             deg = orbital._degeneracy  # Call the property
             if isinstance(deg, int) and deg > 0:
@@ -849,7 +850,7 @@ class CoreHole(ElectronicState):
         except (AttributeError, Exception):
             # _degeneracy property not implemented or failed
             pass
-        
+
         return None
 
     def resolve_occupation(self, logger: 'BoundLogger') -> np.float64 | None:
