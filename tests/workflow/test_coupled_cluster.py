@@ -1,5 +1,3 @@
-# tests/schema_packages/workflow/test_coupled_cluster.py
-
 from nomad_simulations.schema_packages.workflow.coupled_cluster import (
     HFCCModel,
     HFCCResults,

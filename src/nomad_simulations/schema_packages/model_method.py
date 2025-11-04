@@ -1209,39 +1209,6 @@ class HartreeFock(ModelMethodElectronic):
         """,
     )
 
-    # def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-    #     """
-    #     • Ensures the determinant is RHF / UHF / ROHF (no KS flavours).
-    #     • Checks that the spin-channel count of MolecularOrbitals matches that determinant.
-    #     """
-    #     super().normalize(archive, logger)
-
-    #     det = self.reference_determinant
-    #     if det in ('RKS', 'UKS', 'ROKS'):
-    #         logger.error(
-    #             'Kohn-Sham determinant given for a pure Hartree-Fock section; '
-    #             'resetting to None',
-    #             supplied=det,
-    #         )
-    #         self.reference_determinant = None
-    #         return
-
-    #     # --- spin‑channel consistency ------------------------------------
-    #     if self.molecular_orbitals is None:
-    #         return
-
-    #     spin_channels = self.molecular_orbitals.spin_channels or ()
-    #     n_spins = len(spin_channels)
-
-    #     expected = {None: None, 'RHF': 1, 'UHF': 2, 'ROHF': 2}.get(det)
-    #     if expected is not None and n_spins != expected:
-    #         logger.warning(
-    #             'Spin-channel count does not match Hartree-Fock determinant',
-    #             determinant=det,
-    #             expected_spins=expected,
-    #             found_spins=n_spins,
-    #         )
-
 
 class PerturbationMethod(ModelMethodElectronic):
     type = Quantity(

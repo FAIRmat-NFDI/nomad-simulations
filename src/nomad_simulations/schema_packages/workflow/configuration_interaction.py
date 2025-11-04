@@ -1,5 +1,3 @@
-# nomad_simulations/schema_packages/workflow/ci.py
-
 from nomad.datamodel import EntryArchive
 from nomad.metainfo import SchemaPackage
 from structlog.stdlib import BoundLogger
