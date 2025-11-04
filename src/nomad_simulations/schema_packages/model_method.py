@@ -1183,3 +1183,172 @@ class DMFT(ModelMethodElectronic):
         `orbitals_ref` and their spin state.
         """,
     )
+
+
+class PerturbationMethod(ModelMethodElectronic):
+    type = Quantity(
+        type=MEnum('MP', 'RS', 'BW'),
+        default='MP',
+        description="""
+        Perturbation approach. The abbreviations stand for:
+        | Abbreviation | Description |
+        | ------------ | ----------- |
+        | `'MP'`       | Møller-Plesset |
+        | `'RS'`       | Rayleigh-Schrödigner |
+        | `'BW'`       | Brillouin-Wigner |
+        """,
+    )
+
+    order = Quantity(
+        type=np.int32,
+        description="""
+        Order up to which the perturbation is expanded.
+        """,
+    )
+
+    density = Quantity(
+        type=MEnum('relaxed', 'unrelaxed'),
+        description="""
+        unrelaxed density: MP2 expectation value density.
+        relaxed density  : incorporates orbital relaxation.
+        """,
+    )
+
+    spin_component_scaling = Quantity(
+        type=MEnum('none', 'SCS', 'SOS', 'custom'),
+        default='none',
+        description="""
+        Spin-component scaling approach for perturbation methods:
+          - none  : no spin-component scaling
+          - SCS   : spin-component scaled (Grimme's approach, https://doi.org/10.1002/wcms.1110)
+          - SOS   : spin-opposite scaled
+          - custom: user-defined scaling factors
+        This is typically relevant only for MP2 calculations.
+        """,
+    )
+
+
+class CoupledCluster(ModelMethodElectronic):
+    """
+    A base section used to define the parameters of a Coupled Cluster calculation.
+    A standard schema is defined, though the most common cases can be summarized in the `type` quantity.
+    """
+
+    type = Quantity(
+        type=str,
+        description="""
+        String labeling the Coupled Cluster flavor (e.g., CC2, CC3, CCD, CCSD, CCSDT, etc.).
+        If a known standard approach, it might match these examples:
+          - CC2, CC3  : approximate methods for excited states
+          - CCD       : Coupled Cluster Doubles
+          - CCSD      : Singles and Doubles
+          - CCSDT     : Singles, Doubles, and Triples
+          - CCSDTQ    : Singles, Doubles, Triples, and Quadruples
+        By default, the "perturbative corrections" like (T) are not included in this string.
+        """,
+    )
+
+    excitation_order = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        The excitation orders explicitly included in the cluster operator, e.g. [1,2]
+        for CCSD. 
+        - 1 = singles 
+        - 2 = doubles 
+        - 3 = triples 
+        - 4 = quadruples, etc.
+        Example: CCSDT => [1, 2, 3].
+        """,
+    )
+
+    perturbative_correction_order = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        The excitation orders included only in a perturbative manner.
+        For instance, in CCSD(T), singles and doubles are solved iteratively,
+        while triples appear as a perturbative correction => [3].
+        """,
+    )
+
+    perturbative_correction = Quantity(
+        type=MEnum('(T)', '[T]', '(T0)', '[T0]', '(Q)'),
+        description="""
+        Label for the perturbative corrections:
+          - '(T)'   : standard perturbative triples
+          - '[T]'   : Brueckner-based or other variant
+          - '(T0)'  : approximate version of (T)
+          - '[T0]'  : approximate, typically for Brueckner references
+          - '(Q)'   : perturbative quadruples, e.g., CCSDT(Q)
+          - 'none'  : no perturbative correction
+        """,
+    )
+
+    perturbation_method = SubSection(sub_section=PerturbationMethod.m_def)
+
+    explicit_correlation = Quantity(
+        type=MEnum('F12', 'F12a', 'F12b', 'F12c', 'R12'),
+        default='',
+        description="""
+        Explicit correlation treatment.
+        These methods introduce the interelectronic distance coordinate
+        directly into the wavefunction to treat dynamical electron correlation.
+        It can be added linearly (R12) or exponentially (F12).
+        """,
+    )
+
+
+class ConfigurationInteraction(ModelMethodElectronic):
+    """
+    Single-reference Configuration Interaction (CI) methods using atom-centered basis sets.
+
+    Variants include:
+      - CIS    : Configuration Interaction Singles
+      - CID    : Configuration Interaction Doubles
+      - CISD   : Configuration Interaction Singles and Doubles
+      - CISDT  : Configuration Interaction Singles, Doubles and Triples
+      - CISDTQ : Configuration Interaction Singles, Doubles, Triples and Quadruples
+      - FCI    : Full Configuration Interaction
+    """
+
+    type = Quantity(
+        type=MEnum(
+            'CIS',
+            'CID',
+            'CISD',
+            'CISDT',
+            'CISDTQ',
+            'FCI',
+            'QCISD',
+            'QCISD(T)',
+        ),
+        description='CI variant to employ',
+    )
+
+    excitation_order = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+            List of excitation orders included in the CI expansion 
+            (1=singles, 2=doubles, 3=triples, 4=quadruples, …).
+            """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        # If excitation_order isn’t explicitly set, infer it from the chosen variant:
+        default_orders = {
+            'CIS': [1],
+            'CID': [2],
+            'CISD': [1, 2],
+            'CISDT': [1, 2, 3],
+            'CISDTQ': [1, 2, 3, 4],
+            'QCISD': [1, 2],
+            'QCISD(T)': [1, 2],
+            'FCI': None,  # full space; leave excitation_order unset
+        }
+        if self.excitation_order is None:
+            orders = default_orders.get(self.type)
+            if orders is not None:
+                self.excitation_order = np.array(orders, dtype=np.int32)
