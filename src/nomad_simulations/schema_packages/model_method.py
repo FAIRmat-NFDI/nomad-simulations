@@ -1263,7 +1263,7 @@ class CoupledCluster(ModelMethodElectronic):
         description="""
         String labeling the Coupled Cluster flavor (e.g., CC2, CC3, CCD, CCSD, CCSDT, etc.).
         If a known standard approach, it might match these examples:
-          - CC2, CC3  : CC2, CC3: approximate CC models (commonly used for excited-state calculations)
+          - CC2, CC3  : approximate CC models (commonly used for excited-state calculations)
           - CCD       : Coupled Cluster Doubles
           - CCSD      : Singles and Doubles
           - CCSDT     : Singles, Doubles, and Triples
