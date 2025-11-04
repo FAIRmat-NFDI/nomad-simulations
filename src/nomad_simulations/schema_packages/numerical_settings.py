@@ -366,7 +366,7 @@ class KMesh(Mesh):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (tuple[list[np.ndarray] | None, np.ndarray | None]): The resolved `points` and `offset` of the `KMesh`.
+            (tuple[np.ndarray | None, np.ndarray | None]): The resolved `points` and `offset` of the `KMesh`.
         """
         if self.grid is None:
             logger.warning('Could not find `KMesh.grid`.')
@@ -376,7 +376,8 @@ class KMesh(Mesh):
         offset = None
         if self.center == 'Gamma-centered':  # ! fix this (@ndaelman-hu)
             grid_space = [np.linspace(0, 1, n) for n in self.grid]
-            points = np.meshgrid(grid_space)
+            points_meshgrid = np.meshgrid(*grid_space, indexing='ij')
+            points = np.column_stack([grid.ravel() for grid in points_meshgrid])
             offset = np.array([0, 0, 0])
         elif self.center == 'Monkhorst-Pack':
             try:
