@@ -1,5 +1,5 @@
 from itertools import accumulate, chain, tee
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pint
