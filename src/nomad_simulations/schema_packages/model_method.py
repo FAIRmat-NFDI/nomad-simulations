@@ -1241,15 +1241,13 @@ class PerturbationMethod(ModelMethodElectronic):
 
     # TODO : later on, the details about custom scaling factors will be added
     spin_component_scaling = Quantity(
-        type=MEnum('none', 'SCS', 'SOS', 'custom'),
-        default='none',
+        type=MEnum('SCS', 'SOS', 'custom'),
         description="""
         Spin-component scaling approach for perturbation methods:
-          - none  : no spin-component scaling
           - SCS   : spin-component scaled (Grimme's approach, https://doi.org/10.1002/wcms.1110)
           - SOS   : spin-opposite scaled
           - custom: user-defined scaling factors
-        This is primarily used for MP2.
+        Typically used for MP2; SCS/SOS variants also exist for some approximate CC models.
         """,
     )
 
