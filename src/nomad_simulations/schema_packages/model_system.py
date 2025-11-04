@@ -654,11 +654,7 @@ class Symmetry(ArchiveSection):
         )
         # TODO : the following is a temporary fix, and it might break again
         # when there are systems with deeper hierarchies.
-        if (
-            atomic_cell is not None
-            and self.m_parent.m_parent is not None
-            and self.m_parent.type == 'bulk'
-        ):
+        if atomic_cell is not None and self.m_parent.m_parent is not None and self.m_parent.type == 'bulk':
             # Adding the newly calculated primitive and conventional cells to the ModelSystem
             (
                 primitive_atomic_cell,
@@ -1257,9 +1253,7 @@ class ModelSystem(System):
         return system_type, dimensionality
 
     # TODO thorough check
-    def _copy_common_quantities(
-        self, src, dst, *, exclude: set[str] | None = None
-    ) -> None:
+    def _copy_common_quantities(self, src, dst, *, exclude: set[str] | None = None) -> None:
         exclude = exclude or set()
 
         def _qnames(section) -> set[str]:

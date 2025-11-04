@@ -392,7 +392,7 @@ class KMesh(Mesh):
             # Unknown center type
             logger.warning(f'Unknown center type: {self.center}')
             return np.array([]), np.array([])
-
+        
         return points, offset
 
     def get_k_line_density(
