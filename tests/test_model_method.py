@@ -2,9 +2,7 @@ from typing import Optional
 
 import pytest
 from nomad.datamodel import EntryArchive
-
-from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
-from nomad_simulations.schema_packages.general import Simulation
+from nomad_simulations.schema_packages.atoms_state import AtomsState, ElectronicState, SphericalSymmetryState
 from nomad_simulations.schema_packages.model_method import (
     TB,
     SlaterKoster,
@@ -126,10 +124,10 @@ class TestTB:
         self,
         model_systems: list[ModelSystem],
         model_index: int,
-        result: list[OrbitalsState] | None,
+        result: list[ElectronicState] | None,
     ):
         """
-        Test the `resolve_orbital_references` method of TB to find OrbitalsState objects
+        Test the `resolve_orbital_references` method of TB to find `ElectronicState` objects
         from a model_system child typed 'active_atom'.
         """
         tb_method = TB()
@@ -146,11 +144,11 @@ class TestTB:
         else:
             assert len(orbitals_ref) == len(result)
             if result and orbitals_ref:
-                # Compare first orbitals for convenience
-                assert orbitals_ref[0].l_quantum_symbol == result[0].l_quantum_symbol
+                # Compare first electronic states for convenience
+                assert orbitals_ref[0].name == result[0].name
 
     @pytest.mark.parametrize(
-        'tb_section, result_type, model_systems, expected_orbitals',
+    'tb_section, result_type, model_systems, expected_states',
         [
             # (1) no method `type` extracted + no model systems
             (TB(), 'unavailable', [], None),
@@ -191,7 +189,7 @@ class TestTB:
                         sub_systems=[
                             ModelSystem(type='active_atom', particle_indices=[99])
                         ],
-                        particle_states=[AtomsState(orbitals_state=[OrbitalsState()])],
+                        particle_states=[AtomsState(electronic_state=ElectronicState(name='missing_index_state', basis_orbitals=[SphericalSymmetryState()]))],
                     )
                 ],
                 None,
@@ -207,17 +205,17 @@ class TestTB:
                         sub_systems=[
                             ModelSystem(type='active_atom', particle_indices=[0])
                         ],
-                        particle_states=[AtomsState(orbitals_state=[])],
+                        particle_states=[AtomsState()],
                     )
                 ],
                 None,
             ),
             # (9) user gave Wannier.orbitals_ref => skip resolution
             (
-                Wannier(orbitals_ref=[OrbitalsState(l_quantum_symbol='p')]),
+                Wannier(orbitals_ref=[ElectronicState(name='user_orbital_state', basis_orbitals=[SphericalSymmetryState(l_quantum_symbol='p')])]),
                 'Wannier',
                 [ModelSystem(is_representative=True, cell=[AtomicCell()])],
-                [OrbitalsState(l_quantum_symbol='p')],
+                [ElectronicState(name='user_orbital_state', basis_orbitals=[SphericalSymmetryState(l_quantum_symbol='p')])],
             ),
             # Commented out for now.
             # (10) fully valid => single orbital
@@ -239,11 +237,11 @@ class TestTB:
         tb_section: TB,
         result_type: str,
         model_systems: list[ModelSystem],
-        expected_orbitals: list[OrbitalsState] | None,
+        expected_states: list[ElectronicState] | None,
     ):
         """
         Test TB.normalize() [including Wannier or SlaterKoster],
-        checking that it sets .type and .orbitals_ref as needed.
+        checking that it sets .type and .electronic_state_ref as needed.
         """
         # Attach the TB (or Wannier, or SlaterKoster) to a simulation
         sim = generate_simulation(model_method=[tb_section])
@@ -251,15 +249,13 @@ class TestTB:
         tb_section.normalize(EntryArchive(), logger=logger)
         # Check the recognized type
         assert tb_section.type == result_type
-        if expected_orbitals is None:
+        if expected_states is None:
             assert tb_section.orbitals_ref is None or tb_section.orbitals_ref == []
         else:
-            # Compare the first orbitals
-            assert len(tb_section.orbitals_ref) == len(expected_orbitals)
-            for i, orb in enumerate(expected_orbitals):
-                assert (
-                    tb_section.orbitals_ref[i].l_quantum_symbol == orb.l_quantum_symbol
-                )
+            # Compare the first electronic states
+            assert len(tb_section.orbitals_ref) == len(expected_states)
+            for i, state in enumerate(expected_states):
+                assert tb_section.orbitals_ref[i].name == state.name
 
 
 class TestWannier:
@@ -321,8 +317,16 @@ class TestSlaterKosterBond:
         """
         sk_bond = SlaterKosterBond()
         # If there's an orbit1 or orbit2, build them
-        orbit1 = OrbitalsState(l_quantum_symbol=orb1_symbol) if orb1_symbol else None
-        orbit2 = OrbitalsState(l_quantum_symbol=orb2_symbol) if orb2_symbol else None
+        orbit1 = None
+        if orb1_symbol:
+            spherical_state = SphericalSymmetryState(l_quantum_symbol=orb1_symbol)
+            orbit1 = ElectronicState(spin_orbit_state=spherical_state)
+        
+        orbit2 = None
+        if orb2_symbol:
+            spherical_state = SphericalSymmetryState(l_quantum_symbol=orb2_symbol)
+            orbit2 = ElectronicState(spin_orbit_state=spherical_state)
+            
         name = sk_bond.resolve_bond_name_from_references(
             orbital_1=orbit1,
             orbital_2=orbit2,
@@ -353,10 +357,14 @@ class TestSlaterKosterBond:
         bond = SlaterKosterBond()
         orbitals = []
         if orb1_symbol:
-            orbitals.append(OrbitalsState(l_quantum_symbol=orb1_symbol))
+            spherical_state = SphericalSymmetryState(l_quantum_symbol=orb1_symbol)
+            electronic_state = ElectronicState(spin_orbit_state=spherical_state)
+            orbitals.append(electronic_state)
             bond.orbital_1 = orbitals[-1]
         if orb2_symbol:
-            orbitals.append(OrbitalsState(l_quantum_symbol=orb2_symbol))
+            spherical_state = SphericalSymmetryState(l_quantum_symbol=orb2_symbol)
+            electronic_state = ElectronicState(spin_orbit_state=spherical_state)
+            orbitals.append(electronic_state)
             bond.orbital_2 = orbitals[-1]
 
         if bravais_vector is not None:
