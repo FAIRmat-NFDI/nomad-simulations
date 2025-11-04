@@ -1523,7 +1523,7 @@ class ModelSystem(System):
         root_bonds = np.asarray(root.bond_list, dtype=np.int32).reshape(-1, 2)
         filtered_bonds = root_bonds[mask]
         if filtered_bonds.size > 0:
-            bond_list = np.unique(filtered_bonds, axis=0).astype(np.int32)
+            bond_list = np.unique(filtered_bonds, axis=0)
         else:
             bond_list = np.empty((0, 2), dtype=np.int32)
         self._cache['bond_list'] = bond_list
