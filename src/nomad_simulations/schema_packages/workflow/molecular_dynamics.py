@@ -650,6 +650,7 @@ class FreeEnergyCalculationParameters(MDSettings):
     )
 
     # If your runs share one aligned λ grid across all targets, keep a single index:
+    # TODO check if we make this a helper variable only for the normalization
     current_lambda_index = Quantity(
         type=int,
         shape=[],
@@ -674,9 +675,7 @@ class FreeEnergyCalculationParameters(MDSettings):
 
         # Collapse multiple "output" entries: keep the first, drop the rest
         output_idxs = [
-            i
-            for i, lam in enumerate(self.lambdas or [])
-            if lam.interaction_type == 'output'
+            i for i, lam in enumerate(self.lambdas) if lam.interaction_type == 'output'
         ]
         if len(output_idxs) > 1:
             logger.warning(
@@ -686,38 +685,35 @@ class FreeEnergyCalculationParameters(MDSettings):
                 del self.lambdas[i]
 
         # Check uniqueness of interaction_type (non-"output")
-        seen = {}
-        for lam in self.lambdas or []:
-            t = lam.interaction_type
-            if t is None:
-                continue
-            seen[t] = seen.get(t, 0) + 1
-        for t, n in seen.items():
-            if t != 'output' and n > 1:
-                logger.warning(
-                    'Duplicate Lambda interaction types detected; duplicates may indicate inconsistent setup.'
-                )
+        interaction_types = [
+            lam.interaction_type
+            for lam in self.lambdas
+            if lam.interaction_type is not None and lam.interaction_type != 'output'
+        ]
+        if len(interaction_types) != len(set(interaction_types)):
+            logger.warning(
+                'Duplicate Lambda interaction types detected; duplicates may indicate inconsistent setup.'
+            )
 
         # Range checks for λ grids (alchemical: expect [0,1] for common targets)
         strict_targets = {'vdw', 'coulomb', 'bonded', 'mass'}
         if self.calc_type == 'alchemical':
-            for lam in self.lambdas or []:
-                if lam.interaction_type in strict_targets and lam.values:
-                    vmin, vmax = min(lam.values), max(lam.values)
-                    if vmin < 0.0 or vmax > 1.0:
-                        logger.warning(
-                            'One or more Lambda grids for alchemical targets are outside the expected [0,1] range.'
-                        )
-        else:
-            logger.info(
-                'Lambda range enforcement skipped for non-alchemical calculation type.'
+            values = np.array(
+                [
+                    val
+                    for lam in self.lambdas
+                    if lam.interaction_type in strict_targets and lam.values
+                    for val in lam.values
+                ]
             )
+            if values.size > 0 and (np.any(values < 0.0) or np.any(values > 1.0)):
+                logger.warning(
+                    'One or more Lambda grids for alchemical targets are outside the expected [0,1] range.'
+                )
 
         # Alignment check for single current_lambda_index
         if self.current_lambda_index is not None:
-            grids = [
-                tuple(getattr(lam, 'values', []) or []) for lam in (self.lambdas or [])
-            ]
+            grids = [tuple(getattr(lam, 'values', []) or []) for lam in self.lambdas]
             non_empty = [g for g in grids if len(g) > 0]
             if len(non_empty) > 1 and any(g != non_empty[0] for g in non_empty[1:]):
                 logger.warning(
@@ -742,29 +738,29 @@ class FreeEnergyCalculationParameters(MDSettings):
         # Validate per-target scalar λs if present
         current_lambdas = self.current_lambdas
         if current_lambdas is not None:
-            n_targets = len(self.lambdas or [])
+            n_targets = len(self.lambdas)
             if len(current_lambdas) != n_targets:
                 logger.warning(
                     'The number of current Lambda values does not match the number of Lambda entries.'
                 )
-            if self.calc_type == 'alchemical':
-                for lam_val in current_lambdas:
-                    if not (0.0 <= lam_val <= 1.0):
-                        logger.warning(
-                            'One or more current Lambda values are outside the expected [0,1] range.'
-                        )
+            if self.calc_type == 'alchemical' and any(
+                not (0.0 <= lam_val <= 1.0) for lam_val in current_lambdas
+            ):
+                logger.warning(
+                    'One or more current Lambda values are outside the expected [0,1] range.'
+                )
 
         # Use single "output" grid as default for missing per-target grids
         output_grid = None
-        for lam in self.lambdas or []:
+        for lam in self.lambdas:
             if lam.interaction_type == 'output' and lam.values:
                 output_grid = list(lam.values)
                 break
         if output_grid is not None:
-            for lam in self.lambdas or []:
+            for lam in self.lambdas:
                 if lam.interaction_type != 'output':
                     vals = lam.values
-                    if not vals or len(vals) == 0:
+                    if vals is None or len(vals) == 0:
                         lam.values = list(output_grid)
                         logger.info(
                             'Missing Lambda grids have been filled from the "output" grid.'
@@ -1115,7 +1111,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         n_traj_split = 10  # number of intervals to split trajectory into for averaging
         try:
             n_prune = int(
-                self._universe.trajectory.n_frames / len(archive.data[-1].model_system)
+                self._universe.trajectory.n_frames / len(archive.data.model_system)
             )
         except Exception:
             n_prune = 1
@@ -1225,7 +1221,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         This is separated from the workflow calculation to maintain clean separation of concerns.
         """
         try:
-            data = archive.data[-1]
+            data = archive.data
             sec_systems = data.system
             sec_outputs = data.outputs
         except Exception:
@@ -1242,9 +1238,9 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                 continue
 
             for out in sec_outputs:
-                if not out.system_ref:  # TODO check relevance
+                if not out.model_system_ref:  # TODO check relevance
                     continue
-                sys_ind = out.system_ref.m_parent_index
+                sys_ind = out.model_system_ref.m_parent_index
 
                 # Use the correct property name from outputs.py (radii_of_gyration, plural)
                 if not hasattr(out, 'radii_of_gyration') or not out.radii_of_gyration:
@@ -1254,10 +1250,12 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                     sec_rgs_out = out.radii_of_gyration[0]
 
                 # TODO Fix this assignment fails with TypeError
-                try:
-                    sec_rgs_out.atomsgroup_ref = [rg.get('atomsgroup_ref')]
-                except Exception:
-                    pass
+                # TODO atomsgroup_ref is now only in RadiiOfGyration, assess
+                # relevance in both classes
+                # try:
+                #     sec_rgs_out.atomsgroup_ref = [rg.get('atomsgroup_ref')]
+                # except Exception:
+                #     pass
                 sec_rgs_out.label = rg.get('label')
                 sec_rgs_out.value = rg.get('value')[sys_ind]
 
@@ -1277,7 +1275,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
             return self.radii_of_gyration
 
         try:
-            data = archive.data[-1]
+            data = archive.data
             sec_systems = data.system
             sec_system = sec_systems[data.representative_system_index]
             sec_outputs = data.outputs
@@ -1299,7 +1297,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                 logger.warning('Universe is None, cannot calculate RGs')
                 return []
 
-            system_hierarchy = sec_system.subsystems
+            system_hierarchy = sec_system.sub_systems
             rg_results = calc_molecular_radius_of_gyration(
                 self._universe, system_hierarchy
             )
