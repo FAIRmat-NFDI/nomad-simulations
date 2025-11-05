@@ -274,68 +274,70 @@ def create_empty_universe(
     return universe
 
 
-# TODO: update run to data
-# def archive_to_universe(
-#     archive,
-#     system_index: int = 0,
-#     method_index: int = -1,
-#     model_index: int = -1,
-# ) -> MDAUniverse | None:
-#     """Extract the topology from a provided run section of an archive entry
+TODO: update run to data
+def archive_to_universe(
+    archive,
+    system_index: int = 0,
+    method_index: int = -1,
+    model_index: int = -1,
+) -> MDAUniverse | None:
+    """Extract the topology from a provided run section of an archive entry
 
-#     Input:
+    Input:
 
-#         archive_sec_run: section run of an EntryArchive
+        archive_sec_run: section run of an EntryArchive
 
-#         system_index: list index of archive.run[].system to be used for topology extraction
+        system_index: list index of archive.run[].system to be used for topology extraction
 
-#         method_index: list index of archive.run[].method to be used for atom parameter (charges and masses) extraction
+        method_index: list index of archive.run[].method to be used for atom parameter (charges and masses) extraction
 
-#         model_index: list index of archive.run[].method[].force_field.model for bond list extraction
+        model_index: list index of archive.run[].method[].force_field.model for bond list extraction
 
-#     Variables:
+    Variables:
 
-#         n_frames (int):
+        n_frames (int):
 
-#         n_atoms (int):
+        n_atoms (int):
 
-#         atom_names (str, shape=(n_atoms)):
+        atom_names (str, shape=(n_atoms)):
 
-#         atom_types (str, shape=(n_atoms)):
+        atom_types (str, shape=(n_atoms)):
 
-#         atom_resindex (str, shape=(n_atoms)):
+        atom_resindex (str, shape=(n_atoms)):
 
-#         atom_segids (str, shape=(n_atoms)):
+        atom_segids (str, shape=(n_atoms)):
 
-#         n_segments (int): Segments correspond to a group of the same type of molecules.
+        n_segments (int): Segments correspond to a group of the same type of molecules.
 
-#         n_residues (int): The number of distinct residues (nb - individual molecules are also denoted as a residue).
+        n_residues (int): The number of distinct residues (nb - individual molecules are also denoted as a residue).
 
-#         resnames (str, shape=(n_residues)): The name of each residue.
+        resnames (str, shape=(n_residues)): The name of each residue.
 
-#         residue_segindex (int, shape=(n_residues)): The segment index that each residue belongs to.
+        residue_segindex (int, shape=(n_residues)): The segment index that each residue belongs to.
 
-#         residue_molnums (int, shape=(n_residues)): The molecule index that each residue belongs to.
+        residue_molnums (int, shape=(n_residues)): The molecule index that each residue belongs to.
 
-#         residue_moltypes (int, shape=(n_residues)): The molecule type of each residue.
+        residue_moltypes (int, shape=(n_residues)): The molecule type of each residue.
 
-#         n_molecules (int):
+        n_molecules (int):
 
-#         masses (float, shape=(n_atoms)):  atom masses, units = amu
+        masses (float, shape=(n_atoms)):  atom masses, units = amu
 
-#         charges (float, shape=(n_atoms)): atom partial charges, units = e
+        charges (float, shape=(n_atoms)): atom partial charges, units = e
 
-#         positions (float, shape=(n_frames,n_atoms,3)): atom positions
+        positions (float, shape=(n_frames,n_atoms,3)): atom positions
 
-#         velocities (float, shape=(n_frames,n_atoms,3)): atom velocities
+        velocities (float, shape=(n_frames,n_atoms,3)): atom velocities
 
-#         dimensions (float, shape=(n_frames,6)): box dimensions (nb - currently assuming a cubic box!)
+        dimensions (float, shape=(n_frames,6)): box dimensions (nb - currently assuming a cubic box!)
 
-#         bonds (tuple, shape=([])): list of tuples with the atom indices of each bond
-#     """
-#     if not _check_mda_dependency('archive_to_universe'):
-#         return None
+        bonds (tuple, shape=([])): list of tuples with the atom indices of each bond
+    """
+    if not _check_mda_dependency('archive_to_universe'):
+        return None
 
+    # TODO just return None until we convert to data
+    return None
 #     try:
 #         sec_run = archive.run[-1]
 #         sec_system = sec_run.system
