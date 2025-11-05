@@ -1,8 +1,7 @@
 import numpy as np
-
 from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflow
-from nomad.metainfo import Quantity, SchemaPackage, SubSection, Datetime
+from nomad.metainfo import Datetime, Quantity, SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.common import SimulationTime
@@ -17,7 +16,6 @@ from nomad_simulations.schema_packages.workflow.trajectory import (
     RadiiOfGyration,
     Temperatures,
 )
-
 
 # TODO make this a function to check required number of tasks
 INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
