@@ -829,17 +829,22 @@ def _correlation(function, positions: list[float]):
     return map(lambda f: function(start_frame, f), chain([start_frame], iterator))
 
 
-def _calc_diffusion_constant(
-    times: np.ndarray, values: np.ndarray, dim: int = 3
-) -> tuple[float, float]:
+def _linear_fit(x_data: np.ndarray, y_data: np.ndarray) -> tuple[float, float]:
     """
-    Determines the diffusion constant from a fit of the mean squared displacement
-    vs. time according to the Einstein relation.
+    Performs a linear regression fit on the provided data.
+
+    Args:
+        x_data: Independent variable data (e.g., time values)
+        y_data: Dependent variable data (e.g., mean squared displacement)
+
+    Returns:
+        tuple: (slope, r_value) where slope is the fitted slope and r_value is the
+               Pearson correlation coefficient indicating quality of fit
     """
-    linear_model = linregress(times, values)
+    linear_model = linregress(x_data, y_data)
     slope = linear_model.slope
-    error = linear_model.rvalue
-    return slope * 1 / (2 * dim), error
+    r_value = linear_model.rvalue
+    return slope, r_value
 
 
 def shifted_correlation_average(
@@ -1121,9 +1126,11 @@ def calc_molecular_mean_squared_displacements(
         if results:
             msd_results['value'].append(results[1])
             msd_results['times'].append(results[0])
-            diffusion_constant, error = _calc_diffusion_constant(*results)
+            slope, r_value = _linear_fit(*results)
+            # Calculate diffusion constant from slope using Einstein relation: D = slope / (2 * dim)
+            diffusion_constant = slope * 1 / (2 * 3)  # dim=3 for 3D diffusion
             msd_results['diffusion_constant'].append(diffusion_constant)
-            msd_results['error_diffusion_constant'].append(error)
+            msd_results['error_diffusion_constant'].append(r_value)
 
     msd_results['types'] = moltypes
     msd_results['times'] = np.array(msd_results['times']) * ureg.picosecond
