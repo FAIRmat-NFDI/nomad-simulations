@@ -1101,13 +1101,14 @@ def calc_molecular_mean_squared_displacements(
             ' Some molecule types were skipped.'
         )
 
-    msd_results: dict[str, Any] = {}
-    msd_results['type'] = 'molecular'
-    msd_results['direction'] = 'xyz'
-    msd_results['value'] = []
-    msd_results['times'] = []
-    msd_results['diffusion_constant'] = []
-    msd_results['error_diffusion_constant'] = []
+    msd_results: dict[str, Any] = {
+        'type': 'molecular',
+        'direction': 'xyz',
+        'value': [],
+        'times': [],
+        'diffusion_constant': [],
+        'error_diffusion_constant': [],
+    }
     for moltype in moltypes:
         positions = get_nojump_positions(universe, bead_groups[moltype])
         results = shifted_correlation_average(
