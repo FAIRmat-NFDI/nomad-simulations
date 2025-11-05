@@ -4,9 +4,8 @@ from array import array
 from collections import namedtuple
 from collections.abc import Callable
 from itertools import chain
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import networkx
 import numpy as np
 from scipy import sparse
 from scipy.stats import linregress
@@ -21,12 +20,20 @@ try:
     _HAS_MDA = True
 except ImportError:
     _HAS_MDA = False
+    MDAnalysis = None  # type: ignore
 
-if not _HAS_MDA:
-    raise ImportError(
-        'MDAnalysis is required for this functionality. '
-        'Please re-install the plugin with `pip install nomad-simulations[md]`.'
-    )
+try:
+    import networkx
+
+    _HAS_NETWORKX = True
+except ImportError:
+    _HAS_NETWORKX = False
+    networkx = None  # type: ignore
+
+# Import types for type checking only (not at runtime)
+if TYPE_CHECKING:
+    from MDAnalysis import Universe as MDAUniverse
+    from MDAnalysis.core.groups import AtomGroup
 
 from nomad import atomutils
 from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
@@ -36,6 +43,39 @@ from nomad.utils import get_logger
 from nomad_simulations.schema_packages.model_system import ModelSystem
 
 LOGGER = get_logger(__name__)
+
+
+def _log_missing_dependency(dependency: str, calculation: str) -> str:
+    """
+    Generates a standardized warning message for missing dependencies.
+
+    Args:
+        dependency: The required dependency (e.g., 'universe', 'bead_groups')
+        calculation: The calculation being attempted (e.g., 'RDF', 'MSD', 'radius of gyration')
+
+    Returns:
+        A formatted warning message string
+    """
+    return f'{dependency} required to calculate {calculation}.'
+
+
+def _check_mda_dependency(function_name: str) -> bool:
+    """
+    Checks if MDAnalysis is available and logs an error if not.
+
+    Args:
+        function_name: The name of the function requiring MDAnalysis
+
+    Returns:
+        True if MDAnalysis is available, False otherwise
+    """
+    if not _HAS_MDA:
+        LOGGER.error(
+            f'{function_name} requires MDAnalysis. '
+            'Please install with `pip install nomad-simulations[md]`.'
+        )
+        return False
+    return True
 
 
 class BeadGroup:
@@ -130,7 +170,7 @@ def create_empty_universe(
     flag_velocities: bool = False,
     flag_forces: bool = False,
     timestep: float | None = None,
-) -> MDAnalysis.Universe:
+) -> MDAUniverse | None:
     """Create a blank Universe
 
     This function was adapted from the function empty() within the MDA class Universe().
@@ -187,6 +227,8 @@ def create_empty_universe(
     .. versionchanged:: 1.0.0
         Universes can now be created with 0 atoms
     """
+    if not _check_mda_dependency('create_empty_universe'):
+        return None
 
     if not n_atoms:
         n_residues = 0
@@ -238,7 +280,7 @@ def archive_to_universe(
     system_index: int = 0,
     method_index: int = -1,
     model_index: int = -1,
-) -> MDAnalysis.Universe:
+) -> MDAUniverse | None:
     """Extract the topology from a provided run section of an archive entry
 
     Input:
@@ -291,6 +333,8 @@ def archive_to_universe(
 
         bonds (tuple, shape=([])): list of tuples with the atom indices of each bond
     """
+    if not _check_mda_dependency('archive_to_universe'):
+        return None
 
     try:
         sec_run = archive.run[-1]
@@ -543,14 +587,17 @@ def archive_to_universe(
 
 
 def _get_molecular_bead_groups(
-    universe: MDAnalysis.Universe, moltypes: list[str] = []
+    universe: MDAUniverse | None, moltypes: list[str] = []
 ) -> dict[str, BeadGroup]:
     """
     Creates bead groups based on the molecular types as defined by the MDAnalysis universe.
     """
+    if not _check_mda_dependency('_get_molecular_bead_groups'):
+        return {}
+
     # Input validation
     if universe is None:
-        LOGGER.warning('Universe required to create beads.')
+        LOGGER.warning(_log_missing_dependency('universe', 'beads'))
         return {}
 
     if not moltypes:
@@ -572,7 +619,7 @@ def _get_molecular_bead_groups(
 
 
 def calc_molecular_rdf(
-    universe: MDAnalysis.Universe,
+    universe: MDAUniverse | None,
     bead_groups: dict[str, BeadGroup],
     n_traj_split: int = 10,
     n_prune: int = 1,
@@ -598,9 +645,12 @@ def calc_molecular_rdf(
     max_mols : int
         Maximum number of molecules per bead group for calculating the rdf, for efficiency purposes.
     """
+    if not _check_mda_dependency('calc_molecular_rdf'):
+        return {}
+
     # TODO 5k default for max_mols was set after > 50k was giving problems. Should do further testing to see where the appropriate limit should be set.
     if bead_groups is None or not bead_groups:
-        LOGGER.warning('bead_groups required to calculate RDF.')
+        LOGGER.warning(_log_missing_dependency('bead_groups', 'RDF'))
         return {}
 
     if (
@@ -608,7 +658,7 @@ def calc_molecular_rdf(
         or not universe.trajectory
         or universe.trajectory[0].dimensions is None
     ):
-        LOGGER.warning('universe required to calculate RDF.')
+        LOGGER.warning(_log_missing_dependency('universe', 'RDF'))
         return {}
 
     n_frames = universe.trajectory.n_frames
@@ -877,7 +927,7 @@ def shifted_correlation_average(
 
 
 def calc_molecular_mean_squared_displacements(
-    universe: MDAnalysis.Universe,
+    universe: MDAUniverse | None,
     bead_groups: dict[str, BeadGroup],
     max_mols: int = 5000,
 ) -> dict[str, Any]:
@@ -894,10 +944,10 @@ def calc_molecular_mean_squared_displacements(
     max_mols : int
         Maximum number of molecules per bead group for calculating the msd, for efficiency purposes.
     """
+    if not _check_mda_dependency('calc_molecular_mean_squared_displacements'):
+        return {}
 
-    def parse_jumps(
-        universe: MDAnalysis.Universe, selection: MDAnalysis.AtomGroup
-    ):  # TODO Add output declaration
+    def parse_jumps(universe, selection):  # TODO Add output declaration
         """
         See __get_nojump_positions().
         """
@@ -923,9 +973,7 @@ def calc_molecular_mean_squared_displacements(
 
         return jump_data
 
-    def generate_nojump_matrices(
-        universe: MDAnalysis.Universe, selection: MDAnalysis.AtomGroup
-    ):  # TODO Add output declaration
+    def generate_nojump_matrices(universe, selection):  # TODO Add output declaration
         """
         See __get_nojump_positions().
         """
@@ -941,9 +989,7 @@ def calc_molecular_mean_squared_displacements(
         )
         return nojump_matrices
 
-    def get_nojump_positions(
-        universe: MDAnalysis.Universe, selection: MDAnalysis.AtomGroup
-    ) -> np.ndarray:
+    def get_nojump_positions(universe, selection) -> np.ndarray:
         """
         Unwraps the positions to create a continuous trajectory without jumps across periodic boundaries.
         """
@@ -970,7 +1016,7 @@ def calc_molecular_mean_squared_displacements(
         return (vec**2).sum(axis=1).mean()
 
     if bead_groups is None or not bead_groups:
-        LOGGER.warning('bead_groups required to calculate MSD.')
+        LOGGER.warning(_log_missing_dependency('bead_groups', 'MSD'))
         return {}
 
     if (
@@ -978,7 +1024,7 @@ def calc_molecular_mean_squared_displacements(
         or not universe.trajectory
         or universe.trajectory[0].dimensions is None
     ):
-        LOGGER.warning('universe required to calculate MSD.')
+        LOGGER.warning(_log_missing_dependency('universe', 'MSD'))
         return {}
 
     n_frames = universe.trajectory.n_frames
@@ -1073,7 +1119,7 @@ def calc_molecular_mean_squared_displacements(
 
 
 def calc_radius_of_gyration(
-    universe: MDAnalysis.Universe, molecule_particle_indices: np.ndarray
+    universe: MDAUniverse | None, molecule_particle_indices: np.ndarray
 ) -> dict[str, Any]:
     """
     Calculates the radius of gyration as a function of time for the particles 'molecule_particle_indices'.
@@ -1081,9 +1127,12 @@ def calc_radius_of_gyration(
     molecule_particle_indices : np.ndarray
         The indices of the particles corresponding to a single molecule for which the Rg will be calculated.
     """
+    if not _check_mda_dependency('calc_radius_of_gyration'):
+        return {}
+
     if molecule_particle_indices is None or len(molecule_particle_indices) == 0:
         LOGGER.warning(
-            'molecule_particle_indices is required to calculate radius of gyration'
+            _log_missing_dependency('molecule_particle_indices', 'radius of gyration')
         )
         return {}
 
@@ -1092,7 +1141,7 @@ def calc_radius_of_gyration(
         or not universe.trajectory
         or universe.trajectory[0].dimensions is None
     ):
-        LOGGER.warning('universe is None. Cannot calculate radius of gyration.')
+        LOGGER.warning(_log_missing_dependency('universe', 'radius of gyration'))
         return {}
     selection = ' '.join([str(i) for i in molecule_particle_indices])
     selection = f'index {selection}'
@@ -1100,7 +1149,7 @@ def calc_radius_of_gyration(
     rg_results: dict[str, Any] = {}
     rg_results['times'] = []
     rg_results['value'] = []
-    time_unit = hasattr(universe.trajectory.time, 'units')
+    time_unit = getattr(universe.trajectory.time, 'units', None)
     for __ in universe.trajectory:
         rg_results['times'].append(
             universe.trajectory.time.magnitude
@@ -1120,17 +1169,22 @@ def calc_radius_of_gyration(
 
 
 def calc_molecular_radius_of_gyration(
-    universe: MDAnalysis.Universe, system_hierarchy: MSection
+    universe: MDAUniverse | None, system_hierarchy: MSection
 ) -> list[dict[str, Any]]:
     """
     Calculates the radius of gyration as a function of time for each polymer in the system.
     """
+    if not _check_mda_dependency('calc_molecular_radius_of_gyration'):
+        return []
+
     if universe is None:
-        LOGGER.warning('universe required to calculate molecular radius of gyration')
+        LOGGER.warning(
+            _log_missing_dependency('universe', 'molecular radius of gyration')
+        )
         return []
     if system_hierarchy is None or not system_hierarchy:
         LOGGER.warning(
-            'system_topology required to calculate molecular radius of gyration.'
+            _log_missing_dependency('system_topology', 'molecular radius of gyration')
         )
         return []
 
@@ -1162,6 +1216,13 @@ def get_molecules_from_bond_list(
     """
     Returns a list of dictionaries with molecule info from each instance in the list of bonds.
     """
+    if not _HAS_NETWORKX:
+        LOGGER.error(
+            'get_molecules_from_bond_list requires networkx. '
+            'Please install with `pip install nomad-simulations[md]`.'
+        )
+        return []
+
     system_graph = networkx.empty_graph(n_particles)
     system_graph.add_edges_from([(i[0], i[1]) for i in bond_list])
     molecules = [
@@ -1233,7 +1294,7 @@ def get_composition(children_names: list[str]) -> str:
     return formula
 
 
-def mda_universe_from_nomad_atoms(system, logger=None):
+def mda_universe_from_nomad_atoms(system, logger=None) -> MDAUniverse | None:
     """Returns an instance of mda.Universe from a NOMAD Atoms-section.
 
     Args:
@@ -1242,6 +1303,9 @@ def mda_universe_from_nomad_atoms(system, logger=None):
     Returns:
         A new mda.Universe created from the given data.
     """
+    if not _check_mda_dependency('mda_universe_from_nomad_atoms'):
+        return None
+
     n_atoms = len(system.positions)
     n_residues = 1
     atom_resindex = [0] * n_atoms
