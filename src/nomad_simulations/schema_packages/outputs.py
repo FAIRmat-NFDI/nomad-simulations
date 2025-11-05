@@ -7,6 +7,8 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
+from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Reference
+
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
@@ -36,6 +38,13 @@ from nomad_simulations.schema_packages.properties import (
 )
 
 from .common import Time
+
+
+# TODO redo this, only to demo archive h5 wriiting
+class ChargeDensity(PhysicalProperty):
+    value_h5_dataset = Quantity(type=HDF5Dataset)
+
+    value_h5_reference = Quantity(type=HDF5Reference)
 
 
 class Outputs(Time):
@@ -121,6 +130,8 @@ class Outputs(Time):
     total_forces = SubSection(sub_section=TotalForce.m_def, repeats=True)
 
     temperatures = SubSection(sub_section=Temperature.m_def, repeats=True)
+
+    charge_density = SubSection(sub_section=ChargeDensity.m_def, repeats=True)
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
