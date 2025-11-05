@@ -1,6 +1,8 @@
+import numpy as np
+
 from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflow
-from nomad.metainfo import Quantity, SchemaPackage, SubSection
+from nomad.metainfo import Quantity, SchemaPackage, SubSection, Datetime
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.common import SimulationTime
@@ -15,6 +17,7 @@ from nomad_simulations.schema_packages.workflow.trajectory import (
     RadiiOfGyration,
     Temperatures,
 )
+
 
 # TODO make this a function to check required number of tasks
 INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
@@ -57,12 +60,6 @@ class SimulationWorkflowMethod(ArchiveSection):
             self.initial_method = archive.data.model_method[0]
 
 
-import numpy as np
-from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel.metainfo.annotations import ELNAnnotation
-from nomad.metainfo import Datetime, Quantity
-
-
 class WorkflowTime(ArchiveSection):
     """
     Contains time-related quantities.
@@ -73,7 +70,6 @@ class WorkflowTime(ArchiveSection):
         description="""
         The date and time when the workflow ended.
         """,
-        a_eln=ELNAnnotation(component='DateTimeEditQuantity'),
     )
 
     cpu1_start = Quantity(
@@ -82,7 +78,6 @@ class WorkflowTime(ArchiveSection):
         description="""
         The starting time of the workflow on the (first) CPU 1.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     cpu1_end = Quantity(
@@ -91,7 +86,6 @@ class WorkflowTime(ArchiveSection):
         description="""
         The end time of the workflow on the (first) CPU 1.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     wall_start = Quantity(
@@ -100,7 +94,6 @@ class WorkflowTime(ArchiveSection):
         description="""
         The internal wall-clock time from the starting of the workflow.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
     wall_end = Quantity(
@@ -109,7 +102,6 @@ class WorkflowTime(ArchiveSection):
         description="""
         The internal wall-clock time from the end of the workflow.
         """,
-        a_eln=ELNAnnotation(component='NumberEditQuantity'),
     )
 
 

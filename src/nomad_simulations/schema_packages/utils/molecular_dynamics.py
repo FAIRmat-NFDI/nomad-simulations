@@ -1230,9 +1230,8 @@ def get_molecules_from_bond_list(
         for c in networkx.connected_components(system_graph)
     ]
     molecule_info: list[dict[str, Any]] = []
-    molecule_dict: dict[str, Any] = {}
     for mol in molecules:
-        molecule_dict = {}
+        molecule_dict: dict[str, Any] = {}
         molecule_dict['indices'] = np.array(mol.nodes())
         molecule_dict['bonds'] = np.array(mol.edges())
         molecule_dict['type'] = 'molecule'
@@ -1278,32 +1277,20 @@ def _is_same_molecule(mol_1: dict, mol_2: dict) -> bool:
     bond_list_dict_1 = get_bond_list_dict(mol_1)
     bond_list_dict_2 = get_bond_list_dict(mol_2)
 
-    if bond_list_dict_1 == bond_list_dict_2:
-        return True
-
-    return False
+    return bond_list_dict_1 == bond_list_dict_2
 
 
-def get_composition(children_names: list[str]) -> str:
-    """
-    Generates a generalized "chemical formula" based on the provided list `children_names`,
-    with the format X(m)Y(n) for children_names X and Y of quantities m and n, respectively.
-    """
-    children_count_tup = np.unique(children_names, return_counts=True)
-    formula = ''.join([f'{name}({count})' for name, count in zip(*children_count_tup)])
-    return formula
-
-
-def mda_universe_from_nomad_atoms(system, logger=None) -> MDAUniverse | None:
+def model_system_to_universe(system: ModelSystem, logger=None) -> MDAUniverse | None:
     """Returns an instance of mda.Universe from a NOMAD Atoms-section.
 
     Args:
         system: The atoms to transform
+        logger: Optional logger (currently unused)
 
     Returns:
         A new mda.Universe created from the given data.
     """
-    if not _check_mda_dependency('mda_universe_from_nomad_atoms'):
+    if not _check_mda_dependency('model_system_to_universe'):
         return None
 
     n_atoms = len(system.positions)

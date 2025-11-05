@@ -41,6 +41,7 @@ dependencies = [
 [project.optional-dependencies]
 md = [
     "MDAnalysis>=2.4.0",
+    "networkx"
 ]
 dev = [
     'mypy>=1.15',
