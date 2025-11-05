@@ -382,6 +382,7 @@ class KMesh(Mesh):
         elif self.center == 'Monkhorst-Pack':
             try:
                 points_array = monkhorst_pack(size=self.grid)
+                points = points_array
                 offset = get_monkhorst_pack_size_and_offset(kpts=points_array)[-1]
             except ValueError:
                 logger.warning(
@@ -389,7 +390,7 @@ class KMesh(Mesh):
                 )
                 # this is a quick workaround: k_mesh.grid should be symmetry reduced
                 return None, None
-        return points_array, offset
+        return points, offset
 
     def get_k_line_density(
         self, reciprocal_lattice_vectors: pint.Quantity | None, logger: 'BoundLogger'
