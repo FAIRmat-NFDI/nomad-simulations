@@ -121,10 +121,14 @@ class BeadGroup:
             self.__last_frame = self.universe.trajectory.frame
         return self._cache['positions']
 
-    @property  # type: ignore
-    @MDAnalysis.lib.util.cached('universe')
+    @property
+    # @property  # type: ignore  # COMMENTED OUT: Decorator fails when MDAnalysis is not installed
+    # @MDAnalysis.lib.util.cached('universe')  # TODO: Test if this caching decorator is necessary for performance
     def universe(self):
-        return self._atoms.universe
+        # Manual caching implementation to replace MDAnalysis decorator
+        if 'universe' not in self._cache:
+            self._cache['universe'] = self._atoms.universe
+        return self._cache['universe']
 
 
 # TODO update from runschema to nomad-simulations
