@@ -4,12 +4,12 @@ from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
 
-from .beyond_hf import BeyondHFModel, BeyondHFResults, BeyondHFWorkflow
+from .beyond_hf import BeyondHFMethod, BeyondHFResults, BeyondHFWorkflow
 
 m_package = SchemaPackage()
 
 
-class HFCCModel(BeyondHFModel):
+class HFCCMethod(BeyondHFMethod):
     _label = 'HF+CC workflow parameters'
 
 
@@ -24,8 +24,8 @@ class HFCCWorkflow(BeyondHFWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = HFCCModel()
+        if not self.method:
+            self.method = HFCCMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 

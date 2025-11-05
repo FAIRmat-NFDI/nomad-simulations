@@ -119,7 +119,7 @@ class BeadGroup:
 #     return bond_list
 
 
-def _create_empty_universe(
+def create_empty_universe(
     n_atoms: int,
     n_frames: int = 1,
     n_residues: int = 1,
@@ -496,7 +496,7 @@ def archive_to_universe(
     )
 
     # create the Universe
-    metainfo_universe = _create_empty_universe(
+    metainfo_universe = create_empty_universe(
         n_atoms,
         n_frames=n_frames,
         n_residues=n_residues,

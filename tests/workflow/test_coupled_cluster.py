@@ -1,5 +1,5 @@
 from nomad_simulations.schema_packages.workflow.coupled_cluster import (
-    HFCCModel,
+    HFCCMethod,
     HFCCResults,
     HFCCWorkflow,
 )
@@ -10,7 +10,7 @@ class TestHFCCWorkflow:
     def test_inputs_outputs(self, logger, archive, log_output):
         workflow = HFCCWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, HFCCModel)
+        assert isinstance(workflow.method, HFCCMethod)
         assert isinstance(workflow.results, HFCCResults)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1
@@ -23,5 +23,5 @@ class TestHFCCWorkflow:
         workflow.normalize(archive, logger)
         assert workflow.tasks[0].name == 'HF'
         assert workflow.tasks[1].name == 'CC'
-        assert workflow.model in [inp.section for inp in workflow.tasks[0].inputs]
+        assert workflow.method in [inp.section for inp in workflow.tasks[0].inputs]
         assert workflow.tasks[0] in [inp.section for inp in workflow.tasks[1].inputs]

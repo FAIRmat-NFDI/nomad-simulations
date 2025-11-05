@@ -2,7 +2,7 @@ from nomad.datamodel import EntryMetadata
 from nomad.datamodel.metainfo.workflow import TaskReference
 
 from nomad_simulations.schema_packages.workflow.beyond_hf import (
-    BeyondHFModel,
+    BeyondHFMethod,
     BeyondHFResults,
     BeyondHFWorkflow,
 )
@@ -12,7 +12,7 @@ class TestBeyondHF:
     def test_inputs_outputs(self, logger, archive, log_output):
         workflow = BeyondHFWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, BeyondHFModel)
+        assert isinstance(workflow.method, BeyondHFMethod)
         assert isinstance(workflow.results, BeyondHFResults)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1
