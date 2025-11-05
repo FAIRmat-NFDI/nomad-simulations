@@ -88,35 +88,35 @@ class BeadGroup:
 
 
 # TODO update from runschema to nomad-simulations
-def get_bond_list_from_model_contributions(
-    sec_run: MSection, method_index: int = -1, model_index: int = -1
-) -> list[tuple]:
-    """
-    Generates bond list of tuples using the list of bonded force field interactions stored under run[].method[].force_field.model[].
+# def get_bond_list_from_model_contributions(
+#     sec_run: MSection, method_index: int = -1, model_index: int = -1
+# ) -> list[tuple]:
+#     """
+#     Generates bond list of tuples using the list of bonded force field interactions stored under run[].method[].force_field.model[].
 
-    bond_list: List[tuple]
-    """
-    contributions = []
-    if sec_run.m_xpath(
-        f'method[{method_index}].force_field.model[{model_index}].contributions'
-    ):
-        contributions = (
-            sec_run.method[method_index].force_field.model[model_index].contributions
-        )
-    bond_list = []
-    for contribution in contributions:
-        if contribution.type != 'bond':
-            continue
+#     bond_list: List[tuple]
+#     """
+#     contributions = []
+#     if sec_run.m_xpath(
+#         f'method[{method_index}].force_field.model[{model_index}].contributions'
+#     ):
+#         contributions = (
+#             sec_run.method[method_index].force_field.model[model_index].contributions
+#         )
+#     bond_list = []
+#     for contribution in contributions:
+#         if contribution.type != 'bond':
+#             continue
 
-        atom_indices = contribution.atom_indices
-        if (
-            contribution.n_interactions
-        ):  # all bonds have been grouped into one contribution
-            bond_list = [tuple(indices) for indices in atom_indices]
-        else:
-            bond_list.append(tuple(contribution.atom_indices))
+#         atom_indices = contribution.atom_indices
+#         if (
+#             contribution.n_interactions
+#         ):  # all bonds have been grouped into one contribution
+#             bond_list = [tuple(indices) for indices in atom_indices]
+#         else:
+#             bond_list.append(tuple(contribution.atom_indices))
 
-    return bond_list
+#     return bond_list
 
 
 def _create_empty_universe(
@@ -453,10 +453,11 @@ def archive_to_universe(
 
     # get the bonds  # TODO extend to multiple storage options for interactions
     bonds = sec_atoms.bond_list
-    if bonds is None:
-        bonds = get_bond_list_from_model_contributions(
-            sec_run, method_index=-1, model_index=-1
-        )
+    # TODO add back in once get_bond_list_from_model_contributions is updated
+    # if bonds is None:
+    #     bonds = get_bond_list_from_model_contributions(
+    #         sec_run, method_index=-1, model_index=-1
+    #     )
 
     # get the system times
     system_timestep = 1.0 * ureg.picosecond

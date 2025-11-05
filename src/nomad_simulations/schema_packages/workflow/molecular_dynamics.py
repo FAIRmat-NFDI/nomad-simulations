@@ -1171,9 +1171,6 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         ):  # TODO add check for diffusion_constants too?
             return self.mean_squared_displacements, self.diffusion_constants or []
 
-        if self._universe is None:
-            return [], []
-
         msd_results = calc_molecular_mean_squared_displacements(
             self._universe, self._bead_groups
         )
@@ -1311,7 +1308,6 @@ class MolecularDynamicsResults(SerialWorkflowResults):
             for rg in rg_results:
                 sec_rgs = RadiiOfGyration()  # Use plural name for trajectory workflow
                 sec_rgs._rg_results = rg
-                sec_rgs.normalize(archive, logger)
                 workflow_rgs.append(sec_rgs)
 
             # Populate output sections separately
@@ -1329,8 +1325,6 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         self._bead_groups = _get_molecular_bead_groups(self._universe)
 
         # calculate molecular radial distribution functions
-        # TODO remove if the below works
-        # self.radial_distribution_functions = self._get_molecular_rdfs(archive)
         self.radial_distribution_functions.extend(self._get_molecular_rdfs(archive))
 
         # calculate the molecular mean squared displacements

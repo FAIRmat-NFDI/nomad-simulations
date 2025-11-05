@@ -3,6 +3,7 @@ from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import MEnum, Quantity, Section, SubSection
 
 
+# TODO This entire module is a prototype, to be tested and refined
 class ErrorEstimate(ArchiveSection):
     """
     A generic container for uncertainty/error information associated with a PhysicalProperty.
