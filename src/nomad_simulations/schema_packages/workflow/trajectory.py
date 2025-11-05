@@ -8,13 +8,6 @@ from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
-if TYPE_CHECKING:
-    from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
-        FreeEnergyCalculationParameters,
-    )
-else:
-    FreeEnergyCalculationParameters = 'FreeEnergyCalculationParameters'
-
 
 class ConfigurationalProperty(PhysicalProperty):
     """
@@ -134,7 +127,11 @@ class FreeEnergyCalculations(ConfigurationalProperty):
     """
 
     method_ref = Quantity(
-        type=Reference(FreeEnergyCalculationParameters),
+        type=Reference(
+            SectionProxy(
+                'nomad_simulations.schema_packages.workflow.molecular_dynamics.FreeEnergyCalculationParameters'
+            )
+        ),
         shape=[],
         description="""
         Links the free energy results with the method parameters.
