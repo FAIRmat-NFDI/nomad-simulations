@@ -1019,7 +1019,7 @@ def calc_molecular_mean_squared_displacements(
         vec = start - current
         return (vec**2).sum(axis=1).mean()
 
-    if bead_groups is None or not bead_groups:
+    if not bead_groups:
         LOGGER.warning(_log_missing_dependency('bead_groups', 'MSD'))
         return {}
 
@@ -1039,6 +1039,7 @@ def calc_molecular_mean_squared_displacements(
         )
         return {}
 
+    # TODO universe.trajectory.dt?
     dt = getattr(universe.trajectory, 'dt')
     if dt is None:
         LOGGER.warning(
@@ -1053,13 +1054,18 @@ def calc_molecular_mean_squared_displacements(
 
     moltypes = [moltype for moltype in bead_groups.keys()]
     del_list = []
+    has_large_groups = False
+    has_errors = False
+
+    if max_mols > 50000:
+        LOGGER.warning(
+            'Calculating mean squared displacements for more than 50k molecules.'
+            ' Expect long processing times!',
+        )
+
     for i_moltype, moltype in enumerate(moltypes):
         if len(bead_groups[moltype].positions) > max_mols:
-            if max_mols > 50000:
-                LOGGER.warning(
-                    'Calculating mean squared displacements for more than 50k molecules.'
-                    ' Expect long processing times!',
-                )
+            has_large_groups = True
             try:
                 # select max_mols nr. of rnd molecules from this moltype
                 moltype_indices = np.array(
@@ -1077,18 +1083,23 @@ def calc_molecular_mean_squared_displacements(
                 selection = f'index {selection}'
                 ags_moltype_rnd = universe.select_atoms(selection)
                 bead_groups[moltype] = BeadGroup(ags_moltype_rnd, compound='fragments')
-                LOGGER.warning(
-                    'Maximum number of molecules for calculating the msd has been reached.'
-                    ' Will make a random selection for calculation.'
-                )
             except Exception:
-                LOGGER.warning(
-                    'Error in selecting random molecules for large group when calculating msd. Skipping this molecule type.'
-                )
+                has_errors = True
                 del_list.append(i_moltype)
 
     for index in sorted(del_list, reverse=True):
         del moltypes[index]
+
+    if has_large_groups:
+        LOGGER.warning(
+            'Maximum number of molecules for calculating the msd has been reached.'
+            ' Random selection used for calculation.'
+        )
+    if has_errors:
+        LOGGER.warning(
+            'Error in selecting random molecules for large group when calculating msd.'
+            ' Some molecule types were skipped.'
+        )
 
     msd_results: dict[str, Any] = {}
     msd_results['type'] = 'molecular'
