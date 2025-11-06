@@ -12,20 +12,13 @@ from scipy.stats import linregress
 
 try:
     import MDAnalysis
-    import MDAnalysis.analysis.rdf as MDA_RDF
-    from MDAnalysis.core._get_readers import get_reader_for
-    from MDAnalysis.core.topology import Topology
-    from MDAnalysis.core.universe import Universe
 
     _HAS_MDA = True
 except ImportError:
     _HAS_MDA = False
 
-if not _HAS_MDA:
-    raise ImportError(
-        'MDAnalysis is required for this functionality. '
-        'Please re-install the plugin with `pip install nomad-simulations[md]`.'
-    )
+if TYPE_CHECKING:
+    from MDAnalysis.core.universe import Universe
 
 from nomad import atomutils
 from nomad.datamodel.data import ArchiveSection
@@ -45,8 +38,8 @@ from nomad_simulations.schema_packages.utils.molecular_dynamics import (
     _get_molecular_bead_groups,
     archive_to_universe,
     calc_molecular_msd,
-    calc_molecular_rg,
     calc_molecular_rdf,
+    calc_molecular_rg,
 )
 from nomad_simulations.schema_packages.workflow.trajectory import RadiiOfGyration
 
@@ -1057,8 +1050,8 @@ class MeanSquaredDisplacement(CorrelationFunction):
 class MolecularDynamicsResults(SerialWorkflowResults):
     _label = 'MD results'
     _cache: dict[str, Any] = {}
-    _universe: MDAnalysis.Universe | None
-    _bead_groups: dict[str, BeadGroup] | None
+    _universe: Universe | None = None
+    _bead_groups: dict[str, BeadGroup] | None = None
 
     n_steps = Quantity(
         type=np.int32,
@@ -1087,10 +1080,16 @@ class MolecularDynamicsResults(SerialWorkflowResults):
     )
 
     @log
-    def get_universe(self, archive) -> MDAnalysis.Universe | None:
+    def get_universe(self, archive) -> Universe | None:
         logger = self.get_universe.__annotations__['logger']
         if self._universe:
             return self._universe
+        if not _HAS_MDA:
+            logger.warning(
+                'MDAnalysis is not installed. Skipping MD results normalization. '
+                'Install with `pip install nomad-simulations[md]`.'
+            )
+            return None
         try:
             universe = archive_to_universe(archive)
         except Exception:
