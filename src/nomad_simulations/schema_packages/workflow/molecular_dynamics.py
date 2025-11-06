@@ -1147,11 +1147,16 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                 rdf.variables_name = ['distance']
 
                 rdf.label = str(pair_type)
-                rdf.n_bins = len(rdf_results.get('bins', [[]] * i_pair)[i_pair])
-                rdf.bins = rdf_results.get('bins', [[]] * i_pair)[i_pair]
-                rdf.value = rdf_results.get('value', [[]] * i_pair)[i_pair]
-                rdf.frame_start = rdf_results.get('frame_start', [[]] * i_pair)[i_pair]
-                rdf.frame_end = rdf_results.get('frame_end', [[]] * i_pair)[i_pair]
+                bins_list = rdf_results.get('bins', [])
+                value_list = rdf_results.get('value', [])
+                frame_start_list = rdf_results.get('frame_start', [])
+                frame_end_list = rdf_results.get('frame_end', [])
+                
+                rdf.n_bins = len(bins_list[i_pair]) if i_pair < len(bins_list) else 0
+                rdf.bins = bins_list[i_pair] if i_pair < len(bins_list) else np.array([])
+                rdf.value = value_list[i_pair] if i_pair < len(value_list) else np.array([])
+                rdf.frame_start = frame_start_list[i_pair] if i_pair < len(frame_start_list) else 0
+                rdf.frame_end = frame_end_list[i_pair] if i_pair < len(frame_end_list) else 0
                 sec_rdfs.append(rdf)
 
         return sec_rdfs

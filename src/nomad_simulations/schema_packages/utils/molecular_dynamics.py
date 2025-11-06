@@ -1257,9 +1257,12 @@ def calc_radius_of_gyration(
 
 def calc_molecular_rg(
     universe: MDAUniverse | None, system_hierarchy: MSection
-) -> list[MolecularRadiusOfGyrationResults]:
+) -> list[dict[str, Any]]:
     """
     Calculates the radius of gyration as a function of time for each polymer in the system.
+
+    Returns a list of dictionaries containing RadiusOfGyrationResults data plus
+    additional metadata (label, system_ref).
     """
     if not _check_package_dependency('MDAnalysis', 'calc_molecular_rg', 'md'):
         return []
@@ -1275,7 +1278,7 @@ def calc_molecular_rg(
         )
         return []
 
-    rg_results = []
+    rg_results: list[dict[str, Any]] = []
     for molgroup in system_hierarchy:
         for i_mol, molecule in enumerate(molgroup.subsystems):
             sec_monomer_groups = molecule.subsystems
@@ -1287,9 +1290,11 @@ def calc_molecular_rg(
             ):  # TODO need a better way to identify polymers
                 continue
             rg_result = calc_radius_of_gyration(universe, molecule.particle_indices)
-            rg_result['label'] = molecule.label + '-index_' + str(i_mol)
-            rg_result['system_ref'] = molecule
-            rg_results.append(rg_result)
+            # Convert TypedDict to regular dict and add metadata
+            result_dict: dict[str, Any] = dict(rg_result)
+            result_dict['label'] = molecule.label + '-index_' + str(i_mol)
+            result_dict['system_ref'] = molecule
+            rg_results.append(result_dict)
 
     return rg_results
 
