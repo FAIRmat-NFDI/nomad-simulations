@@ -229,7 +229,7 @@ class SphericalSymmetryState(
             kappa: Relativistic quantum number
 
         Returns:
-            l = |κ| - 1/2 if κ < 0, or l = κ for κ > 0
+            l = |κ| - 1 if κ < 0, or l = κ for κ > 0 (with κ ≠ 0)
         """
         if kappa == 0:
             raise ValueError('κ = 0 is unphysical')
