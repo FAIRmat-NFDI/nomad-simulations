@@ -143,11 +143,35 @@ def build_vertical(
     # Micro-examples (combined dict keyed by section)
     section_classes = resolve_section_classes(sections, registry)
     ex_map = {}
+    section_info = []
     for cls in section_classes:
         ex = example_for_section(cls)
         ex_map[cls.__name__] = (
             ex if isinstance(ex, dict) else (yaml.safe_load(ex) or {})
         )
+        # Extract docstring for section description
+        docstring = (cls.__doc__ or '').strip()
+        # Get first complete sentence (up to first period followed by space or newline)
+        brief = ''
+        if docstring:
+            # Join lines and split by sentence boundaries
+            text = ' '.join(line.strip() for line in docstring.split('\n') if line.strip())
+            # Find first sentence ending
+            import re
+            match = re.match(r'^(.*?\.)\s', text)
+            if match:
+                brief = match.group(1)
+            else:
+                # If no clear sentence boundary, take first 150 chars
+                brief = text[:150]
+                if len(text) > 150:
+                    brief += '...'
+                elif brief and not brief.endswith('.'):
+                    brief += '.'
+        section_info.append({
+            'name': cls.__name__,
+            'description': brief
+        })
     example_yaml = yaml.safe_dump(ex_map, sort_keys=False)
 
     # Render template
@@ -165,6 +189,7 @@ def build_vertical(
         in_scope=in_scope,
         out_of_scope=out_of_scope,
         sections=sections,
+        section_info=section_info,
         metainfo_base=metainfo_base,
         mermaid_block=mermaid_block,  # already fenced
         example_yaml=example_yaml,
@@ -204,7 +229,7 @@ def parse_args(argv=None):
     )
     p.add_argument(
         '--metainfo-base',
-        default='https://nomad-lab.eu/prod/v1/gui/analyze/metainfo',
+        default='https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo',
         help='Base URL for the MetaInfo browser deeplinks.',
     )
     p.add_argument(
@@ -221,6 +246,48 @@ def parse_args(argv=None):
     return p.parse_args(argv)
 
 
+def build_index_page(
+    verticals: dict,
+    templates_dir: Path,
+    out_dir: Path,
+):
+    """Generate the index.md overview page with links to all verticals."""
+    env = Environment(
+        loader=FileSystemLoader(templates_dir),
+        autoescape=select_autoescape(enabled_extensions=('html',)),
+        trim_blocks=True,
+        lstrip_blocks=True,
+    )
+    
+    # Prepare vertical data for template
+    vert_list = []
+    for key, spec in verticals.items():
+        if isinstance(spec, dict):
+            vert_list.append({
+                'key': key,
+                'title': spec.get('title', key.title()),
+                'purpose': spec.get('purpose', ''),
+                'in_scope': spec.get('in_scope', []),
+                'sections': spec.get('sections', []),
+            })
+        else:
+            vert_list.append({
+                'key': key,
+                'title': key.title(),
+                'purpose': '',
+                'in_scope': [],
+                'sections': list(spec),
+            })
+    
+    tpl = env.get_template('index.md.j2')
+    page_md = tpl.render(verticals=vert_list)
+    
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_file = out_dir / 'index.md'
+    out_file.write_text(page_md, encoding='utf-8')
+    print(f'[gen_docs] Wrote {out_file}')
+
+
 def main(argv=None):
     args = parse_args(argv)
 
@@ -229,6 +296,8 @@ def main(argv=None):
 
     templates_dir = Path(args.templates_dir)
     out_dir = Path(args.out_dir)
+    
+    # Generate individual vertical pages
     for key, spec in VERTICALS.items():
         build_vertical(
             key,
@@ -241,6 +310,9 @@ def main(argv=None):
             metainfo_base=args.metainfo_base,
             feedback_url_base=args.feedback_url,
         )
+    
+    # Generate index page
+    build_index_page(VERTICALS, templates_dir, out_dir)
 
 
 if __name__ == '__main__':

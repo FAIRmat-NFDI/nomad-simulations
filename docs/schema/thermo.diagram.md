@@ -1,5 +1,3 @@
-Test mermaid
-
 ```mermaid
 classDiagram
     class Enthalpy

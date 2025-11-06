@@ -17,10 +17,10 @@
 ## Key sections
 
 {# Use a real Markdown table to avoid whitespace collapsing #}
-| Section | MetaInfo |
-|---|---|
-{% for s in sections %}
-| `{{ s }}` | [Open in MetaInfo browser]({{ metainfo_base }}) |
+| Section | Description | MetaInfo |
+|---|---|---|
+{% for s in section_info %}
+| `{{ s.name }}` | {{ s.description }} | [Open in MetaInfo browser]({{ metainfo_base }}) |
 {% endfor %}
 
 
