@@ -1,5 +1,5 @@
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import SchemaPackage
+from nomad.metainfo import SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
@@ -26,15 +26,8 @@ class BeyondHFResults(SimulationWorkflowResults):
 
     _label = 'HF+ workflow results'
 
-    # Baseline HF electronic-structure results (single)
-    # Reuse ElectronicStructureResults, consistent with beyond_dft.py
-    from nomad.metainfo import (
-        SubSection,  # local import to mirror beyond_dft.py pattern
-    )
-
     hf = SubSection(sub_section=ElectronicStructureResults)
 
-    # Extended post-HF electronic-structure results (repeatable)
     ext = SubSection(sub_section=ElectronicStructureResults, repeats=True)
 
 
