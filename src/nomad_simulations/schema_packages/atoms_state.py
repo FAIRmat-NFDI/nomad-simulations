@@ -368,7 +368,7 @@ class SphericalSymmetryState(
             )
         return quantity
 
-    def _russel_saunders_j_values(
+    def _russell_saunders_j_values(
         self, l_quantum: float, s_quantum: float
     ) -> list[float]:
         """Generate all possible j values: |l - s|, |l - s| + 1, ..., l + s"""
