@@ -4,7 +4,7 @@ from array import array
 from collections import namedtuple
 from collections.abc import Callable
 from itertools import chain
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import numpy as np
 from scipy import sparse
@@ -43,6 +43,50 @@ from nomad.utils import get_logger
 from nomad_simulations.schema_packages.model_system import ModelSystem
 
 LOGGER = get_logger(__name__)
+
+
+class MolecularRDFResults(TypedDict):
+    """Type definition for molecular radial distribution function results."""
+
+    n_smooth: int
+    n_prune: int
+    type: str
+    types: list[str]
+    variables_name: list[list[str]]
+    bins: list[Any]  # list of pint Quantity arrays
+    value: list[np.ndarray]
+    frame_start: list[int]
+    frame_end: list[int]
+
+
+class MolecularMSDResults(TypedDict):
+    """Type definition for molecular mean squared displacement results."""
+
+    type: str
+    direction: str
+    types: list[str]
+    times: np.ndarray  # pint Quantity array
+    value: np.ndarray  # pint Quantity array
+    diffusion_constant: np.ndarray  # pint Quantity array
+    error_diffusion_constant: np.ndarray
+
+
+class RadiusOfGyrationResults(TypedDict):
+    """Type definition for radius of gyration calculation results."""
+
+    times: np.ndarray  # pint Quantity array (or plain array if no time units)
+    value: np.ndarray  # pint Quantity array in angstrom
+    n_frames: int
+
+
+class MolecularRadiusOfGyrationResults(TypedDict):
+    """Type definition for molecular radius of gyration results with metadata."""
+
+    times: np.ndarray  # pint Quantity array (or plain array if no time units)
+    value: np.ndarray  # pint Quantity array in angstrom
+    n_frames: int
+    label: str  # molecule label with index
+    system_ref: Any  # reference to the molecule section
 
 
 def _log_missing_dependency(dependency: str, calculation: str) -> str:
@@ -633,7 +677,7 @@ def calc_molecular_rdf(
     n_prune: int = 1,
     interval_indices=None,
     max_mols: int = 5000,
-) -> dict[str, Any]:
+) -> MolecularRDFResults | dict[str, Any]:
     """
     Calculates the radial distribution functions between for each unique pair of
     molecule types as a function of their center of mass distance.
@@ -939,11 +983,11 @@ def shifted_correlation_average(
     return correlation_times, result
 
 
-def calc_molecular_mean_squared_displacements(
+def calc_molecular_msd(
     universe: MDAUniverse | None,
     bead_groups: dict[str, BeadGroup],
     max_mols: int = 5000,
-) -> dict[str, Any]:
+) -> MolecularMSDResults | dict[str, Any]:
     """
     Calculates the mean squared displacement for the center of mass of each
     molecule type.
@@ -957,7 +1001,7 @@ def calc_molecular_mean_squared_displacements(
     max_mols : int
         Maximum number of molecules per bead group for calculating the msd, for efficiency purposes.
     """
-    if not _check_mda_dependency('calc_molecular_mean_squared_displacements'):
+    if not _check_mda_dependency('calc_molecular_msd'):
         return {}
 
     def parse_jumps(universe, selection):  # TODO Add output declaration
@@ -1147,7 +1191,7 @@ def calc_molecular_mean_squared_displacements(
 
 def calc_radius_of_gyration(
     universe: MDAUniverse | None, molecule_particle_indices: np.ndarray
-) -> dict[str, Any]:
+) -> RadiusOfGyrationResults | dict[str, Any]:
     """
     Calculates the radius of gyration as a function of time for the particles 'molecule_particle_indices'.
 
@@ -1195,13 +1239,13 @@ def calc_radius_of_gyration(
     return rg_results
 
 
-def calc_molecular_radius_of_gyration(
+def calc_molecular_rg(
     universe: MDAUniverse | None, system_hierarchy: MSection
-) -> list[dict[str, Any]]:
+) -> list[MolecularRadiusOfGyrationResults]:
     """
     Calculates the radius of gyration as a function of time for each polymer in the system.
     """
-    if not _check_mda_dependency('calc_molecular_radius_of_gyration'):
+    if not _check_mda_dependency('calc_molecular_rg'):
         return []
 
     if universe is None:

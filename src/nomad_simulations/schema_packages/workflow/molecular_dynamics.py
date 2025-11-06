@@ -44,8 +44,8 @@ from nomad_simulations.schema_packages.utils.molecular_dynamics import (
     BeadGroup,
     _get_molecular_bead_groups,
     archive_to_universe,
-    calc_molecular_mean_squared_displacements,
-    calc_molecular_radius_of_gyration,
+    calc_molecular_msd,
+    calc_molecular_rg,
     calc_molecular_rdf,
 )
 from nomad_simulations.schema_packages.workflow.trajectory import RadiiOfGyration
@@ -1167,9 +1167,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         ):  # TODO add check for diffusion_constants too?
             return self.mean_squared_displacements, self.diffusion_constants or []
 
-        msd_results = calc_molecular_mean_squared_displacements(
-            self._universe, self._bead_groups
-        )
+        msd_results = calc_molecular_msd(self._universe, self._bead_groups)
         sec_msds: list[MeanSquaredDisplacement] = []
         sec_diffusion_constants: list[DiffusionConstant] = []
         if msd_results:
@@ -1298,9 +1296,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                 return []
 
             system_hierarchy = sec_system.sub_systems
-            rg_results = calc_molecular_radius_of_gyration(
-                self._universe, system_hierarchy
-            )
+            rg_results = calc_molecular_rg(self._universe, system_hierarchy)
 
             # Create workflow RG sections
             for rg in rg_results:
