@@ -5,6 +5,11 @@ from typing import TYPE_CHECKING
 import ase
 import numpy as np
 import pint
+from nomad.datamodel.data import ArchiveSection
+from nomad.datamodel.metainfo.basesections.base_atoms_state import (
+    BaseAtomsState,
+    BaseParticleState,
+)
 from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy, SubSection
 from nomad.units import ureg
@@ -1061,75 +1066,10 @@ class HubbardInteractions(ElectronicState):
                 )
 
 
-class ParticleState(Entity):
+class AtomsState(BaseAtomsState):
     """
-    Generic base section representing the state of a particle in a simulation.
-    This can be extended to include any common quantities in the future.
+    A section to define each atom state information.
     """
-
-    label = Quantity(
-        type=str,
-        description="""
-        User- or program-package-defined identifier for this particle.
-        """,
-    )
-
-    def get_label(self) -> str | None:
-        """
-        Returns the label of the particle.
-        """
-        return self.label
-
-
-class AtomsState(ParticleState):
-    """
-    A base section to define each atom state information.
-    """
-
-    chemical_symbol = Quantity(
-        type=MEnum(ase.data.chemical_symbols[1:]),
-        description="""
-        Symbol of the element, e.g. 'H', 'Pb'. This quantity is equivalent to `atomic_numbers`.
-        """,
-    )
-
-    atomic_number = Quantity(
-        type=np.int32,
-        description="""
-        Atomic number Z. This quantity is equivalent to `chemical_symbol`.
-        """,
-    )
-
-    charge = Quantity(
-        type=np.int32,
-        default=0,
-        description="""
-        Charge of the atom. It is defined as the number of extra electrons or holes in the
-        atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`ElectronicState.occupation`
-        coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)
-        for cations or any negative integer (-1, -2...) for anions.
-
-        Note: for `CoreHole` systems we do not consider the charge of the atom even if
-        we do not store the final `ElectronicState` where the electron was excited to.
-        """,
-    )
-
-    spin = Quantity(
-        type=np.int32,
-        default=0,
-        description="""
-        Total spin quantum number, S.
-        """,
-    )
-
-    label = Quantity(
-        type=str,
-        description="""
-        User- or program-package-defined identifier for this atomic site.
-        e.g. 'H1', 'H1a', 'C_eq'.
-        It doesn't replace `chemical_symbol`, but merely gives users a more specialized token for the unique site name.
-        """,
-    )
 
     electronic_state = SubSection(sub_section=ElectronicState.m_def)
 
@@ -1147,71 +1087,11 @@ class AtomsState(ParticleState):
         """,
     )
 
-    @log
-    def get_label(self) -> str | None:
-        """
-        Returns the label of the particle.
-        """
-        return self.chemical_symbol if self.chemical_symbol else self.label
-
-    def resolve_chemical_symbol(self, logger: 'BoundLogger') -> str | None:
-        """
-        Resolves the `chemical_symbol` from the `atomic_number`.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[str]): The resolved `chemical_symbol`.
-        """
-        logger = self.resolve_chemical_symbol.__annotations__['logger']
-        if self.atomic_number is not None:
-            try:
-                return ase.data.chemical_symbols[self.atomic_number]
-            except IndexError:
-                logger.error(
-                    'The `AtomsState.atomic_number` is out of range of the periodic table.'
-                )
-        return None
-
-    @log
-    def resolve_atomic_number(self) -> int | None:
-        """
-        Resolves the `atomic_number` from the `chemical_symbol`.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[int]): The resolved `atomic_number`.
-        """
-        logger = self.resolve_atomic_number.__annotations__['logger']
-        if self.chemical_symbol is not None:
-            try:
-                return ase.data.atomic_numbers[self.chemical_symbol]
-            except IndexError:
-                logger.error(
-                    'The `AtomsState.chemical_symbol` is not recognized in the periodic table.'
-                )
-        return None
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Get chemical_symbol from atomic_number and viceversa
-        if self.chemical_symbol is None:
-            self.chemical_symbol = self.resolve_chemical_symbol(logger=logger)
-        elif self.atomic_number is None:
-            self.atomic_number = self.resolve_atomic_number(logger=logger)
-        else:
-            # If both are set, check if they match
-            if self.atomic_number != ase.data.atomic_numbers[self.chemical_symbol]:
-                logger.error(
-                    'The `AtomsState.atomic_number` and `chemical_symbol` do not match.'
-                )
 
-
-class CGBeadState(ParticleState):
+class CGBeadState(BaseParticleState):
     """
     A section to define coarse-grained bead state information.
     """
