@@ -1,26 +1,15 @@
-```mermaid
-classDiagram
-    class AtomicCell
-    class BaseGreensFunction
-    class Cell
-    class ChemicalFormula
-    class KLinePath
-    class KMesh
-    class KSpace
-    class ModelSystem
-    class ParticleState
-    class Permittivity
-    class Simulation
-    class Symmetry
-    class System
-    BaseGreensFunction --> KMesh : k_mesh
-    KSpace --> KLinePath : k_line_path
-    KSpace --> KMesh : k_mesh
-    ModelSystem --> Cell : cell
-    ModelSystem --> ChemicalFormula : chemical_formula
-    ModelSystem --> ModelSystem : sub_systems
-    ModelSystem --> ParticleState : particle_states
-    ModelSystem --> Symmetry : symmetry
-    Permittivity --> KMesh : q_mesh
-    Simulation --> ModelSystem : model_system
-```
+# System & Geometry - Full Screen Diagram
+
+!!! tip "Interactive Zoom & Pan"
+    - **Scroll wheel** or **+/-** buttons to zoom
+    - **Click and drag** to pan
+    - **Keyboard shortcuts**: `+`/`-` to zoom, `0` to reset, `f` to fit
+    - **↗** button to open in separate window
+    - **⬇** button to download as SVG
+
+This diagram shows the relationships between schema classes in this vertical:
+
+- **Solid arrows** (-->) represent SubSection containment
+- **Dashed arrows** (..->) represent Quantity references
+
+![system.diagram_0 diagram](../assets/diagrams/system.diagram_0.png){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}

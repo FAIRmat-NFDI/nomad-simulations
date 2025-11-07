@@ -12,6 +12,11 @@
 
 ## Relationship map
 
+!!! tip "Interactive Diagram"
+    **Click on the diagram below to zoom in.** Click again to zoom out.
+    
+    The diagram shows the relationships between the key sections in this vertical domain.
+
 {{ mermaid_block }}
 
 ## Key sections
@@ -20,7 +25,7 @@
 | Section | Description | MetaInfo |
 |---|---|---|
 {% for s in section_info %}
-| `{{ s.name }}` | {{ s.description }} | [Open in MetaInfo browser]({{ metainfo_base }}) |
+| `{{ s.name }}` | {{ s.description }} | [Open in MetaInfo browser]({{ s.metainfo_url }}){:target="_blank"} |
 {% endfor %}
 
 

@@ -27,7 +27,7 @@ except Exception as e:
     )
 
 
-def mermaid_for_vertical(name: str, allowlist: list[str], all_edges: dict) -> str:
+def mermaid_for_vertical(name: str, allowlist: list[str], all_edges: dict, add_header: bool = False, key: str = '') -> str:
     """
     Build a small Mermaid classDiagram for a vertical.
     Solid arrows = SubSection containment; dashed arrows = Quantity references.
@@ -37,7 +37,26 @@ def mermaid_for_vertical(name: str, allowlist: list[str], all_edges: dict) -> st
         if a in allowlist or b in allowlist:
             nodes.update([a, b])
 
-    lines = ['```mermaid', 'classDiagram']
+    lines = []
+    if add_header:
+        lines.extend([
+            f'# {name} - Full Screen Diagram',
+            '',
+            '!!! tip "Interactive Zoom & Pan"',
+            '    - **Scroll wheel** or **+/-** buttons to zoom',
+            '    - **Click and drag** to pan',
+            '    - **Keyboard shortcuts**: `+`/`-` to zoom, `0` to reset, `f` to fit',
+            '    - **↗** button to open in separate window',
+            '    - **⬇** button to download as SVG',
+            '',
+            'This diagram shows the relationships between schema classes in this vertical:',
+            '',
+            '- **Solid arrows** (-->) represent SubSection containment',
+            '- **Dashed arrows** (..->) represent Quantity references',
+            '',
+        ])
+    
+    lines.extend(['```mermaid', 'classDiagram'])
     for n in sorted(nodes):
         lines.append(f'    class {n}')
     for a, b, label in all_edges['contain']:
@@ -87,7 +106,7 @@ def main(argv=None):
 
     for key, spec in VERTICALS.items():
         allowlist = list(spec['sections'])
-        md = mermaid_for_vertical(spec.get('title', key), allowlist, edges)
+        md = mermaid_for_vertical(spec.get('title', key), allowlist, edges, add_header=True, key=key)
 
         if args.stdout:
             print(f"# {spec.get('title', key)}")

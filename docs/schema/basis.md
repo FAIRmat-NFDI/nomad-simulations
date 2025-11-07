@@ -6,39 +6,28 @@
 
 ## Relationship map
 
+!!! tip "Interactive Diagram"
+    **Click on the diagram below to zoom in.** Click again to zoom out.
+    
+    The diagram shows the relationships between the key sections in this vertical domain.
 
-```mermaid
-classDiagram
-    class APWLocalOrbital
-    class APWOrbital
-    class APWPlaneWaveBasisSet
-    class AtomCenteredBasisSet
-    class AtomCenteredFunction
-    class AtomicOrbitals
-    class EffectiveCorePotential
-    class PlaneWaveBasisSet
-    class SlaterKoster
-    class SlaterKosterBond
-    AtomCenteredBasisSet --> AtomCenteredFunction : functional_compositions
-    AtomCenteredBasisSet --> AtomicOrbitals : atomic_orbitals
-    AtomCenteredBasisSet --> EffectiveCorePotential : ecps
-    SlaterKoster --> SlaterKosterBond : bonds
-    SlaterKoster --> SlaterKosterBond : overlaps
-```
+
+![basis_0 diagram](../assets/diagrams/basis_0.png){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
 
 
 ## Key sections
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `PlaneWaveBasisSet` | Basis set over a reciprocal mesh, where each point $k_n$ represents a planar-wave basis function $rac{1}{\sqrt{\omega}} e^{i k_n r}$. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `AtomCenteredBasisSet` | Defines an **atom-centered basis set** for quantum chemistry calculations. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `APWPlaneWaveBasisSet` | A `PlaneWaveBasisSet` specialized to the APW use case. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `APWLocalOrbital` | Implementation of `APWWavefunction` capturing a local orbital extending a foundational APW basis set. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `APWOrbital` | Implementation of `APWWavefunction` capturing the foundational (S)(L)APW basis sets, all of the form $\sum_{lm} \left[ \sum_o c_{lmo} rac{\partial}{\partial r}u_l(r, \epsilon_l) ight] Y_lm$. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `AtomCenteredFunction` | Specifies a single contracted basis function in an atom-centered basis set. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `SlaterKoster` | A base section used to define the parameters used in a Slater-Koster tight-binding fitting. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `SlaterKosterBond` | A base section used to define the Slater-Koster bond information betwee two orbitals. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
+| `PlaneWaveBasisSet` | Basis set over a reciprocal mesh, where each point $k_n$ represents a planar-wave basis function $rac{1}{\sqrt{\omega}} e^{i k_n r}$. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.PlaneWaveBasisSet){:target="_blank"} |
+| `AtomCenteredBasisSet` | Defines an **atom-centered basis set** for quantum chemistry calculations. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.AtomCenteredBasisSet){:target="_blank"} |
+| `APWPlaneWaveBasisSet` | A `PlaneWaveBasisSet` specialized to the APW use case. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.APWPlaneWaveBasisSet){:target="_blank"} |
+| `APWLocalOrbital` | Implementation of `APWWavefunction` capturing a local orbital extending a foundational APW basis set. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.APWLocalOrbital){:target="_blank"} |
+| `APWOrbital` | Implementation of `APWWavefunction` capturing the foundational (S)(L)APW basis sets, all of the form $\sum_{lm} \left[ \sum_o c_{lmo} rac{\partial}{\partial r}u_l(r, \epsilon_l) 
+ight] Y_lm$. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.APWOrbital){:target="_blank"} |
+| `AtomCenteredFunction` | Specifies a single contracted basis function in an atom-centered basis set. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.AtomCenteredFunction){:target="_blank"} |
+| `SlaterKoster` | A base section used to define the parameters used in a Slater-Koster tight-binding fitting. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.SlaterKoster){:target="_blank"} |
+| `SlaterKosterBond` | A base section used to define the Slater-Koster bond information betwee two orbitals. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.SlaterKosterBond){:target="_blank"} |
 
 
 ## Micro-examples

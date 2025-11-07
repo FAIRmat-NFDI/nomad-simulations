@@ -88,8 +88,7 @@ extra_css:
 extra_javascript:
   - 'https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js'
   - 'https://unpkg.com/cytoscape@3.19.1/dist/cytoscape.min.js'
-  - https://unpkg.com/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js
-  - assets/mermaid-zoom.js
+  - assets/click-zoom.js
   # - assets/code/parse.js
 extra:
   version: 0.1

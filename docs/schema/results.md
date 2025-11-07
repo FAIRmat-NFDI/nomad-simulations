@@ -6,89 +6,29 @@
 
 ## Relationship map
 
+!!! tip "Interactive Diagram"
+    **Click on the diagram below to zoom in.** Click again to zoom out.
+    
+    The diagram shows the relationships between the key sections in this vertical domain.
 
-```mermaid
-classDiagram
-    class AbsorptionSpectrum
-    class BeyondDFTResults
-    class ChemicalPotential
-    class CrystalFieldSplitting
-    class DOSProfile
-    class ElectronicBandGap
-    class ElectronicBandStructure
-    class ElectronicDensityOfStates
-    class ElectronicEigenvalues
-    class ElectronicGreensFunction
-    class ElectronicSelfEnergy
-    class ElectronicStructureResults
-    class Energy2
-    class FermiSurface
-    class GeometryOptimizationResults
-    class HoppingMatrix
-    class HybridizationFunction
-    class KLinePath
-    class KineticEnergy
-    class Occupancy
-    class Outputs
-    class Permittivity
-    class PotentialEnergy
-    class QuasiparticleWeight
-    class SCFOutputs
-    class Simulation
-    class Temperature
-    class ThermodynamicsResults
-    class TotalEnergy
-    class TotalForce
-    class TrajectoryOutputs
-    class XASSpectrum
-    BeyondDFTResults --> ElectronicStructureResults : dft
-    BeyondDFTResults --> ElectronicStructureResults : ext
-    DOSProfile --> Energy2 : energies
-    ElectronicBandStructure --> KLinePath : k_path
-    ElectronicDensityOfStates --> DOSProfile : projected_dos
-    ElectronicDensityOfStates --> Energy2 : energies
-    Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ChemicalPotential : chemical_potentials
-    Outputs --> CrystalFieldSplitting : crystal_field_splittings
-    Outputs --> ElectronicBandGap : electronic_band_gaps
-    Outputs --> ElectronicBandStructure : electronic_band_structures
-    Outputs --> ElectronicDensityOfStates : electronic_dos
-    Outputs --> ElectronicEigenvalues : electronic_eigenvalues
-    Outputs --> ElectronicGreensFunction : electronic_greens_functions
-    Outputs --> ElectronicSelfEnergy : electronic_self_energies
-    Outputs --> FermiSurface : fermi_surfaces
-    Outputs --> HoppingMatrix : hopping_matrices
-    Outputs --> HybridizationFunction : hybridization_functions
-    Outputs --> KineticEnergy : kinetic_energies
-    Outputs --> Occupancy : occupancies
-    Outputs --> Permittivity : permittivities
-    Outputs --> PotentialEnergy : potential_energies
-    Outputs --> QuasiparticleWeight : quasiparticle_weights
-    Outputs --> Temperature : temperatures
-    Outputs --> TotalEnergy : total_energies
-    Outputs --> TotalForce : total_forces
-    Outputs --> XASSpectrum : xas_spectra
-    SCFOutputs --> Outputs : scf_steps
-    Simulation --> Outputs : outputs
-    XASSpectrum --> AbsorptionSpectrum : exafs_spectrum
-    XASSpectrum --> AbsorptionSpectrum : xanes_spectrum
-```
+
+![results_0 diagram](../assets/diagrams/results_0.png){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
 
 
 ## Key sections
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `Outputs` | Output properties of a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `ElectronicStructureResults` | Contains definitions for results of an electronic structure simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `ElectronicBandStructure` | Accessible energies by the charges (electrons and holes) in the reciprocal space. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `ElectronicDensityOfStates` | Number of electronic states accessible for the charges per energy and per volume. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `ElectronicBandGap` | Energy difference between the highest occupied electronic state and the lowest unoccupied electronic state. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `FermiSurface` | Energy boundary in reciprocal space that separates the filled and empty electronic states in a metal. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `SCFOutputs` | This section contains the self-consistent (SCF) steps performed to converge an output property. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `TrajectoryOutputs` | This section contains output properties that depend on a single system, but were calculated as part of a trajectory (e.g., temperatures from a molecul... | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `ThermodynamicsResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
-| `GeometryOptimizationResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo) |
+| `Outputs` | Output properties of a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.outputs.Outputs){:target="_blank"} |
+| `ElectronicStructureResults` | Contains definitions for results of an electronic structure simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ElectronicStructureResults){:target="_blank"} |
+| `ElectronicBandStructure` | Accessible energies by the charges (electrons and holes) in the reciprocal space. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.band_structure.ElectronicBandStructure){:target="_blank"} |
+| `ElectronicDensityOfStates` | Number of electronic states accessible for the charges per energy and per volume. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.spectral_profile.ElectronicDensityOfStates){:target="_blank"} |
+| `ElectronicBandGap` | Energy difference between the highest occupied electronic state and the lowest unoccupied electronic state. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.band_gap.ElectronicBandGap){:target="_blank"} |
+| `FermiSurface` | Energy boundary in reciprocal space that separates the filled and empty electronic states in a metal. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.fermi_surface.FermiSurface){:target="_blank"} |
+| `SCFOutputs` | This section contains the self-consistent (SCF) steps performed to converge an output property. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.outputs.SCFOutputs){:target="_blank"} |
+| `TrajectoryOutputs` | This section contains output properties that depend on a single system, but were calculated as part of a trajectory (e.g., temperatures from a molecul... | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.outputs.TrajectoryOutputs){:target="_blank"} |
+| `ThermodynamicsResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.thermodynamics.ThermodynamicsResults){:target="_blank"} |
+| `GeometryOptimizationResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.geometry_optimization.GeometryOptimizationResults){:target="_blank"} |
 
 
 ## Micro-examples

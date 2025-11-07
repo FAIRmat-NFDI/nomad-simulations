@@ -155,9 +155,12 @@ def build_vertical(
         brief = ''
         if docstring:
             # Join lines and split by sentence boundaries
-            text = ' '.join(line.strip() for line in docstring.split('\n') if line.strip())
+            text = ' '.join(
+                line.strip() for line in docstring.split('\n') if line.strip()
+            )
             # Find first sentence ending
             import re
+
             match = re.match(r'^(.*?\.)\s', text)
             if match:
                 brief = match.group(1)
@@ -168,10 +171,18 @@ def build_vertical(
                     brief += '...'
                 elif brief and not brief.endswith('.'):
                     brief += '.'
-        section_info.append({
-            'name': cls.__name__,
-            'description': brief
-        })
+
+        # Build full MetaInfo URL for this specific section
+        # Format: {base}/{package}/section_definitions@{module_path}.{ClassName}
+        module = cls.__module__
+        class_name = cls.__name__
+        metainfo_url = (
+            f'{metainfo_base}/{pkg}/section_definitions@{module}.{class_name}'
+        )
+
+        section_info.append(
+            {'name': cls.__name__, 'description': brief, 'metainfo_url': metainfo_url}
+        )
     example_yaml = yaml.safe_dump(ex_map, sort_keys=False)
 
     # Render template
@@ -229,7 +240,7 @@ def parse_args(argv=None):
     )
     p.add_argument(
         '--metainfo-base',
-        default='https://nomad-lab.eu/prod/v1/oasis/gui/analyze/metainfo',
+        default='https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo',
         help='Base URL for the MetaInfo browser deeplinks.',
     )
     p.add_argument(
@@ -258,30 +269,34 @@ def build_index_page(
         trim_blocks=True,
         lstrip_blocks=True,
     )
-    
+
     # Prepare vertical data for template
     vert_list = []
     for key, spec in verticals.items():
         if isinstance(spec, dict):
-            vert_list.append({
-                'key': key,
-                'title': spec.get('title', key.title()),
-                'purpose': spec.get('purpose', ''),
-                'in_scope': spec.get('in_scope', []),
-                'sections': spec.get('sections', []),
-            })
+            vert_list.append(
+                {
+                    'key': key,
+                    'title': spec.get('title', key.title()),
+                    'purpose': spec.get('purpose', ''),
+                    'in_scope': spec.get('in_scope', []),
+                    'sections': spec.get('sections', []),
+                }
+            )
         else:
-            vert_list.append({
-                'key': key,
-                'title': key.title(),
-                'purpose': '',
-                'in_scope': [],
-                'sections': list(spec),
-            })
-    
+            vert_list.append(
+                {
+                    'key': key,
+                    'title': key.title(),
+                    'purpose': '',
+                    'in_scope': [],
+                    'sections': list(spec),
+                }
+            )
+
     tpl = env.get_template('index.md.j2')
     page_md = tpl.render(verticals=vert_list)
-    
+
     out_dir.mkdir(parents=True, exist_ok=True)
     out_file = out_dir / 'index.md'
     out_file.write_text(page_md, encoding='utf-8')
@@ -296,7 +311,7 @@ def main(argv=None):
 
     templates_dir = Path(args.templates_dir)
     out_dir = Path(args.out_dir)
-    
+
     # Generate individual vertical pages
     for key, spec in VERTICALS.items():
         build_vertical(
@@ -310,7 +325,7 @@ def main(argv=None):
             metainfo_base=args.metainfo_base,
             feedback_url_base=args.feedback_url,
         )
-    
+
     # Generate index page
     build_index_page(VERTICALS, templates_dir, out_dir)
 
