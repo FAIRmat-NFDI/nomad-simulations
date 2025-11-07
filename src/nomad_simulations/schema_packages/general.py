@@ -22,7 +22,7 @@ from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.utils import get_composition, log
 
-from .common import Time
+from .common import SimulationTime
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -115,7 +115,7 @@ class Program(Entity):
     )
 
 
-class BaseSimulation(Activity, Time):
+class BaseSimulation(Activity, SimulationTime):
     """
     A computational simulation that produces output data from a given input model system
     and input methodological parameters.
@@ -127,45 +127,6 @@ class BaseSimulation(Activity, Time):
 
     m_def = Section(
         links=['https://liusemweb.github.io/mdo/core/1.1/index.html#Calculation']
-    )
-
-    datetime_end = Quantity(
-        type=Datetime,
-        description="""
-        The date and time when this computation ended.
-        """,
-    )
-
-    cpu1_start = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The starting time of the computation on the (first) CPU 1.
-        """,
-    )
-
-    cpu1_end = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The end time of the computation on the (first) CPU 1.
-        """,
-    )
-
-    wall_start = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The internal wall-clock time from the starting of the computation.
-        """,
-    )
-
-    wall_end = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The internal wall-clock time from the end of the computation.
-        """,
     )
 
     program = SubSection(sub_section=Program.m_def, repeats=False)

@@ -1500,7 +1500,7 @@ class ModelSystem(System):
         if self._cache.get('bond_list') is not None:
             return self._cache['bond_list']
 
-        bond_list = np.empty((0, 2), dtype=np.int32)
+        bond_list: np.ndarray = np.empty((0, 2), dtype=np.int32)
         # root
         if self.is_root_system():
             bond_list = self.bond_list if self.bond_list is not None else bond_list

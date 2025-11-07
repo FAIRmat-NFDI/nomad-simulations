@@ -7,14 +7,14 @@ from nomad_simulations.schema_packages.utils import log
 from .general import (
     INCORRECT_N_TASKS,
     SimulationWorkflow,
-    SimulationWorkflowModel,
+    SimulationWorkflowMethod,
     SimulationWorkflowResults,
 )
 
 m_package = SchemaPackage()
 
 
-class SinglePointModel(SimulationWorkflowModel):
+class SinglePointMethod(SimulationWorkflowMethod):
     """
     Contains definitions for the input model of a single point workflow.
     """
@@ -39,8 +39,8 @@ class SinglePoint(SimulationWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive):
-        if not self.model:
-            self.model = SinglePointModel()
+        if not self.method:
+            self.method = SinglePointMethod()
 
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)

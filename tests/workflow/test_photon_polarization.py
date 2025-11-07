@@ -1,5 +1,5 @@
 from nomad_simulations.schema_packages.workflow.photon_polarization import (
-    PhotonPolarizationModel,
+    PhotonPolarizationMethod,
     PhotonPolarizationResults,
     PhotonPolarizationWorkflow,
 )
@@ -10,7 +10,7 @@ class TestPhotonPolarizationWorkflow:
     def test_inputs_outputs(self, logger, archive, log_output):
         workflow = PhotonPolarizationWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, PhotonPolarizationModel)
+        assert isinstance(workflow.method, PhotonPolarizationMethod)
         assert isinstance(workflow.results, PhotonPolarizationResults)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1

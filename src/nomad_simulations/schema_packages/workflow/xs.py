@@ -5,12 +5,12 @@ from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
 
-from .beyond_dft import BeyondDFTModel, BeyondDFTResults, BeyondDFTWorkflow
+from .beyond_dft import BeyondDFTMethod, BeyondDFTResults, BeyondDFTWorkflow
 
 m_package = SchemaPackage()
 
 
-class XSModel(BeyondDFTModel):
+class XSMethod(BeyondDFTMethod):
     _label = 'XS workflow parameters'
 
 
@@ -25,8 +25,8 @@ class XSWorkflow(BeyondDFTWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = XSModel()
+        if not self.method:
+            self.method = XSMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 

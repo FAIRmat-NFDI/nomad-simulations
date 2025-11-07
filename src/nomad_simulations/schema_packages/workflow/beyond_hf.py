@@ -8,14 +8,14 @@ from .general import (
     INCORRECT_N_TASKS,
     ElectronicStructureResults,
     SerialWorkflow,
-    SimulationWorkflowModel,
+    SimulationWorkflowMethod,
     SimulationWorkflowResults,
 )
 
 m_package = SchemaPackage()
 
 
-class BeyondHFModel(SimulationWorkflowModel):
+class BeyondHFMethod(SimulationWorkflowMethod):
     _label = 'HF+ workflow parameters'
 
 
@@ -38,8 +38,8 @@ class BeyondHFWorkflow(SerialWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = BeyondHFModel()
+        if not self.method:
+            self.method = BeyondHFMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
