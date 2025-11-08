@@ -12,7 +12,7 @@
     The diagram shows the relationships between the key sections in this vertical domain.
 
 
-![spectroscopy_0 diagram](../assets/diagrams/spectroscopy_0.png){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+![spectroscopy_0 diagram](../assets/diagrams/spectroscopy_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
 
 
 ## Key sections

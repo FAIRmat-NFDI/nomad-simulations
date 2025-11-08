@@ -12,4 +12,4 @@ This diagram shows the relationships between schema classes in this vertical:
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
 
-![system.diagram_0 diagram](../assets/diagrams/system.diagram_0.png){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+![system.diagram_0 diagram](../assets/diagrams/system.diagram_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}

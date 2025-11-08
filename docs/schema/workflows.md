@@ -12,7 +12,7 @@
     The diagram shows the relationships between the key sections in this vertical domain.
 
 
-![workflows_0 diagram](../assets/diagrams/workflows_0.png){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+![workflows_0 diagram](../assets/diagrams/workflows_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
 
 
 ## Key sections

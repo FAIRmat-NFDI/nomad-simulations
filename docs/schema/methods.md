@@ -12,7 +12,7 @@
     The diagram shows the relationships between the key sections in this vertical domain.
 
 
-![methods_0 diagram](../assets/diagrams/methods_0.png){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+![methods_0 diagram](../assets/diagrams/methods_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
 
 
 ## Key sections

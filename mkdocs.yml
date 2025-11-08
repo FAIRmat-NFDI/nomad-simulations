@@ -42,17 +42,17 @@ theme:
   icon:
     repo: fontawesome/brands/github
   palette:
-    - media: "(prefers-color-scheme: light)"
+    # Default to light mode
+    - scheme: default
       # primary: '#2A4CDF'
       # accent: '#008A67'
-      scheme: default
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
       toggle:
         icon: material/weather-night
+        name: Switch to dark mode
+    # Dark mode option
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
         name: Switch to light mode
 plugins:
   - search
@@ -85,10 +85,13 @@ markdown_extensions:
 extra_css:
   - stylesheets/extra.css
   - stylesheets/mermaid-zoom.css
+  - stylesheets/svg-diagram.css
 extra_javascript:
   - 'https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js'
   - 'https://unpkg.com/cytoscape@3.19.1/dist/cytoscape.min.js'
+  - 'https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js'
   - assets/click-zoom.js
+  - assets/svg-pan-zoom-diagram.js
   # - assets/code/parse.js
 extra:
   version: 0.1

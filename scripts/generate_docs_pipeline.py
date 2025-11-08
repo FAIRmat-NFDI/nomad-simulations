@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 
-def run_command(description: str, command: list[str], cwd: Path | None = None) -> bool:
+def run_command(description: str, command: list, cwd = None) -> bool:
     """
     Run a subprocess command with progress reporting.
 
@@ -131,6 +131,19 @@ def main():
             'Documentation generated but diagrams are in Mermaid format (not clickable)'
         )
         sys.exit(1)
+    
+    # Step 4: Convert PNG references to SVG (vector graphics with click-zoom)
+    print('\n' + '=' * 60)
+    print('Converting PNG to SVG for vector quality')
+    print('=' * 60)
+    step4_success = run_command(
+        description='Convert diagrams to SVG with click-zoom',
+        command=[sys.executable, 'scripts/mermaid_to_svg_simple.py'],
+        cwd=repo_root,
+    )
+
+    if not step4_success:
+        print('\n⚠ Note: SVG conversion failed, but PNG version is available')
 
     # Final summary
     print('\n' + '=' * 60)
@@ -140,12 +153,21 @@ def main():
     print('  - docs/schema/index.md (overview page)')
     print('  - docs/schema/*.md (vertical domain pages)')
     print('  - docs/schema/*.diagram.md (standalone diagram pages)')
-    print('  - docs/assets/diagrams/*.png (diagram images)')
+    if step4_success:
+        print('  - docs/assets/diagrams/*.svg (SVG vector images with click-zoom)')
+    else:
+        print('  - docs/assets/diagrams/*.png (PNG images with click-zoom)')
     print('\nNext steps:')
     print('  1. Review the generated documentation:')
     print('     mkdocs serve')
     print('  2. View at http://127.0.0.1:8000')
-    print('\nAll diagrams support click-to-zoom functionality!')
+    print('\nDiagram features:')
+    if step4_success:
+        print('  ✓ SVG vector graphics - infinite zoom quality')
+        print('  ✓ Click to zoom (2x scale)')
+        print('  ✓ Smaller file sizes than PNG')
+    else:
+        print('  ✓ PNG with click-to-zoom (2x scale)')
 
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@
     The diagram shows the relationships between the key sections in this vertical domain.
 
 
-![system_0 diagram](../assets/diagrams/system_0.png){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+![system_0 diagram](../assets/diagrams/system_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
 
 
 ## Key sections

@@ -1,0 +1,24 @@
+classDiagram
+    class AtomicCell
+    class BaseGreensFunction
+    class Cell
+    class ChemicalFormula
+    class KLinePath
+    class KMesh
+    class KSpace
+    class ModelSystem
+    class ParticleState
+    class Permittivity
+    class Simulation
+    class Symmetry
+    class System
+    BaseGreensFunction --> KMesh : k_mesh
+    KSpace --> KLinePath : k_line_path
+    KSpace --> KMesh : k_mesh
+    ModelSystem --> Cell : cell
+    ModelSystem --> ChemicalFormula : chemical_formula
+    ModelSystem --> ModelSystem : sub_systems
+    ModelSystem --> ParticleState : particle_states
+    ModelSystem --> Symmetry : symmetry
+    Permittivity --> KMesh : q_mesh
+    Simulation --> ModelSystem : model_system

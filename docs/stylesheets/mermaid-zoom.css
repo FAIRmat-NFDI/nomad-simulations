@@ -21,6 +21,12 @@
     border-radius: 4px;
 }
 
+/* Ensure SVG images scale properly */
+img[src$=".svg"].click-zoom-img {
+    width: 80%;
+    height: auto;
+}
+
 /* Old click-zoom div styles (kept for backwards compatibility) */
 .click-zoom {
     text-align: center;
