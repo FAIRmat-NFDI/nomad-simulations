@@ -46,13 +46,16 @@ class SphericalSymmetryState(
     BaseSpinOrbitalState
 ):  # @EBB2675 we could also split this section into 3 mutually inheriting sections
     """Describes a quantum state under spherical symmetry.
-    Supports SOC and relativistic effects."""
+    Supports SOC and relativistic effects.
+
+    - κ (kappa_quantum_number) is specific to relativistic settings and populates j and l during normalization, not vice versa.
+    """
 
     # TODO: define when these quantities are populated and `None` semantics
 
     kappa_quantum_number = Quantity(
         type=np.int32, description='κ = ±(j + 1/2), encodes l and j'
-    )  # ? should this be mutually exclusive with j_quantum_number?
+    )
 
     j_quantum_number = Quantity(
         type=np.float64,
@@ -188,24 +191,6 @@ class SphericalSymmetryState(
             return int(orbital_degeneracy * spin_degeneracy)
 
         return 0
-
-    def compute_kappa_from_j_l(self, jqn: float, lqn: int) -> int:
-        """
-        Compute κ quantum number from j and l quantum numbers.
-
-        Args:
-            j: Total angular momentum quantum number
-            l: Orbital angular momentum quantum number
-
-        Returns:
-            κ = -(j + 1/2) if j = l + 1/2, or κ = +(j + 1/2) if j = l - 1/2
-        """
-        if abs(jqn - (lqn + 0.5)) < 1e-10:  # j = l + 1/2
-            return -(int(jqn + 0.5))
-        elif abs(jqn - (lqn - 0.5)) < 1e-10:  # j = l - 1/2
-            return +(int(jqn + 0.5))
-        else:
-            raise ValueError(f'Invalid j={jqn} for l={lqn}. Must be l±1/2')
 
     def compute_j_from_kappa(self, kappa: int) -> float:
         """
