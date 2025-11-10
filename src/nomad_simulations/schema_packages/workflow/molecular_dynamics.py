@@ -54,7 +54,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Generator
 
     import pint
-    from nomad.metainfo import Context, Section
+    from nomad.datamodel.context import Context
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 

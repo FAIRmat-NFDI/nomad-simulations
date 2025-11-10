@@ -6,8 +6,8 @@ from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import URL, MEnum, Quantity, Section, SubSection
 
 if TYPE_CHECKING:
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import CoreHole, OrbitalsState
@@ -1277,10 +1277,10 @@ class CoupledCluster(ModelMethodElectronic):
         shape=['*'],
         description="""
         The excitation orders explicitly included in the cluster operator, e.g. [1,2]
-        for CCSD. 
-        - 1 = singles 
-        - 2 = doubles 
-        - 3 = triples 
+        for CCSD.
+        - 1 = singles
+        - 2 = doubles
+        - 3 = triples
         - 4 = quadruples, etc.
         Example: CCSDT => [1, 2, 3].
         """,
@@ -1350,7 +1350,7 @@ class ConfigurationInteraction(ModelMethodElectronic):
         type=np.int32,
         shape=['*'],
         description="""
-            List of excitation orders included in the CI expansion 
+            List of excitation orders included in the CI expansion
             (1=singles, 2=doubles, 3=triples, 4=quadruples, …).
             """,
     )
