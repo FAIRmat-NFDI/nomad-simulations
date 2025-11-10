@@ -523,7 +523,7 @@ def make_spherical_state(
     - n -> n_quantum_number
     - l -> l_quantum_number, l_symbol -> l_quantum_symbol
     - ml -> ml_quantum_number, ml_symbol -> ml_quantum_symbol
-    - j -> j_quantum_number (float or list[float])
+    - j -> j_quantum_number (float)
     - kappa -> kappa_quantum_number
     - s -> s_quantum_number, ms -> ms_quantum_number, ms_symbol -> ms_quantum_symbol
     - coupling_origin -> coupling_origin (e.g., 'pure_LS','pure_jj','intermediate','relativistic')

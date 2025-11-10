@@ -33,7 +33,7 @@ class TestSphericalSymmetryState:
         l_number: int,
         ml_number: int | None,
         ms_number: float | None,
-        j_number: list[float] | None,
+        j_number: float | None,
         mj_number: list[float] | None,
     ) -> None:
         """Adds l and ml quantum numbers to the `OrbitalsState` section."""
@@ -158,16 +158,24 @@ class TestSphericalSymmetryState:
             (
                 1,
                 None,
-                [1 / 2, 3 / 2],
+                1 / 2,
                 None,
                 None,
-                6,
-            ),  # j=[0.5,1.5] -> 2*0.5+1 + 2*1.5+1 = 2+4 = 6 (j takes priority)
+                2,
+            ),  # j=0.5 -> 2*0.5+1 = 2 (j takes priority)
+            (
+                1,
+                None,
+                3 / 2,
+                None,
+                None,
+                4,
+            ),  # j=1.5 -> 2*1.5+1 = 4 (j takes priority)
             (
                 1,
                 -1,
-                [1 / 2, 3 / 2],
-                [-3 / 2, 1 / 2, 1 / 2, 3 / 2],
+                3 / 2,
+                [-3 / 2, -1 / 2, 1 / 2, 3 / 2],
                 None,
                 4,
             ),  # mj specified -> len(mj) = 4
@@ -177,7 +185,7 @@ class TestSphericalSymmetryState:
         self,
         l_quantum_number: int,
         ml_quantum_number: int | None,
-        j_quantum_number: list[float] | None,
+        j_quantum_number: float | None,
         mj_quantum_number: list[float] | None,
         ms_quantum_number: float | None,
         degeneracy: int,
@@ -188,7 +196,7 @@ class TestSphericalSymmetryState:
         Args:
             l_quantum_number (int): The angular momentum quantum number.
             ml_quantum_number (Optional[int]): The magnetic quantum number.
-            j_quantum_number (Optional[list[float]]): The total angular momentum quantum number.
+            j_quantum_number (Optional[float]): The total angular momentum quantum number.
             mj_quantum_number (Optional[list[float]]): The magnetic quantum number for the total angular momentum.
             ms_quantum_number (Optional[float]): The spin quantum number.
             degeneracy (int): The expected degeneracy of the orbital state.

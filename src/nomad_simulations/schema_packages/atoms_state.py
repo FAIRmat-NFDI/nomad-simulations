@@ -39,6 +39,10 @@ class BaseSpinOrbitalState(Entity):
 
     @property
     def _degeneracy(self) -> int:
+        """
+        Compute the degeneracy for this spin-orbital state using available quantum numbers.
+        If insufficient information is available, returns 0.
+        """
         raise NotImplementedError('Subclasses must implement this method.')
 
 
@@ -59,10 +63,11 @@ class SphericalSymmetryState(
 
     j_quantum_number = Quantity(
         type=np.float64,
-        shape=['1..2'],
         description="""
         Total angular momentum quantum number $j = |l-s| ... l+s$. Necessary with strong
         L-S coupling or non-collinear spin systems.
+
+        Can be set independently when l or s are not known or not applicable.
         """,
     )
 
@@ -70,6 +75,7 @@ class SphericalSymmetryState(
         type=positive_int(),
         description="""
         Angular quantum number of the orbital state. Must be >= 0.
+        Can be set independently when j or s are not known or not applicable.
         """,
     )
 
@@ -124,6 +130,7 @@ class SphericalSymmetryState(
         default=0.5,
         description="""
         Total spin quantum number $s = 0, 1/2, 1, ...$.
+        Can be set independently when j or l are not known or not applicable.
         """,
     )
 
@@ -154,9 +161,9 @@ class SphericalSymmetryState(
         quantum numbers. If insufficient information is available, returns 0.
 
         Rules:
-        - If j is present (especially as a list), use j-based calculation as it represents coupled states
+        - If j is present, use j-based calculation as it represents coupled states
         - Otherwise, if l is known (and ml not), orbital degeneracy = 2*l + 1; if ml is known, = 1
-        - If neither j nor ms is known, default spin degeneracy to 1 (updated from 2)
+        - If neither j nor ms is known, default spin degeneracy to 1
         """
         lqn = getattr(self, 'l_quantum_number', None)
         ml = getattr(self, 'ml_quantum_number', None)
@@ -175,12 +182,7 @@ class SphericalSymmetryState(
                         return 1  # Single mj value
 
                 # No mj specified: use j-based calculation for the full manifold
-                # Handle both lists and numpy arrays
-                if hasattr(jqn, '__len__') and len(jqn) > 1:
-                    return int(sum(int(2 * j + 1) for j in jqn))
-                # Single j value (scalar or single-element array)
-                j_val = jqn[0] if hasattr(jqn, '__len__') else jqn
-                return int(2 * j_val + 1)
+                return int(2 * jqn + 1)
             except Exception:
                 return 0
 
@@ -235,13 +237,8 @@ class SphericalSymmetryState(
                 # Use factored computation for validation
                 expected_j = self.compute_j_from_kappa(self.kappa_quantum_number)
 
-                # Check if any j value matches expected
-                j_values = (
-                    self.j_quantum_number
-                    if isinstance(self.j_quantum_number, list)
-                    else [self.j_quantum_number]
-                )
-                if not any(abs(j - expected_j) < 1e-10 for j in j_values):
+                # Check if j value matches expected
+                if abs(self.j_quantum_number - expected_j) >= 1e-10:
                     logger.error(
                         f'Inconsistent κ={self.kappa_quantum_number} and j={self.j_quantum_number}. '
                         f'Expected j={expected_j}'
@@ -259,9 +256,7 @@ class SphericalSymmetryState(
         """
         if self.kappa_quantum_number is not None and self.j_quantum_number is None:
             # Compute j from κ
-            self.j_quantum_number = [
-                self.compute_j_from_kappa(self.kappa_quantum_number)
-            ]
+            self.j_quantum_number = self.compute_j_from_kappa(self.kappa_quantum_number)
 
         elif self.j_quantum_number is not None and self.kappa_quantum_number is None:
             # Cannot uniquely determine κ from j alone (need l as well)
