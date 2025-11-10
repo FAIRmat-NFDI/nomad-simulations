@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import ase
 import numpy as np
@@ -8,9 +8,7 @@ from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
-    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.data_types import (
@@ -49,9 +47,14 @@ class BaseSpinOrbitalState(Entity):
 class SphericalSymmetryState(
     BaseSpinOrbitalState
 ):  # @EBB2675 we could also split this section into 3 mutually inheriting sections
-    """Describes a quantum state under spherical symmetry.
-    Supports SOC and relativistic effects.
+    """Describes a quantum state under spherical symmetry. Supports SOC and relativistic effects.
 
+    The system is only defined up to the given quantum numbers. States with a wider degeneracy are possible by keeping some quantum numbers undefined.
+
+    Quantum number relationships:
+    - j and l, s: j = |l - s|, |l - s| + 1, ..., l + s (total angular momentum from orbital and spin coupling)
+    - m_j and j: m_j ∈ [-j, -j+1, ..., j-1, j] (azimuthal projection of j, 2j+1 values)
+    - m_l and l: m_l ∈ [-l, -l+1, ..., l-1, l] (azimuthal projection of l, 2l+1 values)
     - κ (kappa_quantum_number) is specific to relativistic settings and populates j and l during normalization, not vice versa.
     """
 
@@ -62,7 +65,7 @@ class SphericalSymmetryState(
     )
 
     j_quantum_number = Quantity(
-        type=np.float64,
+        type=positive_float(),
         description="""
         Total angular momentum quantum number $j = |l-s| ... l+s$. Necessary with strong
         L-S coupling or non-collinear spin systems.
@@ -92,7 +95,6 @@ class SphericalSymmetryState(
 
     mj_quantum_number = Quantity(
         type=np.float64,
-        shape=['*'],
         description="""
         Azimuthal projection of the `j$ vector. Necessary with strong L-S coupling or
         non-collinear spin systems.
@@ -106,6 +108,15 @@ class SphericalSymmetryState(
         """,
     )
 
+    # TODO: Define quantization axis and coordinate frame for ml_quantum_symbol
+    # - ml symbols ('x', 'y', 'z', 'xy', etc.) currently assume a default Cartesian coordinate frame
+    # - These symbols represent real spherical harmonics/Cartesian orbitals defined with respect to a specific quantization axis
+    # - In magnetic field or crystal field contexts, this axis should align with the field direction or crystal symmetry axes
+    # - Need to:
+    #   1. Add explicit quantization_axis quantity (similar to NonCollinearSpinState.axis)
+    #   2. Link ml_quantum_symbol to the coordinate system defined in ModelSystem
+    #   3. Document the convention: ml=0 → z-axis alignment, ml=±1 → x,y in xy-plane
+    #   4. Consider how this relates to magnetic field direction if present
     @property
     def ml_quantum_symbol(self) -> str:
         """
@@ -185,12 +196,9 @@ class SphericalSymmetryState(
         # Case A: j-based inference (prioritize when j is present)
         if jqn is not None:
             try:
-                # If mj is specified, degeneracy equals the number of mj states
+                # If mj is specified, degeneracy is 1 (single projection state)
                 if mj is not None:
-                    if hasattr(mj, '__len__'):
-                        return len(mj)
-                    else:
-                        return 1  # Single mj value
+                    return 1
 
                 # No mj specified: use j-based calculation for the full manifold
                 return int(2 * jqn + 1)
@@ -277,7 +285,7 @@ class SphericalSymmetryState(
     @log
     def validate_quantum_numbers(self) -> bool:
         """
-        Validate the angular momentum quantum numbers (l, ml) by checking if they are physically sensible.
+        Validate the angular momentum quantum numbers (l, ml, j, mj) by checking if they are physically sensible.
 
         Args:
             logger (BoundLogger): The logger to log messages.
@@ -301,6 +309,19 @@ class SphericalSymmetryState(
             ):
                 logger.error(
                     'The `ml_quantum_number` must be between `-l_quantum_number` and `l_quantum_number`.'
+                )
+                return False
+
+        if self.mj_quantum_number is not None:
+            if self.j_quantum_number is None:
+                logger.error('Cannot validate mj without j_quantum_number.')
+                return False
+            if (
+                self.mj_quantum_number < -self.j_quantum_number
+                or self.mj_quantum_number > self.j_quantum_number
+            ):
+                logger.error(
+                    f'The `mj_quantum_number` must be between -j and +j. Found mj={self.mj_quantum_number} for j={self.j_quantum_number}.'
                 )
                 return False
 
@@ -444,6 +465,9 @@ class SphericalSymmetryState(
             return None
 
         self.normalize_kappa_j_consistency()
+
+        if not self.validate_quantum_numbers(logger=logger):
+            return None
 
 
 class NonCollinearSpinState(SphericalSymmetryState):  # ? Move to `ElectronicState`

@@ -34,7 +34,7 @@ class TestSphericalSymmetryState:
         ml_number: int | None,
         ms_number: float | None,
         j_number: float | None,
-        mj_number: list[float] | None,
+        mj_number: float | None,
     ) -> None:
         """Adds l and ml quantum numbers to the `OrbitalsState` section."""
         orbital_state.l_quantum_number = l_number
@@ -127,10 +127,10 @@ class TestSphericalSymmetryState:
                 1,
                 -1,
                 3 / 2,
-                [-3 / 2, -1 / 2, 1 / 2, 3 / 2],
+                3 / 2,
                 None,
-                4,
-            ),  # mj specified -> len(mj) = 4
+                1,
+            ),  # mj specified -> degeneracy = 1
         ],
     )
     def test_degeneracy(
@@ -138,7 +138,7 @@ class TestSphericalSymmetryState:
         l_quantum_number: int,
         ml_quantum_number: int | None,
         j_quantum_number: float | None,
-        mj_quantum_number: list[float] | None,
+        mj_quantum_number: float | None,
         ms_quantum_number: float | None,
         degeneracy: int,
     ):
@@ -149,7 +149,7 @@ class TestSphericalSymmetryState:
             l_quantum_number (int): The angular momentum quantum number.
             ml_quantum_number (Optional[int]): The magnetic quantum number.
             j_quantum_number (Optional[float]): The total angular momentum quantum number.
-            mj_quantum_number (Optional[list[float]]): The magnetic quantum number for the total angular momentum.
+            mj_quantum_number (Optional[float]): The magnetic quantum number for the total angular momentum.
             ms_quantum_number (Optional[float]): The spin quantum number.
             degeneracy (int): The expected degeneracy of the orbital state.
         """
