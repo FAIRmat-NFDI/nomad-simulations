@@ -72,54 +72,6 @@ class TestSphericalSymmetryState:
             assert orbital_state.validate_quantum_numbers(logger=logger) == res
 
     @pytest.mark.parametrize(
-        'quantum_name, value, expected_result',
-        [
-            ('l', 0, 's'),
-            ('l', 1, 'p'),
-            ('l', 2, 'd'),
-            ('l', 3, 'f'),
-            ('l', 4, None),
-            ('ml', -1, 'x'),
-            ('ml', 0, 'z'),
-            ('ml', 1, 'y'),
-            ('ml', -2, None),
-            # Skip ms tests since ms_quantum_symbol resolution is not fully implemented
-            ('no_attribute', None, None),
-        ],
-    )
-    def test_number_and_symbol(
-        self,
-        quantum_name: str,
-        value: int | float,
-        expected_result: str | None,
-    ):
-        """
-        Test the number and symbol resolution for each of the quantum numbers defined in the parametrization.
-
-        Args:
-            quantum_name (str): The quantum number string to be tested.
-            value (Union[int, float]): The value stored in `OrbitalState`.
-            expected_result (Optional[str]): The expected result after resolving the counter-type.
-        """
-        # Adding quantum numbers to the `SphericalSymmetryState` section
-        orbital_state = SphericalSymmetryState(n_quantum_number=2)
-        if quantum_name == 'ml':  # l_quantum_number must be specified
-            orbital_state.l_quantum_number = 1
-        setattr(orbital_state, f'{quantum_name}_quantum_number', value)
-
-        # Making sure that the `'number'` is assigned
-        resolved_type = orbital_state.resolve_number_and_symbol(
-            quantum_name=quantum_name, quantum_type='number', logger=logger
-        )
-        assert resolved_type == value
-
-        # Resolving if the counter-type is assigned
-        resolved_countertype = orbital_state.resolve_number_and_symbol(
-            quantum_name=quantum_name, quantum_type='symbol', logger=logger
-        )
-        assert resolved_countertype == expected_result
-
-    @pytest.mark.parametrize(
         'l_quantum_number, ml_quantum_number, j_quantum_number, mj_quantum_number, ms_quantum_number, degeneracy',
         [
             (

@@ -79,12 +79,16 @@ class SphericalSymmetryState(
         """,
     )
 
-    l_quantum_symbol = Quantity(
-        type=MEnum('s', 'p', 'd', 'f'),
-        description="""
+    @property
+    def l_quantum_symbol(self) -> str:
+        """
         Symbolic representation of the `l` quantum number, i.e., 's', 'p', 'd', 'f'.
-        """,
-    )  # @EBB2675: do we want to serialize symbolic representations? or maybe just provide a setter / getter mapping?
+        Derived from l_quantum_number.
+        """
+        if self.l_quantum_number is None:
+            return ''
+        l_symbols = {0: 's', 1: 'p', 2: 'd', 3: 'f'}
+        return l_symbols.get(self.l_quantum_number)
 
     mj_quantum_number = Quantity(
         type=np.float64,
@@ -102,28 +106,29 @@ class SphericalSymmetryState(
         """,
     )
 
-    ml_quantum_symbol = Quantity(
-        type=MEnum(
-            'x',
-            'y',
-            'z',
-            'xy',
-            'xz',
-            'z^2',
-            'yz',
-            'x^2-y^2',
-            'x(x^2-3y^2)',
-            'xyz',
-            'xz^2',
-            'z^3',
-            'yz^2',
-            'z(x^2-y^2)',
-            'y(3x^2-y^2)',
-        ),
-        description="""
+    @property
+    def ml_quantum_symbol(self) -> str:
+        """
         Symbolic representation of the `ml` quantum number, e.g., 'y', 'xz', 'x^2-y^2'.
-        """,
-    )  # @EBB2675: do we want to serialize symbolic representations? or maybe just provide a setter / getter mapping?
+        Derived from l_quantum_number and ml_quantum_number.
+        """
+        if self.l_quantum_number is None or self.ml_quantum_number is None:
+            return ''
+        ml_symbols = {
+            0: {0: ''},
+            1: {-1: 'x', 0: 'z', 1: 'y'},
+            2: {-2: 'xy', -1: 'xz', 0: 'z^2', 1: 'yz', 2: 'x^2-y^2'},
+            3: {
+                -3: 'x(x^2-3y^2)',
+                -2: 'xyz',
+                -1: 'xz^2',
+                0: 'z^3',
+                1: 'yz^2',
+                2: 'z(x^2-y^2)',
+                3: 'y(3x^2-y^2)',
+            },
+        }
+        return ml_symbols.get(self.l_quantum_number, {}).get(self.ml_quantum_number)
 
     s_quantum_number = Quantity(
         type=np.float64,
@@ -142,12 +147,18 @@ class SphericalSymmetryState(
         """,
     )  # @EBB2675 this, `(-, +)`, `(-1/2, +1/2)`, or `(-1, 1)`?
 
-    ms_quantum_symbol = Quantity(
-        type=MEnum('down', 'up'),
-        description="""
+    @property
+    def ms_quantum_symbol(self) -> str:
+        """
         Symbolic representation of the `ms` quantum number, e.g., 'down', 'up'.
-        """,
-    )  # @EBB2675: do we want to serialize symbolic representations? or maybe just provide a setter / getter mapping?
+        Derived from ms_quantum_number.
+        """
+        if self.ms_quantum_number < 0:
+            return 'down'
+        elif self.ms_quantum_number > 0:
+            return 'up'
+        else:
+            return ''
 
     coupling_origin = Quantity(
         type=MEnum('pure_LS', 'pure_jj', 'intermediate', 'relativistic'),
@@ -295,59 +306,6 @@ class SphericalSymmetryState(
 
         return True
 
-    def resolve_number_and_symbol(
-        self, quantum_name: str, quantum_type: str, logger: 'BoundLogger'
-    ) -> str | int | None:
-        """
-        Resolves the quantum number or symbol from the `self._orbitals_map` on the passed `quantum_type`.
-        `quantum_type` can be either 'number' or 'symbol'. If the quantum type is not found, then the countertype
-        (e.g., quantum_type == 'number' => countertype == 'symbol') is used to resolve it.
-
-        Args:
-            quantum_name (str): The quantum name to resolve. Can be 'l', 'ml'.
-            quantum_type (str): The type of the quantum name. Can be 'number' or 'symbol'.
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[Union[str, int]]): The quantum number or symbol resolved from the orbitals_map.
-        """
-        if quantum_name not in ['l', 'ml']:
-            logger.warning("The quantum_name is not recognized. Try 'l', 'ml'.")
-            return None
-        if quantum_type not in ['number', 'symbol']:
-            logger.warning(
-                f"The quantum_type {quantum_type} is not recognized. Try 'number' or 'symbol'."
-            )
-            return None
-
-        # Check if quantity already exists
-        quantity = getattr(self, f'{quantum_name}_quantum_{quantum_type}')
-        if quantity is not None:
-            return quantity
-
-        # If not, check whether the countertype exists
-        _countertype_map = {
-            'number': 'symbol',
-            'symbol': 'number',
-        }
-        other_quantity = getattr(
-            self, f'{quantum_name}_quantum_{_countertype_map[quantum_type]}'
-        )
-        if other_quantity is None:
-            return None
-
-        # If the counterpart exists, then resolve the quantity from the orbitals_map
-        orbital_quantity = self._orbitals_map.get(f'{quantum_name}_{quantum_type}s', {})
-        if quantum_name == 'l':
-            quantity = orbital_quantity.get(other_quantity)
-        elif quantum_name == 'ml':
-            if self.l_quantum_number is None:
-                return None
-            quantity = orbital_quantity.get(self.l_quantum_number, {}).get(
-                other_quantity
-            )
-        return quantity
-
     def _russell_saunders_j_values(
         self, l_quantum: float, s_quantum: float
     ) -> list[float]:
@@ -478,37 +436,6 @@ class SphericalSymmetryState(
 
         # Remove duplicates and sort
         return sorted(list(set(all_j_combinations)))
-
-    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
-        super().__init__(m_def, m_context, **kwargs)
-        self._orbitals = {
-            -1: dict(zip(range(4), ('s', 'p', 'd', 'f'))),
-            0: {0: ''},
-            1: dict(zip(range(-1, 2), ('x', 'z', 'y'))),
-            2: dict(zip(range(-2, 3), ('xy', 'xz', 'z^2', 'yz', 'x^2-y^2'))),
-            3: dict(
-                zip(
-                    range(-3, 4),
-                    (
-                        'x(x^2-3y^2)',
-                        'xyz',
-                        'xz^2',
-                        'z^3',
-                        'yz^2',
-                        'z(x^2-y^2)',
-                        'y(3x^2-y^2)',
-                    ),
-                )
-            ),
-        }
-        self._orbitals_map: dict[str, Any] = {
-            'l_symbols': self._orbitals[-1],
-            'ml_symbols': {i: self._orbitals[i] for i in range(4)},
-            'l_numbers': {v: k for k, v in self._orbitals[-1].items()},
-            'ml_numbers': {
-                k: {v: k for k, v in self._orbitals[k].items()} for k in range(4)
-            },
-        }
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)

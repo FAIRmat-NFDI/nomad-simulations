@@ -94,24 +94,28 @@ def generate_model_system(
         basis_list: list[SphericalSymmetryState] = []
         for o in orbitals:
             # Map common orbital labels like 's', 'px', 'py', 'pz', 'xy', 'xz', 'z^2', 'yz', 'x^2-y^2'
+            l_symbol_to_number = {'s': 0, 'p': 1, 'd': 2, 'f': 3}
+            ml_p_symbols = {'x': -1, 'z': 0, 'y': 1}
+            ml_d_symbols = {'xy': -2, 'xz': -1, 'z^2': 0, 'yz': 1, 'x^2-y^2': 2}
+
             if o in {'s', 'p', 'd', 'f'}:
                 state = SphericalSymmetryState()
-                state.l_quantum_symbol = o
+                state.l_quantum_number = l_symbol_to_number[o]
             else:
                 # split into l-symbol and ml-symbol when possible
                 # p-orbitals: px, py, pz
                 if o in {'px', 'py', 'pz'}:
                     state = SphericalSymmetryState()
-                    state.l_quantum_symbol = 'p'
-                    state.ml_quantum_symbol = o[-1]  # 'x', 'y', or 'z'
+                    state.l_quantum_number = 1  # p
+                    state.ml_quantum_number = ml_p_symbols[o[-1]]
                 elif o in {'xy', 'xz', 'z^2', 'yz', 'x^2-y^2'}:
                     state = SphericalSymmetryState()
-                    state.l_quantum_symbol = 'd'
-                    state.ml_quantum_symbol = o
+                    state.l_quantum_number = 2  # d
+                    state.ml_quantum_number = ml_d_symbols[o]
                 else:
-                    # Fallback: store only name in symbol field when not recognized
+                    # Fallback: default to s
                     state = SphericalSymmetryState()
-                    state.l_quantum_symbol = 's'
+                    state.l_quantum_number = 0  # s
             basis_list.append(state)
 
         e_state = ElectronicState()
@@ -507,13 +511,10 @@ def make_spherical_state(
     n: int | None = 1,
     lqn: int | None = 0,
     ml: int | None = None,
-    j: float | list[float] | None = None,
+    j: float | None = None,
     kappa: int | None = None,
     s: float | None = None,
     ms: float | None = None,
-    l_symbol: str | None = None,
-    ml_symbol: str | None = None,
-    ms_symbol: str | None = None,
     coupling_origin: str | None = None,
 ) -> SphericalSymmetryState:
     """
@@ -521,11 +522,12 @@ def make_spherical_state(
 
     Parameters map to schema quantities:
     - n -> n_quantum_number
-    - l -> l_quantum_number, l_symbol -> l_quantum_symbol
-    - ml -> ml_quantum_number, ml_symbol -> ml_quantum_symbol
+    - lqn -> l_quantum_number
+    - ml -> ml_quantum_number
     - j -> j_quantum_number (float)
     - kappa -> kappa_quantum_number
-    - s -> s_quantum_number, ms -> ms_quantum_number, ms_symbol -> ms_quantum_symbol
+    - s -> s_quantum_number
+    - ms -> ms_quantum_number
     - coupling_origin -> coupling_origin (e.g., 'pure_LS','pure_jj','intermediate','relativistic')
     """
     state = SphericalSymmetryState()
@@ -533,12 +535,8 @@ def make_spherical_state(
         state.n_quantum_number = n
     if lqn is not None:
         state.l_quantum_number = lqn
-    if l_symbol is not None:
-        state.l_quantum_symbol = l_symbol
     if ml is not None:
         state.ml_quantum_number = ml
-    if ml_symbol is not None:
-        state.ml_quantum_symbol = ml_symbol
     if j is not None:
         state.j_quantum_number = j
     if kappa is not None:
@@ -547,8 +545,6 @@ def make_spherical_state(
         state.s_quantum_number = s
     if ms is not None:
         state.ms_quantum_number = ms
-    if ms_symbol is not None:
-        state.ms_quantum_symbol = ms_symbol
     if coupling_origin is not None:
         state.coupling_origin = coupling_origin
     return state
