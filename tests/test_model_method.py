@@ -228,9 +228,7 @@ class TestTB:
                     orbitals_ref=[
                         ElectronicState(
                             name='user_orbital_state',
-                            basis_orbitals=[
-                                SphericalSymmetryState(l_quantum_symbol='p')
-                            ],
+                            basis_orbitals=[SphericalSymmetryState(l_quantum_number=1)],
                         )
                     ]
                 ),
@@ -239,7 +237,7 @@ class TestTB:
                 [
                     ElectronicState(
                         name='user_orbital_state',
-                        basis_orbitals=[SphericalSymmetryState(l_quantum_symbol='p')],
+                        basis_orbitals=[SphericalSymmetryState(l_quantum_number=1)],
                     )
                 ],
             ),
