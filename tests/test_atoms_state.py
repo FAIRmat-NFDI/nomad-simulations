@@ -180,6 +180,57 @@ class TestSphericalSymmetryState:
             _degeneracy_from_orbital(orbital_state) == 1
         )  # l=2, ml=-2 -> degeneracy=1
 
+    @pytest.mark.parametrize(
+        'n_number, l_number, ml_number, j_number, expected_name',
+        [
+            # Basic n + l formats
+            (1, 0, None, None, '1s'),
+            (2, 1, None, None, '2p'),
+            (3, 2, None, None, '3d'),
+            (4, 3, None, None, '4f'),
+            # n + l + ml formats
+            (2, 1, -1, None, '2px'),
+            (2, 1, 0, None, '2pz'),
+            (2, 1, 1, None, '2py'),
+            (3, 2, -2, None, '3dxy'),
+            (3, 2, 0, None, '3dz^2'),
+            # n + l + j formats (ml not set, j set)
+            (2, 1, None, 0.5, '2p(j=0.5)'),
+            (2, 1, None, 1.5, '2p(j=1.5)'),
+            # Without n (just l)
+            (None, 0, None, None, 's'),
+            (None, 1, None, None, 'p'),
+            (None, 2, None, None, 'd'),
+            # Without n (l + ml)
+            (None, 1, 1, None, 'py'),
+            (None, 2, -2, None, 'dxy'),
+            # Edge case: no l_quantum_number
+            (1, None, None, None, ''),
+        ],
+    )
+    def test_name_property(
+        self,
+        n_number: int | None,
+        l_number: int | None,
+        ml_number: int | None,
+        j_number: float | None,
+        expected_name: str,
+    ):
+        """
+        Test the _name property generates correct orbital names from quantum numbers.
+        """
+        orbital_state = SphericalSymmetryState()
+        if n_number is not None:
+            orbital_state.n_quantum_number = n_number
+        if l_number is not None:
+            orbital_state.l_quantum_number = l_number
+        if ml_number is not None:
+            orbital_state.ml_quantum_number = ml_number
+        if j_number is not None:
+            orbital_state.j_quantum_number = j_number
+
+        assert orbital_state._name == expected_name
+
 
 class TestCoreHole:
     """

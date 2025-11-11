@@ -213,6 +213,42 @@ class SphericalSymmetryState(
 
         return 0
 
+    @property
+    def _name(self) -> str:
+        """
+        State name derived from quantum numbers following standard atomic orbital notation.
+
+        Returns formats like:
+        - "1s", "2p", "3d" (n + l)
+        - "2px", "3dxy" (n + l + ml)
+        - "2p(j=0.5)" (n + l + j, when j is specified)
+        """
+        if self.l_quantum_number is None:
+            return ''
+
+        # Start with principal quantum number if available
+        parts = []
+        if self.n_quantum_number is not None:
+            parts.append(str(self.n_quantum_number))
+
+        # Add orbital symbol (s, p, d, f)
+        l_sym = self.l_quantum_symbol
+        parts.append(l_sym)
+
+        # Add ml directional component if specified
+        if self.ml_quantum_number is not None:
+            ml_sym = self.ml_quantum_symbol
+            if ml_sym:  # Can be empty for s orbitals
+                parts.append(ml_sym)
+
+        # Add j component if specified (for spin-orbit coupling states)
+        elif self.j_quantum_number is not None:
+            # Format as "2p(j=1.5)" to avoid subscripts
+            j_str = f'(j={self.j_quantum_number})'
+            parts.append(j_str)
+
+        return ''.join(parts)
+
     def compute_j_from_kappa(self, kappa: int) -> float:
         """
         Compute j quantum number from κ.
@@ -452,7 +488,7 @@ class SphericalSymmetryState(
         higher-level search/matching operations where users can explicitly request conversion
         between relativistic (κ) and non-relativistic (j, l) quantum number representations.
         """
-        #TODO: Implement search/matching functionality at GUI or query level that allows users
+        # TODO: Implement search/matching functionality at GUI or query level that allows users
         # to explicitly convert between κ and (j, l) representations when searching for or
         # comparing quantum states. This should be a user-driven operation, not an automatic
         # schema-level conversion.
