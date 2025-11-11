@@ -22,6 +22,7 @@ from .spectral_profile import (
     SpectralProfile,
     XASSpectrum,
 )
+from .structure import RadiusOfGyration
 from .thermodynamics import (
     ChemicalPotential,
     Enthalpy,

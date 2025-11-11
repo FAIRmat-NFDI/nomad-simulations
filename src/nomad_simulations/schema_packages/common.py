@@ -4,7 +4,7 @@ from nomad.datamodel.metainfo.annotations import ELNAnnotation
 from nomad.metainfo import Datetime, Quantity
 
 
-class Time(ArchiveSection):
+class SimulationTime(ArchiveSection):
     """
     Contains time-related quantities.
     """
@@ -12,7 +12,7 @@ class Time(ArchiveSection):
     datetime_end = Quantity(
         type=Datetime,
         description="""
-        The date and time when this computation ended.
+        The date and time when the computation ended.
         """,
         a_eln=ELNAnnotation(component='DateTimeEditQuantity'),
     )

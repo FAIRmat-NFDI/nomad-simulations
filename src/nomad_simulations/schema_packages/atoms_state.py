@@ -8,7 +8,9 @@ from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.data_types import (

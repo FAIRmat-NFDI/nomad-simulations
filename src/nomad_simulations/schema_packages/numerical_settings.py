@@ -9,8 +9,9 @@ from nomad.metainfo import JSON, MEnum, Quantity, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.model_system import ModelSystem
@@ -358,7 +359,7 @@ class KMesh(Mesh):
 
     def resolve_points_and_offset(
         self, logger: 'BoundLogger'
-    ) -> tuple[list[np.ndarray] | None, np.ndarray | None]:
+    ) -> tuple[np.ndarray | None, np.ndarray | None]:
         """
         Resolves the `points` and `offset` of the `KMesh` from the `grid` and the `center`.
 
@@ -366,7 +367,7 @@ class KMesh(Mesh):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (tuple[list[np.ndarray] | None, np.ndarray | None]): The resolved `points` and `offset` of the `KMesh`.
+            (tuple[np.ndarray | None, np.ndarray | None]): The resolved `points` and `offset` of the `KMesh`.
         """
         if self.grid is None:
             logger.warning('Could not find `KMesh.grid`.')
@@ -376,12 +377,13 @@ class KMesh(Mesh):
         offset = None
         if self.center == 'Gamma-centered':  # ! fix this (@ndaelman-hu)
             grid_space = [np.linspace(0, 1, n) for n in self.grid]
-            points = list(np.meshgrid(grid_space))
+            points_meshgrid = np.meshgrid(*grid_space, indexing='ij')
+            points = np.column_stack([grid.ravel() for grid in points_meshgrid])
             offset = np.array([0, 0, 0])
         elif self.center == 'Monkhorst-Pack':
             try:
                 points_array = monkhorst_pack(size=self.grid)
-                points = [points_array]
+                points = points_array
                 offset = get_monkhorst_pack_size_and_offset(kpts=points_array)[-1]
             except ValueError:
                 logger.warning(

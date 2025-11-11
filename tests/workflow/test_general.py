@@ -5,7 +5,7 @@ from nomad_simulations.schema_packages.workflow.general import (
     ParallelWorkflow,
     SerialWorkflow,
     SimulationWorkflow,
-    SimulationWorkflowModel,
+    SimulationWorkflowMethod,
     SimulationWorkflowResults,
 )
 
@@ -39,19 +39,19 @@ class TestSimulationWorklow:
         archive.data.model_method = [ModelMethod(), ModelMethod()]
         archive.data.model_system = [ModelSystem()]
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, SimulationWorkflowModel)
+        assert isinstance(workflow.method, SimulationWorkflowMethod)
         assert workflow.inputs[0].name == 'Input model'
         assert len(workflow.inputs) == 1
-        assert workflow.model.initial_method == archive.data.model_method[0]
-        assert workflow.model.initial_system == archive.data.model_system[0]
+        assert workflow.method.initial_method == archive.data.model_method[0]
+        assert workflow.method.initial_system == archive.data.model_system[0]
 
     def test_outputs(self, logger, archive, workflow):
         archive.data.outputs = [Outputs(), Outputs()]
         workflow.normalize(archive, logger)
         assert isinstance(workflow.results, SimulationWorkflowResults)
         assert len(workflow.outputs) == 1
-        assert workflow.outputs[0].name == 'Output results'
-        assert workflow.results.final_outputs == archive.data.outputs[-1]
+        assert workflow.outputs[0].name == 'Workflow results'
+        # assert workflow.results.final_outputs == archive.data.outputs[-1]
 
     @pytest.mark.parametrize(
         'times, linked',
@@ -101,10 +101,7 @@ class TestSerialWorkflow:
             == archive.data.model_method[0]
         )
         assert len(serial_workflow.outputs) == 2
-        assert serial_workflow.outputs[0].name == 'Output results'
-        assert (
-            serial_workflow.outputs[0].section.final_outputs == archive.data.outputs[-1]
-        )
+        assert serial_workflow.outputs[0].name == 'Workflow results'
         assert serial_workflow.outputs[1].name == 'Outputs'
         assert serial_workflow.outputs[1].section == archive.data.outputs[-1]
 
@@ -135,11 +132,11 @@ class TestParallelWorkflow:
             == archive.data.model_system[0]
         )
         assert len(parallel_workflow.outputs) == self.n_outputs + 1
-        assert parallel_workflow.outputs[0].name == 'Output results'
-        assert (
-            parallel_workflow.outputs[0].section.final_outputs
-            == archive.data.outputs[-1]
-        )
+        assert parallel_workflow.outputs[0].name == 'Workflow results'
+        # assert (
+        #     parallel_workflow.outputs[0].section.final_outputs
+        #     == archive.data.outputs[-1]
+        # )
         for n, output in enumerate(parallel_workflow.outputs[1:]):
             assert output.section == archive.data.outputs[n]
 

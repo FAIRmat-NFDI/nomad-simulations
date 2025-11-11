@@ -4,47 +4,47 @@ from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
 
-from .beyond_dft import BeyondDFTMethod, BeyondDFTResults, BeyondDFTWorkflow
+from .beyond_hf import BeyondHFMethod, BeyondHFResults, BeyondHFWorkflow
 
 m_package = SchemaPackage()
 
 
-class DFTGWMethod(BeyondDFTMethod):
-    _label = 'DFT+GW workflow parameters'
+class HFCIMethod(BeyondHFMethod):
+    _label = 'HF+CI workflow parameters'
 
 
-class DFTGWResults(BeyondDFTResults):
-    _label = 'DFT+GW workflow results'
+class HFCIResults(BeyondHFResults):
+    _label = 'HF+CI workflow results'
 
 
-class DFTGWWorkflow(BeyondDFTWorkflow):
+class HFCIWorkflow(BeyondHFWorkflow):
     """
-    Definitions for GW calculations based on DFT.
+    Definitions for Configuration-Interaction calculations based on HF (HF → CI).
     """
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.method:
-            self.method = DFTGWMethod()
+            self.method = HFCIMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
-            self.results = DFTGWResults()
+            self.results = HFCIResults()
         logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         """
-        Link the DFT and GW single point workflows in the DFT-GW workflow.
+        Link the HF and CI single-point workflows in the HF-CI workflow.
         """
-
         super().normalize(archive, logger)
 
+        # Name the last task CI if it is unnamed
         if self.tasks and not self.tasks[-1].name:
-            self.tasks[-1].name = 'GW'
+            self.tasks[-1].name = 'CI'
 
 
 m_package.__init_metainfo__()
