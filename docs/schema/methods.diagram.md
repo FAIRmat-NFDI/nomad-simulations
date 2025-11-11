@@ -12,4 +12,37 @@ This diagram shows the relationships between schema classes in this vertical:
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
 
-![methods.diagram_0 diagram](../assets/diagrams/methods.diagram_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class BaseModelMethod {
+    }
+    class BaseSimulation {
+    }
+    class DFT {
+    }
+    class DMFT {
+    }
+    class GW {
+    }
+    class ModelMethod {
+    }
+    class ModelMethodElectronic {
+    }
+    class NumericalSettings {
+    }
+    class Program {
+    }
+    class Simulation {
+    }
+    class Smearing {
+    }
+    class TB {
+    }
+    class XCFunctional {
+    }
+    BaseModelMethod --> NumericalSettings
+    BaseSimulation --> Program
+    DFT --> XCFunctional
+    ModelMethod --> BaseModelMethod : contributions
+    Simulation --> ModelMethod
+```

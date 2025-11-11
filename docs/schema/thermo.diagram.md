@@ -12,4 +12,24 @@ This diagram shows the relationships between schema classes in this vertical:
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
 
-![thermo.diagram_0 diagram](../assets/diagrams/thermo.diagram_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class Enthalpy {
+    }
+    class Entropy {
+    }
+    class GibbsFreeEnergy {
+    }
+    class HeatCapacity {
+    }
+    class HelmholtzFreeEnergy {
+    }
+    class InternalEnergy {
+    }
+    class Thermodynamics {
+    }
+    class ThermodynamicsModel {
+    }
+    class ThermodynamicsResults {
+    }
+```

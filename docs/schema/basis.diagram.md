@@ -12,4 +12,31 @@ This diagram shows the relationships between schema classes in this vertical:
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
 
-![basis.diagram_0 diagram](../assets/diagrams/basis.diagram_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class APWLocalOrbital {
+    }
+    class APWOrbital {
+    }
+    class APWPlaneWaveBasisSet {
+    }
+    class AtomCenteredBasisSet {
+    }
+    class AtomCenteredFunction {
+    }
+    class AtomicOrbitals {
+    }
+    class EffectiveCorePotential {
+    }
+    class PlaneWaveBasisSet {
+    }
+    class SlaterKoster {
+    }
+    class SlaterKosterBond {
+    }
+    AtomCenteredBasisSet --> AtomCenteredFunction : functional_compositions
+    AtomCenteredBasisSet --> AtomicOrbitals
+    AtomCenteredBasisSet --> EffectiveCorePotential : ecps
+    SlaterKoster --> SlaterKosterBond : bonds
+    SlaterKoster --> SlaterKosterBond : overlaps
+```

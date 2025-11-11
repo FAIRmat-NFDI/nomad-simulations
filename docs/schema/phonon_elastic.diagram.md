@@ -12,4 +12,23 @@ This diagram shows the relationships between schema classes in this vertical:
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
 
-![phonon_elastic.diagram_0 diagram](../assets/diagrams/phonon_elastic.diagram_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class Elastic {
+    }
+    class ElasticModel {
+    }
+    class ElasticResults {
+    }
+    class Hessian {
+    }
+    class Phonon {
+    }
+    class PhononModel {
+    }
+    class PhononResults {
+    }
+    class StrainDiagrams {
+    }
+    ElasticResults --> StrainDiagrams
+```

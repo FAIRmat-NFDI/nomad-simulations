@@ -12,4 +12,32 @@ This diagram shows the relationships between schema classes in this vertical:
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
 
-![workflows.diagram_0 diagram](../assets/diagrams/workflows.diagram_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class GeometryOptimization {
+    }
+    class MolecularDynamics {
+    }
+    class ParallelWorkflow {
+    }
+    class SelfConsistency {
+    }
+    class SerialWorkflow {
+    }
+    class SimulationTask {
+    }
+    class SimulationWorkflow {
+    }
+    class SimulationWorkflowModel {
+    }
+    class SimulationWorkflowResults {
+    }
+    class SinglePoint {
+    }
+    class Task {
+    }
+    class Workflow {
+    }
+    SimulationWorkflow --> SimulationWorkflowModel : model
+    SimulationWorkflow --> SimulationWorkflowResults : results
+```

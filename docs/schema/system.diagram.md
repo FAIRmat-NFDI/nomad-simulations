@@ -12,4 +12,42 @@ This diagram shows the relationships between schema classes in this vertical:
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
 
-![system.diagram_0 diagram](../assets/diagrams/system.diagram_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class AtomicCell {
+    }
+    class BaseGreensFunction {
+    }
+    class Cell {
+    }
+    class ChemicalFormula {
+    }
+    class KLinePath {
+    }
+    class KMesh {
+    }
+    class KSpace {
+    }
+    class ModelSystem {
+    }
+    class ParticleState {
+    }
+    class Permittivity {
+    }
+    class Simulation {
+    }
+    class Symmetry {
+    }
+    class System {
+    }
+    BaseGreensFunction --> KMesh
+    KSpace --> KLinePath
+    KSpace --> KMesh
+    ModelSystem --> Cell
+    ModelSystem --> ChemicalFormula
+    ModelSystem --> ModelSystem : sub_systems
+    ModelSystem --> ParticleState
+    ModelSystem --> Symmetry
+    Permittivity --> KMesh : q_mesh
+    Simulation --> ModelSystem
+```

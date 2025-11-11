@@ -118,7 +118,8 @@ def process_docs(
     assets_dir.mkdir(parents=True, exist_ok=True)
 
     # Find all markdown files with Mermaid diagrams
-    md_files = list(docs_dir.glob('*.md'))
+    # Exclude .diagram.md files - they should keep mermaid code for interactive viewing
+    md_files = [f for f in docs_dir.glob('*.md') if not f.name.endswith('.diagram.md')]
 
     total_converted = 0
 

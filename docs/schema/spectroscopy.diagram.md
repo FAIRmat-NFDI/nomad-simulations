@@ -12,4 +12,35 @@ This diagram shows the relationships between schema classes in this vertical:
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
 
-![spectroscopy.diagram_0 diagram](../assets/diagrams/spectroscopy.diagram_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class AbsorptionSpectrum {
+    }
+    class BSE {
+    }
+    class DFTGWModel {
+    }
+    class DFTGWResults {
+    }
+    class DFTGWWorkflow {
+    }
+    class ElectronicGreensFunction {
+    }
+    class ElectronicSelfEnergy {
+    }
+    class Outputs {
+    }
+    class QuasiparticleWeight {
+    }
+    class Screening {
+    }
+    class XASSpectrum {
+    }
+    Outputs --> AbsorptionSpectrum : absorption_spectra
+    Outputs --> ElectronicGreensFunction
+    Outputs --> ElectronicSelfEnergy : electronic_self_energies
+    Outputs --> QuasiparticleWeight
+    Outputs --> XASSpectrum : xas_spectra
+    XASSpectrum --> AbsorptionSpectrum : exafs_spectrum
+    XASSpectrum --> AbsorptionSpectrum : xanes_spectrum
+```

@@ -1,30 +1,4 @@
 # scripts/gen_diagrams.py
-"""
-Generate mermaid classDiagram markdown files for NOMAD schema verticals.
-
-BACKUP & RESTORATION NOTES:
----------------------------
-A backup of the original version is saved as: scripts/gen_diagrams.py.backup
-
-To restore UML-style labels and boxes with attributes/methods sections:
-1. Change class definition format:
-   FROM: class {ClassName} { }
-   TO:   class {ClassName}
-   
-2. Remove or modify the normalize_label() function to keep all labels:
-   FROM: if label_normalized == target_normalized: return ''
-   TO:   return label  # Keep all labels
-
-3. Optionally add attributes/methods to classes:
-   class {ClassName} {
-       +attribute_name: Type
-       +method_name()
-   }
-
-Current simplified format removes:
-- Redundant edge labels (when label matches target class name)
-- Empty UML attribute/method sections (uses empty braces {})
-"""
 from __future__ import annotations
 import argparse
 from pathlib import Path
