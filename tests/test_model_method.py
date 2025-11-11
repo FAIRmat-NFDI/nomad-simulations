@@ -322,19 +322,19 @@ class TestSlaterKosterBond:
     """
 
     @pytest.mark.parametrize(
-        'orb1_symbol, orb2_symbol, bravais_vector, expected_name',
+        'orb1_l_number, orb2_l_number, bravais_vector, expected_name',
         [
             (None, None, None, None),
-            ('s', None, None, None),
-            (None, 'p', None, None),
-            ('s', 's', (0, 0, 0), 'sss'),
-            ('s', 'p', (0, 0, 0), 'sps'),
+            (0, None, None, None),
+            (None, 1, None, None),
+            (0, 0, (0, 0, 0), 'sss'),
+            (0, 1, (0, 0, 0), 'sps'),
         ],
     )
     def test_resolve_bond_name_from_references(
         self,
-        orb1_symbol: str | None,
-        orb2_symbol: str | None,
+        orb1_l_number: int | None,
+        orb2_l_number: int | None,
         bravais_vector: tuple | None,
         expected_name: str | None,
     ):
@@ -344,13 +344,13 @@ class TestSlaterKosterBond:
         sk_bond = SlaterKosterBond()
         # If there's an orbit1 or orbit2, build them
         orbit1 = None
-        if orb1_symbol:
-            spherical_state = SphericalSymmetryState(l_quantum_symbol=orb1_symbol)
+        if orb1_l_number is not None:
+            spherical_state = SphericalSymmetryState(l_quantum_number=orb1_l_number)
             orbit1 = ElectronicState(spin_orbit_state=spherical_state)
 
         orbit2 = None
-        if orb2_symbol:
-            spherical_state = SphericalSymmetryState(l_quantum_symbol=orb2_symbol)
+        if orb2_l_number is not None:
+            spherical_state = SphericalSymmetryState(l_quantum_number=orb2_l_number)
             orbit2 = ElectronicState(spin_orbit_state=spherical_state)
 
         name = sk_bond.resolve_bond_name_from_references(
@@ -362,17 +362,17 @@ class TestSlaterKosterBond:
         assert name == expected_name
 
     @pytest.mark.parametrize(
-        'orb1_symbol, orb2_symbol, bravais_vector, expected',
+        'orb1_l_number, orb2_l_number, bravais_vector, expected',
         [
             (None, None, None, None),
-            ('s', None, None, None),
-            ('s', 'p', (0, 0, 0), 'sps'),
+            (0, None, None, None),
+            (0, 1, (0, 0, 0), 'sps'),
         ],
     )
     def test_normalize(
         self,
-        orb1_symbol: str | None,
-        orb2_symbol: str | None,
+        orb1_l_number: int | None,
+        orb2_l_number: int | None,
         bravais_vector: tuple | None,
         expected: str | None,
     ):
@@ -382,13 +382,13 @@ class TestSlaterKosterBond:
         # Prepare a model scenario
         bond = SlaterKosterBond()
         orbitals = []
-        if orb1_symbol:
-            spherical_state = SphericalSymmetryState(l_quantum_symbol=orb1_symbol)
+        if orb1_l_number is not None:
+            spherical_state = SphericalSymmetryState(l_quantum_number=orb1_l_number)
             electronic_state = ElectronicState(spin_orbit_state=spherical_state)
             orbitals.append(electronic_state)
             bond.orbital_1 = orbitals[-1]
-        if orb2_symbol:
-            spherical_state = SphericalSymmetryState(l_quantum_symbol=orb2_symbol)
+        if orb2_l_number is not None:
+            spherical_state = SphericalSymmetryState(l_quantum_number=orb2_l_number)
             electronic_state = ElectronicState(spin_orbit_state=spherical_state)
             orbitals.append(electronic_state)
             bond.orbital_2 = orbitals[-1]

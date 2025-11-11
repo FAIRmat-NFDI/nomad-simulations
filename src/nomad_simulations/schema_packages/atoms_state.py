@@ -240,9 +240,9 @@ class SphericalSymmetryState(
         if kappa == 0:
             raise ValueError('κ = 0 is unphysical')
         if kappa < 0:
-            return abs(kappa) - 1  # l = |κ| - 1 for κ < 0
+            return abs(kappa) - 1
         else:
-            return kappa  # l = κ for κ > 0
+            return kappa
 
     def validate_kappa_j_relationship(self, logger: 'BoundLogger') -> bool:
         """
@@ -253,10 +253,8 @@ class SphericalSymmetryState(
         """
         if self.kappa_quantum_number is not None and self.j_quantum_number is not None:
             try:
-                # Use factored computation for validation
                 expected_j = self.compute_j_from_kappa(self.kappa_quantum_number)
 
-                # Check if j value matches expected
                 if abs(self.j_quantum_number - expected_j) >= 1e-10:
                     logger.error(
                         f'Inconsistent κ={self.kappa_quantum_number} and j={self.j_quantum_number}. '
@@ -267,20 +265,6 @@ class SphericalSymmetryState(
                 logger.error(f'Invalid quantum numbers: {e}')
                 return False
         return True
-
-    def normalize_kappa_j_consistency(self):
-        """
-        Ensure κ and j are consistent during normalization using factored computation.
-        Populates missing values when possible.
-        """
-        if self.kappa_quantum_number is not None and self.j_quantum_number is None:
-            # Compute j from κ
-            self.j_quantum_number = self.compute_j_from_kappa(self.kappa_quantum_number)
-
-        elif self.j_quantum_number is not None and self.kappa_quantum_number is None:
-            # Cannot uniquely determine κ from j alone (need l as well)
-            # This would need orbital information
-            pass
 
     @log
     def validate_quantum_numbers(self) -> bool:
@@ -458,13 +442,36 @@ class SphericalSymmetryState(
         # Remove duplicates and sort
         return sorted(list(set(all_j_combinations)))
 
+    @log
+    def normalize_kappa_j_consistency(self) -> None:
+        """
+        Populate j and l quantum numbers from κ (kappa) when κ is defined but j/l are not.
+
+        This method is NOT called during normalization to avoid baking in physics assumptions
+        about relativistic coupling and the underlying Hamiltonian. It is retained for
+        higher-level search/matching operations where users can explicitly request conversion
+        between relativistic (κ) and non-relativistic (j, l) quantum number representations.
+        """
+        #TODO: Implement search/matching functionality at GUI or query level that allows users
+        # to explicitly convert between κ and (j, l) representations when searching for or
+        # comparing quantum states. This should be a user-driven operation, not an automatic
+        # schema-level conversion.
+
+        if self.kappa_quantum_number is not None:
+            if self.j_quantum_number is None:
+                self.j_quantum_number = self.compute_j_from_kappa(
+                    self.kappa_quantum_number
+                )
+            if self.l_quantum_number is None:
+                self.l_quantum_number = self.compute_l_from_kappa(
+                    self.kappa_quantum_number
+                )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
         if not self.validate_kappa_j_relationship(logger):
             return None
-
-        self.normalize_kappa_j_consistency()
 
         if not self.validate_quantum_numbers(logger=logger):
             return None
