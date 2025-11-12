@@ -105,7 +105,7 @@ rm -f docs/assets/diagrams/*.svg
 │ ModelMethod     │
 ├─────────────────┤  ← divider
 │                 │  ← empty attributes
-├─────────────────┤  ← divider  
+├─────────────────┤  ← divider
 │                 │  ← empty methods
 └─────────────────┘
      ↓ numerical_settings (redundant label)
