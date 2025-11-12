@@ -682,7 +682,6 @@ class ElectronicState(Entity):
         """,
     )
 
-
     basis_orbitals = SubSection(
         section_def=BaseSpinOrbitalState.m_def,  # @EBB2675: do you see numerical_settings.basis_set also fit here?
         repeats=True,
@@ -731,7 +730,6 @@ class ElectronicState(Entity):
             pass
 
         return None
-
 
     def get_parent_entity(self):
         """
@@ -786,7 +784,10 @@ class ElectronicState(Entity):
         if self.spin_orbit_state is not None:
             try:
                 # Check if spin_orbit_state has n_quantum_number
-                if hasattr(self.spin_orbit_state, 'n_quantum_number') and self.spin_orbit_state.n_quantum_number is not None:
+                if (
+                    hasattr(self.spin_orbit_state, 'n_quantum_number')
+                    and self.spin_orbit_state.n_quantum_number is not None
+                ):
                     orbital_name = f'{self.spin_orbit_state.n_quantum_number}{self.spin_orbit_state._name}'
                 else:
                     orbital_name = f'{self.spin_orbit_state._name}'

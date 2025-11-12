@@ -131,16 +131,22 @@ class TestElectronicDensityOfStates:
         ]
         assert (
             orbital_projected[0].entity_ref
-            == outputs.model_system_ref.particle_states[0].electronic_state.sub_states[0]
+            == outputs.model_system_ref.particle_states[0].electronic_state.sub_states[
+                0
+            ]
         )
         assert (
             orbital_projected[1].entity_ref
-            == outputs.model_system_ref.particle_states[1].electronic_state.sub_states[0]
+            == outputs.model_system_ref.particle_states[1].electronic_state.sub_states[
+                0
+            ]
         )
         # For the third orbital, assume it comes from the second particle as well (e.g. As atom has two orbitals)
         assert (
             orbital_projected[2].entity_ref
-            == outputs.model_system_ref.particle_states[1].electronic_state.sub_states[1]
+            == outputs.model_system_ref.particle_states[1].electronic_state.sub_states[
+                1
+            ]
         )
 
         # Run extraction again to verify repeatability
@@ -185,10 +191,12 @@ class TestElectronicDensityOfStates:
         # Check that the entity_ref of the atom PDOS points to the ElectronicState (not AtomsState)
         # This is the new architectural pattern where ElectronicState serves as gateway
         assert (
-            atom_projected[0].entity_ref == outputs.model_system_ref.particle_states[0].electronic_state
+            atom_projected[0].entity_ref
+            == outputs.model_system_ref.particle_states[0].electronic_state
         )
         assert (
-            atom_projected[1].entity_ref == outputs.model_system_ref.particle_states[1].electronic_state
+            atom_projected[1].entity_ref
+            == outputs.model_system_ref.particle_states[1].electronic_state
         )
 
     def test_normalize(self):
