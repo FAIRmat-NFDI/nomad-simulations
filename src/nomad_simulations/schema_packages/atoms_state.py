@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import ase
 import numpy as np
@@ -733,21 +733,56 @@ class ElectronicState(Entity):
         return None
 
 
-    def get_name(self) -> Optional[str]:
+    def get_parent_entity(self):
         """
-        Generate a descriptive name for this ElectronicState by combining information from
-        the spin_orbit_state and the containing AtomsState.
+        Recursively navigate up the hierarchy to find the containing parent entity
+        (AtomsState or ModelSystem).
+
+        This works for both:
+        - Top-level ElectronicState (direct child of AtomsState/ModelSystem)
+        - Sub-state ElectronicState (child of another ElectronicState)
 
         Returns:
-            Optional[str]: The generated name, or None if it cannot be determined.
+            The containing parent entity (AtomsState or ModelSystem), or None if not found.
         """
-        atoms_state = self.get_atoms_state()
-        if atoms_state is None:
+        parent = getattr(self, 'm_parent', None)
+        if parent is None:
             return None
 
-        atom_label = atoms_state.get_label()
+        # If parent is not ElectronicState, it's the parent entity we're looking for
+        if not isinstance(parent, ElectronicState):
+            return parent
 
-        # If spin_orbit_state is set, combine orbital name with atom label
+        # Parent is ElectronicState, recurse up
+        return parent.get_parent_entity()
+
+    def get_name(self) -> str | None:
+        """
+        Generate a descriptive name for this ElectronicState by combining information from
+        the spin_orbit_state and the containing parent entity (AtomsState or ModelSystem).
+
+        The parent entity provides context via:
+        - get_label() method for AtomsState (returns chemical symbol, e.g., "Ga")
+        - name attribute for ModelSystem (returns system name, e.g., "GaAs_bulk")
+
+        Returns:
+            str | None: The generated name, or None if it cannot be determined.
+        """
+        parent_entity = self.get_parent_entity()
+        if parent_entity is None:
+            return None
+
+        # Get label/name from parent entity
+        # AtomsState uses get_label() to return chemical symbol (e.g., "Ga")
+        # ModelSystem uses name attribute (e.g., "GaAs_bulk")
+        if hasattr(parent_entity, 'get_label'):
+            entity_label = parent_entity.get_label()
+        elif hasattr(parent_entity, 'name'):
+            entity_label = parent_entity.name
+        else:
+            return None
+
+        # If spin_orbit_state is set, combine orbital name with entity label
         if self.spin_orbit_state is not None:
             try:
                 # Check if spin_orbit_state has n_quantum_number
@@ -755,13 +790,13 @@ class ElectronicState(Entity):
                     orbital_name = f'{self.spin_orbit_state.n_quantum_number}{self.spin_orbit_state._name}'
                 else:
                     orbital_name = f'{self.spin_orbit_state._name}'
-                return f'{orbital_name} {atom_label}'
+                return f'{orbital_name} {entity_label}'
             except AttributeError:
                 # _name property not implemented on this BaseSpinOrbitalState
-                return atom_label
+                return entity_label
         else:
-            # No spin_orbit_state means this represents the full atom
-            return atom_label
+            # No spin_orbit_state means this represents the full entity
+            return entity_label
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -773,31 +808,6 @@ class ElectronicState(Entity):
         # Extract name
         if self.name is None:
             self.name = self.get_name()
-
-    def get_atoms_state(self) -> Optional['AtomsState']:
-        """
-        Recursively navigate up the hierarchy to find the containing AtomsState.
-
-        This works for both:
-        - Top-level ElectronicState (direct child of AtomsState)
-        - Sub-state ElectronicState (child of another ElectronicState)
-
-        Returns:
-            Optional[AtomsState]: The containing AtomsState, or None if not found.
-        """
-        parent = getattr(self, 'm_parent', None)
-
-        # Direct child of AtomsState
-        if isinstance(parent, AtomsState):
-            return parent
-
-        # Sub-state of another ElectronicState (which is child of AtomsState)
-        elif isinstance(parent, ElectronicState):
-            grandparent = getattr(parent, 'm_parent', None)
-            if isinstance(grandparent, AtomsState):
-                return grandparent
-
-        return None
 
 
 class CoreHole(ElectronicState):

@@ -421,10 +421,10 @@ class ElectronicDensityOfStates(DOSProfile):
             # group orbitals by their AtomsState
             atom_orbital_map: dict[AtomsState, list[DOSProfile]] = {}
             for orb in orbital_projected:
-                # Use the helper method to navigate to AtomsState
-                atoms_state = orb.entity_ref.get_atoms_state()
-                if atoms_state is not None:
-                    atom_orbital_map.setdefault(atoms_state, []).append(orb)
+                # Navigate to parent entity and check if it's an AtomsState
+                parent_entity = orb.entity_ref.get_parent_entity()
+                if isinstance(parent_entity, AtomsState):
+                    atom_orbital_map.setdefault(parent_entity, []).append(orb)
 
             for atom_state, orbs in atom_orbital_map.items():
                 # sum their values
