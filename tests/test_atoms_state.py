@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
@@ -24,7 +22,7 @@ def _degeneracy_from_orbital(orbital: SphericalSymmetryState) -> int | None:
 
 class TestSphericalSymmetryState:
     """
-    Test the `OrbitalsState` class defined in atoms_state.py.
+    Test the `SphericalSymmetryState` class defined in atoms_state.py.
     """
 
     @staticmethod

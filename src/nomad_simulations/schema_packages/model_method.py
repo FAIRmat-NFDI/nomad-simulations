@@ -521,7 +521,12 @@ class TB(ModelMethodElectronic):
             if child_sys.type != 'active_atom':
                 continue
             # if no particle_indices => skip
-            if not child_sys.particle_indices:
+            # Note: Use 'is None' and len check to avoid numpy array boolean evaluation issues
+            # (numpy array [0] evaluates to False in boolean context)
+            if (
+                child_sys.particle_indices is None
+                or len(child_sys.particle_indices) == 0
+            ):
                 logger.warning('Child system is active_atom but no particle_indices.')
                 continue
 
@@ -541,7 +546,7 @@ class TB(ModelMethodElectronic):
                     )
                     continue
 
-                orbitals_ref.extend(active_atom_state.electronic_state)
+                orbitals_ref.append(active_atom_state.electronic_state)
 
         # Return the collected orbitals
         return orbitals_ref
@@ -1145,14 +1150,14 @@ class DMFT(ModelMethodElectronic):
         Example: hydrogenated graphene with 3 atoms in the unit cell. The full list of `AtomsState` would
         be
             [
-                AtomsState(chemical_symbol='C', orbitals_state=[ElectronicState('s'), ElectronicState('px'), ElectronicState('py'), ElectronicState('pz')]),
-                AtomsState(chemical_symbol='C', orbitals_state=[ElectronicState('s'), ElectronicState('px'), ElectronicState('py'), ElectronicState('pz')]),
-                AtomsState(chemical_symbol='H', orbitals_state=[ElectronicState('s')]),
+                AtomsState(chemical_symbol='C', electronic_state=ElectronicState(basis_orbitals=[SphericalSymmetryState('s'), SphericalSymmetryState('px'), SphericalSymmetryState('py'), SphericalSymmetryState('pz')])),
+                AtomsState(chemical_symbol='C', electronic_state=ElectronicState(basis_orbitals=[SphericalSymmetryState('s'), SphericalSymmetryState('px'), SphericalSymmetryState('py'), SphericalSymmetryState('pz')])),
+                AtomsState(chemical_symbol='H', electronic_state=ElectronicState(basis_orbitals=[SphericalSymmetryState('s')])),
             ]
 
         The relevant orbitals for the TB model are the `'pz'` ones for each `'C'` atom. Then, we define:
 
-            orbitals_ref= [OrbitalState('pz'), ElectronicState('pz')]
+            orbitals_ref = [ElectronicState('pz'), ElectronicState('pz')]
 
         The relevant impurities information can be accesed from the parent AtomsState sections:
             impurity_state = orbitals_ref[i].m_parent

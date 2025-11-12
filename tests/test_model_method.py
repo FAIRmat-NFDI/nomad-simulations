@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pytest
 from nomad.datamodel import EntryArchive
 
@@ -107,22 +105,36 @@ class TestTB:
                 0,
                 [],
             ),
-            # Commented out for now.
-            # (10) valid case with a single orbital
-            # (
-            #     [ModelSystem(
-            #         is_representative=True,
-            #         cell=[AtomicCell()],
-            #         particle_states=[
-            #             AtomsState(
-            #                 orbitals_state=[OrbitalsState(l_quantum_symbol='s')])
-            #         ],
-            #         sub_systems=[ModelSystem(type='active_atom', particle_indices=[0])]
-            #     )],
-            #     0,
-            #     [OrbitalsState(l_quantum_symbol='s')],
-            #     #[],
-            # ),
+            # (10) valid case with single H atom with 1s orbital
+            (
+                [
+                    ModelSystem(
+                        is_representative=True,
+                        cell=[AtomicCell()],
+                        particle_states=[
+                            AtomsState(
+                                chemical_symbol='H',
+                                electronic_state=ElectronicState(
+                                    basis_orbitals=[
+                                        SphericalSymmetryState(l_quantum_number=0)
+                                    ]
+                                ),
+                            )
+                        ],
+                        sub_systems=[
+                            ModelSystem(type='active_atom', particle_indices=[0])
+                        ],
+                    )
+                ],
+                0,
+                # TODO: This should be a reference to the same ElectronicState instance
+                # created above in particle_states[0].electronic_state
+                [
+                    ElectronicState(
+                        basis_orbitals=[SphericalSymmetryState(l_quantum_number=0)]
+                    )
+                ],
+            ),
         ],
     )
     def test_resolve_orbital_references(
@@ -135,10 +147,7 @@ class TestTB:
         Test the `resolve_orbital_references` method of TB to find `ElectronicState` objects
         from a model_system child typed 'active_atom'.
         """
-        tb_method = TB()
-        simulation = generate_simulation(model_method=[tb_method])
-        simulation.model_system = model_systems
-        orbitals_ref = tb_method.resolve_orbital_references(
+        orbitals_ref = TB().resolve_orbital_references(
             model_systems=model_systems,
             logger=logger,
             model_index=model_index,
@@ -241,19 +250,37 @@ class TestTB:
                     )
                 ],
             ),
-            # Commented out for now.
-            # (10) fully valid => single orbital
-            # (
-            #     Wannier(),
-            #     'Wannier',
-            #     [ModelSystem(
-            #         is_representative=True,
-            #         cell=[AtomicCell()],
-            #         particle_states=[AtomsState(orbitals_state=[OrbitalsState(l_quantum_symbol='s')])],
-            #         sub_systems=[ModelSystem(type='active_atom', particle_indices=[0])]
-            #     )],
-            #     [OrbitalsState(l_quantum_symbol='s')]
-            # ),
+            # (10) fully valid Wannier with single s orbital
+            (
+                Wannier(),
+                'Wannier',
+                [
+                    ModelSystem(
+                        is_representative=True,
+                        cell=[AtomicCell()],
+                        particle_states=[
+                            AtomsState(
+                                chemical_symbol='H',
+                                electronic_state=ElectronicState(
+                                    basis_orbitals=[
+                                        SphericalSymmetryState(l_quantum_number=0)
+                                    ]
+                                ),
+                            )
+                        ],
+                        sub_systems=[
+                            ModelSystem(type='active_atom', particle_indices=[0])
+                        ],
+                    )
+                ],
+                # TODO: This should be a reference to the same ElectronicState instance
+                # created above in particle_states[0].electronic_state
+                [
+                    ElectronicState(
+                        basis_orbitals=[SphericalSymmetryState(l_quantum_number=0)]
+                    )
+                ],
+            ),
         ],
     )
     def test_normalize(
