@@ -316,22 +316,20 @@ class Occupancy(PhysicalProperty):
     spin-polarized systems, and between 0 and 2 for non-spin-polarized systems. This property is
     important when studying if an orbital or spin channel are fully occupied, at half-filling, or
     fully emptied, which have an effect on the electron-electron interaction effects.
+
+    The `orbitals_state_ref` field points to an `ElectronicState` describing the orbital. To access
+    the parent AtomsState, use `orbitals_state_ref.get_parent_entity()`. This follows the
+    ElectronicState gateway pattern.
     """
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/Occupancy'
-
-    atoms_state_ref = Quantity(
-        type=AtomsState,
-        description="""
-        Reference to the `AtomsState` section in which the occupancy is calculated.
-        """,
-    )
 
     orbitals_state_ref = Quantity(
         type=ElectronicState,
         description="""
         Reference to the `ElectronicState` section in which the occupancy is calculated.
         This can reference individual orbitals, orbital manifolds, or hybrid/molecular orbitals.
+        The parent AtomsState can be accessed via `orbitals_state_ref.get_parent_entity()`.
         """,
     )
 
@@ -345,10 +343,10 @@ class Occupancy(PhysicalProperty):
     value = Quantity(
         type=np.float64,
         description="""
-        Value of the electronic occupancy in the atom defined by `atoms_state_ref` and the orbital
-        defined by `orbitals_state_ref`. the orbital. If `spin_channel` is set, then this number is
-        between 0 and 1, where 0 means that the state is unoccupied and 1 means that the state is
-        fully occupied; if `spin_channel` is not set, then this number is between 0 and 2.
+        Value of the electronic occupancy for the orbital defined by `orbitals_state_ref`.
+        If `spin_channel` is set, then this number is between 0 and 1, where 0 means that
+        the state is unoccupied and 1 means that the state is fully occupied; if `spin_channel`
+        is not set, then this number is between 0 and 2.
         """,
     )
 
