@@ -95,22 +95,19 @@ class DOSProfile(SpectralProfile):
 
         # entity_ref should always be ElectronicState
         if isinstance(self.entity_ref, ElectronicState):
-            atoms_state = self.entity_ref.get_atoms_state()
-            if atoms_state is None:
-                logger.warning('Could not resolve parent AtomsState from ElectronicState.')
+            if not self.entity_ref.name:
+                logger.warning('ElectronicState.name not set; cannot resolve PDOS name.')
                 return None
 
             # Use spin_orbit_state to distinguish atom vs orbital DOS
             if self.entity_ref.spin_orbit_state is None:
                 # Atom-projected DOS (ElectronicState with no spin_orbit_state)
-                return f"atom {atoms_state.get_label()}"
+                # ElectronicState.name is already the atom label (e.g., "Ga")
+                return f"atom {self.entity_ref.name}"
             else:
                 # Orbital-projected DOS (ElectronicState with spin_orbit_state)
-                if self.entity_ref.name:
-                    return f"orbital {self.entity_ref.name} {atoms_state.get_label()}"
-                else:
-                    logger.warning('ElectronicState.name not set for orbital-projected DOS.')
-                    return None
+                # ElectronicState.name already includes atom label (e.g., "s Ga")
+                return f"orbital {self.entity_ref.name}"
 
         # Legacy support for direct AtomsState reference (deprecated pattern)
         elif isinstance(self.entity_ref, AtomsState):

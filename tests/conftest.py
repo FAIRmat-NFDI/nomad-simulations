@@ -231,6 +231,10 @@ def generate_simulation_electronic_dos(
     as_atom.electronic_state.sub_states.append(es_as_py)
     es_as_py.normalize(EntryArchive(), logger)
 
+    # Normalize the top-level ElectronicState to set their names
+    ga_atom.electronic_state.normalize(EntryArchive(), logger)
+    as_atom.electronic_state.normalize(EntryArchive(), logger)
+
     orbital_s_Ga_pdos = DOSProfile(
         energies=variables_energy,
         entity_ref=es_ga_s,

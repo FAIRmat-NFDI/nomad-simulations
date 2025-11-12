@@ -811,7 +811,7 @@ class ModelSystem(System):
         4. Symmetry section creation and normalization (for bulk systems)
         5. ChemicalFormula section creation and normalization
 
-    Note: Other normalizations (AtomsState, ElectronicState, etc.) are handled automatically
+    Note: Other normalizations (ParticleState, ElectronicState, etc.) are handled automatically
     by NOMAD's normalization system when their respective sections are processed.
 
     Examples for the parent-child hierarchical trees:

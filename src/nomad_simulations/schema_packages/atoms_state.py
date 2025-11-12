@@ -733,6 +733,36 @@ class ElectronicState(Entity):
         return None
 
 
+    def get_name(self) -> Optional[str]:
+        """
+        Generate a descriptive name for this ElectronicState by combining information from
+        the spin_orbit_state and the containing AtomsState.
+
+        Returns:
+            Optional[str]: The generated name, or None if it cannot be determined.
+        """
+        atoms_state = self.get_atoms_state()
+        if atoms_state is None:
+            return None
+
+        atom_label = atoms_state.get_label()
+
+        # If spin_orbit_state is set, combine orbital name with atom label
+        if self.spin_orbit_state is not None:
+            try:
+                # Check if spin_orbit_state has n_quantum_number
+                if hasattr(self.spin_orbit_state, 'n_quantum_number') and self.spin_orbit_state.n_quantum_number is not None:
+                    orbital_name = f'{self.spin_orbit_state.n_quantum_number}{self.spin_orbit_state._name}'
+                else:
+                    orbital_name = f'{self.spin_orbit_state._name}'
+                return f'{orbital_name} {atom_label}'
+            except AttributeError:
+                # _name property not implemented on this BaseSpinOrbitalState
+                return atom_label
+        else:
+            # No spin_orbit_state means this represents the full atom
+            return atom_label
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
@@ -742,22 +772,11 @@ class ElectronicState(Entity):
 
         # Extract name
         if self.name is None:
-            if self.spin_orbit_state is not None:
-                try:
-                    # Check if spin_orbit_state has n_quantum_number
-                    if hasattr(self.spin_orbit_state, 'n_quantum_number') and self.spin_orbit_state.n_quantum_number is not None:
-                        self.name = (
-                            f'{self.spin_orbit_state.n_quantum_number}{self.spin_orbit_state._name}'
-                        )
-                    else:
-                        self.name = f'{self.spin_orbit_state._name}'
-                except AttributeError:
-                    # _name property not implemented on this BaseSpinOrbitalState
-                    pass
+            self.name = self.get_name()
 
     def get_atoms_state(self) -> Optional['AtomsState']:
         """
-        Navigate up the hierarchy to find the containing AtomsState.
+        Recursively navigate up the hierarchy to find the containing AtomsState.
 
         This works for both:
         - Top-level ElectronicState (direct child of AtomsState)
