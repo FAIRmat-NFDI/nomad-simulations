@@ -1,5 +1,7 @@
 from typing import TYPE_CHECKING
 
+from abc import abstractmethod
+from functools import cached_property
 import ase
 import numpy as np
 import pint
@@ -8,9 +10,7 @@ from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
-    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.data_types import (
@@ -33,11 +33,13 @@ class BaseSpinOrbitalState(Entity):
         """,
     )
 
-    @property
+    @cached_property
+    @abstractmethod
     def _name(self) -> str:
         raise NotImplementedError('Subclasses must implement this method.')
 
-    @property
+    @cached_property
+    @abstractmethod
     def _degeneracy(self) -> int:
         """
         Compute the degeneracy for this spin-orbital state using available quantum numbers.
@@ -178,7 +180,7 @@ class SphericalSymmetryState(
         description='How this j value was derived',
     )
 
-    @property
+    @cached_property
     def _degeneracy(self) -> int:
         """
         Compute the degeneracy for this spherical-symmetry state using available
@@ -215,7 +217,7 @@ class SphericalSymmetryState(
 
         return 0
 
-    @property
+    @cached_property
     def _name(self) -> str:
         """
         State name derived from quantum numbers following standard atomic orbital notation.
@@ -251,7 +253,8 @@ class SphericalSymmetryState(
 
         return ''.join(parts)
 
-    def compute_j_from_kappa(self, kappa: int) -> float:
+    @staticmethod
+    def compute_j_from_kappa(kappa: int) -> float:
         """
         Compute j quantum number from κ.
 
@@ -265,7 +268,8 @@ class SphericalSymmetryState(
             raise ValueError('κ = 0 is unphysical')
         return abs(kappa) - 0.5
 
-    def compute_l_from_kappa(self, kappa: int) -> int:
+    @staticmethod
+    def compute_l_from_kappa(kappa: int) -> int:
         """
         Compute l quantum number from κ.
 
@@ -295,12 +299,14 @@ class SphericalSymmetryState(
 
                 if abs(self.j_quantum_number - expected_j) >= 1e-10:
                     logger.error(
-                        f'Inconsistent κ={self.kappa_quantum_number} and j={self.j_quantum_number}. '
-                        f'Expected j={expected_j}'
+                        'Inconsistent κ=%s and j=%s. Expected j=%s',
+                        self.kappa_quantum_number,
+                        self.j_quantum_number,
+                        expected_j,
                     )
                     return False
             except ValueError as e:
-                logger.error(f'Invalid quantum numbers: {e}')
+                logger.error('Invalid quantum numbers: %s', e)
                 return False
         return True
 
@@ -343,7 +349,9 @@ class SphericalSymmetryState(
                 or self.mj_quantum_number > self.j_quantum_number
             ):
                 logger.error(
-                    f'The `mj_quantum_number` must be between -j and +j. Found mj={self.mj_quantum_number} for j={self.j_quantum_number}.'
+                    'The `mj_quantum_number` must be between -j and +j. Found mj=%s for j=%s.',
+                    self.mj_quantum_number,
+                    self.j_quantum_number,
                 )
                 return False
 
