@@ -210,21 +210,26 @@ def generate_simulation_electronic_dos(
     variables_energy = Energy(points=energy_points * ureg.joule)
     electronic_dos = ElectronicDensityOfStates(energies=variables_energy)
     outputs.electronic_dos.append(electronic_dos)
-    # Build ElectronicState wrappers for specific orbitals using basis_orbitals
+    # Build ElectronicState sub_states for specific orbitals and add them to AtomsState
     ga_atom = model_system.particle_states[0]
     as_atom = model_system.particle_states[1]
 
+    # Create sub_states for Ga atom orbitals (s)
     ga_s_basis = ga_atom.electronic_state.basis_orbitals[0]
     es_ga_s = ElectronicState(spin_orbit_state=ga_s_basis)
-    es_ga_s.populate_atoms_state_refs(ga_atom)
+    ga_atom.electronic_state.sub_states.append(es_ga_s)
+    es_ga_s.normalize(EntryArchive(), logger)
 
+    # Create sub_states for As atom orbitals (px, py)
     as_px_basis = as_atom.electronic_state.basis_orbitals[0]
     es_as_px = ElectronicState(spin_orbit_state=as_px_basis)
-    es_as_px.populate_atoms_state_refs(as_atom)
+    as_atom.electronic_state.sub_states.append(es_as_px)
+    es_as_px.normalize(EntryArchive(), logger)
 
     as_py_basis = as_atom.electronic_state.basis_orbitals[1]
     es_as_py = ElectronicState(spin_orbit_state=as_py_basis)
-    es_as_py.populate_atoms_state_refs(as_atom)
+    as_atom.electronic_state.sub_states.append(es_as_py)
+    es_as_py.normalize(EntryArchive(), logger)
 
     orbital_s_Ga_pdos = DOSProfile(
         energies=variables_energy,

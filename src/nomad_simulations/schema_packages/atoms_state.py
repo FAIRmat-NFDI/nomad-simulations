@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import ase
 import numpy as np
@@ -682,13 +682,6 @@ class ElectronicState(Entity):
         """,
     )
 
-    atoms_state_ref = SubSection(
-        sub_section=SectionProxy('AtomsState'),
-        description="""
-        Reference to the atomic species (`AtomsState`) to which this electronic state belongs.
-        Populated automatically during normalization to link electronic structure to atoms.
-        """,
-    )
 
     basis_orbitals = SubSection(
         section_def=BaseSpinOrbitalState.m_def,  # @EBB2675: do you see numerical_settings.basis_set also fit here?
@@ -739,17 +732,6 @@ class ElectronicState(Entity):
 
         return None
 
-    def populate_atoms_state_refs(self, atoms_state: 'AtomsState') -> None:
-        """
-        Populates the references to the corresponding `AtomsState` definition.
-
-        Args:
-            atoms_state (AtomsState): The `AtomsState` instance to reference.
-        """
-        self.atoms_state_ref = atoms_state
-        if self.sub_states:
-            for sub_state in self.sub_states:
-                sub_state.populate_atoms_state_refs(atoms_state)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -762,9 +744,10 @@ class ElectronicState(Entity):
         if self.name is None:
             if self.spin_orbit_state is not None:
                 try:
-                    if self.n_quantum_number is not None:
+                    # Check if spin_orbit_state has n_quantum_number
+                    if hasattr(self.spin_orbit_state, 'n_quantum_number') and self.spin_orbit_state.n_quantum_number is not None:
                         self.name = (
-                            f'{self.n_quantum_number}{self.spin_orbit_state._name}'
+                            f'{self.spin_orbit_state.n_quantum_number}{self.spin_orbit_state._name}'
                         )
                     else:
                         self.name = f'{self.spin_orbit_state._name}'
@@ -772,21 +755,41 @@ class ElectronicState(Entity):
                     # _name property not implemented on this BaseSpinOrbitalState
                     pass
 
+    def get_atoms_state(self) -> Optional['AtomsState']:
+        """
+        Navigate up the hierarchy to find the containing AtomsState.
+
+        This works for both:
+        - Top-level ElectronicState (direct child of AtomsState)
+        - Sub-state ElectronicState (child of another ElectronicState)
+
+        Returns:
+            Optional[AtomsState]: The containing AtomsState, or None if not found.
+        """
+        parent = getattr(self, 'm_parent', None)
+
+        # Direct child of AtomsState
+        if isinstance(parent, AtomsState):
+            return parent
+
+        # Sub-state of another ElectronicState (which is child of AtomsState)
+        elif isinstance(parent, ElectronicState):
+            grandparent = getattr(parent, 'm_parent', None)
+            if isinstance(grandparent, AtomsState):
+                return grandparent
+
+        return None
+
 
 class CoreHole(ElectronicState):
     """
     A section used to define the core-hole state of an atom by extending the `ElectronicState`
     section with core-hole specific properties like excited electron count and DSCF state.
-    """
 
-    orbital_ref = SubSection(
-        section_def=BaseSpinOrbitalState.m_def,
-        description="""
-        Reference to the orbital state where the core-hole is generated.
-        Can be a single-electron state (SphericalSymmetryState) or a multi-electron state,
-        depending on the level of description needed for the vacancy.
-        """,
-    )  # ? to be merged into spin_orbit_state?
+    The core-hole orbital is specified using the inherited `spin_orbit_state` field from
+    `ElectronicState`. This can be a single-electron state (SphericalSymmetryState) or a
+    multi-electron state, depending on the level of description needed for the vacancy.
+    """
 
     n_excited_electrons = Quantity(
         type=unit_float(),  # ? too restrictive
@@ -801,33 +804,9 @@ class CoreHole(ElectronicState):
         description="""
         Tag used to identify the role in the workflow of the same name. Allowed values are 'initial'
         (not to be confused with the _initial-state approximation_) and 'final'. If 'initial'
-        is used, then `n_excited_electrons` is set to None and the `orbital_ref.degeneracy` is
-        set to 1.
+        is used, then `n_excited_electrons` is set to 0 and the degeneracy is set to 1.
         """,
     )
-
-    @log
-    def resolve_degeneracy(self) -> int | None:
-        """
-        Resolve degeneracy for this CoreHole from `orbital_ref._degeneracy`.
-        Overrides ElectronicState.resolve_degeneracy() to use orbital_ref instead of spin_orbit_state.
-
-        Returns:
-            int | None: Computed degeneracy, or None if insufficient information.
-        """
-        orbital = getattr(self, 'orbital_ref', None)
-        if orbital is None:
-            return super().resolve_degeneracy()  # Fallback to parent method
-
-        try:
-            deg = orbital._degeneracy  # Call the property
-            if isinstance(deg, int) and deg > 0:
-                return deg
-        except (AttributeError, Exception):
-            # _degeneracy property not implemented or failed
-            pass
-
-        return None
 
     def resolve_occupation(self, logger: 'BoundLogger') -> np.float64 | None:
         """
@@ -1166,9 +1145,6 @@ class AtomsState(ParticleState):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-
-        if self.electronic_state:
-            self.electronic_state.populate_atoms_state_refs(self)
 
         # Get chemical_symbol from atomic_number and viceversa
         if self.chemical_symbol is None:

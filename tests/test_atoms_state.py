@@ -236,7 +236,7 @@ class TestCoreHole:
     """
 
     @pytest.mark.parametrize(
-        'orbital_ref, degeneracy, n_excited_electrons, occupation',
+        'spin_orbit_state, degeneracy, n_excited_electrons, occupation',
         [
             (
                 SphericalSymmetryState(l_quantum_number=1),
@@ -255,25 +255,25 @@ class TestCoreHole:
     )
     def test_occupation(
         self,
-        orbital_ref: SphericalSymmetryState | None,
+        spin_orbit_state: SphericalSymmetryState | None,
         degeneracy: int | None,
         n_excited_electrons: float,
         occupation: float | None,
     ):
         """
-        Test the occupation of a core hole for a given set of orbital reference and degeneracy.
+        Test the occupation of a core hole for a given set of spin-orbit state and degeneracy.
 
         Args:
-            orbital_ref (Optional[SphericalSymmetryState]): The orbital reference of the core hole.
-            degeneracy (Optional[int]): The degeneracy of the orbital reference.
+            spin_orbit_state (Optional[SphericalSymmetryState]): The spin-orbit state of the core hole.
+            degeneracy (Optional[int]): The degeneracy of the orbital.
             n_excited_electrons (float): The number of excited electrons.
             occupation (Optional[float]): The expected occupation of the core hole.
         """
         core_hole = CoreHole(
-            orbital_ref=orbital_ref, n_excited_electrons=n_excited_electrons
+            spin_orbit_state=spin_orbit_state, n_excited_electrons=n_excited_electrons
         )
-        if orbital_ref is not None:
-            assert _degeneracy_from_orbital(orbital_ref) == degeneracy
+        if spin_orbit_state is not None:
+            assert _degeneracy_from_orbital(spin_orbit_state) == degeneracy
         resolved_occupation = core_hole.resolve_occupation(logger=logger)
         if resolved_occupation is not None:
             assert np.isclose(resolved_occupation, occupation)
@@ -281,7 +281,7 @@ class TestCoreHole:
             assert resolved_occupation == occupation
 
     @pytest.mark.parametrize(
-        'orbital_ref, n_excited_electrons, dscf_state, results',
+        'spin_orbit_state, n_excited_electrons, dscf_state, results',
         [
             (
                 SphericalSymmetryState(l_quantum_number=1),
@@ -312,12 +312,12 @@ class TestCoreHole:
                 0.5,
                 None,
                 (0.5, None, None),
-            ),  # When orbital_ref is None, occupation should remain None
+            ),  # When spin_orbit_state is None, occupation should remain None
         ],
     )
     def test_normalize(
         self,
-        orbital_ref: SphericalSymmetryState | None,
+        spin_orbit_state: SphericalSymmetryState | None,
         n_excited_electrons: float | None,
         dscf_state: str | None,
         results: tuple[float | None, float | None, float | None],
@@ -326,19 +326,19 @@ class TestCoreHole:
         Test the normalization of the `CoreHole`. Inputs are defined as the quantities of the `CoreHole` section.
 
         Args:
-            orbital_ref (Optional[SphericalSymmetryState]): The orbital reference of the core hole.
+            spin_orbit_state (Optional[SphericalSymmetryState]): The spin-orbit state of the core hole.
             n_excited_electrons (Optional[float]): The number of excited electrons.
             dscf_state (Optional[str]): The DSCF state of the core hole.
             results (tuple[Optional[float], Optional[float], Optional[float]]): The expected results after normalization.
         """
         core_hole = CoreHole(
-            orbital_ref=orbital_ref,
+            spin_orbit_state=spin_orbit_state,
             n_excited_electrons=n_excited_electrons,
             dscf_state=dscf_state,
         )
         core_hole.normalize(EntryArchive(), logger)
         assert core_hole.n_excited_electrons == results[0]
-        if core_hole.orbital_ref and results[1] is not None:
+        if core_hole.spin_orbit_state and results[1] is not None:
             assert core_hole.degeneracy == results[1]
         if core_hole.occupation is not None and results[2] is not None:
             assert np.isclose(core_hole.occupation, results[2])
