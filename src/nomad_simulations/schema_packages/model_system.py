@@ -533,7 +533,7 @@ class Symmetry(ArchiveSection):
 
         mapping = cell_type_map.get(cell_type)
         if mapping is None:
-            logger.error(f'Cell type {cell_type} is not supported.')
+            logger.error('Cell type %s is not supported.', cell_type)
             return None
 
         try:

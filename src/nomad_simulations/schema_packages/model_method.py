@@ -495,7 +495,7 @@ class TB(ModelMethodElectronic):
         try:
             model_system = model_systems[model_index]
         except IndexError:
-            logger.warning(f'No ModelSystem at index {model_index}.')
+            logger.warning('No ModelSystem at index %s.', model_index)
             return None
 
         # If the system is not representative, bail out of normalization
@@ -534,7 +534,7 @@ class TB(ModelMethodElectronic):
             for idx in child_sys.particle_indices:
                 if idx < 0 or idx >= len(model_system.particle_states):
                     logger.warning(
-                        f'Particle index {idx} out of range for particle_states.'
+                        'Particle index %s out of range for particle_states.', idx
                     )
                     continue
                 active_atom_state = model_system.particle_states[idx]
@@ -542,7 +542,7 @@ class TB(ModelMethodElectronic):
                 # If no orbitals_state => skip
                 if not active_atom_state.electronic_state:
                     logger.warning(
-                        f'No electronic_state found in particle_states[{idx}].'
+                        'No electronic_state found in particle_states[%s].', idx
                     )
                     continue
 

@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING
-
 from abc import abstractmethod
 from functools import cached_property
+from typing import TYPE_CHECKING
+
 import ase
 import numpy as np
 import pint
