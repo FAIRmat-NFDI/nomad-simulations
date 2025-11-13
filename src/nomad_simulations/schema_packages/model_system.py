@@ -17,9 +17,8 @@
 #
 
 import re
-from functools import lru_cache
 from hashlib import sha1
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import ase
 import numpy as np
@@ -36,16 +35,18 @@ from matid.classification.classifications import (
 )
 from nomad.atomutils import Formula, get_normalized_wyckoff, search_aflow_prototype
 from nomad.config import config
+from nomad.datamodel.context import Context
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity, System
 from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
+from nomad.metainfo.metainfo import Section
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.utils import log
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
-    from typing import Any, Optional
+    from collections.abc import Callable
+    from typing import Any
 
     import pint
     from nomad.datamodel.context import Context
@@ -56,6 +57,7 @@ if TYPE_CHECKING:
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
     CGBeadState,
+    ElectronicState,
     ParticleState,
 )
 from nomad_simulations.schema_packages.utils import get_sibling_section
@@ -531,7 +533,7 @@ class Symmetry(ArchiveSection):
 
         mapping = cell_type_map.get(cell_type)
         if mapping is None:
-            logger.error(f'Cell type {cell_type} is not supported.')
+            logger.error('Cell type %s is not supported.', cell_type)
             return None
 
         try:
@@ -775,9 +777,9 @@ class ModelSystem(System):
     """
     Model system used as an input for simulating the material.
 
-    Particle positions are held at the top level in the quantity “positions”
+    Particle positions are held at the top level in the quantity "positions"
     and more detailed per‐particle information, e.g., electronic state information,
-    are stored in the subsection “particle_states”. The particle state can be of type
+    are stored in the subsection "particle_states". The particle state can be of type
     AtomState or CGBeadState, but the list of particle states must be homogeneous in type.
     Mixed systems should be treated with multiple ModelSystem sections.
 
@@ -802,18 +804,15 @@ class ModelSystem(System):
     parent-child system trees. The quantities `branch_label`, `branch_depth`, `particle_indices`,
     and `bond_list` are used to define the parent-child tree.
 
-    The normalization is ran in the following order:
-        1. `OrbitalsState.normalize()` in atoms_state.py under `AtomsState`
-        2. `CoreHole.normalize()` in atoms_state.py under `AtomsState`
-        3. `HubbardInteractions.normalize()` in atoms_state.py under `AtomsState`
-        4. `AtomsState.normalize()` in atoms_state.py
-        5. `AtomicCell.normalize()` in atomic_cell.py
-        6. `Symmetry.normalize()` in this class
-        7. `ChemicalFormula.normalize()` in this class
-        8. `ModelSystem.normalize()` in this class
+    The normalization within ModelSystem.normalize() proceeds in the following order:
+        1. Parent System normalization
+        2. Particle state reassignment and validation
+        3. System type and dimensionality resolution (if representative and atomic)
+        4. Symmetry section creation and normalization (for bulk systems)
+        5. ChemicalFormula section creation and normalization
 
-    Note: `normalize()` can be called at any time for each of the classes without being re-triggered
-    by the NOMAD normalization.
+    Note: Other normalizations (ParticleState, ElectronicState, etc.) are handled automatically
+    by NOMAD's normalization system when their respective sections are processed.
 
     Examples for the parent-child hierarchical trees:
 
@@ -1010,6 +1009,14 @@ class ModelSystem(System):
         Stored as an integer or half-integer represented in doubled form
         (e.g. singlet → 0, doublet → 1, triplet → 2).
         Not to be confused with the spin multiplicity 2S+1.
+        """,
+    )
+
+    electronic_state = SubSection(
+        section_def=ElectronicState.m_def,
+        description="""
+        Electronic state of the system, e.g., the electronic structure information.
+        This is an starting point for navigating the electronic hierarchy.
         """,
     )
 
