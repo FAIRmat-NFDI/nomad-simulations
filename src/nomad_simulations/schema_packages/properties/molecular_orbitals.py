@@ -19,9 +19,7 @@ class MolecularOrbitals(PhysicalProperty):
     Molecular-orbital eigenstates expressed in an atom-centred AO basis.
 
     Every quantity is either directly mappable to the TREXIO *mo* group or
-    provides auxiliary metadata needed by NOMAD tooling.  Shapes are expressed
-    in Fortran/column-major convention to match TREXIO and most quantum-code
-    outputs.
+    provides auxiliary metadata needed by NOMAD tooling.  
 
     The TREXIO format:
     Posenitsky et al., J. Chem. Phys. 158, 174801 (2023)
