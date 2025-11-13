@@ -19,7 +19,7 @@ class MolecularOrbitals(PhysicalProperty):
     Molecular-orbital eigenstates expressed in an atom-centred AO basis.
 
     Every quantity is either directly mappable to the TREXIO *mo* group or
-    provides auxiliary metadata needed by NOMAD tooling.  
+    provides auxiliary metadata needed by NOMAD tooling.
 
     The TREXIO format:
     Posenitsky et al., J. Chem. Phys. 158, 174801 (2023)
@@ -96,6 +96,7 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
+    # TODO: check via normalization
     mo_class = Quantity(
         type=MEnum('core', 'inactive', 'active', 'virtual', 'deleted'),
         shape=['n_mo'],
@@ -151,7 +152,7 @@ class MolecularOrbitals(PhysicalProperty):
     # ------------------------------------------------------------------ #
     mo_type = Quantity(
         type=MEnum('canonical', 'natural', 'localized', 'hybrid'),
-        default='canonical',
+        # default='canonical',
         description="""
         Classification of these orbitals:
           - canonical  : standard SCF eigenfunctions
