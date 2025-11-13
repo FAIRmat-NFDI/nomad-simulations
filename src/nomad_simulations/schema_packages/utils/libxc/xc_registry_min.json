@@ -1,0 +1,4755 @@
+[
+  {
+    "id": 1,
+    "label": "XC_LDA_X",
+    "name": "Slater exchange",
+    "family": "LDA",
+    "kind": "exchange"
+  },
+  {
+    "id": 2,
+    "label": "XC_LDA_C_WIGNER",
+    "name": "Wigner",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 3,
+    "label": "XC_LDA_C_RPA",
+    "name": "Random Phase Approximation (RPA)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 4,
+    "label": "XC_LDA_C_HL",
+    "name": "Hedin & Lundqvist",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 5,
+    "label": "XC_LDA_C_GL",
+    "name": "Gunnarson & Lundqvist",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 6,
+    "label": "XC_LDA_C_XALPHA",
+    "name": "Slater's Xalpha",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 7,
+    "label": "XC_LDA_C_VWN",
+    "name": "Vosko, Wilk & Nusair (VWN5)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 8,
+    "label": "XC_LDA_C_VWN_RPA",
+    "name": "Vosko, Wilk & Nusair (VWN5_RPA)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 9,
+    "label": "XC_LDA_C_PZ",
+    "name": "Perdew & Zunger",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 10,
+    "label": "XC_LDA_C_PZ_MOD",
+    "name": "Perdew & Zunger (Modified)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 11,
+    "label": "XC_LDA_C_OB_PZ",
+    "name": "Ortiz & Ballone (PZ parametrization)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 12,
+    "label": "XC_LDA_C_PW",
+    "name": "Perdew & Wang",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 13,
+    "label": "XC_LDA_C_PW_MOD",
+    "name": "Perdew & Wang (modified)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 14,
+    "label": "XC_LDA_C_OB_PW",
+    "name": "Ortiz & Ballone (PW parametrization)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 15,
+    "label": "XC_LDA_C_2D_AMGB",
+    "name": "AMGB (for 2D systems)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 16,
+    "label": "XC_LDA_C_2D_PRM",
+    "name": "PRM (for 2D systems)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 17,
+    "label": "XC_LDA_C_VBH",
+    "name": "von Barth & Hedin",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 18,
+    "label": "XC_LDA_C_1D_CSC",
+    "name": "Casula, Sorella & Senatore",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 19,
+    "label": "XC_LDA_X_2D",
+    "name": "Slater exchange",
+    "family": "LDA",
+    "kind": "exchange"
+  },
+  {
+    "id": 20,
+    "label": "XC_LDA_XC_TETER93",
+    "name": "Teter 93",
+    "family": "LDA",
+    "kind": "xc"
+  },
+  {
+    "id": 21,
+    "label": "XC_LDA_X_1D_SOFT",
+    "name": "Exchange in 1D for an soft-Coulomb interaction",
+    "family": "LDA",
+    "kind": "exchange"
+  },
+  {
+    "id": 22,
+    "label": "XC_LDA_C_ML1",
+    "name": "Modified LSD (version 1) of Proynov and Salahub",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 23,
+    "label": "XC_LDA_C_ML2",
+    "name": "Modified LSD (version 2) of Proynov and Salahub",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 24,
+    "label": "XC_LDA_C_GOMBAS",
+    "name": "Gombas",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 25,
+    "label": "XC_LDA_C_PW_RPA",
+    "name": "Perdew & Wang (fit to the RPA energy)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 26,
+    "label": "XC_LDA_C_1D_LOOS",
+    "name": "P-F Loos correlation LDA",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 27,
+    "label": "XC_LDA_C_RC04",
+    "name": "Ragot-Cortona",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 28,
+    "label": "XC_LDA_C_VWN_1",
+    "name": "Vosko, Wilk & Nusair (VWN1)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 29,
+    "label": "XC_LDA_C_VWN_2",
+    "name": "Vosko, Wilk & Nusair (VWN2)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 30,
+    "label": "XC_LDA_C_VWN_3",
+    "name": "Vosko, Wilk & Nusair (VWN3)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 31,
+    "label": "XC_LDA_C_VWN_4",
+    "name": "Vosko, Wilk & Nusair (VWN4)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 32,
+    "label": "XC_GGA_X_GAM",
+    "name": "Minnesota GAM exhange functional",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 33,
+    "label": "XC_GGA_C_GAM",
+    "name": "Minnesota GAM correlation functional",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 34,
+    "label": "XC_GGA_X_HCTH_A",
+    "name": "HCTH-A",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 35,
+    "label": "XC_GGA_X_EV93",
+    "name": "Engel and Vosko",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 36,
+    "label": "XC_HYB_MGGA_X_DLDF",
+    "name": "Dispersionless Density Functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 37,
+    "label": "XC_MGGA_C_DLDF",
+    "name": "Dispersionless Density Functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 38,
+    "label": "XC_GGA_X_BCGP",
+    "name": "Burke, Cancio, Gould, and Pittalis",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 39,
+    "label": "XC_GGA_C_ACGGA",
+    "name": "acGGA, asymptotically corrected GGA correlation",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 40,
+    "label": "XC_GGA_X_LAMBDA_OC2_N",
+    "name": "lambda_OC2(N) version of PBE",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 41,
+    "label": "XC_GGA_X_B86_R",
+    "name": "Revised Becke 86 with modified gradient correction",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 42,
+    "label": "XC_MGGA_XC_ZLP",
+    "name": "Zhao, Levy & Parr, Eq. (21)",
+    "family": "meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 43,
+    "label": "XC_LDA_XC_ZLP",
+    "name": "Zhao, Levy & Parr, Eq. (20)",
+    "family": "LDA",
+    "kind": "xc"
+  },
+  {
+    "id": 44,
+    "label": "XC_GGA_X_LAMBDA_CH_N",
+    "name": "lambda_CH(N) version of PBE",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 45,
+    "label": "XC_GGA_X_LAMBDA_LO_N",
+    "name": "lambda_LO(N) version of PBE",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 46,
+    "label": "XC_GGA_X_HJS_B88_V2",
+    "name": "HJS screened exchange B88 corrected version",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 47,
+    "label": "XC_GGA_C_Q2D",
+    "name": "Chiodo et al",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 48,
+    "label": "XC_GGA_X_Q2D",
+    "name": "Chiodo et al",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 49,
+    "label": "XC_GGA_X_PBE_MOL",
+    "name": "Reparametrized PBE by del Campo, Gazquez, Trickey & Vela",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 50,
+    "label": "XC_LDA_K_TF",
+    "name": "Thomas-Fermi kinetic energy",
+    "family": "LDA",
+    "kind": "k"
+  },
+  {
+    "id": 51,
+    "label": "XC_LDA_K_LP",
+    "name": "Lee and Parr Gaussian ansatz for the kinetic energy",
+    "family": "LDA",
+    "kind": "k"
+  },
+  {
+    "id": 52,
+    "label": "XC_GGA_K_TFVW",
+    "name": "Thomas-Fermi plus von Weiszaecker correction",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 53,
+    "label": "XC_GGA_K_REVAPBEINT",
+    "name": "interpolated version of revAPBE",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 54,
+    "label": "XC_GGA_K_APBEINT",
+    "name": "interpolated version of APBE",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 55,
+    "label": "XC_GGA_K_REVAPBE",
+    "name": "revised APBE",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 56,
+    "label": "XC_GGA_X_AK13",
+    "name": "Armiento & Kuemmel 2013",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 57,
+    "label": "XC_GGA_K_MEYER",
+    "name": "Meyer,  Wang, and Young",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 58,
+    "label": "XC_GGA_X_LV_RPW86",
+    "name": "Berland and Hyldgaard",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 59,
+    "label": "XC_GGA_X_PBE_TCA",
+    "name": "PBE revised by Tognetti et al",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 60,
+    "label": "XC_GGA_X_PBEINT",
+    "name": "PBE for hybrid interfaces",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 61,
+    "label": "XC_GGA_C_ZPBEINT",
+    "name": "spin-dependent gradient correction to PBEint",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 62,
+    "label": "XC_GGA_C_PBEINT",
+    "name": "PBE for hybrid interfaces",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 63,
+    "label": "XC_GGA_C_ZPBESOL",
+    "name": "spin-dependent gradient correction to PBEsol",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 64,
+    "label": "XC_MGGA_XC_OTPSS_D",
+    "name": "oTPSS-D functional of Goerigk and Grimme",
+    "family": "meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 65,
+    "label": "XC_GGA_XC_OPBE_D",
+    "name": "oPBE-D functional of Goerigk and Grimme",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 66,
+    "label": "XC_GGA_XC_OPWLYP_D",
+    "name": "oPWLYP-D functional of Goerigk and Grimme",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 67,
+    "label": "XC_GGA_XC_OBLYP_D",
+    "name": "oBLYP-D functional of Goerigk and Grimme",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 68,
+    "label": "XC_GGA_X_VMT84_GE",
+    "name": "VMT{8,4} with constraint satisfaction with mu = mu_GE",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 69,
+    "label": "XC_GGA_X_VMT84_PBE",
+    "name": "VMT{8,4} with constraint satisfaction with mu = mu_PBE",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 70,
+    "label": "XC_GGA_X_VMT_GE",
+    "name": "Vela, Medel, and Trickey with mu = mu_GE",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 71,
+    "label": "XC_GGA_X_VMT_PBE",
+    "name": "Vela, Medel, and Trickey with mu = mu_PBE",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 72,
+    "label": "XC_MGGA_C_CS",
+    "name": "Colle and Salvetti",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 73,
+    "label": "XC_MGGA_C_MN12_SX",
+    "name": "Minnesota MN12-SX correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 74,
+    "label": "XC_MGGA_C_MN12_L",
+    "name": "Minnesota MN12-L correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 75,
+    "label": "XC_MGGA_C_M11_L",
+    "name": "Minnesota M11-L correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 76,
+    "label": "XC_MGGA_C_M11",
+    "name": "Minnesota M11 correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 77,
+    "label": "XC_MGGA_C_M08_SO",
+    "name": "Minnesota M08-SO correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 78,
+    "label": "XC_MGGA_C_M08_HX",
+    "name": "Minnesota M08 correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 79,
+    "label": "XC_GGA_C_N12_SX",
+    "name": "Minnesota N12-SX correlation functional",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 80,
+    "label": "XC_GGA_C_N12",
+    "name": "Minnesota N12 correlation functional",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 81,
+    "label": "XC_HYB_GGA_X_N12_SX",
+    "name": "Minnesota N12-SX exchange functional",
+    "family": "hybrid-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 82,
+    "label": "XC_GGA_X_N12",
+    "name": "Minnesota N12 exchange functional",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 83,
+    "label": "XC_GGA_C_REGTPSS",
+    "name": "regularized TPSS correlation",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 84,
+    "label": "XC_GGA_C_OP_XALPHA",
+    "name": "one-parameter progressive functional (Xalpha version)",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 85,
+    "label": "XC_GGA_C_OP_G96",
+    "name": "one-parameter progressive functional (G96 version)",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 86,
+    "label": "XC_GGA_C_OP_PBE",
+    "name": "one-parameter progressive functional (PBE version)",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 87,
+    "label": "XC_GGA_C_OP_B88",
+    "name": "one-parameter progressive functional (B88 version)",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 88,
+    "label": "XC_GGA_C_FT97",
+    "name": "Filatov & Thiel correlation",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 89,
+    "label": "XC_GGA_C_SPBE",
+    "name": "PBE correlation to be used with the SSB exchange",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 90,
+    "label": "XC_GGA_X_SSB_SW",
+    "name": "Swart, Sola and Bickelhaupt correction to PBE",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 91,
+    "label": "XC_GGA_X_SSB",
+    "name": "Swart, Sola and Bickelhaupt",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 92,
+    "label": "XC_GGA_X_SSB_D",
+    "name": "Swart, Sola and Bickelhaupt dispersion",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 93,
+    "label": "XC_GGA_XC_HCTH_407P",
+    "name": "HCTH/407+",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 94,
+    "label": "XC_GGA_XC_HCTH_P76",
+    "name": "HCTH p=7/6",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 95,
+    "label": "XC_GGA_XC_HCTH_P14",
+    "name": "HCTH p=1/4",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 96,
+    "label": "XC_GGA_XC_B97_GGA1",
+    "name": "Becke 97 GGA-1",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 97,
+    "label": "XC_GGA_C_HCTH_A",
+    "name": "HCTH-A",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 98,
+    "label": "XC_GGA_X_BPCCAC",
+    "name": "BPCCAC (GRAC for the energy)",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 99,
+    "label": "XC_GGA_C_REVTCA",
+    "name": "Tognetti, Cortona, Adamo (revised)",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 100,
+    "label": "XC_GGA_C_TCA",
+    "name": "Tognetti, Cortona, Adamo",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 101,
+    "label": "XC_GGA_X_PBE",
+    "name": "Perdew, Burke & Ernzerhof",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 102,
+    "label": "XC_GGA_X_PBE_R",
+    "name": "Revised PBE from Zhang & Yang",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 103,
+    "label": "XC_GGA_X_B86",
+    "name": "Becke 86",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 105,
+    "label": "XC_GGA_X_B86_MGC",
+    "name": "Becke 86 with modified gradient correction",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 106,
+    "label": "XC_GGA_X_B88",
+    "name": "Becke 88",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 107,
+    "label": "XC_GGA_X_G96",
+    "name": "Gill 96",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 108,
+    "label": "XC_GGA_X_PW86",
+    "name": "Perdew & Wang 86",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 109,
+    "label": "XC_GGA_X_PW91",
+    "name": "Perdew & Wang 91",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 110,
+    "label": "XC_GGA_X_OPTX",
+    "name": "Handy & Cohen OPTX 01",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 111,
+    "label": "XC_GGA_X_DK87_R1",
+    "name": "dePristo & Kress 87 version R1",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 112,
+    "label": "XC_GGA_X_DK87_R2",
+    "name": "dePristo & Kress 87 version R2",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 113,
+    "label": "XC_GGA_X_LG93",
+    "name": "Lacks & Gordon 93",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 114,
+    "label": "XC_GGA_X_FT97_A",
+    "name": "Filatov & Thiel 97 (version A)",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 115,
+    "label": "XC_GGA_X_FT97_B",
+    "name": "Filatov & Thiel 97 (version B)",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 116,
+    "label": "XC_GGA_X_PBE_SOL",
+    "name": "Perdew, Burke & Ernzerhof SOL",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 117,
+    "label": "XC_GGA_X_RPBE",
+    "name": "Hammer, Hansen, and Norskov",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 118,
+    "label": "XC_GGA_X_WC",
+    "name": "Wu & Cohen",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 119,
+    "label": "XC_GGA_X_MPW91",
+    "name": "mPW91 of Adamo & Barone",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 120,
+    "label": "XC_GGA_X_AM05",
+    "name": "Armiento & Mattsson 05",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 121,
+    "label": "XC_GGA_X_PBEA",
+    "name": "Madsen 07",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 122,
+    "label": "XC_GGA_X_MPBE",
+    "name": "Adamo & Barone modification to PBE",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 123,
+    "label": "XC_GGA_X_XPBE",
+    "name": "Extended PBE by Xu & Goddard III",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 124,
+    "label": "XC_GGA_X_2D_B86_MGC",
+    "name": "Becke 86 with modified gradient correction for 2D",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 125,
+    "label": "XC_GGA_X_BAYESIAN",
+    "name": "Bayesian best fit for the enhancement factor",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 126,
+    "label": "XC_GGA_X_PBE_JSJR",
+    "name": "Reparametrized PBE by Pedroza, Silva & Capelle",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 127,
+    "label": "XC_GGA_X_2D_B88",
+    "name": "Becke 88 in 2D",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 128,
+    "label": "XC_GGA_X_2D_B86",
+    "name": "Becke 86 in 2D",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 129,
+    "label": "XC_GGA_X_2D_PBE",
+    "name": "Perdew, Burke & Ernzerhof in 2D",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 130,
+    "label": "XC_GGA_C_PBE",
+    "name": "Perdew, Burke & Ernzerhof",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 131,
+    "label": "XC_GGA_C_LYP",
+    "name": "Lee, Yang & Parr",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 132,
+    "label": "XC_GGA_C_P86",
+    "name": "Perdew 86",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 133,
+    "label": "XC_GGA_C_PBE_SOL",
+    "name": "Perdew, Burke & Ernzerhof SOL",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 134,
+    "label": "XC_GGA_C_PW91",
+    "name": "Perdew & Wang 91",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 135,
+    "label": "XC_GGA_C_AM05",
+    "name": "Armiento & Mattsson 05",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 136,
+    "label": "XC_GGA_C_XPBE",
+    "name": "Extended PBE by Xu & Goddard III",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 137,
+    "label": "XC_GGA_C_LM",
+    "name": "Langreth & Mehl",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 138,
+    "label": "XC_GGA_C_PBE_JRGX",
+    "name": "Reparametrized PBE by Pedroza, Silva & Capelle",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 139,
+    "label": "XC_GGA_X_OPTB88_VDW",
+    "name": "opt-Becke 88 for vdW",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 140,
+    "label": "XC_GGA_X_PBEK1_VDW",
+    "name": "Reparametrized PBE for vdW",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 141,
+    "label": "XC_GGA_X_OPTPBE_VDW",
+    "name": "Reparametrized PBE for vdW",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 142,
+    "label": "XC_GGA_X_RGE2",
+    "name": "Regularized PBE",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 143,
+    "label": "XC_GGA_C_RGE2",
+    "name": "Regularized PBE",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 144,
+    "label": "XC_GGA_X_RPW86",
+    "name": "Refitted Perdew & Wang 86",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 145,
+    "label": "XC_GGA_X_KT1",
+    "name": "Exchange part of Keal and Tozer version 1",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 146,
+    "label": "XC_GGA_XC_KT2",
+    "name": "Keal and Tozer, version 2",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 147,
+    "label": "XC_GGA_C_WL",
+    "name": "Wilson & Levy",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 148,
+    "label": "XC_GGA_C_WI",
+    "name": "Wilson & Ivanov",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 149,
+    "label": "XC_GGA_X_MB88",
+    "name": "Modified Becke 88 for proton transfer",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 150,
+    "label": "XC_GGA_X_SOGGA",
+    "name": "Second-order generalized gradient approximation",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 151,
+    "label": "XC_GGA_X_SOGGA11",
+    "name": "Second-order generalized gradient approximation 2011",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 152,
+    "label": "XC_GGA_C_SOGGA11",
+    "name": "Second-order generalized gradient approximation 2011",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 153,
+    "label": "XC_GGA_C_WI0",
+    "name": "Wilson & Ivanov initial version",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 154,
+    "label": "XC_GGA_XC_TH1",
+    "name": "Tozer and Handy v. 1",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 155,
+    "label": "XC_GGA_XC_TH2",
+    "name": "Tozer and Handy v. 2",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 156,
+    "label": "XC_GGA_XC_TH3",
+    "name": "Tozer and Handy v. 3",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 157,
+    "label": "XC_GGA_XC_TH4",
+    "name": "Tozer and Handy v. 4",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 158,
+    "label": "XC_GGA_X_C09X",
+    "name": "C09x to be used with the VdW of Rutgers-Chalmers",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 159,
+    "label": "XC_GGA_C_SOGGA11_X",
+    "name": "To be used with HYB_GGA_X_SOGGA11_X",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 160,
+    "label": "XC_GGA_X_LB",
+    "name": "van Leeuwen & Baerends",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 161,
+    "label": "XC_GGA_XC_HCTH_93",
+    "name": "HCTH/93",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 162,
+    "label": "XC_GGA_XC_HCTH_120",
+    "name": "HCTH/120",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 163,
+    "label": "XC_GGA_XC_HCTH_147",
+    "name": "HCTH/147",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 164,
+    "label": "XC_GGA_XC_HCTH_407",
+    "name": "HCTH/407",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 165,
+    "label": "XC_GGA_XC_EDF1",
+    "name": "EDF1",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 166,
+    "label": "XC_GGA_XC_XLYP",
+    "name": "XLYP",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 167,
+    "label": "XC_GGA_XC_KT1",
+    "name": "Keal and Tozer, version 1",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 168,
+    "label": "XC_GGA_X_LSPBE",
+    "name": "lsPBE, a PW91-like modification of PBE exchange",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 169,
+    "label": "XC_GGA_X_LSRPBE",
+    "name": "lsRPBE, a PW91-like modification of RPBE",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 170,
+    "label": "XC_GGA_XC_B97_D",
+    "name": "Becke 97-D",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 171,
+    "label": "XC_GGA_X_OPTB86B_VDW",
+    "name": "Becke 86 reoptimized for use with vdW functional of Dion et al",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 172,
+    "label": "XC_MGGA_C_REVM11",
+    "name": "Revised Minnesota M11 correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 173,
+    "label": "XC_GGA_XC_PBE1W",
+    "name": "PBE1W",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 174,
+    "label": "XC_GGA_XC_MPWLYP1W",
+    "name": "mPWLYP1w",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 175,
+    "label": "XC_GGA_XC_PBELYP1W",
+    "name": "PBELYP1W",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 176,
+    "label": "XC_GGA_C_ACGGAP",
+    "name": "acGGA+, asymptotically corrected GGA correlation+",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 177,
+    "label": "XC_HYB_LDA_XC_LDA0",
+    "name": "LDA hybrid exchange (LDA0)",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 178,
+    "label": "XC_HYB_LDA_XC_CAM_LDA0",
+    "name": "CAM version of LDA0",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 179,
+    "label": "XC_GGA_X_B88_6311G",
+    "name": "Becke 88 reoptimized with the 6-311G** basis set",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 180,
+    "label": "XC_GGA_X_NCAP",
+    "name": "Nearly correct asymptotic potential",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 181,
+    "label": "XC_GGA_XC_NCAP",
+    "name": "NCAP exchange + P86 correlation",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 182,
+    "label": "XC_GGA_X_LBM",
+    "name": "van Leeuwen & Baerends modified",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 183,
+    "label": "XC_GGA_X_OL2",
+    "name": "Exchange form based on Ou-Yang and Levy v.2",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 184,
+    "label": "XC_GGA_X_APBE",
+    "name": "mu fixed from the semiclassical neutral atom",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 185,
+    "label": "XC_GGA_K_APBE",
+    "name": "mu fixed from the semiclassical neutral atom",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 186,
+    "label": "XC_GGA_C_APBE",
+    "name": "mu fixed from the semiclassical neutral atom",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 187,
+    "label": "XC_GGA_K_TW1",
+    "name": "Tran and Wesolowski set 1 (Table II)",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 188,
+    "label": "XC_GGA_K_TW2",
+    "name": "Tran and Wesolowski set 2 (Table II)",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 189,
+    "label": "XC_GGA_K_TW3",
+    "name": "Tran and Wesolowski set 3 (Table II)",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 190,
+    "label": "XC_GGA_K_TW4",
+    "name": "Tran and Wesolowski set 4 (Table II)",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 191,
+    "label": "XC_GGA_X_HTBS",
+    "name": "Haas, Tran, Blaha, and Schwarz",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 192,
+    "label": "XC_GGA_X_AIRY",
+    "name": "Constantin et al based on the Airy gas",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 193,
+    "label": "XC_GGA_X_LAG",
+    "name": "Local Airy Gas",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 194,
+    "label": "XC_GGA_XC_MOHLYP",
+    "name": "Functional for organometallic chemistry",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 195,
+    "label": "XC_GGA_XC_MOHLYP2",
+    "name": "Functional for barrier heights",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 196,
+    "label": "XC_GGA_XC_TH_FL",
+    "name": "Tozer and Handy v. FL",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 197,
+    "label": "XC_GGA_XC_TH_FC",
+    "name": "Tozer and Handy v. FC",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 198,
+    "label": "XC_GGA_XC_TH_FCFO",
+    "name": "Tozer and Handy v. FCFO",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 199,
+    "label": "XC_GGA_XC_TH_FCO",
+    "name": "Tozer and Handy v. FCO",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 200,
+    "label": "XC_GGA_C_OPTC",
+    "name": "Optimized correlation functional of Cohen and Handy",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 201,
+    "label": "XC_MGGA_X_LTA",
+    "name": "Local tau approximation",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 202,
+    "label": "XC_MGGA_X_TPSS",
+    "name": "Tao, Perdew, Staroverov & Scuseria",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 203,
+    "label": "XC_MGGA_X_M06_L",
+    "name": "Minnesota M06-L exchange functional",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 204,
+    "label": "XC_MGGA_X_GVT4",
+    "name": "GVT4 (X part of VSXC)",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 205,
+    "label": "XC_MGGA_X_TAU_HCTH",
+    "name": "tau-HCTH from Boese and Handy",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 206,
+    "label": "XC_MGGA_X_BR89",
+    "name": "Becke-Roussel 89, gamma = 0.8",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 207,
+    "label": "XC_MGGA_X_BJ06",
+    "name": "Becke & Johnson 06",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 208,
+    "label": "XC_MGGA_X_TB09",
+    "name": "Tran & Blaha 09",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 209,
+    "label": "XC_MGGA_X_RPP09",
+    "name": "Rasanen, Pittalis & Proetto 09",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 210,
+    "label": "XC_MGGA_X_2D_PRHG07",
+    "name": "Pittalis-Rasanen-Helbig-Gross 2007",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 211,
+    "label": "XC_MGGA_X_2D_PRHG07_PRP10",
+    "name": "PRHG07 with Pittalis-Rasanen-Proetto 2010 correction",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 212,
+    "label": "XC_MGGA_X_REVTPSS",
+    "name": "revised Tao, Perdew, Staroverov & Scuseria",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 213,
+    "label": "XC_MGGA_X_PKZB",
+    "name": "Perdew, Kurth, Zupan, and Blaha",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 214,
+    "label": "XC_MGGA_X_BR89_1",
+    "name": "Becke-Roussel 89, gamma = 1.0",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 215,
+    "label": "XC_GGA_X_ECMV92",
+    "name": "Engel, Chevary, Macdonald and Vosko",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 216,
+    "label": "XC_GGA_C_PBE_VWN",
+    "name": "Perdew, Burke & Ernzerhof based on VWN correlation",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 217,
+    "label": "XC_GGA_C_P86_FT",
+    "name": "Perdew 86 with more accurate value for ftilde",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 218,
+    "label": "XC_GGA_K_RATIONAL_P",
+    "name": "RATIONAL$^{p}$ by Lehtomaki and Lopez-Acevedo (by default $p=3/2$, $C_{2}=0.7687$)",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 219,
+    "label": "XC_GGA_K_PG1",
+    "name": "PG1 (Pauli-Gaussian) functional by Constantin, Fabiano, and Della Sala",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 220,
+    "label": "XC_MGGA_K_PGSL025",
+    "name": "PGSL025 (Pauli-Gaussian) functional by Constantin, Fabiano, and Della Sala",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 221,
+    "label": "XC_MGGA_X_MS0",
+    "name": "MS exchange of Sun, Xiao, and Ruzsinszky",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 222,
+    "label": "XC_MGGA_X_MS1",
+    "name": "MS1 exchange of Sun, et al",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 223,
+    "label": "XC_MGGA_X_MS2",
+    "name": "MS2 exchange of Sun, et al",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 224,
+    "label": "XC_HYB_MGGA_X_MS2H",
+    "name": "MS2 hybrid exchange of Sun, et al",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 225,
+    "label": "XC_MGGA_X_TH",
+    "name": "Tsuneda and Hirao",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 226,
+    "label": "XC_MGGA_X_M11_L",
+    "name": "Minnesota M11-L exchange functional",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 227,
+    "label": "XC_MGGA_X_MN12_L",
+    "name": "Minnesota MN12-L exchange functional",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 228,
+    "label": "XC_MGGA_X_MS2_REV",
+    "name": "MS2 exchange of Sun, et al with revised value for c",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 229,
+    "label": "XC_MGGA_XC_CC06",
+    "name": "Cancio and Chou 2006",
+    "family": "meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 230,
+    "label": "XC_MGGA_X_MK00",
+    "name": "Exchange for accurate virtual orbital energies",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 231,
+    "label": "XC_MGGA_C_TPSS",
+    "name": "Tao, Perdew, Staroverov & Scuseria",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 232,
+    "label": "XC_MGGA_C_VSXC",
+    "name": "VSXC (correlation part)",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 233,
+    "label": "XC_MGGA_C_M06_L",
+    "name": "Minnesota M06-L correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 234,
+    "label": "XC_MGGA_C_M06_HF",
+    "name": "Minnesota M06-HF correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 235,
+    "label": "XC_MGGA_C_M06",
+    "name": "Minnesota M06 correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 236,
+    "label": "XC_MGGA_C_M06_2X",
+    "name": "Minnesota M06-2X correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 237,
+    "label": "XC_MGGA_C_M05",
+    "name": "Minnesota M05 correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 238,
+    "label": "XC_MGGA_C_M05_2X",
+    "name": "Minnesota M05-2X correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 239,
+    "label": "XC_MGGA_C_PKZB",
+    "name": "Perdew, Kurth, Zupan, and Blaha",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 240,
+    "label": "XC_MGGA_C_BC95",
+    "name": "Becke correlation 95",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 241,
+    "label": "XC_MGGA_C_REVTPSS",
+    "name": "revised TPSS correlation",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 242,
+    "label": "XC_MGGA_XC_TPSSLYP1W",
+    "name": "TPSSLYP1W",
+    "family": "meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 243,
+    "label": "XC_MGGA_X_MK00B",
+    "name": "Exchange for accurate virtual orbital energies (v. B)",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 244,
+    "label": "XC_MGGA_X_BLOC",
+    "name": "functional with balanced localization",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 245,
+    "label": "XC_MGGA_X_MODTPSS",
+    "name": "Modified Tao, Perdew, Staroverov & Scuseria",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 246,
+    "label": "XC_GGA_C_PBELOC",
+    "name": "Semilocal dynamical correlation",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 247,
+    "label": "XC_MGGA_C_TPSSLOC",
+    "name": "Semilocal dynamical correlation",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 248,
+    "label": "XC_HYB_MGGA_X_MN12_SX",
+    "name": "Minnesota MN12-SX hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 249,
+    "label": "XC_MGGA_X_MBEEF",
+    "name": "mBEEF exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 250,
+    "label": "XC_MGGA_X_MBEEFVDW",
+    "name": "mBEEF-vdW exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 251,
+    "label": "XC_MGGA_C_TM",
+    "name": "Tao and Mo 2016 correlation",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 252,
+    "label": "XC_GGA_C_P86VWN",
+    "name": "Perdew 86 based on VWN5 correlation",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 253,
+    "label": "XC_GGA_C_P86VWN_FT",
+    "name": "Perdew 86 based on VWN5 correlation, with more accurate value for ftilde",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 254,
+    "label": "XC_MGGA_XC_B97M_V",
+    "name": "B97M-V exchange-correlation functional",
+    "family": "meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 255,
+    "label": "XC_GGA_XC_VV10",
+    "name": "Vydrov and Van Voorhis",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 256,
+    "label": "XC_MGGA_X_JK",
+    "name": "Jemmer-Knowles meta-GGA exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 257,
+    "label": "XC_MGGA_X_MVS",
+    "name": "MVS exchange of Sun, Perdew, and Ruzsinszky",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 258,
+    "label": "XC_GGA_C_PBEFE",
+    "name": "PBE for formation energies",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 259,
+    "label": "XC_LDA_XC_KSDT",
+    "name": "Karasiev, Sjostrom, Dufty & Trickey",
+    "family": "LDA",
+    "kind": "xc"
+  },
+  {
+    "id": 260,
+    "label": "XC_MGGA_X_MN15_L",
+    "name": "Minnesota MN15-L exchange functional",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 261,
+    "label": "XC_MGGA_C_MN15_L",
+    "name": "Minnesota MN15-L correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 262,
+    "label": "XC_GGA_C_OP_PW91",
+    "name": "one-parameter progressive functional (PW91 version)",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 263,
+    "label": "XC_MGGA_X_SCAN",
+    "name": "SCAN exchange of Sun, Ruzsinszky, and Perdew",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 264,
+    "label": "XC_HYB_MGGA_X_SCAN0",
+    "name": "SCAN hybrid exchange (SCAN0)",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 265,
+    "label": "XC_GGA_X_PBEFE",
+    "name": "PBE for formation energies",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 266,
+    "label": "XC_HYB_GGA_XC_B97_1P",
+    "name": "version of B97 by Cohen and Handy",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 267,
+    "label": "XC_MGGA_C_SCAN",
+    "name": "SCAN correlation of Sun, Ruzsinszky, and Perdew",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 268,
+    "label": "XC_HYB_MGGA_X_MN15",
+    "name": "Minnesota MN15 hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 269,
+    "label": "XC_MGGA_C_MN15",
+    "name": "Minnesota MN15 correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 270,
+    "label": "XC_GGA_X_CAP",
+    "name": "Correct Asymptotic Potential",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 271,
+    "label": "XC_GGA_X_EB88",
+    "name": "Non-empirical (excogitated) B88 functional of Becke and Elliott",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 272,
+    "label": "XC_GGA_C_PBE_MOL",
+    "name": "Reparametrized PBE by del Campo, Gazquez, Trickey & Vela",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 273,
+    "label": "XC_HYB_GGA_XC_PBE_MOL0",
+    "name": "PBEmol0",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 274,
+    "label": "XC_HYB_GGA_XC_PBE_SOL0",
+    "name": "PBEsol0",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 275,
+    "label": "XC_HYB_GGA_XC_PBEB0",
+    "name": "PBEbeta0",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 276,
+    "label": "XC_HYB_GGA_XC_PBE_MOLB0",
+    "name": "PBEmolbeta0",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 277,
+    "label": "XC_GGA_K_ABSP3",
+    "name": "gamma-TFvW form by Acharya et al [$g = 1 - 1.513/N^{0.35}]$",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 278,
+    "label": "XC_GGA_K_ABSP4",
+    "name": "gamma-TFvW form by Acharya et al [$g = l = 1/(1 + 1.332/N^{1/3})$]",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 279,
+    "label": "XC_HYB_MGGA_X_BMK",
+    "name": "Boese-Martin for kinetics",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 280,
+    "label": "XC_GGA_C_BMK",
+    "name": "Boese-Martin correlation for kinetics",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 281,
+    "label": "XC_GGA_C_TAU_HCTH",
+    "name": "correlation part of tau-hcth",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 282,
+    "label": "XC_HYB_MGGA_X_TAU_HCTH",
+    "name": "Hybrid version of tau-HCTH",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 283,
+    "label": "XC_GGA_C_HYB_TAU_HCTH",
+    "name": "correlation part of hyb-tau-hcth",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 284,
+    "label": "XC_MGGA_X_B00",
+    "name": "Becke 2000",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 285,
+    "label": "XC_GGA_X_BEEFVDW",
+    "name": "BEEF-vdW exchange",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 286,
+    "label": "XC_GGA_XC_BEEFVDW",
+    "name": "BEEF-vdW exchange-correlation",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 287,
+    "label": "XC_LDA_C_CHACHIYO",
+    "name": "Chachiyo simple 2 parameter correlation",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 288,
+    "label": "XC_MGGA_XC_HLE17",
+    "name": "high local exchange 2017",
+    "family": "meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 289,
+    "label": "XC_LDA_C_LP96",
+    "name": "Liu-Parr correlation",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 290,
+    "label": "XC_HYB_GGA_XC_PBE50",
+    "name": "PBE50",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 291,
+    "label": "XC_GGA_X_PBETRANS",
+    "name": "Gradient-regulated connection-based correction for the PBE exchange",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 292,
+    "label": "XC_MGGA_C_SCAN_RVV10",
+    "name": "SCAN + rVV10 correlation",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 293,
+    "label": "XC_MGGA_X_REVM06_L",
+    "name": "Minnesota revM06-L exchange functional",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 294,
+    "label": "XC_MGGA_C_REVM06_L",
+    "name": "Minnesota revM06-L correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 295,
+    "label": "XC_HYB_MGGA_X_M08_HX",
+    "name": "Minnesota M08-HX hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 296,
+    "label": "XC_HYB_MGGA_X_M08_SO",
+    "name": "Minnesota M08-SO hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 297,
+    "label": "XC_HYB_MGGA_X_M11",
+    "name": "Minnesota M11 hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 298,
+    "label": "XC_GGA_X_CHACHIYO",
+    "name": "Chachiyo exchange",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 299,
+    "label": "XC_MGGA_X_RTPSS",
+    "name": "TPSS for surface adsorption",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 300,
+    "label": "XC_MGGA_X_MS2B",
+    "name": "MS2beta exchange of Furness and Sun",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 301,
+    "label": "XC_MGGA_X_MS2BS",
+    "name": "MS2beta* exchange of Furness and Sun",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 302,
+    "label": "XC_MGGA_X_MVSB",
+    "name": "MVSbeta exchange by Furness and Sun",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 303,
+    "label": "XC_MGGA_X_MVSBS",
+    "name": "MVSbeta* exchange by Furness and Sun",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 304,
+    "label": "XC_HYB_MGGA_X_REVM11",
+    "name": "Revised Minnesota M11 hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 305,
+    "label": "XC_HYB_MGGA_X_REVM06",
+    "name": "Revised Minnesota M06 hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 306,
+    "label": "XC_MGGA_C_REVM06",
+    "name": "Revised Minnesota M06 correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 307,
+    "label": "XC_LDA_C_CHACHIYO_MOD",
+    "name": "Chachiyo simple 2 parameter correlation with modified spin scaling",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 308,
+    "label": "XC_LDA_C_KARASIEV_MOD",
+    "name": "Karasiev reparameterization of Chachiyo",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 309,
+    "label": "XC_GGA_C_CHACHIYO",
+    "name": "Chachiyo simple GGA correlation",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 310,
+    "label": "XC_HYB_MGGA_X_M06_SX",
+    "name": "Minnesota M06-SX short-range hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 311,
+    "label": "XC_MGGA_C_M06_SX",
+    "name": "Minnesota M06-SX correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 312,
+    "label": "XC_GGA_X_REVSSB_D",
+    "name": "Revised Swart, Sola and Bickelhaupt dispersion",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 313,
+    "label": "XC_GGA_C_CCDF",
+    "name": "ccDF: coupled-cluster motivated density functional",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 314,
+    "label": "XC_HYB_GGA_XC_HFLYP",
+    "name": "HF + LYP correlation",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 315,
+    "label": "XC_HYB_GGA_XC_B3P86_NWCHEM",
+    "name": "B3P86, NWChem version",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 316,
+    "label": "XC_GGA_X_PW91_MOD",
+    "name": "PW91, alternate version with more digits",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 317,
+    "label": "XC_LDA_C_W20",
+    "name": "Xie, Wu, and Zhao interpolation ansatz without fitting parameters",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 318,
+    "label": "XC_LDA_XC_CORRKSDT",
+    "name": "Corrected KSDT by Karasiev, Dufty and Trickey",
+    "family": "LDA",
+    "kind": "xc"
+  },
+  {
+    "id": 319,
+    "label": "XC_MGGA_X_FT98",
+    "name": "Filatov and Thiel 1998 meta-GGA exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 320,
+    "label": "XC_GGA_X_PBE_MOD",
+    "name": "Perdew, Burke & Ernzerhof with less precise value for beta",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 321,
+    "label": "XC_GGA_X_PBE_GAUSSIAN",
+    "name": "Perdew, Burke & Ernzerhof with parameter values used in Gaussian",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 322,
+    "label": "XC_GGA_C_PBE_GAUSSIAN",
+    "name": "Perdew, Burke & Ernzerhof with parameters from Gaussian",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 323,
+    "label": "XC_MGGA_C_TPSS_GAUSSIAN",
+    "name": "Tao, Perdew, Staroverov & Scuseria with parameters from Gaussian",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 324,
+    "label": "XC_GGA_X_NCAPR",
+    "name": "Nearly correct asymptotic potential revised",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 325,
+    "label": "XC_HYB_GGA_XC_RELPBE0",
+    "name": "relPBE0 a.k.a. relPBE: PBE0 refitted for actinide compounds",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 326,
+    "label": "XC_MGGA_X_EEL",
+    "name": "Exact exchange-like exchange of Aschebrock et al",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 327,
+    "label": "XC_GGA_XC_B97_3C",
+    "name": "Becke 97-3c by Grimme et. al.",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 328,
+    "label": "XC_LDA_C_EPC17",
+    "name": "epc17(-1): electron-proton correlation 2017",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 329,
+    "label": "XC_LDA_C_EPC17_2",
+    "name": "epc17-2: electron-proton correlation 2017 for proton affinities",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 330,
+    "label": "XC_LDA_C_EPC18_1",
+    "name": "epc18-1: electron-proton correlation 2018",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 331,
+    "label": "XC_LDA_C_EPC18_2",
+    "name": "epc18-2: electron-proton correlation 2018 for proton affinities",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 338,
+    "label": "XC_GGA_X_BKL1",
+    "name": "Type-I band gap functional by Bhattacharjee, Koshi and Lee",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 339,
+    "label": "XC_GGA_X_BKL2",
+    "name": "Type-II band gap functional by Bhattacharjee, Koshi and Lee",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 340,
+    "label": "XC_HYB_MGGA_X_CF22D",
+    "name": "Minnesota CF22D hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 341,
+    "label": "XC_MGGA_C_CF22D",
+    "name": "Minnesota CF22D correlation functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 342,
+    "label": "XC_MGGA_X_LAK",
+    "name": "Lebeda-Aschebrock-Kummel meta-GGA exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 386,
+    "label": "XC_HYB_GGA_XC_OPB3LYP",
+    "name": "opB3LYP: B3LYP reoptimized in 6-311++G(2d,2p) basis set",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 387,
+    "label": "XC_MGGA_C_CC",
+    "name": "Self-interaction corrected correlation functional by Schmidt et al",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 388,
+    "label": "XC_MGGA_C_CCALDA",
+    "name": "Iso-orbital corrected LDA correlation by Lebeda et al",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 389,
+    "label": "XC_HYB_MGGA_XC_BR3P86",
+    "name": "BR3P86 hybrid meta-GGA from Neumann and Handy",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 390,
+    "label": "XC_HYB_GGA_XC_CASE21",
+    "name": "CASE21: Constrained And Smoothed semi-Empirical 2021 functional",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 391,
+    "label": "XC_MGGA_C_RREGTM",
+    "name": "Revised regTM correlation by Jana et al",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 392,
+    "label": "XC_HYB_GGA_XC_PBE_2X",
+    "name": "PBE-2X: PBE0 with 56% exact exchange",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 393,
+    "label": "XC_HYB_GGA_XC_PBE38",
+    "name": "PBE38: PBE0 with 3/8 = 37.5% exact exchange",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 394,
+    "label": "XC_HYB_GGA_XC_B3LYP3",
+    "name": "B3LYP with VWN functional 3 instead of RPA",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 395,
+    "label": "XC_HYB_GGA_XC_CAM_O3LYP",
+    "name": "CAM-O3LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 396,
+    "label": "XC_HYB_MGGA_XC_TPSS0",
+    "name": "TPSS0 with 25% exact exchange",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 397,
+    "label": "XC_MGGA_C_B94",
+    "name": "Becke 1994 meta-GGA correlation",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 398,
+    "label": "XC_HYB_MGGA_XC_B94_HYB",
+    "name": "Becke 1994 hybrid meta-GGA",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 399,
+    "label": "XC_HYB_GGA_XC_WB97X_D3",
+    "name": "wB97X-D3 range-separated functional",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 400,
+    "label": "XC_HYB_GGA_XC_LC_BLYP",
+    "name": "LC version of BLYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 401,
+    "label": "XC_HYB_GGA_XC_B3PW91",
+    "name": "The original (ACM, B3PW91) hybrid of Becke",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 402,
+    "label": "XC_HYB_GGA_XC_B3LYP",
+    "name": "B3LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 403,
+    "label": "XC_HYB_GGA_XC_B3P86",
+    "name": "B3P86",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 404,
+    "label": "XC_HYB_GGA_XC_O3LYP",
+    "name": "O3LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 405,
+    "label": "XC_HYB_GGA_XC_MPW1K",
+    "name": "mPW1K",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 406,
+    "label": "XC_HYB_GGA_XC_PBEH",
+    "name": "PBEH (PBE0)",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 407,
+    "label": "XC_HYB_GGA_XC_B97",
+    "name": "Becke 97",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 408,
+    "label": "XC_HYB_GGA_XC_B97_1",
+    "name": "Becke 97-1",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 409,
+    "label": "XC_HYB_GGA_XC_APF",
+    "name": "APF hybrid functional",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 410,
+    "label": "XC_HYB_GGA_XC_B97_2",
+    "name": "Becke 97-2",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 411,
+    "label": "XC_HYB_GGA_XC_X3LYP",
+    "name": "X3LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 412,
+    "label": "XC_HYB_GGA_XC_B1WC",
+    "name": "B1WC",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 413,
+    "label": "XC_HYB_GGA_XC_B97_K",
+    "name": "Boese-Martin for Kinetics",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 414,
+    "label": "XC_HYB_GGA_XC_B97_3",
+    "name": "Becke 97-3",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 415,
+    "label": "XC_HYB_GGA_XC_MPW3PW",
+    "name": "MPW3PW of Adamo & Barone",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 416,
+    "label": "XC_HYB_GGA_XC_B1LYP",
+    "name": "B1LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 417,
+    "label": "XC_HYB_GGA_XC_B1PW91",
+    "name": "B1PW91",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 418,
+    "label": "XC_HYB_GGA_XC_MPW1PW",
+    "name": "mPW1PW",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 419,
+    "label": "XC_HYB_GGA_XC_MPW3LYP",
+    "name": "MPW3LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 420,
+    "label": "XC_HYB_GGA_XC_SB98_1A",
+    "name": "SB98 (1a)",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 421,
+    "label": "XC_HYB_GGA_XC_SB98_1B",
+    "name": "SB98 (1b)",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 422,
+    "label": "XC_HYB_GGA_XC_SB98_1C",
+    "name": "SB98 (1c)",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 423,
+    "label": "XC_HYB_GGA_XC_SB98_2A",
+    "name": "SB98 (2a)",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 424,
+    "label": "XC_HYB_GGA_XC_SB98_2B",
+    "name": "SB98 (2b)",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 425,
+    "label": "XC_HYB_GGA_XC_SB98_2C",
+    "name": "SB98 (2c)",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 426,
+    "label": "XC_HYB_GGA_X_SOGGA11_X",
+    "name": "Hybrid based on SOGGA11 form",
+    "family": "hybrid-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 427,
+    "label": "XC_HYB_GGA_XC_HSE03",
+    "name": "HSE03",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 428,
+    "label": "XC_HYB_GGA_XC_HSE06",
+    "name": "HSE06",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 429,
+    "label": "XC_HYB_GGA_XC_HJS_PBE",
+    "name": "HJS hybrid screened exchange PBE version",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 430,
+    "label": "XC_HYB_GGA_XC_HJS_PBE_SOL",
+    "name": "HJS hybrid screened exchange PBE_SOL version",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 431,
+    "label": "XC_HYB_GGA_XC_HJS_B88",
+    "name": "HJS hybrid screened exchange B88 version",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 432,
+    "label": "XC_HYB_GGA_XC_HJS_B97X",
+    "name": "HJS hybrid screened exchange B97x version",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 433,
+    "label": "XC_HYB_GGA_XC_CAM_B3LYP",
+    "name": "CAM version of B3LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 434,
+    "label": "XC_HYB_GGA_XC_TUNED_CAM_B3LYP",
+    "name": "CAM version of B3LYP, tuned for excitations and properties",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 435,
+    "label": "XC_HYB_GGA_XC_BHANDH",
+    "name": "BHandH i.e. BHLYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 436,
+    "label": "XC_HYB_GGA_XC_BHANDHLYP",
+    "name": "BHandHLYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 437,
+    "label": "XC_HYB_GGA_XC_MB3LYP_RC04",
+    "name": "B3LYP with RC04 LDA",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 438,
+    "label": "XC_HYB_MGGA_X_M05",
+    "name": "Minnesota M05 hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 439,
+    "label": "XC_HYB_MGGA_X_M05_2X",
+    "name": "Minnesota M05-2X hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 440,
+    "label": "XC_HYB_MGGA_XC_B88B95",
+    "name": "Mixture of B88 with BC95 (B1B95)",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 441,
+    "label": "XC_HYB_MGGA_XC_B86B95",
+    "name": "Mixture of B86 with BC95",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 442,
+    "label": "XC_HYB_MGGA_XC_PW86B95",
+    "name": "Mixture of PW86 with BC95",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 443,
+    "label": "XC_HYB_MGGA_XC_BB1K",
+    "name": "Mixture of B88 with BC95 from Zhao and Truhlar",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 444,
+    "label": "XC_HYB_MGGA_X_M06_HF",
+    "name": "Minnesota M06-HF hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 445,
+    "label": "XC_HYB_MGGA_XC_MPW1B95",
+    "name": "Mixture of mPW91 with BC95 from Zhao and Truhlar",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 446,
+    "label": "XC_HYB_MGGA_XC_MPWB1K",
+    "name": "Mixture of mPW91 with BC95 for kinetics",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 447,
+    "label": "XC_HYB_MGGA_XC_X1B95",
+    "name": "Mixture of X with BC95",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 448,
+    "label": "XC_HYB_MGGA_XC_XB1K",
+    "name": "Mixture of X with BC95 for kinetics",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 449,
+    "label": "XC_HYB_MGGA_X_M06",
+    "name": "Minnesota M06 hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 450,
+    "label": "XC_HYB_MGGA_X_M06_2X",
+    "name": "Minnesota M06-2X hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 451,
+    "label": "XC_HYB_MGGA_XC_PW6B95",
+    "name": "Mixture of PW91 with BC95 from Zhao and Truhlar",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 452,
+    "label": "XC_HYB_MGGA_XC_PWB6K",
+    "name": "Mixture of PW91 with BC95 from Zhao and Truhlar for kinetics",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 453,
+    "label": "XC_HYB_GGA_XC_MPWLYP1M",
+    "name": "MPW with 1 par. for metals/LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 454,
+    "label": "XC_HYB_GGA_XC_REVB3LYP",
+    "name": "Revised B3LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 455,
+    "label": "XC_HYB_GGA_XC_CAMY_BLYP",
+    "name": "CAMY version of BLYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 456,
+    "label": "XC_HYB_GGA_XC_PBE0_13",
+    "name": "PBE0-1/3",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 457,
+    "label": "XC_HYB_MGGA_XC_TPSSH",
+    "name": "TPSSh",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 458,
+    "label": "XC_HYB_MGGA_XC_REVTPSSH",
+    "name": "revTPSSh",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 459,
+    "label": "XC_HYB_GGA_XC_B3LYPS",
+    "name": "B3LYP*",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 460,
+    "label": "XC_HYB_GGA_XC_QTP17",
+    "name": "Global hybrid for vertical ionization potentials",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 461,
+    "label": "XC_HYB_GGA_XC_B3LYP_MCM1",
+    "name": "B3LYP-MCM1",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 462,
+    "label": "XC_HYB_GGA_XC_B3LYP_MCM2",
+    "name": "B3LYP-MCM2",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 463,
+    "label": "XC_HYB_GGA_XC_WB97",
+    "name": "wB97 range-separated functional",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 464,
+    "label": "XC_HYB_GGA_XC_WB97X",
+    "name": "wB97X range-separated functional",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 465,
+    "label": "XC_HYB_GGA_XC_LRC_WPBEH",
+    "name": "Long-range corrected short-range hybrid PBE (LRC-wPBEh) by Rohrdanz, Martins and Herbert",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 466,
+    "label": "XC_HYB_GGA_XC_WB97X_V",
+    "name": "wB97X-V range-separated functional",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 467,
+    "label": "XC_HYB_GGA_XC_LCY_PBE",
+    "name": "LCY version of PBE",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 468,
+    "label": "XC_HYB_GGA_XC_LCY_BLYP",
+    "name": "LCY version of BLYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 469,
+    "label": "XC_HYB_GGA_XC_LC_VV10",
+    "name": "Vydrov and Van Voorhis",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 470,
+    "label": "XC_HYB_GGA_XC_CAMY_B3LYP",
+    "name": "CAMY version of B3LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 471,
+    "label": "XC_HYB_GGA_XC_WB97X_D",
+    "name": "wB97X-D range-separated functional",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 472,
+    "label": "XC_HYB_GGA_XC_HPBEINT",
+    "name": "hPBEint",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 473,
+    "label": "XC_HYB_GGA_XC_LRC_WPBE",
+    "name": "Long-range corrected PBE (LRC-wPBE) by Rohrdanz, Martins and Herbert",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 474,
+    "label": "XC_HYB_MGGA_X_MVSH",
+    "name": "MVSh hybrid exchange functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 475,
+    "label": "XC_HYB_GGA_XC_B3LYP5",
+    "name": "B3LYP with VWN functional 5 instead of RPA",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 476,
+    "label": "XC_HYB_GGA_XC_EDF2",
+    "name": "EDF2",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 477,
+    "label": "XC_HYB_GGA_XC_CAP0",
+    "name": "Correct Asymptotic Potential hybrid",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 478,
+    "label": "XC_HYB_GGA_XC_LC_WPBE",
+    "name": "Long-range corrected PBE (LC-wPBE) by Vydrov and Scuseria",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 479,
+    "label": "XC_HYB_GGA_XC_HSE12",
+    "name": "HSE12",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 480,
+    "label": "XC_HYB_GGA_XC_HSE12S",
+    "name": "HSE12 (short-range version)",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 481,
+    "label": "XC_HYB_GGA_XC_HSE_SOL",
+    "name": "HSEsol",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 482,
+    "label": "XC_HYB_GGA_XC_CAM_QTP_01",
+    "name": "CAM-B3LYP retuned using ionization potentials of water",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 483,
+    "label": "XC_HYB_GGA_XC_MPW1LYP",
+    "name": "mPW1LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 484,
+    "label": "XC_HYB_GGA_XC_MPW1PBE",
+    "name": "mPW1PBE",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 485,
+    "label": "XC_HYB_GGA_XC_KMLYP",
+    "name": "Kang-Musgrave hybrid",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 486,
+    "label": "XC_HYB_GGA_XC_LC_WPBE_WHS",
+    "name": "Long-range corrected PBE (LC-wPBE) by Weintraub, Henderson and Scuseria",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 487,
+    "label": "XC_HYB_GGA_XC_LC_WPBEH_WHS",
+    "name": "Long-range corrected short-range hybrid PBE (LC-wPBE) by Weintraub, Henderson and Scuseria",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 488,
+    "label": "XC_HYB_GGA_XC_LC_WPBE08_WHS",
+    "name": "Long-range corrected PBE (LC-wPBE) by Weintraub, Henderson and Scuseria",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 489,
+    "label": "XC_HYB_GGA_XC_LC_WPBESOL_WHS",
+    "name": "Long-range corrected PBE (LC-wPBE) by Weintraub, Henderson and Scuseria",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 490,
+    "label": "XC_HYB_GGA_XC_CAM_QTP_00",
+    "name": "CAM-B3LYP retuned using ionization potentials of water",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 491,
+    "label": "XC_HYB_GGA_XC_CAM_QTP_02",
+    "name": "CAM-B3LYP retuned using ionization potentials of water",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 492,
+    "label": "XC_HYB_GGA_XC_LC_QTP",
+    "name": "CAM-B3LYP retuned using ionization potentials of water",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 493,
+    "label": "XC_MGGA_X_RSCAN",
+    "name": "Regularized SCAN exchange by Bartok and Yates",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 494,
+    "label": "XC_MGGA_C_RSCAN",
+    "name": "Regularized SCAN correlation by Bartok and Yates",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 495,
+    "label": "XC_GGA_X_S12G",
+    "name": "Swart 2012 GGA exchange",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 496,
+    "label": "XC_HYB_GGA_X_S12H",
+    "name": "Swart 2012 hybrid GGA exchange",
+    "family": "hybrid-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 497,
+    "label": "XC_MGGA_X_R2SCAN",
+    "name": "Re-regularized SCAN exchange by Furness et al",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 498,
+    "label": "XC_MGGA_C_R2SCAN",
+    "name": "Re-regularized SCAN correlation by Furness et al",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 499,
+    "label": "XC_HYB_GGA_XC_BLYP35",
+    "name": "BLYP35",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 500,
+    "label": "XC_GGA_K_VW",
+    "name": "von Weiszaecker correction to Thomas-Fermi",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 501,
+    "label": "XC_GGA_K_GE2",
+    "name": "Second-order gradient expansion of the kinetic energy density",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 502,
+    "label": "XC_GGA_K_GOLDEN",
+    "name": "TF-lambda-vW form by Golden (l = 13/45)",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 503,
+    "label": "XC_GGA_K_YT65",
+    "name": "TF-lambda-vW form by Yonei and Tomishima (l = 1/5)",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 504,
+    "label": "XC_GGA_K_BALTIN",
+    "name": "TF-lambda-vW form by Baltin (l = 5/9)",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 505,
+    "label": "XC_GGA_K_LIEB",
+    "name": "TF-lambda-vW form by Lieb (l = 0.185909191)",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 506,
+    "label": "XC_GGA_K_ABSP1",
+    "name": "gamma-TFvW form by Acharya et al [$g = 1 - 1.412/N^{1/3}$]",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 507,
+    "label": "XC_GGA_K_ABSP2",
+    "name": "gamma-TFvW form by Acharya et al [$g = 1 - 1.332/N^{1/3}$]",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 508,
+    "label": "XC_GGA_K_GR",
+    "name": "gamma-TFvW form by Gazquez and Robles",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 509,
+    "label": "XC_GGA_K_LUDENA",
+    "name": "gamma-TFvW form by Ludena",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 510,
+    "label": "XC_GGA_K_GP85",
+    "name": "gamma-TFvW form by Ghosh and Parr",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 511,
+    "label": "XC_GGA_K_PEARSON",
+    "name": "Pearson 1992",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 512,
+    "label": "XC_GGA_K_OL1",
+    "name": "Ou-Yang and Levy v.1",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 513,
+    "label": "XC_GGA_K_OL2",
+    "name": "Ou-Yang and Levy v.2",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 514,
+    "label": "XC_GGA_K_FR_B88",
+    "name": "Fuentealba & Reyes (B88 version)",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 515,
+    "label": "XC_GGA_K_FR_PW86",
+    "name": "Fuentealba & Reyes (PW86 version)",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 516,
+    "label": "XC_GGA_K_DK",
+    "name": "DePristo and Kress",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 517,
+    "label": "XC_GGA_K_PERDEW",
+    "name": "Perdew",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 518,
+    "label": "XC_GGA_K_VSK",
+    "name": "Vitos, Skriver, and Kollar",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 519,
+    "label": "XC_GGA_K_VJKS",
+    "name": "Vitos, Johansson, Kollar, and Skriver",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 520,
+    "label": "XC_GGA_K_ERNZERHOF",
+    "name": "Ernzerhof",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 521,
+    "label": "XC_GGA_K_LC94",
+    "name": "Lembarki & Chermette",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 522,
+    "label": "XC_GGA_K_LLP",
+    "name": "Lee, Lee & Parr",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 523,
+    "label": "XC_GGA_K_THAKKAR",
+    "name": "Thakkar 1992",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 524,
+    "label": "XC_GGA_X_WPBEH",
+    "name": "short-range part of the PBE (default w=0 gives PBEh)",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 525,
+    "label": "XC_GGA_X_HJS_PBE",
+    "name": "HJS screened exchange PBE version",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 526,
+    "label": "XC_GGA_X_HJS_PBE_SOL",
+    "name": "HJS screened exchange PBE_SOL version",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 527,
+    "label": "XC_GGA_X_HJS_B88",
+    "name": "HJS screened exchange B88 version",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 528,
+    "label": "XC_GGA_X_HJS_B97X",
+    "name": "HJS screened exchange B97x version",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 529,
+    "label": "XC_GGA_X_ITYH",
+    "name": "Short-range recipe for B88 functional - erf",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 530,
+    "label": "XC_GGA_X_SFAT",
+    "name": "Short-range recipe for B88 functional - Yukawa",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 531,
+    "label": "XC_HYB_MGGA_XC_WB97M_V",
+    "name": "wB97M-V exchange-correlation functional",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 532,
+    "label": "XC_LDA_X_REL",
+    "name": "Slater exchange with relativistic corrections",
+    "family": "LDA",
+    "kind": "exchange"
+  },
+  {
+    "id": 533,
+    "label": "XC_GGA_X_SG4",
+    "name": "Semiclassical GGA at fourth order",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 534,
+    "label": "XC_GGA_C_SG4",
+    "name": "Semiclassical GGA at fourth order",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 535,
+    "label": "XC_GGA_X_GG99",
+    "name": "Gilbert and Gill 1999",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 536,
+    "label": "XC_LDA_XC_1D_EHWLRG_1",
+    "name": "LDA constructed from slab-like systems of 1 electron",
+    "family": "LDA",
+    "kind": "xc"
+  },
+  {
+    "id": 537,
+    "label": "XC_LDA_XC_1D_EHWLRG_2",
+    "name": "LDA constructed from slab-like systems of 2 electrons",
+    "family": "LDA",
+    "kind": "xc"
+  },
+  {
+    "id": 538,
+    "label": "XC_LDA_XC_1D_EHWLRG_3",
+    "name": "LDA constructed from slab-like systems of 3 electrons",
+    "family": "LDA",
+    "kind": "xc"
+  },
+  {
+    "id": 539,
+    "label": "XC_GGA_X_PBEPOW",
+    "name": "PBE power",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 540,
+    "label": "XC_MGGA_X_TM",
+    "name": "Tao and Mo 2016 exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 541,
+    "label": "XC_MGGA_X_VT84",
+    "name": "meta-GGA version of VT{8,4} GGA",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 542,
+    "label": "XC_MGGA_X_SA_TPSS",
+    "name": "TPSS with correct surface asymptotics",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 543,
+    "label": "XC_MGGA_K_PC07",
+    "name": "Perdew and Constantin 2007",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 544,
+    "label": "XC_GGA_X_KGG99",
+    "name": "Gilbert and Gill 1999 (mixed)",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 545,
+    "label": "XC_GGA_XC_HLE16",
+    "name": "high local exchange 2016",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 546,
+    "label": "XC_LDA_X_ERF",
+    "name": "Short-range LDA exchange with error function kernel (erfc)",
+    "family": "LDA",
+    "kind": "exchange"
+  },
+  {
+    "id": 547,
+    "label": "XC_LDA_XC_LP_A",
+    "name": "Lee-Parr reparametrization A",
+    "family": "LDA",
+    "kind": "xc"
+  },
+  {
+    "id": 548,
+    "label": "XC_LDA_XC_LP_B",
+    "name": "Lee-Parr reparametrization B",
+    "family": "LDA",
+    "kind": "xc"
+  },
+  {
+    "id": 549,
+    "label": "XC_LDA_X_RAE",
+    "name": "Rae self-energy corrected exchange",
+    "family": "LDA",
+    "kind": "exchange"
+  },
+  {
+    "id": 550,
+    "label": "XC_LDA_K_ZLP",
+    "name": "Wigner including kinetic energy contribution",
+    "family": "LDA",
+    "kind": "k"
+  },
+  {
+    "id": 551,
+    "label": "XC_LDA_C_MCWEENY",
+    "name": "McWeeny 76",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 552,
+    "label": "XC_LDA_C_BR78",
+    "name": "Brual & Rothstein 78",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 553,
+    "label": "XC_GGA_C_SCAN_E0",
+    "name": "GGA component of SCAN",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 554,
+    "label": "XC_LDA_C_PK09",
+    "name": "Proynov and Kong 2009",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 555,
+    "label": "XC_GGA_C_GAPC",
+    "name": "GapC",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 556,
+    "label": "XC_GGA_C_GAPLOC",
+    "name": "Gaploc",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 557,
+    "label": "XC_GGA_C_ZVPBEINT",
+    "name": "another spin-dependent correction to PBEint",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 558,
+    "label": "XC_GGA_C_ZVPBESOL",
+    "name": "another spin-dependent correction to PBEsol",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 559,
+    "label": "XC_GGA_C_TM_LYP",
+    "name": "Takkar and McCarthy reparametrization, also known as reLYP",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 560,
+    "label": "XC_GGA_C_TM_PBE",
+    "name": "Thakkar and McCarthy reparametrization",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 561,
+    "label": "XC_GGA_C_W94",
+    "name": "Wilson 94 (Eq. 25)",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 562,
+    "label": "XC_MGGA_C_KCIS",
+    "name": "Krieger, Chen, Iafrate, and Savin",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 563,
+    "label": "XC_HYB_MGGA_XC_B0KCIS",
+    "name": "Hybrid based on KCIS",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 564,
+    "label": "XC_MGGA_XC_LP90",
+    "name": "Lee & Parr, Eq. (56)",
+    "family": "meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 565,
+    "label": "XC_GGA_C_CS1",
+    "name": "A dynamical correlation functional",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 566,
+    "label": "XC_HYB_MGGA_XC_MPW1KCIS",
+    "name": "MPW1KCIS for barrier heights",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 567,
+    "label": "XC_HYB_MGGA_XC_MPWKCIS1K",
+    "name": "MPWKCIS1K for barrier heights",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 568,
+    "label": "XC_HYB_MGGA_XC_PBE1KCIS",
+    "name": "PBE1KCIS for binding energies",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 569,
+    "label": "XC_HYB_MGGA_XC_TPSS1KCIS",
+    "name": "TPSS1KCIS for thermochemistry and kinetics",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 570,
+    "label": "XC_GGA_X_B88M",
+    "name": "Becke 88 reoptimized to be used with tau1",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 571,
+    "label": "XC_MGGA_C_B88",
+    "name": "Meta-GGA correlation by Becke",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 572,
+    "label": "XC_HYB_GGA_XC_B5050LYP",
+    "name": "B5050LYP",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 573,
+    "label": "XC_LDA_C_OW_LYP",
+    "name": "Wigner with corresponding LYP parameters",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 574,
+    "label": "XC_LDA_C_OW",
+    "name": "Optimized Wigner",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 575,
+    "label": "XC_MGGA_X_GX",
+    "name": "GX functional of Loos",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 576,
+    "label": "XC_MGGA_X_PBE_GX",
+    "name": "PBE-GX functional of Loos",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 577,
+    "label": "XC_LDA_XC_GDSMFB",
+    "name": "Groth, Dornheim, Sjostrom, Malone, Foulkes, Bonitz",
+    "family": "LDA",
+    "kind": "xc"
+  },
+  {
+    "id": 578,
+    "label": "XC_LDA_C_GK72",
+    "name": "Gordon and Kim 1972",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 579,
+    "label": "XC_LDA_C_KARASIEV",
+    "name": "Karasiev reparameterization of Chachiyo",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 580,
+    "label": "XC_LDA_K_LP96",
+    "name": "Liu-Parr kinetic",
+    "family": "LDA",
+    "kind": "k"
+  },
+  {
+    "id": 581,
+    "label": "XC_MGGA_X_REVSCAN",
+    "name": "revised SCAN",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 582,
+    "label": "XC_MGGA_C_REVSCAN",
+    "name": "revised SCAN",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 583,
+    "label": "XC_HYB_MGGA_X_REVSCAN0",
+    "name": "revised SCAN hybrid exchange (SCAN0)",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 584,
+    "label": "XC_MGGA_C_SCAN_VV10",
+    "name": "SCAN + VV10 correlation",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 585,
+    "label": "XC_MGGA_C_REVSCAN_VV10",
+    "name": "REVSCAN + VV10 correlation",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 586,
+    "label": "XC_MGGA_X_BR89_EXPLICIT",
+    "name": "Becke-Roussel 89 with an explicit inversion of x(y), gamma = 0.8",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 587,
+    "label": "XC_GGA_XC_KT3",
+    "name": "Keal and Tozer, version 3",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 588,
+    "label": "XC_HYB_LDA_XC_BN05",
+    "name": "Baer and Neuhauser, gamma=1",
+    "family": "GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 589,
+    "label": "XC_HYB_GGA_XC_LB07",
+    "name": "Livshits and Baer, empirical functional also used for IP tuning",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 590,
+    "label": "XC_LDA_C_PMGB06",
+    "name": "Long-range LDA correlation functional",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 591,
+    "label": "XC_GGA_K_GDS08",
+    "name": "Combined analytical theory with Monte Carlo sampling",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 592,
+    "label": "XC_GGA_K_GHDS10",
+    "name": "As GDS08 but for an electron gas with spin",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 593,
+    "label": "XC_GGA_K_GHDS10R",
+    "name": "Reparametrized GHDS10",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 594,
+    "label": "XC_GGA_K_TKVLN",
+    "name": "Trickey, Karasiev, and Vela",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 595,
+    "label": "XC_GGA_K_PBE3",
+    "name": "Three parameter PBE-like expansion",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 596,
+    "label": "XC_GGA_K_PBE4",
+    "name": "Four parameter PBE-like expansion",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 597,
+    "label": "XC_GGA_K_EXP4",
+    "name": "Intermediate form between PBE3 and PBE4",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 598,
+    "label": "XC_HYB_MGGA_XC_B98",
+    "name": "Becke 98",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 599,
+    "label": "XC_LDA_XC_TIH",
+    "name": "Neural network LDA from Tozer et al",
+    "family": "LDA",
+    "kind": "xc"
+  },
+  {
+    "id": 600,
+    "label": "XC_LDA_X_1D_EXPONENTIAL",
+    "name": "Exchange in 1D for an exponentially screened interaction",
+    "family": "LDA",
+    "kind": "exchange"
+  },
+  {
+    "id": 601,
+    "label": "XC_GGA_X_SFAT_PBE",
+    "name": "Short-range recipe for PBE functional - Yukawa",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 602,
+    "label": "XC_MGGA_X_BR89_EXPLICIT_1",
+    "name": "Becke-Roussel 89 with an explicit inversion of x(y), gamma = 1.0",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 603,
+    "label": "XC_MGGA_X_REGTPSS",
+    "name": "Regularized TPSS",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 604,
+    "label": "XC_GGA_X_FD_LB94",
+    "name": "Functional derivative recovered from the stray LB94 potential",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 605,
+    "label": "XC_GGA_X_FD_REVLB94",
+    "name": "Revised FD_LB94",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 606,
+    "label": "XC_GGA_C_ZVPBELOC",
+    "name": "PBEloc variation with enhanced compatibility with exact exchange",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 607,
+    "label": "XC_HYB_GGA_XC_APBE0",
+    "name": "Hybrid based on APBE",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 608,
+    "label": "XC_HYB_GGA_XC_HAPBE",
+    "name": "Hybrid based in APBE and zvPBEloc",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 609,
+    "label": "XC_MGGA_X_2D_JS17",
+    "name": "JS17 meta-GGA for 2D",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 610,
+    "label": "XC_HYB_GGA_XC_RCAM_B3LYP",
+    "name": "Similar to CAM-B3LYP, but trying to reduce the many-electron self-interaction",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 611,
+    "label": "XC_HYB_GGA_XC_WC04",
+    "name": "hybrid fitted to carbon NMR shifts",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 612,
+    "label": "XC_HYB_GGA_XC_WP04",
+    "name": "hybrid fitted to proton NMR shifts",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 613,
+    "label": "XC_GGA_K_LKT",
+    "name": "Luo-Karasiev-Trickey GGA kinetic",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 614,
+    "label": "XC_HYB_GGA_XC_CAMH_B3LYP",
+    "name": "CAM version of B3LYP, tuned for TDDFT",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 615,
+    "label": "XC_HYB_GGA_XC_WHPBE0",
+    "name": "Long-range corrected short-range hybrid PBE (whPBE0) by Shao et al",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 616,
+    "label": "XC_GGA_K_PBE2",
+    "name": "Three parameter PBE-like expansion",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 617,
+    "label": "XC_MGGA_K_L04",
+    "name": "L0.4 by Laricchia et al",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 618,
+    "label": "XC_MGGA_K_L06",
+    "name": "L0.6 by Laricchia et al",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 619,
+    "label": "XC_GGA_K_VT84F",
+    "name": "VT84F by Karasiev et al",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 620,
+    "label": "XC_GGA_K_LGAP",
+    "name": "LGAP by Constantin et al",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 621,
+    "label": "XC_MGGA_K_RDA",
+    "name": "Reduced derivative approximation by Karasiev et al",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 622,
+    "label": "XC_GGA_X_ITYH_OPTX",
+    "name": "Short-range recipe for OPTX functional",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 623,
+    "label": "XC_GGA_X_ITYH_PBE",
+    "name": "Short-range recipe for PBE functional",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 624,
+    "label": "XC_GGA_C_LYPR",
+    "name": "Short-range LYP by Ai, Fang, and Su",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 625,
+    "label": "XC_HYB_GGA_XC_LC_BLYP_EA",
+    "name": "LC version of BLYP for electron affinities",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 626,
+    "label": "XC_MGGA_X_REGTM",
+    "name": "Regularized Tao and Mo exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 627,
+    "label": "XC_MGGA_K_GEA2",
+    "name": "Second-order gradient expansion",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 628,
+    "label": "XC_MGGA_K_GEA4",
+    "name": "Fourth-order gradient expansion",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 629,
+    "label": "XC_MGGA_K_CSK1",
+    "name": "mGGA-rev functional by Cancio, Stewart, and Kuna (a=1)",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 630,
+    "label": "XC_MGGA_K_CSK4",
+    "name": "mGGA-rev functional by Cancio, Stewart, and Kuna (a=4)",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 631,
+    "label": "XC_MGGA_K_CSK_LOC1",
+    "name": "mGGAloc-rev functional by Cancio, Stewart, and Kuna (a=1)",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 632,
+    "label": "XC_MGGA_K_CSK_LOC4",
+    "name": "mGGAloc-rev functional by Cancio, Stewart, and Kuna (a=4)",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 633,
+    "label": "XC_GGA_K_LGAP_GE",
+    "name": "LGAP-GE by Constantin et al",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 634,
+    "label": "XC_MGGA_K_PC07_OPT",
+    "name": "Reoptimized PC07 by Mejia-Rodriguez and Trickey",
+    "family": "meta-GGA",
+    "kind": "k"
+  },
+  {
+    "id": 635,
+    "label": "XC_GGA_K_TFVW_OPT",
+    "name": "empirically optimized gamma-TFvW form",
+    "family": "GGA",
+    "kind": "k"
+  },
+  {
+    "id": 636,
+    "label": "XC_HYB_GGA_XC_LC_BOP",
+    "name": "LC version of B88",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 637,
+    "label": "XC_HYB_GGA_XC_LC_PBEOP",
+    "name": "LC version of PBE",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 638,
+    "label": "XC_MGGA_C_KCISK",
+    "name": "Krieger, Chen, and Kurth",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 639,
+    "label": "XC_HYB_GGA_XC_LC_BLYPR",
+    "name": "LC version of BLYP with correlation only in the short range",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 640,
+    "label": "XC_HYB_GGA_XC_MCAM_B3LYP",
+    "name": "Modified CAM-B3LYP by Day, Nguyen and Pachter",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 641,
+    "label": "XC_LDA_X_YUKAWA",
+    "name": "Short-range LDA exchange with Yukawa attenuation",
+    "family": "LDA",
+    "kind": "exchange"
+  },
+  {
+    "id": 642,
+    "label": "XC_MGGA_C_R2SCAN01",
+    "name": "Re-regularized SCAN correlation with larger value for eta",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 643,
+    "label": "XC_MGGA_C_RMGGAC",
+    "name": "Revised correlation energy for MGGAC exchange functional",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 644,
+    "label": "XC_MGGA_X_MCML",
+    "name": "MCML exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 645,
+    "label": "XC_MGGA_X_R2SCAN01",
+    "name": "Re-regularized SCAN exchange by Furness et al with larger value for eta",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 646,
+    "label": "XC_HYB_GGA_X_CAM_S12G",
+    "name": "Swart 2012 range-separated hybrid GGA exchange",
+    "family": "hybrid-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 647,
+    "label": "XC_HYB_GGA_X_CAM_S12H",
+    "name": "Swart 2012 range-separated hybrid GGA exchange",
+    "family": "hybrid-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 648,
+    "label": "XC_MGGA_X_RPPSCAN",
+    "name": "r++SCAN: rSCAN with uniform density limit and coordinate scaling behavior",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 649,
+    "label": "XC_MGGA_C_RPPSCAN",
+    "name": "r++SCAN: rSCAN with uniform density limit and coordinate scaling behavior",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 650,
+    "label": "XC_MGGA_X_R4SCAN",
+    "name": "r$^{4}$SCAN, a functional that satisfies the same exact constraints that SCAN does",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 651,
+    "label": "XC_MGGA_X_VCML",
+    "name": "Exchange part of VCML-rVV10 by Trepte and Voss",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 652,
+    "label": "XC_MGGA_XC_VCML_RVV10",
+    "name": "VCML-rVV10 by Trepte and Voss",
+    "family": "meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 653,
+    "label": "XC_HYB_LDA_X_ERF",
+    "name": "Long-range corrected functional based on short-range LDA exchange (erfc)",
+    "family": "LDA",
+    "kind": "exchange"
+  },
+  {
+    "id": 654,
+    "label": "XC_LDA_C_PW_ERF",
+    "name": "Short ranged correlation LDA (erfc)",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 655,
+    "label": "XC_GGA_X_PBE_ERF_GWS",
+    "name": "Short ranged PBE exchange (erfc)",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 656,
+    "label": "XC_HYB_GGA_X_PBE_ERF_GWS",
+    "name": "Short-range PBE (GWS) exchange (erfc) + long-range exact exchange",
+    "family": "hybrid-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 657,
+    "label": "XC_GGA_C_PBE_ERF_GWS",
+    "name": "Short ranged PBE correlation (erfc)",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 658,
+    "label": "XC_HYB_MGGA_XC_GAS22",
+    "name": "Google Accelerated Science 22",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 659,
+    "label": "XC_HYB_MGGA_XC_R2SCANH",
+    "name": "r2SCANh: r2SCAN hybrid like TPSSh with 10% exact exchange",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 660,
+    "label": "XC_HYB_MGGA_XC_R2SCAN0",
+    "name": "r2SCAN0: r2SCAN hybrid like PBE0 with 25% exact exchange",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 661,
+    "label": "XC_HYB_MGGA_XC_R2SCAN50",
+    "name": "r2SCAN50: r2SCAN hybrid like PBE50 with 50% exact exchange",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 681,
+    "label": "XC_HYB_GGA_XC_CAM_PBEH",
+    "name": "CAM hybrid screened exchange PBE version",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 682,
+    "label": "XC_HYB_GGA_XC_CAMY_PBEH",
+    "name": "CAMY hybrid screened exchange PBE version",
+    "family": "hybrid-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 683,
+    "label": "XC_LDA_C_UPW92",
+    "name": "Ruggeri, Rios, and Alavi unrestricted fit",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 684,
+    "label": "XC_LDA_C_RPW92",
+    "name": "Ruggeri, Rios, and Alavi restricted fit",
+    "family": "LDA",
+    "kind": "correlation"
+  },
+  {
+    "id": 685,
+    "label": "XC_MGGA_X_TLDA",
+    "name": "LDA-type exchange with tau-dependent potential",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 686,
+    "label": "XC_MGGA_X_EDMGGA",
+    "name": "Tao 2001",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 687,
+    "label": "XC_MGGA_X_GDME_NV",
+    "name": "Generalized density-matrix with a=1/2",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 688,
+    "label": "XC_MGGA_X_RLDA",
+    "name": "Reparametrized local-density approximation",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 689,
+    "label": "XC_MGGA_X_GDME_0",
+    "name": "Generalized density-matrix with a=0",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 690,
+    "label": "XC_MGGA_X_GDME_KOS",
+    "name": "Generalized density-matrix with a=0.00638",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 691,
+    "label": "XC_MGGA_X_GDME_VT",
+    "name": "Varied-terms (VT) mGGA of Koehl, Odom, and Scuseria",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 692,
+    "label": "XC_LDA_X_SLOC",
+    "name": "simple local model for Slater potential",
+    "family": "LDA",
+    "kind": "exchange"
+  },
+  {
+    "id": 693,
+    "label": "XC_MGGA_X_REVTM",
+    "name": "revised Tao and Mo 2016 exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 694,
+    "label": "XC_MGGA_C_REVTM",
+    "name": "revised Tao and Mo 2016 exchange",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 695,
+    "label": "XC_HYB_MGGA_XC_EDMGGAH",
+    "name": "EDMGGA hybrid",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 696,
+    "label": "XC_MGGA_X_MBRXC_BG",
+    "name": "Modified Becke-Roussel for band gaps - cuspless hole",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 697,
+    "label": "XC_MGGA_X_MBRXH_BG",
+    "name": "Modified Becke-Roussel for band gaps - hydrogen hole",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 698,
+    "label": "XC_MGGA_X_HLTA",
+    "name": "Half-and-half meta-LDAized LDA exchange by Lehtola and Marques",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 699,
+    "label": "XC_MGGA_C_HLTAPW",
+    "name": "Half-and-half meta-LDAized PW correlation by Lehtola and Marques",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 700,
+    "label": "XC_MGGA_X_SCANL",
+    "name": "Deorbitalized SCAN (SCAN-L) exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 701,
+    "label": "XC_MGGA_X_REVSCANL",
+    "name": "Deorbitalized revised SCAN (revSCAN-L) exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 702,
+    "label": "XC_MGGA_C_SCANL",
+    "name": "Deorbitalized SCAN (SCAN-L) correlation",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 703,
+    "label": "XC_MGGA_C_SCANL_RVV10",
+    "name": "SCAN-L + rVV10 correlation",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 704,
+    "label": "XC_MGGA_C_SCANL_VV10",
+    "name": "SCAN-L + VV10 correlation",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 705,
+    "label": "XC_HYB_MGGA_X_JS18",
+    "name": "Jana and Samal 2018, screened range-separated TM exchange",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 706,
+    "label": "XC_HYB_MGGA_X_PJS18",
+    "name": "Patra, Jana and Samal 2018, screened range-separated TM exchange",
+    "family": "hybrid-meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 707,
+    "label": "XC_MGGA_X_TASK",
+    "name": "TASK exchange of Aschebrock and Kuemmel",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 711,
+    "label": "XC_MGGA_X_MGGAC",
+    "name": "MGGAC exchange of Patra et al",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 712,
+    "label": "XC_GGA_C_MGGAC",
+    "name": "beta fitted to LC20 to be used with MGGAC",
+    "family": "GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 716,
+    "label": "XC_MGGA_X_MBR",
+    "name": "modified Becke-Roussel by Patra et al",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 718,
+    "label": "XC_MGGA_X_R2SCANL",
+    "name": "Deorbitalized re-regularized SCAN (r2SCAN-L) exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 719,
+    "label": "XC_MGGA_C_R2SCANL",
+    "name": "Deorbitalized re-regularized SCAN (r2SCAN-L) correlation",
+    "family": "meta-GGA",
+    "kind": "correlation"
+  },
+  {
+    "id": 720,
+    "label": "XC_HYB_MGGA_XC_LC_TMLYP",
+    "name": "Long-range corrected TM-LYP by Jana et al",
+    "family": "hybrid-meta-GGA",
+    "kind": "xc"
+  },
+  {
+    "id": 724,
+    "label": "XC_MGGA_X_MTASK",
+    "name": "modified TASK exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 734,
+    "label": "XC_GGA_X_Q1D",
+    "name": "Functional for quasi-1D systems",
+    "family": "GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 735,
+    "label": "XC_MGGA_X_KTBM_0",
+    "name": "KTBM learned exchange - 0",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 736,
+    "label": "XC_MGGA_X_KTBM_1",
+    "name": "KTBM learned exchange - 1",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 737,
+    "label": "XC_MGGA_X_KTBM_2",
+    "name": "KTBM learned exchange - 2",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 738,
+    "label": "XC_MGGA_X_KTBM_3",
+    "name": "KTBM learned exchange - 3",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 739,
+    "label": "XC_MGGA_X_KTBM_4",
+    "name": "KTBM learned exchange - 4",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 740,
+    "label": "XC_MGGA_X_KTBM_5",
+    "name": "KTBM learned exchange - 5",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 741,
+    "label": "XC_MGGA_X_KTBM_6",
+    "name": "KTBM learned exchange - 6",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 742,
+    "label": "XC_MGGA_X_KTBM_7",
+    "name": "KTBM learned exchange - 7",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 743,
+    "label": "XC_MGGA_X_KTBM_8",
+    "name": "KTBM learned exchange - 8",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 744,
+    "label": "XC_MGGA_X_KTBM_9",
+    "name": "KTBM learned exchange - 9",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 745,
+    "label": "XC_MGGA_X_KTBM_10",
+    "name": "KTBM learned exchange - 10",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 746,
+    "label": "XC_MGGA_X_KTBM_11",
+    "name": "KTBM learned exchange - 11",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 747,
+    "label": "XC_MGGA_X_KTBM_12",
+    "name": "KTBM learned exchange - 12",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 748,
+    "label": "XC_MGGA_X_KTBM_13",
+    "name": "KTBM learned exchange - 13",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 749,
+    "label": "XC_MGGA_X_KTBM_14",
+    "name": "KTBM learned exchange - 14",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 750,
+    "label": "XC_MGGA_X_KTBM_15",
+    "name": "KTBM learned exchange - 15",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 751,
+    "label": "XC_MGGA_X_KTBM_16",
+    "name": "KTBM learned exchange - 16",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 752,
+    "label": "XC_MGGA_X_KTBM_17",
+    "name": "KTBM learned exchange - 17",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 753,
+    "label": "XC_MGGA_X_KTBM_18",
+    "name": "KTBM learned exchange - 18",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 754,
+    "label": "XC_MGGA_X_KTBM_19",
+    "name": "KTBM learned exchange - 19",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 755,
+    "label": "XC_MGGA_X_KTBM_20",
+    "name": "KTBM learned exchange - 20",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 756,
+    "label": "XC_MGGA_X_KTBM_21",
+    "name": "KTBM learned exchange - 21",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 757,
+    "label": "XC_MGGA_X_KTBM_22",
+    "name": "KTBM learned exchange - 22",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 758,
+    "label": "XC_MGGA_X_KTBM_23",
+    "name": "KTBM learned exchange - 23",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 759,
+    "label": "XC_MGGA_X_KTBM_24",
+    "name": "KTBM learned exchange - 24",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 760,
+    "label": "XC_MGGA_X_KTBM_GAP",
+    "name": "KTBM learned exchange - GAP",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 761,
+    "label": "XC_MGGA_X_MSPBEL",
+    "name": "MS-PBEl, a PBE-like meta-GGA exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 762,
+    "label": "XC_MGGA_X_RMSPBEL",
+    "name": "regularized MS-PBEl",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 763,
+    "label": "XC_MGGA_X_MSRPBEL",
+    "name": "MS-RPBEl, a RPBE-like meta-GGA exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 764,
+    "label": "XC_MGGA_X_RMSRPBEL",
+    "name": "regularized MS-RPBEl",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 765,
+    "label": "XC_MGGA_X_MSB86BL",
+    "name": "MS-B86bl, a B86b-like meta-GGA exchange",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 766,
+    "label": "XC_MGGA_X_RMSB86BL",
+    "name": "regularized MS-B86bl",
+    "family": "meta-GGA",
+    "kind": "exchange"
+  },
+  {
+    "id": 100001,
+    "label": "XC_LDA_K_GDS08_WORKER",
+    "name": "Combined analytical theory with Monte Carlo sampling",
+    "family": "LDA",
+    "kind": "k"
+  }
+]

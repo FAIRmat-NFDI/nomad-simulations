@@ -46,8 +46,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
+    import pint
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import (
@@ -541,7 +543,7 @@ class Symmetry(ArchiveSection):
 
         # Getting prototype_formula, prototype_aflow_id, and strukturbericht designation from
         # standarized Wyckoff numbers and the space group number
-        if symmetry.get('space_group_number'):
+        if symmetry.get('space_group_number') and conventional_atomic_cell is not None:
             # Retrieve the expanded conventional system (an ASE.Atoms object) from the analyzer.
             conventional_system = symmetry_analyzer.get_conventional_system()
             # Use the conventional system to get the expanded atomic numbers.
@@ -1454,7 +1456,7 @@ class ModelSystem(System, Representation):
         if self._cache.get('bond_list') is not None:
             return self._cache['bond_list']
 
-        bond_list = np.empty((0, 2), dtype=np.int32)
+        bond_list: np.ndarray = np.empty((0, 2), dtype=np.int32)
         # root
         if self.is_root_system():
             bond_list = self.bond_list if self.bond_list is not None else bond_list
@@ -1474,9 +1476,10 @@ class ModelSystem(System, Representation):
         )
 
         mask = np.isin(root.bond_list, idx).all(axis=1)
-        root_bonds = np.asarray(root.bond_list, dtype=np.int32).reshape(-1, 2)
-        bond_list = root_bonds[mask]
-        bond_list = np.unique(bond_list, axis=0)
+        root_bonds_temp = np.asarray(root.bond_list, dtype=np.int32).reshape(-1, 2)
+        root_bonds: np.ndarray = root_bonds_temp.astype(np.int32)
+        filtered_bonds: np.ndarray = root_bonds[mask].astype(np.int32)
+        bond_list = np.unique(filtered_bonds, axis=0).astype(np.int32)
         self._cache['bond_list'] = bond_list
 
         return bond_list

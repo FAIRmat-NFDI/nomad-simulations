@@ -19,7 +19,7 @@ from nomad_simulations.schema_packages.utils import log
 
 from .general import (
     ParallelWorkflow,
-    SimulationWorkflowModel,
+    SimulationWorkflowMethod,
     SimulationWorkflowResults,
 )
 
@@ -35,7 +35,7 @@ FUNCTION_NAMES = {
 }
 
 
-class EquationOfStateModel(SimulationWorkflowModel):
+class EquationOfStateMethod(SimulationWorkflowMethod):
     _label = 'EquationOfState workflow parameters'
 
     program = Quantity(
@@ -227,8 +227,8 @@ class EquationOfState(ParallelWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = EquationOfStateModel()
+        if not self.method:
+            self.method = EquationOfStateMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 

@@ -4,12 +4,12 @@ from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
 
-from .beyond_dft import BeyondDFTModel, BeyondDFTResults, BeyondDFTWorkflow
+from .beyond_dft import BeyondDFTMethod, BeyondDFTResults, BeyondDFTWorkflow
 
 m_package = SchemaPackage()
 
 
-class DFTTBDDMFTModel(BeyondDFTModel):
+class DFTTBDMFTMethod(BeyondDFTMethod):
     _label = 'DFT+TB+DMFT workflow parameters'
 
 
@@ -24,8 +24,8 @@ class DFTTBDMFTWorkflow(BeyondDFTWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = DFTTBDDMFTModel()
+        if not self.method:
+            self.method = DFTTBDMFTMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 

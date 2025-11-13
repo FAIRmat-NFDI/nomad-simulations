@@ -5,7 +5,7 @@ from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.workflow.single_point import (
     SinglePoint,
-    SinglePointModel,
+    SinglePointMethod,
     SinglePointResults,
 )
 
@@ -17,7 +17,7 @@ class TestSinglePoint:
         archive.data.model_system = [ModelSystem()]
         workflow = SinglePoint()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, SinglePointModel)
+        assert isinstance(workflow.method, SinglePointMethod)
         assert isinstance(workflow.results, SinglePointResults)
         assert len(workflow.inputs) == 1
         assert workflow.inputs[0].name == 'Single point model'
@@ -38,7 +38,7 @@ class TestSinglePoint:
         else:
             assert len(workflow.tasks) == 1
             assert workflow.tasks[0].name == 'Calculation'
-            assert workflow.model in [inp.section for inp in workflow.tasks[0].inputs]
+            assert workflow.method in [inp.section for inp in workflow.tasks[0].inputs]
             assert archive.data.outputs[0] in [
                 out.section for out in workflow.tasks[0].outputs
             ]

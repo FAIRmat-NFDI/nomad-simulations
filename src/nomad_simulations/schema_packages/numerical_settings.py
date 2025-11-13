@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from itertools import accumulate, chain, tee
 from typing import TYPE_CHECKING, Union
 
@@ -9,8 +10,9 @@ from nomad.metainfo import JSON, MEnum, Quantity, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.model_system import ModelSystem
@@ -365,7 +367,7 @@ class KMesh(Mesh):
 
     def resolve_points_and_offset(
         self, logger: 'BoundLogger'
-    ) -> tuple[list[np.ndarray] | None, np.ndarray | None]:
+    ) -> tuple[np.ndarray | None, np.ndarray | None]:
         """
         Resolves the `points` and `offset` of the `KMesh` from the `grid` and the `center`.
 
@@ -373,7 +375,7 @@ class KMesh(Mesh):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (tuple[list[np.ndarray] | None, np.ndarray | None]): The resolved `points` and `offset` of the `KMesh`.
+            (tuple[np.ndarray | None, np.ndarray | None]): The resolved `points` and `offset` of the `KMesh`.
         """
         if self.grid is None:
             logger.warning('Could not find `KMesh.grid`.')
@@ -383,12 +385,14 @@ class KMesh(Mesh):
         offset = None
         if self.center == 'Gamma-centered':  # ! fix this (@ndaelman-hu)
             grid_space = [np.linspace(0, 1, n) for n in self.grid]
-            points = np.meshgrid(grid_space)
+            points_meshgrid = np.meshgrid(*grid_space, indexing='ij')
+            points = np.column_stack([grid.ravel() for grid in points_meshgrid])
             offset = np.array([0, 0, 0])
         elif self.center == 'Monkhorst-Pack':
             try:
-                points = monkhorst_pack(size=self.grid)
-                offset = get_monkhorst_pack_size_and_offset(kpts=points)[-1]
+                points_array = monkhorst_pack(size=self.grid)
+                points = points_array
+                offset = get_monkhorst_pack_size_and_offset(kpts=points_array)[-1]
             except ValueError:
                 logger.warning(
                     'Could not resolve `KMesh.points` and `KMesh.offset` from `KMesh.grid`. ASE `monkhorst_pack` failed.'
@@ -984,3 +988,116 @@ class ForceCalculations(NumericalSettings):
 
     def normalize(self, archive, logger) -> None:
         super().normalize(archive, logger)
+
+
+class FrozenCore(NumericalSettings):
+    """
+    Section defining the frozen-core approximation settings for molecular electronic-structure methods.
+
+    In the frozen-core approximation, selected inner-shell (core) orbitals are excluded from
+    the orbital optimization or post-SCF correlation treatment, retaining them at their
+    reference-determinant (e.g., Hartree-Fock or Kohn-Sham) values. This significantly
+    reduces the number of 'valence' orbitals, lowering computational cost.
+
+    The frozen-core scheme can be specified either by enumerating the exact orbitals to
+    freeze or by using simple threshold rules based on quantum numbers or atomic numbers.
+
+    """
+
+    ####  MolecularOrbitalsState has not been implemented yet.
+    # core_orbitals_ref = Quantity(
+    #     type=MolecularOrbitalsState,
+    #     shape=['n_frozen_core_orbitals'],
+    #     description="""
+    #     References to the atomic OrbitalsState sections to keep frozen.
+    #     """,
+    # )
+
+    per_atom_n_threshold = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        For each atom (in input order), maximum principal quantum number *n*
+        that will be **frozen**.  -1 means “no freezing for that atom”.
+        """,
+    )
+
+    per_atom_z_threshold = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Alternative per-atom rule: freeze all core shells with atomic number Z ≤ value.
+        Entries of 0 disable the rule for that atom.
+        """,
+    )
+
+
+class IntegralDecomposition(ArchiveSection):
+    """
+    A general class for integral decomposition techniques that approximate
+    Coulomb and/or exchange integrals to reduce computational cost in quantum
+    chemistry.
+
+    Captures common families such as RIJ, RIJK, RIJCOSX, SENEX, and Cholesky
+    Decomposition (CD / CD_F12). The `approximated_term` encodes which part of
+    the electronic structure workload is approximated. This class self-normalizes
+    legacy/narrow settings to lossless semantics:
+      • RIJ        → J only                      → 'coulomb'
+      • RIJK       → J and K together            → 'jk'
+      • RIJCOSX    → J (RI) + K (COSX)           → 'jk'
+      • CD         → ERI-tensor level            → 'two_electron'
+      • CD_F12     → explicit-correlation terms  → 'explicit_correlation'
+
+    Typical references:
+      - F. Weigend, M. Häser, The RI-MP2 method: Algorithmic
+        implementation of efficient, approximate MP2 theories,
+        Theor. Chem. Acc. 97, 331-340 (1997).
+      - S. Hättig, F. Weigend, J. Chem. Phys. 113, 5154 (2000). (RI-J)
+      - Neese et al., “Chain-of-spheres algorithms for HF exchange,”
+        Chem. Phys. 356 (2008), 98-109.
+    """
+
+    approximation_type = Quantity(
+        type=MEnum('RIJ', 'RIJK', 'RIJCOSX', 'SENEX', 'CD', 'CD_F12'),
+        description="""
+        RIJ     : also known as RIJONX, where only Coulomb integrals are approximated.
+        RIJK    : both Coulomb and exchange integrals.
+        RIJCOSX : RIJ for Coulomb and COSX for HF exchange.
+        SENEX   : Similar to COSX, relevant for Turbomole.
+        CD      : Cholesky decomposition of the two-electron integral tensor
+        CD_F12  : Cholesky decomposition specialized for F12/explicit-correlation integrals
+        """,
+    )
+
+    approximated_term = Quantity(
+        type=MEnum(
+            'coulomb',  # J only
+            'exchange',  # K only
+            'jk',  # J and K together (e.g., RIJK/RIJCOSX)
+            'two_electron',  # ERI-level (e.g., plain CD)
+            'mp2',
+            'cc',
+            'explicit_correlation',
+        ),
+        description="""
+        The targeted term(s) being approximated. If not provided, it will be
+        inferred from `approximation_type`. For backward compatibility, narrow
+        values are safely widened (e.g., RIJK + 'exchange' → 'jk').
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        _TERM_BY_TYPE = {
+            'RIJ': 'coulomb',
+            'RIJK': 'jk',
+            'RIJCOSX': 'jk',
+            'CD': 'two_electron',
+            'CD_F12': 'explicit_correlation',
+        }
+
+        if self.approximated_term is None:
+            inferred = _TERM_BY_TYPE.get(self.approximation_type)
+            if inferred is not None:
+                self.approximated_term = inferred

@@ -33,9 +33,9 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Start containers
-      run: |
-        docker compose up -d --quiet-pull
+    # - name: Start containers
+    #   run: |
+    #     docker compose up -d --quiet-pull
     - name: Set up Python ${{matrix.python_version}}
       uses: actions/setup-python@v5
       with:

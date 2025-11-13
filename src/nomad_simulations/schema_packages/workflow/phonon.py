@@ -7,13 +7,15 @@ from nomad_simulations.schema_packages.utils import log
 
 from .general import (
     INCORRECT_N_TASKS,
+    ParallelWorkflow,
+    SerialWorkflow,
     SimulationWorkflow,
-    SimulationWorkflowModel,
+    SimulationWorkflowMethod,
     SimulationWorkflowResults,
 )
 
 
-class PhononModel(SimulationWorkflowModel):
+class PhononMethod(SimulationWorkflowMethod):
     _label = 'Phonon calculation parameters'
 
     force_calculator = Quantity(
@@ -147,8 +149,8 @@ class Phonon(SimulationWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = PhononModel()
+        if not self.method:
+            self.method = PhononMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 

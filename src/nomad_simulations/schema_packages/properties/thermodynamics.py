@@ -4,8 +4,9 @@ import numpy as np
 from nomad.metainfo import Quantity
 
 if TYPE_CHECKING:
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
@@ -170,7 +171,7 @@ class ChemicalPotential(BaseEnergy):
     type = Quantity(
         type=str,
         description="""
-        Type of chemical potential calculation. Examples: 'electronic', 'atomic', 
+        Type of chemical potential calculation. Examples: 'electronic', 'atomic',
         'ionic', 'molecular'. Helps identify what kind of particles this applies to.
         """,
     )
