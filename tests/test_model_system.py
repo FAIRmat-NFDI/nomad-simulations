@@ -348,13 +348,14 @@ class TestModelSystem:
         Test the full normalization sequence for ModelSystem:
           - If representative, run type/dimensionality, symmetry, chemical formula, etc.
         """
-        # Build a minimal model system with top-level positions and an AtomicCell
+        # Build a minimal model system with top-level positions and a Representation
         sys = generate_model_system(
+            is_representative=True,
             positions=[[0, 0, 0], [0.5, 0, 0.5], [1, 1, 1]],
             lattice_vectors=[[3, 0, 0], [0, 3, 0], [0, 0, 3]],
-            periodic_boundary_conditions=[True, True, True],
+            pbc=[True, True, True],
             chemical_symbols=['H', 'H', 'O'],
-            atomic_numbers=[1, 1, 8],
+            orbitals_symbols=[['s'], ['s'], ['s']],
         )
         sym = Symmetry()
         sys.symmetry.append(sym)

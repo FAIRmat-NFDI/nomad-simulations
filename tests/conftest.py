@@ -56,7 +56,6 @@ def generate_simulation(
 
 
 def generate_model_system(
-    type: str | None = None,
     system_type: str | None = None,
     positions: list[list[float]] | None = None,
     lattice_vectors: list[list[float]] | None = None,
@@ -64,6 +63,7 @@ def generate_model_system(
     orbitals_symbols: list[list[str]] | None = None,
     is_representative: bool | None = None,
     pbc: list[bool] | None = None,
+    representation_name: str | None = None,
 ) -> ModelSystem | None:
     """
     Generate a `ModelSystem` section with the given parameters.
@@ -98,6 +98,8 @@ def generate_model_system(
         )
     if pbc is not None and all(isinstance(x, bool) for x in pbc):
         representation_kwargs['periodic_boundary_conditions'] = pbc
+    if representation_name is not None:
+        representation_kwargs['name'] = representation_name
 
     # Only append representation if we have at least one parameter
     if representation_kwargs:
@@ -174,7 +176,7 @@ def generate_simulation_electronic_dos(
     """
     # Create the `Simulation` section to make refs work
     model_system = generate_model_system(
-        type='original',
+        representation_name='original',
         system_type='bulk',
         positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
         lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
@@ -254,7 +256,7 @@ def generate_k_space_simulation(
     grid=[6, 6, 6],
 ) -> Simulation:
     model_system = generate_model_system(
-        type='primitive',
+        representation_name='primitive',
         system_type=system_type,
         is_representative=is_representative,
         positions=positions,
@@ -339,7 +341,7 @@ def generate_electronic_eigenvalues(
     _ = generate_simulation(
         model_system=[
             generate_model_system(
-                type='original',
+                representation_name='original',
                 system_type='bulk',
                 positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
                 lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
@@ -369,7 +371,7 @@ def generate_electronic_eigenvalues(
 @pytest.fixture(scope='session')
 def model_system() -> ModelSystem:
     return generate_model_system(
-        type='original',
+        representation_name='original',
         system_type='bulk',
         positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
         lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
