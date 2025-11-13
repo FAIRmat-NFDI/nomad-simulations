@@ -615,7 +615,7 @@ def test_additional_basis_functions_assigned_to_subset_of_atoms() -> None:
         data=Simulation(
             model_system=[
                 ModelSystem(
-                    cell=[AtomicCell()],
+                    representations=[Representation()],
                     particle_states=[
                         AtomsState(chemical_symbol='O'),  # idx 0
                         AtomsState(chemical_symbol='H'),  # idx 1
@@ -716,7 +716,7 @@ def test_mixed_orbital_aux_ecp() -> None:
         data=Simulation(
             model_system=[
                 ModelSystem(
-                    cell=[AtomicCell()],
+                    representations=[Representation()],
                     particle_states=[
                         AtomsState(
                             chemical_symbol='H'

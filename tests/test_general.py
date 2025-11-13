@@ -291,7 +291,7 @@ class TestSimulation:
         Root with no subsystems/particle_indices derives composition from its own symbols.
         """
         root = ModelSystem(is_representative=True)
-        root.cell.append(Representation())  # minimal cell so normalize doesn't bail
+        root.representations.append(Representation())  # minimal representation so normalize doesn't bail
         for sym in ['H', 'H', 'O']:
             root.particle_states.append(AtomsState(chemical_symbol=sym))
 
@@ -306,7 +306,7 @@ class TestSimulation:
         Pre-set custom composition on root is not overwritten during normalize.
         """
         root = ModelSystem(is_representative=True, composition_formula='Custom(1)')
-        root.cell.append(Representation())
+        root.representations.append(Representation())
         for sym in ['H', 'H', 'O']:
             root.particle_states.append(AtomsState(chemical_symbol=sym))
 

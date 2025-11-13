@@ -684,10 +684,6 @@ setattr(
     ),
 )
 
-# Backward compatibility aliases for parser packages that still reference old classes
-AtomicCell = Representation
-Cell = Representation
-
 
 class ModelSystem(System, Representation):
     """
@@ -948,9 +944,6 @@ class ModelSystem(System, Representation):
     )
 
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
-
-    # Backward compatibility: add cell as a subsection that references Representation
-    cell = SubSection(sub_section=Representation.m_def, repeats=True)
 
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
         super().__init__(m_def, m_context, **kwargs)
@@ -1663,14 +1656,3 @@ class ModelSystem(System, Representation):
                 logger.debug(f'Could not map velocities: {e}')
 
         return model_system
-
-
-# Add backward compatibility property for representations -> cell using lambdas
-setattr(
-    ModelSystem,
-    'cell',
-    property(
-        lambda self: self.representations,
-        lambda self, value: setattr(self, 'representations', value),
-    ),
-)
