@@ -543,7 +543,7 @@ class Symmetry(ArchiveSection):
 
         # Getting prototype_formula, prototype_aflow_id, and strukturbericht designation from
         # standarized Wyckoff numbers and the space group number
-        if symmetry.get('space_group_number') and conventional_atomic_cell is not None:
+        if symmetry.get('space_group_number') and conventional_cell is not None:
             # Retrieve the expanded conventional system (an ASE.Atoms object) from the analyzer.
             conventional_system = symmetry_analyzer.get_conventional_system()
             # Use the conventional system to get the expanded atomic numbers.
