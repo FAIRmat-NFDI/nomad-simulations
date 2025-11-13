@@ -260,7 +260,11 @@ class TestTB:
                     ]
                 ),
                 'Wannier',
-                [ModelSystem(is_representative=True, representations=[Representation()])],
+                [
+                    ModelSystem(
+                        is_representative=True, representations=[Representation()]
+                    )
+                ],
                 [
                     ElectronicState(
                         name='user_orbital_state',

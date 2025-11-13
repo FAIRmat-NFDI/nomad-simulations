@@ -291,7 +291,9 @@ class TestSimulation:
         Root with no subsystems/particle_indices derives composition from its own symbols.
         """
         root = ModelSystem(is_representative=True)
-        root.representations.append(Representation())  # minimal representation so normalize doesn't bail
+        root.representations.append(
+            Representation()
+        )  # minimal representation so normalize doesn't bail
         for sym in ['H', 'H', 'O']:
             root.particle_states.append(AtomsState(chemical_symbol=sym))
 
