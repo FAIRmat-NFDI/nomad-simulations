@@ -11,8 +11,15 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import CoreHole, ElectronicState
+from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
+from nomad_simulations.schema_packages.utils.libxc.build import (
+    spec_from_label,
+)
+from nomad_simulations.schema_packages.utils.libxc.expand import (
+    expand_to_libxc_labels,
+)
 
 
 class BaseModelMethod(ArchiveSection):
@@ -81,6 +88,409 @@ class ModelMethod(BaseModelMethod):
     )
 
 
+class ImplicitSolvationModel(BaseModelMethod):
+    """Implicit-solvent or polarizable continuum treatments.
+
+    Examples include PCM and its variants (IEF-PCM, CPCM), COSMO, COSMO-RS,
+    SMD, GBSA, and Poisson-Boltzmann (PB) models.  The essential parameters
+    are the dielectric constant **ε** of the solvent, a description of how
+    the cavity is constructed, and optional surface-charge or
+    dispersion terms used by the model.
+
+    References
+    ----------
+    •  J. Tomasi, B. Mennucci, R. Cammi, *Chem. Rev.* **105**, 2999 (2005) — PCM overview
+    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) — COSMO
+    •  A. V. Marenich *et al.*, *J. Chem. Phys. B* **113**, 6378 (2009) — SMD
+    """
+
+    model = Quantity(
+        type=MEnum(
+            # Quantum-chemistry continuum
+            'PCM',
+            'IEF-PCM',
+            'CPCM',
+            'DCOSMO',
+            'COSMO',
+            'COSMO-RS',
+            'SMD',  # SMx family represented by SMD here
+            # Electrostatics continuum
+            'PB',
+            'GB',
+            'GBSA',
+            # Solid-state / modern continua
+            'SCCS',
+        ),
+        description="""
+        The implicit-solvent flavour employed.
+
+        | Abbrev. | Full name                              |
+        |---------|----------------------------------------|
+        | PCM     | Polarizable Continuum Model            |
+        | IEF-PCM | Integral Equation Formalism PCM        |
+        | CPCM    | Conductor-like PCM                     |
+        | SMD     | Solvation Model based on Density       |
+        | COSMO   | COnductor-like Screening MOdel         |
+        | COSMO-RS| COSMO for Real Solvents                |
+        | GBSA    | Generalised Born Surface Area          |
+        | PB      | Poisson-Boltzmann                      |
+        """,
+    )
+
+    solvent = Quantity(
+        type=str,
+        description="""
+        Common name or formula of the solvent (e.g. water, acetonitrile).
+        """,
+    )
+
+    dielectric_constant = Quantity(
+        type=np.float64,
+        description="""
+        Static relative permittivity (ε) of the bulk solvent. (ε at ω=0)
+        Required for PCM/COSMO/GBSA; may be implicit in SMD parameter sets.
+        """,
+    )
+
+    dielectric_constant_optical = Quantity(
+        type=np.float64,
+        description="""
+        Optical-frequency (high-frequency) dielectric ε_∞ of the solvent.
+        Used in TDDFT/non-equilibrium PCM. Often derived from n via ε_∞ ≈ n².
+        """,
+    )
+
+    is_mixture = Quantity(
+        type=bool,
+        description='True if a solvent mixture was modeled (COSMO-RS/JDFT contexts).',
+    )
+
+    refractive_index = Quantity(
+        type=np.float64,
+        description="""
+        Optical-frequency refractive index *n* of the solvent.  Needed when a
+        frequency-dependent dielectric is used (e.g. in TDDFT PCM).
+        If provided and `dielectric_constant_optical` is missing, normalization sets
+        dielectric_constant_optical = n**2.
+        """,
+    )
+
+    cavity_construction = Quantity(
+        type=MEnum('UFF', 'VdW', 'ISOSURFACE', 'SAS', 'FIXED_RADIUS', 'other'),
+        description="""
+        How the solute cavity surface is defined.
+          • *UFF* / *VdW* : scaled van-der-Waals radii (default for PCM)
+          • *ISOSURFACE*  : electron-density isosurface (IEFPCM/SMD)
+          • *SAS*         : solvent-accessible surface
+          • *FIXED_RADIUS*: single-sphere (GBSA)
+        """,
+    )
+
+    # TODO: revisit here after the final Mesh implementation
+    surface_tessellation = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Number of Lebedev/Geodesic points per atom used in the cavity
+        discretisation (relevant for surface-integral PCM codes).
+
+        Semantics:
+        • Single value → global default applied to all atoms.
+        • Length == n_species → per-species values (ordered like the model's species list).
+        • Length == n_atoms → per-atom values (in atomic order).
+
+        Many codes expose a global setting but internally vary with element; this
+        shape allows parsers to emit either a single global value or an explicit
+        vector when the input/output is species- or atom-resolved.
+        """,
+    )
+
+    #  minimal PB/GB knobs for classical comparability
+    epsilon_interior = Quantity(
+        type=np.float64,
+        description='Interior (solute) dielectric ε_in; GB/PB often use ε_in > 1. Default is 1.0 if missing.',
+    )
+
+    ionic_strength = Quantity(
+        type=np.float64,
+        unit='mole / liter',
+        description='Bulk ionic strength (salt) for PB; optional for GB parameterizations.',
+    )
+
+    # GB/GBSA per-atom Born radii
+    born_radii_system_ref = Quantity(
+        type=ModelSystem,
+        description="""
+        ModelSystem whose particle ordering the Born radii refer to. If omitted,
+        normalization should default to the last representative ModelSystem.
+        """,
+    )
+
+    # Local count specifically for this array (avoids clashing with ModelSystem.n_particles)
+    n_born = Quantity(
+        type=np.int32,
+        description='Number of Born radii provided (length of effective_born_radii).',
+    )
+
+    effective_born_radii = Quantity(
+        type=np.float64,
+        unit='meter',
+        shape=['n_born'],
+        description="""
+        Per-particle effective Born radii R_i^Born used by GB/GBSA electrostatics.
+        Units match the code's length unit; ordering defined by born_radii_system_ref
+        plus optional born_radii_particle_indices.
+        """,
+    )
+
+    born_radii_particle_indices = Quantity(
+        type=np.int32,
+        shape=['n_born'],
+        description="""
+        Optional indices into born_radii_system_ref's particle list. If omitted, a 1:1
+        mapping to that system's particle ordering is assumed.
+        """,
+    )
+
+    def normalize(self, archive, logger):
+        super().normalize(archive, logger)
+
+        # --- derive ε∞ from n (when needed) ---
+        if (
+            self.dielectric_constant_optical is None
+            and self.refractive_index is not None
+        ):
+            try:
+                self.dielectric_constant_optical = float(self.refractive_index) ** 2
+            except Exception:
+                logger.warning(
+                    'Failed to derive dielectric_constant_optical from refractive_index.'
+                )
+
+        # --- light validation by model type ---
+        if (
+            self.model in ['PCM', 'IEF-PCM', 'CPCM', 'DCOSMO', 'COSMO', 'GB', 'GBSA']
+            and self.dielectric_constant is None
+        ):
+            logger.warning(
+                'ImplicitSolvationModel.model requires static dielectric_constant (ε_s), but it is missing.'
+            )
+
+
+class ExplicitDispersionModel(BaseModelMethod):
+    """Explicit dispersion / vdW treatment used together with an ab-initio method.
+
+    Covers pairwise-additive (D2/D3/D3(BJ)/D4), density-dependent (TS/TS-SCS),
+    many-body dispersion (MBD, e.g. MBD@rsSCS), and non-local correlation
+    functionals (VV10, rVV10, vdW-DF family, XDM). Records key numerical knobs
+    (s6/s8/s9, BJ a1/a2, VV10 b, MBD beta, TS sR).
+
+    References
+    ----------
+    •  S. Grimme, *J. Comp. Chem.* **27**, 1787 (2006) — DFT-D2
+    •  S. Grimme *et al.*, *J. Chem. Phys.* **132**, 154104 (2010) — DFT-D3
+    •  S. Grimme *et al.*, *J. Chem. Phys.* **136**, 154105 (2012) — DFT-D3(BJ)
+    •  C. Steinmann, *WIREs Comput. Mol. Sci.* **10**, e1438 (2020) — overview
+    """
+
+    model = Quantity(
+        type=MEnum(
+            # Pairwise / density-dependent
+            'D2',
+            'D3',
+            'D3BJ',
+            'D4',
+            'OBS',
+            'JCHS',
+            'TS',
+            'TS-SCS',
+            # Many-body
+            'MBD',
+            'MBD@rsSCS',
+            # Exchange-hole based
+            'XDM',
+            # Non-local correlation functionals
+            'VV10',
+            'rVV10',
+            'vdW-DF',
+            'vdW-DF2',
+            'optB88-vdW',
+            'optB86b-vdW',
+            'SCAN+rVV10',
+            'BEEF-vdW',
+        ),
+        description='Dispersion/vdW scheme.',
+    )
+
+    # application context
+    is_embedded_in_xc = Quantity(
+        type=bool,
+        description='True if dispersion is part of the XC functional (e.g. SCAN+rVV10).',
+    )
+
+    # Damping form
+    damping_function = Quantity(
+        type=MEnum('zero', 'BJ', 'fermi', 'rational'),
+        description='Short-range damping: D3{zero,BJ}, TS{fermi}, XDM{rational}.',
+    )
+
+    # TODO @ EBB: link this to XCComponent(s) when available
+    xc_partner = Quantity(
+        type=str,
+        description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
+    )
+
+    # Core scalar knobs (only some are relevant for each model)
+    s6 = Quantity(type=np.float64, description='Global s6 scaling for C6/R6.')
+    s8 = Quantity(type=np.float64, description='Global s8 scaling for C8/R8 (D3/D4).')
+    s9 = Quantity(
+        type=np.float64, description='Global s9 for 3-body ATM term (if enabled).'
+    )
+    a1 = Quantity(type=np.float64, description='BJ damping a1 (D3BJ/D4).')
+    a2 = Quantity(type=np.float64, description='BJ damping a2 (D3BJ/D4).')
+    sR = Quantity(type=np.float64, description='Range/damping length for TS/TS-SCS.')
+    b = Quantity(type=np.float64, description='VV10/rVV10 kernel parameter b.')
+    beta = Quantity(
+        type=np.float64, description='MBD range-separation / screening parameter.'
+    )
+
+    # Method-specific switches
+    include_three_body_atm = Quantity(
+        type=bool,
+        description='If a 3-body Axilrod-Teller-Muto term is included (D3/D4).',
+    )
+    include_c8 = Quantity(
+        type=bool, description='If C8 term is included in the pairwise sum.'
+    )
+    include_c10 = Quantity(type=bool, description='If C10 term is included (e.g. XDM).')
+    max_dispersion_order = Quantity(
+        type=np.int32, description='Highest n in Cn/R^n used (e.g., 6, 8, 10).'
+    )
+
+    # Environment/charges for density-dependent schemes
+    partition_scheme = Quantity(
+        type=MEnum('Hirshfeld', 'Hirshfeld-I', 'MBIS'),
+        description='Density partition for TS/MBD polarizabilities.',
+    )
+    charge_model = Quantity(
+        type=MEnum('EEQ', 'CM5', 'NPA'),
+        description='Atomic charge model used by D4 (e.g., EEQ).',
+    )
+
+    # Kernel flavor (vdW-DF family)
+    nonlocal_kernel = Quantity(
+        type=MEnum('DRSLL', 'LMKLL', 'VV10', 'rVV10'),
+        description='Nonlocal correlation kernel flavor (when applicable).',
+    )
+
+    # Density source for TS/MBD
+    density_source = Quantity(
+        type=MEnum('all-electron', 'PAW-reconstructed', 'valence-only'),
+        description='Source of electron density used for Hirshfeld/MBIS partitioning.',
+    )
+
+    # Practical cutoffs
+    cutoff_radius = Quantity(
+        type=np.float64,
+        unit='meter',
+        description='Pairwise/MBD real-space cutoff (if any).',
+    )
+
+
+class RelativityModel(BaseModelMethod):
+    """
+    Relativistic treatment of the valence Hamiltonian.
+    This does not describe core-electron approximations (PP/ECP).
+
+    Typical options
+    --------------
+    * Four-component Dirac-Coulomb (DC)
+    * Two-component X2C / DKH / ZORA
+    * Spin-orbit mean-field (SOMF) for post-HF/BSE
+    """
+
+    level = Quantity(
+        type=MEnum(
+            'non-relativistic',
+            'scalar',
+            'two-component',
+            'four-component',
+        ),
+        default='non-relativistic',
+        description="""
+        Non-relativistic (Schrödinger), scalar (spin-free),
+        two-component (spin-orbit couple removed variationally, e.g. X2C),
+        or four-component Dirac treatment.
+        """,
+    )
+
+    approximation = Quantity(
+        type=MEnum(
+            'DKH',
+            'ZORA',
+            'FORA',
+            'IORA',
+            'X2C',
+            'BSS',
+            'NESC',
+            'Pauli',
+            'SOMF',
+        ),
+        description="""
+        Specific approximation or decoupling scheme.
+          • DKH  : Douglas-Kroll-Hess (all orders)
+          • ZORA : Zeroth-order regular approximation      
+          • FORA  : First-order regular approximation
+          • IORA  : Improved regular approximation
+          • X2C  : Exact two-component
+          • BSS  : Barysz-Sadlej-Snijders
+          • NESC: Normalized elimination of the small component (Dyall)
+          • Pauli: Pauli spin-orbit correction
+          • SOMF : Spin-orbit mean-field added after SCF
+        """,
+    )
+
+    dkh_order = Quantity(
+        type=np.int32,
+        description='Order used for DKH (e.g., 2, 4, ...).',
+    )
+
+
+class OrbitalLocalization(BaseModelMethod):
+    """Transforming canonical MOs into a localized representation.
+
+    Localized orbitals are used by local correlation methods such as
+    LMP2, DLPNO-CCSD(T), fragment charge analyses, and qualitative bonding pictures.
+    The transformation is (near) unitary and does not change the total energy by itself,
+    it merely changes the representation.
+
+    References:
+        - S. F. Boys, "Construction of Some Molecular Orbitals to Be Approximately Invariant for Changes from One Molecule to Another," Rev. Mod. Phys. 32, 296 (1960). https://doi.org/10.1103/RevModPhys.32.296
+        - J. Pipek and P. G. Mezey, "A fast intrinsic localization procedure applicable for ab initio and semiempirical linear combination of atomic orbital wave functions," J. Chem. Phys. 90, 4916 (1989). https://doi.org/10.1063/1.456588
+        - C. Edmiston and K. Ruedenberg, "Localized Atomic and Molecular Orbitals," Rev. Mod. Phys. 35, 457 (1963). https://doi.org/10.1103/RevModPhys.35.457
+        - G. Knizia, "Intrinsic Atomic Orbitals: An Unbiased Bridge between Quantum Theory and Chemical Concepts," J. Chem. Theory Comput. 9, 4834 (2013). https://doi.org/10.1021/ct400687b
+        - F. Weinhold, C. R. Landis, "Natural bond orbitals and extensions of localized bonding concepts," Chem. Educ. Res. Pract. 2, 91 (2001). https://doi.org/10.1039/B1RP90011K
+
+    """
+
+    method = Quantity(
+        type=MEnum(
+            'Foster-Boys',
+            'Pipek-Mezey',
+            'Edmiston-Ruedenberg',
+            'IBO',
+            'NBO',
+            'AIOPM-NBO',
+        ),
+        description="""Localization criterion / algorithm.""",
+    )
+
+    n_localized_orbitals = Quantity(
+        type=np.int32,
+        description='Number of orbitals actually subjected to the localization (can differ from the full occupied space).',
+    )
+
+
 class ModelMethodElectronic(ModelMethod):
     """
     A base section used to define the parameters of a model Hamiltonian used in electronic structure
@@ -88,6 +498,7 @@ class ModelMethodElectronic(ModelMethod):
     """
 
     # ? Is this necessary or will it be defined in another way?
+    # TODO @ndaelman-hu & EBB2675, we need to assess how to reconcile is_spin_polarized and determinant
     is_spin_polarized = Quantity(
         type=bool,
         description="""
@@ -95,87 +506,145 @@ class ModelMethodElectronic(ModelMethod):
         channels, 'down' and 'up') or not.
         """,
     )
-
-    # ? What about this quantity
-    relativity_method = Quantity(
-        type=MEnum(
-            'scalar_relativistic',
-            'pseudo_scalar_relativistic',
-            'scalar_relativistic_atomic_ZORA',
-        ),
+    # TODO : this part should be revisited once Spin is handled.
+    # TODO : this part should be revisited in general.
+    determinant = Quantity(
+        type=MEnum('unrestricted', 'restricted', 'restricted-open-shell'),
         description="""
-        Describes the relativistic treatment used for the calculation of the final energy
-        and related quantities. If `None`, no relativistic treatment is applied.
+        The spin-coupling form of the determinant used for the
+        self-consistent field (SCF) calculation.
+
+        - **restricted**  (RHF/RKS): α and β electrons share the same spatial orbitals  
+        - **unrestricted** (UHF/UKS): α and β orbitals are optimized independently  
+        - **restricted-open-shell** (ROHF/ROKS): closed-shell core with spin-unpaired electrons
+        sharing spatial orbitals in the open-shell manifold
         """,
+    )
+
+
+class XCComponent(ArchiveSection):
+    """
+    One exchange-correlation functional conform the LibXC format.
+    All data are extracted from its LibXC counterpart; α/ω are ONLY set by parsers when present in inputs/outputs.
+
+    LibXC project page: https://libxc.gitlab.io/
+    """
+
+    # Identity (from LibXC registry)
+    libxc_id = Quantity(type=np.int64, description='LibXC ID (e.g., 101).')
+    canonical_label = Quantity(
+        type=str, description="LibXC label, e.g. 'XC_GGA_X_PBE'."
+    )
+    display_name = Quantity(type=str, description='Human-readable name, e.g. B3LYP.')
+
+    # Taxonomy
+    family = Quantity(
+        type=MEnum('LDA', 'GGA', 'meta-GGA', 'hybrid-GGA', 'hybrid-meta-GGA'),
+        description="Jacob's ladder family.",
+    )
+    kind = Quantity(
+        type=MEnum('exchange', 'correlation', 'xc', 'k'), description='Component kind.'
+    )
+
+    # Hybrid / range-separated parameters — PARSERS fill these if known
+    # TODO: normalize with defaults if not provided
+    fraction_exact_exchange = Quantity(type=np.float64, description='HF mixing α.')
+
+    range_part = Quantity(
+        type=MEnum('global', 'short-range', 'long-range'),
+        description="""
+        Range domain this component applies to:
+        'global' (no split), 'short-range', or 'long-range'.
+        """,
+    )
+
+    range_separation_parameter = Quantity(
+        type=np.float64, unit='1/m', description='Range separation ω.'
+    )
+
+    range_separation_function = Quantity(
+        type=MEnum('erf', 'erfc', 'Yukawa', 'exp', 'Gaussian', 'Slater'),
+        description="""
+        Functional form of the range-separation kernel used to partition the Coulomb operator.
+
+        Common choices:
+        • erf     — error function (used in LC-ωPBE, CAM-B3LYP)
+        • erfc    — complementary error function (equivalent to erf split)
+        • Yukawa  — exponential screening, e.g. HSE-style
+        • exp     — simple exponential decay
+        • Gaussian — Gaussian screening form
+        • Slater  — Slater-type exponential
+
+        Needed to interpret the range-separation parameter ω correctly.
+        """,
+    )
+
+    weight = Quantity(
+        type=unit_float(),
+        description="""
+            Fractional contribution in the density functional result.
+            Only applies when the functional is part of a larger, composed functional, that is not included in the LibXC.
+            All components' fractions should sum up to one.
+         """,
     )
 
 
 class XCFunctional(ArchiveSection):
     """
-    A base section used to define the parameters of an exchange or correlation functional.
+    Normalized XC information for a calculation (possibly multi-component).
     """
 
-    libxc_name = Quantity(
+    components = SubSection(sub_section=XCComponent.m_def, repeats=True)
+
+    functional_key = Quantity(
         type=str,
         description="""
-        Provides the name of one of the exchange or correlation (XC) functional following the libxc
-        convention. For the code base containing the conventions, see https://gitlab.com/libxc/libxc.
-        """,  # TODO: step away from the libxc naming convention
-    )
-
-    name = Quantity(
-        type=MEnum('exchange', 'correlation', 'hybrid', 'contribution'),
-        description="""
-        Name of the XC functional. It can be one of the following: 'exchange', 'correlation',
-        'hybrid', or 'contribution'.
+        Canonical functional alias representing one XC functional as a whole.
+        Used for filtering and display (e.g. 'PBE', 'PBE0', 'B3LYP', 'SCAN+rVV10').
+        Typically corresponds to the original name reported in the code,
         """,
     )
 
-    weight = Quantity(
+    # moved & renamed from DFT.exact_exchange_mixing_factor
+    global_exact_exchange = Quantity(
         type=np.float64,
-        description="""
-        Weight of the functional. This quantity is relevant when defining linear combinations of the
-        different functionals. If not specified, its value is 1.
-        """,
+        description='Global HF mixing α (if any); derived from XC components.',
     )
-
-    # ? add method to extract `name` from `libxc_name`
-
-    def get_weight_name(self, weight: np.float64 | None) -> str | None:
-        """
-        Returns the `weight` as a string with a "*" added at the end.
-
-        Args:
-            weight (Optional[np.float64]): The weight of the functional.
-
-        Returns:
-            (Optional[str]): The weight as a string with a "*" added at the end.
-        """
-        weight_name = ''
-        if weight is not None:
-            weight_name = f'{str(weight)}*'
-        return weight_name
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Appending `weight` as a string to `libxc_name`
-        libxc_name_weight = ''
-        if self.weight is not None:
-            libxc_name_weight = self.get_weight_name(self.weight)
-        if '*' not in self.libxc_name:
-            self.libxc_name = libxc_name_weight + self.libxc_name
+        try:
+            if not self.components and self.functional_key:
+                labels = expand_to_libxc_labels(self.functional_key)
+                if labels:
+                    # de-duplicate while preserving order
+                    seen = set()
+                    for lbl in labels:
+                        if lbl in seen:
+                            continue
+                        seen.add(lbl)
 
-        # ! check with @ndaelman-hu if this makes sense (COMMENTED OUT FOR NOW)
-        # Appending `"+alpha"` in `libxc_name` for hybrids in which the `exact_exchange_mixing_factor` is included
-        # libxc_name_alpha = ''
-        # if (
-        #     self.name == 'hybrid'
-        #     and 'exact_exchange_mixing_factor' in self.parameters.keys()
-        # ):
-        #     libxc_name_alpha = f'+alpha'
-        # if '+alpha' not in self.libxc_name:
-        #     self.libxc_name = self.libxc_name + libxc_name_alpha
+                        spec = spec_from_label(lbl, weight=1.0)
+                        if spec is not None:
+                            comp = XCComponent(**spec)
+                            self.m_add_sub_section(type(self).components, comp)
+                else:
+                    logger.debug(
+                        'LibXC expansion produced no labels.',
+                        raw=self.functional_key,
+                    )
+        except Exception:
+            logger.warning('LibXC expansion failed.')
+
+        if self.global_exact_exchange is None:
+            alphas = [
+                c.fraction_exact_exchange
+                for c in (self.components or [])
+                if c.fraction_exact_exchange is not None
+            ]
+            if len(alphas) == 1 or (len(alphas) > 1 and len(set(alphas)) == 1):
+                self.global_exact_exchange = alphas[0]
 
 
 class DFT(ModelMethodElectronic):
@@ -183,206 +652,44 @@ class DFT(ModelMethodElectronic):
     A base section used to define the parameters used in a density functional theory (DFT) calculation.
     """
 
-    # ? Do we need to define `type` for DFT+U?
-
+    # TODO : improve and rename this classification
     jacobs_ladder = Quantity(
-        type=MEnum('LDA', 'GGA', 'metaGGA', 'hyperGGA', 'hybrid', 'unavailable'),
+        type=MEnum(
+            'LDA', 'GGA', 'meta-GGA', 'hybrid-GGA', 'hybrid-meta-GGA', 'unavailable'
+        ),
         description="""
-        Functional classification in line with Jacob's Ladder. See:
+        Highest Jacob's ladder rung present among XC components.
+        See:
             - https://doi.org/10.1063/1.1390175 (original paper)
             - https://doi.org/10.1103/PhysRevLett.91.146401 (meta-GGA)
             - https://doi.org/10.1063/1.1904565 (hyper-GGA)
         """,
     )
 
-    # ? This could be moved under `contributions`, @ndaelman-hu
-    xc_functionals = SubSection(sub_section=XCFunctional.m_def, repeats=True)
-
-    exact_exchange_mixing_factor = Quantity(
-        type=np.float64,
-        description="""
-        Amount of exact exchange mixed in with the XC functional (value range = [0, 1]).
-        """,
-    )
-
-    # ! MEnum this
-    self_interaction_correction_method = Quantity(
-        type=str,
-        description="""
-        Contains the name for the self-interaction correction (SIC) treatment used to
-        calculate the final energy and related quantities. If skipped or empty, no special
-        correction is applied.
-
-        The following SIC methods are available:
-
-        | SIC method                | Description                       |
-
-        | ------------------------- | --------------------------------  |
-
-        | `""`                      | No correction                     |
-
-        | `"SIC_AD"`                | The average density correction    |
-
-        | `"SIC_SOSEX"`             | Second order screened exchange    |
-
-        | `"SIC_EXPLICIT_ORBITALS"` | (scaled) Perdew-Zunger correction explicitly on a
-        set of orbitals |
-
-        | `"SIC_MAURI_SPZ"`         | (scaled) Perdew-Zunger expression on the spin
-        density / doublet unpaired orbital |
-
-        | `"SIC_MAURI_US"`          | A (scaled) correction proposed by Mauri and co-
-        workers on the spin density / doublet unpaired orbital |
-        """,
-    )
-
-    van_der_waals_correction = Quantity(
-        type=MEnum('TS', 'OBS', 'G06', 'JCHS', 'MDB', 'XC'),
-        description="""
-        Describes the Van der Waals (VdW) correction methodology. If `None`, no VdW correction is applied.
-
-        | VdW method  | Reference                               |
-        | --------------------- | ----------------------------------------- |
-        | `"TS"`  | http://dx.doi.org/10.1103/PhysRevLett.102.073005 |
-        | `"OBS"` | http://dx.doi.org/10.1103/PhysRevB.73.205101 |
-        | `"G06"` | http://dx.doi.org/10.1002/jcc.20495 |
-        | `"JCHS"` | http://dx.doi.org/10.1002/jcc.20570 |
-        | `"MDB"` | http://dx.doi.org/10.1103/PhysRevLett.108.236402 and http://dx.doi.org/10.1063/1.4865104 |
-        | `"XC"` | The method to calculate the VdW energy uses a non-local functional |
-        """,
-    )
-
-    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
-        super().__init__(m_def, m_context, **kwargs)
-        self._jacobs_ladder_map = {
-            'lda': 'LDA',
-            'gga': 'GGA',
-            'mgg': 'meta-GGA',
-            'hyb_mgg': 'hyper-GGA',
-            'hyb': 'hybrid',
-        }
-
-    def resolve_libxc_names(
-        self, xc_functionals: list[XCFunctional]
-    ) -> list[str] | None:
-        """
-        Resolves the `libxc_names` and sorts them from the list of `XCFunctional` sections.
-
-        Args:
-            xc_functionals (list[XCFunctional]): The list of `XCFunctional` sections.
-
-        Returns:
-            (Optional[list[str]]): The resolved and sorted `libxc_names`.
-        """
-        return sorted(
-            [
-                functional.libxc_name
-                for functional in xc_functionals
-                if functional.libxc_name is not None
-            ]
-        )
-
-    def resolve_jacobs_ladder(
-        self,
-        libxc_names: list[str],
-    ) -> str:
-        """
-        Resolves the `jacobs_ladder` from the `libxc_names`. The mapping (libxc -> NOMAD) is set in `self._jacobs_ladder_map`.
-
-        Args:
-            libxc_names (list[str]): The list of `libxc_names`.
-
-        Returns:
-            (str): The resolved `jacobs_ladder`.
-        """
-        if libxc_names is None:
-            return 'unavailable'
-
-        rung_order = {x: i for i, x in enumerate(self._jacobs_ladder_map.keys())}
-        re_abbrev = re.compile(r'((HYB_)?[A-Z]{3})')
-
-        abbrevs = []
-        for xc_name in libxc_names:
-            try:
-                abbrev = re_abbrev.match(xc_name).group(1)
-                abbrev = abbrev.lower() if abbrev == 'HYB_MGG' else abbrev[:3].lower()
-                abbrevs.append(abbrev)
-            except AttributeError:
-                continue
-
-        try:
-            highest_rung_abbrev = (
-                max(abbrevs, key=lambda x: rung_order[x]) if abbrevs else None
-            )
-        except KeyError:
-            return 'unavailable'
-        return self._jacobs_ladder_map.get(highest_rung_abbrev, 'unavailable')
-
-    def resolve_exact_exchange_mixing_factor(
-        self, xc_functionals: list[XCFunctional], libxc_names: list[str]
-    ) -> float | None:
-        """
-        Resolves the `exact_exchange_mixing_factor` from the `xc_functionals` and `libxc_names`.
-
-        Args:
-            xc_functionals (list[XCFunctional]): The list of `XCFunctional` sections.
-            libxc_names (list[str]): The list of `libxc_names`.
-
-        Returns:
-            (Optional[float]): The resolved `exact_exchange_mixing_factor`.
-        """
-
-        for functional in xc_functionals:
-            if functional.name == 'hybrid':
-                return functional.parameters.get('exact_exchange_mixing_factor')
-
-        def _scan_patterns(patterns: list[str], xc_name: str) -> bool:
-            return any(x for x in patterns if re.search('_' + x + '$', xc_name))
-
-        for xc_name in libxc_names:
-            if not re.search('_XC?_', xc_name):
-                continue
-            if re.search('_B3LYP[35]?$', xc_name):
-                return 0.2
-            elif _scan_patterns(['HSE', 'PBEH', 'PBE_MOL0', 'PBE_SOL0'], xc_name):
-                return 0.25
-            elif re.search('_M05$', xc_name):
-                return 0.28
-            elif re.search('_PBE0_13$', xc_name):
-                return 1 / 3
-            elif re.search('_PBE38$', xc_name):
-                return 3 / 8
-            elif re.search('_PBE50$', xc_name):
-                return 0.5
-            elif re.search('_M06_2X$', xc_name):
-                return 0.54
-            elif _scan_patterns(['M05_2X', 'PBE_2X'], xc_name):
-                return 0.56
-        return None
+    xc = SubSection(sub_section=XCFunctional.m_def, repeats=False)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        libxc_names = self.resolve_libxc_names(self.xc_functionals)
-        if libxc_names is not None:
-            # Resolves the `jacobs_ladder` from `libxc` mapping
-            jacobs_ladder = self.resolve_jacobs_ladder(libxc_names)
-            self.jacobs_ladder = (
-                jacobs_ladder if self.jacobs_ladder is None else self.jacobs_ladder
-            )
+        if self.xc is None:
+            self.xc = XCFunctional()
 
-            # Resolves the `exact_exchange_mixing_factor` from the `xc_functionals` and `libxc_names`
-            if self.xc_functionals is not None:
-                exact_exchange_mixing_factor = (
-                    self.resolve_exact_exchange_mixing_factor(
-                        self.xc_functionals, libxc_names
-                    )
-                )
-                self.exact_exchange_mixing_factor = (
-                    exact_exchange_mixing_factor
-                    if self.exact_exchange_mixing_factor is None
-                    else self.exact_exchange_mixing_factor
-                )
+        # XC-specific normalization now handled by XCFunctional
+        self.xc.normalize(archive, logger)
+
+        # Derive Jacob’s ladder from components (highest rung wins)
+        rank = {
+            'LDA': 0,
+            'GGA': 1,
+            'meta-GGA': 2,
+            'hybrid-GGA': 3,
+            'hybrid-meta-GGA': 4,
+        }
+        families = [c.family for c in (self.xc.components or []) if c.family]
+        if families:
+            self.jacobs_ladder = max(families, key=lambda f: rank.get(f, -1))
+        else:
+            self.jacobs_ladder = self.jacobs_ladder or 'unavailable'
 
 
 class TB(ModelMethodElectronic):
