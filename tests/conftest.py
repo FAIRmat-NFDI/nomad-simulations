@@ -1,4 +1,5 @@
 import os
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
@@ -8,7 +9,12 @@ from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 from structlog.testing import LogCapture
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomsState,
+    BaseSpinOrbitalState,
+    ElectronicState,
+    SphericalSymmetryState,
+)
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
@@ -105,25 +111,48 @@ def generate_model_system(
     if representation_kwargs:
         model_system.representations.append(Representation(**representation_kwargs))
 
-    # Add particle states only if both chemical_symbols and orbitals_symbols are provided
+    # Add atoms_state to the model_system using ElectronicState with basis_orbitals
     if chemical_symbols is not None and orbitals_symbols is not None:
         atoms_state = []
-
         for element, orbitals in zip(chemical_symbols, orbitals_symbols):
-            orbitals_state = [
-                OrbitalsState(l_quantum_symbol=o[0], ml_quantum_symbol=o[1:])
-                for o in orbitals
-            ]
-            atom_state = AtomsState(
-                chemical_symbol=element, orbitals_state=orbitals_state
-            )
-            # normalize() will resolve atomic_number from the symbol
+            basis_list: list[SphericalSymmetryState] = []
+            for o in orbitals:
+                # Map common orbital labels like 's', 'px', 'py', 'pz', 'xy', 'xz', 'z^2', 'yz', 'x^2-y^2'
+                l_symbol_to_number = {'s': 0, 'p': 1, 'd': 2, 'f': 3}
+                ml_p_symbols = {'x': -1, 'z': 0, 'y': 1}
+                ml_d_symbols = {'xy': -2, 'xz': -1, 'z^2': 0, 'yz': 1, 'x^2-y^2': 2}
+
+                if o in {'s', 'p', 'd', 'f'}:
+                    state = SphericalSymmetryState()
+                    state.l_quantum_number = l_symbol_to_number[o]
+                else:
+                    # split into l-symbol and ml-symbol when possible
+                    # p-orbitals: px, py, pz
+                    if o in {'px', 'py', 'pz'}:
+                        state = SphericalSymmetryState()
+                        state.l_quantum_number = 1  # p
+                        state.ml_quantum_number = ml_p_symbols[o[-1]]
+                    elif o in {'xy', 'xz', 'z^2', 'yz', 'x^2-y^2'}:
+                        state = SphericalSymmetryState()
+                        state.l_quantum_number = 2  # d
+                        state.ml_quantum_number = ml_d_symbols[o]
+                    else:
+                        # Fallback: default to s
+                        state = SphericalSymmetryState()
+                        state.l_quantum_number = 0  # s
+                basis_list.append(state)
+
+            e_state = ElectronicState()
+            for bo in basis_list:
+                e_state.basis_orbitals.append(bo)
+
+            atom_state = AtomsState(chemical_symbol=element)
+            atom_state.electronic_state = e_state
             atom_state.normalize(EntryArchive(), logger)
             atoms_state.append(atom_state)
 
         for state in atoms_state:
             model_system.particle_states.append(state)
-
     return model_system
 
 
@@ -194,17 +223,42 @@ def generate_simulation_electronic_dos(
     variables_energy = Energy(points=energy_points * ureg.joule)
     electronic_dos = ElectronicDensityOfStates(energies=variables_energy)
     outputs.electronic_dos.append(electronic_dos)
+    # Build ElectronicState sub_states for specific orbitals and add them to AtomsState
+    ga_atom = model_system.particle_states[0]
+    as_atom = model_system.particle_states[1]
+
+    # Create sub_states for Ga atom orbitals (s)
+    ga_s_basis = ga_atom.electronic_state.basis_orbitals[0]
+    es_ga_s = ElectronicState(spin_orbit_state=ga_s_basis)
+    ga_atom.electronic_state.sub_states.append(es_ga_s)
+    es_ga_s.normalize(EntryArchive(), logger)
+
+    # Create sub_states for As atom orbitals (px, py)
+    as_px_basis = as_atom.electronic_state.basis_orbitals[0]
+    es_as_px = ElectronicState(spin_orbit_state=as_px_basis)
+    as_atom.electronic_state.sub_states.append(es_as_px)
+    es_as_px.normalize(EntryArchive(), logger)
+
+    as_py_basis = as_atom.electronic_state.basis_orbitals[1]
+    es_as_py = ElectronicState(spin_orbit_state=as_py_basis)
+    as_atom.electronic_state.sub_states.append(es_as_py)
+    es_as_py.normalize(EntryArchive(), logger)
+
+    # Normalize the top-level ElectronicState to set their names
+    ga_atom.electronic_state.normalize(EntryArchive(), logger)
+    as_atom.electronic_state.normalize(EntryArchive(), logger)
+
     orbital_s_Ga_pdos = DOSProfile(
         energies=variables_energy,
-        entity_ref=model_system.particle_states[0].orbitals_state[0],
+        entity_ref=es_ga_s,
     )
     orbital_px_As_pdos = DOSProfile(
         energies=variables_energy,
-        entity_ref=model_system.particle_states[1].orbitals_state[0],
+        entity_ref=es_as_px,
     )
     orbital_py_As_pdos = DOSProfile(
         energies=variables_energy,
-        entity_ref=model_system.particle_states[1].orbitals_state[1],
+        entity_ref=es_as_py,
     )
     orbital_s_Ga_pdos.value = [0.2, 0.5, 0, 0, 0, 0.0, 0.0] * ureg('1/joule')
     orbital_px_As_pdos.value = [1.0, 0.2, 0, 0, 0, 0.3, 0.0] * ureg('1/joule')
@@ -489,3 +543,88 @@ def approx():
         return pytest.approx(expected, abs=abs, rel=rel)
 
     return func
+
+
+def make_spherical_state(
+    n: int | None = 1,
+    lqn: int | None = 0,
+    ml: int | None = None,
+    j: float | None = None,
+    kappa: int | None = None,
+    s: float | None = None,
+    ms: float | None = None,
+    coupling_origin: str | None = None,
+) -> SphericalSymmetryState:
+    """
+    Construct a SphericalSymmetryState with convenient aliases for quantum numbers.
+
+    Parameters map to schema quantities:
+    - n -> n_quantum_number
+    - lqn -> l_quantum_number
+    - ml -> ml_quantum_number
+    - j -> j_quantum_number (float)
+    - kappa -> kappa_quantum_number
+    - s -> s_quantum_number
+    - ms -> ms_quantum_number
+    - coupling_origin -> coupling_origin (e.g., 'pure_LS','pure_jj','intermediate','relativistic')
+    """
+    state = SphericalSymmetryState()
+    if n is not None:
+        state.n_quantum_number = n
+    if lqn is not None:
+        state.l_quantum_number = lqn
+    if ml is not None:
+        state.ml_quantum_number = ml
+    if j is not None:
+        state.j_quantum_number = j
+    if kappa is not None:
+        state.kappa_quantum_number = kappa
+    if s is not None:
+        state.s_quantum_number = s
+    if ms is not None:
+        state.ms_quantum_number = ms
+    if coupling_origin is not None:
+        state.coupling_origin = coupling_origin
+    return state
+
+
+def make_electronic_state(
+    basis_orbitals: list[BaseSpinOrbitalState] | None = None,
+    *,
+    name: str | None = None,
+    symmetry_label: str | None = None,
+    point_group: str | None = None,
+    occupation: float | None = None,
+    spin_orbit: BaseSpinOrbitalState | None = None,
+    sub_states: list[ElectronicState] | None = None,
+) -> ElectronicState:
+    """
+    Construct an ElectronicState, optionally with a list of basis_orbitals and other metadata.
+
+    - basis_orbitals: list of BaseSpinOrbitalState (e.g., SphericalSymmetryState) to define expansion basis
+    - name, symmetry_label, point_group, occupation: metadata
+    - spin_orbit: optional BaseSpinOrbitalState to assign to spin_orbit_state subsection
+    - sub_states: optional child ElectronicState hierarchy to append to sub_states
+    """
+    es = ElectronicState()
+    if name is not None:
+        es.name = name
+    if symmetry_label is not None:
+        es.symmetry_label = symmetry_label
+    if point_group is not None:
+        es.point_group = point_group
+    if occupation is not None:
+        es.occupation = occupation
+
+    if spin_orbit is not None:
+        es.spin_orbit_state = spin_orbit
+
+    if basis_orbitals:
+        for bo in basis_orbitals:
+            es.basis_orbitals.append(bo)
+
+    if sub_states:
+        for child in sub_states:
+            es.sub_states.append(child)
+
+    return es

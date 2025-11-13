@@ -1,5 +1,5 @@
 import re
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
@@ -10,11 +10,7 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import (
-    AtomsState,
-    CoreHole,
-    OrbitalsState,
-)
+from nomad_simulations.schema_packages.atoms_state import CoreHole, ElectronicState
 from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
@@ -746,29 +742,23 @@ class TB(ModelMethodElectronic):
     )
 
     orbitals_ref = Quantity(
-        type=OrbitalsState,
+        type=ElectronicState,
         shape=['n_orbitals_per_atom'],
         description="""
-        References to the `OrbitalsState` sections that contain the orbitals per atom in the unit cell information which are
-        relevant for the `TB` model. This quantity is resolved from normalization when the active atoms sub-systems `model_system.model_system[*]`
+        References to the `ElectronicState` that contain system's the orbitals (with a mapping to each atom) relevant for the `TB` model. This quantity is resolved from normalization when the active atoms sub-systems `model_system.model_system[*]`
         are populated.
-
-        Example: hydrogenated graphene with 3 atoms in the unit cell. The full list of `AtomsState` would
-        be
-            [
-                AtomsState(chemical_symbol='C', orbitals_state=[OrbitalsState('s'), OrbitalsState('px'), OrbitalsState('py'), OrbitalsState('pz')]),
-                AtomsState(chemical_symbol='C', orbitals_state=[OrbitalsState('s'), OrbitalsState('px'), OrbitalsState('py'), OrbitalsState('pz')]),
-                AtomsState(chemical_symbol='H', orbitals_state=[OrbitalsState('s')]),
-            ]
 
         The relevant orbitals for the TB model are the `'pz'` ones for each `'C'` atom. Then, we define:
 
-            orbitals_ref= [OrbitalState('pz'), OrbitalsState('pz')]
+            `orbitals_ref= [ElectronicState('pz'), ElectronicState('pz')]`
 
         The relevant atoms information can be accessed from the parent AtomsState sections:
-            atom_state = orbitals_ref[i].m_parent
-            index = orbitals_ref[i].m_parent_index
-            atom_position = orbitals_ref[i].m_parent.m_parent.positions[index]
+
+            ```
+                atom_state = orbitals_ref[i].m_parent
+                index = orbitals_ref[i].m_parent_index
+                atom_position = orbitals_ref[i].m_parent.m_parent.positions[index]
+            ```
         """,
     )
 
@@ -778,7 +768,7 @@ class TB(ModelMethodElectronic):
         `m_def.name` of the section.
 
         Returns:
-            (Optional[str]): The resolved `type` of the `TB` section.
+            str | None: The resolved `type` of the `TB` section.
         """
         return (
             self.m_def.name
@@ -791,14 +781,14 @@ class TB(ModelMethodElectronic):
         model_systems: list[ModelSystem],
         logger: 'BoundLogger',
         model_index: int = -1,
-    ) -> list[OrbitalsState] | None:
+    ) -> list[ElectronicState] | None:
         """
-        Resolves references to the `OrbitalsState` sections from the top-level `ModelSystem`
+        Resolves references to the `ElectronicState` sections from the top-level `ModelSystem`
         that has child system(s) typed 'active_atom'. This uses the new design:
 
         - The parent ModelSystem stores per-atom data in `particle_states`.
         - The child system(s) typed 'active_atom' list indices in `particle_indices`.
-        - We gather OrbitalsState from each relevant particle_states entry.
+        - We gather `ElectronicState` from each relevant particle_states entry.
 
         Args:
             model_systems (list[ModelSystem]): The list of `ModelSystem` sections.
@@ -806,13 +796,13 @@ class TB(ModelMethodElectronic):
             model_index (int, optional): The ModelSystem index to use. Defaults to -1 (the last).
 
         Returns:
-            Optional[list[OrbitalsState]]: The resolved references to the OrbitalsState sections.
+            `list[ElectronicState] | None`: The resolved references to the `ElectronicState` sections.
         """
         # Check that the requested ModelSystem exists
         try:
             model_system = model_systems[model_index]
         except IndexError:
-            logger.warning(f'No ModelSystem at index {model_index}.')
+            logger.warning('No ModelSystem at index %s.', model_index)
             return None
 
         # If the system is not representative, bail out of normalization
@@ -831,14 +821,19 @@ class TB(ModelMethodElectronic):
             logger.warning('No particle_states in the parent ModelSystem.')
             return None
 
-        orbitals_ref: list[OrbitalsState] = []
+        orbitals_ref: list[ElectronicState] = []
 
         # For each child in sub_systems, if type='active_atom', gather orbitals
         for child_sys in model_system.sub_systems:
             if child_sys.type != 'active_atom':
                 continue
             # if no particle_indices => skip
-            if not child_sys.particle_indices:
+            # Note: Use 'is None' and len check to avoid numpy array boolean evaluation issues
+            # (numpy array [0] evaluates to False in boolean context)
+            if (
+                child_sys.particle_indices is None
+                or len(child_sys.particle_indices) == 0
+            ):
                 logger.warning('Child system is active_atom but no particle_indices.')
                 continue
 
@@ -846,19 +841,19 @@ class TB(ModelMethodElectronic):
             for idx in child_sys.particle_indices:
                 if idx < 0 or idx >= len(model_system.particle_states):
                     logger.warning(
-                        f'Particle index {idx} out of range for particle_states.'
+                        'Particle index %s out of range for particle_states.', idx
                     )
                     continue
                 active_atom_state = model_system.particle_states[idx]
 
                 # If no orbitals_state => skip
-                if not active_atom_state.orbitals_state:
+                if not active_atom_state.electronic_state:
                     logger.warning(
-                        f'No orbitals_state found in particle_states[{idx}].'
+                        'No electronic_state found in particle_states[%s].', idx
                     )
                     continue
 
-                orbitals_ref.extend(active_atom_state.orbitals_state)
+                orbitals_ref.append(active_atom_state.electronic_state)
 
         # Return the collected orbitals
         return orbitals_ref
@@ -872,11 +867,11 @@ class TB(ModelMethodElectronic):
         # Resolve `type` to be defined by the lower level class (Wannier, DFTB, xTB or SlaterKoster) if it is not already defined
         self.type = self.resolve_type()
 
-        # Resolve `orbitals_ref` from the info in the child `ModelSystem` section and the `OrbitalsState` sections
+        # Resolve `orbitals_ref` from the info in the child `ModelSystem` section and the `ElectronicState` sections
         model_systems = self.m_xpath('m_parent.model_system', dict=False)
         if model_systems is None:
             logger.warning(
-                'Could not find the `ModelSystem` sections. References to `OrbitalsState` will not be resolved.'
+                'Could not find the `ModelSystem` sections. References to `ElectronicState` will not be resolved.'
             )
             return
         # This normalization only considers the last `ModelSystem` (default `model_index` argument set to -1)
@@ -956,16 +951,16 @@ class SlaterKosterBond(ArchiveSection):
     """
 
     orbital_1 = Quantity(
-        type=OrbitalsState,
+        type=ElectronicState,
         description="""
-        Reference to the first `OrbitalsState` section.
+        Reference to the first `ElectronicState` section.
         """,
     )
 
     orbital_2 = Quantity(
-        type=OrbitalsState,
+        type=ElectronicState,
         description="""
-        Reference to the second `OrbitalsState` section.
+        Reference to the second `ElectronicState` section.
         """,
     )
 
@@ -1016,40 +1011,51 @@ class SlaterKosterBond(ArchiveSection):
 
     def resolve_bond_name_from_references(
         self,
-        orbital_1: OrbitalsState | None,
-        orbital_2: OrbitalsState | None,
+        orbital_1: ElectronicState | None,
+        orbital_2: ElectronicState | None,
         bravais_vector: tuple | None,
         logger: 'BoundLogger',
     ) -> str | None:
         """
-        Resolves the `name` of the `SlaterKosterBond` from the references to the `OrbitalsState` sections.
+        Resolves the `name` of the `SlaterKosterBond` from the references to the `ElectronicState` sections.
 
         Args:
-            orbital_1 (Optional[OrbitalsState]): The first `OrbitalsState` section.
-            orbital_2 (Optional[OrbitalsState]): The second `OrbitalsState` section.
-            bravais_vector (Optional[tuple]): The bravais vector of the cell.
-            logger (BoundLogger): The logger to log messages.
+            orbital_1 (`ElectronicState | None`): The first `ElectronicState` section.
+            orbital_2 (`ElectronicState | None`): The second `ElectronicState` section.
+            bravais_vector (`tuple | None`): The bravais vector of the cell.
+            logger (`BoundLogger`): The logger to log messages.
 
         Returns:
-            (Optional[str]): The resolved `name` of the `SlaterKosterBond`.
+            `[str] | None`: The resolved `name` of the `SlaterKosterBond`.
         """
         # Initial check
         if orbital_1 is None or orbital_2 is None:
-            logger.warning('The `OrbitalsState` sections are not defined.')
+            logger.warning('The `ElectronicState` sections are not defined.')
             return None
         if bravais_vector is None:
             logger.warning('The `bravais_vector` is not defined.')
             return None
 
-        # Check for `l_quantum_symbol` in `OrbitalsState` sections
-        if orbital_1.l_quantum_symbol is None or orbital_2.l_quantum_symbol is None:
+        # Check for `l_quantum_symbol` in `ElectronicState` sections
+        orbital_1_l_symbol = (
+            getattr(orbital_1.spin_orbit_state, 'l_quantum_symbol', None)
+            if orbital_1.spin_orbit_state
+            else None
+        )
+        orbital_2_l_symbol = (
+            getattr(orbital_2.spin_orbit_state, 'l_quantum_symbol', None)
+            if orbital_2.spin_orbit_state
+            else None
+        )
+
+        if orbital_1_l_symbol is None or orbital_2_l_symbol is None:
             logger.warning(
-                'The `l_quantum_symbol` of the `OrbitalsState` bonds are not defined.'
+                'The `l_quantum_symbol` of the `ElectronicState` bonds are not defined.'
             )
             return None
 
         bond_name = None
-        value = [orbital_1.l_quantum_symbol, orbital_2.l_quantum_symbol, bravais_vector]
+        value = [orbital_1_l_symbol, orbital_2_l_symbol, bravais_vector]
         # Check if `value` is found in the `self._bond_name_map` and return the key
         for key, val in self._bond_name_map.items():
             if val == value:
@@ -1060,7 +1066,7 @@ class SlaterKosterBond(ArchiveSection):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Resolve the SK bond `name` from the `OrbitalsState` references and the `bravais_vector`
+        # Resolve the SK bond `name` from the `ElectronicState` references and the `bravais_vector`
         if self.orbital_1 and self.orbital_2 and self.bravais_vector is not None:
             if self.bravais_vector is not None:
                 bravais_vector = tuple(self.bravais_vector)  # transformed for comparing
@@ -1442,23 +1448,23 @@ class DMFT(ModelMethodElectronic):
     )
 
     orbitals_ref = Quantity(
-        type=OrbitalsState,
+        type=ElectronicState,
         shape=['n_orbitals'],
         description="""
-        References to the `OrbitalsState` sections that contain the orbitals information which are
+        References to the `ElectronicState` sections that contain the orbitals information which are
         relevant for the `DMFT` calculation.
 
         Example: hydrogenated graphene with 3 atoms in the unit cell. The full list of `AtomsState` would
         be
             [
-                AtomsState(chemical_symbol='C', orbitals_state=[OrbitalsState('s'), OrbitalsState('px'), OrbitalsState('py'), OrbitalsState('pz')]),
-                AtomsState(chemical_symbol='C', orbitals_state=[OrbitalsState('s'), OrbitalsState('px'), OrbitalsState('py'), OrbitalsState('pz')]),
-                AtomsState(chemical_symbol='H', orbitals_state=[OrbitalsState('s')]),
+                AtomsState(chemical_symbol='C', electronic_state=ElectronicState(basis_orbitals=[SphericalSymmetryState('s'), SphericalSymmetryState('px'), SphericalSymmetryState('py'), SphericalSymmetryState('pz')])),
+                AtomsState(chemical_symbol='C', electronic_state=ElectronicState(basis_orbitals=[SphericalSymmetryState('s'), SphericalSymmetryState('px'), SphericalSymmetryState('py'), SphericalSymmetryState('pz')])),
+                AtomsState(chemical_symbol='H', electronic_state=ElectronicState(basis_orbitals=[SphericalSymmetryState('s')])),
             ]
 
         The relevant orbitals for the TB model are the `'pz'` ones for each `'C'` atom. Then, we define:
 
-            orbitals_ref= [OrbitalState('pz'), OrbitalsState('pz')]
+            orbitals_ref = [ElectronicState('pz'), ElectronicState('pz')]
 
         The relevant impurities information can be accesed from the parent AtomsState sections:
             impurity_state = orbitals_ref[i].m_parent

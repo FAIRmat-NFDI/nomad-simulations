@@ -1,8 +1,5 @@
-from typing import Optional
-
 import numpy as np
 import pytest
-from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
@@ -134,16 +131,22 @@ class TestElectronicDensityOfStates:
         ]
         assert (
             orbital_projected[0].entity_ref
-            == outputs.model_system_ref.particle_states[0].orbitals_state[0]
+            == outputs.model_system_ref.particle_states[0].electronic_state.sub_states[
+                0
+            ]
         )
         assert (
             orbital_projected[1].entity_ref
-            == outputs.model_system_ref.particle_states[1].orbitals_state[0]
+            == outputs.model_system_ref.particle_states[1].electronic_state.sub_states[
+                0
+            ]
         )
         # For the third orbital, assume it comes from the second particle as well (e.g. As atom has two orbitals)
         assert (
             orbital_projected[2].entity_ref
-            == outputs.model_system_ref.particle_states[1].orbitals_state[1]
+            == outputs.model_system_ref.particle_states[1].electronic_state.sub_states[
+                1
+            ]
         )
 
         # Run extraction again to verify repeatability
@@ -185,12 +188,15 @@ class TestElectronicDensityOfStates:
         assert len(orbital_projected) == 3 and len(atom_projected) == 2
         atom_projected_names = [ap.name for ap in atom_projected]
         assert atom_projected_names == ['atom Ga', 'atom As']
-        # Check that the entity_ref of the atom PDOS corresponds to the particle state in the referenced ModelSystem
+        # Check that the entity_ref of the atom PDOS points to the ElectronicState (not AtomsState)
+        # This is the new architectural pattern where ElectronicState serves as gateway
         assert (
-            atom_projected[0].entity_ref == outputs.model_system_ref.particle_states[0]
+            atom_projected[0].entity_ref
+            == outputs.model_system_ref.particle_states[0].electronic_state
         )
         assert (
-            atom_projected[1].entity_ref == outputs.model_system_ref.particle_states[1]
+            atom_projected[1].entity_ref
+            == outputs.model_system_ref.particle_states[1].electronic_state
         )
 
     def test_normalize(self):
