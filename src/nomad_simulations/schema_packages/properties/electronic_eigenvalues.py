@@ -34,7 +34,11 @@ class BaseElectronicEigenvalues(PhysicalProperty):
     n_levels = Quantity(
         type=np.int32,
         description="""
-        Number of bands / eigenvalues.
+        Number of energy levels per sampling point.
+
+        In periodic systems these correspond to electronic bands; in molecular
+        calculations they correspond to (spin-resolved) molecular orbitals or
+        similar one-particle states.
         """,
     )
 
