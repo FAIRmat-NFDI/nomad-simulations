@@ -200,7 +200,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
                 band_gap.value = lumo - homo
         return band_gap
 
-    def normalize(self):
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         """
         Normalize the eigenvalues by resolving HOMO/LUMO and extracting the band gap.
         """
