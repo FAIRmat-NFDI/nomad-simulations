@@ -22,28 +22,10 @@ class MolecularOrbitals(PhysicalProperty):
     provides auxiliary metadata needed by NOMAD tooling.
 
     The TREXIO format:
-    Posenitsky et al., J. Chem. Phys. 158, 174801 (2023)
-
-    ----------
-    Quantities
-    -----------------
-    ``basis_set_ref``        Reference to the AO basis section.
-    ``mo_spin``              Per-orbital spin index (TREXIO-style unified list).
-    ``n_mo``                 Number of molecular orbitals stored.
-    ``n_ao``                 Size of the AO basis.
-    ``mo_energies``          εᵢ orbital energies (eV).
-    ``mo_occupations``       nᵢ occupation numbers.
-    ``mo_coefficients``      Real part of AO→MO coefficient matrix C.
-    ``mo_coefficients_im``   Imaginary part of C (optional).
-    ``mo_class``             Role of each MO: Core/Inactive/Active/Virtual/Deleted.
-    ``mo_symmetry``          Irreducible-representation labels (e.g. *a₁*, *b₂*).
-    ``mo_type``              Classification of entire set: canonical/natural/…
-
+    Posenitsky et al., J. Chem. Phys. 158, 174801 (2023).
     """
 
-    # ------------------------------------------------------------------ #
-    #                           References                               #
-    # ------------------------------------------------------------------ #
+    # References
     basis_set_ref = Quantity(
         type=Reference(SectionProxy('AtomCenteredBasisSet')),
         description="""
@@ -52,9 +34,7 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
-    # ------------------------------------------------------------------ #
-    #                    Dimension-defining scalars                      #
-    # ------------------------------------------------------------------ #
+    # Dimension-defining scalars
     n_mo = Quantity(
         type=np.int32,
         description='Number of molecular orbitals stored.',
@@ -65,9 +45,7 @@ class MolecularOrbitals(PhysicalProperty):
         description='Number of atomic orbitals (size of AO basis).',
     )
 
-    # ------------------------------------------------------------------ #
-    #                   Per-orbital mandatory metadata                   #
-    # ------------------------------------------------------------------ #
+    # Per-orbital mandatory metadata
     mo_spin = Quantity(
         type=np.int32,
         shape=['n_mo'],
@@ -122,9 +100,7 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
-    # ------------------------------------------------------------------ #
-    #                 AO → MO coefficient matrices                       #
-    # ------------------------------------------------------------------ #
+    # AO → MO coefficient matrices
     mo_coefficients = Quantity(
         type=np.float64,
         shape=['n_mo', 'n_ao'],
@@ -147,9 +123,7 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
-    # ------------------------------------------------------------------ #
-    #               Whole-set classification                             #
-    # ------------------------------------------------------------------ #
+    # Whole-set classification
     mo_type = Quantity(
         type=MEnum('canonical', 'natural', 'localized', 'hybrid'),
         # default='canonical',
