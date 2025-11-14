@@ -18,7 +18,6 @@ from nomad_simulations.schema_packages.atoms_state import (
 from nomad_simulations.schema_packages.numerical_settings import KSpace
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
-from nomad_simulations.schema_packages.properties.fermi_surface import FermiSurface
 from nomad_simulations.schema_packages.utils import get_sibling_section, log
 
 configuration = config.get_plugin_entry_point(
