@@ -106,7 +106,7 @@ class MolecularOrbitals(ElectronicEigenvalues):
         shape=['n_mo', 'n_ao'],
         description="""
         The AO→MO coefficient matrix **C**, such that 
-        ψ_i(r) = ∑_μ C[i,μ] φ_μ(r).  
+        ψ_i(r) = ∑_μ C[i,μ] φ_μ(r). 
         Row index i runs over MOs, column index μ runs over AOs in `basis_set_ref`.
         """,
     )
