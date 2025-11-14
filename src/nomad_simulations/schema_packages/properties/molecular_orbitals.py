@@ -69,7 +69,7 @@ class MolecularOrbitals(ElectronicEigenvalues):
         type=np.float64,
         shape=['n_mo'],
         description="""
-        Occupation numbers for each MO.  Closed-shell codes will typically give 2.0 
+        Occupation numbers for each MO. Closed-shell codes will typically give 2.0 
         for occupied and 0.0 for virtual orbitals; unrestricted codes use two channels.
         """,
     )
