@@ -11,10 +11,10 @@ from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy
 
-from nomad_simulations.schema_packages.physical_property import PhysicalProperty
+from nomad_simulations.schema_packages.properties import ElectronicEigenvalues
 
 
-class MolecularOrbitals(PhysicalProperty):
+class MolecularOrbitals(ElectronicEigenvalues):
     """
     Molecular-orbital eigenstates expressed in an atom-centred AO basis.
 
