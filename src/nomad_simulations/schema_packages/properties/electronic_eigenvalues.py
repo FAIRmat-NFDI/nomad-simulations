@@ -104,7 +104,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         Contributions to the electronic eigenvalues. Example, in the case of a DFT+GW calculation, the GW eigenvalues
         are stored under `value`, and each contribution is identified by `label`:
             - `'KS'`: Kohn-Sham contribution. This is also stored in the DFT entry under `ElectronicEigenvalues.value`.
-            - `'KSxc'`: Diagonal matrix elements of the expectation value of the Kohn-Sahm exchange-correlation potential.
+            - `'KSxc'`: Diagonal matrix elements of the expectation value of the Kohn-Sham exchange-correlation potential.
             - `'SigX'`: Diagonal matrix elements of the exchange self-energy. This is also stored in the GW entry under `ElectronicSelfEnergy.value`.
             - `'SigC'`: Diagonal matrix elements of the correlation self-energy. This is also stored in the GW entry under `ElectronicSelfEnergy.value`.
             - `'Zk'`: Quasiparticle renormalization factors contribution. This is also stored in the GW entry under `QuasiparticleWeights.value`.
