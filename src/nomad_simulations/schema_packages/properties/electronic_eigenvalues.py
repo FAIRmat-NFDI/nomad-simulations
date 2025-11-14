@@ -12,7 +12,6 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import (
-    AtomsState,
     ElectronicState,
 )
 from nomad_simulations.schema_packages.numerical_settings import KSpace
