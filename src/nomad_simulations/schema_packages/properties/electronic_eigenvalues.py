@@ -166,7 +166,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
                 return self.highest_occupied, self.lowest_unoccupied
             return None, None
 
-        # Binary search ot find the transition point between `occupation = 2` and `occupation = 0`
+        # Binary search to find the transition point between `occupation = 2` and `occupation = 0`
         homo = self.highest_occupied
         lumo = self.lowest_unoccupied
         mid = (
