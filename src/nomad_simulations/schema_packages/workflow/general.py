@@ -108,7 +108,7 @@ class SimulationWorkflowModel(ArchiveSection):
         """
     )
 
-    convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
+    #convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not archive.data:
