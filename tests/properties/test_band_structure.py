@@ -18,17 +18,17 @@ class TestElectronicEigenvalues:
 
     # ! Include this initial `test_default_quantities` method when testing your PhysicalProperty classes
     @pytest.mark.parametrize(
-        'n_bands',
+        'n_levels',
         [
             (None),
             (10),
         ],
     )
-    def test_default_quantities(self, n_bands: int | None):
+    def test_default_quantities(self, n_levels: int | None):
         """
         Test the default quantities assigned when creating an instance of the `HoppingMatrix` class.
         """
-        electronic_eigenvalues = ElectronicEigenvalues(n_bands=n_bands)
+        electronic_eigenvalues = ElectronicEigenvalues(n_levels=n_levels)
         assert (
             electronic_eigenvalues.iri
             == 'http://fairmat-nfdi.eu/taxonomy/ElectronicEigenvalues'
