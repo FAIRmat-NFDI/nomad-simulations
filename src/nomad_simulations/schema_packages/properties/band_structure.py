@@ -101,7 +101,7 @@ class ElectronicBandStructure(ElectronicEigenvalues):
         # ! This is still conceptually wrong: `value` should be the KMesh.points,
         # ! not the eigenvalues. Kept as-is until the FermiSurface property is final.
         fermi_surface = FermiSurface(
-            n_levels=self.n_levels,
+            n_bands=self.n_bands,
             is_derived=True,
             physical_property_ref=self,
         )
