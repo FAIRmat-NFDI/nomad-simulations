@@ -5,15 +5,15 @@ import pytest
 from nomad.datamodel import EntryArchive
 
 from nomad_simulations.schema_packages.outputs import Outputs
-from nomad_simulations.schema_packages.properties import ElectronicEigenvalues
+from nomad_simulations.schema_packages.properties import ElectronicBandStructure
 
-from ..conftest import generate_electronic_eigenvalues
+from ..conftest import generate_electronic_band_structure
 from . import logger
 
 
-class TestElectronicEigenvalues:
+class TestElectronicBandStructure:
     """
-    Test the `ElectronicEigenvalues` class defined in `properties/band_structure.py`.
+    Test the `ElectronicBandStructure` class defined in `properties/band_structure.py`.
     """
 
     # ! Include this initial `test_default_quantities` method when testing your PhysicalProperty classes
@@ -28,10 +28,10 @@ class TestElectronicEigenvalues:
         """
         Test the default quantities assigned when creating an instance of the `HoppingMatrix` class.
         """
-        electronic_eigenvalues = ElectronicEigenvalues(n_levels=n_levels)
+        electronic_band_structure = ElectronicBandStructure(n_levels=n_levels)
         assert (
-            electronic_eigenvalues.iri
-            == 'http://fairmat-nfdi.eu/taxonomy/ElectronicEigenvalues'
+            electronic_band_structure.iri
+            == 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandStructure'
         )
 
     # @pytest.mark.parametrize(
@@ -50,12 +50,11 @@ class TestElectronicEigenvalues:
     #     """
     #     Test the `validate_occupation` method.
     #     """
-    #     electronic_eigenvalues = generate_electronic_eigenvalues(
+    #     electronic_band_structure = generate_electronic_band_structure(
     #         value=[[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
     #         occupation=occupation,
     #     )
-    #     assert electronic_eigenvalues.validate_occupation(logger) == result
-
+    #     assert electronic_band_structure.validate_occupation(logger) == result
     @pytest.mark.parametrize(
         'occupation, value, result_validation, result',
         [
@@ -132,16 +131,16 @@ class TestElectronicEigenvalues:
         """
         Test the `order_eigenvalues` method.
         """
-        electronic_eigenvalues = generate_electronic_eigenvalues(
+        electronic_band_structure = generate_electronic_band_structure(
             value=value,
             occupation=occupation,
         )
-        order_result = electronic_eigenvalues.order_eigenvalues()
+        order_result = electronic_band_structure.order_eigenvalues()
         if not order_result:
             assert result_validation == ()  # Empty tuple means validation failed
         else:
             sorted_value, sorted_occupation = order_result
-            assert electronic_eigenvalues.m_cache['sorted_eigenvalues']
+            assert electronic_band_structure.m_cache['sorted_eigenvalues']
             assert (sorted_value.magnitude == result[0]).all()
             assert (sorted_occupation == result[1]).all()
 
@@ -221,13 +220,13 @@ class TestElectronicEigenvalues:
         """
         Test the `resolve_homo_lumo_eigenvalues` method.
         """
-        electronic_eigenvalues = generate_electronic_eigenvalues(
+        electronic_band_structure = generate_electronic_band_structure(
             value=value,
             occupation=occupation,
             highest_occupied=highest_occupied,
             lowest_unoccupied=lowest_unoccupied,
         )
-        homo, lumo = electronic_eigenvalues.resolve_homo_lumo_eigenvalues()
+        homo, lumo = electronic_band_structure.resolve_homo_lumo_eigenvalues()
         if homo is not None and lumo is not None:
             assert (homo.magnitude, lumo.magnitude) == result
         else:
@@ -317,13 +316,13 @@ class TestElectronicEigenvalues:
         """
         Test the `extract_band_gap` method.
         """
-        electronic_eigenvalues = generate_electronic_eigenvalues(
+        electronic_band_structure = generate_electronic_band_structure(
             value=value,
             occupation=occupation,
             highest_occupied=highest_occupied,
             lowest_unoccupied=lowest_unoccupied,
         )
-        band_gap = electronic_eigenvalues.extract_band_gap()
+        band_gap = electronic_band_structure.extract_band_gap()
         if band_gap is not None:
             assert np.isclose(band_gap.value.magnitude, band_gap_result)
         else:
@@ -353,13 +352,13 @@ class TestElectronicEigenvalues:
         Test the `resolve_reciprocal_cell` method. This is done via the `normalize` function because `reciprocal_cell` is a
         `QuantityReference`, hence we need to assign it.
         """
-        electronic_eigenvalues = generate_electronic_eigenvalues(
+        electronic_band_structure = generate_electronic_band_structure(
             reciprocal_lattice_vectors=reciprocal_lattice_vectors
         )
         # `normalize()` instead of `resolve_reciprocal_cell()` in order for refs to work
-        # reciprocal_cell = electronic_eigenvalues.resolve_reciprocal_cell()
-        electronic_eigenvalues.normalize(EntryArchive(), logger)
-        reciprocal_cell = electronic_eigenvalues.reciprocal_cell
+        # reciprocal_cell = electronic_band_structure.resolve_reciprocal_cell()
+        electronic_band_structure.normalize(EntryArchive(), logger)
+        reciprocal_cell = electronic_band_structure.reciprocal_cell
         if reciprocal_cell is not None:
             assert np.allclose(reciprocal_cell.magnitude, result)
         else:

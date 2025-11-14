@@ -27,8 +27,8 @@ from nomad_simulations.schema_packages.outputs import Outputs, SCFOutputs
 from nomad_simulations.schema_packages.properties import (
     DOSProfile,
     ElectronicBandGap,
+    ElectronicBandStructure,
     ElectronicDensityOfStates,
-    ElectronicEigenvalues,
 )
 from nomad_simulations.schema_packages.variables import Energy2 as Energy
 from nomad_simulations.schema_packages.variables import KLinePath
@@ -328,7 +328,7 @@ def generate_k_space_simulation(
     return generate_simulation(model_method=[model_method], model_system=[model_system])
 
 
-def generate_electronic_eigenvalues(
+def generate_electronic_band_structure(
     reciprocal_lattice_vectors: list[list[float]] | None = [
         [1, 0, 0],
         [0, 1, 0],
@@ -356,9 +356,9 @@ def generate_electronic_eigenvalues(
     ],
     highest_occupied: float | None = None,
     lowest_unoccupied: float | None = None,
-) -> ElectronicEigenvalues:
+) -> ElectronicBandStructure:
     """
-    Generate an `ElectronicEigenvalues` section with the given parameters.
+    Generate an `ElectronicBandStructure` section with the given parameters.
     """
     outputs = Outputs()
     k_space = KSpace(
@@ -383,18 +383,18 @@ def generate_electronic_eigenvalues(
         model_method=[model_method],
         outputs=[outputs],
     )
-    electronic_eigenvalues = ElectronicEigenvalues(n_bands=2)
-    outputs.electronic_eigenvalues = [electronic_eigenvalues]
-    electronic_eigenvalues.k_path = KLinePath(
+    electronic_band_structure = ElectronicBandStructure(n_levels=2)
+    outputs.electronic_eigenvalues = [electronic_band_structure]
+    electronic_band_structure.k_path = KLinePath(
         points=model_method.numerical_settings[0].k_line_path
     )
     if value is not None:
-        electronic_eigenvalues.value = value
+        electronic_band_structure.value = value
     if occupation is not None:
-        electronic_eigenvalues.occupation = occupation
-    electronic_eigenvalues.highest_occupied = highest_occupied
-    electronic_eigenvalues.lowest_unoccupied = lowest_unoccupied
-    return electronic_eigenvalues
+        electronic_band_structure.occupation = occupation
+    electronic_band_structure.highest_occupied = highest_occupied
+    electronic_band_structure.lowest_unoccupied = lowest_unoccupied
+    return electronic_band_structure
 
 
 @pytest.fixture(scope='session')

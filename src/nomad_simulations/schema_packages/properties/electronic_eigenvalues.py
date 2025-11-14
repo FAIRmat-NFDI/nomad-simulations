@@ -112,13 +112,6 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         """,
     )
 
-    reciprocal_cell = Quantity(
-        type=KSpace.reciprocal_lattice_vectors,
-        description="""
-        Reference to the reciprocal lattice vectors stored under `KSpace`.
-        """,
-    )
-
     def order_eigenvalues(self) -> tuple[pint.Quantity, np.ndarray] | None:
         """
         Order the eigenvalues based on the `value` and `occupation`. The return `value` and
@@ -211,97 +204,6 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
             else:
                 band_gap.value = lumo - homo
         return band_gap
-
-    # TODO fix this method once `FermiSurface` property is implemented
-    @log
-    def extract_fermi_surface(self) -> FermiSurface | None:
-        """
-        Extract the Fermi surface for metal systems and using the `FermiLevel.value`.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[FermiSurface]): The extracted Fermi surface section to be stored in `Outputs`.
-        """
-        logger = self.extract_fermi_surface.__annotations__['logger']
-        # Check if the system has a finite band gap
-        homo, lumo = self.resolve_homo_lumo_eigenvalues()
-        if (homo and lumo) and (lumo - homo).magnitude > 0:
-            return None
-
-        # Get the `fermi_level.value`
-        fermi_level = get_sibling_section(
-            section=self, sibling_section_name='fermi_level', logger=logger
-        )
-        if fermi_level is None:
-            logger.warning(
-                'Could not extract the `FermiSurface`, because `FermiLevel` is not stored.'
-            )
-            return None
-        fermi_level_value = fermi_level.value.magnitude
-
-        # Extract values close to the `fermi_level.value`
-        fermi_indices = np.logical_and(
-            self.value.magnitude
-            >= (fermi_level_value - configuration.fermi_surface_tolerance),
-            self.value.magnitude
-            <= (fermi_level_value + configuration.fermi_surface_tolerance),
-        )
-        fermi_values = self.value[fermi_indices]
-
-        # Store `FermiSurface` values
-        # ! This is wrong (!) the `value` should be the `KMesh.points`, not the `ElectronicEigenvalues.value`
-        fermi_surface = FermiSurface(
-            n_levels=self.n_levels,
-            is_derived=True,
-            physical_property_ref=self,
-        )
-        fermi_surface.value = fermi_values
-        return fermi_surface
-
-    def resolve_reciprocal_cell(self) -> pint.Quantity | None:
-        """
-        Resolve the reciprocal cell from the `KSpace` numerical settings section.
-
-        Returns:
-            Optional[pint.Quantity]: _description_
-        """
-        numerical_settings = self.m_xpath(
-            'm_parent.m_parent.model_method[-1].numerical_settings', dict=False
-        )
-        if numerical_settings is None:
-            return None
-        k_space = None
-        for setting in numerical_settings:
-            if isinstance(setting, KSpace):
-                k_space = setting
-                break
-        if k_space is None:
-            return None
-        return k_space
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        # Resolve `highest_occupied` and `lowest_unoccupied` eigenvalues
-        self.highest_occupied, self.lowest_unoccupied = (
-            self.resolve_homo_lumo_eigenvalues()
-        )
-
-        # `ElectronicBandGap` extraction
-        band_gap = self.extract_band_gap()
-        if band_gap is not None:
-            self.m_parent.electronic_band_gaps.append(band_gap)
-
-        # TODO uncomment once `FermiSurface` property is implemented
-        # `FermiSurface` extraction
-        # fermi_surface = self.extract_fermi_surface(logger)
-        # if fermi_surface is not None:
-        #     self.m_parent.fermi_surfaces.append(fermi_surface)
-
-        # Resolve `reciprocal_cell` from the `KSpace` numerical settings section
-        self.reciprocal_cell = self.resolve_reciprocal_cell()
 
 
 class Occupancy(PhysicalProperty):
