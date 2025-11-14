@@ -202,7 +202,17 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
                 band_gap.value = lumo - homo
         return band_gap
 
-
+    def normalize(self):
+        """
+        Normalize the eigenvalues by resolving HOMO/LUMO and extracting the band gap.
+        """
+        # Ensure HOMO/LUMO are resolved (side effects may be needed)
+        self.resolve_homo_lumo_eigenvalues()
+        # Extract and store the band gap if possible
+        band_gap = self.extract_band_gap()
+        if band_gap is not None:
+            # Store the band gap as an attribute or in a suitable location
+            self.band_gap = band_gap
 class Occupancy(PhysicalProperty):
     """
     Electrons occupancy of an atom per orbital and spin. This is a number defined between 0 and 1 for
