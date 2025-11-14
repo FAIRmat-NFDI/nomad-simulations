@@ -59,7 +59,7 @@ class MolecularOrbitals(ElectronicEigenvalues):
         unit='electron_volt',
         shape=['n_mo'],
         description="""
-        Orbital energies for each MO.  In a canonical SCF these are the eigenvalues 
+        Orbital energies for each MO. In a canonical SCF these are the eigenvalues 
         of the (Fock) Hamiltonian; in correlated frameworks they may be natural-orbital
         energies or any other chosen set.
         """,
