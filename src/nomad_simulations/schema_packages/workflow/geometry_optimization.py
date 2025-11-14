@@ -10,6 +10,7 @@ from .general import (
     SerialWorkflow,
     SimulationWorkflowModel,
     SimulationWorkflowResults,
+    WorkflowConvergenceTarget
 )
 
 m_package = SchemaPackage()
@@ -69,6 +70,8 @@ class GeometryOptimizationModel(SimulationWorkflowModel):
         The number of optimization steps between saved outputs.
         """,
     )
+
+    convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
 
 
 class GeometryOptimizationResults(SimulationWorkflowResults):
