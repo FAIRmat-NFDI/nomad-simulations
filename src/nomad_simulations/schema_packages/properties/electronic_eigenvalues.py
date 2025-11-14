@@ -211,6 +211,8 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         if band_gap is not None:
             # Store the band gap as an attribute or in a suitable location
             self.band_gap = band_gap
+
+
 class Occupancy(PhysicalProperty):
     """
     Electrons occupancy of an atom per orbital and spin. This is a number defined between 0 and 1 for
