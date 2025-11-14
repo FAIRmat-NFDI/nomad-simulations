@@ -1,5 +1,5 @@
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import SchemaPackage, SubSection
+from nomad.metainfo import SchemaPackage
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
@@ -9,7 +9,6 @@ from .general import (
     SimulationWorkflow,
     SimulationWorkflowModel,
     SimulationWorkflowResults,
-    WorkflowConvergenceTarget
 )
 
 m_package = SchemaPackage()
@@ -22,8 +21,6 @@ class SinglePointModel(SimulationWorkflowModel):
 
     _label = 'Single point model'
 
-    convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
-
 
 class SinglePointResults(SimulationWorkflowResults):
     """
@@ -31,8 +28,6 @@ class SinglePointResults(SimulationWorkflowResults):
     """
 
     _label = 'Single point results'
-
-    ## Add the ref to the Single point data here
 
 
 class SinglePoint(SimulationWorkflow):

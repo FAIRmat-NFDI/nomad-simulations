@@ -108,7 +108,7 @@ class SimulationWorkflowModel(ArchiveSection):
         """
     )
 
-    #convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
+    convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not archive.data:
@@ -202,6 +202,11 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
         if not archive.data or not archive.data.outputs:
             return
+        
+        #Don't generate tasks if not at the root
+        if isinstance(self.m_parent, SimulationWorkflowModel):
+            return
+
 
         # do not overwrite if tasks are set but give out a warning that it maybe
         # inconsistent with the outputs
