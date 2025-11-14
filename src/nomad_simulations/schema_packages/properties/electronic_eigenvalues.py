@@ -5,8 +5,6 @@ import pint
 from nomad.config import config
 from nomad.metainfo import Quantity, SubSection
 
-from nomad_simulations.schema_packages.variables import KLinePath
-
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
