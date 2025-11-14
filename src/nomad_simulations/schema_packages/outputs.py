@@ -51,7 +51,7 @@ class SCFStep(ArchiveSection):
         unit='s',
         description="""
         Time spent at this SCF step.
-        """
+        """,
     )
 
     # Placeholder for code specific quantites - these could be a dictionary

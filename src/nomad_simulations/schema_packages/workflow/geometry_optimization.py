@@ -10,8 +10,8 @@ from .general import (
     SerialWorkflow,
     SimulationWorkflowModel,
     SimulationWorkflowResults,
-    WorkflowConvergenceTarget
 )
+from .single_point import SinglePointModel
 
 m_package = SchemaPackage()
 
@@ -71,7 +71,7 @@ class GeometryOptimizationModel(SimulationWorkflowModel):
         """,
     )
 
-    convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
+    single_point_workflows = SubSection(sub_section=SinglePointModel.m_def, repeats=True)
 
 
 class GeometryOptimizationResults(SimulationWorkflowResults):
