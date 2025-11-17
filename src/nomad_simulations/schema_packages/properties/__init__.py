@@ -1,5 +1,6 @@
 from .band_gap import ElectronicBandGap
-from .band_structure import ElectronicBandStructure, ElectronicEigenvalues, Occupancy
+from .band_structure import ElectronicBandStructure
+from .electronic_eigenvalues import ElectronicEigenvalues, Occupancy
 from .energies import (
     KineticEnergy,
     PotentialEnergy,
