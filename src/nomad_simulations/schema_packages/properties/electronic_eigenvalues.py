@@ -93,7 +93,7 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
     # ? Should we add functionalities to handle min/max of the `value` in some specific cases, .e.g, bands around the Fermi level,
     # ? core bands separated by gaps, and equivalently, higher-energy valence bands separated by gaps?
 
-    value_contributions = SubSection(
+    contributions = SubSection(
         sub_section=BaseElectronicEigenvalues.m_def,
         repeats=True,
         description="""
