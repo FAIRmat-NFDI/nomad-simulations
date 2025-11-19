@@ -343,6 +343,135 @@ class TestModelSystem:
         assert stype == expected_type
         assert dim == expected_dim
 
+    @pytest.mark.parametrize(
+        'lattice_vectors, positions, expected_fractional, description',
+        [
+            (
+                np.eye(3) * 4.0,
+                [[0, 0, 0], [2, 0, 0], [0, 2, 2]],
+                [[0.0, 0.0, 0.0], [0.5, 0.0, 0.0], [0.0, 0.5, 0.5]],
+                'cubic_cell',
+            ),
+            (
+                np.array(
+                    [
+                        [3.0, 0, 0],
+                        [3.0 * np.cos(np.pi / 3), 3.0 * np.sin(np.pi / 3), 0],
+                        [0, 0, 5.0],
+                    ]
+                ),
+                [[2.25, 1.29903811, 2.5]],
+                [[0.5, 0.5, 0.5]],
+                'hexagonal_cell',
+            ),
+            (
+                np.eye(3) * 2.0,
+                [[0, 0, 0]],
+                [[0.0, 0.0, 0.0]],
+                'origin',
+            ),
+            (
+                np.eye(3) * 2.0,
+                [[2, 2, 2]],
+                [[1.0, 1.0, 1.0]],
+                'unit_cell_corner',
+            ),
+            (
+                np.eye(3) * 2.0,
+                [[4, 0, 0], [0, 6, 0]],
+                [[2.0, 0.0, 0.0], [0.0, 3.0, 0.0]],
+                'outside_unit_cell',
+            ),
+            (
+                np.eye(3) * 2.0,
+                [[-2, 0, 0], [0, -4, 0]],
+                [[-1.0, 0.0, 0.0], [0.0, -2.0, 0.0]],
+                'negative_positions',
+            ),
+            (
+                np.eye(3) * 0.1,
+                [[0.05, 0.05, 0.05]],
+                [[0.5, 0.5, 0.5]],
+                'very_small_cell',
+            ),
+            (
+                np.eye(3) * 1000.0,
+                [[500, 500, 500]],
+                [[0.5, 0.5, 0.5]],
+                'very_large_cell',
+            ),
+            (
+                np.diag([2.0, 3.0, 4.0]),
+                [[1, 1.5, 2]],
+                [[0.5, 0.5, 0.5]],
+                'orthorhombic',
+            ),
+            (
+                np.array([[3.0, 0, 0], [0, 4.0, 0], [1.0, 0, 5.0]]),
+                [[1.5, 2.0, 2.5]],
+                [[0.33333333, 0.5, 0.5]],
+                'monoclinic',
+            ),
+        ],
+    )
+    def test_compute_fractional_coordinates_valid(
+        self, lattice_vectors, positions, expected_fractional, description
+    ):
+        """
+        Test compute_fractional_coordinates with valid inputs covering various cell types
+        and edge cases like positions outside unit cell, negative positions, and extreme sizes.
+        """
+        sys = ModelSystem(is_representative=True)
+        sys.lattice_vectors = lattice_vectors * ureg.angstrom
+        sys.positions = np.array(positions) * ureg.angstrom
+
+        fractional = sys.compute_fractional_coordinates()
+
+        assert fractional is not None, f'Failed for {description}'
+        np.testing.assert_allclose(
+            fractional,
+            expected_fractional,
+            rtol=1e-5,
+            err_msg=f'Mismatch for {description}',
+        )
+
+    @pytest.mark.parametrize(
+        'lattice_vectors, positions, description',
+        [
+            (np.zeros((3, 3)), [[0, 0, 0]], 'zero_lattice'),
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 1, 0]]),
+                [[0.5, 0.5, 0]],
+                'coplanar_vectors',
+            ),
+            (
+                np.array([[1, 0, 0], [2, 0, 0], [0, 1, 0]]),
+                [[1, 1, 0]],
+                'linearly_dependent',
+            ),
+            (np.eye(3), None, 'no_positions'),
+            (None, [[0, 0, 0]], 'no_lattice_vectors'),
+            (None, None, 'both_none'),
+        ],
+    )
+    def test_compute_fractional_coordinates_edge_cases(
+        self, lattice_vectors, positions, description
+    ):
+        """
+        Test compute_fractional_coordinates returns None for edge cases:
+        degenerate cells, missing data, singular matrices.
+        """
+        sys = ModelSystem(is_representative=True)
+
+        if lattice_vectors is not None:
+            sys.lattice_vectors = lattice_vectors * ureg.angstrom
+        if positions is not None:
+            sys.positions = np.array(positions) * ureg.angstrom
+
+        fractional = sys.compute_fractional_coordinates()
+
+        assert fractional is None, f'Should return None for {description}'
+
     def test_normalize(self):
         """
         Test the full normalization sequence for ModelSystem:

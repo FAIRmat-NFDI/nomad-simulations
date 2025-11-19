@@ -144,6 +144,9 @@ class Representation(ArchiveSection):
 
     This design allows for multiple representations of the same system (e.g., primitive,
     conventional, supercell) to coexist while maintaining a consistent interface.
+
+    See the [Representation Architecture](https://nomad-lab.eu/prod/v1/staging/docs/howto/customization/plugins_dev.html)
+    documentation for detailed information about the design philosophy and usage patterns.
     """
 
     name = Quantity(
@@ -157,12 +160,14 @@ class Representation(ArchiveSection):
         type=MEnum('cartesian', 'cylindrical', 'spherical', 'ellipsoidal', 'polar'),
         default='cartesian',
         description="""
-        Coordinate system used to define geometrical primitives of a shape in real
-        space. Defaults to 'cartesian'.
+        Coordinate system convention used to interpret the positions quantity. Defaults to 'cartesian',
+        which is used in practice for almost all simulation data.
+
+        For 'cartesian', positions and lattice_vectors are expressed in an implicit Cartesian frame (x, y, z).
 
         | name       | description | dimensionalities | coordinates |
         |------------|-------------|------------------|-------------|
-        | cartesian  | coordinate system with fixed angles between the axes (not necessarily 90°) | 1, 2, 3 | x, y, z |
+        | cartesian  | implicit Cartesian coordinate system | 1, 2, 3 | x, y, z |
         | cylindrical| cylindrical symmetry | 3 | r, theta, z |
         | spherical  | spherical symmetry | 3 | r, theta, phi |
         | ellipsoidal| spherically elongated system | 3 | r, theta, phi |
@@ -170,13 +175,17 @@ class Representation(ArchiveSection):
         """,
     )  # ? in practice we use cartesian only...
 
+    # TODO: in the future, we may need to disambiguate between "basis vectors of the reference frame" and "lattice vectors"
+    # in cases where the terminology could be confusing. The lattice vectors define the periodic cell,
+    # while the reference frame basis vectors (x, y, z) are implicit and not stored.
     lattice_vectors = Quantity(
         type=np.float64,
         shape=[3, 3],
         unit='meter',
         description="""
-        Lattice vectors of the simulated cell. The first index runs over each lattice vector.
-        The second index runs over the reference Cartesian coordinate system, in the order $x, y, z$.
+        Lattice vectors of the simulated cell, stored as a 3x3 matrix where each row is a lattice vector.
+        The first index runs over each lattice vector (a, b, c). The second index runs over the
+        implicit Cartesian coordinate system (x, y, z), the same frame used for positions.
         """,
     )
 
@@ -229,22 +238,16 @@ class Representation(ArchiveSection):
         """,
     )
 
-    positions = Quantity(
-        type=np.float64,
-        shape=['*', 3],
-        unit='meter',
-        description="""
-            Cartesian coordinates of all atoms in the system.
+    fractional_coordinates = (
+        Quantity(  # TODO rename to fractional_positions for consistency
+            type=np.float64,
+            shape=['*', 3],
+            description="""
+            Fractional coordinates of all atoms in the system with respect to the lattice vectors.
+            Values typically range from 0 to 1 within the unit cell, though atoms may lie outside
+            this range in non-periodic directions or due to wrapping conventions.
         """,
-    )
-
-    fractional_coordinates = Quantity(
-        type=np.float64,
-        shape=['*', 3],
-        description="""
-            Fractional coordinates of all atoms in the system with respect to the
-            lattice vectors.
-        """,
+        )
     )
 
     wyckoff_letters = Quantity(
@@ -272,26 +275,30 @@ class AlternativeRepresentation(Representation):
     A representation relative to another, reference representation, typically the original computed system.
     """
 
+    # Mimics spglib's dataset['origin_shift'] from get_symmetry_dataset()
     origin_shift = Quantity(
         type=np.float64,
         shape=[3],
         description="""
-        Vector `p` from the origin of a custom coordinates system to the origin of the
-        global coordinates system. Together with the matrix `P` (stored in transformation_matrix),
-        the transformation between the custom coordinates `x` and global coordinates `X` is then
-        given by:
-            `x` = `P` `X` + `p`.
+        Translation vector relating the origin of this representation to the reference representation,
+        expressed in fractional coordinates. Together with transformation_matrix, defines how fractional
+        coordinates transform between representations: x_alt = P @ x_ref + p, where both representations
+        use the same implicit Cartesian frame but different lattice vectors. Commonly used to relate
+        input cells to standardized conventional cells in symmetry analysis (e.g., from [spglib](https://spglib.readthedocs.io/en/latest/definition.html)).
         """,
     )
 
+    # Mimics spglib's dataset['transformation_matrix'] from get_symmetry_dataset()
     transformation_matrix = Quantity(
         type=np.float64,
         shape=[3, 3],
         description="""
-        Matrix `P` used to transform the custom coordinates system to the global coordinates system.
-        Together with the vector `p` (stored in origin_shift), the transformation between
-        the custom coordinates `x` and global coordinates `X` is then given by:
-            `x` = `P` `X` + `p`.
+        Transformation matrix P relating lattice vectors between this representation and the reference
+        representation. Lattice vectors transform as: (a_alt, b_alt, c_alt) = (a_ref, b_ref, c_ref) @ P^-1.
+        Together with origin_shift, defines how fractional coordinates transform: x_alt = P @ x_ref + p.
+        Both representations use the same implicit Cartesian frame; this matrix only changes how fractional
+        coordinates are expressed relative to different lattice vectors. Commonly used in symmetry analysis
+        to relate input cells to standardized conventional cells (e.g., from [spglib](https://spglib.readthedocs.io/en/latest/definition.html)).
         """,
     )
 
@@ -720,6 +727,9 @@ class ModelSystem(System, Representation):
     parent-child system trees. The quantities `branch_label`, `branch_depth`, `particle_indices`,
     and `bond_list` are used to define the parent-child tree.
 
+    See the [ModelSystem documentation](https://nomad-lab.eu/prod/v1/staging/docs/howto/customization/plugins_dev.html)
+    for comprehensive usage examples, design philosophy, and integration patterns.
+
     The normalization within ModelSystem.normalize() proceeds in the following order:
         1. Parent System normalization
         2. Particle state reassignment and validation
@@ -732,17 +742,19 @@ class ModelSystem(System, Representation):
 
     Examples for the parent-child hierarchical trees:
 
-        - Example 1, a crystal Si has: 3 Cell sections (named 'original', 'primitive',
-        and 'conventional'), 1 Symmetry section, and 0 nested ModelSystem trees.
+        - Example 1, a crystal Si has: 2 alternative Representation sections (named 'primitive'
+        and 'conventional'), 1 Symmetry section, and 0 nested ModelSystem trees. The original
+        representation data is stored directly on the ModelSystem instance itself.
 
         - Example 2, an heterostructure Si/GaAs has: 1 parent ModelSystem section (for
         Si/GaAs together) and 2 nested child ModelSystem sections (for Si and GaAs); each
-        child has 3 Cell sections and 1 Symmetry section. The parent ModelSystem section
-        could also have 3 Cell and 1 Symmetry section (if it is possible to extract them).
+        child has 2 alternative Representation sections and 1 Symmetry section. The parent
+        ModelSystem section could also have 2 alternative Representation sections and 1
+        Symmetry section (if it is possible to extract them).
 
         - Example 3, a solution of C800H3200Cu has: 1 parent ModelSystem section (for
-        800*(CH4)+Cu) and 2 nested child ModelSystem sections (for CH4 and Cu); each child
-        has 1 Cell section.
+        800*(CH4)+Cu) and 2 nested child ModelSystem sections (for CH4 and Cu). Each system
+        stores its cell data directly via Representation inheritance.
 
         - Example 4, a passivated surface GaAs-CO2 has --> similar to the example 2.
 
@@ -804,7 +816,7 @@ class ModelSystem(System, Representation):
         Defaults to False and set to True by the `Computation.normalize()`. If set to True,
         the `ModelSystem.normalize()` function is ran (otherwise, it is not).
         """,
-    )
+    )  # TODO: remove, as main ModelSystem is now representative by default
 
     # ? Check later when implementing `Outputs` if this quantity needs to be extended
     time_step = Quantity(
@@ -855,12 +867,28 @@ class ModelSystem(System, Representation):
         """,
     )
 
+    # positions is defined in ModelSystem (not Representation) because it represents the fixed
+    # Cartesian positions of atoms in the top-level system. Alternative representations can have
+    # different lattice_vectors and fractional_coordinates, but they all describe the same atoms
+    # at the same Cartesian positions. Subsystems reference these positions via particle_indices.
+    positions = Quantity(
+        type=np.float64,
+        shape=['*', 3],
+        unit='meter',
+        description="""
+        Cartesian coordinates of all atoms in the system. Values are expressed in an implicit
+        Cartesian coordinate system with axes ordered as (x, y, z). The orientation of this
+        frame is determined by the simulation code or parser that generates the data.
+        All subsystems reference these positions via particle_indices.
+        """,
+    )
+
     velocities = Quantity(
         type=np.float64,
         shape=['*', 3],
         unit='meter / second',
         description="""
-            Velocities of the particles: I.e., the change in cartesian coordinates of the
+        Velocities of the particles: I.e., the change in cartesian coordinates of the
         particle position with time.
         """,
     )
@@ -975,6 +1003,59 @@ class ModelSystem(System, Representation):
             cell_section = self.representations[0]
             cell_section.volume = cell.volume * ureg.angstrom**3
 
+    def compute_fractional_coordinates(
+        self,
+        positions: np.ndarray | None = None,
+        lattice_vectors: np.ndarray | None = None,
+    ) -> np.ndarray | None:
+        """
+        Compute fractional coordinates from Cartesian positions and lattice vectors
+        by solving: fractional = positions @ inv(lattice_vectors.T)
+
+        Args:
+            `positions`: Cartesian positions in the implicit frame (N x 3 array). If `None`, uses self.positions.
+            `lattice_vectors`: Lattice vectors as 3x3 matrix (rows are vectors a,b,c). If `None`, uses self.lattice_vectors.
+
+        Returns:
+            Fractional coordinates (N x 3 array) or `None` if computation fails.
+        """
+        # TODO: Extend support to 2D and 1D systems by handling reduced-dimension lattice vectors appropriately.
+        # Use instance attributes if not provided
+        if positions is None:
+            if self.positions is None:
+                return None
+            positions = (
+                self.positions.magnitude
+                if hasattr(self.positions, 'magnitude')
+                else self.positions
+            )
+
+        if lattice_vectors is None:
+            if self.lattice_vectors is None:
+                return None
+            lattice_vectors = (
+                self.lattice_vectors.magnitude
+                if hasattr(self.lattice_vectors, 'magnitude')
+                else self.lattice_vectors
+            )
+
+        # Check for degenerate cell  #? move to a separate utility function
+        try:
+            cell_volume = np.linalg.det(lattice_vectors)
+            # Use a relative threshold instead of absolute since values can be in different units
+            if abs(cell_volume) < 1e-50:
+                return None
+
+            # Compute fractional coordinates: fractional = positions @ inv(lattice_vectors)
+            # This solves: positions = fractional @ lattice_vectors
+            # (lattice_vectors rows are the basis vectors a, b, c)
+            inv_lattice = np.linalg.inv(lattice_vectors)
+            fractional = positions @ inv_lattice
+
+            return fractional
+        except (np.linalg.LinAlgError, ValueError):
+            return None
+
     # TODO this could be wrong if executed before normalization
     def is_atomic(self) -> bool:
         """
@@ -1063,14 +1144,18 @@ class ModelSystem(System, Representation):
         Generates an ASE Atoms object from ModelSystem data.
 
         Args:
-            representation_index: Index of representation to use for cell data.
-                                 None uses original ModelSystem data (no representations),
-                                 int uses ModelSystem.representations[index]
+            representation_index: Index of the alternative representation to use for cell geometry.
+                                 - None (default): Uses the original cell data directly from ModelSystem
+                                   (lattice_vectors, periodic_boundary_conditions)
+                                 - int: Uses the alternative representation at ModelSystem.representations[index]
+                                   This allows conversion of primitive cells, conventional cells, or other
+                                   geometric views to ASE format while keeping the same atomic positions.
 
         Uses:
-          - atom_states to obtain chemical symbols,
-          - positions from the top-level positions quantity,
-          - periodic boundary conditions and lattice vectors from specified representation or original data.
+          - atom_states to obtain chemical symbols
+          - positions from the top-level positions quantity (always from ModelSystem, not from representations)
+          - periodic boundary conditions and lattice vectors from either ModelSystem directly (if representation_index=None)
+            or from the specified alternative representation (if representation_index is an integer)
         """
         logger = self.to_ase_atoms.__annotations__['logger']
         symbols = self.get_symbols()
@@ -1364,6 +1449,12 @@ class ModelSystem(System, Representation):
 
         # Extract geometric space quantities for the cell
         self.get_geometric_space_for_cell(logger=logger)
+
+        # TODO: Optionally populate fractional_coordinates from positions and lattice_vectors
+        # This could be controlled via an environment variable (e.g., NOMAD_POPULATE_FRACTIONAL_COORDS)
+        # if os.getenv('NOMAD_POPULATE_FRACTIONAL_COORDS', 'false').lower() == 'true':
+        #     if self.positions is not None and self.lattice_vectors is not None:
+        #         self.fractional_coordinates = self.compute_fractional_coordinates()
 
         # Create and normalize Symmetry section if applicable
         if self.type == 'bulk' and self.symmetry is not None:
