@@ -4,12 +4,12 @@ import numpy as np
 from nomad.metainfo import MEnum, Quantity, SubSection
 
 if TYPE_CHECKING:
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
-
-from nomad_simulations.schema_packages.atoms_state import AtomsState, OrbitalsState
+from nomad_simulations.schema_packages.atoms_state import AtomsState, ElectronicState
 from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.variables import (
@@ -31,38 +31,26 @@ class BaseGreensFunction(PhysicalProperty):
     `WignerSeitz` (real space), `KMesh`, `MatsubaraFrequency`, `Frequency`, `Time`, or `ImaginaryTime`.
     For example, G(k, ω) will have corresponds to `k_mesh` and `real_frequency` being set.
 
+    The `entity_ref` field points to an `ElectronicState` describing the correlated orbitals. To access the
+    parent AtomsState, use `entity_ref.get_parent_entity()`. This follows the ElectronicState gateway pattern.
+
     Further information in M. Wallerberger et al., Comput. Phys. Commun. 235, 2 (2019).
     """
-
-    # ! we use `atoms_state_ref` and `orbitals_state_ref` to enforce order in the matrices
 
     n_atoms = Quantity(
         type=np.int32,
         description="""
         Number of atoms involved in the correlations effect and used for the matrix representation of the property.
+        Can be derived from entity_ref if needed.
         """,
     )
 
-    atoms_state_ref = Quantity(
-        type=AtomsState,
-        shape=['n_atoms'],
+    entity_ref = Quantity(
+        type=ElectronicState,
         description="""
-        Reference to the `AtomsState` section in which the Green's function properties are calculated.
-        """,
-    )
-
-    n_correlated_orbitals = Quantity(
-        type=np.int32,
-        description="""
-        Number of orbitals involved in the correlations effect and used for the matrix representation of the property.
-        """,
-    )
-
-    correlated_orbitals_ref = Quantity(
-        type=OrbitalsState,
-        shape=['n_correlated_orbitals'],
-        description="""
-        Reference to the `OrbitalsState` section in which the Green's function properties are calculated.
+        Reference to the `ElectronicState` section describing the correlated orbitals for which the
+        Green's function properties are calculated. The parent AtomsState can be accessed via
+        `entity_ref.get_parent_entity()`.
         """,
     )
 
@@ -232,9 +220,10 @@ class QuasiparticleWeight(PhysicalProperty):
     where Σ is the `ElectronicSelfEnergy`. The quasi-particle weight is a measure of the strength of the
     electron-electron interactions and takes values between 0 and 1, with Z = 1 representing a non-correlated
     system, and Z = 0 the Mott state.
-    """
 
-    # ! we use `atoms_state_ref` and `orbitals_state_ref` to enforce order in the matrices
+    The `entity_ref` field points to an `ElectronicState` describing the correlated orbitals. To access the
+    parent AtomsState, use `entity_ref.get_parent_entity()`. This follows the ElectronicState gateway pattern.
+    """
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/HybridizationFunction'
 
@@ -261,14 +250,7 @@ class QuasiparticleWeight(PhysicalProperty):
         type=np.int32,
         description="""
         Number of atoms involved in the correlations effect and used for the matrix representation of the quasiparticle weight.
-        """,
-    )
-
-    atoms_state_ref = Quantity(
-        type=AtomsState,
-        shape=['n_atoms'],
-        description="""
-        Reference to the `AtomsState` section in which the Green's function properties are calculated.
+        Can be derived from entity_ref if needed.
         """,
     )
 
@@ -279,11 +261,12 @@ class QuasiparticleWeight(PhysicalProperty):
         """,
     )
 
-    correlated_orbitals_ref = Quantity(
-        type=OrbitalsState,
-        shape=['n_correlated_orbitals'],
+    entity_ref = Quantity(
+        type=ElectronicState,
         description="""
-        Reference to the `OrbitalsState` section in which the Green's function properties are calculated.
+        Reference to the `ElectronicState` section describing the correlated orbitals for which the
+        quasiparticle weight is calculated. The parent AtomsState can be accessed via
+        `entity_ref.get_parent_entity()`.
         """,
     )
 

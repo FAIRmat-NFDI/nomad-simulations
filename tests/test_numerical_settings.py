@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
@@ -142,7 +140,16 @@ class TestKMesh:
             (
                 'Gamma-centered',
                 [2, 2, 2],
-                [[0.0, 1.0, 0.0, 1.0, 0.0, 1.0]],  # ! this result is weird @ndaelman-hu
+                [
+                    [0.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0],
+                    [0.0, 1.0, 0.0],
+                    [0.0, 1.0, 1.0],
+                    [1.0, 0.0, 0.0],
+                    [1.0, 0.0, 1.0],
+                    [1.0, 1.0, 0.0],
+                    [1.0, 1.0, 1.0],
+                ],
                 [0.0, 0.0, 0.0],
             ),
             # `center` is `'Monkhorst-Pack'`

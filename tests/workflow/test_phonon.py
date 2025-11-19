@@ -4,7 +4,7 @@ from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.workflow.phonon import (
     Phonon,
-    PhononModel,
+    PhononMethod,
     PhononResults,
 )
 from nomad_simulations.schema_packages.workflow.single_point import SinglePoint
@@ -22,10 +22,10 @@ class TestPhonon:
             ],
         )
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, PhononModel)
+        assert isinstance(workflow.method, PhononMethod)
         assert isinstance(workflow.results, PhononResults)
         assert len(workflow.inputs) == 2
-        assert workflow.model == workflow.inputs[1].section
+        assert workflow.method == workflow.inputs[1].section
         assert len(workflow.outputs) == 2
         assert workflow.results == workflow.outputs[0].section
         assert archive.data.model_system[0] in [

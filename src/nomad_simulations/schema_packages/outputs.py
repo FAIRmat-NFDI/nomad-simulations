@@ -29,13 +29,14 @@ from nomad_simulations.schema_packages.properties import (
     Permittivity,
     PotentialEnergy,
     QuasiparticleWeight,
+    RadiusOfGyration,
     Temperature,
     TotalEnergy,
     TotalForce,
     XASSpectrum,
 )
 
-from .common import Time
+from .common import SimulationTime
 
 
 # I don't think this should live here. 
@@ -68,7 +69,7 @@ class SCFStep(ArchiveSection):
     )
 
 
-class Outputs(Time):
+class Outputs(SimulationTime):
     """
     Output properties of a simulation. This base class can be used for inheritance in any of the output properties
     defined in this schema.
@@ -94,31 +95,27 @@ class Outputs(Time):
         """,
     )
 
+    absorption_spectra = SubSection(sub_section=AbsorptionSpectrum.m_def, repeats=True)
+
     chemical_potentials = SubSection(sub_section=ChemicalPotential.m_def, repeats=True)
 
     crystal_field_splittings = SubSection(
         sub_section=CrystalFieldSplitting.m_def, repeats=True
     )
 
-    hopping_matrices = SubSection(sub_section=HoppingMatrix.m_def, repeats=True)
-
-    electronic_eigenvalues = SubSection(
-        sub_section=ElectronicEigenvalues.m_def, repeats=True
-    )
-
     electronic_band_gaps = SubSection(sub_section=ElectronicBandGap.m_def, repeats=True)
-
-    electronic_dos = SubSection(
-        sub_section=ElectronicDensityOfStates.m_def, repeats=True
-    )
-
-    fermi_surfaces = SubSection(sub_section=FermiSurface.m_def, repeats=True)
 
     electronic_band_structures = SubSection(
         sub_section=ElectronicBandStructure.m_def, repeats=True
     )
 
-    occupancies = SubSection(sub_section=Occupancy.m_def, repeats=True)
+    electronic_dos = SubSection(
+        sub_section=ElectronicDensityOfStates.m_def, repeats=True
+    )
+
+    electronic_eigenvalues = SubSection(
+        sub_section=ElectronicEigenvalues.m_def, repeats=True
+    )
 
     electronic_greens_functions = SubSection(
         sub_section=ElectronicGreensFunction.m_def, repeats=True
@@ -128,30 +125,36 @@ class Outputs(Time):
         sub_section=ElectronicSelfEnergy.m_def, repeats=True
     )
 
+    fermi_surfaces = SubSection(sub_section=FermiSurface.m_def, repeats=True)
+
+    hopping_matrices = SubSection(sub_section=HoppingMatrix.m_def, repeats=True)
+
     hybridization_functions = SubSection(
         sub_section=HybridizationFunction.m_def, repeats=True
     )
+
+    kinetic_energies = SubSection(sub_section=KineticEnergy.m_def, repeats=True)
+
+    occupancies = SubSection(sub_section=Occupancy.m_def, repeats=True)
+
+    permittivities = SubSection(sub_section=Permittivity.m_def, repeats=True)
+
+    potential_energies = SubSection(sub_section=PotentialEnergy.m_def, repeats=True)
 
     quasiparticle_weights = SubSection(
         sub_section=QuasiparticleWeight.m_def, repeats=True
     )
 
-    permittivities = SubSection(sub_section=Permittivity.m_def, repeats=True)
+    radii_of_gyration = SubSection(sub_section=RadiusOfGyration.m_def, repeats=True)
 
-    absorption_spectra = SubSection(sub_section=AbsorptionSpectrum.m_def, repeats=True)
-
-    xas_spectra = SubSection(sub_section=XASSpectrum.m_def, repeats=True)
+    temperatures = SubSection(sub_section=Temperature.m_def, repeats=True)
 
     #TODO I think this can be deleted in favor of scf_steps
     total_energies = SubSection(sub_section=TotalEnergy.m_def, repeats=True)
 
-    kinetic_energies = SubSection(sub_section=KineticEnergy.m_def, repeats=True)
-
-    potential_energies = SubSection(sub_section=PotentialEnergy.m_def, repeats=True)
-
     total_forces = SubSection(sub_section=TotalForce.m_def, repeats=True)
 
-    temperatures = SubSection(sub_section=Temperature.m_def, repeats=True)
+    xas_spectra = SubSection(sub_section=XASSpectrum.m_def, repeats=True)
 
     scf_steps = SubSection(sub_section=SCFStep.m_def, repeats=True)
 

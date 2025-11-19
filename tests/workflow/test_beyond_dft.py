@@ -1,8 +1,9 @@
+import pytest
 from nomad.datamodel import EntryMetadata
 from nomad.datamodel.metainfo.workflow import TaskReference
 
 from nomad_simulations.schema_packages.workflow.beyond_dft import (
-    BeyondDFTModel,
+    BeyondDFTMethod,
     BeyondDFTResults,
     BeyondDFTWorkflow,
 )
@@ -12,7 +13,7 @@ class TestBeyondDFT:
     def test_inputs_outputs(self, logger, archive, log_output):
         workflow = BeyondDFTWorkflow()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, BeyondDFTModel)
+        assert isinstance(workflow.method, BeyondDFTMethod)
         assert isinstance(workflow.results, BeyondDFTResults)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1
@@ -21,9 +22,8 @@ class TestBeyondDFT:
         assert log_output.entries[0]['event'] == 'Incorrect number of tasks found.'
 
     # TODO enable once tests with infra is permitted
-    def _test_tasks(
-        self, logger, archive, upload_data, context, upload_id, main_author
-    ):
+    @pytest.mark.skip(reason='Requires Keycloak/infrastructure setup')
+    def test_tasks(self, logger, archive, upload_data, context, upload_id, main_author):
         archive.metadata = EntryMetadata(upload_id=upload_id, main_author=main_author)
         archive.m_context = context
         workflow = BeyondDFTWorkflow()

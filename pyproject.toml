@@ -39,11 +39,16 @@ dependencies = [
 "Documentation" = "https://nomad-coe.github.io/nomad-simulations/"
 
 [project.optional-dependencies]
+md = [
+    "MDAnalysis>=2.4.0",
+    "networkx"
+]
 dev = [
     'mypy>=1.15',
     'pytest>= 5.3.0, <8',
     'pytest-timeout>=1.4.2',
     'pytest-cov>=2.7.1',
+    'pytest-asyncio>=0.21.0',
     'ruff>=0.6',
     'structlog>=1.0',
     'typing-extensions>=4.12',

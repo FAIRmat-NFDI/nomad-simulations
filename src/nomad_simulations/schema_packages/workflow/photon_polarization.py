@@ -8,14 +8,14 @@ from nomad_simulations.schema_packages.utils import log
 
 from .general import (
     ParallelWorkflow,
-    SimulationWorkflowModel,
+    SimulationWorkflowMethod,
     SimulationWorkflowResults,
 )
 
 m_package = SchemaPackage()
 
 
-class PhotonPolarizationModel(SimulationWorkflowModel):
+class PhotonPolarizationMethod(SimulationWorkflowMethod):
     """Defines the full macroscopic dielectric tensor methodology: BSE method reference."""
 
     # TODO add TDDFT methodology reference.
@@ -58,8 +58,8 @@ class PhotonPolarizationWorkflow(ParallelWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = PhotonPolarizationModel()
+        if not self.method:
+            self.method = PhotonPolarizationMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 

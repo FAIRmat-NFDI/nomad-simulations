@@ -8,14 +8,14 @@ from .general import (
     INCORRECT_N_TASKS,
     ElectronicStructureResults,
     SerialWorkflow,
-    SimulationWorkflowModel,
+    SimulationWorkflowMethod,
     SimulationWorkflowResults,
 )
 
 m_package = SchemaPackage()
 
 
-class BeyondDFTModel(SimulationWorkflowModel):
+class BeyondDFTMethod(SimulationWorkflowMethod):
     _label = 'DFT+ workflow parameters'
 
 
@@ -38,8 +38,8 @@ class BeyondDFTWorkflow(SerialWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = BeyondDFTModel()
+        if not self.method:
+            self.method = BeyondDFTMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 

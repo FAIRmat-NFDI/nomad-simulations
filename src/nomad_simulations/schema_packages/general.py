@@ -22,7 +22,7 @@ from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.utils import get_composition, log
 
-from .common import Time
+from .common import SimulationTime
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -137,7 +137,7 @@ class Program(Entity):
     )
 
 
-class BaseSimulation(Activity, Time):
+class BaseSimulation(Activity, SimulationTime):
     """
     A computational simulation that produces output data from a given input model system
     and input methodological parameters.

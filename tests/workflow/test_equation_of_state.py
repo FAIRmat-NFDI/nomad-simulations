@@ -8,7 +8,7 @@ from nomad_simulations.schema_packages.properties.energies import TotalEnergy
 from nomad_simulations.schema_packages.workflow.equation_of_state import (
     FUNCTION_NAMES,
     EquationOfState,
-    EquationOfStateModel,
+    EquationOfStateMethod,
     EquationOfStateResults,
 )
 
@@ -17,7 +17,7 @@ class TestEquationOfState:
     def test_inputs_outputs(self, logger, archive, log_output):
         workflow = EquationOfState()
         workflow.normalize(archive, logger)
-        assert isinstance(workflow.model, EquationOfStateModel)
+        assert isinstance(workflow.method, EquationOfStateMethod)
         assert isinstance(workflow.results, EquationOfStateResults)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1

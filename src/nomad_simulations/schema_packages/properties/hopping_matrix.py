@@ -4,8 +4,9 @@ import numpy as np
 from nomad.metainfo import Quantity
 
 if TYPE_CHECKING:
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Context, Section
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
@@ -14,6 +15,9 @@ from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 class HoppingMatrix(PhysicalProperty):
     """
     Transition probability between two atomic orbitals in a tight-binding model.
+
+    Entity references for orbitals should use the `ElectronicState` navigation section.
+    Individual quantum state objects (e.g., `SphericalSymmetryState`) are referenced within the basis_orbitals list of ElectronicState.
     """
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/HoppingMatrix'
@@ -22,7 +26,7 @@ class HoppingMatrix(PhysicalProperty):
         type=np.int32,
         description="""
         Number of orbitals in the tight-binding model. The `entity_ref` reference is used to refer to
-        the `OrbitalsState` section.
+        the `ElectronicState` section, which navigates to the relevant basis orbitals (e.g., `SphericalSymmetryState`).
         """,
     )
 
@@ -57,7 +61,7 @@ class CrystalFieldSplitting(PhysicalProperty):
         type=np.int32,
         description="""
         Number of orbitals in the tight-binding model. The `entity_ref` reference is used to refer to
-        the `OrbitalsState` section.
+        the `ElectronicState` section, which navigates to the relevant basis orbitals (e.g., `SphericalSymmetryState`).
         """,
     )
 

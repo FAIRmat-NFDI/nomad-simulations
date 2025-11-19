@@ -8,7 +8,7 @@ from nomad_simulations.schema_packages.utils import log
 
 from .general import (
     SerialWorkflow,
-    SimulationWorkflowModel,
+    SimulationWorkflowMethod,
     SimulationWorkflowResults,
 )
 from .single_point import SinglePointModel
@@ -16,7 +16,7 @@ from .single_point import SinglePointModel
 m_package = SchemaPackage()
 
 
-class GeometryOptimizationModel(SimulationWorkflowModel):
+class GeometryOptimizationMethod(SimulationWorkflowMethod):
     """
     Workflow model describing a geometry optimization.
     """
@@ -170,8 +170,8 @@ class GeometryOptimization(SerialWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = GeometryOptimizationModel()
+        if not self.method:
+            self.method = GeometryOptimizationMethod()
         logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
