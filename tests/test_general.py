@@ -325,8 +325,8 @@ class TestSimulation:
         ([True, False, True, False], 2, [False, False, True, False]),
         # 3) exactly one representative → preserve it
         ([False, True, False], 1, [False, True, False]),
-        # 4) singleton without representative → promote itself, index -1 (first pass)
-        ([False], -1, [True]),
+        # 4) singleton without representative → promote itself, index 0
+        ([False], 0, [True]),
     ],
 )
 def test_representative_selection(initial_flags, expected_index, expected_flags):
