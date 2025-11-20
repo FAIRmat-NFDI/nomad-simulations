@@ -277,6 +277,14 @@ class Simulation(BaseSimulation, Schema):
         if len(rep_idx) == 0:
             self.model_system[-1].is_representative = True
             self.representative_system_index = -1
+
+            # - Singleton: store concrete index 0
+            # - Multi-system: keep sentinel -1 ("last element")
+            if len(self.model_system) == 1:
+                self.representative_system_index = 0
+            else:
+                self.representative_system_index = -1
+
         elif len(rep_idx) > 1:
             logger.warning(
                 'Multiple representative systems found, one allowed.'
