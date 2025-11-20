@@ -5,8 +5,8 @@ from nomad.datamodel import EntryArchive
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
-    AtomicCell,
     ModelSystem,
+    Representation,
 )
 
 from . import logger
@@ -218,8 +218,8 @@ class TestSimulation:
         model_system.composition_formula = custom_formulas[0]
         ctr_comp = 1
         # Create an AtomicCell (cell geometry only)
-        atomic_cell = AtomicCell()
-        model_system.cell.append(atomic_cell)
+        atomic_cell = Representation()
+        model_system.representations.append(atomic_cell)
         if has_atom_indices:
             model_system.particle_indices = np.empty(0, dtype=np.int32)
 
@@ -291,7 +291,9 @@ class TestSimulation:
         Root with no subsystems/particle_indices derives composition from its own symbols.
         """
         root = ModelSystem(is_representative=True)
-        root.cell.append(AtomicCell())  # minimal cell so normalize doesn't bail
+        root.representations.append(
+            Representation()
+        )  # minimal representation so normalize doesn't bail
         for sym in ['H', 'H', 'O']:
             root.particle_states.append(AtomsState(chemical_symbol=sym))
 
@@ -306,7 +308,7 @@ class TestSimulation:
         Pre-set custom composition on root is not overwritten during normalize.
         """
         root = ModelSystem(is_representative=True, composition_formula='Custom(1)')
-        root.cell.append(AtomicCell())
+        root.representations.append(Representation())
         for sym in ['H', 'H', 'O']:
             root.particle_states.append(AtomsState(chemical_symbol=sym))
 

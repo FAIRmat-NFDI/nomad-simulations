@@ -7,11 +7,18 @@ nav:
   - Home: index.md
   - Simulation schema:
     - Overview: general.md
-    - ModelSystem: model_system/model_system.md
-    - ModelMethod: model_method/model_method.md
+    - ModelSystem:
+      - Overview: model_system/model_system.md
+      - Representation Architecture: model_system/representation.md
+    - AtomsState:
+      - Electronic States: atoms_state/electronic_states.md
+    - ModelMethod:
+      - Overview: model_method/model_method.md
+      - Basis Sets: model_method/basis_sets.md
     - Outputs: outputs/outputs.md
   - How to use the Simulation schema: howto_use.md
   - The normalize function: normalize.md
+  - Bounded Data Types: data_types.md
   - Contact: contact.md
 theme:
   name: material
