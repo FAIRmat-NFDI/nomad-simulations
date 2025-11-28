@@ -516,6 +516,54 @@ class TestModelSystem:
             # Top-level system: expect only one representation.
             assert len(sys.representations) == 1
 
+    def test_normalize_clears_pbc_without_lattice_vectors(self, caplog):
+        """
+        Test that normalize() clears periodic_boundary_conditions when
+        lattice_vectors are absent or empty, and logs a warning.
+        """
+        import logging
+
+        # Test with None lattice_vectors
+        sys = ModelSystem(is_representative=True)
+        sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5]]) * ureg.angstrom
+        sys.periodic_boundary_conditions = [True, True, True]
+        sys.lattice_vectors = None
+        for sym in ['H', 'O']:
+            sys.particle_states.append(AtomsState(chemical_symbol=sym))
+
+        with caplog.at_level(logging.WARNING):
+            sys.normalize(EntryArchive(), logger=logger)
+
+        assert sys.periodic_boundary_conditions == []
+        assert any(
+            'Lattice vectors are not defined' in rec.message for rec in caplog.records
+        )
+
+        # Test with empty array
+        sys2 = ModelSystem(is_representative=True)
+        sys2.positions = np.array([[0, 0, 0]]) * ureg.angstrom
+        sys2.periodic_boundary_conditions = [True, False, False]
+        sys2.lattice_vectors = np.array([]).reshape(0, 3) * ureg.angstrom  # empty
+        sys2.particle_states.append(AtomsState(chemical_symbol='H'))
+
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            sys2.normalize(EntryArchive(), logger=logger)
+
+        assert sys2.periodic_boundary_conditions == []
+
+        # Test with empty list
+        sys3 = ModelSystem(is_representative=True)
+        sys3.positions = np.array([[0, 0, 0]]) * ureg.angstrom
+        sys3.periodic_boundary_conditions = [True, False, False]
+        sys3.lattice_vectors = [[], []]  # empty list
+        sys3.particle_states.append(AtomsState(chemical_symbol='H'))
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            sys3.normalize(EntryArchive(), logger=logger)
+
+        assert sys3.periodic_boundary_conditions == []
+
 
 @pytest.mark.parametrize('branching', [True, False])
 def test_branch_depth_if_needed(branching):

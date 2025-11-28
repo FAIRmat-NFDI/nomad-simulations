@@ -1410,7 +1410,7 @@ class ModelSystem(System, Representation):
 
         # Check and normalize periodic boundary conditions based on lattice vectors
         # Handle None, empty arrays, empty lists, and pint Quantities
-        lattice_vectors_empty = (
+        is_lattice_vectors_empty: bool = (
             self.lattice_vectors is None
             or (
                 hasattr(self.lattice_vectors, 'size') and self.lattice_vectors.size == 0
@@ -1420,7 +1420,7 @@ class ModelSystem(System, Representation):
                 and len(self.lattice_vectors) == 0
             )
         )
-        if lattice_vectors_empty and self.periodic_boundary_conditions:
+        if is_lattice_vectors_empty and self.periodic_boundary_conditions:
             logger.warning(
                 'Lattice vectors are not defined but periodic boundary conditions are set. Unsetting PBC.'
             )
