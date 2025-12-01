@@ -1409,7 +1409,6 @@ class ModelSystem(System, Representation):
         super().normalize(archive, logger)
 
         # Check and normalize periodic boundary conditions based on lattice vectors
-        # Handle None, empty arrays, empty lists, and pint Quantities
         is_lattice_vectors_empty: bool = (
             self.lattice_vectors is None
             or (

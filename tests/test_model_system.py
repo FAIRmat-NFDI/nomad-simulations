@@ -516,53 +516,65 @@ class TestModelSystem:
             # Top-level system: expect only one representation.
             assert len(sys.representations) == 1
 
-    def test_normalize_clears_pbc_without_lattice_vectors(self, caplog):
+    @pytest.mark.parametrize(
+        'lattice_vectors, pbc, should_clear, description',
+        [
+            (None, [True, True, True], True, 'None lattice_vectors with list PBC'),
+            (
+                None,
+                np.array([True, True, True]),
+                True,
+                'None lattice_vectors with array PBC',
+            ),
+            (
+                np.array([]).reshape(0, 3) * ureg.angstrom,
+                [False],
+                True,
+                'empty array lattice_vectors',
+            ),
+            (
+                np.eye(3) * 4.0 * ureg.angstrom,
+                [True, True, True],
+                False,
+                'valid lattice_vectors should not clear',
+            ),
+            (
+                np.eye(3) * 4.0 * ureg.angstrom,
+                np.array([True, False, True]),
+                False,
+                'valid lattice_vectors with array PBC',
+            ),
+        ],
+    )
+    def test_normalize_clears_pbc_without_lattice_vectors(
+        self, caplog, lattice_vectors, pbc, should_clear, description
+    ):
         """
         Test that normalize() clears periodic_boundary_conditions when
         lattice_vectors are absent or empty, and logs a warning.
         """
         import logging
 
-        # Test with None lattice_vectors
         sys = ModelSystem(is_representative=True)
         sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5]]) * ureg.angstrom
-        sys.periodic_boundary_conditions = [True, True, True]
-        sys.lattice_vectors = None
+        sys.periodic_boundary_conditions = pbc
+        sys.lattice_vectors = lattice_vectors
         for sym in ['H', 'O']:
             sys.particle_states.append(AtomsState(chemical_symbol=sym))
 
         with caplog.at_level(logging.WARNING):
             sys.normalize(EntryArchive(), logger=logger)
 
-        assert sys.periodic_boundary_conditions == []
-        assert any(
-            'Lattice vectors are not defined' in rec.message for rec in caplog.records
-        )
-
-        # Test with empty array
-        sys2 = ModelSystem(is_representative=True)
-        sys2.positions = np.array([[0, 0, 0]]) * ureg.angstrom
-        sys2.periodic_boundary_conditions = [True, False, False]
-        sys2.lattice_vectors = np.array([]).reshape(0, 3) * ureg.angstrom  # empty
-        sys2.particle_states.append(AtomsState(chemical_symbol='H'))
-
-        caplog.clear()
-        with caplog.at_level(logging.WARNING):
-            sys2.normalize(EntryArchive(), logger=logger)
-
-        assert sys2.periodic_boundary_conditions == []
-
-        # Test with empty list
-        sys3 = ModelSystem(is_representative=True)
-        sys3.positions = np.array([[0, 0, 0]]) * ureg.angstrom
-        sys3.periodic_boundary_conditions = [True, False, False]
-        sys3.lattice_vectors = [[], []]  # empty list
-        sys3.particle_states.append(AtomsState(chemical_symbol='H'))
-        caplog.clear()
-        with caplog.at_level(logging.WARNING):
-            sys3.normalize(EntryArchive(), logger=logger)
-
-        assert sys3.periodic_boundary_conditions == []
+        if should_clear:
+            assert sys.periodic_boundary_conditions == [], f'Failed for {description}'
+            assert any(
+                'Lattice vectors are not defined' in rec.message
+                for rec in caplog.records
+            ), f'Warning not logged for {description}'
+        else:
+            assert sys.periodic_boundary_conditions != [], (
+                f'PBC incorrectly cleared for {description}'
+            )
 
 
 @pytest.mark.parametrize('branching', [True, False])
