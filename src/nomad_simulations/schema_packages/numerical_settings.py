@@ -1034,9 +1034,20 @@ class FrozenCore(NumericalSettings):
 
 class Pseudopotential(NumericalSettings):
     """
-    Section containing the parameters for pseudopotentials used in electronic structure calculations.
-    Pseudopotentials are used to approximate the potential of the core electrons and the nucleus,
-    allowing for a more efficient treatment of valence electrons.
+    Section containing metadata for pseudopotentials used in plane-wave DFT calculations.
+
+    Pseudopotentials approximate the potential of core electrons and the nucleus, enabling
+    efficient treatment of valence electrons in codes like VASP, Quantum ESPRESSO, and CASTEP.
+    Common types include PAW (Projector Augmented Wave), ultrasoft (US), and norm-conserving (NC).
+
+    This class stores high-level metadata (type, cutoff energy, XC functional) that identifies
+    which pseudopotential was used. The actual numerical pseudopotential data (radial functions,
+    projectors, augmentation charges) is stored in external files (POTCAR, UPF, etc.) and is
+    typically not included in the archive due to size and licensing constraints.
+
+    Note: This class is distinct from `EffectiveCorePotential` in basis_set.py, which stores
+    analytical ECP representations for quantum chemistry codes with Gaussian basis sets. ECPs
+    cannot represent PAW or ultrasoft pseudopotentials used in plane-wave calculations.
     """
 
     name = Quantity(

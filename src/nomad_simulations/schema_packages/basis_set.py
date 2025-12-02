@@ -333,9 +333,20 @@ class AtomCenteredFunction(ArchiveSection):
 
 class EffectiveCorePotential(BasisSetComponent):
     """
-    TREXIO-style ECP storage:
+    TREXIO-style ECP storage for quantum chemistry calculations with Gaussian basis sets.
+
+    Effective Core Potentials (ECPs) replace core electrons with analytical potentials
+    expressed as sums of Gaussian functions. This representation is used in quantum chemistry
+    codes (Gaussian, ORCA, Molpro, Q-Chem, NWChem) to reduce computational cost while
+    maintaining accuracy for valence electrons.
+
+    Storage format (TREXIO convention):
       - Per-nucleus arrays: z_core[nucleus], max_ang_mom_plus_1[nucleus]
       - Flat list of projector items: size ecp_num with nucleus_index, ang_mom, exponent, coefficient, power
+
+    Note: This class stores analytical ECPs for Gaussian basis set codes. It does NOT represent
+    pseudopotentials used in plane-wave DFT codes (PAW, ultrasoft, norm-conserving). For metadata
+    about plane-wave pseudopotentials, see the `Pseudopotential` class in numerical_settings.py.
     """
 
     # Optional human label
