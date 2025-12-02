@@ -1032,6 +1032,83 @@ class FrozenCore(NumericalSettings):
     )
 
 
+class Pseudopotential(NumericalSettings):
+    """
+    Section containing the parameters for pseudopotentials used in electronic structure calculations.
+    Pseudopotentials are used to approximate the potential of the core electrons and the nucleus,
+    allowing for a more efficient treatment of valence electrons.
+    """
+
+    name = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Native code name of the pseudopotential.
+        """,
+    )
+
+    type = Quantity(
+        type=MEnum('US V', 'US MBK', 'PAW'),
+        shape=[],
+        description="""
+        Pseudopotential classification.
+
+        | abbreviation | description | DOI |
+        | ------------ | ----------- | --------- |
+        | `'US'`       | Ultra-soft  | |
+        | `'PAW'`      | Projector augmented wave | |
+        | `'V'`        | Vanderbilt | https://doi.org/10.1103/PhysRevB.47.6728 |
+        | `'MBK'`      | Morrison-Bylander-Kleinman | https://doi.org/10.1103/PhysRevB.41.7892 |
+        """,
+    )
+
+    norm_conserving = Quantity(
+        type=bool,
+        shape=[],
+        description="""
+        Denotes whether the pseudopotential is norm-conserving.
+        """,
+    )
+
+    cutoff = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='joule',
+        description="""
+        Minimum recommended spherical cutoff energy for any plane-wave basis set
+        using the pseudopotential.
+        """,
+    )
+
+    xc_functional_name = Quantity(
+        type=str,
+        shape=['*'],
+        description="""
+        Name of the exchange-correlation functional used to generate the pseudopotential.
+        Follows the libxc naming convention.
+        """,
+    )
+
+    l_max = Quantity(
+        type=np.int32,
+        shape=[],
+        description="""
+        Maximum angular momentum of the pseudopotential projectors.
+        """,
+    )
+
+    lm_max = Quantity(
+        type=np.int32,
+        shape=[],
+        description="""
+        Maximum magnetic momentum of the pseudopotential projectors.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+
 class IntegralDecomposition(ArchiveSection):
     """
     A general class for integral decomposition techniques that approximate
@@ -1053,7 +1130,7 @@ class IntegralDecomposition(ArchiveSection):
         implementation of efficient, approximate MP2 theories,
         Theor. Chem. Acc. 97, 331-340 (1997).
       - S. Hättig, F. Weigend, J. Chem. Phys. 113, 5154 (2000). (RI-J)
-      - Neese et al., “Chain-of-spheres algorithms for HF exchange,”
+      - Neese et al., "Chain-of-spheres algorithms for HF exchange,"
         Chem. Phys. 356 (2008), 98-109.
     """
 
