@@ -1409,7 +1409,17 @@ class ModelSystem(System, Representation):
         super().normalize(archive, logger)
 
         # Check and normalize periodic boundary conditions based on lattice vectors
-        if not self.lattice_vectors and self.periodic_boundary_conditions:
+        is_lattice_vectors_empty: bool = (
+            self.lattice_vectors is None
+            or (
+                hasattr(self.lattice_vectors, 'size') and self.lattice_vectors.size == 0
+            )
+            or (
+                hasattr(self.lattice_vectors, '__len__')
+                and len(self.lattice_vectors) == 0
+            )
+        )
+        if is_lattice_vectors_empty and self.periodic_boundary_conditions:
             logger.warning(
                 'Lattice vectors are not defined but periodic boundary conditions are set. Unsetting PBC.'
             )
