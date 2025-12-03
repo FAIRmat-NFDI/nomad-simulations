@@ -1074,88 +1074,6 @@ class Pseudopotential(NumericalSettings):
         """,
     )
 
-    norm_conserving = Quantity(
-        type=bool,
-        shape=[],
-        description="""
-        Denotes whether the pseudopotential is norm-conserving.
-        """,
-    )
-
-    cutoff = Quantity(
-        type=np.float64,
-        shape=[],
-        unit='joule',
-        description="""
-        Recommended cutoff energy for the plane-wave basis set using this pseudopotential.
-
-        When multiple cutoff recommendations exist in the source (e.g., coarse/medium/fine
-        or min/max), store the most representative value. Use the medium/standard setting
-        when in doubt. Codes with sophisticated multi-level cutoff systems should extend this at
-        the parser-specific schema level.
-        """,
-    )
-
-    xc_functional_name = Quantity(
-        type=str,
-        shape=['*'],
-        description="""
-        Name of the exchange-correlation functional used to generate the pseudopotential.
-        Follows the libxc naming convention.
-        """,
-    )
-
-    l_max = Quantity(
-        type=np.int32,
-        shape=[],
-        description="""
-        Maximum angular momentum of the pseudopotential projectors.
-        """,
-    )
-
-    lm_max = Quantity(
-        type=np.int32,
-        shape=[],
-        description="""
-        Maximum magnetic momentum of the pseudopotential projectors.
-        """,
-    )
-
-    r_core = Quantity(
-        type=np.float64,
-        shape=[],
-        unit='meter',
-        description="""
-        Core radius defining the pseudopotential smoothing region:
-        - For norm-conserving and ultrasoft pseudopotentials: smaller values require higher
-          cutoff energies but provide better transferability and accuracy
-        - For PAW: augmentation sphere radius; PAW's all-electron reconstruction mitigates
-          the traditional hardness/cutoff tradeoff while maintaining accuracy
-        - Useful for detecting overlapping augmentation spheres in small unit cells
-        """,
-    )
-
-    pseudization_scheme = Quantity(
-        type=MEnum('Troullier-Martins', 'Polynomial', 'Bessel', 'Extra-Soft', 'unavailable'),
-        shape=[],
-        description="""
-        Method used to generate the smooth pseudopotential:
-        - `'Troullier-Martins'`: Standard scheme with continuous derivatives
-        - `'Polynomial'`: Polynomial matching at core radius
-        - `'Bessel'`: Bessel function based construction
-        - `'Extra-Soft'`: Optimized for low cutoff energies
-        - `'unavailable'`: Pseudization scheme not specified or unknown
-        """,
-    )
-
-    relativistic_treatment = SubSection(
-        sub_section=RelativityModel.m_def,
-        description="""
-        Relativistic treatment used during pseudopotential generation.
-        Does not imply anything about how treatment of the valence electrons.
-        """,
-    )
-
     n_valence_electrons = Quantity(
         type=np.float64,
         shape=[],
@@ -1176,6 +1094,101 @@ class Pseudopotential(NumericalSettings):
         Electronic configuration used to generate the pseudopotential (e.g., "3s1 3d0.5" or "3p6 3d7 4s1").
         Documents the valence electron occupations used during generation.
         The configuration string may only show the outermost valence orbitals explicitly.
+        """,
+    )
+
+    norm_conserving = Quantity(
+        type=bool,
+        shape=[],
+        description="""
+        Denotes whether the pseudopotential is norm-conserving.
+        """,
+    )
+
+    gw_optimized = Quantity(
+        type=bool,
+        default=False,
+        description="""
+        Whether this pseudopotential was optimized for GW/excited-state calculations.
+        GW-optimized pseudopotentials are validated for scattering properties far above
+        the Fermi level and typically include more semi-core states. They remain valid
+        for standard DFT calculations but are computationally more expensive.
+        """,
+    )
+
+    cutoff = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='joule',
+        description="""
+        Recommended cutoff energy for the plane-wave basis set using this pseudopotential.
+
+        When multiple cutoff recommendations exist in the source (e.g., coarse/medium/fine
+        or min/max), store the most representative value. Use the medium/standard setting
+        when in doubt. Codes with sophisticated multi-level cutoff systems should extend this at
+        the parser-specific schema level.
+        """,
+    )
+
+    r_core = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='meter',
+        description="""
+        Core radius defining the pseudopotential smoothing region:
+        - For norm-conserving and ultrasoft pseudopotentials: smaller values require higher
+          cutoff energies but provide better transferability and accuracy
+        - For PAW: augmentation sphere radius; PAW's all-electron reconstruction mitigates
+          the traditional hardness/cutoff tradeoff while maintaining accuracy
+        - Useful for detecting overlapping augmentation spheres in small unit cells
+        """,
+    )
+
+    l_max = Quantity(
+        type=np.int32,
+        shape=[],
+        description="""
+        Maximum angular momentum of the pseudopotential projectors.
+        """,
+    )
+
+    lm_max = Quantity(
+        type=np.int32,
+        shape=[],
+        description="""
+        Maximum magnetic momentum of the pseudopotential projectors.
+        """,
+    )
+
+    # generation details
+
+    pseudization_scheme = Quantity(
+        type=MEnum('Troullier-Martins', 'Polynomial', 'Bessel', 'Extra-Soft', 'unavailable'),
+        shape=[],
+        description="""
+        Method used to generate the smooth pseudopotential:
+        - `'Troullier-Martins'`: Standard scheme with continuous derivatives
+        - `'Polynomial'`: Polynomial matching at core radius
+        - `'Bessel'`: Bessel function based construction
+        - `'Extra-Soft'`: Optimized for low cutoff energies
+        - `'unavailable'`: Pseudization scheme not specified or unknown
+        """,
+    )
+
+    xc_functional_name = Quantity(
+        type=str,
+        shape=['*'],
+        description="""
+        Name of the exchange-correlation functional used to generate the pseudopotential.
+        Follows the libxc naming convention.
+        """,
+    )
+
+    relativistic_treatment = SubSection(
+        sub_section=RelativityModel.m_def,
+        description="""
+        Relativistic treatment used during pseudopotential generation.
+        Does not imply anything about how treatment of the valence electrons.
         """,
     )
 
