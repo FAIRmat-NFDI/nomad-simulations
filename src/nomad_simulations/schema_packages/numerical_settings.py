@@ -1087,8 +1087,12 @@ class Pseudopotential(NumericalSettings):
         shape=[],
         unit='joule',
         description="""
-        Minimum recommended spherical cutoff energy for any plane-wave basis set
-        using the pseudopotential.
+        Recommended cutoff energy for the plane-wave basis set using this pseudopotential.
+
+        When multiple cutoff recommendations exist in the source (e.g., coarse/medium/fine
+        or min/max), store the most representative value. Use the medium/standard setting
+        when in doubt. Codes with sophisticated multi-level cutoff systems should extend this at
+        the parser-specific schema level.
         """,
     )
 
@@ -1174,9 +1178,6 @@ class Pseudopotential(NumericalSettings):
         The configuration string may only show the outermost valence orbitals explicitly.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class IntegralDecomposition(ArchiveSection):
