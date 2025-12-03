@@ -6,7 +6,7 @@ import numpy as np
 import pint
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import JSON, MEnum, Quantity, SubSection
+from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.model_method import RelativityModel
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
 
@@ -1175,20 +1174,22 @@ class Pseudopotential(NumericalSettings):
         """,
     )
 
-    xc_functional_name = Quantity(
-        type=str,
-        shape=['*'],
+    xc_functional = SubSection(
+        sub_section=SectionProxy('XCFunctional'),
         description="""
-        Name of the exchange-correlation functional used to generate the pseudopotential.
-        Follows the libxc naming convention.
+        Exchange-correlation functional used to generate this pseudopotential.
+
+        Should match (or be compatible with) the XC functional used in the calculation.
+        The functional_key field allows parsers to store simple aliases (e.g., 'PBE', 'LDA'),
+        which are automatically expanded to LibXC components during normalization.
         """,
     )
 
     relativistic_treatment = SubSection(
-        sub_section=RelativityModel.m_def,
+        sub_section=SectionProxy('RelativityModel'),
         description="""
         Relativistic treatment used during pseudopotential generation.
-        Does not imply anything about how treatment of the valence electrons.
+        Does not imply anything about treatment of the valence electrons.
         """,
     )
 
