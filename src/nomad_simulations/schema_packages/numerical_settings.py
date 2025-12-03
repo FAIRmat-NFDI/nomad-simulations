@@ -1039,6 +1039,7 @@ class Pseudopotential(NumericalSettings):
     Pseudopotentials approximate the potential of core electrons and the nucleus, enabling
     efficient treatment of valence electrons in codes like VASP, Quantum ESPRESSO, and CASTEP.
     Common types include PAW (Projector Augmented Wave), ultrasoft (US), and norm-conserving (NC).
+    Norm-conserving pseudopotentials are represented by setting `norm_conserving = True` and choosing the appropriate value in `type`.
 
     This class stores high-level metadata (type, cutoff energy, XC functional) that identifies
     which pseudopotential was used. The actual numerical pseudopotential data (radial functions,
