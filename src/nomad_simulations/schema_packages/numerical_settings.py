@@ -1116,6 +1116,45 @@ class Pseudopotential(NumericalSettings):
         """,
     )
 
+    r_core = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='meter',
+        description="""
+        Core radius defining the pseudopotential smoothing region:
+        - For norm-conserving and ultrasoft pseudopotentials: smaller values require higher
+          cutoff energies but provide better transferability and accuracy
+        - For PAW: augmentation sphere radius; PAW's all-electron reconstruction mitigates
+          the traditional hardness/cutoff tradeoff while maintaining accuracy
+        - Useful for detecting overlapping augmentation spheres in small unit cells
+        """,
+    )
+
+    pseudization_scheme = Quantity(
+        type=MEnum('Troullier-Martins', 'Polynomial', 'Bessel', 'Extra-Soft', 'unavailable'),
+        shape=[],
+        description="""
+        Method used to generate the smooth pseudopotential:
+        - `'Troullier-Martins'`: Standard scheme with continuous derivatives
+        - `'Polynomial'`: Polynomial matching at core radius
+        - `'Bessel'`: Bessel function based construction
+        - `'Extra-Soft'`: Optimized for low cutoff energies
+        - `'unavailable'`: Pseudization scheme not specified or unknown
+        """,
+    )
+
+    relativistic = Quantity(
+        type=MEnum('non-relativistic', 'scalar-relativistic', 'full-relativistic', 'unavailable'),
+        shape=[],
+        description="""
+        Level of relativistic effects included in pseudopotential generation:
+        - `'non-relativistic'`: No relativistic corrections (light elements)
+        - `'scalar-relativistic'`: Scalar relativistic effects (spin-orbit coupling neglected)
+        - `'full-relativistic'`: Complete relativistic treatment (heavy elements, spin-orbit)
+        - `'unavailable'`: Relativistic treatment not specified or unknown
+        """,
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
