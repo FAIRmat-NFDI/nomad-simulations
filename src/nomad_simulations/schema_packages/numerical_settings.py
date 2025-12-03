@@ -1152,6 +1152,29 @@ class Pseudopotential(NumericalSettings):
         """,
     )
 
+    n_valence_electrons = Quantity(
+        type=np.float64,
+        shape=[],
+        description="""
+        Number of valence electrons explicitly treated by the pseudopotential.
+        This also determines the effective ionic charge seen by the valence electrons.
+
+        Should equal the sum of electrons in `reference_configuration`, though the
+        configuration string may omit deeper semi-core levels that are included in
+        the valence count.
+        """,
+    )
+
+    reference_configuration = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Electronic configuration used to generate the pseudopotential (e.g., "3s1 3d0.5" or "3p6 3d7 4s1").
+        Documents the valence electron occupations used during generation.
+        The configuration string may only show the outermost valence orbitals explicitly.
+        """,
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
