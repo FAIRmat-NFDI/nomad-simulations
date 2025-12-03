@@ -1162,7 +1162,9 @@ class Pseudopotential(NumericalSettings):
     # generation details
 
     pseudization_scheme = Quantity(
-        type=MEnum('Troullier-Martins', 'Polynomial', 'Bessel', 'Extra-Soft', 'unavailable'),
+        type=MEnum(
+            'Troullier-Martins', 'Polynomial', 'Bessel', 'Extra-Soft', 'unavailable'
+        ),
         shape=[],
         description="""
         Method used to generate the smooth pseudopotential:
