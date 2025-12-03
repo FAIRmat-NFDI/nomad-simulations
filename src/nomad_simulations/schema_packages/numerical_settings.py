@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.model_method import RelativityModel
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
 
@@ -1143,15 +1144,11 @@ class Pseudopotential(NumericalSettings):
         """,
     )
 
-    relativistic = Quantity(
-        type=MEnum('non-relativistic', 'scalar-relativistic', 'full-relativistic', 'unavailable'),
-        shape=[],
+    relativistic_treatment = SubSection(
+        sub_section=RelativityModel.m_def,
         description="""
-        Level of relativistic effects included in pseudopotential generation:
-        - `'non-relativistic'`: No relativistic corrections (light elements)
-        - `'scalar-relativistic'`: Scalar relativistic effects (spin-orbit coupling neglected)
-        - `'full-relativistic'`: Complete relativistic treatment (heavy elements, spin-orbit)
-        - `'unavailable'`: Relativistic treatment not specified or unknown
+        Relativistic treatment used during pseudopotential generation.
+        Does not imply anything about how treatment of the valence electrons.
         """,
     )
 
