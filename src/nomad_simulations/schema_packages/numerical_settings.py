@@ -1059,17 +1059,21 @@ class Pseudopotential(NumericalSettings):
     )
 
     type = Quantity(
-        type=MEnum('US V', 'US MBK', 'PAW'),
+        type=MEnum('NC', 'US', 'PAW', 'NC-PAW', 'NC-PAW-GW'),
         shape=[],
         description="""
-        Pseudopotential classification.
+        Pseudopotential formalism classification.
 
-        | abbreviation | description | DOI |
-        | ------------ | ----------- | --------- |
-        | `'US'`       | Ultra-soft  | |
-        | `'PAW'`      | Projector augmented wave | |
-        | `'V'`        | Vanderbilt | https://doi.org/10.1103/PhysRevB.47.6728 |
-        | `'MBK'`      | Morrison-Bylander-Kleinman | https://doi.org/10.1103/PhysRevB.41.7892 |
+        | Type | Description | Key References |
+        |------|-------------|----------------|
+        | `'NC'` | Norm-conserving: Maintains charge norm in pseudized region. Highest transferability but requires higher cutoffs. | Hamann et al., Phys. Rev. Lett. 43, 1494 (1979); Troullier & Martins, Phys. Rev. B 43, 1993 (1991) |
+        | `'US'` | Ultrasoft (Vanderbilt): Relaxes norm-conservation for softer pseudopotentials and lower cutoffs. All ultrasoft pseudopotentials follow Vanderbilt's formalism. | Vanderbilt, Phys. Rev. B 41, 7892 (1990) |
+        | `'PAW'` | Projector Augmented Wave: All-electron frozen-core method with non-norm-conserving partial waves. Most accurate for ground-state DFT. | Blöchl, Phys. Rev. B 50, 17953 (1994); Kresse & Joubert, Phys. Rev. B 59, 1758 (1999) |
+        | `'NC-PAW'` | PAW with norm-conserving partial waves: Better scattering properties at high energies than standard PAW. | Kresse & Joubert, Phys. Rev. B 59, 1758 (1999) |
+        | `'NC-PAW-GW'` | NC-PAW optimized for GW/BSE: Includes extra projectors at higher energies for accurate treatment of unoccupied states far above Fermi level. | VASP _GW potentials; see VASP manual |
+
+        The Morrison-Bylander-Kleinman (MBK) separable form is an implementation
+        technique used across all types, not a distinct pseudopotential formalism.
         """,
     )
 
