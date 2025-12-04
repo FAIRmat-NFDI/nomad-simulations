@@ -1038,7 +1038,32 @@ class Pseudopotential(NumericalSettings):
 
     Pseudopotentials approximate the potential of core electrons and the nucleus, enabling
     efficient treatment of valence electrons in codes like VASP, Quantum ESPRESSO, and CASTEP.
-    Common types include PAW (Projector Augmented Wave), ultrasoft (US), and norm-conserving (NC).
+
+    **Type Classification:**
+
+    Norm-conserving (NC): Maintains charge norm within the core region, providing highest
+    transferability between chemical environments. NC pseudopotentials require higher plane-wave
+    cutoffs but guarantee correct scattering properties across all energy ranges.
+
+    Ultrasoft (US): Vanderbilt's formalism relaxes the norm-conservation constraint, producing
+    softer pseudopotentials that converge with lower cutoffs. This reduces computational cost
+    but may sacrifice some transferability. All ultrasoft pseudopotentials follow the same
+    fundamental formalism regardless of generation method.
+
+    Projector Augmented Wave (PAW): Frozen-core all-electron method that reconstructs the full
+    wavefunction within augmentation spheres. Standard PAW uses non-norm-conserving partial
+    waves optimized for ground-state DFT accuracy and computational efficiency.
+
+    NC-PAW: PAW variant with norm-conserving partial waves. While more expensive than standard
+    PAW, NC-PAW provides better scattering properties for high-energy states, making it more
+    suitable for calculations requiring accurate unoccupied states.
+
+    NC-PAW-GW: NC-PAW optimized specifically for GW and BSE calculations. These include additional
+    projectors at higher energies to accurately describe quasiparticle states far above the Fermi
+    level. Standard PAW and US pseudopotentials systematically underestimate scattering into
+    high-energy unoccupied states, which is critical for GW many-body perturbation theory.
+
+    **Data Storage:**
 
     This class stores high-level metadata (type, cutoff energy, XC functional) that identifies
     which pseudopotential was used. The actual numerical pseudopotential data (radial functions,
