@@ -33,7 +33,7 @@ from nomad_simulations.schema_packages.force_field import (
     UreyBradleyAngle,
 )
 from nomad_simulations.schema_packages.general import Simulation
-from nomad_simulations.schema_packages.numerical_settings import ForceCalculations
+from nomad_simulations.schema_packages.force_field import ForceCalculations
 
 # from structlog.stdlib import BoundLogger
 from . import logger
@@ -71,19 +71,19 @@ def assert_dict_equal(d1, d2):
         if abs(float1) == float('inf'):
             assert 'inf' == float2 if float1 > 0 else '-inf' == float2
         else:
-            assert float1 == approx(float2), (
-                f"Value mismatch for key '{key}': {float1} != {float2}"
-            )
+            assert float1 == approx(
+                float2
+            ), f"Value mismatch for key '{key}': {float1} != {float2}"
 
     def compare_arrays(key, arr1, arr2):
-        assert np.isclose(arr1, arr2).all(), (
-            f"Value mismatch for key '{key}': {arr1} != {arr2}"
-        )
+        assert np.isclose(
+            arr1, arr2
+        ).all(), f"Value mismatch for key '{key}': {arr1} != {arr2}"
 
     def compare_lists(key, l1, l2):
-        assert len(l1) == len(l2), (
-            f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
-        )
+        assert len(l1) == len(
+            l2
+        ), f"Length mismatch for key '{key}': {len(l1)} != {len(l2)}"
 
         for i, l1_item in enumerate(l1):
             if isinstance(l1_item, dict) and isinstance(l2[i], dict):
@@ -1067,3 +1067,38 @@ def test_missing_units_skip_derivation():
 
     # Ensure that normalization does not produce an error
     dummy.normalize(None, logger)
+
+
+def test_force_calculations_subsection():
+    """Test that ForceCalculations can be added to ForceField via force_calculations subsection."""
+    # Create a ForceField instance
+    force_field = ForceField()
+
+    # Add multiple ForceCalculations instances
+    fc1 = ForceCalculations()
+    fc1.vdw_cutoff = 1.2 * ureg.nanometer
+    fc1.coulomb_type = 'particle_mesh_ewald'
+    fc1.coulomb_cutoff = 1.0 * ureg.nanometer
+
+    fc2 = ForceCalculations()
+    fc2.vdw_cutoff = 1.5 * ureg.nanometer
+    fc2.coulomb_type = 'ewald'
+    fc2.neighbor_update_frequency = 10
+
+    force_field.force_calculations.append(fc1)
+    force_field.force_calculations.append(fc2)
+
+    # Verify the subsections were added correctly
+    assert len(force_field.force_calculations) == 2
+    assert force_field.force_calculations[0].vdw_cutoff.to(
+        'nanometer'
+    ).magnitude == approx(1.2)
+    assert force_field.force_calculations[0].coulomb_type == 'particle_mesh_ewald'
+    assert force_field.force_calculations[0].coulomb_cutoff.to(
+        'nanometer'
+    ).magnitude == approx(1.0)
+    assert force_field.force_calculations[1].vdw_cutoff.to(
+        'nanometer'
+    ).magnitude == approx(1.5)
+    assert force_field.force_calculations[1].coulomb_type == 'ewald'
+    assert force_field.force_calculations[1].neighbor_update_frequency == 10
