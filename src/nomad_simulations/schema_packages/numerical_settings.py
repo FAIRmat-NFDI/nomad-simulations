@@ -1202,7 +1202,9 @@ class Pseudopotential(NumericalSettings):
     )
 
     xc_functional = SubSection(
-        sub_section=SectionProxy('nomad_simulations.schema_packages.model_method.XCFunctional'),
+        sub_section=SectionProxy(
+            'nomad_simulations.schema_packages.model_method.XCFunctional'
+        ),
         description="""
         Exchange-correlation functional used to generate this pseudopotential.
 
