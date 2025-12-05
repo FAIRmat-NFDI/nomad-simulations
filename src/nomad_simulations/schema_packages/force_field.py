@@ -53,7 +53,8 @@ class ParameterEntry(ArchiveSection):
 
 class ForceCalculations(NumericalSettings):
     """
-    Section containing the parameters for force calculations according to a ForceField model.
+    Section containing the parameters describing how a ForceField model
+    is evaluated during a simulation.
     """
 
     vdw_cutoff = Quantity(
@@ -129,9 +130,6 @@ class ForceCalculations(NumericalSettings):
         The distance cutoff for determining the neighbor list.
         """,
     )
-
-    def normalize(self, archive, logger) -> None:
-        super().normalize(archive, logger)
 
 
 class Potential(BaseModelMethod):
@@ -1272,14 +1270,6 @@ class ForceField(ModelMethod):
         repeats=True,
         description="""
         Contribution or sub-term of the total model Hamiltonian.
-        """,
-    )
-
-    force_calculations = SubSection(
-        sub_section=ForceCalculations.m_def,
-        repeats=True,
-        description="""
-        Parameters describing how this ForceField model is evaluated during a simulation.
         """,
     )
 
