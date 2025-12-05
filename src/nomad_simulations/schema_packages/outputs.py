@@ -370,4 +370,3 @@ class TrajectoryOutputs(WorkflowOutputs):
         The elapsed simulated physical time since the start of the trajectory.
         """,
     )
-

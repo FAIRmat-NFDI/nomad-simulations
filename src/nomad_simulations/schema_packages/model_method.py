@@ -1109,12 +1109,14 @@ class SlaterKoster(TB):
 
     overlaps = SubSection(sub_section=SlaterKosterBond.m_def, repeats=True)
 
+
 class xTB(TB):
     """
     A base section used to define the parameters used in an extended tight-binding (xTB) calculation.
     """
 
     # ? Deprecate this
+
 
 class Photon(ArchiveSection):
     """

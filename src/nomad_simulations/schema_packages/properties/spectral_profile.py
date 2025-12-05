@@ -38,6 +38,7 @@ class SpectralProfile(PhysicalProperty):
 
     frequencies = SubSection(sub_section=Energy.m_def)
 
+
 class DOSProfile(SpectralProfile):
     """
     A base section used to define the `value` of the `ElectronicDensityOfState` property. This is useful when containing

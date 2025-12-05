@@ -28,4 +28,3 @@ class FermiSurface(PhysicalProperty):
         Number of bands / eigenvalues.
         """,
     )
-

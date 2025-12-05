@@ -109,6 +109,7 @@ class Energy2(Variables):
         """,
     )
 
+
 class WignerSeitz(Variables):
     """
     Wigner-Seitz points in which the real space is discretized. This variable is used to define `HoppingMatrix(PhysicalProperty)` and
@@ -123,6 +124,7 @@ class WignerSeitz(Variables):
         """,
     )
 
+
 class Frequency(Variables):
     """ """
 
@@ -134,6 +136,7 @@ class Frequency(Variables):
         Points in which the frequency is discretized, in joules.
         """,
     )
+
 
 class MatsubaraFrequency(Variables):
     """ """
@@ -147,6 +150,7 @@ class MatsubaraFrequency(Variables):
         """,
     )
 
+
 class Time(Variables):
     """ """
 
@@ -159,6 +163,7 @@ class Time(Variables):
         """,
     )
 
+
 class ImaginaryTime(Variables):
     """ """
 
@@ -170,6 +175,7 @@ class ImaginaryTime(Variables):
         Points in which the imaginary time is discretized, in seconds.
         """,
     )
+
 
 class KMesh(Variables):
     """
@@ -184,6 +190,7 @@ class KMesh(Variables):
         """,
     )
 
+
 class KLinePath(Variables):
     """ """
 
@@ -193,4 +200,3 @@ class KLinePath(Variables):
         Reference to the `KLinePath.points` in which the physical property is calculated. These are 3D arrays stored in fractional coordinates.
         """,
     )
-

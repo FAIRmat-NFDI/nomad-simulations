@@ -1285,4 +1285,3 @@ class CGBeadState(ParticleState):
             symbol = alts[0] if alts else None
 
         return symbol
-
