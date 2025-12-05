@@ -967,10 +967,7 @@ class MuffinTinRegion(BasisSetComponent, Mesh):
         super().__init__(*args, **kwargs)
         self.mt_r_min = None
 
-    @check_normalized
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-        # TODO: add spherical specification, once supported in `Grid`
+    # TODO: add spherical specification in normalization, once supported in `Grid`
 
 
 class BasisSetContainer(NumericalSettings):

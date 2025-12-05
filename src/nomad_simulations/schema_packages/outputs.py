@@ -371,5 +371,3 @@ class TrajectoryOutputs(WorkflowOutputs):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

@@ -1109,20 +1109,12 @@ class SlaterKoster(TB):
 
     overlaps = SubSection(sub_section=SlaterKosterBond.m_def, repeats=True)
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-
 class xTB(TB):
     """
     A base section used to define the parameters used in an extended tight-binding (xTB) calculation.
     """
 
     # ? Deprecate this
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class Photon(ArchiveSection):
     """
