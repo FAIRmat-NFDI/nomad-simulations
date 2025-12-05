@@ -1184,7 +1184,7 @@ class Pseudopotential(NumericalSettings):
         type=np.int32,
         shape=[],
         description="""
-        Maximum magnetic momentum of the pseudopotential projectors.
+        Maximum magnetic quantum number of the pseudopotential projectors.
         """,
     )
 
