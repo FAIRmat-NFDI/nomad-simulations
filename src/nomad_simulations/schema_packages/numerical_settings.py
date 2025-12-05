@@ -1034,10 +1034,13 @@ class FrozenCore(NumericalSettings):
 
 class Pseudopotential(NumericalSettings):
     """
-    Section containing metadata for pseudopotentials used in plane-wave DFT calculations.
-
+    Section containing high-level metadata (type, cutoff energy, XC functional) that identifies which pseudopotential was used.
     Pseudopotentials approximate the potential of core electrons and the nucleus, enabling
     efficient treatment of valence electrons in codes like VASP, Quantum ESPRESSO, and CASTEP.
+
+    The actual numerical pseudopotential data (radial functions,
+    projectors, augmentation charges) is stored in external files (POTCAR, UPF, etc.) and is
+    typically not included in the archive due to size and licensing constraints.
 
     **Type Classification:**
 
@@ -1062,13 +1065,6 @@ class Pseudopotential(NumericalSettings):
     projectors at higher energies to accurately describe quasiparticle states far above the Fermi
     level. Standard PAW and US pseudopotentials systematically underestimate scattering into
     high-energy unoccupied states, which is critical for GW many-body perturbation theory.
-
-    **Data Storage:**
-
-    This class stores high-level metadata (type, cutoff energy, XC functional) that identifies
-    which pseudopotential was used. The actual numerical pseudopotential data (radial functions,
-    projectors, augmentation charges) is stored in external files (POTCAR, UPF, etc.) and is
-    typically not included in the archive due to size and licensing constraints.
 
     Note: This class is distinct from `EffectiveCorePotential` in basis_set.py, which stores
     analytical ECP representations for quantum chemistry codes with Gaussian basis sets. ECPs
