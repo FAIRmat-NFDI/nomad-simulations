@@ -1224,6 +1224,13 @@ class Pseudopotential(NumericalSettings):
         """,
     )
 
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Normalize XC functional to expand functional_key into LibXC components
+        if self.xc_functional:
+            self.xc_functional.normalize(archive, logger)
+
 
 class IntegralDecomposition(ArchiveSection):
     """
