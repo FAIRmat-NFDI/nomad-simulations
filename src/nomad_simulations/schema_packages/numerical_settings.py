@@ -1215,7 +1215,9 @@ class Pseudopotential(NumericalSettings):
     )
 
     relativistic_treatment = SubSection(
-        sub_section=SectionProxy('RelativityModel'),
+        sub_section=SectionProxy(
+            'nomad_simulations.schema_packages.model_method.RelativityModel'
+        ),
         description="""
         Relativistic treatment used during pseudopotential generation.
         Does not imply anything about treatment of the valence electrons.
