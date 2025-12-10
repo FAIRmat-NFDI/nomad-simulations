@@ -1036,7 +1036,7 @@ class Pseudopotential(NumericalSettings):
     """
     Section containing high-level metadata (type, cutoff energy, XC functional) that identifies which pseudopotential was used.
     Pseudopotentials approximate the potential of core electrons and the nucleus, enabling
-    efficient treatment of valence electrons in codes like VASP, Quantum ESPRESSO, and CASTEP.
+    efficient treatment of valence electrons in plane-wave codes.
 
     The actual numerical pseudopotential data (radial functions,
     projectors, augmentation charges) is stored in external files (POTCAR, UPF, etc.) and is
@@ -1121,7 +1121,7 @@ class Pseudopotential(NumericalSettings):
         """,
     )
 
-    norm_conserving = Quantity(
+    is_norm_conserving = Quantity(
         type=bool,
         shape=[],
         description="""
