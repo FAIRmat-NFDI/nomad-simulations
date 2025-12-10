@@ -1149,6 +1149,20 @@ class Pseudopotential(NumericalSettings):
         """,
     )
 
+    cutoff_target = Quantity(
+        type=str,
+        default='',
+        description="""
+        Code-native terminology specifying what precision level the cutoff energy refers to.
+
+        Different codes use different names for different cutoff energies within the same pseudopotential file
+        (e.g., ENMAX vs ENMIN in VASP, ecutwfc vs ecutrho in Quantum ESPRESSO). 
+        May be left blank (i.e. an empty string) if no ambiguity is possible. `None` means unset / unevaluated.
+
+        Examples: 'ENMAX' (VASP), 'ecutwfc' (Quantum ESPRESSO), 'cut_off_energy' (CASTEP).
+        """,
+    )
+
     r_core = Quantity(
         type=np.float64,
         shape=[],
