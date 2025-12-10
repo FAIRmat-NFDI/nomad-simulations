@@ -611,6 +611,15 @@ class XCFunctional(ArchiveSection):
         description='Global HF mixing α (if any); derived from XC components.',
     )
 
+    uses_libxc = Quantity(
+        type=bool,
+        default=False,
+        description="""
+        `True` if the calculation explicitly used the LibXC library for XC functional evaluation.
+        Has to be set by the parser. `False` indicates the code used its own internal implementation.
+        """,
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
