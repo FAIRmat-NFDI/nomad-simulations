@@ -1124,7 +1124,7 @@ class Pseudopotential(NumericalSettings):
         """,
     )
 
-    gw_optimized = Quantity(
+    is_gw_optimized = Quantity(
         type=bool,
         default=False,
         description="""
