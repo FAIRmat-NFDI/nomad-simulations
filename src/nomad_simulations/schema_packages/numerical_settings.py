@@ -1038,33 +1038,8 @@ class Pseudopotential(NumericalSettings):
     Pseudopotentials approximate the potential of core electrons and the nucleus, enabling
     efficient treatment of valence electrons in plane-wave codes.
 
-    The actual numerical pseudopotential data (radial functions,
-    projectors, augmentation charges) is stored in external files (POTCAR, UPF, etc.) and is
-    typically not included in the archive due to size and licensing constraints.
-
-    **Type Classification:**
-
-    Norm-conserving (NC): Maintains charge norm within the core region, providing highest
-    transferability between chemical environments. NC pseudopotentials require higher plane-wave
-    cutoffs but guarantee correct scattering properties across all energy ranges.
-
-    Ultrasoft (US): Vanderbilt's formalism relaxes the norm-conservation constraint, producing
-    softer pseudopotentials that converge with lower cutoffs. This reduces computational cost
-    but may sacrifice some transferability. All ultrasoft pseudopotentials follow the same
-    fundamental formalism regardless of generation method.
-
-    Projector Augmented Wave (PAW): Frozen-core all-electron method that reconstructs the full
-    wavefunction within augmentation spheres. Standard PAW uses non-norm-conserving partial
-    waves optimized for ground-state DFT accuracy and computational efficiency.
-
-    NC-PAW: PAW variant with norm-conserving partial waves. While more expensive than standard
-    PAW, NC-PAW provides better scattering properties for high-energy states, making it more
-    suitable for calculations requiring accurate unoccupied states.
-
-    NC-PAW-GW: NC-PAW optimized specifically for GW and BSE calculations. These include additional
-    projectors at higher energies to accurately describe quasiparticle states far above the Fermi
-    level. Standard PAW and US pseudopotentials systematically underestimate scattering into
-    high-energy unoccupied states, which is critical for GW many-body perturbation theory.
+    The actual numerical pseudopotential data (radial functions, projectors, augmentation charges)
+    is typically stored in external files which are not parsed into the archive due to size and licensing constraints.
 
     Note: This class is distinct from `EffectiveCorePotential` in basis_set.py, which stores
     analytical ECP representations for quantum chemistry codes with Gaussian basis sets. ECPs
@@ -1085,16 +1060,36 @@ class Pseudopotential(NumericalSettings):
         description="""
         Pseudopotential formalism classification.
 
-        | Type | Description | Key References |
-        |------|-------------|----------------|
-        | `'NC'` | Norm-conserving: Maintains charge norm in pseudized region. Highest transferability but requires higher cutoffs. | Hamann et al., Phys. Rev. Lett. 43, 1494 (1979); Troullier & Martins, Phys. Rev. B 43, 1993 (1991) |
-        | `'US'` | Ultrasoft (Vanderbilt): Relaxes norm-conservation for softer pseudopotentials and lower cutoffs. All ultrasoft pseudopotentials follow Vanderbilt's formalism. | Vanderbilt, Phys. Rev. B 41, 7892 (1990) |
-        | `'PAW'` | Projector Augmented Wave: All-electron frozen-core method with non-norm-conserving partial waves. Most accurate for ground-state DFT. | Blöchl, Phys. Rev. B 50, 17953 (1994); Kresse & Joubert, Phys. Rev. B 59, 1758 (1999) |
-        | `'NC-PAW'` | PAW with norm-conserving partial waves: Better scattering properties at high energies than standard PAW. | Kresse & Joubert, Phys. Rev. B 59, 1758 (1999) |
-        | `'NC-PAW-GW'` | NC-PAW optimized for GW/BSE: Includes extra projectors at higher energies for accurate treatment of unoccupied states far above Fermi level. | VASP _GW potentials; see VASP manual |
+        Norm-conserving (NC) pseudopotentials maintain the charge norm within the core region,
+        providing the highest transferability between chemical environments. They guarantee
+        correct scattering properties across all energy ranges but require higher plane-wave
+        cutoffs than other types. Key references: Hamann et al., Phys. Rev. Lett. 43, 1494 (1979);
+        Troullier & Martins, Phys. Rev. B 43, 1993 (1991).
 
-        The Morrison-Bylander-Kleinman (MBK) separable form is an implementation
-        technique used across all types, not a distinct pseudopotential formalism.
+        Ultrasoft (US) pseudopotentials use Vanderbilt's formalism to relax the norm-conservation
+        constraint, producing softer pseudopotentials that converge with lower cutoffs. This reduces
+        computational cost but may sacrifice some transferability. All ultrasoft pseudopotentials
+        follow the same fundamental formalism regardless of generation method. Reference:
+        Vanderbilt, Phys. Rev. B 41, 7892 (1990).
+
+        Projector Augmented Wave (PAW) is a frozen-core all-electron method that reconstructs the
+        full wavefunction within augmentation spheres. Standard PAW uses non-norm-conserving partial
+        waves optimized for ground-state DFT accuracy and computational efficiency. References:
+        Blöchl, Phys. Rev. B 50, 17953 (1994); Kresse & Joubert, Phys. Rev. B 59, 1758 (1999).
+
+        NC-PAW is a PAW variant with norm-conserving partial waves. While more expensive than
+        standard PAW, NC-PAW provides better scattering properties for high-energy states, making
+        it more suitable for calculations requiring accurate unoccupied states. Reference:
+        Kresse & Joubert, Phys. Rev. B 59, 1758 (1999).
+
+        NC-PAW-GW pseudopotentials are NC-PAW optimized specifically for GW and BSE calculations.
+        They include additional projectors at higher energies to accurately describe quasiparticle
+        states far above the Fermi level. Standard PAW and US pseudopotentials systematically
+        underestimate scattering into high-energy unoccupied states, which is critical for GW
+        many-body perturbation theory. See VASP _GW potentials documentation.
+
+        Note: The Morrison-Bylander-Kleinman (MBK) separable form is an implementation technique
+        used across all types, not a distinct pseudopotential formalism.
         """,
     )
 
