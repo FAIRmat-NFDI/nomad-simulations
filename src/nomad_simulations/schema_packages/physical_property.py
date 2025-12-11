@@ -5,6 +5,7 @@ from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
 from nomad.metainfo import URL, Quantity, Reference, SectionProxy, SubSection
 
+from nomad_simulations.schema_packages.errors import ErrorEstimate
 from nomad_simulations.schema_packages.utils import log
 
 logger = utils.get_logger(__name__)

@@ -1,3 +1,4 @@
+import jmespath
 import numpy as np
 from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflow
@@ -22,6 +23,13 @@ INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
 
 m_package = SchemaPackage()
 
+CONVERGENCE_QUANTITY_MAPPING = {
+    'force:maximum' : 'workflow2.results.final_force_maximum',
+    'potential:rms' : 'data.outputs[*].scf_steps.delta_potential_rms',
+    'energy:absolute': 'data.outputs[*].scf_steps.delta_energies_total',
+    'charge:absolute' : 'data.outputs[*].scf_steps.delta_density_rms',
+    'force:absolute' : 'data.outputs[*].scf_steps.delta_force_abs'
+    }
 
 class SimulationTask(Task):
     pass
@@ -35,11 +43,12 @@ class WorkflowConvergenceTarget(ArchiveSection):
     and the unit of the convergence parameter.
     """
 
-    # TODO: This most probably needs more explanation, and/or needs to be changed to an Enum to reduce ambiguity when populating.
     convergence_parameter_name = Quantity(
-        type=str,
+        type=MEnum('energy', 'force', 'potential', 'charge', 'density'),
         description="""
-        Name of the parameter that is converged, e.g., energy, forces, electron density, ...
+        Name of the convergence parameter.
+
+        Available quantites are: `'energy'`, `'force'`, `'potential'`, `'charge'`, `'density'`.
         """
     )
 
@@ -50,7 +59,15 @@ class WorkflowConvergenceTarget(ArchiveSection):
         """
     )
 
+    threshold_unit = Quantity(
+        type=str,
+        description = """
+        Unit of the convergence threshold.
+        """
+    )
+
     # This is copied from PR #191 https://github.com/nomad-coe/nomad-simulations/pull/191
+    # TODO @ND: Do all of them apply?
     threshold_type = Quantity(
         type=MEnum('absolute', 'relative', 'maximum', 'rms', 'residuum'),
         description="""
@@ -71,17 +88,23 @@ class WorkflowConvergenceTarget(ArchiveSection):
         """,
     )
 
-    convergence_threshold_unit = Quantity(
-        type=str,
+
+class WorkflowConvergenceResults(ArchiveSection):
+    """
+    Results of the workflow convergence. This describes if convergence targets have been met during the calculation.
+    """
+
+    convergence_target_ref = Quantity(
+        type=WorkflowConvergenceTarget,
         description="""
-        Unit using the pint UnitRegistry() notation for the `convergence_threshold`.
+        Reference to the workflow convergence target.    
         """
     )
 
     is_reached = Quantity(
         type=bool,
         description="""
-        Represents if the convergence target was reached (True) or not (False).
+        Convergence target was reached (true) or not (false).
         """
     )
 
@@ -107,14 +130,6 @@ class SimulationWorkflowModel(ArchiveSection):
         """,
     )
 
-    is_converged = Quantity(
-        type=bool,
-        description="""
-        Indicates if all convergence targets have been reached (true)
-        or not (false)
-        """
-    )
-
     convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
@@ -127,10 +142,8 @@ class SimulationWorkflowModel(ArchiveSection):
         if not self.initial_method and archive.data.model_method:
             self.initial_method = archive.data.model_method[0]
 
-        #TODO test
-        # set convergence
-        self.is_converged = all(convergence_target.is_reached for convergence_target in self.convergence)
 
+# TODO: Is this nomad_simulations.common.SimulationTime ?
 class WorkflowTime(ArchiveSection):
     """
     Contains time-related quantities.
@@ -190,6 +203,15 @@ class SimulationWorkflowResults(WorkflowTime):
         Indicates if calculation terminated normally.
         """,
     )
+
+    is_converged = Quantity(
+        type=bool,
+        description="""
+        Represents if the convergence targets have been reached (True) or not (False).
+        """
+    )
+
+    convergence = SubSection(sub_section=WorkflowConvergenceResults.m_def, repeats=True)
 
     # TODO add generic convergence results here
 
@@ -303,6 +325,72 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
         self.tasks.extend(tasks)
 
+    @log
+    def map_convergence(self, archive: EntryArchive) -> None:
+        """
+        Populate the convergence according the to convergence targets.
+
+        TODO this works only for SCF output so far, needs to also consider geometry optimizations
+        """
+        if not archive.data or not archive.data.outputs:
+            return
+        logger = self.map_convergence.__annotations__['logger']
+
+        # check convergence targets in model and populate convergence results in results
+        convergence_results = []
+        all_reached = None
+        convergence_targets = self.method.get('convergence')
+        if convergence_targets is None:
+            return
+        for convergence_target in convergence_targets:
+            parameter_name = convergence_target.get('convergence_parameter_name')
+            threshold_type = convergence_target.get('threshold_type')
+            unit = convergence_target.get('threshold_unit')
+            if parameter_name is None or threshold_type is None or unit is None:
+                continue
+            # do last step of path manually because jmespath only returns the raw values
+            # and not quantites - TODO this is pretty much a hack, is there a better solution?
+            quantity_path = CONVERGENCE_QUANTITY_MAPPING[f'{parameter_name}:{threshold_type}'].split('.')
+            quantity_name = quantity_path[-1]
+            quantity_path = '.'.join(quantity_path[:-1])
+            quantity_values = jmespath.search(
+                quantity_path,
+                archive
+            )
+            if isinstance(quantity_values, list):
+               convergence_data = quantity_values[-1][quantity_name]
+            else:
+                convergence_data = quantity_values[quantity_name]
+            threshold = convergence_target['convergence_threshold']
+            convergence_result = WorkflowConvergenceResults()
+            convergence_result.convergence_target_ref = convergence_target
+            converged = False
+            # TODO @all: For some reason threshold is just a value and not a quantity
+            # I don't know how or where to fix this: It is a quantity in the parser (with its unit)
+            # and somehow here it is just a value. Can we have it as a quantity?
+            if len(convergence_data) == 1: # the threshold is absolute
+                converged = convergence_data.to(unit).magnitude < threshold.magnitude
+            else: # the threshold is relative
+                convergence_data = convergence_data.to(unit)
+                converged = abs(convergence_data[-2].magnitude - convergence_data[-1].magnitude) <= threshold
+            if converged:
+                convergence_result.is_reached = True
+                all_reached = True if all_reached is None else all_reached
+            else:
+                convergence_result.is_reached = False
+                all_reached = False
+            convergence_results.append(convergence_result)
+        self.results.convergence = convergence_results
+
+        # set converged for self
+        if self.results.get('is_converged') is None and all_reached is not None:
+            self.results.is_converged = all_reached
+        else:
+            if not self.results.get('is_converged') == all_reached:
+                logger.warning('Derived and parsed state of convergence do not agree.')
+                pass
+            
+
     def normalize(self, archive: EntryArchive, logger: BoundLogger):
         """
         Link tasks based on start and end times.
@@ -315,6 +403,8 @@ class SimulationWorkflow(Workflow, SimulationTask):
         self.map_outputs(archive, logger=logger)
 
         self.map_tasks(archive, logger=logger)
+
+        self.map_convergence(archive, logger=logger)
 
 
 class SerialWorkflowResults(SimulationWorkflowResults):

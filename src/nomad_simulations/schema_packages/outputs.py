@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
-from nomad.datamodel.datamodel import ArchiveSection
+from nomad.datamodel.datamodel import JSON, ArchiveSection
 from nomad.metainfo import Quantity, SubSection
 
 if TYPE_CHECKING:
@@ -31,7 +31,6 @@ from nomad_simulations.schema_packages.properties import (
     QuasiparticleWeight,
     RadiusOfGyration,
     Temperature,
-    TotalEnergy,
     TotalForce,
     XASSpectrum,
 )
@@ -39,37 +38,77 @@ from nomad_simulations.schema_packages.properties import (
 from .common import SimulationTime
 
 
-# I don't think this should live here. 
-# TODO find a new home
-class SCFStep(ArchiveSection):
+# MK: I don't think this should live here. 
+# @all: where to move this?
+class SCFSteps(ArchiveSection):
     """
     Data recorded at each step of a self-consistent DFT calculation.
     """
 
-    duration = Quantity(
-        type=float,
-        unit='s',
-        description="""
-        Time spent at this SCF step.
-        """,
-    )
-
-    # Placeholder for code specific quantites - these could be a dictionary
-    # TODO MK: ask JFR how this is done
-    code_specific_quantities = SubSection(sub_section=ArchiveSection.m_def, repeats=True)
-
-    # Placeholder for the total energy and contributions when it is available as a physical property
-    # TODO add physical property
-    energy_total = Quantity(
+    # @ND: Should this be of type TotalEnergy? Do we have a type system for this?
+    energies_total = Quantity(
+        shape=['*'],
         type=float,
         unit='joule',
         description="""
-        Total energy in this SCF step.
+        Total energy at each SCF step.
         """
     )
 
+    delta_energies_total = Quantity(
+        shape=['*'],
+        type=float,
+        unit='joule',
+        description="""
+        Absolute change of total energy at each SCF step.
+        """
+    )
 
-class Outputs(Time):
+    delta_potential_rms = Quantity(
+        shape=['*'],
+        type=float,
+        unit='joule',
+        description="""
+        Root mean square of change of potential energy at each SCF step.
+        """
+    )
+
+    delta_density_rms = Quantity(
+        shape=['*'],
+        type=float,
+        unit='coulomb',
+        description="""
+        Root mean square of change of potential energy at each SCF step.
+        """
+    )
+
+    delta_force_abs = Quantity(
+        shape=['*'],
+        type=float,
+        unit='newton',
+        description="""
+        Absolute change of forces at each SCF step.
+        """
+    )
+
+    durations = Quantity(
+        shape=['*'],
+        type=float,
+        unit='s',
+        description="""
+        Time spent at each SCF step.
+        """,
+    )
+
+    code_specific_quantities = Quantity(
+        type=JSON,
+        description="""
+        Code specific quantities that are recorded during SCF convergence.
+        """
+    )
+
+# TODO: Outputs should not be of type time, but the workflow should be instead?
+class Outputs(SimulationTime):
     """
     Output properties of a simulation. This base class can be used for inheritance in any of the output properties
     defined in this schema.
@@ -149,14 +188,11 @@ class Outputs(Time):
 
     temperatures = SubSection(sub_section=Temperature.m_def, repeats=True)
 
-    #TODO I think this can be deleted in favor of scf_steps
-    total_energies = SubSection(sub_section=TotalEnergy.m_def, repeats=True)
-
     total_forces = SubSection(sub_section=TotalForce.m_def, repeats=True)
 
     xas_spectra = SubSection(sub_section=XASSpectrum.m_def, repeats=True)
 
-    scf_steps = SubSection(sub_section=SCFStep.m_def, repeats=True)
+    scf_steps = SubSection(sub_section=SCFSteps.m_def, repeats=False)
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
