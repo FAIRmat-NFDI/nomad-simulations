@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 import jmespath
 import numpy as np
 from nomad.datamodel import ArchiveSection, EntryArchive
@@ -213,22 +215,6 @@ class SimulationWorkflowResults(WorkflowTime):
 
     convergence = SubSection(sub_section=WorkflowConvergenceResults.m_def, repeats=True)
 
-    # TODO add generic convergence results here
-
-    # final_outputs = Quantity(
-    #     type=Outputs,
-    #     description="""
-    #     Reference to the final outputs.
-    #     """,
-    # )
-
-    # def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
-    #     if not archive.data or not archive.data.outputs:
-    #         return
-
-    #     if not self.final_outputs:
-    #         self.final_outputs = archive.data.outputs[-1]
-
 
 class SimulationTaskReference(TaskReference, SimulationTask):
     pass
@@ -287,11 +273,6 @@ class SimulationWorkflow(Workflow, SimulationTask):
         if not archive.data or not archive.data.outputs:
             return
         
-        #Don't generate tasks if not at the root
-        if isinstance(self.m_parent, SimulationWorkflowMethod):
-            return
-
-
         # do not overwrite if tasks are set but give out a warning that it maybe
         # inconsistent with the outputs
         logger = self.map_tasks.__annotations__['logger']
@@ -362,6 +343,8 @@ class SimulationWorkflow(Workflow, SimulationTask):
                 quantity_path,
                 archive
             )
+            if quantity_values is None:
+                continue
             if isinstance(quantity_values, list):
                convergence_data = quantity_values[-1][quantity_name]
             else:
@@ -373,11 +356,11 @@ class SimulationWorkflow(Workflow, SimulationTask):
             # TODO @all: For some reason threshold is just a value and not a quantity
             # I don't know how or where to fix this: It is a quantity in the parser (with its unit)
             # and somehow here it is just a value. Can we have it as a quantity?
-            if len(convergence_data) == 1: # the threshold is absolute
-                converged = convergence_data.to(unit).magnitude < threshold.magnitude
-            else: # the threshold is relative
+            if isinstance(convergence_data, Iterable) and len(convergence_data.shape) > 0: # the threshold is relative
                 convergence_data = convergence_data.to(unit)
                 converged = abs(convergence_data[-2].magnitude - convergence_data[-1].magnitude) <= threshold
+            else: # the threshold is absolute
+                converged = convergence_data.to(unit).magnitude < threshold
             if converged:
                 convergence_result.is_reached = True
                 all_reached = True if all_reached is None else all_reached
@@ -490,7 +473,7 @@ class ParallelWorkflow(SimulationWorkflow):
                     [out for out in task.outputs if out not in self.outputs]
                 )
 
-
+# TODO @all: Does this belong here?
 class ElectronicStructureResults(SimulationWorkflowResults):
     """
     Contains definitions for results of an electronic structure simulation.
