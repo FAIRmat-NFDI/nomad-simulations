@@ -1,3 +1,4 @@
+import jmespath
 import numpy as np
 from nomad.datamodel import EntryArchive
 from nomad.metainfo import MEnum, Quantity, SchemaPackage, SubSection
@@ -11,7 +12,7 @@ from .general import (
     SimulationWorkflowMethod,
     SimulationWorkflowResults,
 )
-from .single_point import SinglePointModel
+from .single_point import SinglePointMethod
 
 m_package = SchemaPackage()
 
@@ -71,7 +72,7 @@ class GeometryOptimizationMethod(SimulationWorkflowMethod):
         """,
     )
 
-    single_point_workflows = SubSection(sub_section=SinglePointModel.m_def, repeats=True)
+    #single_point_workflows = SubSection(sub_section=SinglePointMethod.m_def, repeats=True)
 
 
 class GeometryOptimizationResults(SimulationWorkflowResults):
@@ -131,14 +132,6 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
         """,
     )
 
-    is_converged_geometry = Quantity(
-        type=bool,
-        shape=[],
-        description="""
-        Indicates if the geometry convergence criteria were fulfilled.
-        """,
-    )
-
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not self.n_steps:
             self.n_steps = len(archive.data.outputs)
@@ -159,6 +152,12 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
                 self.final_energy_difference = (
                     denergies[denergies.nonzero()[0][-1]] * BaseEnergy.value.unit
                 )
+        if self.final_force_maximum is None:
+            final_forces = jmespath.search('data.outputs[-1].total_forces[-1]', archive)
+            if final_forces is not None:
+                force_abs = np.linalg.norm(final_forces.value, axis=1)
+                self.final_force_maximum = max(force_abs) 
+        super().normalize(archive, logger)
 
 
 class GeometryOptimization(SerialWorkflow):

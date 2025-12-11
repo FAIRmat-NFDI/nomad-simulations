@@ -6,7 +6,6 @@ from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
 from nomad.metainfo import URL, Quantity, Reference, SectionProxy, SubSection
 
 from nomad_simulations.schema_packages.errors import ErrorEstimate
-from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 from nomad_simulations.schema_packages.utils import log
 
 logger = utils.get_logger(__name__)
