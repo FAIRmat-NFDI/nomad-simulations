@@ -157,7 +157,7 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
             if final_forces is not None:
                 force_abs = np.linalg.norm(final_forces.value, axis=1)
                 self.final_force_maximum = max(force_abs) 
-        super().normalize(archive, logger)
+        #super().normalize(archive, logger)
 
 
 class GeometryOptimization(SerialWorkflow):
