@@ -1,6 +1,6 @@
 import itertools
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from scipy import constants as const
 

@@ -1032,6 +1032,68 @@ class FrozenCore(NumericalSettings):
     )
 
 
+class PPCutoff(ArchiveSection):
+    """
+    Section defining a single cutoff recommendation or setting for a pseudopotential.
+
+    Pseudopotentials often come with multiple cutoff recommendations depending on the
+    physical expansion (wavefunction, charge density, augmentation) and the desired
+    precision level (used, recommended, stringent). This section captures both
+    dimensions, allowing parsers to store all available cutoff information from
+    pseudopotential libraries or calculation files.
+    """
+
+    cutoff_kind = Quantity(
+        type=MEnum(
+            'wavefunction',  # e.g. QE ecutwfc, VASP ENCUT
+            'charge_density',  # e.g. QE ecutrho (often ~4x for NC, higher for US)
+            'augmentation',  # PAW augmentation / projector-related cutoffs (if applicable)
+            'response',  # response-function basis cutoffs (e.g. ENCUTGW-like)
+            'other',
+        ),
+        description="""
+        The physical expansion this cutoff controls:
+        - `'wavefunction'`: Cutoff for the plane-wave expansion of wavefunctions (e.g., QE ecutwfc, VASP ENCUT).
+        - `'charge_density'`: Cutoff for the charge density expansion (e.g., QE ecutrho, often 4× wavefunction cutoff for norm-conserving, higher for ultrasoft).
+        - `'augmentation'`: Cutoff for PAW augmentation charges or projector-related expansions.
+        - `'response'`: Cutoff for response-function basis sets (e.g., GW calculations).
+        - `'other'`: Any other cutoff type not covered above.
+        """,
+    )
+
+    cutoff_role = Quantity(
+        type=MEnum(
+            'used',  # actually used in the run (runtime value)
+            'recommended',  # vendor/library recommended default
+            'recommended_min',  # lower bound recommendation
+            'recommended_max',  # upper bound recommendation
+            'standard',  # library "standard" recommendation (SSSP-like)
+            'stringent',  # library "stringent" recommendation
+            'soft',  # explicitly soft setting
+            'hard',  # explicitly hard setting
+        ),
+        description="""
+        The role or context of this cutoff value:
+        - `'used'`: Actually used in the run (runtime value from calculation).
+        - `'recommended'`: Vendor or library recommended default.
+        - `'recommended_min'`: Lower bound of recommended range.
+        - `'recommended_max'`: Upper bound of recommended range.
+        - `'standard'`: Library "standard" precision (e.g., SSSP standard).
+        - `'stringent'`: Library "stringent" precision (e.g., SSSP stringent).
+        - `'soft'`: Explicitly soft setting (lower precision).
+        - `'hard'`: Explicitly hard setting (higher precision).
+        """,
+    )
+
+    value = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        The cutoff energy value in joules.
+        """,
+    )
+
+
 class Pseudopotential(NumericalSettings):
     """
     Section containing high-level metadata (type, cutoff energy, XC functional) that identifies which pseudopotential was used.
@@ -1135,33 +1197,7 @@ class Pseudopotential(NumericalSettings):
         """,
     )
 
-    cutoff = Quantity(
-        type=np.float64,
-        shape=[],
-        unit='joule',
-        description="""
-        Recommended cutoff energy for the plane-wave basis set using this pseudopotential.
-
-        When multiple cutoff recommendations exist in the source (e.g., coarse/medium/fine
-        or min/max), store the most representative value. Use the medium/standard setting
-        when in doubt. Codes with sophisticated multi-level cutoff systems should extend this at
-        the parser-specific schema level.
-        """,
-    )
-
-    cutoff_target = Quantity(
-        type=str,
-        default='',
-        description="""
-        Code-native terminology specifying what precision level the cutoff energy refers to.
-
-        Different codes use different names for different cutoff energies within the same pseudopotential file
-        (e.g., ENMAX vs ENMIN in VASP, ecutwfc vs ecutrho in Quantum ESPRESSO). 
-        May be left blank (i.e. an empty string) if no ambiguity is possible. `None` means unset / unevaluated.
-
-        Examples: 'ENMAX' (VASP), 'ecutwfc' (Quantum ESPRESSO), 'cut_off_energy' (CASTEP).
-        """,
-    )
+    cutoffs = SubSection(sub_section=PPCutoff.m_def, repeats=True)
 
     r_core = Quantity(
         type=np.float64,
