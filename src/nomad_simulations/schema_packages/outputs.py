@@ -31,6 +31,7 @@ from nomad_simulations.schema_packages.properties import (
     QuasiparticleWeight,
     RadiusOfGyration,
     Temperature,
+    TotalEnergy,
     TotalForce,
     XASSpectrum,
 )
@@ -189,6 +190,8 @@ class Outputs(SimulationTime):
     temperatures = SubSection(sub_section=Temperature.m_def, repeats=True)
 
     total_forces = SubSection(sub_section=TotalForce.m_def, repeats=True)
+
+    total_energies = SubSection(sub_section=TotalEnergy.m_def, repeats=True)
 
     xas_spectra = SubSection(sub_section=XASSpectrum.m_def, repeats=True)
 
