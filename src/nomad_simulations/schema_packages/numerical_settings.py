@@ -1034,54 +1034,47 @@ class FrozenCore(NumericalSettings):
 
 class PPCutoff(ArchiveSection):
     """
-    Section defining a single cutoff recommendation or setting for a pseudopotential.
-
-    Pseudopotentials often come with multiple cutoff recommendations depending on the
-    physical expansion (wavefunction, charge density, augmentation) and the desired
-    precision level (used, recommended, stringent). This section captures both
-    dimensions, allowing parsers to store all available cutoff information from
-    pseudopotential libraries or calculation files.
+    A single plane-wave cutoff recommendation for a pseudopotential, specifying context metadata
+    such as which physical expansion it controls (wavefunction, charge density, etc.) and its precision
+    (package recommendation, library tier, or range bound).
     """
 
     cutoff_kind = Quantity(
         type=MEnum(
-            'wavefunction',  # e.g. QE ecutwfc, VASP ENCUT
-            'charge_density',  # e.g. QE ecutrho (often ~4x for NC, higher for US)
-            'augmentation',  # PAW augmentation / projector-related cutoffs (if applicable)
-            'response',  # response-function basis cutoffs (e.g. ENCUTGW-like)
-            'other',
+            'wavefunction',
+            'charge_density',
+            'augmentation',
+            'response',
+            'unavailable',
         ),
         description="""
-        The physical expansion this cutoff controls:
-        - `'wavefunction'`: Cutoff for the plane-wave expansion of wavefunctions (e.g., QE ecutwfc, VASP ENCUT).
-        - `'charge_density'`: Cutoff for the charge density expansion (e.g., QE ecutrho, often 4× wavefunction cutoff for norm-conserving, higher for ultrasoft).
-        - `'augmentation'`: Cutoff for PAW augmentation charges or projector-related expansions.
-        - `'response'`: Cutoff for response-function basis sets (e.g., GW calculations).
-        - `'other'`: Any other cutoff type not covered above.
+        Identifies which physical expansion this cutoff controls. Plane-wave DFT codes
+        use different cutoffs for the wavefunction basis, charge density grid, PAW
+        augmentation charges, and response functions (e.g., for GW calculations). This
+        field disambiguates which expansion the cutoff value applies to.
         """,
     )
 
     cutoff_role = Quantity(
         type=MEnum(
-            'used',  # actually used in the run (runtime value)
-            'recommended',  # vendor/library recommended default
-            'recommended_min',  # lower bound recommendation
-            'recommended_max',  # upper bound recommendation
-            'standard',  # library "standard" recommendation (SSSP-like)
-            'stringent',  # library "stringent" recommendation
-            'soft',  # explicitly soft setting
-            'hard',  # explicitly hard setting
+            'recommended',
+            'recommended_min',
+            'recommended_max',
+            'fast',
+            'balanced',
+            'stringent',
         ),
         description="""
-        The role or context of this cutoff value:
-        - `'used'`: Actually used in the run (runtime value from calculation).
-        - `'recommended'`: Vendor or library recommended default.
-        - `'recommended_min'`: Lower bound of recommended range.
-        - `'recommended_max'`: Upper bound of recommended range.
-        - `'standard'`: Library "standard" precision (e.g., SSSP standard).
-        - `'stringent'`: Library "stringent" precision (e.g., SSSP stringent).
-        - `'soft'`: Explicitly soft setting (lower precision).
-        - `'hard'`: Explicitly hard setting (higher precision).
+        Pseudopotential files may provide more than one cutoff recommendation.
+        This field captures the recommendation context for the cutoff value: whether it
+        represents a single simulation package recommendation, bounds in a recommended range (min/max),
+        or a precision tier from a standard library.
+        
+        The precision tiers follow the SSSP (Standard Solid-State Pseudopotentials)
+        protocol nomenclature: `'fast'` for testing and preliminary calculations,
+        `'balanced'` for high-throughput screening and most practical applications,
+        and `'stringent'` for production calculations requiring maximum precision
+        (Beal et al., arXiv:2504.03962, 2025).
         """,
     )
 
@@ -1089,7 +1082,7 @@ class PPCutoff(ArchiveSection):
         type=np.float64,
         unit='joule',
         description="""
-        The cutoff energy value in joules.
+        The cutoff energy.
         """,
     )
 
