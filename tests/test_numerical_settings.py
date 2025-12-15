@@ -390,3 +390,34 @@ class TestKLinePath:
             ]
         )
         assert np.allclose(k_line_path.points, points)
+
+    def test_resolve_high_symmetry_points_with_none_model_systems(self):
+        """
+        Test that resolve_high_symmetry_points handles None model_systems gracefully.
+        """
+        k_space_functionalities = KSpaceFunctionalities()
+        result = k_space_functionalities.resolve_high_symmetry_points(
+            model_systems=None, logger=logger
+        )
+        assert result is None
+
+    def test_resolve_reciprocal_lattice_vectors_with_none_model_systems(self):
+        """
+        Test that KSpace.normalize handles None model_systems gracefully when
+        resolving reciprocal_lattice_vectors.
+        """
+        from nomad_simulations.schema_packages.numerical_settings import KSpace
+
+        k_space = KSpace()
+
+        # Mock m_xpath to return None (simulating missing model_systems)
+        def mock_xpath(path, dict=False):
+            return None
+
+        k_space.m_xpath = mock_xpath
+
+        # This should not raise TypeError, should return None gracefully
+        result = k_space.resolve_reciprocal_lattice_vectors(
+            model_systems=None, logger=logger
+        )
+        assert result is None
