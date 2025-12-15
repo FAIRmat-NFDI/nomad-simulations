@@ -1134,7 +1134,7 @@ class AtomsState(ParticleState):
     electronic_state = SubSection(sub_section=ElectronicState.m_def)
 
     pseudopotential = Quantity(
-        type=Reference(SectionProxy('Pseudopotential')),
+        type=Reference(SectionProxy('nomad_simulations.schema_packages.numerical_settings.Pseudopotential')),
         description="""
         Reference to the pseudopotential used for this atomic species in plane-wave DFT
         calculations. The referenced `Pseudopotential` section is defined in `numerical_settings`
