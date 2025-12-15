@@ -215,7 +215,9 @@ class KSpaceFunctionalities:
         # Extracting `bravais_lattice` from `ModelSystem.symmetry` section and `ASE.cell` from `ModelSystem.representations`
         lattice = None
         if model_systems is None:
-            logger.warning('Could not find `model_systems` to resolve high symmetry points.')
+            logger.warning(
+                'Could not find `model_systems` to resolve high symmetry points.'
+            )
             return None
         for model_system in model_systems:
             # General checks to proceed with normalization
@@ -825,7 +827,9 @@ class KSpace(NumericalSettings):
             (pint.Quantity | None): The resolved `reciprocal_lattice_vectors` of the `KSpace`.
         """
         if model_systems is None:
-            logger.warning('Could not find `model_systems` to resolve reciprocal lattice vectors.')
+            logger.warning(
+                'Could not find `model_systems` to resolve reciprocal lattice vectors.'
+            )
             return None
         for model_system in model_systems:
             # General checks to proceed with normalization
