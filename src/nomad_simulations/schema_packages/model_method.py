@@ -524,8 +524,14 @@ class ModelMethodElectronic(ModelMethod):
 
 class XCComponent(ArchiveSection):
     """
-    One exchange-correlation functional conform the LibXC format.
-    All data are extracted from its LibXC counterpart; α/ω are ONLY set by parsers when present in inputs/outputs.
+    One exchange-correlation functional component using LibXC nomenclature for standardization.
+
+    Note: LibXC IDs and labels are used to provide a unified taxonomy across different codes,
+    but do not necessarily indicate that the LibXC library was used in the calculation.
+    Check `XCFunctional.uses_libxc` to determine the actual implementation source.
+
+    All taxonomy data are extracted from the LibXC registry; hybrid parameters (α/ω) are
+    set by parsers when present in inputs/outputs.
 
     LibXC project page: https://libxc.gitlab.io/
     """
@@ -592,6 +598,13 @@ class XCComponent(ArchiveSection):
 class XCFunctional(ArchiveSection):
     """
     Normalized XC information for a calculation (possibly multi-component).
+
+    The `components` subsection uses LibXC nomenclature to provide standardized
+    taxonomy and metadata across different simulation codes. This standardization
+    does not imply that the LibXC library was actually used in the calculation.
+
+    To determine whether the simulation code used its internal XC implementation
+    or explicitly called the LibXC library, check the `uses_libxc` quantity.
     """
 
     components = SubSection(sub_section=XCComponent.m_def, repeats=True)
@@ -609,6 +622,15 @@ class XCFunctional(ArchiveSection):
     global_exact_exchange = Quantity(
         type=np.float64,
         description='Global HF mixing α (if any); derived from XC components.',
+    )
+
+    uses_libxc = Quantity(
+        type=bool,
+        default=False,
+        description="""
+        `True` if the calculation explicitly used the LibXC library for XC functional evaluation.
+        Has to be set by the parser. `False` indicates the code used its own internal implementation.
+        """,
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
