@@ -1345,6 +1345,122 @@ class BSE(ExcitedStateMethodology):
     )
 
 
+class TDDFT(ExcitedStateMethodology):
+    """
+    Time-dependent density functional theory settings. Captures both linear-response
+    and real-time propagation flavours.
+    """
+
+    type = Quantity(
+        type=MEnum('linear_response', 'real_time'),
+        default='linear_response',
+        description="""
+        TDDFT flavour (linear-response or real-time propagation).
+          • linear_response — frequency-domain (Casida, Sternheimer, Liouville-Lanczos)
+          • real_time       — explicit time propagation under a perturbation
+        """,
+    )
+
+    kernel = Quantity(
+        type=MEnum(
+            'ALDA',
+            'AGGA',
+            'hybrid',
+            'range_separated',
+            'frequency_dependent',
+            'bootstrap',
+            'long_range_corrected',
+        ),
+        description="""
+        This field describes the effective XC response behaviour assumed in the TDDFT calculation, 
+        whether implemented explicitly (linear-response) or implicitly via the XC potential (real-time).
+          • ALDA / AGGA     : adiabatic local or semi-local
+          • hybrid          : hybrid adiabatic kernel
+          • range_separated : long/short-range split hybrids
+          • frequency_dependent : non-adiabatic kernel
+          • bootstrap / long_range_corrected : common nano/solid-state kernels
+        """,
+    )
+
+    is_tamm_dancoff = Quantity(
+        type=bool,
+        description='If True, Tamm-Dancoff approximation (TDA) is used (linear-response only).',
+    )
+
+    xc_kernel_ref = Quantity(
+        type=XCFunctional,
+        description='Reference XC functional used for the TDDFT kernel (can be same as ground-state XC).',
+    )
+
+    field_ref = Quantity(
+        type=Photon,
+        description='External field / polarization used to drive the response or propagation.',
+    )
+
+    target = Quantity(
+        type=MEnum('absorption', 'emission', 'EELS', 'Raman', 'nonlinear'),
+        description='Intended spectral/response target of the TDDFT input.',
+    )
+
+    time_step = Quantity(
+        type=np.float64,
+        unit='second',
+        description='Time step used for real-time propagation.',
+    )
+
+    n_steps = Quantity(
+        type=np.int32,
+        description='Number of time steps in real-time propagation.',
+    )
+
+    propagator = Quantity(
+        type=MEnum(
+            'Crank-Nicolson',
+            'ETRS',
+            'Magnus',
+            'Runge-Kutta',
+            'Lanczos',
+            'split_operator',
+        ),
+        description='Time integrator used for real-time propagation.',
+    )
+
+    gauge = Quantity(
+        type=MEnum('length', 'velocity'),
+        description='Electromagnetic gauge used for coupling to the field (mostly real-time).',
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Standardize name for this method section
+        self.name = 'TDDFT'
+
+        # Default to linear_response if not specified
+        self.type = self.type or 'linear_response'
+
+        # Derive kernel type from xc_kernel_ref when hybrids are clear
+        if self.kernel is None and self.xc_kernel_ref is not None:
+            try:
+                if (
+                    self.xc_kernel_ref.global_exact_exchange is not None
+                    and float(self.xc_kernel_ref.global_exact_exchange) > 0
+                ):
+                    self.kernel = 'hybrid'
+            except Exception:
+                logger.debug('Could not derive TDDFT.kernel from xc_kernel_ref.')
+
+        # Soft warnings to help parsers spot missing essentials
+        if self.type == 'real_time' and (
+            self.time_step is None or self.n_steps is None
+        ):
+            logger.warning(
+                'TDDFT real_time mode without time_step or n_steps may be incomplete.'
+            )
+        if self.type == 'linear_response' and self.is_tamm_dancoff is None:
+            logger.debug('TDDFT linear_response set but is_tamm_dancoff not specified.')
+
+
 # ? Is this class really necessary or should go in outputs.py?
 class CoreHoleSpectra(ModelMethodElectronic):
     """
