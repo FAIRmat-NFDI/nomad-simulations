@@ -253,6 +253,7 @@ class Hessian(PhysicalProperty):
             'saddle_point',
             'maximum',
             'non_stationary',
+            'unavailable',
         ),
         description="""
         Stationary-point classification (requires zero gradient) based on Hessian
