@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
-from nomad.metainfo import Quantity
+from nomad.metainfo import MEnum, Quantity
 
 if TYPE_CHECKING:
     from nomad.datamodel.context import Context
@@ -233,5 +233,27 @@ class Hessian(PhysicalProperty):
         type=np.float64,
         unit='joule / m ** 2',
         description="""
+        """,
+    )
+
+    n_negative_eigenvalues = Quantity(
+        type=np.int32,
+        description="""
+        Number of negative Hessian eigenvalues (imaginary vibrational frequencies).
+        A value of 0 indicates a local minimum, 1 a first-order saddle point, and
+        >1 a higher-order saddle point.
+        """,
+    )
+
+    stationary_point_type = Quantity(
+        type=MEnum(
+            'minimum',
+            'saddle_point',
+            'maximum',
+        ),
+        description="""
+        Stationary-point classification inferred from the Hessian eigenvalue sign
+        pattern. Use 'saddle_point' for any stationary point with one or more
+        negative eigenvalues (a transition state corresponds to exactly one).
         """,
     )
