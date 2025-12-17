@@ -1418,7 +1418,7 @@ class TDDFT(ExcitedStateMethodology):
         """,
     )
 
-    external_field_ref = Quantity(
+    field_polarization_ref = Quantity(
         type=Photon,
         description='External field / polarization used to drive the response or propagation.',
     )
@@ -1426,34 +1426,6 @@ class TDDFT(ExcitedStateMethodology):
     target_property = Quantity(
         type=MEnum('absorption', 'emission', 'EELS', 'Raman', 'nonlinear'),
         description='Intended spectral/response target of the TDDFT input.',
-    )
-
-    time_step = Quantity(
-        type=np.float64,
-        unit='second',
-        description='Time step used for real-time propagation.',
-    )
-
-    n_steps = Quantity(
-        type=np.int32,
-        description='Number of time steps in real-time propagation.',
-    )
-
-    propagator = Quantity(
-        type=MEnum(
-            'Crank-Nicolson',
-            'ETRS',
-            'Magnus',
-            'Runge-Kutta',
-            'Lanczos',
-            'split_operator',
-        ),
-        description='Time integrator used for real-time propagation.',
-    )
-
-    gauge = Quantity(
-        type=MEnum('length', 'velocity'),
-        description='Electromagnetic gauge used for coupling to the field (mostly real-time).',
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
