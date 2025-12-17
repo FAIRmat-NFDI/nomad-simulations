@@ -1418,12 +1418,12 @@ class TDDFT(ExcitedStateMethodology):
         """,
     )
 
-    field_ref = Quantity(
+    external_field_ref = Quantity(
         type=Photon,
         description='External field / polarization used to drive the response or propagation.',
     )
 
-    target = Quantity(
+    target_property = Quantity(
         type=MEnum('absorption', 'emission', 'EELS', 'Raman', 'nonlinear'),
         description='Intended spectral/response target of the TDDFT input.',
     )
