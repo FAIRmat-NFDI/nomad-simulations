@@ -292,7 +292,7 @@ class Hessian(PhysicalProperty):
         super().normalize(archive, logger)
 
         if self.eigenvalues is not None:
-            vals = np.asarray(self.eigenvalues, dtype=float)
+            vals = np.array(self.eigenvalues)
             positives = np.sort(vals[vals > 0])[::-1]
             zeros = vals[np.isclose(vals, 0)]
             negatives = np.sort(vals[vals < 0])
