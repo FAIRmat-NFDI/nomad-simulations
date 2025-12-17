@@ -262,8 +262,8 @@ class Hessian(PhysicalProperty):
         shape=['*'],
         description="""
         Eigenvalues of the Hessian. Sorted during normalization with positive values
-        descending, followed by zeros, then negative values descending (closest to
-        zero first). Very low-magnitude modes in solid-state phonon calculations
+        descending, followed by zeros, then negative values ascending (most negative
+        first). Very low-magnitude modes in solid-state phonon calculations
         (e.g., <100 cm-1) or when using RI/DF approximations often reflect numerical
         artifacts rather than true instabilities.
         """,
@@ -292,8 +292,8 @@ class Hessian(PhysicalProperty):
         super().normalize(archive, logger)
 
         if self.eigenvalues is not None:
-            vals = np.array(self.eigenvalues)
+            vals = np.asarray(self.eigenvalues, dtype=float)
             positives = np.sort(vals[vals > 0])[::-1]
             zeros = vals[np.isclose(vals, 0)]
-            negatives = np.sort(vals[vals < 0])[::-1]
+            negatives = np.sort(vals[vals < 0])
             self.eigenvalues = np.concatenate([positives, zeros, negatives])
