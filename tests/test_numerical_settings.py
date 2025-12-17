@@ -7,6 +7,7 @@ from nomad_simulations.schema_packages.numerical_settings import (
     KLinePath,
     KMesh,
     KSpaceFunctionalities,
+    Pseudopotential,
 )
 
 from . import logger
