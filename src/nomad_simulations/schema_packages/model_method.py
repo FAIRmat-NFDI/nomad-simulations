@@ -1461,17 +1461,6 @@ class TDDFT(ExcitedStateMethodology):
 
         self.name = 'TDDFT'
 
-        # Derive kernel type from xc_kernel_ref when hybrids are clear
-        if self.kernel is None and self.xc_kernel_ref is not None:
-            try:
-                if (
-                    self.xc_kernel_ref.global_exact_exchange is not None
-                    and float(self.xc_kernel_ref.global_exact_exchange) > 0
-                ):
-                    self.kernel = 'hybrid'
-            except Exception:
-                logger.warning('Could not derive TDDFT.kernel from xc_kernel_ref.')
-
         # Soft warnings to help parsers spot missing essentials
         if self.type == 'real_time' and (
             self.time_step is None or self.n_steps is None
@@ -1480,7 +1469,9 @@ class TDDFT(ExcitedStateMethodology):
                 'TDDFT real_time mode without time_step or n_steps may be incomplete.'
             )
         if self.type == 'linear_response' and self.is_tamm_dancoff is None:
-            logger.info('TDDFT linear_response set but is_tamm_dancoff not specified.')
+            logger.warning(
+                'TDDFT linear_response set but is_tamm_dancoff not specified.'
+            )
 
 
 # ? Is this class really necessary or should go in outputs.py?
