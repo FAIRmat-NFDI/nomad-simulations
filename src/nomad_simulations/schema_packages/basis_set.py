@@ -41,7 +41,7 @@ class BasisSetComponent(ArchiveSection):
     - atom-centered basis sets, e.g. Gaussian-type basis sets, Slater-type orbitals, muffin-tin orbitals
     """
 
-    # TODO check implementation of `BasisSetComponent` for Wannier and Slater-Koster orbitals
+    # TODO check implementation of `BasisSetComponent` for Wannier
 
     name = Quantity(
         type=str,
