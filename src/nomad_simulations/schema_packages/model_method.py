@@ -1349,6 +1349,13 @@ class TDDFT(ExcitedStateMethodology):
     """
     Time-dependent density functional theory settings. Captures both linear-response
     and real-time propagation flavours.
+
+    References
+    ----------
+    • E. Runge, E. K. U. Gross, Phys. Rev. Lett. 52, 997 (1984)  (TDDFT formalism)
+    • M. A. L. Marques et al. (eds.), *Fundamentals of Time-Dependent Density Functional Theory*,
+      Springer (2012)
+    • A. Castro et al., Phys. Status Solidi B 243, 2465 (2006)  (Real-time TDDFT overview)
     """
 
     type = Quantity(
@@ -1357,7 +1364,7 @@ class TDDFT(ExcitedStateMethodology):
         description="""
         TDDFT flavour (linear-response or real-time propagation).
           • linear_response — frequency-domain (Casida, Sternheimer, Liouville-Lanczos)
-          • real_time       — explicit time propagation under a perturbation
+          • real_time       — explicit time propagation under a perturbation.
         """,
     )
 
@@ -1387,9 +1394,28 @@ class TDDFT(ExcitedStateMethodology):
         description='If True, Tamm-Dancoff approximation (TDA) is used (linear-response only).',
     )
 
+    solver = Quantity(
+        type=MEnum(
+            'Casida', 'Sternheimer', 'Liouville-Lanczos', 'propagation', 'unavailable'
+        ),
+        description="""
+        Numerical driver:
+          • Casida             : eigenvalue problem in particle-hole space
+          • Sternheimer        : frequency-domain Sternheimer
+          • Liouville-Lanczos  : iterative Liouville-Lanczos
+          • propagation        : explicit time evolution (real-time)
+          • unavailable        : code-chosen / unspecified
+        """,
+    )
+
     xc_kernel_ref = Quantity(
         type=XCFunctional,
-        description='Reference XC functional used for the TDDFT kernel (can be same as ground-state XC).',
+        description="""
+        Reference to an `XCFunctional` describing the TDDFT kernel.
+        Typically points to the ground-state DFT XC section if the adiabatic
+        kernel matches, or to a separate XCFunctional created for the TD kernel
+        when it differs (e.g., LRC/hybrid kernel on top of semi-local ground state).
+        """,
     )
 
     field_ref = Quantity(
@@ -1433,10 +1459,11 @@ class TDDFT(ExcitedStateMethodology):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Standardize name for this method section
         self.name = 'TDDFT'
 
-        # Default to linear_response if not specified
+        # Default to linear_response if not specified; infer real_time from solver hint
+        if self.type is None and self.solver in ['propagation']:
+            self.type = 'real_time'
         self.type = self.type or 'linear_response'
 
         # Derive kernel type from xc_kernel_ref when hybrids are clear
@@ -1448,7 +1475,7 @@ class TDDFT(ExcitedStateMethodology):
                 ):
                     self.kernel = 'hybrid'
             except Exception:
-                logger.debug('Could not derive TDDFT.kernel from xc_kernel_ref.')
+                logger.warning('Could not derive TDDFT.kernel from xc_kernel_ref.')
 
         # Soft warnings to help parsers spot missing essentials
         if self.type == 'real_time' and (
@@ -1458,7 +1485,7 @@ class TDDFT(ExcitedStateMethodology):
                 'TDDFT real_time mode without time_step or n_steps may be incomplete.'
             )
         if self.type == 'linear_response' and self.is_tamm_dancoff is None:
-            logger.debug('TDDFT linear_response set but is_tamm_dancoff not specified.')
+            logger.info('TDDFT linear_response set but is_tamm_dancoff not specified.')
 
 
 # ? Is this class really necessary or should go in outputs.py?
