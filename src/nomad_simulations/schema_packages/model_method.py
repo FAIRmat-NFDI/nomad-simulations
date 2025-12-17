@@ -1461,11 +1461,6 @@ class TDDFT(ExcitedStateMethodology):
 
         self.name = 'TDDFT'
 
-        # Default to linear_response if not specified; infer real_time from solver hint
-        if self.type is None and self.solver in ['propagation']:
-            self.type = 'real_time'
-        self.type = self.type or 'linear_response'
-
         # Derive kernel type from xc_kernel_ref when hybrids are clear
         if self.kernel is None and self.xc_kernel_ref is not None:
             try:
