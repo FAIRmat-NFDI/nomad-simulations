@@ -241,7 +241,8 @@ class Hessian(PhysicalProperty):
         description="""
         Number of negative Hessian eigenvalues (imaginary vibrational frequencies).
         A value of 0 indicates a local minimum, 1 a first-order saddle point, and
-        >1 a higher-order saddle point.
+        >1 a higher-order saddle point. Leave unset if the Hessian was evaluated
+        away from a stationary point.
         """,
     )
 
@@ -250,10 +251,13 @@ class Hessian(PhysicalProperty):
             'minimum',
             'saddle_point',
             'maximum',
+            'non_stationary',
         ),
         description="""
         Stationary-point classification inferred from the Hessian eigenvalue sign
         pattern. Use 'saddle_point' for any stationary point with one or more
         negative eigenvalues (a transition state corresponds to exactly one).
+        Use 'non_stationary' if the Hessian was evaluated where the gradient is
+        non-zero and no stationary point classification applies.
         """,
     )
