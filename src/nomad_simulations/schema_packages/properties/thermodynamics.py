@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
-from nomad.metainfo import Quantity
+from nomad.metainfo import MEnum, Quantity
 
 if TYPE_CHECKING:
     from nomad.datamodel.context import Context
@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.data_types import positive_int
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.energies import BaseEnergy
 
@@ -227,11 +228,72 @@ class Hessian(PhysicalProperty):
     describing the local curvature of the energy surface.
     """
 
-    rank = [3, 3]
+    n_hessian_dim = Quantity(
+        type=positive_int(),
+        description="""
+        Matrix dimension (number of degrees of freedom) of the square Hessian in the
+        coordinate basis used by the parser. For Cartesian atomic Hessians this is
+        typically 3 * N_atoms; constrained/filtered coordinates should use the
+        remaining degrees of freedom.
+        """,
+    )
 
     value = Quantity(
         type=np.float64,
         unit='joule / m ** 2',
+        shape=['n_hessian_dim', 'n_hessian_dim'],
         description="""
         """,
     )
+
+    n_negative_eigenvalues = Quantity(
+        type=positive_int(),
+        description="""
+        Number of negative Hessian eigenvalues (imaginary vibrational frequencies).
+        A value of 0 indicates a local minimum, 1 a first-order saddle point, and
+        >1 a higher-order saddle point. Leave unset if the Hessian was evaluated
+        away from a stationary point.
+        """,
+    )
+
+    eigenvalues = Quantity(
+        type=np.float64,
+        unit='joule / m ** 2',
+        shape=['*'],
+        description="""
+        Eigenvalues of the Hessian. Sorted during normalization with positive values
+        descending, followed by zeros, then negative values ascending (most negative
+        first). Very low-magnitude modes in solid-state phonon calculations
+        (e.g., <100 cm-1) or when using RI/DF approximations often reflect numerical
+        artifacts rather than true instabilities.
+        """,
+    )
+
+    stationary_point_type = Quantity(
+        type=MEnum(
+            'minimum',
+            'maximum',
+            'saddle_point',
+            'non_stationary',
+            'unavailable',
+        ),
+        description="""
+        Stationary-point classification (requires zero gradient) based on Hessian
+        eigenvalue signs. Use 'saddle_point' for any stationary point with one or
+        more negative eigenvalues (a transition state corresponds to exactly one).
+        Use 'maximum' when all eigenvalues are negative (negative-definite Hessian).
+        Use 'non_stationary' if the Hessian was evaluated where the gradient is
+        non-zero and no stationary point classification applies. Use 'unavailable'
+        when no classification could be determined from the data.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.eigenvalues is not None:
+            vals = np.array(self.eigenvalues)
+            positives = np.sort(vals[vals > 0])[::-1]
+            zeros = vals[np.isclose(vals, 0)]
+            negatives = np.sort(vals[vals < 0])
+            self.eigenvalues = np.concatenate([positives, zeros, negatives])
