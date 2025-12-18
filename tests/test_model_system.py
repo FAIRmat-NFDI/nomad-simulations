@@ -1397,3 +1397,35 @@ class TestRepresentativeFlagOnSubsystem:
 
         root.normalize(EntryArchive(), logger=logger)
         assert root.is_representative is True
+
+
+def test_wyckoff_sites_property():
+    """
+    Test the wyckoff_sites computed property in LocalCrystalSymmetry.
+    """
+    from nomad_simulations.schema_packages.model_system import LocalCrystalSymmetry
+
+    # Test with both wyckoff_letters and site_multiplicities set
+    local_sym = LocalCrystalSymmetry()
+    local_sym.wyckoff_letters = ['a', 'b', 'b', 'c', 'c', 'c', 'c']
+    local_sym.site_multiplicities = [1, 2, 2, 4, 4, 4, 4]
+
+    wyckoff_sites = local_sym.wyckoff_sites
+    assert wyckoff_sites is not None
+    assert wyckoff_sites == ['a1', 'b2', 'b2', 'c4', 'c4', 'c4', 'c4']
+
+    # Test with missing wyckoff_letters
+    local_sym2 = LocalCrystalSymmetry()
+    local_sym2.site_multiplicities = [1, 2]
+    assert local_sym2.wyckoff_sites is None
+
+    # Test with missing site_multiplicities
+    local_sym3 = LocalCrystalSymmetry()
+    local_sym3.wyckoff_letters = ['a', 'b']
+    assert local_sym3.wyckoff_sites is None
+
+    # Test with mismatched lengths
+    local_sym4 = LocalCrystalSymmetry()
+    local_sym4.wyckoff_letters = ['a', 'b']
+    local_sym4.site_multiplicities = [1]  # Length mismatch
+    assert local_sym4.wyckoff_sites is None
