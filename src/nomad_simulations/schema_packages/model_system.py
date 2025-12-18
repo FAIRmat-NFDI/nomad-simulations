@@ -713,7 +713,18 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
     atomic_cell_ref = Quantity(
         type=Representation,
         description="""
-        Reference to the Representation section that the symmetry refers to.
+        **DEPRECATED**: This field is deprecated and will be removed in a future version.
+
+        Originally intended to reference the representation that symmetry describes, but this
+        design was flawed: symmetry analysis is performed on the original ModelSystem structure
+        (representation-independent), not on a specific representation. The primitive and
+        conventional cells are outputs of symmetry analysis, not inputs.
+
+        The field currently points to the conventional cell (an output), which is semantically
+        incorrect and provides no useful information beyond what's already in
+        `model_system.representations`.
+
+        **Migration**: No action needed. This field provides no functionality and can be ignored.
         """,
     )
 
@@ -1100,9 +1111,6 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
                 model_system.representations.append(primitive_cell)
             if conventional_cell:
                 model_system.representations.append(conventional_cell)
-            # Reference to the standardized cell, and if not, fallback to the originally parsed one
-            if model_system.representations:
-                self.atomic_cell_ref = model_system.representations[-1]
 
 
 # Backward compatibility alias
