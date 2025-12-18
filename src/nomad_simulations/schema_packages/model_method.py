@@ -1349,6 +1349,7 @@ class TDDFT(ExcitedStateMethodology):
     """
     Time-dependent density functional theory settings. Captures both linear-response
     and real-time propagation flavours.
+    Links to underlying ground-state calculations should be represented at workflow level.
 
     References
     ----------
@@ -1360,61 +1361,29 @@ class TDDFT(ExcitedStateMethodology):
 
     type = Quantity(
         type=MEnum('linear_response', 'real_time'),
-        default='linear_response',
         description="""
-        TDDFT flavour (linear-response or real-time propagation).
-          • linear_response — frequency-domain (Casida, Sternheimer, Liouville-Lanczos)
-          • real_time       — explicit time propagation under a perturbation.
+        TDDFT flavour:
+          - linear_response: frequency-domain response (Casida/Sternheimer/Liouv.-Lanczos)
+          - real_time: explicit time propagation under a perturbation
         """,
-    )
-
-    kernel = Quantity(
-        type=MEnum(
-            'ALDA',
-            'AGGA',
-            'hybrid',
-            'range_separated',
-            'frequency_dependent',
-            'bootstrap',
-            'long_range_corrected',
-        ),
-        description="""
-        This field describes the effective XC response behaviour assumed in the TDDFT calculation, 
-        whether implemented explicitly (linear-response) or implicitly via the XC potential (real-time).
-          • ALDA / AGGA     : adiabatic local or semi-local
-          • hybrid          : hybrid adiabatic kernel
-          • range_separated : long/short-range split hybrids
-          • frequency_dependent : non-adiabatic kernel
-          • bootstrap / long_range_corrected : common nano/solid-state kernels
-        """,
-    )
-
-    is_tamm_dancoff = Quantity(
-        type=bool,
-        description='If True, Tamm-Dancoff approximation (TDA) is used (linear-response only).',
     )
 
     solver = Quantity(
-        type=MEnum(
-            'Casida', 'Sternheimer', 'Liouville-Lanczos', 'propagation', 'unavailable'
-        ),
+        type=MEnum('Casida', 'Sternheimer', 'Liouville-Lanczos', 'propagation'),
         description="""
-        Numerical driver:
-          • Casida             : eigenvalue problem in particle-hole space
-          • Sternheimer        : frequency-domain Sternheimer
-          • Liouville-Lanczos  : iterative Liouville-Lanczos
-          • propagation        : explicit time evolution (real-time)
-          • unavailable        : code-chosen / unspecified
+        Numerical formulation / driver:
+          - Casida, Sternheimer, Liouville-Lanczos: linear-response formulations
+          - propagation: real-time propagation formulation
         """,
     )
 
-    xc_kernel_ref = Quantity(
-        type=XCFunctional,
+    approximation = Quantity(
+        type=MEnum('full', 'TDA'),
         description="""
-        Reference to an `XCFunctional` describing the TDDFT kernel.
-        Typically points to the ground-state DFT XC section if the adiabatic
-        kernel matches, or to a separate XCFunctional created for the TD kernel
-        when it differs (e.g., LRC/hybrid kernel on top of semi-local ground state).
+        Approximation level of the TDDFT equations.
+
+        - full: full linear-response TDDFT (includes coupling terms)
+        - TDA : Tamm-Dancoff approximation (linear-response only)
         """,
     )
 
@@ -1430,20 +1399,30 @@ class TDDFT(ExcitedStateMethodology):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-
         self.name = 'TDDFT'
 
-        # Soft warnings to help parsers spot missing essentials
-        if self.type == 'real_time' and (
-            self.time_step is None or self.n_steps is None
-        ):
-            logger.warning(
-                'TDDFT real_time mode without time_step or n_steps may be incomplete.'
-            )
-        if self.type == 'linear_response' and self.is_tamm_dancoff is None:
-            logger.warning(
-                'TDDFT linear_response set but is_tamm_dancoff not specified.'
-            )
+        # Light consistency checks
+        if self.type == 'real_time':
+            if self.solver in ['Casida', 'Sternheimer', 'Liouville-Lanczos']:
+                logger.warning(
+                    'TDDFT.type is real_time but solver indicates a linear-response formulation.',
+                    type=self.type,
+                    solver=self.solver,
+                )
+            if self.approximation == 'TDA':
+                logger.warning(
+                    'TDDFT.approximation=TDA is not applicable for real-time TDDFT.',
+                    type=self.type,
+                    approximation=self.approximation,
+                )
+
+        if self.type == 'linear_response':
+            if self.solver == 'propagation':
+                logger.warning(
+                    'TDDFT.type is linear_response but solver is propagation.',
+                    type=self.type,
+                    solver=self.solver,
+                )
 
 
 # ? Is this class really necessary or should go in outputs.py?
