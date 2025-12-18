@@ -1431,12 +1431,59 @@ def test_wyckoff_sites_property():
     assert local_sym4.wyckoff_sites is None
 
 
-def test_symmetry_analysis_fields():
+@pytest.mark.parametrize(
+    'symbol, positions, lattice_constant, n_atoms, space_group_range',
+    [
+        pytest.param(
+            'Al',
+            [[0.0, 0.0, 0.0], [0.5, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.5]],
+            4.05,
+            4,
+            (225, 225),
+            id='fcc_aluminum',
+        ),
+        pytest.param(
+            'Fe',
+            [[0.0, 0.0, 0.0], [0.5, 0.5, 0.5]],
+            2.87,
+            2,
+            (229, 229),
+            id='bcc_iron',
+        ),
+        pytest.param(
+            'Po',
+            [[0.0, 0.0, 0.0]],
+            3.35,
+            1,
+            (221, 221),
+            id='simple_cubic_polonium',
+        ),
+        pytest.param(
+            'Si',
+            [
+                [0.0, 0.0, 0.0],
+                [0.25, 0.25, 0.25],
+                [0.5, 0.5, 0.0],
+                [0.75, 0.75, 0.25],
+                [0.5, 0.0, 0.5],
+                [0.75, 0.25, 0.75],
+                [0.0, 0.5, 0.5],
+                [0.25, 0.75, 0.75],
+            ],
+            5.43,
+            8,
+            (227, 227),
+            id='diamond_silicon',
+        ),
+    ],
+)
+def test_symmetry_analysis_fields(
+    symbol, positions, lattice_constant, n_atoms, space_group_range
+):
     """
     Test that symmetry analysis populates analysis_origin_shift,
-    analysis_transformation_matrix, and site_symmetries.
+    analysis_transformation_matrix, and site_symmetries for various crystal structures.
     """
-    # Create a simple FCC structure (Al) with from_ase_atoms
     import ase
 
     from nomad_simulations.schema_packages.model_system import (
@@ -1446,21 +1493,18 @@ def test_symmetry_analysis_fields():
 
     from . import logger
 
-    a = 4.05  # Angstrom
+    # Create structure with scaled positions
+    a = lattice_constant
+    scaled_positions = positions
     ase_atoms = ase.Atoms(
-        symbols=['Al'] * 4,
-        positions=[
-            [0.0, 0.0, 0.0],
-            [0.5 * a, 0.5 * a, 0.0],
-            [0.5 * a, 0.0, 0.5 * a],
-            [0.0, 0.5 * a, 0.5 * a],
-        ],
+        symbols=[symbol] * n_atoms,
+        scaled_positions=scaled_positions,
         cell=[a, a, a],
         pbc=True,
     )
 
     sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
-    sys.type = 'bulk'  # Set explicitly to trigger symmetry analysis
+    sys.type = 'bulk'
     symmetry = Symmetry()
 
     # Directly call resolve_bulk_symmetry to test the implementation
@@ -1474,12 +1518,16 @@ def test_symmetry_analysis_fields():
     assert symmetry.analysis_transformation_matrix is not None
     assert symmetry.analysis_transformation_matrix.shape == (3, 3)
 
+    # Check space group is in expected range
+    assert symmetry.space_group_number is not None
+    assert space_group_range[0] <= symmetry.space_group_number <= space_group_range[1]
+
     # Check that site_symmetries are populated in local_symmetry
     assert sys.local_symmetry is not None
     assert sys.local_symmetry.site_symmetries is not None
-    assert len(sys.local_symmetry.site_symmetries) == 4
+    assert len(sys.local_symmetry.site_symmetries) == n_atoms
 
-    # Each site symmetry should be a string (point group symbol)
+    # Each site symmetry should be a non-empty string (point group symbol)
     for site_sym in sys.local_symmetry.site_symmetries:
         assert isinstance(site_sym, str)
         assert len(site_sym) > 0
