@@ -832,9 +832,15 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
                         symmetry_analyzer.get_wyckoff_letters_conventional()
                     )
                     if conventional_wyckoff is not None:
+                        # Convert to list if it's a numpy array
+                        conv_wyckoff_list = (
+                            list(conventional_wyckoff)
+                            if hasattr(conventional_wyckoff, '__iter__')
+                            else [conventional_wyckoff]
+                        )
                         conventional_letter_counts = {
-                            letter: conventional_wyckoff.count(letter)
-                            for letter in set(conventional_wyckoff)
+                            letter: conv_wyckoff_list.count(letter)
+                            for letter in set(conv_wyckoff_list)
                         }
                         site_mults = [
                             conventional_letter_counts.get(letter, 1)
@@ -902,9 +908,27 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             symmetry_analyzer.get_space_group_international_short()
         )
 
-        # TODO: Populate analysis_origin_shift and analysis_transformation_matrix
-        # These would describe the transformation MatID applied during analysis,
-        # but are not currently exposed by SymmetryAnalyzer
+        # Populate analysis_origin_shift, analysis_transformation_matrix, and
+        # site_symmetries from the spglib dataset
+        dataset = None
+        try:
+            dataset = symmetry_analyzer.get_symmetry_dataset()
+            if dataset is not None:
+                # Use attribute access (modern spglib API) with fallback to dict access
+                symmetry['analysis_origin_shift'] = (
+                    dataset.origin_shift
+                    if hasattr(dataset, 'origin_shift')
+                    else dataset.get('origin_shift')
+                )
+                symmetry['analysis_transformation_matrix'] = (
+                    dataset.transformation_matrix
+                    if hasattr(dataset, 'transformation_matrix')
+                    else dataset.get('transformation_matrix')
+                )
+        except Exception as e:
+            logger.warning(
+                f'Could not extract analysis transformation data from symmetry dataset: {e}'
+            )
 
         # Populating the ModelSystem local_symmetry information
         original_wyckoff = symmetry_analyzer.get_wyckoff_letters_original()
@@ -921,9 +945,15 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             conventional_wyckoff = symmetry_analyzer.get_wyckoff_letters_conventional()
             if conventional_wyckoff is not None:
                 # Count occurrences of each letter in conventional cell
+                # Convert to list if it's a numpy array
+                conv_wyckoff_list = (
+                    list(conventional_wyckoff)
+                    if hasattr(conventional_wyckoff, '__iter__')
+                    else [conventional_wyckoff]
+                )
                 conventional_letter_counts = {
-                    letter: conventional_wyckoff.count(letter)
-                    for letter in set(conventional_wyckoff)
+                    letter: conv_wyckoff_list.count(letter)
+                    for letter in set(conv_wyckoff_list)
                 }
                 # Map each original position to its multiplicity
                 site_mults = [
@@ -932,7 +962,25 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
                 ]
                 model_system.local_symmetry.site_multiplicities = site_mults
 
-        # TODO: Populate site_symmetries from symmetry_analyzer if available
+        # Populate site_symmetries (point group symbols) from symmetry dataset
+        try:
+            if dataset is not None:
+                site_syms = (
+                    dataset.site_symmetry_symbols
+                    if hasattr(dataset, 'site_symmetry_symbols')
+                    else dataset.get('site_symmetry_symbols')
+                )
+                if site_syms is not None:
+                    # Convert to list and strip leading dots from symbols (e.g., '.3m' -> '3m')
+                    # The dots are used by spglib but not standard in Hermann-Mauguin notation
+                    model_system.local_symmetry.site_symmetries = [
+                        sym.lstrip('.') if isinstance(sym, str) else sym
+                        for sym in site_syms
+                    ]
+        except Exception as e:
+            logger.warning(
+                f'Could not extract site symmetry symbols from symmetry dataset: {e}'
+            )
 
         # Populating the primitive Cell information
         primitive_cell = self.resolve_analyzed_cell(

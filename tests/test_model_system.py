@@ -1429,3 +1429,57 @@ def test_wyckoff_sites_property():
     local_sym4.wyckoff_letters = ['a', 'b']
     local_sym4.site_multiplicities = [1]  # Length mismatch
     assert local_sym4.wyckoff_sites is None
+
+
+def test_symmetry_analysis_fields():
+    """
+    Test that symmetry analysis populates analysis_origin_shift,
+    analysis_transformation_matrix, and site_symmetries.
+    """
+    # Create a simple FCC structure (Al) with from_ase_atoms
+    import ase
+
+    from nomad_simulations.schema_packages.model_system import (
+        ModelSystem,
+        Symmetry,
+    )
+
+    from . import logger
+
+    a = 4.05  # Angstrom
+    ase_atoms = ase.Atoms(
+        symbols=['Al'] * 4,
+        positions=[
+            [0.0, 0.0, 0.0],
+            [0.5 * a, 0.5 * a, 0.0],
+            [0.5 * a, 0.0, 0.5 * a],
+            [0.0, 0.5 * a, 0.5 * a],
+        ],
+        cell=[a, a, a],
+        pbc=True,
+    )
+
+    sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
+    sys.type = 'bulk'  # Set explicitly to trigger symmetry analysis
+    symmetry = Symmetry()
+
+    # Directly call resolve_bulk_symmetry to test the implementation
+    primitive_cell, conventional_cell = symmetry.resolve_bulk_symmetry(sys, logger)
+
+    # Check that analysis_origin_shift is populated
+    assert symmetry.analysis_origin_shift is not None
+    assert symmetry.analysis_origin_shift.shape == (3,)
+
+    # Check that analysis_transformation_matrix is populated
+    assert symmetry.analysis_transformation_matrix is not None
+    assert symmetry.analysis_transformation_matrix.shape == (3, 3)
+
+    # Check that site_symmetries are populated in local_symmetry
+    assert sys.local_symmetry is not None
+    assert sys.local_symmetry.site_symmetries is not None
+    assert len(sys.local_symmetry.site_symmetries) == 4
+
+    # Each site symmetry should be a string (point group symbol)
+    for site_sym in sys.local_symmetry.site_symmetries:
+        assert isinstance(site_sym, str)
+        assert len(site_sym) > 0
