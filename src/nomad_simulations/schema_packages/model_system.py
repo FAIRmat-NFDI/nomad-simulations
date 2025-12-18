@@ -250,24 +250,7 @@ class Representation(ArchiveSection):
         )
     )
 
-    wyckoff_letters = Quantity(
-        type=str,
-        shape=['*'],
-        description="""
-        Wyckoff letters associated with each atom.
-        """,
-    )
-
-    equivalent_atoms = Quantity(
-        type=np.int32,
-        shape=['*'],
-        description="""
-        List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
-        then the list is simply the index of each element, e.g.:
-            - [0, 1, 2, 3] all four atoms are non-equivalent.
-            - [0, 0, 0, 3] three equivalent atoms and one non-equivalent.
-        """,
-    )
+    local_symmetry = SubSection(sub_section='LocalSymmetry')
 
 
 class AlternativeRepresentation(Representation):
@@ -321,6 +304,90 @@ class AlternativeRepresentation(Representation):
         is a $3 x 3 x 3$ superlattice.
         """,
     )
+
+
+class LocalSymmetry(ArchiveSection):
+    """
+    Per-particle local symmetry information for a specific representation.
+
+    Stores site-specific crystallographic symmetry data indexed by particle position.
+    Each representation (original, primitive, conventional, supercell) can have its own
+    LocalSymmetry section since the number and arrangement of particles differs.
+    """
+
+    site_symmetries = Quantity(
+        type=str,
+        shape=['*'],
+        description="""
+        Point group symbol for each particle site (e.g., '3m', 'mmm', '432').
+        Describes the local symmetry operations that leave the atomic site invariant.
+        """,
+    )
+
+    wyckoff_letters = Quantity(
+        type=str,
+        shape=['*'],
+        description="""
+        Wyckoff letter designation for each particle in this representation.
+        Labels such as 'a', '4e', '8c' identify symmetrically equivalent atomic positions
+        within the space group. The multiplicity may be encoded in the label.
+        """,
+    )
+
+    site_multiplicities = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Multiplicity of the Wyckoff site for each particle.
+        Indicates how many symmetrically equivalent positions exist in the unit cell
+        for atoms of this Wyckoff type.
+        """,
+    )
+
+    equivalent_atoms = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Equivalence grouping of atoms by symmetry operations.
+        Atoms with the same index value are symmetrically equivalent.
+
+        Examples:
+            - [0, 1, 2, 3]: all four atoms are non-equivalent
+            - [0, 0, 0, 3]: first three atoms are equivalent, fourth is unique
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """Validate array dimensions match parent representation particle count."""
+        super().normalize(archive, logger)
+
+        parent = self.m_parent
+        if not isinstance(parent, Representation):
+            logger.warning(
+                'LocalSymmetry parent is not a Representation → validation skipped.'
+            )
+            return
+
+        # Validate array lengths against parent representation
+        if (
+            hasattr(parent, 'fractional_coordinates')
+            and parent.fractional_coordinates is not None
+        ):
+            n_particles = len(parent.fractional_coordinates)
+
+            # Check each populated array
+            for field_name in [
+                'site_symmetries',
+                'wyckoff_letters',
+                'site_multiplicities',
+                'equivalent_atoms',
+            ]:
+                field_value = getattr(self, field_name, None)
+                if field_value is not None and len(field_value) != n_particles:
+                    logger.warning(
+                        f'LocalSymmetry.{field_name} length ({len(field_value)}) '
+                        f'does not match n_particles ({n_particles})'
+                    )
 
 
 class GlobalSymmetry(ArchiveSection):
@@ -488,7 +555,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
 
         cell = system.get_cell()
 
-        # Create the cell for geometry only
+        # Create the representation with geometry
         cell_section = Representation()
         if cell_type is not None:
             cell_section.name = cell_type
@@ -501,6 +568,23 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
                 'Failed to extract geometric-space data from ASE cell.',
                 exc_info=exc,
             )
+
+        # Populate local symmetry information
+        try:
+            wyckoff = mapping['wyckoff']()
+            equivalent = mapping['equivalent']()
+            if wyckoff is not None or equivalent is not None:
+                cell_section.local_symmetry = LocalSymmetry()
+                if wyckoff is not None:
+                    cell_section.local_symmetry.wyckoff_letters = wyckoff
+                if equivalent is not None:
+                    cell_section.local_symmetry.equivalent_atoms = equivalent
+        except Exception as exc:
+            logger.warning(
+                f'Failed to extract local symmetry for {cell_type} cell.',
+                exc_info=exc,
+            )
+
         return cell_section
 
     def resolve_bulk_symmetry(
@@ -545,11 +629,16 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             symmetry_analyzer.get_space_group_international_short()
         )
 
-        # Populating the ModelSystem wyckoff_letters and equivalent_atoms information
+        # Populating the ModelSystem local_symmetry information
         original_wyckoff = symmetry_analyzer.get_wyckoff_letters_original()
         original_equivalent_atoms = symmetry_analyzer.get_equivalent_atoms_original()
-        model_system.wyckoff_letters = original_wyckoff
-        model_system.equivalent_atoms = original_equivalent_atoms
+
+        if not model_system.local_symmetry:
+            model_system.local_symmetry = LocalSymmetry()
+
+        model_system.local_symmetry.wyckoff_letters = original_wyckoff
+        model_system.local_symmetry.equivalent_atoms = original_equivalent_atoms
+        # TODO: Populate site_symmetries and site_multiplicities from symmetry_analyzer
 
         # Populating the primitive Cell information
         primitive_cell = self.resolve_analyzed_cell(
