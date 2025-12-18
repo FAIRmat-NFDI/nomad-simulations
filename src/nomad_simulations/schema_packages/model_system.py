@@ -695,7 +695,9 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             self.lattice_centering.split(' - ')[0] if self.lattice_centering else ''
         )
 
-        return f'{family_code}{centering_code}' if family_code and centering_code else None
+        return (
+            f'{family_code}{centering_code}' if family_code and centering_code else None
+        )
 
     def resolve_analyzed_cell(
         self,

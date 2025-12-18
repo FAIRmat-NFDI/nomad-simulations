@@ -79,7 +79,7 @@ def test_get_sibling_section_result_idempotent_and_no_mutation():
     c1 = Representation(name='primitive')
     parent.representations.extend([c0, c1])
     s = Symmetry()
-    parent.symmetry.append(s)
+    parent.symmetry = s
 
     # First call
     got0 = get_sibling_section(s, 'representations', logger, index_sibling=0)
@@ -97,7 +97,7 @@ def test_get_sibling_section_result_idempotent_and_no_mutation():
 
     # Structure was not mutated by calls
     assert parent.representations == [c0, c1]
-    assert parent.symmetry == [s]
+    assert parent.symmetry == s
 
 
 @pytest.mark.parametrize(
@@ -114,7 +114,7 @@ def test_get_sibling_section_edge_cases_stable(
     representation = Representation(name='original')
     symm = Symmetry()
     parent.representations.append(representation)
-    parent.symmetry.append(symm)
+    parent.symmetry = symm
 
     # Call twice; both should yield the same (None here)
     out1 = get_sibling_section(
@@ -129,7 +129,7 @@ def test_get_sibling_section_edge_cases_stable(
 
     # No mutation of structure
     assert parent.representations == [representation]
-    assert parent.symmetry == [symm]
+    assert parent.symmetry == symm
 
 
 # ! Missing test for RusselSandersState (but this class will probably be deprecated)

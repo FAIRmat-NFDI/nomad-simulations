@@ -223,16 +223,13 @@ class KSpaceFunctionalities:
             # General checks to proceed with normalization
             if not model_system.is_representative:
                 continue
-            if model_system.symmetry is None:
-                logger.warning('Could not find `ModelSystem.symmetry`.')
-                continue
             # Symmetry is now a single subsection, not a list
-            bravais_lattice = model_system.symmetry.bravais_lattice
-            if not bravais_lattice:
-                logger.warning(
-                    'Could not determine `bravais_lattice` from `ModelSystem.symmetry`.'
-                )
-                continue
+            # Extract bravais_lattice if symmetry exists, otherwise use None
+            bravais_lattice = (
+                model_system.symmetry.bravais_lattice
+                if model_system.symmetry is not None
+                else None
+            )
 
             if model_system.representations is None:
                 logger.warning('Could not find `ModelSystem.representations`.')
