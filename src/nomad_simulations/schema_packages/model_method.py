@@ -1387,6 +1387,8 @@ class TDDFT(ExcitedStateMethodology):
         """,
     )
 
+    xc = SubSection(sub_section=XCFunctional.m_def, repeats=False)
+
     field_polarization_ref = Quantity(
         type=Photon,
         description='External field / polarization used to drive the response or propagation.',
