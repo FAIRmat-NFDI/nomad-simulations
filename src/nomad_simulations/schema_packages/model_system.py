@@ -308,41 +308,11 @@ class AlternativeRepresentation(Representation):
 
 class LocalSymmetry(ArchiveSection):
     """
-    Per-particle local symmetry information for a specific representation.
+    Base class for per-particle local symmetry information.
 
-    Stores site-specific crystallographic symmetry data indexed by particle position.
-    Each representation (original, primitive, conventional, supercell) can have its own
-    LocalSymmetry section since the number and arrangement of particles differs.
+    Provides polymorphic interface for different types of local symmetry data.
+    Each representation can have its own LocalSymmetry since particle counts differ.
     """
-
-    site_symmetries = Quantity(
-        type=str,
-        shape=['*'],
-        description="""
-        Point group symbol for each particle site (e.g., '3m', 'mmm', '432').
-        Describes the local symmetry operations that leave the atomic site invariant.
-        """,
-    )
-
-    wyckoff_letters = Quantity(
-        type=str,
-        shape=['*'],
-        description="""
-        Wyckoff letter designation for each particle in this representation.
-        Labels such as 'a', '4e', '8c' identify symmetrically equivalent atomic positions
-        within the space group. The multiplicity may be encoded in the label.
-        """,
-    )
-
-    site_multiplicities = Quantity(
-        type=np.int32,
-        shape=['*'],
-        description="""
-        Multiplicity of the Wyckoff site for each particle.
-        Indicates how many symmetrically equivalent positions exist in the unit cell
-        for atoms of this Wyckoff type.
-        """,
-    )
 
     equivalent_atoms = Quantity(
         type=np.int32,
@@ -375,19 +345,54 @@ class LocalSymmetry(ArchiveSection):
         ):
             n_particles = len(parent.fractional_coordinates)
 
-            # Check each populated array
-            for field_name in [
-                'site_symmetries',
-                'wyckoff_letters',
-                'site_multiplicities',
-                'equivalent_atoms',
-            ]:
-                field_value = getattr(self, field_name, None)
-                if field_value is not None and len(field_value) != n_particles:
-                    logger.warning(
-                        f'LocalSymmetry.{field_name} length ({len(field_value)}) '
-                        f'does not match n_particles ({n_particles})'
-                    )
+            # Check each populated array for any quantity with shape ['*']
+            for field_name, quantity in self.m_def.all_quantities.items():
+                if quantity.shape and quantity.shape[0] == '*':
+                    field_value = getattr(self, field_name, None)
+                    if field_value is not None and len(field_value) != n_particles:
+                        logger.warning(
+                            f'{self.__class__.__name__}.{field_name} length ({len(field_value)}) '
+                            f'does not match n_particles ({n_particles})'
+                        )
+
+
+class LocalCrystalSymmetry(LocalSymmetry):
+    """
+    Crystallographic local symmetry for particles in a crystal structure.
+
+    Stores Wyckoff positions, site symmetries, and multiplicities for each particle
+    in the representation.
+    """
+
+    site_symmetries = Quantity(
+        type=str,
+        shape=['*'],
+        description="""
+        Crystallographic point group symbol for each particle site (e.g., '3m', 'mmm', '432').
+        Describes the local symmetry operations that leave the atomic site invariant
+        within the crystal structure.
+        """,
+    )
+
+    wyckoff_letters = Quantity(
+        type=str,
+        shape=['*'],
+        description="""
+        Wyckoff letter designation for each particle in this representation.
+        Labels such as 'a', '4e', '8c' identify symmetrically equivalent atomic positions
+        within the space group. The multiplicity may be encoded in the label.
+        """,
+    )
+
+    site_multiplicities = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Multiplicity of the Wyckoff site for each particle.
+        Indicates how many symmetrically equivalent positions exist in the unit cell
+        for atoms of this Wyckoff type.
+        """,
+    )
 
 
 class GlobalSymmetry(ArchiveSection):
@@ -574,7 +579,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             wyckoff = mapping['wyckoff']()
             equivalent = mapping['equivalent']()
             if wyckoff is not None or equivalent is not None:
-                cell_section.local_symmetry = LocalSymmetry()
+                cell_section.local_symmetry = LocalCrystalSymmetry()
                 if wyckoff is not None:
                     cell_section.local_symmetry.wyckoff_letters = wyckoff
                 if equivalent is not None:
@@ -634,7 +639,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         original_equivalent_atoms = symmetry_analyzer.get_equivalent_atoms_original()
 
         if not model_system.local_symmetry:
-            model_system.local_symmetry = LocalSymmetry()
+            model_system.local_symmetry = LocalCrystalSymmetry()
 
         model_system.local_symmetry.wyckoff_letters = original_wyckoff
         model_system.local_symmetry.equivalent_atoms = original_equivalent_atoms
