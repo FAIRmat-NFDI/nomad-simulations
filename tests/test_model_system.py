@@ -486,8 +486,7 @@ class TestModelSystem:
             chemical_symbols=['H', 'H', 'O'],
             orbitals_symbols=[['s'], ['s'], ['s']],
         )
-        sym = Symmetry()
-        sys.symmetry.append(sym)
+        sys.symmetry = Symmetry()
 
         sys.normalize(EntryArchive(), logger=logger)
 

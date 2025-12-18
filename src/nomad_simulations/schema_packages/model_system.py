@@ -323,9 +323,19 @@ class AlternativeRepresentation(Representation):
     )
 
 
-class Symmetry(ArchiveSection):
+class GlobalSymmetry(ArchiveSection):
     """
-    A base section used to specify the symmetry of the `ModelSystem`.
+    A base section specifying the global symmetry of the corresponding `ModelSystem` at large,
+    which can be used for categorization and lookup. It does not define local, site-specific symmetry.
+    """
+
+
+class GlobalCrystalSymmetry(GlobalSymmetry):
+    """
+    A symmetry section specialized for identifying bulk crystal space groups.
+
+    This section stores crystallographic symmetry information extracted from the atomic structure,
+    including space group identifiers, Bravais lattice type, and structural prototype classifications.
 
     Note: this information can be extracted via normalization using the MatID package, if `ModelSystem`
     is specified.
@@ -614,6 +624,10 @@ class Symmetry(ArchiveSection):
                 self.atomic_cell_ref = model_system.representations[-1]
 
 
+# Backward compatibility alias
+Symmetry = GlobalCrystalSymmetry
+
+
 class ChemicalFormula(ArchiveSection):
     """
     A base section used to store the chemical formulas of a `ModelSystem` in different formats.
@@ -718,8 +732,7 @@ class ModelSystem(System, Representation):
 
     It is composed of the sub-sections:
         - `Representation` containing alternative representations of the system
-        - `Symmetry` containing the information of the (conventional) atomic cell symmetry
-        in bulk ModelSystem,
+        - `GlobalSymmetry` containing the global symmetry information for bulk ModelSystem,
         - `ChemicalFormula` containing the information of the chemical formulas in different
         formats.
 
@@ -828,7 +841,7 @@ class ModelSystem(System, Representation):
         """,
     )
 
-    symmetry = SubSection(sub_section=Symmetry.m_def, repeats=True)
+    symmetry = SubSection(sub_section=GlobalSymmetry.m_def)
 
     chemical_formula = SubSection(sub_section=ChemicalFormula.m_def)
 
@@ -1467,9 +1480,9 @@ class ModelSystem(System, Representation):
         #         self.fractional_coordinates = self.compute_fractional_coordinates()
 
         # Create and normalize Symmetry section if applicable
-        if self.type == 'bulk' and self.symmetry is not None:
-            sec_symmetry = self.m_create(Symmetry)
-            sec_symmetry.normalize(archive, logger)
+        if self.type == 'bulk' and self.symmetry is None:
+            self.symmetry = GlobalCrystalSymmetry()
+            self.symmetry.normalize(archive, logger)
 
         # Create and normalize ChemicalFormula section
         if atom_labels := self.get_symbols():
