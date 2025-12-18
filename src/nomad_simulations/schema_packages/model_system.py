@@ -368,9 +368,26 @@ class LocalCrystalSymmetry(LocalSymmetry):
         type=str,
         shape=['*'],
         description="""
-        Crystallographic point group symbol for each particle site (e.g., '3m', 'mmm', '432').
-        Describes the local symmetry operations that leave the atomic site invariant
-        within the crystal structure.
+        Crystallographic point group symbol for each particle site in Hermann-Mauguin notation.
+
+        Each symbol (e.g., '3m', 'mmm', '432', '1') describes the local symmetry operations
+        that leave the atomic site invariant within the crystal structure. These are the
+        site symmetry groups—subgroups of the full space group that preserve the specific
+        atomic position.
+
+        The site symmetry is intrinsically linked to the Wyckoff position: atoms at the same
+        Wyckoff position share the same site symmetry, though the converse is not always true.
+        Higher symmetry positions (lower Wyckoff letters like 'a') typically have higher-order
+        site symmetries.
+
+        **Source**: Determined via spglib symmetry analysis (accessed through MatID), which
+        uses the geometric positions of atoms to identify symmetry operations.
+
+        Examples:
+        - '1' - No symmetry (general position)
+        - '3m' - Threefold rotation with mirror plane
+        - 'mmm' - Three perpendicular mirror planes (orthorhombic)
+        - '-43m' - Cubic tetrahedral symmetry
         """,
     )
 
@@ -643,9 +660,24 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         type=np.float64,
         shape=[3],
         description="""
-        Origin shift vector applied during crystallographic symmetry analysis to move atoms
-        into the reference unit cell. This describes the transformation used internally by
-        the symmetry analyzer, distinct from generic representation transformations.
+        Origin shift vector (3-element) applied by spglib during symmetry standardization.
+
+        This vector describes the shift from the standardized origin to the input structure's
+        origin in fractional coordinates. During symmetry analysis, spglib may shift the origin
+        to align with conventional crystallographic settings (e.g., placing inversion centers
+        or high-symmetry points at the origin).
+
+        The shift is applied as: **r_input = r_standardized + origin_shift**
+
+        where r_input is a position in the input structure and r_standardized is the
+        corresponding position in the standardized cell.
+
+        **Source**: Extracted from spglib's symmetry dataset via MatID's `SymmetryAnalyzer`.
+
+        **Note**: This transformation is specific to the symmetry analysis process and is
+        distinct from user-defined representation transformations.
+
+        See: https://spglib.readthedocs.io/en/stable/definition.html
         """,
     )
 
@@ -653,10 +685,28 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         type=np.float64,
         shape=[3, 3],
         description="""
-        Transformation matrix applied during crystallographic symmetry analysis to convert
-        the structure into a standardized form. This describes the transformation used
-        internally by the symmetry analyzer to identify space group and Bravais lattice,
-        distinct from generic representation transformations.
+        Transformation matrix (3×3) from input lattice vectors to standardized lattice vectors.
+
+        This matrix describes how spglib transforms the input unit cell into a standardized
+        conventional cell during symmetry analysis. The transformation is defined such that:
+
+        **L_input = L_standardized @ transformation_matrix**
+
+        where L_input is the matrix of input lattice vectors (as columns) and L_standardized
+        is the matrix of standardized lattice vectors.
+
+        The standardization process orients the cell according to conventional crystallographic
+        settings for the identified space group, which may involve:
+        - Reorienting axes to align with symmetry elements
+        - Converting between primitive and conventional cells
+        - Standardizing the choice of basis vectors
+
+        **Source**: Extracted from spglib's symmetry dataset via MatID's `SymmetryAnalyzer`.
+
+        **Note**: This is specifically the transformation applied during symmetry detection
+        and is distinct from user-defined representation transformations.
+
+        See: https://spglib.readthedocs.io/en/stable/definition.html
         """,
     )
 
