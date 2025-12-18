@@ -413,17 +413,84 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
     is specified.
     """
 
-    bravais_lattice = Quantity(
-        type=str,
+    lattice_type = Quantity(
+        type=MEnum(
+            'a - triclinic',
+            'm - monoclinic',
+            'o - orthorhombic',
+            't - tetragonal',
+            'r - trigonal',
+            'h - hexagonal',
+            'c - cubic',
+            'mp - oblique',
+            'op - rectangular',
+            'oc - centered rectangular',
+            'tp - square',
+            'hp - hexagonal 2D',
+            'ap - linear',
+        ),
         description="""
-        Bravais lattice in Pearson notation.
+        Bravais lattice type (crystal family classification).
 
-        The first lowercase letter identifies the
-        crystal family: a (triclinic), b (monoclinic), o (orthorhombic), t (tetragonal),
-        h (hexagonal), c (cubic).
+        The first lowercase letter of Pearson notation, identifying the crystal family
+        based on lattice symmetry:
 
-        The second uppercase letter identifies the centring: P (primitive), S (face centered),
-        I (body centred), R (rhombohedral centring), F (all faces centred).
+        **3D lattices:**
+        - a: triclinic
+        - m: monoclinic
+        - o: orthorhombic
+        - t: tetragonal
+        - r: trigonal
+        - h: hexagonal
+        - c: cubic
+
+        **2D lattices:**
+        - mp: oblique
+        - op: rectangular
+        - oc: centered rectangular
+        - tp: square
+        - hp: hexagonal 2D
+
+        **1D lattices:**
+        - ap: linear
+
+        This quantity enables independent querying of crystal families
+        (e.g., "all cubic systems" regardless of centering type).
+        """,
+    )
+
+    lattice_centering = Quantity(
+        type=MEnum(
+            'P - primitive',
+            'R - rhombohedral',
+            'S - face centred',
+            'I - body centred',
+            'F - all faces centred',
+            'c - centered 2D',
+            'p - primitive 2D/1D',
+        ),
+        description="""
+        Lattice centering type.
+
+        The second uppercase letter of Pearson notation, describing how lattice points
+        are distributed within the conventional unit cell:
+
+        **3D centerings:**
+        - P: primitive (lattice points only at cell corners)
+        - R: rhombohedral (hexagonal setting with 2/3, 1/3 centering)
+        - S: face centered (one pair of opposite faces centered)
+        - I: body centered (center of cell)
+        - F: all faces centered (all faces have centered points)
+
+        **2D centerings:**
+        - c: centered rectangular
+        - p: primitive 2D
+
+        **1D centerings:**
+        - p: primitive 1D
+
+        This quantity enables independent querying of centering types
+        (e.g., "all face-centered lattices" regardless of crystal family).
         """,
     )
 
@@ -436,6 +503,15 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             - `F -4 2 3`,
             - `-P 4 2`,
             - `-F 4 2 3`.
+        """,
+    )
+
+    hall_number = Quantity(
+        type=np.int32,
+        description="""
+        Hall number uniquely identifying the Hall symbol. This is an integer from 1 to 530
+        for 3D space groups, providing a numerical index into the Hall symbol table.
+        Different settings or origin choices of the same space group have different Hall numbers.
         """,
     )
 
@@ -506,12 +582,120 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         """,
     )
 
+    analysis_origin_shift = Quantity(
+        type=np.float64,
+        shape=[3],
+        description="""
+        Origin shift vector applied during crystallographic symmetry analysis to move atoms
+        into the reference unit cell. This describes the transformation used internally by
+        the symmetry analyzer, distinct from generic representation transformations.
+        """,
+    )
+
+    analysis_transformation_matrix = Quantity(
+        type=np.float64,
+        shape=[3, 3],
+        description="""
+        Transformation matrix applied during crystallographic symmetry analysis to convert
+        the structure into a standardized form. This describes the transformation used
+        internally by the symmetry analyzer to identify space group and Bravais lattice,
+        distinct from generic representation transformations.
+        """,
+    )
+
     atomic_cell_ref = Quantity(
         type=Representation,
         description="""
         Reference to the Representation section that the symmetry refers to.
         """,
     )
+
+    def _parse_bravais_lattice_pearson(
+        self, pearson: str, logger: 'BoundLogger'
+    ) -> tuple[str | None, str | None]:
+        """
+        Parse a Pearson notation string into lattice_type and lattice_centering components.
+
+        Pearson notation is a two-letter code where:
+        - First letter indicates crystal family (a, m, o, t, r, h, c for 3D; mp, op, oc, tp, hp, ap for 2D/1D)
+        - Second letter indicates centering (P, I, F, S, R for 3D; p, c for 2D)
+
+        Args:
+            pearson (str): Pearson notation string (e.g., "cF" for cubic face-centered).
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            tuple[str | None, str | None]: A tuple of (lattice_type, lattice_centering) MEnum values,
+            or (None, None) if parsing fails.
+        """
+        if not pearson or len(pearson) < 2:
+            logger.warning(f'Invalid Pearson notation: {pearson}')
+            return None, None
+
+        # Mapping from Pearson first character to lattice_type MEnum
+        family_map = {
+            'a': 'a - triclinic',
+            'm': 'm - monoclinic',
+            'o': 'o - orthorhombic',
+            't': 't - tetragonal',
+            'r': 'r - trigonal',
+            'h': 'h - hexagonal',
+            'c': 'c - cubic',
+            'mp': 'mp - oblique',
+            'op': 'op - rectangular',
+            'oc': 'oc - centered rectangular',
+            'tp': 'tp - square',
+            'hp': 'hp - hexagonal 2D',
+            'ap': 'ap - linear',
+        }
+
+        # Mapping from Pearson second character to lattice_centering MEnum
+        centering_map = {
+            'P': 'P - primitive',
+            'I': 'I - body centred',
+            'F': 'F - all faces centred',
+            'S': 'S - face centred',
+            'R': 'R - rhombohedral',
+            'c': 'c - centered 2D',
+            'p': 'p - primitive 2D/1D',
+        }
+
+        # Extract family and centering from Pearson notation
+        family_code = pearson[0].lower()
+        centering_code = pearson[1] if len(pearson) > 1 else ''
+
+        lattice_type = family_map.get(family_code)
+        lattice_centering = centering_map.get(centering_code)
+
+        if not lattice_type:
+            logger.warning(f'Unknown crystal family in Pearson notation: {family_code}')
+        if not lattice_centering:
+            logger.warning(f'Unknown centering in Pearson notation: {centering_code}')
+
+        return lattice_type, lattice_centering
+
+    @property
+    def bravais_lattice(self) -> str | None:
+        """
+        Reconstructs the Pearson notation from lattice_type and lattice_centering.
+
+        This property provides backward compatibility for code that expects the combined
+        Pearson notation string (e.g., "cF" for cubic face-centered).
+
+        Returns:
+            str | None: Pearson notation string, or None if components are not set.
+        """
+        if not self.lattice_type or not self.lattice_centering:
+            return None
+
+        # Extract the letter codes from the MEnum values
+        # MEnum format is "X - description", we need just the first character(s)
+        family_code = self.lattice_type.split(' - ')[0] if self.lattice_type else ''
+        centering_code = (
+            self.lattice_centering.split(' - ')[0] if self.lattice_centering else ''
+        )
+
+        return f'{family_code}{centering_code}' if family_code and centering_code else None
 
     def resolve_analyzed_cell(
         self,
@@ -626,13 +810,25 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             return None, None
 
         # We store symmetry_analyzer info in a dictionary
-        symmetry['bravais_lattice'] = symmetry_analyzer.get_bravais_lattice()
+        bravais_pearson = symmetry_analyzer.get_bravais_lattice()
+        if bravais_pearson:
+            lattice_type, lattice_centering = self._parse_bravais_lattice_pearson(
+                bravais_pearson, logger
+            )
+            symmetry['lattice_type'] = lattice_type
+            symmetry['lattice_centering'] = lattice_centering
+
         symmetry['hall_symbol'] = symmetry_analyzer.get_hall_symbol()
+        symmetry['hall_number'] = symmetry_analyzer.get_hall_number()
         symmetry['point_group_symbol'] = symmetry_analyzer.get_point_group()
         symmetry['space_group_number'] = symmetry_analyzer.get_space_group_number()
         symmetry['space_group_symbol'] = (
             symmetry_analyzer.get_space_group_international_short()
         )
+
+        # TODO: Populate analysis_origin_shift and analysis_transformation_matrix
+        # These would describe the transformation MatID applied during analysis,
+        # but are not currently exposed by SymmetryAnalyzer
 
         # Populating the ModelSystem local_symmetry information
         original_wyckoff = symmetry_analyzer.get_wyckoff_letters_original()
