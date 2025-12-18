@@ -1345,6 +1345,88 @@ class BSE(ExcitedStateMethodology):
     )
 
 
+class TDDFT(ExcitedStateMethodology):
+    """
+    Time-dependent density functional theory settings. Captures both linear-response
+    and real-time propagation flavours.
+    Links to underlying ground-state calculations should be represented at workflow level.
+
+    References
+    ----------
+    • E. Runge, E. K. U. Gross, Phys. Rev. Lett. 52, 997 (1984)  (TDDFT formalism)
+    • M. A. L. Marques et al. (eds.), *Fundamentals of Time-Dependent Density Functional Theory*,
+      Springer (2012)
+    • A. Castro et al., Phys. Status Solidi B 243, 2465 (2006)  (Real-time TDDFT overview)
+    """
+
+    type = Quantity(
+        type=MEnum('linear_response', 'real_time'),
+        description="""
+        TDDFT flavour:
+          - linear_response: frequency-domain response (Casida/Sternheimer/Liouv.-Lanczos)
+          - real_time: explicit time propagation under a perturbation
+        """,
+    )
+
+    solver = Quantity(
+        type=MEnum('Casida', 'Sternheimer', 'Liouville-Lanczos', 'propagation'),
+        description="""
+        Numerical formulation / driver:
+          - Casida, Sternheimer, Liouville-Lanczos: linear-response formulations
+          - propagation: real-time propagation formulation
+        """,
+    )
+
+    approximation = Quantity(
+        type=MEnum('full', 'TDA'),
+        description="""
+        Approximation level of the TDDFT equations.
+
+        - full: full linear-response TDDFT (includes coupling terms)
+        - TDA : Tamm-Dancoff approximation (linear-response only)
+        """,
+    )
+
+    xc = SubSection(sub_section=XCFunctional.m_def, repeats=False)
+
+    field_polarization_ref = Quantity(
+        type=Photon,
+        description='External field / polarization used to drive the response or propagation.',
+    )
+
+    target_property = Quantity(
+        type=MEnum('absorption', 'emission', 'EELS', 'Raman', 'nonlinear'),
+        description='Intended spectral/response target of the TDDFT input.',
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self.name = 'TDDFT'
+
+        # Light consistency checks
+        if self.type == 'real_time':
+            if self.solver in ['Casida', 'Sternheimer', 'Liouville-Lanczos']:
+                logger.warning(
+                    'TDDFT.type is real_time but solver indicates a linear-response formulation.',
+                    type=self.type,
+                    solver=self.solver,
+                )
+            if self.approximation == 'TDA':
+                logger.warning(
+                    'TDDFT.approximation=TDA is not applicable for real-time TDDFT.',
+                    type=self.type,
+                    approximation=self.approximation,
+                )
+
+        if self.type == 'linear_response':
+            if self.solver == 'propagation':
+                logger.warning(
+                    'TDDFT.type is linear_response but solver is propagation.',
+                    type=self.type,
+                    solver=self.solver,
+                )
+
+
 # ? Is this class really necessary or should go in outputs.py?
 class CoreHoleSpectra(ModelMethodElectronic):
     """
