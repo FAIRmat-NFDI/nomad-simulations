@@ -1,57 +1,50 @@
 ## Purpose
 _Briefly describe the problem this PR addresses and why it matters._
 
-To standardize our PR descriptions.
-
 ## Scope
 
-**Included** (_What is intentionally part of this PR?_)
+**Included**
 
-- PR template
+- 
 
-**Out of scope** (_What is explicitly not included (to avoid scope creep)?_)
+**Out of scope**
 
 -
 
+## Context & Links
+
+_Reminder: Link related issues or PRs (in the sidebar or below). Add short description for any needed context._
+
+- 
+
+## Reviewer Notes
+
+_Anything reviewers should pay special attention to? Trade-offs, known limitations, or areas of uncertainty._
+
 ## Status
 
-_Select one_
-
-- [ ] Draft / In progress (not ready for full review)
+- [ ] Draft / In progress
 - [ ] Ready for review
-- [ ] Blocked (explain below)
+- [ ] Blocked (explain):
+
+## Breaking Changes
+
+- [ ] None
+- [ ] (explain):
 
 ## Dependencies / Blockers
 
-_List anything that may block progress or review_
-
-- [ ] None.
-- [ ] Related PRs:
-- [ ] Open design questions:
-- [ ] External dependencies (people, decisions, data, releases):
+- [ ] None
+- [ ] Open design questions (explain):
+- [ ] External dependencies (explain):
 
 ## Testing / Validation
 
 _How was this change validated?_
 
+- [ ] None (explain):
 - [ ] Unit tests
 - [ ] Integration tests
-- [ ] Manual testing (brief description):
-- [ ] Not applicable (explain why):
+- [ ] Manual testing (explain):
 
-## Linked Issues / Context
-
-_Use GitHub keywords where applicable._
-
-- Fixes #
-- Related to #
-- Follow-up issues (if known):
-
-## Context & Links
-_Reminder: Link related issues or PRs (in the sidebar or below). Add short description for any needed context._
-
-
-## Reviewer Notes
-
-_Anything reviewers should pay special attention to? Trade-offs, known limitations, or areas of uncertainty._
 
