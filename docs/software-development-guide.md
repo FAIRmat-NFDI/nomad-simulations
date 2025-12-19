@@ -52,7 +52,7 @@ PRs remain open even when direction changes or scope becomes unclear.
 
 ### Branching Model
 
-- Development primarily happens on **short-lived branches** created from `main`.
+- Development primarily happens on **short-lived branches** created from `develop`.
 - Branching off a working branch is acceptable during the draft phase (e.g. to try alternatives or propose fixes).
 - Branch names should use a short, hyphen-separated description.
 - Each branch should address **one logical change only**.
