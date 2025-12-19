@@ -47,6 +47,10 @@ _Use GitHub keywords where applicable._
 - Related to #
 - Follow-up issues (if known):
 
+## Context & Links
+_Reminder: Link related issues or PRs (in the sidebar or below). Add short description for any needed context._
+
+
 ## Reviewer Notes
 
 _Anything reviewers should pay special attention to? Trade-offs, known limitations, or areas of uncertainty._
