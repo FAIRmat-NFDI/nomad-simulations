@@ -257,7 +257,10 @@ class GeometryOptimization(SerialWorkflow):
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
-        all_scf_converged = all(all(x) for x in jmespath.search("workflow2.tasks[*].results.convergence[*].is_reached", archive))
+        single_point_convergence_results = jmespath.search("workflow2.tasks[*].results.convergence[*].is_reached", archive)
+        if single_point_convergence_results is None:
+            return
+        all_scf_converged = all(all(x) for x in single_point_convergence_results)
         self.results.is_single_point_converged = all_scf_converged
 
 m_package.__init_metainfo__()
