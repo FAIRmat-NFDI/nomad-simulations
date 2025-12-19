@@ -3,7 +3,15 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import URL, MEnum, Quantity, Section, SubSection
+from nomad.metainfo import (
+    URL,
+    MEnum,
+    Quantity,
+    Reference,
+    Section,
+    SectionProxy,
+    SubSection,
+)
 
 if TYPE_CHECKING:
     from nomad.datamodel.context import Context
@@ -553,6 +561,18 @@ class ActiveSpace(ArchiveSection):
     selection_method = Quantity(
         type=MEnum('manual', 'AVAS', 'UNO', 'localized', 'unavailable'),
         description='Procedure used to choose the active space.',
+    )
+
+    molecular_orbitals_ref = Quantity(
+        type=Reference(SectionProxy('MolecularOrbitals')),
+        description="""
+        Reference to the molecular-orbital set that defines this active space (input-side MO link).
+        """,
+    )
+
+    orbital_representation = Quantity(
+        type=MEnum('canonical', 'localized', 'natural', 'other'),
+        description='Representation of the referenced MOs.',
     )
 
 
