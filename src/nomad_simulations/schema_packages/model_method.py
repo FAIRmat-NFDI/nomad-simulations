@@ -677,6 +677,16 @@ class MultireferenceModelMethod(ModelMethodElectronic):
         """,
     )
 
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Derive n_state_groups if absent
+        if self.n_state_groups is None:
+            if self.state_multiplicities is not None:
+                self.n_state_groups = len(self.state_multiplicities)
+            elif self.n_roots_per_multiplicity is not None:
+                self.n_state_groups = len(self.n_roots_per_multiplicity)
+
 
 class XCComponent(ArchiveSection):
     """
