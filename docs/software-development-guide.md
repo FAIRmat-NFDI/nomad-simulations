@@ -140,7 +140,7 @@ A communication-focused PR template is used to support this.
 **Author responsibilities**
 - Ensure CI passes before review
 - Respond promptly to feedback
-- Keep commits tidy
+- Keep commits small, focused, and with a clear and concise commit message
 
 **Reviewer responsibilities**
 - Review within an agreed timeframe
