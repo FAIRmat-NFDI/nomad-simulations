@@ -124,7 +124,7 @@ Each PR should include:
 - Why it changed
 - How it was tested
 - Links to relevant issues (e.g. `Fixes #123`)
-- Screenshots or examples where relevant
+- Screenshots or examples where relevant, e.g. PRs pertaining to front-end features.
 
 A communication-focused PR template is used to support this.
 
