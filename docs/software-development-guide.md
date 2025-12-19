@@ -64,7 +64,7 @@ PRs remain open even when direction changes or scope becomes unclear.
 Both `git rebase` and `git merge` are valid tools. The choice should be **pragmatic**.
 
 **Default guidance**
-- Rebasing onto `main` is the default recommendation, especially for newer contributors.
+- Rebasing onto `develop` is the default recommendation, especially for newer contributors.
 - Merging `main` into a feature branch is also acceptable and sometimes preferable.
 
 **Rebasing is often easier when**
