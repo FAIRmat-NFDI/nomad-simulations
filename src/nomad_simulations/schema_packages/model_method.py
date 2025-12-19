@@ -522,6 +522,86 @@ class ModelMethodElectronic(ModelMethod):
     )
 
 
+class ActiveSpace(ArchiveSection):
+    """Minimal active-space definition used by multireference stages."""
+
+    n_active_orbitals = Quantity(
+        type=np.int32,
+        description='Number of active spatial orbitals.',
+    )
+
+    n_active_electrons = Quantity(
+        type=np.int32,
+        description='Total number of active electrons.',
+    )
+
+    n_active_alpha = Quantity(
+        type=np.int32,
+        description='Optional number of active α electrons.',
+    )
+
+    n_active_beta = Quantity(
+        type=np.int32,
+        description='Optional number of active β electrons.',
+    )
+
+    orbital_space_type = Quantity(
+        type=MEnum('CAS', 'RAS', 'GAS'),
+        description='Active-space partitioning scheme.',
+    )
+
+    selection_method = Quantity(
+        type=MEnum('manual', 'AVAS', 'UNO', 'localized', 'unavailable'),
+        description='Procedure used to choose the active space.',
+    )
+
+
+class MultireferenceModelMethod(ModelMethodElectronic):
+    """Generic multireference method container."""
+
+    active_space = SubSection(sub_section=ActiveSpace.m_def, repeats=False)
+
+    method_family = Quantity(
+        type=MEnum(
+            'CASSCF',
+            'RASSCF',
+            'GASSCF',
+            'DMRGSCF',
+            'MRCI',
+            'CASPT2',
+            'NEVPT2',
+        ),
+        description='Family of multireference approach used for this stage.',
+    )
+
+    reference_type = Quantity(
+        type=MEnum('state_specific', 'state_averaged'),
+        description='Treatment of reference states.',
+    )
+
+    n_states = Quantity(
+        type=np.int32,
+        description='Number of electronic states included in the reference or averaging.',
+    )
+
+    state_weights = Quantity(
+        type=np.float64,
+        shape=['n_states'],
+        description='Weights applied to each state when state-averaging.',
+    )
+
+    spin_multiplicity = Quantity(
+        type=np.int32,
+        description='Target spin multiplicity for the active-space reference.',
+    )
+
+    # TODO: connect with new Symmetry implementation
+    symmetry_label = Quantity(
+        type=str,
+        description='Symmetry irrep label (if used in the calculation).',
+    )
+
+
 class XCComponent(ArchiveSection):
     """
     One exchange-correlation functional component using LibXC nomenclature for standardization.
