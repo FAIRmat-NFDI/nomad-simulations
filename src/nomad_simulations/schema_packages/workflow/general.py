@@ -310,19 +310,50 @@ class SimulationWorkflow(Workflow, SimulationTask):
     def map_convergence(self, archive: EntryArchive) -> None:
         """
         Populate the convergence according the to convergence targets.
-
-        TODO this works only for SCF output so far, needs to also consider geometry optimizations
         """
         if not archive.data or not archive.data.outputs:
             return
         logger = self.map_convergence.__annotations__['logger']
 
         # check convergence targets in model and populate convergence results in results
-        convergence_results = []
-        all_reached = None
         convergence_targets = self.method.get('convergence')
         if convergence_targets is None:
             return
+        convergence_results = self._resolve_convergence(archive, convergence_targets, logger)
+        if len(convergence_results) == 0:
+            logger.warning("Could not resolve convergence targets.")
+            return
+        self.results.convergence = convergence_results
+        all_reached = all(jmespath.search('[*].is_reached',convergence_results))
+        # set converged for self
+        if self.results.get('is_converged') is None and all_reached is not None:
+            self.results.is_converged = all_reached
+        else:
+            if not self.results.get('is_converged') == all_reached:
+                logger.warning('Derived and parsed state of convergence do not agree.')
+                pass
+            
+    def normalize(self, archive: EntryArchive, logger: BoundLogger):
+        """
+        Link tasks based on start and end times.
+        """
+        if not self.name:
+            self.name: str = self.m_def.name
+
+        self.map_inputs(archive, logger=logger)
+
+        self.map_outputs(archive, logger=logger)
+
+        self.map_tasks(archive, logger=logger)
+
+        self.map_convergence(archive, logger=logger)
+
+    def _resolve_convergence(self, 
+                             archive: EntryArchive,
+                             convergence_targets: list[ArchiveSection],
+                             logger: BoundLogger,
+                             output_index: int = -1) -> None:
+        convergence_results = []
         for convergence_target in convergence_targets:
             parameter_name = convergence_target.get('convergence_parameter_name')
             threshold_type = convergence_target.get('threshold_type')
@@ -341,53 +372,20 @@ class SimulationWorkflow(Workflow, SimulationTask):
             if quantity_values is None:
                 continue
             if isinstance(quantity_values, list):
-               convergence_data = quantity_values[-1][quantity_name]
+               convergence_data = quantity_values[output_index][quantity_name]
             else:
                 convergence_data = quantity_values[quantity_name]
             threshold = convergence_target['convergence_threshold']
             convergence_result = WorkflowConvergenceResults()
             convergence_result.convergence_target_ref = convergence_target
-            converged = False
             # TODO @all: For some reason threshold is just a value and not a quantity
             # I don't know how or where to fix this: It is a quantity in the parser (with its unit)
             # and somehow here it is just a value. Can we have it as a quantity?
             if isinstance(convergence_data, Iterable) and len(convergence_data.shape) > 0: # the threshold is relative
-                convergence_data = convergence_data.to(unit)
-                converged = abs(convergence_data[-2].magnitude - convergence_data[-1].magnitude) <= threshold
-            else: # the threshold is absolute
-                converged = convergence_data.to(unit).magnitude < threshold
-            if converged:
-                convergence_result.is_reached = True
-                all_reached = True if all_reached is None else all_reached
-            else:
-                convergence_result.is_reached = False
-                all_reached = False
+                convergence_data = convergence_data[-1]            
+            convergence_result.is_reached = convergence_data.to(unit).magnitude < threshold
             convergence_results.append(convergence_result)
-        self.results.convergence = convergence_results
-
-        # set converged for self
-        if self.results.get('is_converged') is None and all_reached is not None:
-            self.results.is_converged = all_reached
-        else:
-            if not self.results.get('is_converged') == all_reached:
-                logger.warning('Derived and parsed state of convergence do not agree.')
-                pass
-            
-
-    def normalize(self, archive: EntryArchive, logger: BoundLogger):
-        """
-        Link tasks based on start and end times.
-        """
-        if not self.name:
-            self.name: str = self.m_def.name
-
-        self.map_inputs(archive, logger=logger)
-
-        self.map_outputs(archive, logger=logger)
-
-        self.map_tasks(archive, logger=logger)
-
-        self.map_convergence(archive, logger=logger)
+        return convergence_results
 
 
 class SerialWorkflowResults(SimulationWorkflowResults):
