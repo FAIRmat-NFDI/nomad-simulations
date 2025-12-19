@@ -223,11 +223,12 @@ class GeometryOptimization(SerialWorkflow):
                     results=SimulationWorkflowResults()                 
                 )
                 single_point_convergence = jmespath.search("workflow2.method.single_point_convergence", archive)
-                single_point_convergence_result = task._resolve_convergence(archive, 
-                                                                            single_point_convergence,
-                                                                            logger, 
-                                                                            output_index=n)
-                task.results.convergence = single_point_convergence_result
+                if single_point_convergence is not None:
+                    single_point_convergence_result = task._resolve_convergence(archive, 
+                                                                                single_point_convergence,
+                                                                                logger, 
+                                                                                output_index=n)
+                    task.results.convergence = single_point_convergence_result
             else:
                 task = Task(
                     name=f'{self._task_label} {n}',
