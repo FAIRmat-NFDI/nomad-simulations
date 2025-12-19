@@ -1,5 +1,4 @@
 # Software Development Guide
-**Preliminary Version — Lightweight Best Practices**
 
 ---
 
