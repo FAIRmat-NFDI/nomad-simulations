@@ -531,53 +531,79 @@ class ModelMethodElectronic(ModelMethod):
 
 
 class ActiveSpace(ArchiveSection):
-    """Minimal active-space definition used by multireference stages."""
+    """
+    Minimal active-space definition for multiconfigurational quantum chemistry.
+
+    Captures just the counts and labeling needed to identify the orbital/electron
+    subspace used by CASSCF/CASPT2-style calculations.
+    """
 
     n_active_orbitals = Quantity(
         type=np.int32,
-        description='Number of active spatial orbitals.',
+        description="""
+        Number of spatial orbitals in the active space (per spin channel). Mirrors the
+        CAS/RAS/GAS definition used in the corresponding input.
+        """,
     )
 
     n_active_electrons = Quantity(
         type=np.int32,
-        description='Total number of active electrons.',
+        description="""
+        Total electrons assigned to the active space.
+        """,
     )
 
     n_active_alpha = Quantity(
         type=np.int32,
-        description='Optional number of active α electrons.',
+        description="""
+        Optional number of α-spin electrons in the active space. Use when the input
+        distinguishes spin channels (e.g., unrestricted references).
+        """,
     )
 
     n_active_beta = Quantity(
         type=np.int32,
-        description='Optional number of active β electrons.',
+        description="""
+        Optional number of β-spin electrons in the active space. Use when the input
+        distinguishes spin channels (e.g., unrestricted references).
+        """,
     )
 
     orbital_space_type = Quantity(
         type=MEnum('CAS', 'RAS', 'GAS'),
-        description='Active-space partitioning scheme.',
+        description="""
+        Partitioning scheme used for the active space:
+          - CAS: complete active space (Roos et al., Chem. Phys. Lett. 48, 157, 1977)
+          - RAS: restricted active space (Olsen et al., J. Chem. Phys. 89, 2185, 1988)
+          - GAS: generalized active space (Ma et al., J. Chem. Theory Comput. 7, 433, 2011)
+        """,
     )
 
     selection_method = Quantity(
-        type=MEnum('manual', 'AVAS', 'UNO', 'localized', 'unavailable'),
-        description='Procedure used to choose the active space.',
+        type=MEnum('manual', 'AVAS', 'UNO', 'localized'),
+        description="""
+        Procedure used to choose the active space. Choose 'manual' when the selection
+        method is not known.
+        """,
     )
 
     molecular_orbitals_ref = Quantity(
         type=Reference(SectionProxy('MolecularOrbitals')),
         description="""
-        Reference to the molecular-orbital set that defines this active space (input-side MO link).
+        Reference to the molecular-orbital set that defines this active space. Points to
+        the input-side MO container used when constructing the active space.
         """,
-    )
-
-    orbital_representation = Quantity(
-        type=MEnum('canonical', 'localized', 'natural', 'other'),
-        description='Representation of the referenced MOs.',
     )
 
 
 class MultireferenceModelMethod(ModelMethodElectronic):
-    """Generic multireference method container."""
+    """
+    Generic multireference method entry (e.g., CASSCF, RASSCF, CASPT2, NEVPT2, DMRG-SCF).
+
+    Represents one multireference calculation: it links to the active space, records how
+    states were averaged, and carries high-level classification (method family, spin,
+    symmetry).
+    """
 
     active_space = SubSection(sub_section=ActiveSpace.m_def, repeats=False)
 
@@ -591,34 +617,64 @@ class MultireferenceModelMethod(ModelMethodElectronic):
             'CASPT2',
             'NEVPT2',
         ),
-        description='Family of multireference approach used for this stage.',
+        description="""
+        Family of multireference approach for this calculation.
+        """,
     )
 
     reference_type = Quantity(
         type=MEnum('state_specific', 'state_averaged'),
-        description='Treatment of reference states.',
+        description="""
+        Whether the reference wavefunction is optimized for a single state or averaged
+        over multiple states.
+        """,
     )
 
-    n_states = Quantity(
+    n_state_groups = Quantity(
         type=np.int32,
-        description='Number of electronic states included in the reference or averaging.',
+        description="""
+        Number of state groups specified (typically one per spin multiplicity). Mirrors
+        the length of `state_multiplicities` and `n_roots_per_multiplicity` inputs such
+        as `mult 3,1` / `nroots 10,15`.
+        """,
+    )
+
+    state_multiplicities = Quantity(
+        type=np.int32,
+        shape=['n_state_groups'],
+        description="""
+        Spin multiplicity (2S+1) for each state group (e.g., [3,1] for triplet/singlet).
+        Use together with `n_roots_per_multiplicity` to map how many roots are taken for
+        each multiplicity in the active space.
+        """,
+    )
+
+    n_roots_per_multiplicity = Quantity(
+        type=np.int32,
+        shape=['n_state_groups'],
+        description="""
+        Number of roots requested for each entry in `state_multiplicities` (e.g., [10,15]
+        to represent 10 triplet and 15 singlet roots in a shared active space).
+        """,
     )
 
     state_weights = Quantity(
         type=np.float64,
-        shape=['n_states'],
-        description='Weights applied to each state when state-averaging.',
-    )
-
-    spin_multiplicity = Quantity(
-        type=np.int32,
-        description='Target spin multiplicity for the active-space reference.',
+        shape=['*'],
+        description="""
+        Optional weights applied to individual states for state-averaged references. When
+        provided, the flattened order should follow the multiplicity groups implied by
+        `state_multiplicities` and `n_roots_per_multiplicity`.
+        """,
     )
 
     # TODO: connect with new Symmetry implementation
     symmetry_label = Quantity(
         type=str,
-        description='Symmetry irrep label (if used in the calculation).',
+        description="""
+        Symmetry irrep label used for this calculation, if symmetry constraints or labels
+        were applied.
+        """,
     )
 
 
