@@ -65,7 +65,7 @@ Both `git rebase` and `git merge` are valid tools. The choice should be **pragma
 
 **Default guidance**
 - Rebasing onto `develop` is the default recommendation, especially for newer contributors.
-- Merging `main` into a feature branch is also acceptable and sometimes preferable.
+- Merging `develop` into a feature branch is also acceptable and sometimes preferable.
 
 **Rebasing is often easier when**
 - PRs are small or medium-sized
