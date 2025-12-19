@@ -78,7 +78,7 @@ Both `git rebase` and `git merge` are valid tools. The choice should be **pragma
 - Preserving the development sequence aids understanding
 - The branch already integrates many upstream changes
 
-Because PRs are merged via **Squash & Merge**, neither approach affects the final history of `main`.
+Because PRs are merged via **Squash & Merge**, neither approach affects the final history of `develop`.
 
 **Key expectation**
 A feature branch should include **all relevant changes from the target branch**, not merely be conflict-free.
