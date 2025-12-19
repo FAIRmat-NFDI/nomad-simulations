@@ -87,7 +87,7 @@ A feature branch should include **all relevant changes from the target branch**,
 
 ### PR Maintenance Expectations
 
-- Keep PRs reasonably up-to-date with `main`.
+- Keep PRs reasonably up-to-date with `develop`.
 - Avoid letting unresolved conflicts accumulate.
 - If maintenance becomes complex or reveals deeper issues:
   - Split the PR
