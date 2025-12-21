@@ -10,7 +10,6 @@ NOMAD archives (e.g., HDF5 datasets referenced from the GUI).
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 from ase.io.cube import read_cube_data
