@@ -1945,11 +1945,11 @@ class MultireferenceSCF(BaseMultireferenceMethod):
     Multiconfigurational SCF calculations (e.g., CASSCF, RASSCF, GASSCF, DMRG-SCF).
     """
 
-    method_family = Quantity(
+    type = Quantity(
         type=MEnum('CASSCF', 'RASSCF', 'GASSCF', 'DMRGSCF'),
         description="""
         Multiconfigurational SCF flavour for the active-space calculation. Use
-        `MultireferenceCI` with `method_family='CASCI'` when orbitals are not
+        `MultireferenceCI` with `type='CASCI'` when orbitals are not
         reoptimized.
         """,
     )
@@ -1960,7 +1960,7 @@ class MultireferenceCI(BaseMultireferenceMethod):
     Multireference configuration interaction methods (e.g., MRCI).
     """
 
-    method_family = Quantity(
+    type = Quantity(
         type=MEnum('MRCI', 'MR-ACPF', 'MR-AQCC', 'CASCI', 'RASCI', 'GASCI', 'DMRGCI'),
         description="""
         CI flavour applied on top of a multireference space.
@@ -1973,7 +1973,7 @@ class MultireferencePT2(BaseMultireferenceMethod):
     Multireference perturbation theory methods (e.g., CASPT2, NEVPT2).
     """
 
-    method_family = Quantity(
+    type = Quantity(
         type=MEnum('CASPT2', 'NEVPT2', 'RASPT2', 'GASPT2'),
         description="""
         PT2 flavour applied to a multireference reference state.
