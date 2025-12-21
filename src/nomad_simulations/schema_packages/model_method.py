@@ -1968,14 +1968,25 @@ class MultireferenceCI(BaseMultireferenceMethod):
     )
 
 
-class MultireferencePT2(BaseMultireferenceMethod):
+class MultireferencePT(BaseMultireferenceMethod):
     """
-    Multireference perturbation theory methods (e.g., CASPT2, NEVPT2).
+    Multireference perturbation theory methods (CASPTn/NEVPTn/RASPTn/GASPTn).
+
+    Defaults are PT2-style, but `order` can capture higher-order variants.
     """
 
     type = Quantity(
-        type=MEnum('CASPT2', 'NEVPT2', 'RASPT2', 'GASPT2'),
+        type=MEnum('CASPT', 'NEVPT', 'RASPT', 'GASPT', 'XMCQDPT'),
         description="""
-        PT2 flavour applied to a multireference reference state.
+        Multireference perturbation flavour applied to the reference state.
+        Examples: CASPT with order=2 → CASPT2; NEVPT with order=2 → NEVPT2.
+        """,
+    )
+
+    order = Quantity(
+        type=np.int32,
+        default=2,
+        description="""
+        Perturbation order (2 for CASPT2/NEVPT2; higher for CASPT3, etc.).
         """,
     )
