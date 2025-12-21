@@ -1812,8 +1812,9 @@ class ActiveSpace(ArchiveSection):
     n_active_orbitals = Quantity(
         type=np.int32,
         description="""
-        Number of spatial orbitals in the active space (per spin channel). Mirrors the
-        CAS/RAS/GAS definition used in the corresponding input.
+        Number of spatial orbitals in the active space (same orbitals available to both
+        spin channels). Mirrors the CAS/RAS/GAS definition used in the corresponding
+        input.
         """,
     )
 
