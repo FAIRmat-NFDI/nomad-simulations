@@ -1976,10 +1976,11 @@ class MultireferencePT(BaseMultireferenceMethod):
     """
 
     type = Quantity(
-        type=MEnum('CASPT', 'NEVPT', 'RASPT', 'GASPT', 'XMCQDPT'),
+        type=MEnum('CASPT', 'NEVPT', 'RASPT', 'GASPT', 'MRMP', 'XMCQDPT'),
         description="""
         Multireference perturbation flavour applied to the reference state.
-        Examples: CASPT with order=2 → CASPT2; NEVPT with order=2 → NEVPT2.
+        Examples: CASPT with order=2 → CASPT2; NEVPT with order=2 → NEVPT2;
+        MRMP with order=2 → MRMP2.
         """,
     )
 
