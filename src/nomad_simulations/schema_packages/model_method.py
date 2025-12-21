@@ -530,164 +530,6 @@ class ModelMethodElectronic(ModelMethod):
     )
 
 
-class ActiveSpace(ArchiveSection):
-    """
-    Minimal active-space definition for multiconfigurational quantum chemistry.
-
-    Captures just the counts and labeling needed to identify the orbital/electron
-    subspace used by CASSCF/CASPT2-style calculations.
-    """
-
-    n_active_orbitals = Quantity(
-        type=np.int32,
-        description="""
-        Number of spatial orbitals in the active space (per spin channel). Mirrors the
-        CAS/RAS/GAS definition used in the corresponding input.
-        """,
-    )
-
-    n_active_electrons = Quantity(
-        type=np.int32,
-        description="""
-        Total electrons assigned to the active space.
-        """,
-    )
-
-    n_active_alpha = Quantity(
-        type=np.int32,
-        description="""
-        Optional number of α-spin electrons in the active space. Use when the input
-        distinguishes spin channels (e.g., unrestricted references).
-        """,
-    )
-
-    n_active_beta = Quantity(
-        type=np.int32,
-        description="""
-        Optional number of β-spin electrons in the active space. Use when the input
-        distinguishes spin channels (e.g., unrestricted references).
-        """,
-    )
-
-    orbital_space_type = Quantity(
-        type=MEnum('CAS', 'RAS', 'GAS'),
-        description="""
-        Partitioning scheme used for the active space:
-          - CAS: complete active space (Roos et al., Chem. Phys. Lett. 48, 157, 1977)
-          - RAS: restricted active space (Olsen et al., J. Chem. Phys. 89, 2185, 1988)
-          - GAS: generalized active space (Ma et al., J. Chem. Theory Comput. 7, 433, 2011)
-        """,
-    )
-
-    selection_method = Quantity(
-        type=MEnum('manual', 'AVAS', 'UNO', 'localized'),
-        description="""
-        Procedure used to choose the active space. Choose 'manual' when the selection
-        method is not known.
-        """,
-    )
-
-    molecular_orbitals_ref = Quantity(
-        type=Reference(SectionProxy('MolecularOrbitals')),
-        description="""
-        Reference to the molecular-orbital set that defines this active space. Points to
-        the input-side MO container used when constructing the active space.
-        """,
-    )
-
-
-class MultireferenceModelMethod(ModelMethodElectronic):
-    """
-    Generic multireference method entry (e.g., CASSCF, RASSCF, CASPT2, NEVPT2, DMRG-SCF).
-
-    Represents one multireference calculation: it links to the active space, records how
-    states were averaged, and carries high-level classification (method family, spin,
-    symmetry).
-    """
-
-    active_space = SubSection(sub_section=ActiveSpace.m_def, repeats=False)
-
-    method_family = Quantity(
-        type=MEnum(
-            'CASSCF',
-            'RASSCF',
-            'GASSCF',
-            'DMRGSCF',
-            'MRCI',
-            'CASPT2',
-            'NEVPT2',
-        ),
-        description="""
-        Family of multireference approach for this calculation.
-        """,
-    )
-
-    reference_type = Quantity(
-        type=MEnum('state_specific', 'state_averaged'),
-        description="""
-        Whether the reference wavefunction is optimized for a single state or averaged
-        over multiple states.
-        """,
-    )
-
-    n_state_groups = Quantity(
-        type=np.int32,
-        description="""
-        Number of state groups specified (typically one per spin multiplicity). Mirrors
-        the length of `state_multiplicities` and `n_roots_per_multiplicity` inputs such
-        as `mult 3,1` / `nroots 10,15`.
-        """,
-    )
-
-    state_multiplicities = Quantity(
-        type=np.int32,
-        shape=['n_state_groups'],
-        description="""
-        Spin multiplicity (2S+1) for each state group (e.g., [3,1] for triplet/singlet).
-        Use together with `n_roots_per_multiplicity` to map how many roots are taken for
-        each multiplicity in the active space.
-        """,
-    )
-
-    n_roots_per_multiplicity = Quantity(
-        type=np.int32,
-        shape=['n_state_groups'],
-        description="""
-        Number of roots requested for each entry in `state_multiplicities` (e.g., [10,15]
-        to represent 10 triplet and 15 singlet roots in a shared active space).
-        """,
-    )
-
-    state_weights = Quantity(
-        type=np.float64,
-        shape=['*'],
-        description="""
-        Optional weights applied to individual states for state-averaged references. When
-        provided, the flattened order should follow the multiplicity groups implied by
-        `state_multiplicities` and `n_roots_per_multiplicity`.
-        """,
-    )
-
-    # TODO: connect with new Symmetry implementation
-    symmetry_label = Quantity(
-        type=str,
-        description="""
-        Symmetry irrep label used for this calculation, if symmetry constraints or labels
-        were applied.
-        """,
-    )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        # Derive n_state_groups if absent
-        if self.n_state_groups is None:
-            if self.state_multiplicities is not None:
-                self.n_state_groups = len(self.state_multiplicities)
-            elif self.n_roots_per_multiplicity is not None:
-                self.n_state_groups = len(self.n_roots_per_multiplicity)
-
-
 class XCComponent(ArchiveSection):
     """
     One exchange-correlation functional component using LibXC nomenclature for standardization.
@@ -1904,6 +1746,10 @@ class ConfigurationInteraction(ModelMethodElectronic):
     """
     Single-reference Configuration Interaction (CI) methods using atom-centered basis sets.
 
+    This captures CI expansions built on top of a single-determinant reference
+    (e.g., RHF/UHF/ROHF), not multireference active-space CI variants. For
+    CAS/RAS/GAS-based CI, use `MultireferenceCI`.
+
     Variants include:
       - CIS    : Configuration Interaction Singles
       - CID    : Configuration Interaction Doubles
@@ -1953,3 +1799,183 @@ class ConfigurationInteraction(ModelMethodElectronic):
             orders = default_orders.get(self.type)
             if orders is not None:
                 self.excitation_order = np.array(orders, dtype=np.int32)
+
+
+class ActiveSpace(ArchiveSection):
+    """
+    Minimal active-space definition for multiconfigurational quantum chemistry.
+
+    Captures just the counts and labeling needed to identify the orbital/electron
+    subspace used by CASSCF/CASPT2-style calculations.
+    """
+
+    n_active_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of spatial orbitals in the active space (per spin channel). Mirrors the
+        CAS/RAS/GAS definition used in the corresponding input.
+        """,
+    )
+
+    n_active_electrons = Quantity(
+        type=np.int32,
+        description="""
+        Total electrons assigned to the active space.
+        """,
+    )
+
+    n_active_alpha = Quantity(
+        type=np.int32,
+        description="""
+        Optional number of α-spin electrons in the active space. Use when the input
+        distinguishes spin channels (e.g., unrestricted references).
+        """,
+    )
+
+    n_active_beta = Quantity(
+        type=np.int32,
+        description="""
+        Optional number of β-spin electrons in the active space. Use when the input
+        distinguishes spin channels (e.g., unrestricted references).
+        """,
+    )
+
+    orbital_space_type = Quantity(
+        type=MEnum('CAS', 'RAS', 'GAS'),
+        description="""
+        Partitioning scheme used for the active space:
+          - CAS: complete active space (Roos et al., Chem. Phys. Lett. 48, 157, 1977)
+          - RAS: restricted active space (Olsen et al., J. Chem. Phys. 89, 2185, 1988)
+          - GAS: generalized active space (Ma et al., J. Chem. Theory Comput. 7, 433, 2011)
+        """,
+    )
+
+    selection_method = Quantity(
+        type=MEnum('manual', 'AVAS', 'UNO', 'localized'),
+        description="""
+        Procedure used to choose the active space. Choose 'manual' when the selection
+        method is not known.
+        """,
+    )
+
+    molecular_orbitals_ref = Quantity(
+        type=Reference(SectionProxy('MolecularOrbitals')),
+        description="""
+        Reference to the molecular-orbital set that defines this active space. Points to
+        the input-side MO container used when constructing the active space.
+        """,
+    )
+
+
+class BaseMultireferenceMethod(BaseModelMethod):
+    """
+    Shared multireference parameters (active space, state-averaging, symmetry).
+    """
+
+    active_space = SubSection(sub_section=ActiveSpace.m_def, repeats=False)
+
+    reference_type = Quantity(
+        type=MEnum('state_specific', 'state_averaged'),
+        description="""
+        Whether the reference wavefunction is optimized for a single state or averaged
+        over multiple states.
+        """,
+    )
+
+    n_state_groups = Quantity(
+        type=np.int32,
+        description="""
+        Number of state groups specified (typically one per spin multiplicity). Mirrors
+        the length of `state_multiplicities` and `n_roots_per_multiplicity` inputs such
+        as `mult 3,1` / `nroots 10,15`.
+        """,
+    )
+
+    state_multiplicities = Quantity(
+        type=np.int32,
+        shape=['n_state_groups'],
+        description="""
+        Spin multiplicity (2S+1) for each state group (e.g., [3,1] for triplet/singlet).
+        Use together with `n_roots_per_multiplicity` to map how many roots are taken for
+        each multiplicity in the active space.
+        """,
+    )
+
+    n_roots_per_multiplicity = Quantity(
+        type=np.int32,
+        shape=['n_state_groups'],
+        description="""
+        Number of roots requested for each entry in `state_multiplicities` (e.g., [10,15]
+        to represent 10 triplet and 15 singlet roots in a shared active space).
+        """,
+    )
+
+    state_weights = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description="""
+        Optional weights applied to individual states for state-averaged references. When
+        provided, the flattened order should follow the multiplicity groups implied by
+        `state_multiplicities` and `n_roots_per_multiplicity`.
+        """,
+    )
+
+    # TODO: connect with new Symmetry implementation
+    symmetry_label = Quantity(
+        type=str,
+        description="""
+        Symmetry irrep label used for this calculation, if symmetry constraints or labels
+        were applied.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Derive n_state_groups if absent
+        if self.n_state_groups is None:
+            if self.state_multiplicities is not None:
+                self.n_state_groups = len(self.state_multiplicities)
+            elif self.n_roots_per_multiplicity is not None:
+                self.n_state_groups = len(self.n_roots_per_multiplicity)
+
+
+class MultireferenceSCF(BaseMultireferenceMethod):
+    """
+    Multiconfigurational SCF calculations (e.g., CASSCF, RASSCF, GASSCF, DMRG-SCF).
+    """
+
+    method_family = Quantity(
+        type=MEnum('CASSCF', 'RASSCF', 'GASSCF', 'DMRGSCF'),
+        description="""
+        Multiconfigurational SCF flavour for the active-space calculation. Use
+        `MultireferenceCI` with `method_family='CASCI'` when orbitals are not
+        reoptimized.
+        """,
+    )
+
+
+class MultireferenceCI(BaseMultireferenceMethod):
+    """
+    Multireference configuration interaction methods (e.g., MRCI).
+    """
+
+    method_family = Quantity(
+        type=MEnum('MRCI', 'MR-ACPF', 'MR-AQCC', 'CASCI', 'RASCI', 'GASCI', 'DMRGCI'),
+        description="""
+        CI flavour applied on top of a multireference space.
+        """,
+    )
+
+
+class MultireferencePT2(BaseMultireferenceMethod):
+    """
+    Multireference perturbation theory methods (e.g., CASPT2, NEVPT2).
+    """
+
+    method_family = Quantity(
+        type=MEnum('CASPT2', 'NEVPT2', 'RASPT2', 'GASPT2'),
+        description="""
+        PT2 flavour applied to a multireference reference state.
+        """,
+    )

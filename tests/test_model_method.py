@@ -12,7 +12,6 @@ from nomad_simulations.schema_packages.model_method import (
     ActiveSpace,
     ExplicitDispersionModel,
     ImplicitSolvationModel,
-    MultireferenceModelMethod,
     RelativityModel,
     SlaterKoster,
     SlaterKosterBond,
@@ -447,29 +446,6 @@ class TestSlaterKosterBond:
 
         bond.normalize(EntryArchive(), logger=logger)
         assert bond.name == expected
-
-
-class TestMultireferenceModelMethod:
-    """
-    Tests for the multireference model method container.
-    """
-
-    def test_grouped_multiplicities_and_roots(self):
-        mrm = MultireferenceModelMethod(
-            method_family='CASSCF',
-            reference_type='state_averaged',
-            n_state_groups=2,
-            state_multiplicities=[3, 1],
-            n_roots_per_multiplicity=[10, 15],
-            state_weights=[0.1] * 25,
-        )
-
-        mrm.normalize(EntryArchive(), logger)
-
-        assert list(mrm.state_multiplicities) == [3, 1]
-        assert list(mrm.n_roots_per_multiplicity) == [10, 15]
-        assert mrm.n_state_groups == 2
-        assert len(mrm.state_weights) == 25
 
 
 class TestDFT:
