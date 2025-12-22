@@ -13,6 +13,7 @@ from nomad_simulations.schema_packages.model_method import (
     ActiveSpace,
     ExplicitDispersionModel,
     ImplicitSolvationModel,
+    MultireferenceSCF,
     RelativityModel,
     SlaterKoster,
     SlaterKosterBond,
@@ -473,6 +474,25 @@ class TestActiveSpace:
         assert active.active_orbitals is not None
         assert active.active_orbitals.n_mo == 1
         assert active.active_orbitals.mo_coefficients.shape == (1, 1)
+
+
+class TestMultireferenceMethods:
+    def test_multireference_scf_normalize_sets_state_groups(self):
+        active = ActiveSpace(n_active_orbitals=4, n_active_electrons=6)
+        mref = MultireferenceSCF(
+            type='CASSCF',
+            reference_type='state_averaged',
+            state_multiplicities=[3, 1],
+            n_roots_per_multiplicity=[2, 3],
+            active_space=active,
+        )
+
+        mref.normalize(EntryArchive(), logger=logger)
+
+        assert mref.n_state_groups == 2
+        assert mref.active_space is active
+        assert list(mref.state_multiplicities) == [3, 1]
+        assert list(mref.n_roots_per_multiplicity) == [2, 3]
 
 
 class TestDFT:
