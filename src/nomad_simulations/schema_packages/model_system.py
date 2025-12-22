@@ -982,6 +982,13 @@ class ModelSystem(System, Representation):
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
 
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
+        # Some mappers may emit empty dicts for optional arrays (e.g., lattice_vectors).
+        # Strip those before the metainfo setter attempts to normalize them.
+        if (
+            isinstance(kwargs.get('lattice_vectors'), dict)
+            and not kwargs['lattice_vectors']
+        ):
+            kwargs.pop('lattice_vectors')
         super().__init__(m_def, m_context, **kwargs)
         self._cache: dict[str, Any] = {}
 
@@ -1409,17 +1416,7 @@ class ModelSystem(System, Representation):
         super().normalize(archive, logger)
 
         # Check and normalize periodic boundary conditions based on lattice vectors
-        is_lattice_vectors_empty: bool = (
-            self.lattice_vectors is None
-            or (
-                hasattr(self.lattice_vectors, 'size') and self.lattice_vectors.size == 0
-            )
-            or (
-                hasattr(self.lattice_vectors, '__len__')
-                and len(self.lattice_vectors) == 0
-            )
-        )
-        if is_lattice_vectors_empty and self.periodic_boundary_conditions:
+        if (not self.lattice_vectors) and self.periodic_boundary_conditions:
             logger.warning(
                 'Lattice vectors are not defined but periodic boundary conditions are set. Unsetting PBC.'
             )
