@@ -1861,15 +1861,15 @@ class ActiveSpace(ArchiveSection):
         """,
     )
 
-    active_orbitals = SubSection(
-        sub_section=MolecularOrbitals.m_def,
-        repeats=False,
-        description="""
-        Molecular orbitals defining this active space, embedded directly in the section.
-        These should be the input/reference orbitals used to construct the active space
-        (not the post-optimized correlated orbitals).
-        """,
-    )
+    # active_orbitals = SubSection(
+    #     sub_section=MolecularOrbitals.m_def,
+    #     repeats=False,
+    #     description="""
+    #     Molecular orbitals defining this active space, embedded directly in the section.
+    #     These should be the input/reference orbitals used to construct the active space
+    #     (not the post-optimized correlated orbitals).
+    #     """,
+    # )
 
 
 class BaseMultireferenceMethod(BaseModelMethod):
