@@ -9,7 +9,6 @@ from nomad.metainfo import (
     Quantity,
     Reference,
     Section,
-    SectionProxy,
     SubSection,
 )
 
@@ -22,6 +21,9 @@ from nomad_simulations.schema_packages.atoms_state import CoreHole, ElectronicSt
 from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
+from nomad_simulations.schema_packages.properties.molecular_orbitals import (
+    MolecularOrbitals,
+)
 from nomad_simulations.schema_packages.utils.libxc.build import (
     spec_from_label,
 )
@@ -1859,11 +1861,13 @@ class ActiveSpace(ArchiveSection):
         """,
     )
 
-    molecular_orbitals_ref = Quantity(
-        type=Reference(SectionProxy('MolecularOrbitals')),
+    active_orbitals = SubSection(
+        sub_section=MolecularOrbitals.m_def,
+        repeats=False,
         description="""
-        Reference to the molecular-orbital set that defines this active space. Points to
-        the input-side MO container used when constructing the active space.
+        Molecular orbitals defining this active space, embedded directly in the section.
+        These should be the input/reference orbitals used to construct the active space
+        (not the post-optimized correlated orbitals).
         """,
     )
 
