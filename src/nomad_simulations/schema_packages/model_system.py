@@ -982,8 +982,6 @@ class ModelSystem(System, Representation):
     sub_systems = SubSection(sub_section=SectionProxy('ModelSystem'), repeats=True)
 
     def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
-        # Some mappers may emit empty dicts for optional arrays (e.g., lattice_vectors).
-        # Strip those before the metainfo setter attempts to normalize them.
         super().__init__(m_def, m_context, **kwargs)
         self._cache: dict[str, Any] = {}
 
