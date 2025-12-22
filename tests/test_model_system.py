@@ -576,6 +576,25 @@ class TestModelSystem:
                 f'PBC incorrectly cleared for {description}'
             )
 
+    def test_normalize_with_lattice_vectors_avoids_bool_numpy_error(self):
+        """
+        When lattice_vectors are provided as a numpy array with units, normalize()
+        should not attempt a boolean conversion (which raises ValueError) and
+        must keep the periodic boundary conditions intact.
+        """
+        sys = ModelSystem(is_representative=True)
+        sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5]]) * ureg.angstrom
+        sys.lattice_vectors = np.eye(3) * ureg.angstrom
+        sys.periodic_boundary_conditions = [True, True, True]
+        sys.particle_states.extend(
+            [AtomsState(chemical_symbol='H'), AtomsState(chemical_symbol='O')]
+        )
+
+        sys.normalize(EntryArchive(), logger=logger)
+
+        assert sys.periodic_boundary_conditions == [True, True, True]
+        assert sys.lattice_vectors is not None
+
 
 @pytest.mark.parametrize('branching', [True, False])
 def test_branch_depth_if_needed(branching):

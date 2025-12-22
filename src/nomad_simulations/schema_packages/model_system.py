@@ -1416,7 +1416,9 @@ class ModelSystem(System, Representation):
         super().normalize(archive, logger)
 
         # Check and normalize periodic boundary conditions based on lattice vectors
-        if (not self.lattice_vectors) and self.periodic_boundary_conditions:
+        if (
+            self.lattice_vectors is None or len(self.lattice_vectors) == 0
+        ) and self.periodic_boundary_conditions:
             logger.warning(
                 'Lattice vectors are not defined but periodic boundary conditions are set. Unsetting PBC.'
             )
