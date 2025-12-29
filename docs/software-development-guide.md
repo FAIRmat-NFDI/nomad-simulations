@@ -25,26 +25,13 @@ A stalled PR should always converge toward a visible decision: proceed, split, b
 
 ## II. Common Challenges
 
-### Stale or silent PRs
-PRs remain open without activity, status, or clear ownership.
-
-### PRs with unclear or growing scope
-PRs expand during review or surface design uncertainty late, making review slow and difficult.
-
-### Blocked PRs without visible blockers
-Dependencies on other work, people, or decisions are not made explicit.
-
-### Loss of context across PRs and repositories
-PRs, issues, and follow-ups are not consistently linked.
-
-### Limited visibility into parallel work
-Team members are unaware of related or overlapping work.
-
-### Reviews that do not advance toward a decision
-Feedback acknowledges work without clearly approving, blocking, or requesting concrete changes.
-
-### Reluctance to close or rework PRs
-PRs remain open even when direction changes or scope becomes unclear.
+- **Stale or silent PRs:** Remain open without activity, status, or clear ownership.
+- **Unclear or growing scope:** Scope expands during review or design uncertainty surfaces late, making review slow and difficult.
+- **Blocked PRs without visible blockers:** Dependencies on other work, people, or decisions are not made explicit.
+- **Loss of context across PRs and repositories:** PRs, issues, and follow-ups are not consistently linked.
+- **Limited visibility into parallel work:** Team members are unaware of related or overlapping work.
+- **Reviews that do not advance toward a decision:** Feedback acknowledges work without clearly approving, blocking, or requesting concrete changes.
+- **Reluctance to close or rework PRs:** Remain open even when direction changes or scope becomes unclear.
 
 ---
 
@@ -76,12 +63,12 @@ Both `git rebase` and `git merge` are valid tools. The choice should be **pragma
 - Branches are long-lived
 - Conflicts are complex or repeatedly reoccur
 - Preserving the development sequence aids understanding
-- The branch already integrates many upstream changes
+- The branch already integrates many changes from `develop`
 
 Because PRs are merged via **Squash & Merge**, neither approach affects the final history of `develop`.
 
 **Key expectation**
-A feature branch should include **all relevant changes from the target branch**, not merely be conflict-free.
+A feature branch should be reasonably up to date with the target branch (`develop`) so that the PR can be reviewed and tested against current code, not just merged without conflicts.
 
 ---
 
@@ -113,8 +100,6 @@ A PR should be:
 - Focused (one clear purpose)
 - Self-contained (code, tests, and documentation aligned)
 
-Large or preparatory work should be split into earlier PRs.
-
 ---
 
 ### PR Description
@@ -141,10 +126,20 @@ A communication-focused PR template is used to support this.
 - Ensure CI passes before review
 - Respond promptly to feedback
 - Keep commits small, focused, and with a clear and concise commit message
+- Facilitate the review by communicating relevant context or desired focus areas to the reviewer.
+- Use best judgement to choose reviewer/s with relevant knowledge for PR focus areas.
 
 **Reviewer responsibilities**
 - Review within an agreed timeframe
 - Focus on correctness and clarity
+- Clearly distinguish blocking vs non-blocking feedback
+- Actively advance PRs toward a decision
+
+**Reviewer responsibilities**
+- Review within an agreed timeframe
+- Be thoughtful; do not rush
+- Focus on correctness, clarity, and intent
+- Address any explicitly flagged concerns
 - Clearly distinguish blocking vs non-blocking feedback
 - Actively advance PRs toward a decision
 
@@ -154,7 +149,7 @@ A communication-focused PR template is used to support this.
 
 The following are baseline expectations:
 
-- Use meaningful commit messages
+- Use meaningful commit messages, preferably written in the imperative form (e.g., `Add validation for empty input` or `Refactor parser control flow`)
 - Separate refactors from behavioral changes
 - Follow established linting and formatting tools
 - Add or update tests when behavior changes
@@ -176,9 +171,11 @@ The following are baseline expectations:
 ### Coordination Mechanisms
 
 - PRs should explicitly link related issues and other PRs.
-- Follow-up work should be tracked explicitly, not left as implicit TODOs.
-- For multi-step or cross-repository work, project boards may be used to provide shared visibility.
-- When ownership or the right contact is unclear, a dedicated moment (meeting or agenda item) may be used to unblock PRs collaboratively.
+- Follow-up work should typically be tracked explicitly by creating new issues, not left as implicit TODOs.
+- Responsibility for follow-up issues may vary. Assignments should be used wherever possible. Otherwise, the author/project lead share responsbility for following up. The author of in-code TODO comments is responsibile for keeping track and following up in that case.
+- For multi-step changes, a **super-issue** (labeled `SUPER ISSUE`) can be used to track progress across multiple PRs via a checklist.
+- For broader-scoped, longer-term, or cross-repository work, project boards may be used to provide shared visibility.
+- When a PR cannot be easily unblocked via direct communication between author and reviewer, a dedicated moment (meeting or agenda item) should be used to unblock PRs collaboratively.
 
 ---
 
