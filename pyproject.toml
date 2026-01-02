@@ -34,9 +34,9 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/nomad-coe/nomad-simulations"
-"Bug Tracker" = "https://github.com/nomad-coe/nomad-simulations/issues"
-"Documentation" = "https://nomad-coe.github.io/nomad-simulations/"
+"Homepage" = "https://github.com/fairmat-nfdi/nomad-simulations"
+"Bug Tracker" = "https://github.com/fairmat-nfdi/nomad-simulations/issues"
+"Documentation" = "https://fairmat-nfdi.github.io/nomad-simulations/"
 
 [project.optional-dependencies]
 md = [

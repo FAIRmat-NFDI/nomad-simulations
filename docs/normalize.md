@@ -4,7 +4,7 @@
 
 Each base section defined using the NOMAD schema has a set of public functions which can be used at any moment when reading and parsing files in NOMAD. The `normalize(archive, logger)` function is a special case of such functions, which warrants an in-depth description.
 
-This function is run within the NOMAD infrastructure by the [`MetainfoNormalizer`](https://github.com/nomad-coe/nomad/blob/develop/nomad/normalizing/metainfo.py) in the following order:
+This function is run within the NOMAD infrastructure by the [`MetainfoNormalizer`](https://github.com/fairmat-nfdi/nomad/blob/develop/nomad/normalizing/metainfo.py) in the following order:
 
 1. A child section's `normalize()` function is run before their/its parents' `normalize()` function.
 2. For sibling sections, the `normalize()` function is executed from the smaller to the larger `normalizer_level` attribute. If `normalizer_level` is not set or if they are the same for two different sections, the order is established by the attributes definition order in the parent section.

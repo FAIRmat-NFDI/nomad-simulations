@@ -996,7 +996,7 @@ class PPCutoff(ArchiveSection):
         This field captures the recommendation context for the cutoff value: whether it
         represents a single simulation package recommendation, bounds in a recommended range (min/max),
         or a precision tier from a standard library.
-        
+
         The precision tiers follow the SSSP (Standard Solid-State Pseudopotentials)
         protocol nomenclature: `'fast'` for testing and preliminary calculations,
         `'balanced'` for high-throughput screening and most practical applications,

@@ -1,16 +1,21 @@
 [![NOMAD](https://img.shields.io/badge/Open%20NOMAD-lightgray?logo=data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI3LjUuMCwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCAxNTAwIDE1MDAiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDE1MDAgMTUwMDsiIHhtbDpzcGFjZT0icHJlc2VydmUiPgo8c3R5bGUgdHlwZT0idGV4dC9jc3MiPgoJLnN0MHtmaWxsOiMxOTJFODY7c3Ryb2tlOiMxOTJFODY7c3Ryb2tlLXdpZHRoOjE0MS4zMjI3O3N0cm9rZS1taXRlcmxpbWl0OjEwO30KCS5zdDF7ZmlsbDojMkE0Q0RGO3N0cm9rZTojMkE0Q0RGO3N0cm9rZS13aWR0aDoxNDEuMzIyNztzdHJva2UtbWl0ZXJsaW1pdDoxMDt9Cjwvc3R5bGU+CjxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xMTM2LjQsNjM2LjVjMTUwLjgsMCwyNzMuMS0xMjEuOSwyNzMuMS0yNzIuMlMxMjg3LjIsOTIuMSwxMTM2LjQsOTIuMWMtMTUwLjgsMC0yNzMuMSwxMjEuOS0yNzMuMSwyNzIuMgoJUzk4NS42LDYzNi41LDExMzYuNCw2MzYuNXoiLz4KPHBhdGggY2xhc3M9InN0MSIgZD0iTTEzMjksOTQ2Yy0xMDYuNC0xMDYtMjc4LjgtMTA2LTM4Ni4xLDBjLTk5LjYsOTkuMy0yNTguNywxMDYtMzY1LjEsMTguMWMtNi43LTcuNi0xMy40LTE2LjItMjEuMS0yMy45CgljLTEwNi40LTEwNi0xMDYuNC0yNzgsMC0zODQuOWMxMDYuNC0xMDYsMTA2LjQtMjc4LDAtMzg0LjlzLTI3OC44LTEwNi0zODYuMSwwYy0xMDcuMywxMDYtMTA2LjQsMjc4LDAsMzg0LjkKCWMxMDYuNCwxMDYsMTA2LjQsMjc4LDAsMzg0LjljLTYzLjIsNjMtODkuMSwxNTAtNzYuNywyMzIuMWM3LjcsNTcuMywzMy41LDExMy43LDc3LjYsMTU3LjZjMTA2LjQsMTA2LDI3OC44LDEwNiwzODYuMSwwCgljMTA2LjQtMTA2LDI3OC44LTEwNiwzODYuMSwwYzEwNi40LDEwNiwyNzguOCwxMDYsMzg2LjEsMEMxNDM1LjQsMTIyNCwxNDM1LjQsMTA1MiwxMzI5LDk0NnoiLz4KPC9zdmc+Cg==)](https://nomad-lab.eu/prod/v1/staging/gui/)
-![](https://coveralls.io/repos/github/nomad-coe/nomad-simulations/badge.svg?branch=develop)
+![](https://coveralls.io/repos/github/fairmat-nfdi/nomad-simulations/badge.svg?branch=develop)
 ![](https://img.shields.io/pypi/v/nomad-simulations)
 ![](https://img.shields.io/pypi/pyversions/nomad-simulations)
 [![DOI](https://zenodo.org/badge/744481756.svg)](https://zenodo.org/badge/latestdoi/744481756)
 
-
+> ⚠️ **Repository migration notice**
+>
+> This repository was migrated from `nomad-coe/nomad-simulations` to `fairmat-nfdi/nomad-simulations` on **2025-01-02**.
+> Existing GitHub links and clone URLs continue to work via redirects.
+>
+> If you encounter any broken links or unexpected issues related to the migration, please report them.
 
 # `nomad-simulations`
 
 The `nomad-simulations` is an open-source Python package for managing Materials Science simulation data. It is following the plugin architechture of [NOMAD](https://nomad-lab.eu). This package contains a set of section definitions (Python classes) with quantities (attributes) and methods defined to automate data extraction from different simulation codes. These section definitions can be used at any prefered level by the user, they can be modified and extended, and we welcome external collaborators.
 
-Read more in the [official documentation](https://nomad-coe.github.io/nomad-simulations/) page.
+Read more in the [official documentation](https://fairmat-nfdi.github.io/nomad-simulations/) page.
 
 
 ## Getting started
@@ -26,7 +31,7 @@ pip install nomad-simulations
 
 If you want to develop locally this package, clone the project and in the workspace folder, create a virtual environment (you can use Python 3.10, 3.11, or 3.12):
 ```sh
-git clone https://github.com/nomad-coe/nomad-simulations.git
+git clone https://github.com/fairmat-nfdi/nomad-simulations.git
 cd nomad-simulations
 python3.11 -m venv .pyenv
 . .pyenv/bin/activate
@@ -141,7 +146,7 @@ Read the [NOMAD plugin documentation](https://nomad-lab.eu/prod/v1/staging/docs/
 Modify the script under `/nomad/scripts/install_default_plugins.sh` and add the path to this repository pointing to the `@develop` branch:
 ```sh
 <other-content-in-install_default_plugins.sh...>
-git+https://github.com/nomad-coe/nomad-simulations.git@develop
+git+https://github.com/fairmat-nfdi/nomad-simulations.git@develop
 ```
 
 Then, go to your NOMAD folder, activate your NOMAD virtual environment and run:
