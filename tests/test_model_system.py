@@ -12,6 +12,7 @@ from nomad_simulations.schema_packages.atoms_state import (
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
     ChemicalFormula,
+    GlobalCrystalSymmetry,
     LocalCrystalSymmetry,
     ModelSystem,
     Representation,
@@ -1586,3 +1587,74 @@ def test_compute_site_multiplicities(equivalent_atoms, expected_multiplicities):
     """
     result = Symmetry._compute_site_multiplicities(equivalent_atoms)
     assert result == expected_multiplicities
+
+
+@pytest.mark.parametrize(
+    'pearson, expected_type, expected_centering',
+    [
+        # 3D single-character family codes
+        ('cF', 'c - cubic', 'F - all faces centred'),
+        ('tI', 't - tetragonal', 'I - body centred'),
+        ('oP', 'o - orthorhombic', 'P - primitive'),
+        ('mP', 'm - monoclinic', 'P - primitive'),
+        ('aP', 'a - triclinic', 'P - primitive'),
+        ('hP', 'h - hexagonal', 'P - primitive'),
+        ('rR', 'r - trigonal', 'R - rhombohedral'),
+        # 2D/1D multi-character family codes
+        ('mpp', 'mp - oblique', 'p - primitive 2D/1D'),
+        ('opp', 'op - rectangular', 'p - primitive 2D/1D'),
+        ('ocp', 'oc - centered rectangular', 'p - primitive 2D/1D'),
+        ('tpp', 'tp - square', 'p - primitive 2D/1D'),
+        ('hpp', 'hp - hexagonal 2D', 'p - primitive 2D/1D'),
+        ('app', 'ap - linear', 'p - primitive 2D/1D'),
+        ('occ', 'oc - centered rectangular', 'c - centered 2D'),
+    ],
+)
+def test_parse_bravais_lattice_pearson(pearson, expected_type, expected_centering):
+    """Test Pearson notation parsing for both 3D and 2D/1D lattice types."""
+    symmetry = GlobalCrystalSymmetry()
+
+    lattice_type, lattice_centering = symmetry._parse_bravais_lattice_pearson(
+        pearson, logger
+    )
+
+    assert lattice_type == expected_type
+    assert lattice_centering == expected_centering
+
+
+@pytest.mark.parametrize(
+    'pearson_input',
+    [
+        # 3D single-character family codes
+        'cF',
+        'tI',
+        'oP',
+        'mS',
+        'aP',
+        'hP',
+        'rR',
+        # 2D/1D multi-character family codes
+        'mpp',
+        'opp',
+        'ocp',
+        'tpp',
+        'hpp',
+        'app',
+        'occ',
+    ],
+)
+def test_bravais_lattice_roundtrip(pearson_input):
+    """Test that Pearson notation can be parsed and reconstructed correctly."""
+    symmetry = GlobalCrystalSymmetry()
+
+    # Parse Pearson notation
+    lattice_type, lattice_centering = symmetry._parse_bravais_lattice_pearson(
+        pearson_input, logger
+    )
+    symmetry.lattice_type = lattice_type
+    symmetry.lattice_centering = lattice_centering
+
+    # Reconstruct via property
+    pearson_output = symmetry.bravais_lattice
+
+    assert pearson_output == pearson_input

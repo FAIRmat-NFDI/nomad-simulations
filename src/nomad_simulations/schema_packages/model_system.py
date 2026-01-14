@@ -791,8 +791,14 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         }
 
         # Extract family and centering from Pearson notation
-        family_code = pearson[0].lower()
-        centering_code = pearson[1] if len(pearson) > 1 else ''
+        # Try two-character family codes first (2D/1D), then single-character (3D)
+        pearson_lower = pearson.lower()
+        if len(pearson_lower) >= 3 and pearson_lower[:2] in family_map:
+            family_code = pearson_lower[:2]
+            centering_code = pearson[2] if len(pearson) > 2 else ''
+        else:
+            family_code = pearson_lower[0]
+            centering_code = pearson[1] if len(pearson) > 1 else ''
 
         lattice_type = family_map.get(family_code)
         lattice_centering = centering_map.get(centering_code)
@@ -810,7 +816,10 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         Reconstructs the Pearson notation from lattice_type and lattice_centering.
 
         This property provides backward compatibility for code that expects the combined
-        Pearson notation string (e.g., "cF" for cubic face-centered).
+        Pearson notation string. Handles both single-character (3D) and multi-character
+        (2D/1D) family codes:
+        - 3D examples: "cF" (cubic face-centered), "tI" (tetragonal body-centered)
+        - 2D/1D examples: "mpp" (oblique primitive), "ocp" (centered rectangular primitive)
 
         Returns:
             str | None: Pearson notation string, or None if components are not set.
