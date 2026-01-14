@@ -338,22 +338,34 @@ class LocalSymmetry(ArchiveSection):
             )
             return
 
-        # Validate array lengths against parent representation
+        # Determine particle count from parent representation.
+        # Prefer fractional_coordinates, then positions, then an explicit n_particles.
+        n_particles = None
         if (
             hasattr(parent, 'fractional_coordinates')
             and parent.fractional_coordinates is not None
         ):
             n_particles = len(parent.fractional_coordinates)
+        elif hasattr(parent, 'positions') and parent.positions is not None:
+            n_particles = len(parent.positions)
+        elif hasattr(parent, 'n_particles') and parent.n_particles is not None:
+            n_particles = parent.n_particles
 
-            # Check each populated array for any quantity with shape ['*']
-            for field_name, quantity in self.m_def.all_quantities.items():
-                if quantity.shape and quantity.shape[0] == '*':
-                    field_value = getattr(self, field_name, None)
-                    if field_value is not None and len(field_value) != n_particles:
-                        logger.warning(
-                            f'{self.__class__.__name__}.{field_name} length ({len(field_value)}) '
-                            f'does not match n_particles ({n_particles})'
-                        )
+        if n_particles is None:
+            logger.warning(
+                'LocalSymmetry could not determine n_particles from parent → validation skipped.'
+            )
+            return
+
+        # Check each populated array for any quantity with shape ['*']
+        for field_name, quantity in self.m_def.all_quantities.items():
+            if quantity.shape and quantity.shape[0] == '*':
+                field_value = getattr(self, field_name, None)
+                if field_value is not None and len(field_value) != n_particles:
+                    logger.warning(
+                        f'{self.__class__.__name__}.{field_name} length ({len(field_value)}) '
+                        f'does not match n_particles ({n_particles})'
+                    )
 
 
 class LocalCrystalSymmetry(LocalSymmetry):
