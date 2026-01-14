@@ -354,9 +354,7 @@ class LocalSymmetry(ArchiveSection):
             return parent.n_particles
         return None
 
-    def _validate_array_lengths(
-        self, n_particles: int, logger: 'BoundLogger'
-    ) -> None:
+    def _validate_array_lengths(self, n_particles: int, logger: 'BoundLogger') -> None:
         """
         Validate that all variable-length arrays match the expected particle count.
 

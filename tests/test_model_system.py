@@ -1697,19 +1697,13 @@ def test_get_particle_count_from_parent(
 
 def test_validate_array_lengths():
     """Test array length validation logs warnings for mismatched arrays."""
-    import logging
-
     rep = Representation(fractional_coordinates=np.zeros((4, 3)))
     rep.local_symmetry = LocalCrystalSymmetry(
         wyckoff_letters=['a', 'b', 'c'],  # Only 3, should be 4
         site_symmetries=['1', '2', '3', '4'],  # Correct length
     )
 
-    archive = EntryArchive()
-
     # Capture log output
-    import logging
-
     caplog_records = []
     original_warning = logger.warning
 
