@@ -457,7 +457,7 @@ class LocalCrystalSymmetry(LocalSymmetry):
             - ['a1', 'b2', 'b2', 'c4', 'c4', 'c4', 'c4'] indicates:
               • 1 atom at Wyckoff position 'a' (special position, multiplicity 1)
               • 2 symmetrically equivalent atoms at Wyckoff position 'b' (multiplicity 2)
-              • 4 symmetrically equivalent atoms at Wyckoff position 'c' (general position, multiplicity 4)
+              • 4 symmetrically equivalent atoms at Wyckoff position 'c' (multiplicity 4)
         """
         if self.wyckoff_letters is None or self.site_multiplicities is None:
             return None
@@ -817,6 +817,43 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             f'{family_code}{centering_code}' if family_code and centering_code else None
         )
 
+    @staticmethod
+    def _compute_site_multiplicities(
+        equivalent_atoms: 'np.ndarray | list',
+    ) -> list[int]:
+        """
+        Compute site multiplicities from equivalent_atoms grouping.
+
+        For each atom, the multiplicity is the number of atoms that share the same
+        equivalent_atoms index (i.e., atoms related by space group symmetry operations).
+
+        This method correctly handles parametric Wyckoff positions where the same
+        Wyckoff letter can appear at different coordinate parameters, creating
+        distinct non-equivalent sites.
+
+        Args:
+            equivalent_atoms: Array mapping each atom to its independent atom index.
+                Atoms with the same index are symmetrically equivalent.
+
+        Returns:
+            List of site multiplicities, one per atom.
+
+        Examples:
+            >>> _compute_site_multiplicities([0, 0, 2, 2])
+            [2, 2, 2, 2]  # Two pairs of equivalent atoms
+
+            >>> _compute_site_multiplicities([0, 0, 0, 0, 4, 4])
+            [4, 4, 4, 4, 2, 2]  # Four equivalent + two equivalent
+        """
+        # Convert to list for consistent counting behavior
+        equiv_list = (
+            list(equivalent_atoms)
+            if hasattr(equivalent_atoms, '__iter__')
+            else [equivalent_atoms]
+        )
+        # For each atom, count how many atoms share its equivalent_atoms index
+        return [equiv_list.count(equiv_list[i]) for i in range(len(equiv_list))]
+
     def resolve_analyzed_cell(
         self,
         symmetry_analyzer: 'SymmetryAnalyzer',
@@ -887,26 +924,9 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
                 if wyckoff is not None:
                     cell_section.local_symmetry.wyckoff_letters = wyckoff
 
-                    # Compute site_multiplicities from conventional cell counts
-                    # Multiplicity is always relative to the conventional cell, even for primitive
-                    conventional_wyckoff = (
-                        symmetry_analyzer.get_wyckoff_letters_conventional()
-                    )
-                    if conventional_wyckoff is not None:
-                        # Convert to list if it's a numpy array
-                        conv_wyckoff_list = (
-                            list(conventional_wyckoff)
-                            if hasattr(conventional_wyckoff, '__iter__')
-                            else [conventional_wyckoff]
-                        )
-                        conventional_letter_counts = {
-                            letter: conv_wyckoff_list.count(letter)
-                            for letter in set(conv_wyckoff_list)
-                        }
-                        site_mults = [
-                            conventional_letter_counts.get(letter, 1)
-                            for letter in wyckoff
-                        ]
+                    # Compute site_multiplicities from equivalent_atoms grouping
+                    if equivalent is not None:
+                        site_mults = self._compute_site_multiplicities(equivalent)
                         cell_section.local_symmetry.site_multiplicities = site_mults
 
                 if equivalent is not None:
@@ -1001,27 +1021,10 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         model_system.local_symmetry.wyckoff_letters = original_wyckoff
         model_system.local_symmetry.equivalent_atoms = original_equivalent_atoms
 
-        # Compute site_multiplicities from conventional cell Wyckoff letter counts
-        if original_wyckoff is not None:
-            conventional_wyckoff = symmetry_analyzer.get_wyckoff_letters_conventional()
-            if conventional_wyckoff is not None:
-                # Count occurrences of each letter in conventional cell
-                # Convert to list if it's a numpy array
-                conv_wyckoff_list = (
-                    list(conventional_wyckoff)
-                    if hasattr(conventional_wyckoff, '__iter__')
-                    else [conventional_wyckoff]
-                )
-                conventional_letter_counts = {
-                    letter: conv_wyckoff_list.count(letter)
-                    for letter in set(conv_wyckoff_list)
-                }
-                # Map each original position to its multiplicity
-                site_mults = [
-                    conventional_letter_counts.get(letter, 1)
-                    for letter in original_wyckoff
-                ]
-                model_system.local_symmetry.site_multiplicities = site_mults
+        # Compute site_multiplicities from equivalent_atoms grouping
+        if original_equivalent_atoms is not None:
+            site_mults = self._compute_site_multiplicities(original_equivalent_atoms)
+            model_system.local_symmetry.site_multiplicities = site_mults
 
         # Populate site_symmetries (point group symbols) from symmetry dataset
         try:

@@ -12,6 +12,7 @@ from nomad_simulations.schema_packages.atoms_state import (
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
     ChemicalFormula,
+    LocalCrystalSymmetry,
     ModelSystem,
     Representation,
     Symmetry,
@@ -1508,7 +1509,8 @@ def test_symmetry_analysis_fields(
     symmetry = Symmetry()
 
     # Directly call resolve_bulk_symmetry to test the implementation
-    primitive_cell, conventional_cell = symmetry.resolve_bulk_symmetry(sys, logger)
+    # We discard the returned cells as we're only testing symmetry field population
+    _, _ = symmetry.resolve_bulk_symmetry(sys, logger)
 
     # Check that analysis_origin_shift is populated
     assert symmetry.analysis_origin_shift is not None
@@ -1531,3 +1533,56 @@ def test_symmetry_analysis_fields(
     for site_sym in sys.local_symmetry.site_symmetries:
         assert isinstance(site_sym, str)
         assert len(site_sym) > 0
+
+
+def test_local_symmetry_array_length_validation(caplog):
+    """
+    Test that LocalCrystalSymmetry.normalize() warns when array lengths don't match
+    the parent representation's particle count.
+    """
+    import logging
+
+    # Create a Representation with 4 atoms
+    rep = Representation(fractional_coordinates=np.zeros((4, 3)))
+    rep.local_symmetry = LocalCrystalSymmetry(
+        wyckoff_letters=['a', 'b', 'c']  # Only 3, should be 4
+    )
+
+    # Normalize should issue a warning
+    archive = EntryArchive()
+    with caplog.at_level(logging.WARNING):
+        rep.local_symmetry.normalize(archive, logger)
+
+    # Check that warning was logged
+    assert any(
+        'wyckoff_letters length (3) does not match n_particles (4)' in record.message
+        for record in caplog.records
+    )
+
+
+@pytest.mark.parametrize(
+    'equivalent_atoms, expected_multiplicities',
+    [
+        # Two pairs of equivalent atoms
+        ([0, 0, 2, 2], [2, 2, 2, 2]),
+        # All atoms are unique (no equivalence)
+        ([0, 1, 2, 3], [1, 1, 1, 1]),
+        # All atoms are equivalent
+        ([0, 0, 0, 0], [4, 4, 4, 4]),
+        # Complex: 4 equivalent + 2 equivalent (models ZnS wurtzite)
+        ([0, 0, 0, 0, 4, 4], [4, 4, 4, 4, 2, 2]),
+        # Single atom
+        ([0], [1]),
+        # Three groups: 3, 2, 1
+        ([0, 0, 0, 3, 3, 5], [3, 3, 3, 2, 2, 1]),
+    ],
+)
+def test_compute_site_multiplicities(equivalent_atoms, expected_multiplicities):
+    """
+    Test the _compute_site_multiplicities() static method.
+
+    This method computes how many atoms share the same equivalent_atoms index,
+    which is critical for correctly determining Wyckoff position multiplicities.
+    """
+    result = Symmetry._compute_site_multiplicities(equivalent_atoms)
+    assert result == expected_multiplicities
