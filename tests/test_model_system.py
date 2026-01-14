@@ -14,6 +14,7 @@ from nomad_simulations.schema_packages.model_system import (
     ChemicalFormula,
     GlobalCrystalSymmetry,
     LocalCrystalSymmetry,
+    LocalSymmetry,
     ModelSystem,
     Representation,
     Symmetry,
@@ -1658,3 +1659,78 @@ def test_bravais_lattice_roundtrip(pearson_input):
     pearson_output = symmetry.bravais_lattice
 
     assert pearson_output == pearson_input
+
+
+@pytest.mark.parametrize(
+    'has_frac_coords, has_positions, has_n_particles, expected_count',
+    [
+        # Only fractional_coordinates (preferred)
+        (True, False, False, 4),
+        # Only positions (fallback)
+        (False, True, False, 3),
+        # Only n_particles (fallback)
+        (False, False, True, 5),
+        # Multiple sources - fractional_coordinates wins
+        (True, True, True, 4),
+        # positions + n_particles - positions wins
+        (False, True, True, 3),
+        # No sources available
+        (False, False, False, None),
+    ],
+)
+def test_get_particle_count_from_parent(
+    has_frac_coords, has_positions, has_n_particles, expected_count
+):
+    """Test particle count determination from different parent attributes."""
+    rep = Representation()
+
+    if has_frac_coords:
+        rep.fractional_coordinates = np.array([[0, 0, 0]] * 4)
+    if has_positions:
+        rep.positions = np.array([[0, 0, 0]] * 3) * ureg.angstrom
+    if has_n_particles:
+        rep.n_particles = 5
+
+    result = LocalSymmetry._get_particle_count_from_parent(rep)
+    assert result == expected_count
+
+
+def test_validate_array_lengths():
+    """Test array length validation logs warnings for mismatched arrays."""
+    import logging
+
+    rep = Representation(fractional_coordinates=np.zeros((4, 3)))
+    rep.local_symmetry = LocalCrystalSymmetry(
+        wyckoff_letters=['a', 'b', 'c'],  # Only 3, should be 4
+        site_symmetries=['1', '2', '3', '4'],  # Correct length
+    )
+
+    archive = EntryArchive()
+
+    # Capture log output
+    import logging
+
+    caplog_records = []
+    original_warning = logger.warning
+
+    def capture_warning(msg):
+        caplog_records.append(msg)
+        original_warning(msg)
+
+    logger.warning = capture_warning
+
+    try:
+        rep.local_symmetry._validate_array_lengths(4, logger)
+
+        # Check that warning was logged for wyckoff_letters
+        assert any(
+            'wyckoff_letters length (3) does not match n_particles (4)' in record
+            for record in caplog_records
+        )
+        # Check that no warning was logged for site_symmetries (correct length)
+        assert not any(
+            'site_symmetries' in record and 'does not match' in record
+            for record in caplog_records
+        )
+    finally:
+        logger.warning = original_warning

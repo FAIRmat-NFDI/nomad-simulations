@@ -327,6 +327,55 @@ class LocalSymmetry(ArchiveSection):
         """,
     )
 
+    @staticmethod
+    def _get_particle_count_from_parent(parent: 'Representation') -> int | None:
+        """
+        Determine particle count from parent representation.
+
+        Checks multiple sources in order of preference:
+        1. fractional_coordinates length (preferred for crystal structures)
+        2. positions length (fallback for Cartesian-only systems)
+        3. explicit n_particles attribute (fallback for abstract representations)
+
+        Args:
+            parent: The parent Representation instance.
+
+        Returns:
+            int | None: The number of particles, or None if it cannot be determined.
+        """
+        if (
+            hasattr(parent, 'fractional_coordinates')
+            and parent.fractional_coordinates is not None
+        ):
+            return len(parent.fractional_coordinates)
+        if hasattr(parent, 'positions') and parent.positions is not None:
+            return len(parent.positions)
+        if hasattr(parent, 'n_particles') and parent.n_particles is not None:
+            return parent.n_particles
+        return None
+
+    def _validate_array_lengths(
+        self, n_particles: int, logger: 'BoundLogger'
+    ) -> None:
+        """
+        Validate that all variable-length arrays match the expected particle count.
+
+        Checks each quantity with shape ['*'] and logs a warning if the array length
+        doesn't match n_particles.
+
+        Args:
+            n_particles: Expected number of particles.
+            logger: The logger to log messages.
+        """
+        for field_name, quantity in self.m_def.all_quantities.items():
+            if quantity.shape and quantity.shape[0] == '*':
+                field_value = getattr(self, field_name, None)
+                if field_value is not None and len(field_value) != n_particles:
+                    logger.warning(
+                        f'{self.__class__.__name__}.{field_name} length ({len(field_value)}) '
+                        f'does not match n_particles ({n_particles})'
+                    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         """Validate array dimensions match parent representation particle count."""
         super().normalize(archive, logger)
@@ -338,34 +387,14 @@ class LocalSymmetry(ArchiveSection):
             )
             return
 
-        # Determine particle count from parent representation.
-        # Prefer fractional_coordinates, then positions, then an explicit n_particles.
-        n_particles = None
-        if (
-            hasattr(parent, 'fractional_coordinates')
-            and parent.fractional_coordinates is not None
-        ):
-            n_particles = len(parent.fractional_coordinates)
-        elif hasattr(parent, 'positions') and parent.positions is not None:
-            n_particles = len(parent.positions)
-        elif hasattr(parent, 'n_particles') and parent.n_particles is not None:
-            n_particles = parent.n_particles
-
+        n_particles = self._get_particle_count_from_parent(parent)
         if n_particles is None:
             logger.warning(
                 'LocalSymmetry could not determine n_particles from parent → validation skipped.'
             )
             return
 
-        # Check each populated array for any quantity with shape ['*']
-        for field_name, quantity in self.m_def.all_quantities.items():
-            if quantity.shape and quantity.shape[0] == '*':
-                field_value = getattr(self, field_name, None)
-                if field_value is not None and len(field_value) != n_particles:
-                    logger.warning(
-                        f'{self.__class__.__name__}.{field_name} length ({len(field_value)}) '
-                        f'does not match n_particles ({n_particles})'
-                    )
+        self._validate_array_lengths(n_particles, logger)
 
 
 class LocalCrystalSymmetry(LocalSymmetry):
@@ -719,24 +748,6 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         and is distinct from user-defined representation transformations.
 
         See: https://spglib.readthedocs.io/en/stable/definition.html
-        """,
-    )
-
-    atomic_cell_ref = Quantity(
-        type=Representation,
-        description="""
-        **DEPRECATED**: This field is deprecated and will be removed in a future version.
-
-        Originally intended to reference the representation that symmetry describes, but this
-        design was flawed: symmetry analysis is performed on the original ModelSystem structure
-        (representation-independent), not on a specific representation. The primitive and
-        conventional cells are outputs of symmetry analysis, not inputs.
-
-        The field currently points to the conventional cell (an output), which is semantically
-        incorrect and provides no useful information beyond what's already in
-        `model_system.representations`.
-
-        **Migration**: No action needed. This field provides no functionality and can be ignored.
         """,
     )
 
