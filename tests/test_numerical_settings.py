@@ -351,16 +351,18 @@ class TestKLinePath:
         Test that KLinePath can access reciprocal_lattice_vectors even when normalized
         before its parent KSpace section. This tests the fix for issue #126.
         """
-        # Create a simulation with KSpace and KLinePath
+        # Create a simulation with KSpace and KLinePath with proper lattice vectors
+        # Don't pre-set reciprocal_lattice_vectors - let normalization resolve them
         simulation = generate_k_space_simulation(
             system_type='bulk',
             is_representative=True,
+            reciprocal_lattice_vectors=None,  # Will be resolved from ModelSystem
+            lattice_vectors=[[5.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 5.0]],
             pbc=[True, True, True],
-            reciprocal_lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
             high_symmetry_path_names=['Gamma', 'X', 'R'],
             high_symmetry_path_values=None,  # Will be resolved during normalization
         )
-        # Normalize ModelSystem first to extract symmetry
+        # Normalize ModelSystem first so it's available for KSpace
         simulation.model_system[0].normalize(EntryArchive(), logger)
 
         k_space = simulation.model_method[0].numerical_settings[0]
@@ -370,7 +372,7 @@ class TestKLinePath:
         # This should trigger the fix where KLinePath calls k_space.normalize_reciprocal_lattice_vectors()
         k_line_path.normalize(EntryArchive(), logger)
 
-        # Verify that reciprocal_lattice_vectors are now available in KSpace
+        # Verify that reciprocal_lattice_vectors were resolved and are now available in KSpace
         assert k_space.reciprocal_lattice_vectors is not None
 
         # Verify that KLinePath successfully accessed them during normalization
