@@ -120,9 +120,9 @@ The settings configuration file `.vscode/settings.json` automatically applies th
 
 ### Documentation on Github pages
 
-To view the documentation locally, install the related packages using:
+To view the documentation locally, install the documentation dependencies:
 ```sh
-uv pip install -r requirements_docs.txt
+uv pip install -e '.[docs]'
 ```
 
 **Note**: The documentation pipeline uses `npx` (Node Package Runner) to convert Mermaid diagrams to PNG images for better zoom functionality. Make sure you have Node.js/npm installed:
@@ -135,6 +135,11 @@ If not installed, download Node.js from https://nodejs.org/
 Run the documentation server:
 ```sh
 mkdocs serve
+```
+
+Alternatively, you can run mkdocs directly with `uv run` without installing the dependencies:
+```sh
+uv run --extra docs mkdocs serve
 ```
 
 

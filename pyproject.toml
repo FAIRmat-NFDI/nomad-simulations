@@ -53,6 +53,13 @@ dev = [
     'structlog>=1.0',
     'typing-extensions>=4.12',
 ]
+docs = [
+    'mkdocs>=1.6',
+    'mkdocs-material>=9.5',
+    'pymdown-extensions>=10.5',
+    'mkdocs-click',
+    'mkdocs-awesome-pages-plugin',
+]
 
 [tool.uv]
 build-constraint-dependencies = ["wheel<0.46"]
