@@ -5,7 +5,7 @@ site_author: FAIRmat consortium
 repo_url: https://github.com/fairmat-nfdi/nomad-simulations
 nav:
   - Home: index.md
-  - Generated schema:
+  - Schema Navigation:
       - Overview: schema/index.md
       - Methods & Parameters: schema/methods.md
       - Basis & Orbitals: schema/basis.md
