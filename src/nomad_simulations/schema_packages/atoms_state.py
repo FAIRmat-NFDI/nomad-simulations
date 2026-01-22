@@ -1299,6 +1299,3 @@ class CGBeadState(ParticleState):
             symbol = alts[0] if alts else None
 
         return symbol
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

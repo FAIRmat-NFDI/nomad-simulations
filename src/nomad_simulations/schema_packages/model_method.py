@@ -1109,9 +1109,6 @@ class SlaterKoster(TB):
 
     overlaps = SubSection(sub_section=SlaterKosterBond.m_def, repeats=True)
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class xTB(TB):
     """
@@ -1119,9 +1116,6 @@ class xTB(TB):
     """
 
     # ? Deprecate this
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class Photon(ArchiveSection):

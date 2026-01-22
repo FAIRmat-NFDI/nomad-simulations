@@ -38,9 +38,6 @@ class SpectralProfile(PhysicalProperty):
 
     frequencies = SubSection(sub_section=Energy.m_def)
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class DOSProfile(SpectralProfile):
     """

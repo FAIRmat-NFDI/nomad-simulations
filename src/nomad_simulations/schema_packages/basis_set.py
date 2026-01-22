@@ -241,8 +241,8 @@ class AtomCenteredFunction(ArchiveSection):
     shell_normalization = Quantity(
         type=np.float64,
         description="""
-            Unitless normalization factor applied to each contracted atomic orbital 
-            (or shell) to satisfy the chosen normalization convention. 
+            Unitless normalization factor applied to each contracted atomic orbital
+            (or shell) to satisfy the chosen normalization convention.
             It defines how normalized primitives are scaled when forming the final AO.
             """,
     )
@@ -538,7 +538,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
           - 'NAO': Numerical atomic orbitals
           - 'PC': Point charges (or ghost basis centers)
 
-        If a code uses a mixture (e.g., GTO + ECP), store them as separate `AtomCenteredBasisSet` sections, 
+        If a code uses a mixture (e.g., GTO + ECP), store them as separate `AtomCenteredBasisSet` sections,
         while referring to the relevant AtomsState.
         """,
     )
@@ -554,7 +554,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
         The role of this basis set in the calculation:
           - 'orbital': main orbital basis for the SCF
           - 'auxiliary_scf': used for RI-J or density fitting in SCF
-          - 'auxiliary_post_hf': used in MP2, CC, etc. 
+          - 'auxiliary_post_hf': used in MP2, CC, etc.
           - 'cabs': complementary auxiliary basis for explicitly correlated (F12) methods.
         """,
     )
@@ -608,7 +608,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
     n_total_basis_functions = Quantity(
         type=np.int32,
         description="""
-        The **total** number of contracted basis functions in this entire set. 
+        The **total** number of contracted basis functions in this entire set.
         This is typically the sum of all `(2l+1)` or cartesian expansions across
         all shells on all relevant atoms (within the scope of this section).
         """,

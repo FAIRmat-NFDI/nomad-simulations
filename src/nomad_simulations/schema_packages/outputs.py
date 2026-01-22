@@ -370,6 +370,3 @@ class TrajectoryOutputs(WorkflowOutputs):
         The elapsed simulated physical time since the start of the trajectory.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
