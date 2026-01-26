@@ -524,8 +524,14 @@ class ModelMethodElectronic(ModelMethod):
 
 class XCComponent(ArchiveSection):
     """
-    One exchange-correlation functional conform the LibXC format.
-    All data are extracted from its LibXC counterpart; α/ω are ONLY set by parsers when present in inputs/outputs.
+    One exchange-correlation functional component using LibXC nomenclature for standardization.
+
+    Note: LibXC IDs and labels are used to provide a unified taxonomy across different codes,
+    but do not necessarily indicate that the LibXC library was used in the calculation.
+    Check `XCFunctional.uses_libxc` to determine the actual implementation source.
+
+    All taxonomy data are extracted from the LibXC registry; hybrid parameters (α/ω) are
+    set by parsers when present in inputs/outputs.
 
     LibXC project page: https://libxc.gitlab.io/
     """
@@ -592,6 +598,13 @@ class XCComponent(ArchiveSection):
 class XCFunctional(ArchiveSection):
     """
     Normalized XC information for a calculation (possibly multi-component).
+
+    The `components` subsection uses LibXC nomenclature to provide standardized
+    taxonomy and metadata across different simulation codes. This standardization
+    does not imply that the LibXC library was actually used in the calculation.
+
+    To determine whether the simulation code used its internal XC implementation
+    or explicitly called the LibXC library, check the `uses_libxc` quantity.
     """
 
     components = SubSection(sub_section=XCComponent.m_def, repeats=True)
@@ -609,6 +622,15 @@ class XCFunctional(ArchiveSection):
     global_exact_exchange = Quantity(
         type=np.float64,
         description='Global HF mixing α (if any); derived from XC components.',
+    )
+
+    uses_libxc = Quantity(
+        type=bool,
+        default=False,
+        description="""
+        `True` if the calculation explicitly used the LibXC library for XC functional evaluation.
+        Has to be set by the parser. `False` indicates the code used its own internal implementation.
+        """,
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
@@ -1087,9 +1109,6 @@ class SlaterKoster(TB):
 
     overlaps = SubSection(sub_section=SlaterKosterBond.m_def, repeats=True)
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class xTB(TB):
     """
@@ -1097,9 +1116,6 @@ class xTB(TB):
     """
 
     # ? Deprecate this
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class Photon(ArchiveSection):
@@ -1321,6 +1337,88 @@ class BSE(ExcitedStateMethodology):
         Reference to the `Screening` section that the BSE calculation used to obtain the screened Coulomb interactions.
         """,
     )
+
+
+class TDDFT(ExcitedStateMethodology):
+    """
+    Time-dependent density functional theory settings. Captures both linear-response
+    and real-time propagation flavours.
+    Links to underlying ground-state calculations should be represented at workflow level.
+
+    References
+    ----------
+    • E. Runge, E. K. U. Gross, Phys. Rev. Lett. 52, 997 (1984)  (TDDFT formalism)
+    • M. A. L. Marques et al. (eds.), *Fundamentals of Time-Dependent Density Functional Theory*,
+      Springer (2012)
+    • A. Castro et al., Phys. Status Solidi B 243, 2465 (2006)  (Real-time TDDFT overview)
+    """
+
+    type = Quantity(
+        type=MEnum('linear_response', 'real_time'),
+        description="""
+        TDDFT flavour:
+          - linear_response: frequency-domain response (Casida/Sternheimer/Liouv.-Lanczos)
+          - real_time: explicit time propagation under a perturbation
+        """,
+    )
+
+    solver = Quantity(
+        type=MEnum('Casida', 'Sternheimer', 'Liouville-Lanczos', 'propagation'),
+        description="""
+        Numerical formulation / driver:
+          - Casida, Sternheimer, Liouville-Lanczos: linear-response formulations
+          - propagation: real-time propagation formulation
+        """,
+    )
+
+    approximation = Quantity(
+        type=MEnum('full', 'TDA'),
+        description="""
+        Approximation level of the TDDFT equations.
+
+        - full: full linear-response TDDFT (includes coupling terms)
+        - TDA : Tamm-Dancoff approximation (linear-response only)
+        """,
+    )
+
+    xc = SubSection(sub_section=XCFunctional.m_def, repeats=False)
+
+    field_polarization_ref = Quantity(
+        type=Photon,
+        description='External field / polarization used to drive the response or propagation.',
+    )
+
+    target_property = Quantity(
+        type=MEnum('absorption', 'emission', 'EELS', 'Raman', 'nonlinear'),
+        description='Intended spectral/response target of the TDDFT input.',
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self.name = 'TDDFT'
+
+        # Light consistency checks
+        if self.type == 'real_time':
+            if self.solver in ['Casida', 'Sternheimer', 'Liouville-Lanczos']:
+                logger.warning(
+                    'TDDFT.type is real_time but solver indicates a linear-response formulation.',
+                    type=self.type,
+                    solver=self.solver,
+                )
+            if self.approximation == 'TDA':
+                logger.warning(
+                    'TDDFT.approximation=TDA is not applicable for real-time TDDFT.',
+                    type=self.type,
+                    approximation=self.approximation,
+                )
+
+        if self.type == 'linear_response':
+            if self.solver == 'propagation':
+                logger.warning(
+                    'TDDFT.type is linear_response but solver is propagation.',
+                    type=self.type,
+                    solver=self.solver,
+                )
 
 
 # ? Is this class really necessary or should go in outputs.py?

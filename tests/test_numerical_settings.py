@@ -7,6 +7,7 @@ from nomad_simulations.schema_packages.numerical_settings import (
     KLinePath,
     KMesh,
     KSpaceFunctionalities,
+    Pseudopotential,
 )
 
 from . import logger
@@ -19,16 +20,19 @@ class TestKSpace:
     """
 
     @pytest.mark.parametrize(
-        'system_type, is_representative, reciprocal_lattice_vectors, result',
+        'system_type, is_representative, reciprocal_lattice_vectors, model_systems, result',
         [
-            ('bulk', False, None, None),
-            ('atom', True, None, None),
+            ('bulk', False, None, 'default', None),
+            ('atom', True, None, 'default', None),
             (
                 'bulk',
                 True,
                 [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                'default',
                 [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
             ),
+            # Test None model_systems case
+            ('bulk', True, None, None, None),
         ],
     )
     def test_normalize(
@@ -36,6 +40,7 @@ class TestKSpace:
         system_type: str | None,
         is_representative: bool,
         reciprocal_lattice_vectors: list[list[float]] | None,
+        model_systems: str | None,
         result: list[list[float]],
     ):
         """
@@ -48,6 +53,15 @@ class TestKSpace:
         )
         k_space = simulation.model_method[0].numerical_settings[0]
         assert k_space.name == 'KSpace'
+
+        # Mock m_xpath to return None if model_systems parameter is None
+        if model_systems is None:
+
+            def mock_xpath(path, dict=False):
+                return None
+
+            k_space.m_xpath = mock_xpath
+
         k_space.normalize(EntryArchive(), logger)
         if k_space.reciprocal_lattice_vectors is not None:
             value = k_space.reciprocal_lattice_vectors.to('1/angstrom').magnitude / (
@@ -98,29 +112,48 @@ class TestKSpaceFunctionalities:
         )
         assert check == result
 
-    def test_resolve_high_symmetry_points(self):
+    @pytest.mark.parametrize(
+        'model_systems_input, expected_result',
+        [
+            # Valid case: model_systems with proper symmetry
+            (
+                'valid',
+                {
+                    'Gamma': [0, 0, 0],
+                    'M': [0.5, 0.5, 0],
+                    'R': [0.5, 0.5, 0.5],
+                    'X': [0, 0.5, 0],
+                },
+            ),
+            # None case: model_systems is None
+            (None, None),
+        ],
+    )
+    def test_resolve_high_symmetry_points(self, model_systems_input, expected_result):
         """
-        Test the `resolve_high_symmetry_points` method. Only testing the valid situation in which the `ModelSystem` normalization worked.
+        Test the `resolve_high_symmetry_points` method with valid and None model_systems.
         """
-        # `ModelSystem.normalize()` need to extract `bulk` as a type.
-        simulation = generate_k_space_simulation(
-            pbc=[True, True, True],
-        )
-        model_systems = simulation.model_system
-        # normalize to extract symmetry
-        simulation.model_system[0].normalize(EntryArchive(), logger)
+        if model_systems_input == 'valid':
+            # `ModelSystem.normalize()` need to extract `bulk` as a type.
+            simulation = generate_k_space_simulation(
+                pbc=[True, True, True],
+            )
+            model_systems = simulation.model_system
+            # normalize to extract symmetry
+            simulation.model_system[0].normalize(EntryArchive(), logger)
+        else:
+            model_systems = model_systems_input
 
         # Testing the functionality method
         high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
             model_systems=model_systems, logger=logger
         )
-        assert len(high_symmetry_points) == 4
-        assert high_symmetry_points == {
-            'Gamma': [0, 0, 0],
-            'M': [0.5, 0.5, 0],
-            'R': [0.5, 0.5, 0.5],
-            'X': [0, 0.5, 0],
-        }
+
+        if expected_result is None:
+            assert high_symmetry_points is None
+        else:
+            assert len(high_symmetry_points) == 4
+            assert high_symmetry_points == expected_result
 
 
 class TestKMesh:

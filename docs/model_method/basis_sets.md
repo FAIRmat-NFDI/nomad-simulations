@@ -49,7 +49,44 @@ It can even derive the former from the latter via normalization.
 
 ### Pseudopotentials
 
-Under construction...
+Pseudopotentials replace the strong Coulomb potential of the nucleus and tightly-bound core electrons with a weaker effective potential acting on valence electrons. This approximation dramatically reduces the number of basis functions needed in plane-wave calculations while preserving chemical behavior.
+
+The `Pseudopotential` class stores metadata identifying which pseudopotential files were used. The actual numerical data (radial functions, projectors, augmentation charges) resides in external files (POTCAR, UPF, psp8, etc.) that are typically not archived due to size and licensing restrictions.
+
+#### Type Classification
+
+The `type` field classifies pseudopotentials by their fundamental formalism:
+
+- **NC** (Norm-conserving): Maintains charge norm in the pseudized core region. Highest transferability across chemical environments but requires higher plane-wave cutoffs. Generated using methods like Troullier-Martins or optimized dual-space approaches.
+
+- **US** (Ultrasoft): Vanderbilt's formalism that relaxes norm-conservation for significantly softer pseudopotentials. Lower cutoffs reduce computational cost but may sacrifice transferability. All ultrasoft pseudopotentials follow the same fundamental formalism.
+
+- **PAW** (Projector Augmented Wave): All-electron frozen-core method that reconstructs the full wavefunction within augmentation spheres. Standard PAW uses non-norm-conserving partial waves optimized for ground-state DFT.
+
+- **NC-PAW**: PAW with norm-conserving partial waves. More expensive than standard PAW but provides better scattering properties for high-energy states.
+
+- **NC-PAW-GW**: NC-PAW optimized for GW/BSE calculations. Includes additional projectors at higher energies to accurately describe quasiparticle states far above the Fermi level. Standard PAW and US systematically underestimate scattering into high-energy unoccupied states, which is critical for many-body perturbation theory.
+
+#### Cross-Code Terminology
+
+Different DFT codes use varying terminology and file organization schemes for pseudopotentials. The table below maps common code-specific naming conventions to the standardized schema fields:
+
+| Code | File Format | Hardness Indicators | Type Detection | Standard Sets |
+|------|-------------|---------------------|----------------|---------------|
+| **VASP** | POTCAR (proprietary) | `_h` (hard), `_s` (soft) suffixes; ENMAX/ENMIN in header | LPAW=T → PAW; LULTRA=T → US; _GW suffix → NC-PAW-GW | Licensed with VASP; organized by XC functional (PBE, LDA, etc.) |
+| **Quantum ESPRESSO** | UPF (XML) | Type-dependent recommended cutoffs; ecutwfc/ecutrho in input | Header `pseudo_type` field (NC/US/PAW); `paw_as_gipaw` flag | SSSP (precision/efficiency), PseudoDojo (standard/stringent), Quantum ESPRESSO library |
+| **CASTEP** | UPF or proprietary | COARSE/MEDIUM/FINE precision levels; `cut_off_energy` in file | Inferred from file content structure | "On-the-fly" generation (OTFG); NCP/USP libraries organized by functional |
+| **ABINIT** | psp8 (text), UPF | `high`/`low` suffixes in PseudoDojo sets; `ecut` recommendation in header | `pspcod` identifier (Troullier-Martins, HGH, PAW); format version | PseudoDojo (NC and PAW-XML), JTH table (PAW), HGH tables |
+
+**Notes:**
+
+- Hardness terminology across codes refers to the same underlying physics: smaller core radii require higher plane-wave cutoffs but provide better transferability and accuracy.
+
+- VASP, QE, and CASTEP all support PAW, but implementation details differ. VASP's PAW follows Kresse & Joubert (1999), while QE implements the original Blöchl formulation.
+
+- The Morrison-Bylander-Kleinman (MBK) separable form is an implementation technique used across all types in modern codes, not a distinct pseudopotential classification.
+
+- Standard pseudopotential libraries (SSSP, PseudoDojo) provide validation data including recommended cutoffs and accuracy metrics (Δ-gauge). These should be used when available rather than arbitrary cutoff choices.
 
 ## LAPW
 

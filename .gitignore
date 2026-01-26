@@ -172,3 +172,7 @@ todos*
 questions*
 warnings*
 important*
+
+# Claude Code artifacts
+.claude/agents/
+*_contributions_*.md

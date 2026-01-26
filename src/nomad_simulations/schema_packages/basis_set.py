@@ -1,6 +1,6 @@
 import itertools
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from scipy import constants as const
 
@@ -241,8 +241,8 @@ class AtomCenteredFunction(ArchiveSection):
     shell_normalization = Quantity(
         type=np.float64,
         description="""
-            Unitless normalization factor applied to each contracted atomic orbital 
-            (or shell) to satisfy the chosen normalization convention. 
+            Unitless normalization factor applied to each contracted atomic orbital
+            (or shell) to satisfy the chosen normalization convention.
             It defines how normalized primitives are scaled when forming the final AO.
             """,
     )
@@ -333,9 +333,20 @@ class AtomCenteredFunction(ArchiveSection):
 
 class EffectiveCorePotential(BasisSetComponent):
     """
-    TREXIO-style ECP storage:
+    TREXIO-style ECP storage for quantum chemistry calculations with Gaussian basis sets.
+
+    Effective Core Potentials (ECPs) replace core electrons with analytical potentials
+    expressed as sums of Gaussian functions. This representation is used in quantum chemistry
+    codes (Gaussian, ORCA, Molpro, Q-Chem, NWChem) to reduce computational cost while
+    maintaining accuracy for valence electrons.
+
+    Storage format (TREXIO convention):
       - Per-nucleus arrays: z_core[nucleus], max_ang_mom_plus_1[nucleus]
       - Flat list of projector items: size ecp_num with nucleus_index, ang_mom, exponent, coefficient, power
+
+    Note: This class stores analytical ECPs for Gaussian basis set codes. It does NOT represent
+    pseudopotentials used in plane-wave DFT codes (PAW, ultrasoft, norm-conserving). For metadata
+    about plane-wave pseudopotentials, see the `Pseudopotential` class in numerical_settings.py.
     """
 
     # Optional human label
@@ -527,7 +538,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
           - 'NAO': Numerical atomic orbitals
           - 'PC': Point charges (or ghost basis centers)
 
-        If a code uses a mixture (e.g., GTO + ECP), store them as separate `AtomCenteredBasisSet` sections, 
+        If a code uses a mixture (e.g., GTO + ECP), store them as separate `AtomCenteredBasisSet` sections,
         while referring to the relevant AtomsState.
         """,
     )
@@ -543,7 +554,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
         The role of this basis set in the calculation:
           - 'orbital': main orbital basis for the SCF
           - 'auxiliary_scf': used for RI-J or density fitting in SCF
-          - 'auxiliary_post_hf': used in MP2, CC, etc. 
+          - 'auxiliary_post_hf': used in MP2, CC, etc.
           - 'cabs': complementary auxiliary basis for explicitly correlated (F12) methods.
         """,
     )
@@ -597,7 +608,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
     n_total_basis_functions = Quantity(
         type=np.int32,
         description="""
-        The **total** number of contracted basis functions in this entire set. 
+        The **total** number of contracted basis functions in this entire set.
         This is typically the sum of all `(2l+1)` or cartesian expansions across
         all shells on all relevant atoms (within the scope of this section).
         """,

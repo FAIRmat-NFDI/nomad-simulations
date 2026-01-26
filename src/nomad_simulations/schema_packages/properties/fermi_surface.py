@@ -28,6 +28,3 @@ class FermiSurface(PhysicalProperty):
         Number of bands / eigenvalues.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

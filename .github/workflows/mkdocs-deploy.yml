@@ -3,8 +3,8 @@ name: Deploy MkDocs Site
 on:
   push:
     branches:
-      - main # Triggers deployment on push to the main branch
- 
+      - develop # Triggers deployment on push to the develop branch
+
 permissions:
   contents: write
 

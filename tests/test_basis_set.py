@@ -25,7 +25,7 @@ from nomad_simulations.schema_packages.basis_set import (
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
-from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
+from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
 from tests.conftest import refs_apw
 
 from . import logger
@@ -142,7 +142,7 @@ def test_full_apw(
         data=Simulation(
             model_system=[
                 ModelSystem(
-                    cell=[AtomicCell()],
+                    representations=[Representation()],
                     particle_states=[AtomsState(chemical_symbol='H')],
                 )
             ],
@@ -615,7 +615,7 @@ def test_additional_basis_functions_assigned_to_subset_of_atoms() -> None:
         data=Simulation(
             model_system=[
                 ModelSystem(
-                    cell=[AtomicCell()],
+                    representations=[Representation()],
                     particle_states=[
                         AtomsState(chemical_symbol='O'),  # idx 0
                         AtomsState(chemical_symbol='H'),  # idx 1
@@ -716,7 +716,7 @@ def test_mixed_orbital_aux_ecp() -> None:
         data=Simulation(
             model_system=[
                 ModelSystem(
-                    cell=[AtomicCell()],
+                    representations=[Representation()],
                     particle_states=[
                         AtomsState(
                             chemical_symbol='H'

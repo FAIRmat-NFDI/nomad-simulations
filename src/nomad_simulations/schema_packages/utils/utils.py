@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 import inspect
 from collections import Counter
@@ -11,7 +13,6 @@ from nomad.utils import get_logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-    from typing import Optional
 
     from structlog.stdlib import BoundLogger
 
@@ -19,9 +20,9 @@ DEFAULT_LOGGER = get_logger(__name__)
 
 
 def log(
-    function: 'Callable' = None,
-    logger: 'BoundLogger' = DEFAULT_LOGGER,
-    exc_msg: str = None,
+    function: Callable | None = None,
+    logger: BoundLogger = DEFAULT_LOGGER,
+    exc_msg: str | None = None,
     exc_raise: bool = False,
     default: Any = None,
 ):
@@ -62,13 +63,13 @@ def log(
 
         return wrapper
 
-    return _log(function) if function else _log
+    return _log(function) if function is not None else _log
 
 
 def get_sibling_section(
-    section: 'ArchiveSection',
+    section: ArchiveSection,
     sibling_section_name: str,
-    logger: 'BoundLogger',
+    logger: BoundLogger,
     index_sibling: int = 0,
 ) -> ArchiveSection | None:
     """
@@ -197,7 +198,7 @@ def get_composition(children_names: list[str]) -> str | None:
     return ''.join(parts) if parts else None
 
 
-def catch_not_implemented(func: 'Callable') -> 'Callable':
+def catch_not_implemented(func: Callable) -> Callable:
     """
     Decorator to default comparison functions outside the same class to `False`.
     """

@@ -1,5 +1,3 @@
-from typing import Optional
-
 import ase
 import numpy as np
 import pytest
@@ -13,15 +11,14 @@ from nomad_simulations.schema_packages.atoms_state import (
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
-    AtomicCell,
-    Cell,
     ChemicalFormula,
     ModelSystem,
+    Representation,
     Symmetry,
 )
 
 from . import logger
-from .conftest import generate_atomic_cell
+from .conftest import generate_model_system
 
 
 class TestSymmetry:
@@ -76,26 +73,44 @@ class TestModelSystem:
 
     def test_to_ase_atoms(self):
         """
-        Verify that a ModelSystem with positions, a first cell, and valid AtomsState
+        Verify that a ModelSystem with positions, lattice vectors, and valid AtomsState
         entries produces a valid ASE Atoms object with correct cell and symbols.
+        Tests both original data and representation data.
         """
         sys = ModelSystem(is_representative=True)
         sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5]]) * ureg.angstrom
-        c = Cell(
-            lattice_vectors=np.eye(3) * 4.0 * ureg.angstrom,
-            periodic_boundary_conditions=[True, True, True],
+        # Set original cell data at ModelSystem level
+        sys.lattice_vectors = np.eye(3) * 4.0 * ureg.angstrom
+        sys.periodic_boundary_conditions = [True, True, True]
+
+        # Add a representation
+        rep = Representation(
+            lattice_vectors=np.eye(3) * 5.0 * ureg.angstrom,
+            periodic_boundary_conditions=[True, True, False],
+            name='modified',
         )
-        sys.cell.append(c)
+        sys.representations.append(rep)
+
         # Add AtomsState entries for 2 atoms
         a1 = AtomsState(chemical_symbol='Na')
         a2 = AtomsState(chemical_symbol='Cl')
         sys.particle_states.extend([a1, a2])
 
-        ase_atoms = sys.to_ase_atoms(logger=logger)
-        assert ase_atoms is not None
-        assert len(ase_atoms) == 2
-        assert np.allclose(ase_atoms.get_cell(), np.eye(3) * 4.0)
-        assert ase_atoms.get_chemical_symbols() == ['Na', 'Cl']
+        # Test using original data (representation_index=None)
+        ase_atoms_orig = sys.to_ase_atoms(representation_index=None, logger=logger)
+        assert ase_atoms_orig is not None
+        assert len(ase_atoms_orig) == 2
+        assert np.allclose(ase_atoms_orig.get_cell(), np.eye(3) * 4.0)
+        assert ase_atoms_orig.get_pbc().tolist() == [True, True, True]
+        assert ase_atoms_orig.get_chemical_symbols() == ['Na', 'Cl']
+
+        # Test using representation data (representation_index=0)
+        ase_atoms_rep = sys.to_ase_atoms(representation_index=0, logger=logger)
+        assert ase_atoms_rep is not None
+        assert len(ase_atoms_rep) == 2
+        assert np.allclose(ase_atoms_rep.get_cell(), np.eye(3) * 5.0)
+        assert ase_atoms_rep.get_pbc().tolist() == [True, True, False]
+        assert ase_atoms_rep.get_chemical_symbols() == ['Na', 'Cl']
 
     def test_to_ase_atoms_blocks_non_element_symbols(self):
         """
@@ -105,18 +120,16 @@ class TestModelSystem:
         ms = ModelSystem()
         ms.particle_states.append(CGBeadState(bead_symbol='B1'))
         ms.positions = np.zeros((1, 3)) * ureg.angstrom
-        ms.cell.append(
-            Cell(
-                lattice_vectors=np.eye(3) * ureg.angstrom,
-                periodic_boundary_conditions=[False, False, False],
-            )
-        )
-        assert ms.to_ase_atoms(logger=logger) is None
+        # Set cell data at ModelSystem level
+        ms.lattice_vectors = np.eye(3) * ureg.angstrom
+        ms.periodic_boundary_conditions = [False, False, False]
+
+        assert ms.to_ase_atoms(representation_index=None, logger=logger) is None
 
     def test_from_ase_atoms(self):
         """
-        Verify that from_ase_atoms() populates positions, cell geometry/PBC, and
-        particle_states from a given ASE Atoms object.
+        Verify that `from_ase_atoms` creates a `ModelSystem` from ASE Atoms object.
+        Tests the updated function that returns only `ModelSystem` (no tuple).
         """
         ase_atoms = ase.Atoms(
             'CO',
@@ -124,32 +137,176 @@ class TestModelSystem:
             cell=np.eye(3) * 4.0,
             pbc=[True, True, True],
         )
-        sys = ModelSystem()
-        sys.cell.append(
-            Cell(
-                lattice_vectors=(np.eye(3) * 4.0 * ureg.angstrom),
-                periodic_boundary_conditions=[True, True, True],
-            )
-        )
-        sys.from_ase_atoms(ase_atoms, logger=logger)
+
+        sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
 
         assert sys.n_particles == 2
         assert sys.positions.shape == (2, 3)
-        # Check that the first cell has its lattice_vectors updated; using complete_cell from ASE
+
+        # Check the ModelSystem has correct lattice_vectors and PBC at top level
         expected_cell = ase.geometry.complete_cell(ase_atoms.get_cell()) * ureg.angstrom
         assert np.allclose(
-            sys.cell[0].lattice_vectors.to('angstrom').magnitude,
+            sys.lattice_vectors.to('angstrom').magnitude,
             expected_cell.to('angstrom').magnitude,
         )
         # Check PBC
         assert np.array_equal(
-            np.array(sys.cell[0].periodic_boundary_conditions),
+            np.array(sys.periodic_boundary_conditions),
             np.array(ase_atoms.get_pbc()),
         )
         # Check particle_states references
         assert len(sys.particle_states) == 2
         syms = [st.chemical_symbol for st in sys.particle_states]
         assert syms == ['C', 'O']
+
+        # Check volume is set for 3D system
+        assert sys.volume is not None
+        # Volume should be 64.0 Angstrom^3 = 64.0e-30 m^3 (since 1 Angstrom = 1e-10 m)
+        assert sys.volume.magnitude == pytest.approx(64.0e-30, rel=1e-6)
+
+    def test_from_ase_atoms_enhanced_properties(self):
+        """
+        Test that `from_ase_atoms` correctly maps enhanced properties like
+        charges, tags, velocities, and fractional coordinates.
+        """
+        # Create ASE atoms with additional properties
+        ase_atoms = ase.Atoms(
+            ['H', 'H', 'O'],
+            positions=[[0, 0, 0], [0.76, 0.59, 0], [0, 0.96, 0]],
+            cell=[10, 10, 10],
+            pbc=[True, True, True],
+        )
+
+        # Set additional properties
+        ase_atoms.set_initial_charges([0.6, 0.7, -1.0])
+        ase_atoms.set_tags([1, 1, 2])
+        ase_atoms.set_velocities([[0.1, 0.2, 0.0], [0.0, -0.1, 0.0], [0.0, 0.0, 0.1]])
+
+        sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
+
+        # Check basic properties
+        assert sys.n_particles == 3
+        assert len(sys.particle_states) == 3
+
+        # Check charges were mapped (rounded to integers)
+        charges = [ps.charge for ps in sys.particle_states]
+        assert charges == [
+            1,
+            1,
+            -1,
+        ]  # 0.6 rounds to 1, 0.7 rounds to 1, -1.0 rounds to -1
+
+        # Check tags were mapped to labels
+        labels = [ps.label for ps in sys.particle_states]
+        assert labels == ['H_1', 'H_1', 'O_2']
+
+        # Check velocities were mapped
+        assert sys.velocities is not None
+        assert sys.velocities.shape == (3, 3)
+        expected_velocities = np.array(
+            [[0.1, 0.2, 0.0], [0.0, -0.1, 0.0], [0.0, 0.0, 0.1]]
+        )
+        assert np.allclose(
+            sys.velocities.to('angstrom/second').magnitude, expected_velocities
+        )
+
+        # Check fractional coordinates were computed
+        assert sys.fractional_coordinates is not None
+        assert sys.fractional_coordinates.shape == (3, 3)
+
+        # Check volume for 3D system
+        assert sys.volume is not None
+        # Volume should be 1000 Angstrom^3 = 1e-27 m^3 (since 1 Angstrom = 1e-10 m)
+        assert sys.volume.magnitude == pytest.approx(1e-27, rel=1e-6)
+
+    @pytest.mark.parametrize(
+        'cell, pbc, expected_property, expected_value',
+        [
+            # 3D system - should have volume
+            (
+                [[2.7, 0, 0], [0, 2.7, 0], [0, 0, 2.7]],
+                [True, True, True],
+                'volume',
+                19.683e-30,  # 19.683 Angstrom^3 = 19.683e-30 m^3
+            ),
+            # 2D system with vacuum - should have volume (includes vacuum)
+            (
+                [[2.84, 0, 0], [0, 2.46, 0], [0, 0, 10.0]],
+                [True, True, False],
+                'volume',
+                69.864e-30,  # 69.864 Angstrom^3 = 69.864e-30 m^3
+            ),
+            # 1D system with vacuum - should have volume (includes vacuum)
+            (
+                [[1.48, 0, 0], [0, 10.0, 0], [0, 0, 10.0]],
+                [True, False, False],
+                'volume',
+                148.0e-30,  # 148.0 Angstrom^3 = 148.0e-30 m^3
+            ),
+            # True 2D system - should have area
+            (
+                [[2.46, 0, 0], [1.23, 2.13, 0], [0, 0, 0]],
+                [True, True, False],
+                'area',
+                5.2398e-20,  # 5.2398 Angstrom^2 = 5.2398e-20 m^2
+            ),
+            # True 1D system - should have length
+            (
+                [[1.48, 0, 0], [0, 0, 0], [0, 0, 0]],
+                [True, False, False],
+                'length',
+                1.48e-10,  # 1.48 Angstrom = 1.48e-10 m
+            ),
+        ],
+    )
+    def test_from_ase_atoms_dimensionality(
+        self, cell, pbc, expected_property, expected_value
+    ):
+        """
+        Test that `from_ase_atoms` correctly handles different dimensionality systems
+        and sets the appropriate geometric property (volume/area/length).
+        """
+        ase_atoms = ase.Atoms(['C'], positions=[[0, 0, 0]], cell=cell, pbc=pbc)
+
+        sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
+
+        # Check that the expected property is set
+        if expected_property == 'volume':
+            assert sys.volume is not None
+            assert sys.volume.magnitude == pytest.approx(expected_value, rel=1e-3)
+            assert sys.area is None
+            assert sys.length is None
+        elif expected_property == 'area':
+            assert sys.area is not None
+            assert sys.area.magnitude == pytest.approx(expected_value, rel=1e-3)
+            assert sys.volume is None
+            assert sys.length is None
+        elif expected_property == 'length':
+            assert sys.length is not None
+            assert sys.length.magnitude == pytest.approx(expected_value, rel=1e-3)
+            assert sys.volume is None
+            assert sys.area is None
+
+    def test_from_ase_atoms_molecule(self):
+        """
+        Test that `from_ase_atoms` correctly handles 0D molecular systems
+        (no geometric extents set).
+        """
+        ase_atoms = ase.Atoms(['H', 'H'], positions=[[0, 0, 0], [0.74, 0, 0]])
+
+        sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
+
+        assert sys.n_particles == 2
+        assert len(sys.particle_states) == 2
+
+        # No geometric extents should be set for molecules
+        assert sys.volume is None
+        assert sys.area is None
+        assert sys.length is None
+
+        # Should still have positions
+        assert sys.positions is not None
+        assert sys.positions.shape == (2, 3)
 
     @pytest.mark.parametrize(
         'positions, pbc, expected_type, expected_dim',
@@ -171,61 +328,253 @@ class TestModelSystem:
         """
         sys = ModelSystem()
         sys.positions = positions * ureg.angstrom
-        c = Cell(
+        c = Representation(
             lattice_vectors=np.eye(3) * 3.0 * ureg.angstrom,
             periodic_boundary_conditions=pbc,
         )
-        sys.cell.append(c)
+        sys.representations.append(c)
         # Add enough AtomsState entries to match len(positions)
         for _ in range(len(positions)):
             sys.particle_states.append(AtomsState(chemical_symbol='H'))
-        ase_atoms = sys.to_ase_atoms(logger=logger)
+        ase_atoms = sys.to_ase_atoms(representation_index=0, logger=logger)
         stype, dim = sys.resolve_system_type_and_dimensionality(
             ase_atoms, logger=logger
         )
         assert stype == expected_type
         assert dim == expected_dim
 
+    @pytest.mark.parametrize(
+        'lattice_vectors, positions, expected_fractional, description',
+        [
+            (
+                np.eye(3) * 4.0,
+                [[0, 0, 0], [2, 0, 0], [0, 2, 2]],
+                [[0.0, 0.0, 0.0], [0.5, 0.0, 0.0], [0.0, 0.5, 0.5]],
+                'cubic_cell',
+            ),
+            (
+                np.array(
+                    [
+                        [3.0, 0, 0],
+                        [3.0 * np.cos(np.pi / 3), 3.0 * np.sin(np.pi / 3), 0],
+                        [0, 0, 5.0],
+                    ]
+                ),
+                [[2.25, 1.29903811, 2.5]],
+                [[0.5, 0.5, 0.5]],
+                'hexagonal_cell',
+            ),
+            (
+                np.eye(3) * 2.0,
+                [[0, 0, 0]],
+                [[0.0, 0.0, 0.0]],
+                'origin',
+            ),
+            (
+                np.eye(3) * 2.0,
+                [[2, 2, 2]],
+                [[1.0, 1.0, 1.0]],
+                'unit_cell_corner',
+            ),
+            (
+                np.eye(3) * 2.0,
+                [[4, 0, 0], [0, 6, 0]],
+                [[2.0, 0.0, 0.0], [0.0, 3.0, 0.0]],
+                'outside_unit_cell',
+            ),
+            (
+                np.eye(3) * 2.0,
+                [[-2, 0, 0], [0, -4, 0]],
+                [[-1.0, 0.0, 0.0], [0.0, -2.0, 0.0]],
+                'negative_positions',
+            ),
+            (
+                np.eye(3) * 0.1,
+                [[0.05, 0.05, 0.05]],
+                [[0.5, 0.5, 0.5]],
+                'very_small_cell',
+            ),
+            (
+                np.eye(3) * 1000.0,
+                [[500, 500, 500]],
+                [[0.5, 0.5, 0.5]],
+                'very_large_cell',
+            ),
+            (
+                np.diag([2.0, 3.0, 4.0]),
+                [[1, 1.5, 2]],
+                [[0.5, 0.5, 0.5]],
+                'orthorhombic',
+            ),
+            (
+                np.array([[3.0, 0, 0], [0, 4.0, 0], [1.0, 0, 5.0]]),
+                [[1.5, 2.0, 2.5]],
+                [[0.33333333, 0.5, 0.5]],
+                'monoclinic',
+            ),
+        ],
+    )
+    def test_compute_fractional_coordinates_valid(
+        self, lattice_vectors, positions, expected_fractional, description
+    ):
+        """
+        Test compute_fractional_coordinates with valid inputs covering various cell types
+        and edge cases like positions outside unit cell, negative positions, and extreme sizes.
+        """
+        sys = ModelSystem(is_representative=True)
+        sys.lattice_vectors = lattice_vectors * ureg.angstrom
+        sys.positions = np.array(positions) * ureg.angstrom
+
+        fractional = sys.compute_fractional_coordinates()
+
+        assert fractional is not None, f'Failed for {description}'
+        np.testing.assert_allclose(
+            fractional,
+            expected_fractional,
+            rtol=1e-5,
+            err_msg=f'Mismatch for {description}',
+        )
+
+    @pytest.mark.parametrize(
+        'lattice_vectors, positions, description',
+        [
+            (np.zeros((3, 3)), [[0, 0, 0]], 'zero_lattice'),
+            (
+                np.array([[1, 0, 0], [0, 1, 0], [1, 1, 0]]),
+                [[0.5, 0.5, 0]],
+                'coplanar_vectors',
+            ),
+            (
+                np.array([[1, 0, 0], [2, 0, 0], [0, 1, 0]]),
+                [[1, 1, 0]],
+                'linearly_dependent',
+            ),
+            (np.eye(3), None, 'no_positions'),
+            (None, [[0, 0, 0]], 'no_lattice_vectors'),
+            (None, None, 'both_none'),
+        ],
+    )
+    def test_compute_fractional_coordinates_edge_cases(
+        self, lattice_vectors, positions, description
+    ):
+        """
+        Test compute_fractional_coordinates returns None for edge cases:
+        degenerate cells, missing data, singular matrices.
+        """
+        sys = ModelSystem(is_representative=True)
+
+        if lattice_vectors is not None:
+            sys.lattice_vectors = lattice_vectors * ureg.angstrom
+        if positions is not None:
+            sys.positions = np.array(positions) * ureg.angstrom
+
+        fractional = sys.compute_fractional_coordinates()
+
+        assert fractional is None, f'Should return None for {description}'
+
     def test_normalize(self):
         """
         Test the full normalization sequence for ModelSystem:
           - If representative, run type/dimensionality, symmetry, chemical formula, etc.
         """
-        # Build a minimal model system with top-level positions and an AtomicCell
-        sys = ModelSystem(is_representative=True)
-        sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5], [1, 1, 1]]) * ureg.angstrom
-        ac = generate_atomic_cell(
+        # Build a minimal model system with top-level positions and a Representation
+        sys = generate_model_system(
+            is_representative=True,
+            positions=[[0, 0, 0], [0.5, 0, 0.5], [1, 1, 1]],
             lattice_vectors=[[3, 0, 0], [0, 3, 0], [0, 0, 3]],
-            periodic_boundary_conditions=[True, True, True],
+            pbc=[True, True, True],
             chemical_symbols=['H', 'H', 'O'],
-            atomic_numbers=[1, 1, 8],
+            orbitals_symbols=[['s'], ['s'], ['s']],
         )
-        sys.cell.append(ac)
-        # Add a Symmetry, ChemicalFormula
         sym = Symmetry()
         sys.symmetry.append(sym)
-        chem = ChemicalFormula()
-        sys.chemical_formula = chem
-        # Add 3 AtomsState entries for H,H,O
-        for s, num in zip(['H', 'H', 'O'], [1, 1, 8]):
-            sys.particle_states.append(AtomsState(chemical_symbol=s, atomic_number=num))
 
-        # Normalize
         sys.normalize(EntryArchive(), logger=logger)
+
         # Check basic results
         assert sys.type in ['molecule / cluster', 'bulk']
         assert sys.dimensionality is not None
         if sys.chemical_formula is not None:
             # If the formula is expected "H2O," check that:
             assert sys.chemical_formula.descriptive == 'H2O'
-        # Extra cells (primitive/conventional) are added only if there is a parent ModelSystem.
-        # For a top-level ModelSystem (with no parent), we expect only the originally appended cell.
+        # Extra primitive/conventional cells are added to the symmetry section only if there is a parent ModelSystem.
+        # For a top-level ModelSystem (with no parent), we expect only the originally appended representation.
         if sys.m_parent is not None:
-            if len(sys.cell) >= 2:
-                assert sys.cell[1].type in ['primitive', 'conventional']
+            # Check if primitive or conventional cells are present in the representations
+            primitive = None
+            conventional = None
+            for rep in sys.representations:
+                if getattr(rep, 'name', None) == 'primitive':
+                    primitive = rep
+                if getattr(rep, 'name', None) == 'conventional':
+                    conventional = rep
+            if primitive:
+                assert primitive.name == 'primitive'
+            if conventional:
+                assert conventional.name == 'conventional'
         else:
-            # Top-level system: expect only one cell.
-            assert len(sys.cell) == 1
+            # Top-level system: expect only one representation.
+            assert len(sys.representations) == 1
+
+    @pytest.mark.parametrize(
+        'lattice_vectors, pbc, should_clear, description',
+        [
+            (None, [True, True, True], True, 'None lattice_vectors with list PBC'),
+            (
+                None,
+                np.array([True, True, True]),
+                True,
+                'None lattice_vectors with array PBC',
+            ),
+            (
+                np.array([]).reshape(0, 3) * ureg.angstrom,
+                [False],
+                True,
+                'empty array lattice_vectors',
+            ),
+            (
+                np.eye(3) * 4.0 * ureg.angstrom,
+                [True, True, True],
+                False,
+                'valid lattice_vectors should not clear',
+            ),
+            (
+                np.eye(3) * 4.0 * ureg.angstrom,
+                np.array([True, False, True]),
+                False,
+                'valid lattice_vectors with array PBC',
+            ),
+        ],
+    )
+    def test_normalize_clears_pbc_without_lattice_vectors(
+        self, caplog, lattice_vectors, pbc, should_clear, description
+    ):
+        """
+        Test that normalize() clears periodic_boundary_conditions when
+        lattice_vectors are absent or empty, and logs a warning.
+        """
+        import logging
+
+        sys = ModelSystem(is_representative=True)
+        sys.positions = np.array([[0, 0, 0], [0.5, 0, 0.5]]) * ureg.angstrom
+        sys.periodic_boundary_conditions = pbc
+        sys.lattice_vectors = lattice_vectors
+        for sym in ['H', 'O']:
+            sys.particle_states.append(AtomsState(chemical_symbol=sym))
+
+        with caplog.at_level(logging.WARNING):
+            sys.normalize(EntryArchive(), logger=logger)
+
+        if should_clear:
+            assert sys.periodic_boundary_conditions == [], f'Failed for {description}'
+            assert any(
+                'Lattice vectors are not defined' in rec.message
+                for rec in caplog.records
+            ), f'Warning not logged for {description}'
+        else:
+            assert sys.periodic_boundary_conditions != [], (
+                f'PBC incorrectly cleared for {description}'
+            )
 
 
 @pytest.mark.parametrize('branching', [True, False])
@@ -255,10 +604,10 @@ def make_water_cu_system(n_h2o: int) -> ModelSystem:
     and with proper particle_states and particle_indices.
     """
     root = ModelSystem(is_representative=True)
-    # Add a trivial AtomicCell so normalization doesn't bail out
-    ac = AtomicCell(periodic_boundary_conditions=[False, False, False])
+    # Add a trivial Representation so normalization doesn't bail out
+    ac = Representation(periodic_boundary_conditions=[False, False, False])
     ac.positions = np.zeros((0, 3)) * ureg.angstrom
-    root.cell.append(ac)
+    root.representations.append(ac)
 
     # group_H2O branch
     group = ModelSystem(branch_label='group_H2O', is_representative=False)

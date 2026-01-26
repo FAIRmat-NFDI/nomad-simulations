@@ -11,6 +11,7 @@ from nomad_simulations.schema_packages.force_field import (
     CosineAngle,
     CubicBond,
     FeneBond,
+    ForceCalculations,
     ForceField,
     HarmonicAngle,
     HarmonicAngleDihedralCoupling,
@@ -33,7 +34,6 @@ from nomad_simulations.schema_packages.force_field import (
     UreyBradleyAngle,
 )
 from nomad_simulations.schema_packages.general import Simulation
-from nomad_simulations.schema_packages.numerical_settings import ForceCalculations
 
 # from structlog.stdlib import BoundLogger
 from . import logger

@@ -17,7 +17,7 @@ from nomad_simulations.schema_packages.atoms_state import (
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import ModelMethod
-from nomad_simulations.schema_packages.model_system import AtomicCell, ModelSystem
+from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
 from nomad_simulations.schema_packages.numerical_settings import (
     KLinePath as KLinePathSettings,
 )
@@ -62,94 +62,98 @@ def generate_simulation(
 
 
 def generate_model_system(
-    type: str = 'original',
-    system_type: str = 'bulk',
-    positions: list[list[float]] = [[0, 0, 0], [0.5, 0.5, 0.5]],
-    lattice_vectors: list[list[float]] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-    chemical_symbols: list[str] = ['Ga', 'As'],
-    orbitals_symbols: list[list[str]] = [['s'], ['px', 'py']],
-    is_representative: bool = True,
-    pbc: list[bool] = [False, False, False],
+    system_type: str | None = None,
+    positions: list[list[float]] | None = None,
+    lattice_vectors: list[list[float]] | None = None,
+    chemical_symbols: list[str] | None = None,
+    orbitals_symbols: list[list[str]] | None = None,
+    is_representative: bool | None = None,
+    pbc: list[bool] | None = None,
+    representation_name: str | None = None,
 ) -> ModelSystem | None:
     """
     Generate a `ModelSystem` section with the given parameters.
+    All parameters are optional and will only be set if explicitly provided.
+    Default values are not automatically applied.
     """
-    if len(chemical_symbols) != len(orbitals_symbols):
+    if (
+        chemical_symbols is not None
+        and orbitals_symbols is not None
+        and len(chemical_symbols) != len(orbitals_symbols)
+    ):
         return None
 
-    model_system = ModelSystem(type=system_type, is_representative=is_representative)
+    # Create model system with only provided values
+    model_system_kwargs: dict[str, Any] = {}
+    if system_type is not None:
+        model_system_kwargs['type'] = system_type
+    if is_representative is not None:
+        model_system_kwargs['is_representative'] = is_representative
 
-    model_system.positions = np.array(positions) * ureg.angstrom
+    model_system = ModelSystem(**model_system_kwargs)
 
-    atomic_cell = AtomicCell(
-        type=type,
-        lattice_vectors=lattice_vectors * ureg.angstrom,
-        periodic_boundary_conditions=pbc,
-    )
-    model_system.cell.append(atomic_cell)
+    # Set positions if provided
+    if positions is not None:
+        model_system.positions = np.array(positions) * ureg.angstrom
+
+    # Create representation with only provided values
+    representation_kwargs: dict = {}
+    if lattice_vectors is not None:
+        representation_kwargs['lattice_vectors'] = (
+            np.array(lattice_vectors) * ureg.angstrom
+        )
+    if pbc is not None and all(isinstance(x, bool) for x in pbc):
+        representation_kwargs['periodic_boundary_conditions'] = pbc
+    if representation_name is not None:
+        representation_kwargs['name'] = representation_name
+
+    # Only append representation if we have at least one parameter
+    if representation_kwargs:
+        model_system.representations.append(Representation(**representation_kwargs))
 
     # Add atoms_state to the model_system using ElectronicState with basis_orbitals
-    atoms_state = []
-    for element, orbitals in zip(chemical_symbols, orbitals_symbols):
-        basis_list: list[SphericalSymmetryState] = []
-        for o in orbitals:
-            # Map common orbital labels like 's', 'px', 'py', 'pz', 'xy', 'xz', 'z^2', 'yz', 'x^2-y^2'
-            l_symbol_to_number = {'s': 0, 'p': 1, 'd': 2, 'f': 3}
-            ml_p_symbols = {'x': -1, 'z': 0, 'y': 1}
-            ml_d_symbols = {'xy': -2, 'xz': -1, 'z^2': 0, 'yz': 1, 'x^2-y^2': 2}
+    if chemical_symbols is not None and orbitals_symbols is not None:
+        atoms_state = []
+        for element, orbitals in zip(chemical_symbols, orbitals_symbols):
+            basis_list: list[SphericalSymmetryState] = []
+            for o in orbitals:
+                # Map common orbital labels like 's', 'px', 'py', 'pz', 'xy', 'xz', 'z^2', 'yz', 'x^2-y^2'
+                l_symbol_to_number = {'s': 0, 'p': 1, 'd': 2, 'f': 3}
+                ml_p_symbols = {'x': -1, 'z': 0, 'y': 1}
+                ml_d_symbols = {'xy': -2, 'xz': -1, 'z^2': 0, 'yz': 1, 'x^2-y^2': 2}
 
-            if o in {'s', 'p', 'd', 'f'}:
-                state = SphericalSymmetryState()
-                state.l_quantum_number = l_symbol_to_number[o]
-            else:
-                # split into l-symbol and ml-symbol when possible
-                # p-orbitals: px, py, pz
-                if o in {'px', 'py', 'pz'}:
+                if o in {'s', 'p', 'd', 'f'}:
                     state = SphericalSymmetryState()
-                    state.l_quantum_number = 1  # p
-                    state.ml_quantum_number = ml_p_symbols[o[-1]]
-                elif o in {'xy', 'xz', 'z^2', 'yz', 'x^2-y^2'}:
-                    state = SphericalSymmetryState()
-                    state.l_quantum_number = 2  # d
-                    state.ml_quantum_number = ml_d_symbols[o]
+                    state.l_quantum_number = l_symbol_to_number[o]
                 else:
-                    # Fallback: default to s
-                    state = SphericalSymmetryState()
-                    state.l_quantum_number = 0  # s
-            basis_list.append(state)
+                    # split into l-symbol and ml-symbol when possible
+                    # p-orbitals: px, py, pz
+                    if o in {'px', 'py', 'pz'}:
+                        state = SphericalSymmetryState()
+                        state.l_quantum_number = 1  # p
+                        state.ml_quantum_number = ml_p_symbols[o[-1]]
+                    elif o in {'xy', 'xz', 'z^2', 'yz', 'x^2-y^2'}:
+                        state = SphericalSymmetryState()
+                        state.l_quantum_number = 2  # d
+                        state.ml_quantum_number = ml_d_symbols[o]
+                    else:
+                        # Fallback: default to s
+                        state = SphericalSymmetryState()
+                        state.l_quantum_number = 0  # s
+                basis_list.append(state)
 
-        e_state = ElectronicState()
-        for bo in basis_list:
-            e_state.basis_orbitals.append(bo)
+            e_state = ElectronicState()
+            for bo in basis_list:
+                e_state.basis_orbitals.append(bo)
 
-        atom_state = AtomsState(chemical_symbol=element)
-        atom_state.electronic_state = e_state
-        atom_state.normalize(EntryArchive(), logger)
-        atoms_state.append(atom_state)
+            atom_state = AtomsState(chemical_symbol=element)
+            atom_state.electronic_state = e_state
+            atom_state.normalize(EntryArchive(), logger)
+            atoms_state.append(atom_state)
 
-    for state in atoms_state:
-        model_system.particle_states.append(state)
+        for state in atoms_state:
+            model_system.particle_states.append(state)
     return model_system
-
-
-def generate_atomic_cell(
-    lattice_vectors: list[list[float]] = [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-    periodic_boundary_conditions: list[bool] = [False, False, False],
-    chemical_symbols: list[str] = ['H', 'H', 'O'],
-    atomic_numbers: list[int] = [1, 1, 8],
-) -> AtomicCell:
-    """
-    Generate an `AtomicCell` section with the given parameters.
-    """
-
-    # Define the atomic cell solely with cell properties; positions are handled by ModelSystem.
-    atomic_cell = AtomicCell(periodic_boundary_conditions=periodic_boundary_conditions)
-    if lattice_vectors:
-        atomic_cell.lattice_vectors = np.array(lattice_vectors) * ureg('angstrom')
-    # Removed assignment of positions to atomic_cell as of nomad-simulations>=0.4.
-    # Also, the atoms_state information is now part of ModelSystem (particle_states) instead.
-
-    return atomic_cell
 
 
 def generate_simulation_electronic_dos(
@@ -160,7 +164,16 @@ def generate_simulation_electronic_dos(
     the template of the model_system created with the `generate_model_system` function.
     """
     # Create the `Simulation` section to make refs work
-    model_system = generate_model_system()
+    model_system = generate_model_system(
+        representation_name='original',
+        system_type='bulk',
+        positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
+        lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        chemical_symbols=['Ga', 'As'],
+        orbitals_symbols=[['s'], ['px', 'py']],
+        is_representative=True,
+        pbc=[False, False, False],
+    )
     outputs = Outputs()
     simulation = generate_simulation(model_system=[model_system], outputs=[outputs])
 
@@ -257,6 +270,7 @@ def generate_k_space_simulation(
     grid=[6, 6, 6],
 ) -> Simulation:
     model_system = generate_model_system(
+        representation_name='primitive',
         system_type=system_type,
         is_representative=is_representative,
         positions=positions,
@@ -339,7 +353,18 @@ def generate_electronic_band_structure(
     if reciprocal_lattice_vectors:
         k_space.reciprocal_lattice_vectors = reciprocal_lattice_vectors
     _ = generate_simulation(
-        model_system=[generate_model_system()],
+        model_system=[
+            generate_model_system(
+                representation_name='original',
+                system_type='bulk',
+                positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
+                lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                chemical_symbols=['Ga', 'As'],
+                orbitals_symbols=[['s'], ['px', 'py']],
+                is_representative=True,
+                pbc=[False, False, False],
+            )
+        ],
         model_method=[model_method],
         outputs=[outputs],
     )
@@ -359,12 +384,16 @@ def generate_electronic_band_structure(
 
 @pytest.fixture(scope='session')
 def model_system() -> ModelSystem:
-    return generate_model_system()
-
-
-@pytest.fixture(scope='session')
-def atomic_cell() -> AtomicCell:
-    return generate_atomic_cell()
+    return generate_model_system(
+        representation_name='original',
+        system_type='bulk',
+        positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
+        lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        chemical_symbols=['Ga', 'As'],
+        orbitals_symbols=[['s'], ['px', 'py']],
+        is_representative=True,
+        pbc=[False, False, False],
+    )
 
 
 @pytest.fixture(scope='session')
