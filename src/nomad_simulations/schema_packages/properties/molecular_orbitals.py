@@ -26,13 +26,13 @@ class MolecularOrbitals(ElectronicEigenvalues):
     """
 
     # References
-    # basis_set_ref = Quantity(
-    #     type=Reference(SectionProxy('AtomCenteredBasisSet')),
-    #     description="""
-    #     Reference to the atom-centered basis set in which these molecular
-    #     orbitals are expanded.
-    #     """,
-    # )
+    basis_set_ref = Quantity(
+        type=Reference(SectionProxy('AtomCenteredBasisSet')),
+        description="""
+        Reference to the atom-centered basis set in which these molecular
+        orbitals are expanded.
+        """,
+    )
 
     # Dimension-defining scalars
     n_mo = Quantity(
