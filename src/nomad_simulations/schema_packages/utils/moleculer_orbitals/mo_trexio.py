@@ -35,7 +35,7 @@ def trexio_to_molecular_orbitals(
     """
 
     trexio_path = Path(trexio_path)
-    _logged_missing = set()
+    _logged_missing: set[str] = set()
 
     with h5py.File(trexio_path, 'r') as handle:
         mo_group = handle.get('mo') or handle.get('/mo')
