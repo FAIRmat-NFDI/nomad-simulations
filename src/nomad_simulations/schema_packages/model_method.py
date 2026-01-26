@@ -7,7 +7,6 @@ from nomad.metainfo import (
     URL,
     MEnum,
     Quantity,
-    Reference,
     Section,
     SubSection,
 )
@@ -1858,16 +1857,6 @@ class ActiveSpace(ArchiveSection):
         description="""
         Procedure used to choose the active space. Choose 'manual' when the selection
         method is not known.
-        """,
-    )
-
-    active_orbitals = SubSection(
-        sub_section=MolecularOrbitals.m_def,
-        repeats=False,
-        description="""
-        Molecular orbitals defining this active space, embedded directly in the section.
-        These should be the input/reference orbitals used to construct the active space
-        (not the post-optimized correlated orbitals).
         """,
     )
 
