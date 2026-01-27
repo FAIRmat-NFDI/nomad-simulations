@@ -1,0 +1,23 @@
+classDiagram
+    class BaseElectronicEigenvalues
+    class DOSProfile
+    class ElectronicBandGap
+    class ElectronicBandStructure
+    class ElectronicDensityOfStates
+    class ElectronicEigenvalues
+    class Energy2
+    class FermiSurface
+    class KLinePath
+    class Occupancy
+    class Outputs
+    DOSProfile --> Energy2 : energies
+    ElectronicBandStructure --> KLinePath : k_path
+    ElectronicDensityOfStates --> DOSProfile : projected_dos
+    ElectronicDensityOfStates --> Energy2 : energies
+    ElectronicEigenvalues --> BaseElectronicEigenvalues : value_contributions
+    Outputs --> ElectronicBandGap : electronic_band_gaps
+    Outputs --> ElectronicBandStructure : electronic_band_structures
+    Outputs --> ElectronicDensityOfStates : electronic_dos
+    Outputs --> ElectronicEigenvalues : electronic_eigenvalues
+    Outputs --> FermiSurface : fermi_surfaces
+    Outputs --> Occupancy : occupancies

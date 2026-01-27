@@ -4,69 +4,85 @@ This section contains auto-generated documentation for the NOMAD simulations sch
 
 The schema is organized into vertical domains, each covering a specific aspect of simulation metadata:
 
-## [Methods & Parameters](methods.md)
+## [Simulation Entry](simulation.md)
 
-Code-agnostic method choices and numerical controls that drive reproducibility.
+Root entry point for simulations: Simulation, BaseSimulation, and Program
 
-**In scope:** electronic-structure family, XC selection, smearing, numerical cutoffs/settings
+**In scope:** Root Simulation section that contains all simulation metadata, Timing information (cpu1_start, cpu1_end, wall_start, wall_end), Program details (name, version, link), Entry point that references the four main subsections
 
-**Key sections:** ModelMethod, ModelMethodElectronic, DFT, TB, DMFT, GW, XCFunctional, NumericalSettings, Smearing, Program
+**Key sections:** Simulation, BaseSimulation, Program
 
-## [Basis & Orbitals](basis.md)
+## [Model System](model_system.md)
 
-Representations used to expand wavefunctions or Hamiltonians.
+Complete ModelSystem tree: geometric spaces, cells, symmetry, and particle organization
 
-**In scope:** plane wave parameters, APW/APW+lo, localized atomic basis, tight-binding tables
+**In scope:** ModelSystem as the root of the system tree, Geometric spaces: Cell and AtomicCell with lattice vectors, Symmetry information: space groups, point groups, Bravais lattices, Chemical formulas: descriptive, reduced, IUPAC, Hill, anonymous, Particle states: AtomsState for atoms, CGBeadState for coarse-grained beads, Recursive sub_systems containment (ModelSystem contains ModelSystem), Positions, velocities, particle_indices, System type and dimensionality
 
-**Key sections:** PlaneWaveBasisSet, AtomCenteredBasisSet, APWPlaneWaveBasisSet, APWLocalOrbital, APWOrbital, AtomCenteredFunction, SlaterKoster, SlaterKosterBond
+**Key sections:** ModelSystem, GeometricSpace, Cell, AtomicCell, Symmetry, ChemicalFormula, ParticleState, AtomsState, CGBeadState
 
-## [System & Geometry](system.md)
+## [Atomic State Properties](atoms_state.md)
 
-Atomic structure, cell, symmetry and reciprocal space definitions.
+Detailed atomic-level properties: orbitals, core holes, and Hubbard interactions
 
-**In scope:** lattice, positions, periodicity, k-space definitions, symmetry
+**In scope:** OrbitalsState: quantum numbers (n, l, ml, j, mj, ms), Orbital degeneracy and occupation, CoreHole: excited electron states for spectroscopy, HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems, Slater integrals for many-body interactions
 
-**Key sections:** ModelSystem, System, AtomicCell, Cell, Symmetry, KSpace, KMesh, ChemicalFormula
+**Key sections:** OrbitalsState, CoreHole, HubbardInteractions
 
-## [Workflows](workflows.md)
+## [Model Methods](model_method.md)
 
-End-to-end procedures composed of tasks (e.g., SCF, MD, geometry optimization).
+Complete ModelMethod tree: electronic structure methods and their hierarchy
 
-**In scope:** task graphs, iteration loops, task references
+**In scope:** Method inheritance hierarchy: BaseModelMethod → ModelMethod → ModelMethodElectronic, DFT: Jacobs ladder, XC functionals, exact exchange, van der Waals, Tight-binding (TB): DFTB, xTB, Wannier, Slater-Koster, Excited states: ExcitedStateMethodology → GW, BSE, Screening for many-body methods, CoreHoleSpectra for X-ray spectroscopy, DMFT for strongly correlated systems, Method contributions and references between methods
 
-**Key sections:** Workflow, SimulationWorkflow, ParallelWorkflow, SerialWorkflow, GeometryOptimization, MolecularDynamics, SinglePoint, Task, SimulationTask, SelfConsistency
+**Key sections:** BaseModelMethod, ModelMethod, ModelMethodElectronic, DFT, XCFunctional, TB, Wannier, SlaterKoster, SlaterKosterBond, xTB, ExcitedStateMethodology, Screening, GW, BSE, CoreHoleSpectra, Photon, DMFT
 
-## [Results & Provenance](results.md)
+## [Numerical Settings](numerical_settings.md)
 
-Canonical scientific outputs and provenance bundles.
+Computational parameters: meshes, basis sets, convergence, and discretization
 
-**In scope:** band structures, DOS, gaps, SCF history, trajectories
+**In scope:** K-point meshes and line paths for band structures, Real-space meshes and grids, Basis set specifications: plane-wave, APW, atom-centered, Convergence thresholds and maximum iterations, Smearing functions: Fermi-Dirac, Gaussian, Methfessel-Paxton, Force calculation settings
 
-**Key sections:** Outputs, ElectronicStructureResults, ElectronicBandStructure, ElectronicDensityOfStates, ElectronicBandGap, FermiSurface, SCFOutputs, TrajectoryOutputs, ThermodynamicsResults, GeometryOptimizationResults
+**Key sections:** NumericalSettings, Mesh, KMesh, KLinePath, KSpace, Smearing, SelfConsistency, ForceCalculations, BasisSetComponent, PlaneWaveBasisSet, APWPlaneWaveBasisSet, AtomCenteredFunction
 
-## [Vibrations, Phonons & Elastic](phonon_elastic.md)
+## [Outputs Base](outputs.md)
 
-Lattice dynamics models and results, elastic tensors, and Hessians.
+Base output structure and common property definitions
 
-**In scope:** phonon dispersions, force constants, elastic constants
+**In scope:** Outputs section that references ModelSystem and ModelMethod, SCFOutputs with scf_steps for iteration history, PhysicalProperty base class for all computed properties, Property contributions and derivations, SCF convergence checking
 
-**Key sections:** Phonon, PhononModel, PhononResults, Elastic, ElasticModel, ElasticResults, Hessian
+**Key sections:** Outputs, SCFOutputs, PhysicalProperty
 
-## [Spectroscopy & Excitations](spectroscopy.md)
+## [Electronic Structure Properties](electronic_properties.md)
 
-Excited-state methods and spectra.
+Electronic eigenvalues, band structures, DOS, band gaps, occupancies, and Fermi surfaces
 
-**In scope:** BSE/GW artifacts, response functions, quasiparticles
+**In scope:** Eigenvalue hierarchy: BaseElectronicEigenvalues → ElectronicEigenvalues → ElectronicBandStructure, Band structures along high-symmetry paths, Density of states (DOS) profiles, Electronic band gaps (direct, indirect), Orbital occupancies, Fermi surface topology
 
-**Key sections:** AbsorptionSpectrum, XASSpectrum, BSE, Screening, ElectronicGreensFunction, ElectronicSelfEnergy, QuasiparticleWeight, DFTGWModel, DFTGWResults, DFTGWWorkflow
+**Key sections:** BaseElectronicEigenvalues, ElectronicEigenvalues, ElectronicBandStructure, ElectronicBandGap, DOSProfile, ElectronicDensityOfStates, Occupancy, FermiSurface
 
-## [Thermodynamics](thermo.md)
+## [Many-Body Properties](manybody_properties.md)
 
-Thermodynamic state functions and models.
+Green's functions, self-energies, hybridization, quasiparticle weights, hopping matrices
 
-**In scope:** state functions, derived thermodynamic curves
+**In scope:** Green's function base class and electronic specialization, Self-energies from GW and DMFT, Hybridization functions for impurity problems, Quasiparticle renormalization weights, Hopping matrices from tight-binding, Crystal field splittings in correlated systems
 
-**Key sections:** Thermodynamics, ThermodynamicsModel, ThermodynamicsResults, HeatCapacity, Entropy, HelmholtzFreeEnergy, GibbsFreeEnergy, Enthalpy, InternalEnergy
+**Key sections:** BaseGreensFunction, ElectronicGreensFunction, ElectronicSelfEnergy, HybridizationFunction, QuasiparticleWeight, HoppingMatrix, CrystalFieldSplitting
+
+## [Spectroscopic Properties](spectroscopy.md)
+
+Absorption spectra, XAS, and dielectric response
+
+**In scope:** Spectral profile base class, Absorption spectra from BSE calculations, X-ray absorption spectra (XAS) from core hole calculations, Frequency-dependent dielectric functions (permittivity)
+
+**Key sections:** SpectralProfile, AbsorptionSpectrum, XASSpectrum, Permittivity
+
+## [Thermodynamic Properties](thermodynamics.md)
+
+Energies, forces, pressure, temperature, and thermodynamic state functions
+
+**In scope:** Energy hierarchy: BaseEnergy → specific energy types, Free energies: Gibbs, Helmholtz, Force hierarchy: BaseForce → TotalForce, Thermodynamic state variables: pressure, volume, temperature, Entropy and heat capacities, Virial tensor for stress calculations, Hessian matrices for phonon calculations
+
+**Key sections:** BaseEnergy, TotalEnergy, KineticEnergy, PotentialEnergy, Heat, Work, InternalEnergy, Enthalpy, GibbsFreeEnergy, HelmholtzFreeEnergy, ChemicalPotential, VirialTensor, BaseForce, TotalForce, Pressure, Volume, Temperature, Entropy, HeatCapacity, MassDensity, Hessian
 
 
 ---

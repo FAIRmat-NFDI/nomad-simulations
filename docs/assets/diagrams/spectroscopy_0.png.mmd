@@ -1,19 +1,18 @@
 classDiagram
     class AbsorptionSpectrum
-    class BSE
-    class DFTGWModel
-    class DFTGWResults
-    class DFTGWWorkflow
-    class ElectronicGreensFunction
-    class ElectronicSelfEnergy
+    class Energy2
+    class Frequency
+    class KMesh
     class Outputs
-    class QuasiparticleWeight
-    class Screening
+    class Permittivity
+    class SpectralProfile
     class XASSpectrum
     Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ElectronicGreensFunction : electronic_greens_functions
-    Outputs --> ElectronicSelfEnergy : electronic_self_energies
-    Outputs --> QuasiparticleWeight : quasiparticle_weights
+    Outputs --> Permittivity : permittivities
     Outputs --> XASSpectrum : xas_spectra
+    Permittivity --> Frequency : frequencies
+    Permittivity --> KMesh : q_mesh
+    SpectralProfile --> Energy2 : energies
+    SpectralProfile --> Energy2 : frequencies
     XASSpectrum --> AbsorptionSpectrum : exafs_spectrum
     XASSpectrum --> AbsorptionSpectrum : xanes_spectrum

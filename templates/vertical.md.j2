@@ -1,20 +1,26 @@
 # {{ title }}
 
 {% if purpose %}
-**Purpose.** {{ purpose }}
+**Purpose:** {{ purpose }}
+
 {% endif %}
 {% if in_scope %}
-**In scope:** {{ in_scope | join(", ") }}
+**In scope:**
+
+{{ in_scope | join("\n\n") }}
+
 {% endif %}
 {% if out_of_scope %}
-**Out of scope:** {{ out_of_scope | join(", ") }}
-{% endif %}
+**Out of scope:**
 
+{{ out_of_scope | join("\n\n") }}
+
+{% endif %}
 ## Relationship map
 
 !!! tip "Interactive Diagram"
     **Click on the diagram below to zoom in.** Click again to zoom out.
-    
+
     The diagram shows the relationships between the key sections in this vertical domain.
 
 {{ mermaid_block }}

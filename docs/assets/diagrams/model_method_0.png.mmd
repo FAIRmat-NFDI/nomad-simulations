@@ -1,0 +1,26 @@
+classDiagram
+    class BSE
+    class BaseModelMethod
+    class CoreHoleSpectra
+    class DFT
+    class DMFT
+    class ExcitedStateMethodology
+    class GW
+    class ModelMethod
+    class ModelMethodElectronic
+    class NumericalSettings
+    class Photon
+    class Screening
+    class Simulation
+    class SlaterKoster
+    class SlaterKosterBond
+    class TB
+    class Wannier
+    class XCFunctional
+    class xTB
+    BaseModelMethod --> NumericalSettings : numerical_settings
+    DFT --> XCFunctional : xc_functionals
+    ModelMethod --> BaseModelMethod : contributions
+    Simulation --> ModelMethod : model_method
+    SlaterKoster --> SlaterKosterBond : bonds
+    SlaterKoster --> SlaterKosterBond : overlaps

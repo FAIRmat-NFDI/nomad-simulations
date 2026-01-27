@@ -1,13 +1,14 @@
 # docs/schema/.pages
-title: Generated schema
+title: Schema Documentation
 index: index.md
 nav:
-  - methods.md
-  - basis.md
-  - system.md
-  - workflows.md
-  - results.md
-  - phonon_elastic.md
+  - simulation.md
+  - model_system.md
+  - atoms_state.md
+  - model_method.md
+  - numerical_settings.md
+  - outputs.md
+  - electronic_properties.md
+  - manybody_properties.md
   - spectroscopy.md
-  - thermo.md
-
+  - thermodynamics.md

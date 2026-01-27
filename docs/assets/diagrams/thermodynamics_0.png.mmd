@@ -1,0 +1,31 @@
+classDiagram
+    class BaseEnergy
+    class BaseForce
+    class ChemicalPotential
+    class Enthalpy
+    class Entropy
+    class GibbsFreeEnergy
+    class Heat
+    class HeatCapacity
+    class HelmholtzFreeEnergy
+    class Hessian
+    class InternalEnergy
+    class KineticEnergy
+    class MassDensity
+    class Outputs
+    class PotentialEnergy
+    class Pressure
+    class Temperature
+    class TotalEnergy
+    class TotalForce
+    class VirialTensor
+    class Volume
+    class Work
+    Outputs --> ChemicalPotential : chemical_potentials
+    Outputs --> KineticEnergy : kinetic_energies
+    Outputs --> PotentialEnergy : potential_energies
+    Outputs --> Temperature : temperatures
+    Outputs --> TotalEnergy : total_energies
+    Outputs --> TotalForce : total_forces
+    TotalEnergy --> BaseEnergy : contributions
+    TotalForce --> BaseForce : contributions

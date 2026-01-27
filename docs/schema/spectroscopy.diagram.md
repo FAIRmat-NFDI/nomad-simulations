@@ -1,4 +1,4 @@
-# Spectroscopy & Excitations - Full Screen Diagram
+# Spectroscopic Properties - Full Screen Diagram
 
 !!! tip "Interactive Zoom & Pan"
     - **Scroll wheel** or **+/-** buttons to zoom
@@ -16,31 +16,27 @@ This diagram shows the relationships between schema classes in this vertical:
 classDiagram
     class AbsorptionSpectrum {
     }
-    class BSE {
+    class Energy2 {
     }
-    class DFTGWModel {
+    class Frequency {
     }
-    class DFTGWResults {
-    }
-    class DFTGWWorkflow {
-    }
-    class ElectronicGreensFunction {
-    }
-    class ElectronicSelfEnergy {
+    class KMesh {
     }
     class Outputs {
     }
-    class QuasiparticleWeight {
+    class Permittivity {
     }
-    class Screening {
+    class SpectralProfile {
     }
     class XASSpectrum {
     }
     Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ElectronicGreensFunction
-    Outputs --> ElectronicSelfEnergy : electronic_self_energies
-    Outputs --> QuasiparticleWeight
+    Outputs --> Permittivity : permittivities
     Outputs --> XASSpectrum : xas_spectra
+    Permittivity --> Frequency : frequencies
+    Permittivity --> KMesh : q_mesh
+    SpectralProfile --> Energy2 : energies
+    SpectralProfile --> Energy2 : frequencies
     XASSpectrum --> AbsorptionSpectrum : exafs_spectrum
     XASSpectrum --> AbsorptionSpectrum : xanes_spectrum
 ```

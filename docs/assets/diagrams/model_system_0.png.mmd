@@ -1,0 +1,23 @@
+classDiagram
+    class AtomicCell
+    class AtomsState
+    class CGBeadState
+    class Cell
+    class ChemicalFormula
+    class CoreHole
+    class GeometricSpace
+    class HubbardInteractions
+    class ModelSystem
+    class OrbitalsState
+    class ParticleState
+    class Simulation
+    class Symmetry
+    AtomsState --> CoreHole : core_hole
+    AtomsState --> HubbardInteractions : hubbard_interactions
+    AtomsState --> OrbitalsState : orbitals_state
+    ModelSystem --> Cell : cell
+    ModelSystem --> ChemicalFormula : chemical_formula
+    ModelSystem --> ModelSystem : sub_systems
+    ModelSystem --> ParticleState : particle_states
+    ModelSystem --> Symmetry : symmetry
+    Simulation --> ModelSystem : model_system

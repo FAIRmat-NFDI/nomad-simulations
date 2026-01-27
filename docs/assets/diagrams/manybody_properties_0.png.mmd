@@ -1,0 +1,27 @@
+classDiagram
+    class BaseGreensFunction
+    class CrystalFieldSplitting
+    class ElectronicGreensFunction
+    class ElectronicSelfEnergy
+    class Frequency
+    class HoppingMatrix
+    class HybridizationFunction
+    class ImaginaryTime
+    class KMesh
+    class MatsubaraFrequency
+    class Outputs
+    class QuasiparticleWeight
+    class Time
+    class WignerSeitz
+    BaseGreensFunction --> Frequency : real_frequency
+    BaseGreensFunction --> ImaginaryTime : imaginary_time
+    BaseGreensFunction --> KMesh : k_mesh
+    BaseGreensFunction --> MatsubaraFrequency : matsubara_frequency
+    BaseGreensFunction --> Time : time
+    BaseGreensFunction --> WignerSeitz : wigner_seitz
+    Outputs --> CrystalFieldSplitting : crystal_field_splittings
+    Outputs --> ElectronicGreensFunction : electronic_greens_functions
+    Outputs --> ElectronicSelfEnergy : electronic_self_energies
+    Outputs --> HoppingMatrix : hopping_matrices
+    Outputs --> HybridizationFunction : hybridization_functions
+    Outputs --> QuasiparticleWeight : quasiparticle_weights

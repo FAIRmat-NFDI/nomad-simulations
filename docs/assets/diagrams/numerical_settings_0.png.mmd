@@ -1,0 +1,27 @@
+classDiagram
+    class APWPlaneWaveBasisSet
+    class AtomCenteredBasisSet
+    class AtomCenteredFunction
+    class BaseGreensFunction
+    class BaseModelMethod
+    class BasisSetComponent
+    class BasisSetContainer
+    class ElectronicBandStructure
+    class ForceCalculations
+    class KLinePath
+    class KMesh
+    class KSpace
+    class Mesh
+    class NumericalSettings
+    class Permittivity
+    class PlaneWaveBasisSet
+    class SelfConsistency
+    class Smearing
+    AtomCenteredBasisSet --> AtomCenteredFunction : functional_compositions
+    BaseGreensFunction --> KMesh : k_mesh
+    BaseModelMethod --> NumericalSettings : numerical_settings
+    BasisSetContainer --> BasisSetComponent : basis_set_components
+    ElectronicBandStructure --> KLinePath : k_path
+    KSpace --> KLinePath : k_line_path
+    KSpace --> KMesh : k_mesh
+    Permittivity --> KMesh : q_mesh
