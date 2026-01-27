@@ -7,14 +7,23 @@
     - **↗** button to open in separate window
     - **⬇** button to download as SVG
 
-This diagram shows the relationships between schema classes in this vertical:
+This diagram shows the relationships between schema classes:
 
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
+- **Inheritance arrows** (<|--) represent class inheritance
 
 ```mermaid
 classDiagram
     class AbsorptionSpectrum {
+    }
+    class BaseElectronicEigenvalues {
+    }
+    class BaseEnergy {
+    }
+    class BaseForce {
+    }
+    class BaseGreensFunction {
     }
     class ChemicalPotential {
     }
@@ -32,13 +41,21 @@ classDiagram
     }
     class ElectronicSelfEnergy {
     }
+    class Entropy {
+    }
     class FermiSurface {
+    }
+    class HeatCapacity {
+    }
+    class Hessian {
     }
     class HoppingMatrix {
     }
     class HybridizationFunction {
     }
     class KineticEnergy {
+    }
+    class MassDensity {
     }
     class Occupancy {
     }
@@ -50,20 +67,66 @@ classDiagram
     }
     class PotentialEnergy {
     }
+    class Pressure {
+    }
     class QuasiparticleWeight {
     }
     class SCFOutputs {
     }
     class Simulation {
     }
+    class SpectralProfile {
+    }
     class Temperature {
+    }
+    class Time {
     }
     class TotalEnergy {
     }
     class TotalForce {
     }
+    class Volume {
+    }
+    class WorkflowOutputs {
+    }
     class XASSpectrum {
     }
+    SpectralProfile <|-- AbsorptionSpectrum
+    PhysicalProperty <|-- BaseElectronicEigenvalues
+    PhysicalProperty <|-- BaseEnergy
+    PhysicalProperty <|-- BaseForce
+    PhysicalProperty <|-- BaseGreensFunction
+    BaseEnergy <|-- ChemicalPotential
+    PhysicalProperty <|-- CrystalFieldSplitting
+    PhysicalProperty <|-- ElectronicBandGap
+    ElectronicEigenvalues <|-- ElectronicBandStructure
+    BaseElectronicEigenvalues <|-- ElectronicEigenvalues
+    BaseGreensFunction <|-- ElectronicGreensFunction
+    BaseGreensFunction <|-- ElectronicSelfEnergy
+    PhysicalProperty <|-- Entropy
+    PhysicalProperty <|-- FermiSurface
+    PhysicalProperty <|-- HeatCapacity
+    PhysicalProperty <|-- Hessian
+    PhysicalProperty <|-- HoppingMatrix
+    BaseGreensFunction <|-- HybridizationFunction
+    BaseEnergy <|-- KineticEnergy
+    PhysicalProperty <|-- MassDensity
+    PhysicalProperty <|-- Occupancy
+    Time <|-- Outputs
+    PhysicalProperty <|-- Permittivity
+    BaseEnergy <|-- PotentialEnergy
+    PhysicalProperty <|-- Pressure
+    PhysicalProperty <|-- QuasiparticleWeight
+    Outputs <|-- SCFOutputs
+    PhysicalProperty <|-- SpectralProfile
+    PhysicalProperty <|-- Temperature
+    BaseEnergy <|-- TotalEnergy
+    BaseForce <|-- TotalForce
+    PhysicalProperty <|-- Volume
+    Outputs <|-- WorkflowOutputs
+    AbsorptionSpectrum <|-- XASSpectrum
+    BaseGreensFunction --> Time
+    ElectronicEigenvalues --> BaseElectronicEigenvalues : value_contributions
     Outputs --> AbsorptionSpectrum : absorption_spectra
     Outputs --> ChemicalPotential
     Outputs --> CrystalFieldSplitting
@@ -88,6 +151,8 @@ classDiagram
     PhysicalProperty --> PhysicalProperty : contributions
     SCFOutputs --> Outputs : scf_steps
     Simulation --> Outputs
+    TotalEnergy --> BaseEnergy : contributions
+    TotalForce --> BaseForce : contributions
     XASSpectrum --> AbsorptionSpectrum : exafs_spectrum
     XASSpectrum --> AbsorptionSpectrum : xanes_spectrum
 ```

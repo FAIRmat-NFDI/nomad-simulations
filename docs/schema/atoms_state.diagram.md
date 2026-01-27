@@ -7,10 +7,11 @@
     - **↗** button to open in separate window
     - **⬇** button to download as SVG
 
-This diagram shows the relationships between schema classes in this vertical:
+This diagram shows the relationships between schema classes:
 
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
+- **Inheritance arrows** (<|--) represent class inheritance
 
 ```mermaid
 classDiagram

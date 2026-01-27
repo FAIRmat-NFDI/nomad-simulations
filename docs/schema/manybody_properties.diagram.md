@@ -7,10 +7,11 @@
     - **↗** button to open in separate window
     - **⬇** button to download as SVG
 
-This diagram shows the relationships between schema classes in this vertical:
+This diagram shows the relationships between schema classes:
 
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
+- **Inheritance arrows** (<|--) represent class inheritance
 
 ```mermaid
 classDiagram
@@ -36,12 +37,22 @@ classDiagram
     }
     class Outputs {
     }
+    class PhysicalProperty {
+    }
     class QuasiparticleWeight {
     }
     class Time {
     }
     class WignerSeitz {
     }
+    PhysicalProperty <|-- BaseGreensFunction
+    PhysicalProperty <|-- CrystalFieldSplitting
+    BaseGreensFunction <|-- ElectronicGreensFunction
+    BaseGreensFunction <|-- ElectronicSelfEnergy
+    PhysicalProperty <|-- HoppingMatrix
+    BaseGreensFunction <|-- HybridizationFunction
+    Time <|-- Outputs
+    PhysicalProperty <|-- QuasiparticleWeight
     BaseGreensFunction --> Frequency : real_frequency
     BaseGreensFunction --> ImaginaryTime
     BaseGreensFunction --> KMesh
@@ -54,4 +65,5 @@ classDiagram
     Outputs --> HoppingMatrix : hopping_matrices
     Outputs --> HybridizationFunction
     Outputs --> QuasiparticleWeight
+    PhysicalProperty --> PhysicalProperty : contributions
 ```

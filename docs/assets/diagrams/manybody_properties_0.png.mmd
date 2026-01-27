@@ -10,9 +10,18 @@ classDiagram
     class KMesh
     class MatsubaraFrequency
     class Outputs
+    class PhysicalProperty
     class QuasiparticleWeight
     class Time
     class WignerSeitz
+    PhysicalProperty <|-- BaseGreensFunction
+    PhysicalProperty <|-- CrystalFieldSplitting
+    BaseGreensFunction <|-- ElectronicGreensFunction
+    BaseGreensFunction <|-- ElectronicSelfEnergy
+    PhysicalProperty <|-- HoppingMatrix
+    BaseGreensFunction <|-- HybridizationFunction
+    Time <|-- Outputs
+    PhysicalProperty <|-- QuasiparticleWeight
     BaseGreensFunction --> Frequency : real_frequency
     BaseGreensFunction --> ImaginaryTime : imaginary_time
     BaseGreensFunction --> KMesh : k_mesh
@@ -25,3 +34,4 @@ classDiagram
     Outputs --> HoppingMatrix : hopping_matrices
     Outputs --> HybridizationFunction : hybridization_functions
     Outputs --> QuasiparticleWeight : quasiparticle_weights
+    PhysicalProperty --> PhysicalProperty : contributions

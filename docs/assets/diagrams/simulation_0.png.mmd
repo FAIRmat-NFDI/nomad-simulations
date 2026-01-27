@@ -5,6 +5,10 @@ classDiagram
     class Outputs
     class Program
     class Simulation
+    class Time
+    Time <|-- BaseSimulation
+    Time <|-- Outputs
+    BaseSimulation <|-- Simulation
     BaseSimulation --> Program : program
     ModelSystem --> ModelSystem : sub_systems
     Simulation --> ModelMethod : model_method

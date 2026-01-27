@@ -7,10 +7,11 @@
     - **↗** button to open in separate window
     - **⬇** button to download as SVG
 
-This diagram shows the relationships between schema classes in this vertical:
+This diagram shows the relationships between schema classes:
 
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
+- **Inheritance arrows** (<|--) represent class inheritance
 
 ```mermaid
 classDiagram
@@ -26,6 +27,8 @@ classDiagram
     }
     class ExcitedStateMethodology {
     }
+    class ForceField {
+    }
     class GW {
     }
     class ModelMethod {
@@ -34,7 +37,7 @@ classDiagram
     }
     class NumericalSettings {
     }
-    class Photon {
+    class Potential {
     }
     class Screening {
     }
@@ -52,10 +55,34 @@ classDiagram
     }
     class xTB {
     }
+    ExcitedStateMethodology <|-- BSE
+    ModelMethodElectronic <|-- CoreHoleSpectra
+    ModelMethodElectronic <|-- DFT
+    ModelMethodElectronic <|-- DMFT
+    ModelMethodElectronic <|-- ExcitedStateMethodology
+    ModelMethod <|-- ForceField
+    ExcitedStateMethodology <|-- GW
+    BaseModelMethod <|-- ModelMethod
+    ModelMethod <|-- ModelMethodElectronic
+    BaseModelMethod <|-- Potential
+    ExcitedStateMethodology <|-- Screening
+    TB <|-- SlaterKoster
+    ModelMethodElectronic <|-- TB
+    TB <|-- Wannier
+    TB <|-- xTB
     BaseModelMethod --> NumericalSettings
     DFT --> XCFunctional
+    ForceField --> Potential : contributions
     ModelMethod --> BaseModelMethod : contributions
     Simulation --> ModelMethod
     SlaterKoster --> SlaterKosterBond : bonds
     SlaterKoster --> SlaterKosterBond : overlaps
+```
+
+---
+
+```mermaid
+classDiagram
+    class Photon {
+    }
 ```

@@ -95,21 +95,32 @@ def mermaid_for_vertical(title: str, allowlist: list[str], edges: dict) -> str:
     """
     Emit a properly fenced Mermaid block (with leading/trailing blank lines),
     so MkDocs/Material v9 renders it without any extra JS.
+    Shows inheritance, containment, and reference relationships.
     """
     nodes = set(allowlist)
-    for a, b, _ in edges['contain'] + edges['refs']:
-        if a in allowlist or b in allowlist:
-            nodes.update([a, b])
+    for edge_type in ['contain', 'refs', 'inherit']:
+        for a, b, _ in edges.get(edge_type, []):
+            if a in allowlist or b in allowlist:
+                nodes.update([a, b])
 
     lines = []
     lines.append('```mermaid')
     lines.append('classDiagram')
     for n in sorted(nodes):
         lines.append(f'    class {n}')
-    for a, b, label in edges['contain']:
+    
+    # Add inheritance edges first (most important)
+    for a, b, _ in edges.get('inherit', []):
+        if a in nodes and b in nodes:
+            lines.append(f'    {b} <|-- {a}')
+    
+    # Add containment edges
+    for a, b, label in edges.get('contain', []):
         if a in nodes and b in nodes:
             lines.append(f'    {a} --> {b} : {label}')
-    for a, b, label in edges['refs']:
+    
+    # Add reference edges
+    for a, b, label in edges.get('refs', []):
         if a in nodes and b in nodes:
             lines.append(f'    {a} ..> {b} : {label}')
     lines.append('```')

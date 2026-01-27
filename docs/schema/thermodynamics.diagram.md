@@ -7,10 +7,11 @@
     - **↗** button to open in separate window
     - **⬇** button to download as SVG
 
-This diagram shows the relationships between schema classes in this vertical:
+This diagram shows the relationships between schema classes:
 
 - **Solid arrows** (-->) represent SubSection containment
 - **Dashed arrows** (..->) represent Quantity references
+- **Inheritance arrows** (<|--) represent class inheritance
 
 ```mermaid
 classDiagram
@@ -42,6 +43,8 @@ classDiagram
     }
     class Outputs {
     }
+    class PhysicalProperty {
+    }
     class PotentialEnergy {
     }
     class Pressure {
@@ -52,18 +55,43 @@ classDiagram
     }
     class TotalForce {
     }
+    class Variables {
+    }
     class VirialTensor {
     }
     class Volume {
     }
     class Work {
     }
+    PhysicalProperty <|-- BaseEnergy
+    PhysicalProperty <|-- BaseForce
+    BaseEnergy <|-- ChemicalPotential
+    BaseEnergy <|-- Enthalpy
+    PhysicalProperty <|-- Entropy
+    BaseEnergy <|-- GibbsFreeEnergy
+    BaseEnergy <|-- Heat
+    PhysicalProperty <|-- HeatCapacity
+    BaseEnergy <|-- HelmholtzFreeEnergy
+    PhysicalProperty <|-- Hessian
+    BaseEnergy <|-- InternalEnergy
+    BaseEnergy <|-- KineticEnergy
+    PhysicalProperty <|-- MassDensity
+    BaseEnergy <|-- PotentialEnergy
+    PhysicalProperty <|-- Pressure
+    PhysicalProperty <|-- Temperature
+    Variables <|-- Temperature
+    BaseEnergy <|-- TotalEnergy
+    BaseForce <|-- TotalForce
+    BaseEnergy <|-- VirialTensor
+    PhysicalProperty <|-- Volume
+    BaseEnergy <|-- Work
     Outputs --> ChemicalPotential
     Outputs --> KineticEnergy : kinetic_energies
     Outputs --> PotentialEnergy : potential_energies
     Outputs --> Temperature
     Outputs --> TotalEnergy : total_energies
     Outputs --> TotalForce
+    PhysicalProperty --> PhysicalProperty : contributions
     TotalEnergy --> BaseEnergy : contributions
     TotalForce --> BaseForce : contributions
 ```

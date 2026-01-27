@@ -12,6 +12,10 @@ classDiagram
     class ParticleState
     class Simulation
     class Symmetry
+    Cell <|-- AtomicCell
+    ParticleState <|-- AtomsState
+    ParticleState <|-- CGBeadState
+    GeometricSpace <|-- Cell
     AtomsState --> CoreHole : core_hole
     AtomsState --> HubbardInteractions : hubbard_interactions
     AtomsState --> OrbitalsState : orbitals_state

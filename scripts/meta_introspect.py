@@ -145,6 +145,7 @@ def section_edges(section_cls: type[MSection]) -> dict[str, list[tuple[str, str,
     Return edges for a single section:
       contain: parent --> child (from SubSection)
       refs:    source ..> target (from Quantity types referencing sections)
+      inherit: child <|-- parent (inheritance relationship)
     Each edge is a tuple (source_name, target_name, label).
     """
     sdef = section_cls.m_def
@@ -167,7 +168,14 @@ def section_edges(section_cls: type[MSection]) -> dict[str, list[tuple[str, str,
                 label = getattr(q, 'name', 'ref')
                 refs.add((section_cls.__name__, sec_cls.__name__, label))
 
-    return {'contain': sorted(contain), 'refs': sorted(refs)}
+    # Collect inheritance edges
+    inherit: set[tuple[str, str, str]] = set()
+    for base in section_cls.__bases__:
+        if issubclass_safe(base, MSection) and base is not MSection:
+            # Inheritance: child <|-- parent
+            inherit.add((section_cls.__name__, base.__name__, ''))
+
+    return {'contain': sorted(contain), 'refs': sorted(refs), 'inherit': sorted(inherit)}
 
 
 # ------------------------- aggregate across package -------------------------
@@ -188,12 +196,13 @@ def collect_edges(
     pkg: str, only_modules_prefix: Optional[str] = None
 ) -> dict[str, list[tuple[str, str, str]]]:
     """
-    Aggregate 'contain' and 'refs' edges across all MSection classes found
+    Aggregate 'contain', 'refs', and 'inherit' edges across all MSection classes found
     under the given package. Optionally restrict edges to those whose endpoint
     classes live under 'only_modules_prefix' (to avoid pulling in big externals).
     """
     contain_all: set[tuple[str, str, str]] = set()
     refs_all: set[tuple[str, str, str]] = set()
+    inherit_all: set[tuple[str, str, str]] = set()
 
     classes = list(iter_section_classes(pkg))
     module_by_name = {cls.__name__: cls.__module__ for cls in classes}
@@ -206,8 +215,15 @@ def collect_edges(
         for e in edges['refs']:
             if _include_edge(e, module_by_name, only_modules_prefix):
                 refs_all.add(e)
+        for e in edges['inherit']:
+            if _include_edge(e, module_by_name, only_modules_prefix):
+                inherit_all.add(e)
 
-    return {'contain': sorted(contain_all), 'refs': sorted(refs_all)}
+    return {
+        'contain': sorted(contain_all),
+        'refs': sorted(refs_all),
+        'inherit': sorted(inherit_all),
+    }
 
 
 __all__ = [

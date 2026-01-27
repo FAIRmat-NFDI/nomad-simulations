@@ -10,6 +10,17 @@ classDiagram
     class KLinePath
     class Occupancy
     class Outputs
+    class PhysicalProperty
+    class SpectralProfile
+    PhysicalProperty <|-- BaseElectronicEigenvalues
+    SpectralProfile <|-- DOSProfile
+    PhysicalProperty <|-- ElectronicBandGap
+    ElectronicEigenvalues <|-- ElectronicBandStructure
+    DOSProfile <|-- ElectronicDensityOfStates
+    BaseElectronicEigenvalues <|-- ElectronicEigenvalues
+    PhysicalProperty <|-- FermiSurface
+    PhysicalProperty <|-- Occupancy
+    PhysicalProperty <|-- SpectralProfile
     DOSProfile --> Energy2 : energies
     ElectronicBandStructure --> KLinePath : k_path
     ElectronicDensityOfStates --> DOSProfile : projected_dos
@@ -21,3 +32,6 @@ classDiagram
     Outputs --> ElectronicEigenvalues : electronic_eigenvalues
     Outputs --> FermiSurface : fermi_surfaces
     Outputs --> Occupancy : occupancies
+    PhysicalProperty --> PhysicalProperty : contributions
+    SpectralProfile --> Energy2 : energies
+    SpectralProfile --> Energy2 : frequencies
