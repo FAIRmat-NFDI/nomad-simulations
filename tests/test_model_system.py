@@ -12,6 +12,9 @@ from nomad_simulations.schema_packages.atoms_state import (
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
     ChemicalFormula,
+    GlobalCrystalSymmetry,
+    LocalCrystalSymmetry,
+    LocalSymmetry,
     ModelSystem,
     Representation,
     Symmetry,
@@ -486,8 +489,7 @@ class TestModelSystem:
             chemical_symbols=['H', 'H', 'O'],
             orbitals_symbols=[['s'], ['s'], ['s']],
         )
-        sym = Symmetry()
-        sys.symmetry.append(sym)
+        sys.symmetry = Symmetry()
 
         sys.normalize(EntryArchive(), logger=logger)
 
@@ -1398,3 +1400,331 @@ class TestRepresentativeFlagOnSubsystem:
 
         root.normalize(EntryArchive(), logger=logger)
         assert root.is_representative is True
+
+
+def test_wyckoff_sites_property():
+    """
+    Test the wyckoff_sites computed property in LocalCrystalSymmetry.
+    """
+    from nomad_simulations.schema_packages.model_system import LocalCrystalSymmetry
+
+    # Test with both wyckoff_letters and site_multiplicities set
+    local_sym = LocalCrystalSymmetry()
+    local_sym.wyckoff_letters = ['a', 'b', 'b', 'c', 'c', 'c', 'c']
+    local_sym.site_multiplicities = [1, 2, 2, 4, 4, 4, 4]
+
+    wyckoff_sites = local_sym.wyckoff_sites
+    assert wyckoff_sites is not None
+    assert wyckoff_sites == ['a1', 'b2', 'b2', 'c4', 'c4', 'c4', 'c4']
+
+    # Test with missing wyckoff_letters
+    local_sym2 = LocalCrystalSymmetry()
+    local_sym2.site_multiplicities = [1, 2]
+    assert local_sym2.wyckoff_sites is None
+
+    # Test with missing site_multiplicities
+    local_sym3 = LocalCrystalSymmetry()
+    local_sym3.wyckoff_letters = ['a', 'b']
+    assert local_sym3.wyckoff_sites is None
+
+    # Test with mismatched lengths
+    local_sym4 = LocalCrystalSymmetry()
+    local_sym4.wyckoff_letters = ['a', 'b']
+    local_sym4.site_multiplicities = [1]  # Length mismatch
+    assert local_sym4.wyckoff_sites is None
+
+
+@pytest.mark.parametrize(
+    'symbol, positions, lattice_constant, n_atoms, space_group_range',
+    [
+        pytest.param(
+            'Al',
+            [[0.0, 0.0, 0.0], [0.5, 0.5, 0.0], [0.5, 0.0, 0.5], [0.0, 0.5, 0.5]],
+            4.05,
+            4,
+            (225, 225),
+            id='fcc_aluminum',
+        ),
+        pytest.param(
+            'Fe',
+            [[0.0, 0.0, 0.0], [0.5, 0.5, 0.5]],
+            2.87,
+            2,
+            (229, 229),
+            id='bcc_iron',
+        ),
+        pytest.param(
+            'Po',
+            [[0.0, 0.0, 0.0]],
+            3.35,
+            1,
+            (221, 221),
+            id='simple_cubic_polonium',
+        ),
+        pytest.param(
+            'Si',
+            [
+                [0.0, 0.0, 0.0],
+                [0.25, 0.25, 0.25],
+                [0.5, 0.5, 0.0],
+                [0.75, 0.75, 0.25],
+                [0.5, 0.0, 0.5],
+                [0.75, 0.25, 0.75],
+                [0.0, 0.5, 0.5],
+                [0.25, 0.75, 0.75],
+            ],
+            5.43,
+            8,
+            (227, 227),
+            id='diamond_silicon',
+        ),
+    ],
+)
+def test_symmetry_analysis_fields(
+    symbol, positions, lattice_constant, n_atoms, space_group_range
+):
+    """
+    Test that symmetry analysis populates analysis_origin_shift,
+    analysis_transformation_matrix, and site_symmetries for various crystal structures.
+    """
+    import ase
+
+    from nomad_simulations.schema_packages.model_system import (
+        ModelSystem,
+        Symmetry,
+    )
+
+    from . import logger
+
+    # Create structure with scaled positions
+    a = lattice_constant
+    scaled_positions = positions
+    ase_atoms = ase.Atoms(
+        symbols=[symbol] * n_atoms,
+        scaled_positions=scaled_positions,
+        cell=[a, a, a],
+        pbc=True,
+    )
+
+    sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
+    sys.type = 'bulk'
+    symmetry = Symmetry()
+
+    # Directly call resolve_bulk_symmetry to test the implementation
+    # We discard the returned cells as we're only testing symmetry field population
+    _, _ = symmetry.resolve_bulk_symmetry(sys, logger)
+
+    # Check that analysis_origin_shift is populated
+    assert symmetry.analysis_origin_shift is not None
+    assert symmetry.analysis_origin_shift.shape == (3,)
+
+    # Check that analysis_transformation_matrix is populated
+    assert symmetry.analysis_transformation_matrix is not None
+    assert symmetry.analysis_transformation_matrix.shape == (3, 3)
+
+    # Check space group is in expected range
+    assert symmetry.space_group_number is not None
+    assert space_group_range[0] <= symmetry.space_group_number <= space_group_range[1]
+
+    # Check that site_symmetries are populated in local_symmetry
+    assert sys.local_symmetry is not None
+    assert sys.local_symmetry.site_symmetries is not None
+    assert len(sys.local_symmetry.site_symmetries) == n_atoms
+
+    # Each site symmetry should be a non-empty string (point group symbol)
+    for site_sym in sys.local_symmetry.site_symmetries:
+        assert isinstance(site_sym, str)
+        assert len(site_sym) > 0
+
+
+def test_local_symmetry_array_length_validation(caplog):
+    """
+    Test that LocalCrystalSymmetry.normalize() warns when array lengths don't match
+    the parent representation's particle count.
+    """
+    import logging
+
+    # Create a Representation with 4 atoms
+    rep = Representation(fractional_coordinates=np.zeros((4, 3)))
+    rep.local_symmetry = LocalCrystalSymmetry(
+        wyckoff_letters=['a', 'b', 'c']  # Only 3, should be 4
+    )
+
+    # Normalize should issue a warning
+    archive = EntryArchive()
+    with caplog.at_level(logging.WARNING):
+        rep.local_symmetry.normalize(archive, logger)
+
+    # Check that warning was logged
+    assert any(
+        'wyckoff_letters length (3) does not match n_particles (4)' in record.message
+        for record in caplog.records
+    )
+
+
+@pytest.mark.parametrize(
+    'equivalent_atoms, expected_multiplicities',
+    [
+        # Two pairs of equivalent atoms
+        ([0, 0, 2, 2], [2, 2, 2, 2]),
+        # All atoms are unique (no equivalence)
+        ([0, 1, 2, 3], [1, 1, 1, 1]),
+        # All atoms are equivalent
+        ([0, 0, 0, 0], [4, 4, 4, 4]),
+        # Complex: 4 equivalent + 2 equivalent (models ZnS wurtzite)
+        ([0, 0, 0, 0, 4, 4], [4, 4, 4, 4, 2, 2]),
+        # Single atom
+        ([0], [1]),
+        # Three groups: 3, 2, 1
+        ([0, 0, 0, 3, 3, 5], [3, 3, 3, 2, 2, 1]),
+    ],
+)
+def test_compute_site_multiplicities(equivalent_atoms, expected_multiplicities):
+    """
+    Test the _compute_site_multiplicities() static method.
+
+    This method computes how many atoms share the same equivalent_atoms index,
+    which is critical for correctly determining Wyckoff position multiplicities.
+    """
+    result = Symmetry._compute_site_multiplicities(equivalent_atoms)
+    assert result == expected_multiplicities
+
+
+@pytest.mark.parametrize(
+    'pearson, expected_type, expected_centering',
+    [
+        # 3D single-character family codes
+        ('cF', 'c - cubic', 'F - all faces centred'),
+        ('tI', 't - tetragonal', 'I - body centred'),
+        ('oP', 'o - orthorhombic', 'P - primitive'),
+        ('mP', 'm - monoclinic', 'P - primitive'),
+        ('aP', 'a - triclinic', 'P - primitive'),
+        ('hP', 'h - hexagonal', 'P - primitive'),
+        ('rR', 'r - trigonal', 'R - rhombohedral'),
+        # 2D/1D multi-character family codes
+        ('mpp', 'mp - oblique', 'p - primitive 2D/1D'),
+        ('opp', 'op - rectangular', 'p - primitive 2D/1D'),
+        ('ocp', 'oc - centered rectangular', 'p - primitive 2D/1D'),
+        ('tpp', 'tp - square', 'p - primitive 2D/1D'),
+        ('hpp', 'hp - hexagonal 2D', 'p - primitive 2D/1D'),
+        ('app', 'ap - linear', 'p - primitive 2D/1D'),
+        ('occ', 'oc - centered rectangular', 'c - centered 2D'),
+    ],
+)
+def test_parse_bravais_lattice_pearson(pearson, expected_type, expected_centering):
+    """Test Pearson notation parsing for both 3D and 2D/1D lattice types."""
+    symmetry = GlobalCrystalSymmetry()
+
+    lattice_type, lattice_centering = symmetry._parse_bravais_lattice_pearson(
+        pearson, logger
+    )
+
+    assert lattice_type == expected_type
+    assert lattice_centering == expected_centering
+
+
+@pytest.mark.parametrize(
+    'pearson_input',
+    [
+        # 3D single-character family codes
+        'cF',
+        'tI',
+        'oP',
+        'mS',
+        'aP',
+        'hP',
+        'rR',
+        # 2D/1D multi-character family codes
+        'mpp',
+        'opp',
+        'ocp',
+        'tpp',
+        'hpp',
+        'app',
+        'occ',
+    ],
+)
+def test_bravais_lattice_roundtrip(pearson_input):
+    """Test that Pearson notation can be parsed and reconstructed correctly."""
+    symmetry = GlobalCrystalSymmetry()
+
+    # Parse Pearson notation
+    lattice_type, lattice_centering = symmetry._parse_bravais_lattice_pearson(
+        pearson_input, logger
+    )
+    symmetry.lattice_type = lattice_type
+    symmetry.lattice_centering = lattice_centering
+
+    # Reconstruct via property
+    pearson_output = symmetry.bravais_lattice
+
+    assert pearson_output == pearson_input
+
+
+@pytest.mark.parametrize(
+    'has_frac_coords, has_positions, has_n_particles, expected_count',
+    [
+        # Only fractional_coordinates (preferred)
+        (True, False, False, 4),
+        # Only positions (fallback)
+        (False, True, False, 3),
+        # Only n_particles (fallback)
+        (False, False, True, 5),
+        # Multiple sources - fractional_coordinates wins
+        (True, True, True, 4),
+        # positions + n_particles - positions wins
+        (False, True, True, 3),
+        # No sources available
+        (False, False, False, None),
+    ],
+)
+def test_get_particle_count_from_parent(
+    has_frac_coords, has_positions, has_n_particles, expected_count
+):
+    """Test particle count determination from different parent attributes."""
+    rep = Representation()
+
+    if has_frac_coords:
+        rep.fractional_coordinates = np.array([[0, 0, 0]] * 4)
+    if has_positions:
+        rep.positions = np.array([[0, 0, 0]] * 3) * ureg.angstrom
+    if has_n_particles:
+        rep.n_particles = 5
+
+    result = LocalSymmetry._get_particle_count_from_parent(rep)
+    assert result == expected_count
+
+
+def test_validate_array_lengths():
+    """Test array length validation logs warnings for mismatched arrays."""
+    rep = Representation(fractional_coordinates=np.zeros((4, 3)))
+    rep.local_symmetry = LocalCrystalSymmetry(
+        wyckoff_letters=['a', 'b', 'c'],  # Only 3, should be 4
+        site_symmetries=['1', '2', '3', '4'],  # Correct length
+    )
+
+    # Capture log output
+    caplog_records = []
+    original_warning = logger.warning
+
+    def capture_warning(msg):
+        caplog_records.append(msg)
+        original_warning(msg)
+
+    logger.warning = capture_warning
+
+    try:
+        rep.local_symmetry._validate_array_lengths(4, logger)
+
+        # Check that warning was logged for wyckoff_letters
+        assert any(
+            'wyckoff_letters length (3) does not match n_particles (4)' in record
+            for record in caplog_records
+        )
+        # Check that no warning was logged for site_symmetries (correct length)
+        assert not any(
+            'site_symmetries' in record and 'does not match' in record
+            for record in caplog_records
+        )
+    finally:
+        logger.warning = original_warning

@@ -250,24 +250,7 @@ class Representation(ArchiveSection):
         )
     )
 
-    wyckoff_letters = Quantity(
-        type=str,
-        shape=['*'],
-        description="""
-        Wyckoff letters associated with each atom.
-        """,
-    )
-
-    equivalent_atoms = Quantity(
-        type=np.int32,
-        shape=['*'],
-        description="""
-        List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found,
-        then the list is simply the index of each element, e.g.:
-            - [0, 1, 2, 3] all four atoms are non-equivalent.
-            - [0, 0, 0, 3] three equivalent atoms and one non-equivalent.
-        """,
-    )
+    local_symmetry = SubSection(sub_section='LocalSymmetry')
 
 
 class AlternativeRepresentation(Representation):
@@ -323,25 +306,304 @@ class AlternativeRepresentation(Representation):
     )
 
 
-class Symmetry(ArchiveSection):
+class LocalSymmetry(ArchiveSection):
     """
-    A base section used to specify the symmetry of the `ModelSystem`.
+    Base class for per-particle local symmetry information.
+
+    Provides polymorphic interface for different types of local symmetry data.
+    Each representation can have its own LocalSymmetry since particle counts differ.
+    """
+
+    equivalent_atoms = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Equivalence grouping of atoms by symmetry operations.
+        Atoms with the same index value are symmetrically equivalent.
+
+        Examples:
+            - [0, 1, 2, 3]: all four atoms are non-equivalent
+            - [0, 0, 0, 3]: first three atoms are equivalent, fourth is unique
+        """,
+    )
+
+    @staticmethod
+    def _get_particle_count_from_parent(parent: 'Representation') -> int | None:
+        """
+        Determine particle count from parent representation.
+
+        Checks multiple sources in order of preference:
+        1. fractional_coordinates length (preferred for crystal structures)
+        2. positions length (fallback for Cartesian-only systems)
+        3. explicit n_particles attribute (fallback for abstract representations)
+
+        Args:
+            parent: The parent Representation instance.
+
+        Returns:
+            int | None: The number of particles, or None if it cannot be determined.
+        """
+        if (
+            hasattr(parent, 'fractional_coordinates')
+            and parent.fractional_coordinates is not None
+        ):
+            return len(parent.fractional_coordinates)
+        if hasattr(parent, 'positions') and parent.positions is not None:
+            return len(parent.positions)
+        if hasattr(parent, 'n_particles') and parent.n_particles is not None:
+            return parent.n_particles
+        return None
+
+    def _validate_array_lengths(self, n_particles: int, logger: 'BoundLogger') -> None:
+        """
+        Validate that all variable-length arrays match the expected particle count.
+
+        Checks each quantity with shape ['*'] and logs a warning if the array length
+        doesn't match n_particles.
+
+        Args:
+            n_particles: Expected number of particles.
+            logger: The logger to log messages.
+        """
+        for field_name, quantity in self.m_def.all_quantities.items():
+            if quantity.shape and quantity.shape[0] == '*':
+                field_value = getattr(self, field_name, None)
+                if field_value is not None and len(field_value) != n_particles:
+                    logger.warning(
+                        f'{self.__class__.__name__}.{field_name} length ({len(field_value)}) '
+                        f'does not match n_particles ({n_particles})'
+                    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        """Validate array dimensions match parent representation particle count."""
+        super().normalize(archive, logger)
+
+        parent = self.m_parent
+        if not isinstance(parent, Representation):
+            logger.warning(
+                'LocalSymmetry parent is not a Representation → validation skipped.'
+            )
+            return
+
+        n_particles = self._get_particle_count_from_parent(parent)
+        if n_particles is None:
+            logger.warning(
+                'LocalSymmetry could not determine n_particles from parent → validation skipped.'
+            )
+            return
+
+        self._validate_array_lengths(n_particles, logger)
+
+
+class LocalCrystalSymmetry(LocalSymmetry):
+    """
+    Crystallographic local symmetry for particles in a crystal structure.
+
+    Stores Wyckoff positions, site symmetries, and multiplicities for each particle
+    in the representation.
+    """
+
+    site_symmetries = Quantity(
+        type=str,
+        shape=['*'],
+        description="""
+        Crystallographic point group symbol for each particle site in Hermann-Mauguin notation.
+
+        Each symbol (e.g., '3m', 'mmm', '432', '1') describes the local symmetry operations
+        that leave the atomic site invariant within the crystal structure. These are the
+        site symmetry groups—subgroups of the full space group that preserve the specific
+        atomic position.
+
+        The site symmetry is intrinsically linked to the Wyckoff position: atoms at the same
+        Wyckoff position share the same site symmetry, though the converse is not always true.
+        Higher symmetry positions (lower Wyckoff letters like 'a') typically have higher-order
+        site symmetries.
+
+        **Source**: Determined via spglib symmetry analysis (accessed through MatID), which
+        uses the geometric positions of atoms to identify symmetry operations.
+
+        Examples:
+        - '1' - No symmetry (general position)
+        - '3m' - Threefold rotation with mirror plane
+        - 'mmm' - Three perpendicular mirror planes (orthorhombic)
+        - '-43m' - Cubic tetrahedral symmetry
+        """,
+    )
+
+    wyckoff_letters = Quantity(
+        type=str,
+        shape=['*'],
+        description="""
+        Wyckoff letter designation for each atomic position in this representation.
+
+        Wyckoff positions are the crystallographically distinct positions in a space group, as defined in the
+        **International Tables for Crystallography** and accessible through resources like the **Bilbao
+        Crystallographic Server** (https://www.cryst.ehu.es/) and the **International Union of Crystallography
+        databases** (https://www.iucr.org/resources/data).
+
+        The Wyckoff letter (a, b, c, ...) identifies positions in order of **decreasing site symmetry**, with
+        `a` typically representing the **highest symmetry** (most special) position.
+
+        **Important**:
+        Wyckoff positions are determined using **geometric space group analysis** (via spglib/MatID),
+        which considers **only atomic positions** and ignores chemical species.
+        This means atoms of different elements may share the same Wyckoff designation
+        if they occupy geometrically equivalent positions.
+        For complete crystallographic uniqueness, combine `wyckoff_letters` with chemical information.
+
+        Use the `wyckoff_sites` property to get the combined letter+multiplicity format (e.g., "a1", "b2").
+
+        References:
+        - International Tables for Crystallography, Volume A: Space-group symmetry
+        - Aroyo, M.I. et al. (2006). "Bilbao Crystallographic Server." Z. Kristallogr. 221, 15-27
+        - Aroyo, M.I. et al. (2011). "Crystallography online: Bilbao Crystallographic Server."
+          Bulg. Chem. Commun. 43, 183-197
+        """,
+    )
+
+    site_multiplicities = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Multiplicity of the Wyckoff site for each particle.
+
+        The **multiplicity** indicates how many symmetrically equivalent positions are generated by
+        applying all space group operations to this Wyckoff site within the **conventional unit cell**.
+
+        For example:
+        - Multiplicity 1: Special position with highest symmetry (unique in the unit cell)
+        - Multiplicity 2, 4, 8, etc.: Positions with lower symmetry that appear multiple times
+
+        Note: The multiplicity is determined from the conventional cell. In primitive cells or supercells,
+        fewer or more atoms of this type may be present, but the multiplicity value remains the same
+        as it's an intrinsic property of the Wyckoff position.
+        """,
+    )
+
+    @property
+    def wyckoff_sites(self) -> list[str] | None:
+        """
+        Wyckoff site designation formatted as `<letter><multiplicity>` (e.g., `a1`, `b2`).
+
+        This property combines `wyckoff_letters` and `site_multiplicities` into a convenient
+        single format matching the notation commonly used in crystallography literature.
+
+        Returns:
+            list[str] | None: List of Wyckoff site annotations in format "letter+multiplicity",
+            or None if either wyckoff_letters or site_multiplicities is not set.
+
+        Examples:
+            - ['a1', 'b2', 'b2', 'c4', 'c4', 'c4', 'c4'] indicates:
+              • 1 atom at Wyckoff position 'a' (special position, multiplicity 1)
+              • 2 symmetrically equivalent atoms at Wyckoff position 'b' (multiplicity 2)
+              • 4 symmetrically equivalent atoms at Wyckoff position 'c' (multiplicity 4)
+        """
+        if self.wyckoff_letters is None or self.site_multiplicities is None:
+            return None
+        if len(self.wyckoff_letters) != len(self.site_multiplicities):
+            return None
+        return [
+            f'{letter}{mult}'
+            for letter, mult in zip(self.wyckoff_letters, self.site_multiplicities)
+        ]
+
+
+class GlobalSymmetry(ArchiveSection):
+    """
+    A base section specifying the global symmetry of the corresponding `ModelSystem` at large,
+    which can be used for categorization and lookup. It does not define local, site-specific symmetry.
+    """
+
+
+class GlobalCrystalSymmetry(GlobalSymmetry):
+    """
+    A symmetry section specialized for identifying bulk crystal space groups.
+
+    This section stores crystallographic symmetry information extracted from the atomic structure,
+    including space group identifiers, Bravais lattice type, and structural prototype classifications.
 
     Note: this information can be extracted via normalization using the MatID package, if `ModelSystem`
     is specified.
     """
 
-    bravais_lattice = Quantity(
-        type=str,
+    lattice_type = Quantity(
+        type=MEnum(
+            'a - triclinic',
+            'm - monoclinic',
+            'o - orthorhombic',
+            't - tetragonal',
+            'r - trigonal',
+            'h - hexagonal',
+            'c - cubic',
+            'mp - oblique',
+            'op - rectangular',
+            'oc - centered rectangular',
+            'tp - square',
+            'hp - hexagonal 2D',
+            'ap - linear',
+        ),
         description="""
-        Bravais lattice in Pearson notation.
+        Bravais lattice type (crystal family classification).
 
-        The first lowercase letter identifies the
-        crystal family: a (triclinic), b (monoclinic), o (orthorhombic), t (tetragonal),
-        h (hexagonal), c (cubic).
+        The first lowercase letter of Pearson notation, identifying the crystal family
+        based on lattice symmetry:
 
-        The second uppercase letter identifies the centring: P (primitive), S (face centered),
-        I (body centred), R (rhombohedral centring), F (all faces centred).
+        **3D lattices:**
+        - a: triclinic
+        - m: monoclinic
+        - o: orthorhombic
+        - t: tetragonal
+        - r: trigonal
+        - h: hexagonal
+        - c: cubic
+
+        **2D lattices:**
+        - mp: oblique
+        - op: rectangular
+        - oc: centered rectangular
+        - tp: square
+        - hp: hexagonal 2D
+
+        **1D lattices:**
+        - ap: linear
+
+        This quantity enables independent querying of crystal families
+        (e.g., "all cubic systems" regardless of centering type).
+        """,
+    )
+
+    lattice_centering = Quantity(
+        type=MEnum(
+            'P - primitive',
+            'R - rhombohedral',
+            'S - face centred',
+            'I - body centred',
+            'F - all faces centred',
+            'c - centered 2D',
+            'p - primitive 2D/1D',
+        ),
+        description="""
+        Lattice centering type.
+
+        The second uppercase letter of Pearson notation, describing how lattice points
+        are distributed within the conventional unit cell:
+
+        **3D centerings:**
+        - P: primitive (lattice points only at cell corners)
+        - R: rhombohedral (hexagonal setting with 2/3, 1/3 centering)
+        - S: face centered (one pair of opposite faces centered)
+        - I: body centered (center of cell)
+        - F: all faces centered (all faces have centered points)
+
+        **2D centerings:**
+        - c: centered rectangular
+        - p: primitive 2D
+
+        **1D centerings:**
+        - p: primitive 1D
+
+        This quantity enables independent querying of centering types
+        (e.g., "all face-centered lattices" regardless of crystal family).
         """,
     )
 
@@ -354,6 +616,15 @@ class Symmetry(ArchiveSection):
             - `F -4 2 3`,
             - `-P 4 2`,
             - `-F 4 2 3`.
+        """,
+    )
+
+    hall_number = Quantity(
+        type=np.int32,
+        description="""
+        Hall number uniquely identifying the Hall symbol. This is an integer from 1 to 530
+        for 3D space groups, providing a numerical index into the Hall symbol table.
+        Different settings or origin choices of the same space group have different Hall numbers.
         """,
     )
 
@@ -424,12 +695,194 @@ class Symmetry(ArchiveSection):
         """,
     )
 
-    atomic_cell_ref = Quantity(
-        type=Representation,
+    analysis_origin_shift = Quantity(
+        type=np.float64,
+        shape=[3],
         description="""
-        Reference to the Representation section that the symmetry refers to.
+        Origin shift vector (3-element) applied by spglib during symmetry standardization.
+
+        This vector describes the shift from the standardized origin to the input structure's
+        origin in fractional coordinates. During symmetry analysis, spglib may shift the origin
+        to align with conventional crystallographic settings (e.g., placing inversion centers
+        or high-symmetry points at the origin).
+
+        The shift is applied as: **r_input = r_standardized + origin_shift**
+
+        where r_input is a position in the input structure and r_standardized is the
+        corresponding position in the standardized cell.
+
+        **Source**: Extracted from spglib's symmetry dataset via MatID's `SymmetryAnalyzer`.
+
+        **Note**: This transformation is specific to the symmetry analysis process and is
+        distinct from user-defined representation transformations.
+
+        See: https://spglib.readthedocs.io/en/stable/definition.html
         """,
     )
+
+    analysis_transformation_matrix = Quantity(
+        type=np.float64,
+        shape=[3, 3],
+        description="""
+        Transformation matrix (3×3) from input lattice vectors to standardized lattice vectors.
+
+        This matrix describes how spglib transforms the input unit cell into a standardized
+        conventional cell during symmetry analysis. The transformation is defined such that:
+
+        **L_input = L_standardized @ transformation_matrix**
+
+        where L_input is the matrix of input lattice vectors (as columns) and L_standardized
+        is the matrix of standardized lattice vectors.
+
+        The standardization process orients the cell according to conventional crystallographic
+        settings for the identified space group, which may involve:
+        - Reorienting axes to align with symmetry elements
+        - Converting between primitive and conventional cells
+        - Standardizing the choice of basis vectors
+
+        **Source**: Extracted from spglib's symmetry dataset via MatID's `SymmetryAnalyzer`.
+
+        **Note**: This is specifically the transformation applied during symmetry detection
+        and is distinct from user-defined representation transformations.
+
+        See: https://spglib.readthedocs.io/en/stable/definition.html
+        """,
+    )
+
+    def _parse_bravais_lattice_pearson(
+        self, pearson: str, logger: 'BoundLogger'
+    ) -> tuple[str | None, str | None]:
+        """
+        Parse a Pearson notation string into lattice_type and lattice_centering components.
+
+        Pearson notation is a two-letter code where:
+        - First letter indicates crystal family (a, m, o, t, r, h, c for 3D; mp, op, oc, tp, hp, ap for 2D/1D)
+        - Second letter indicates centering (P, I, F, S, R for 3D; p, c for 2D)
+
+        Args:
+            pearson (str): Pearson notation string (e.g., "cF" for cubic face-centered).
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            tuple[str | None, str | None]: A tuple of (lattice_type, lattice_centering) MEnum values,
+            or (None, None) if parsing fails.
+        """
+        if not pearson or len(pearson) < 2:
+            logger.warning(f'Invalid Pearson notation: {pearson}')
+            return None, None
+
+        # Mapping from Pearson first character to lattice_type MEnum
+        family_map = {
+            'a': 'a - triclinic',
+            'm': 'm - monoclinic',
+            'o': 'o - orthorhombic',
+            't': 't - tetragonal',
+            'r': 'r - trigonal',
+            'h': 'h - hexagonal',
+            'c': 'c - cubic',
+            'mp': 'mp - oblique',
+            'op': 'op - rectangular',
+            'oc': 'oc - centered rectangular',
+            'tp': 'tp - square',
+            'hp': 'hp - hexagonal 2D',
+            'ap': 'ap - linear',
+        }
+
+        # Mapping from Pearson second character to lattice_centering MEnum
+        centering_map = {
+            'P': 'P - primitive',
+            'I': 'I - body centred',
+            'F': 'F - all faces centred',
+            'S': 'S - face centred',
+            'R': 'R - rhombohedral',
+            'c': 'c - centered 2D',
+            'p': 'p - primitive 2D/1D',
+        }
+
+        # Extract family and centering from Pearson notation
+        # Try two-character family codes first (2D/1D), then single-character (3D)
+        pearson_lower = pearson.lower()
+        if len(pearson_lower) >= 3 and pearson_lower[:2] in family_map:
+            family_code = pearson_lower[:2]
+            centering_code = pearson[2] if len(pearson) > 2 else ''
+        else:
+            family_code = pearson_lower[0]
+            centering_code = pearson[1] if len(pearson) > 1 else ''
+
+        lattice_type = family_map.get(family_code)
+        lattice_centering = centering_map.get(centering_code)
+
+        if not lattice_type:
+            logger.warning(f'Unknown crystal family in Pearson notation: {family_code}')
+        if not lattice_centering:
+            logger.warning(f'Unknown centering in Pearson notation: {centering_code}')
+
+        return lattice_type, lattice_centering
+
+    @property
+    def bravais_lattice(self) -> str | None:
+        """
+        Reconstructs the Pearson notation from lattice_type and lattice_centering.
+
+        This property provides backward compatibility for code that expects the combined
+        Pearson notation string. Handles both single-character (3D) and multi-character
+        (2D/1D) family codes:
+        - 3D examples: "cF" (cubic face-centered), "tI" (tetragonal body-centered)
+        - 2D/1D examples: "mpp" (oblique primitive), "ocp" (centered rectangular primitive)
+
+        Returns:
+            str | None: Pearson notation string, or None if components are not set.
+        """
+        if not self.lattice_type or not self.lattice_centering:
+            return None
+
+        # Extract the letter codes from the MEnum values
+        # MEnum format is "X - description", we need just the first character(s)
+        family_code = self.lattice_type.split(' - ')[0] if self.lattice_type else ''
+        centering_code = (
+            self.lattice_centering.split(' - ')[0] if self.lattice_centering else ''
+        )
+
+        return (
+            f'{family_code}{centering_code}' if family_code and centering_code else None
+        )
+
+    @staticmethod
+    def _compute_site_multiplicities(
+        equivalent_atoms: 'np.ndarray | list',
+    ) -> list[int]:
+        """
+        Compute site multiplicities from equivalent_atoms grouping.
+
+        For each atom, the multiplicity is the number of atoms that share the same
+        equivalent_atoms index (i.e., atoms related by space group symmetry operations).
+
+        This method correctly handles parametric Wyckoff positions where the same
+        Wyckoff letter can appear at different coordinate parameters, creating
+        distinct non-equivalent sites.
+
+        Args:
+            equivalent_atoms: Array mapping each atom to its independent atom index.
+                Atoms with the same index are symmetrically equivalent.
+
+        Returns:
+            List of site multiplicities, one per atom.
+
+        Examples:
+            >>> _compute_site_multiplicities([0, 0, 2, 2])
+            [2, 2, 2, 2]  # Two pairs of equivalent atoms
+
+            >>> _compute_site_multiplicities([0, 0, 0, 0, 4, 4])
+            [4, 4, 4, 4, 2, 2]  # Four equivalent + two equivalent
+        """
+        # Convert to list for consistent counting behavior
+        equiv_list = (
+            list(equivalent_atoms)
+            if hasattr(equivalent_atoms, '__iter__')
+            else [equivalent_atoms]
+        )
+        # For each atom, count how many atoms share its equivalent_atoms index
+        return [equiv_list.count(equiv_list[i]) for i in range(len(equiv_list))]
 
     def resolve_analyzed_cell(
         self,
@@ -478,7 +931,7 @@ class Symmetry(ArchiveSection):
 
         cell = system.get_cell()
 
-        # Create the cell for geometry only
+        # Create the representation with geometry
         cell_section = Representation()
         if cell_type is not None:
             cell_section.name = cell_type
@@ -491,6 +944,29 @@ class Symmetry(ArchiveSection):
                 'Failed to extract geometric-space data from ASE cell.',
                 exc_info=exc,
             )
+
+        # Populate local symmetry information
+        try:
+            wyckoff = mapping['wyckoff']()
+            equivalent = mapping['equivalent']()
+            if wyckoff is not None or equivalent is not None:
+                cell_section.local_symmetry = LocalCrystalSymmetry()
+                if wyckoff is not None:
+                    cell_section.local_symmetry.wyckoff_letters = wyckoff
+
+                    # Compute site_multiplicities from equivalent_atoms grouping
+                    if equivalent is not None:
+                        site_mults = self._compute_site_multiplicities(equivalent)
+                        cell_section.local_symmetry.site_multiplicities = site_mults
+
+                if equivalent is not None:
+                    cell_section.local_symmetry.equivalent_atoms = equivalent
+        except Exception as exc:
+            logger.warning(
+                f'Failed to extract local symmetry for {cell_type} cell.',
+                exc_info=exc,
+            )
+
         return cell_section
 
     def resolve_bulk_symmetry(
@@ -527,19 +1003,78 @@ class Symmetry(ArchiveSection):
             return None, None
 
         # We store symmetry_analyzer info in a dictionary
-        symmetry['bravais_lattice'] = symmetry_analyzer.get_bravais_lattice()
+        bravais_pearson = symmetry_analyzer.get_bravais_lattice()
+        if bravais_pearson:
+            lattice_type, lattice_centering = self._parse_bravais_lattice_pearson(
+                bravais_pearson, logger
+            )
+            symmetry['lattice_type'] = lattice_type
+            symmetry['lattice_centering'] = lattice_centering
+
         symmetry['hall_symbol'] = symmetry_analyzer.get_hall_symbol()
+        symmetry['hall_number'] = symmetry_analyzer.get_hall_number()
         symmetry['point_group_symbol'] = symmetry_analyzer.get_point_group()
         symmetry['space_group_number'] = symmetry_analyzer.get_space_group_number()
         symmetry['space_group_symbol'] = (
             symmetry_analyzer.get_space_group_international_short()
         )
 
-        # Populating the ModelSystem wyckoff_letters and equivalent_atoms information
+        # Populate analysis_origin_shift, analysis_transformation_matrix, and
+        # site_symmetries from the spglib dataset
+        dataset = None
+        try:
+            dataset = symmetry_analyzer.get_symmetry_dataset()
+            if dataset is not None:
+                # Use attribute access (modern spglib API) with fallback to dict access
+                symmetry['analysis_origin_shift'] = (
+                    dataset.origin_shift
+                    if hasattr(dataset, 'origin_shift')
+                    else dataset.get('origin_shift')
+                )
+                symmetry['analysis_transformation_matrix'] = (
+                    dataset.transformation_matrix
+                    if hasattr(dataset, 'transformation_matrix')
+                    else dataset.get('transformation_matrix')
+                )
+        except Exception as e:
+            logger.warning(
+                f'Could not extract analysis transformation data from symmetry dataset: {e}'
+            )
+
+        # Populating the ModelSystem local_symmetry information
         original_wyckoff = symmetry_analyzer.get_wyckoff_letters_original()
         original_equivalent_atoms = symmetry_analyzer.get_equivalent_atoms_original()
-        model_system.wyckoff_letters = original_wyckoff
-        model_system.equivalent_atoms = original_equivalent_atoms
+
+        if not model_system.local_symmetry:
+            model_system.local_symmetry = LocalCrystalSymmetry()
+
+        model_system.local_symmetry.wyckoff_letters = original_wyckoff
+        model_system.local_symmetry.equivalent_atoms = original_equivalent_atoms
+
+        # Compute site_multiplicities from equivalent_atoms grouping
+        if original_equivalent_atoms is not None:
+            site_mults = self._compute_site_multiplicities(original_equivalent_atoms)
+            model_system.local_symmetry.site_multiplicities = site_mults
+
+        # Populate site_symmetries (point group symbols) from symmetry dataset
+        try:
+            if dataset is not None:
+                site_syms = (
+                    dataset.site_symmetry_symbols
+                    if hasattr(dataset, 'site_symmetry_symbols')
+                    else dataset.get('site_symmetry_symbols')
+                )
+                if site_syms is not None:
+                    # Convert to list and strip leading dots from symbols (e.g., '.3m' -> '3m')
+                    # The dots are used by spglib but not standard in Hermann-Mauguin notation
+                    model_system.local_symmetry.site_symmetries = [
+                        sym.lstrip('.') if isinstance(sym, str) else sym
+                        for sym in site_syms
+                    ]
+        except Exception as e:
+            logger.warning(
+                f'Could not extract site symmetry symbols from symmetry dataset: {e}'
+            )
 
         # Populating the primitive Cell information
         primitive_cell = self.resolve_analyzed_cell(
@@ -609,9 +1144,10 @@ class Symmetry(ArchiveSection):
                 model_system.representations.append(primitive_cell)
             if conventional_cell:
                 model_system.representations.append(conventional_cell)
-            # Reference to the standardized cell, and if not, fallback to the originally parsed one
-            if model_system.representations:
-                self.atomic_cell_ref = model_system.representations[-1]
+
+
+# Backward compatibility alias
+Symmetry = GlobalCrystalSymmetry
 
 
 class ChemicalFormula(ArchiveSection):
@@ -718,8 +1254,7 @@ class ModelSystem(System, Representation):
 
     It is composed of the sub-sections:
         - `Representation` containing alternative representations of the system
-        - `Symmetry` containing the information of the (conventional) atomic cell symmetry
-        in bulk ModelSystem,
+        - `GlobalSymmetry` containing the global symmetry information for bulk ModelSystem,
         - `ChemicalFormula` containing the information of the chemical formulas in different
         formats.
 
@@ -828,7 +1363,7 @@ class ModelSystem(System, Representation):
         """,
     )
 
-    symmetry = SubSection(sub_section=Symmetry.m_def, repeats=True)
+    symmetry = SubSection(sub_section=GlobalSymmetry.m_def)
 
     chemical_formula = SubSection(sub_section=ChemicalFormula.m_def)
 
@@ -1467,9 +2002,9 @@ class ModelSystem(System, Representation):
         #         self.fractional_coordinates = self.compute_fractional_coordinates()
 
         # Create and normalize Symmetry section if applicable
-        if self.type == 'bulk' and self.symmetry is not None:
-            sec_symmetry = self.m_create(Symmetry)
-            sec_symmetry.normalize(archive, logger)
+        if self.type == 'bulk' and self.symmetry is None:
+            self.symmetry = GlobalCrystalSymmetry()
+            self.symmetry.normalize(archive, logger)
 
         # Create and normalize ChemicalFormula section
         if atom_labels := self.get_symbols():

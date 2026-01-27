@@ -112,8 +112,6 @@ for rep in model_system.representations:
         conventional_lattice = rep.lattice_vectors
 ```
 
-The `Symmetry` class references specific representations through the `atomic_cell_ref` quantity, which points to the `Representation` instance that the symmetry information applies to. This explicit referencing eliminates ambiguity about which representation is being described.
-
 ## Usage Patterns and Best Practices
 
 ### When to Use Alternative Representations

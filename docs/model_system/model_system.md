@@ -80,8 +80,6 @@ if model_system.symmetry:
     point_group = model_system.symmetry.point_group_symbol
 ```
 
-The `Symmetry` class includes a reference to the specific representation it describes through the `atomic_cell_ref` quantity.
-
 ### Chemical Formulas
 
 The `chemical_formula` subsection contains a `ChemicalFormula` instance providing various representations of the system's composition:
