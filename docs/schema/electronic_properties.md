@@ -4,32 +4,20 @@
 
 **In scope:**
 
-Eigenvalue hierarchy: BaseElectronicEigenvalues → ElectronicEigenvalues → ElectronicBandStructure
-
-Band structures along high-symmetry paths
-
-Density of states (DOS) profiles
-
-Electronic band gaps (direct, indirect)
-
-Orbital occupancies
-
-Fermi surface topology
+- Eigenvalue hierarchy: BaseElectronicEigenvalues → ElectronicEigenvalues → ElectronicBandStructure
+- Band structures along high-symmetry paths
+- Density of states (DOS) profiles
+- Electronic band gaps (direct, indirect)
+- Orbital occupancies
+- Fermi surface topology
 
 **Out of scope:**
 
-Many-body properties like Green's functions (see manybody_properties)
-
-Spectroscopic properties (see spectroscopy)
-
-Thermodynamic properties (see thermodynamics)
+- Many-body properties like Green's functions
+- Spectroscopic properties
+- Thermodynamic properties
 
 ## Relationship map
-
-!!! tip "Interactive Diagram"
-    **Click on the diagram below to zoom in.** Click again to zoom out.
-
-    The diagram shows the relationships between the key sections in this vertical domain.
 
 
 ![electronic_properties_0 diagram](../assets/diagrams/electronic_properties_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}

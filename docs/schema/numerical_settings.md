@@ -4,30 +4,19 @@
 
 **In scope:**
 
-K-point meshes and line paths for band structures
-
-Real-space meshes and grids
-
-Basis set specifications: plane-wave, APW, atom-centered
-
-Convergence thresholds and maximum iterations
-
-Smearing functions: Fermi-Dirac, Gaussian, Methfessel-Paxton
-
-Force calculation settings
+- K-point meshes and line paths for band structures
+- Real-space meshes and grids
+- Basis set specifications: plane-wave, APW, atom-centered
+- Convergence thresholds and maximum iterations
+- Smearing functions: Fermi-Dirac, Gaussian, Methfessel-Paxton
+- Force calculation settings
 
 **Out of scope:**
 
-Methods that use these settings (see model_method)
-
-Systems these apply to (see model_system)
+- Methods that use these settings
+- Systems these apply to
 
 ## Relationship map
-
-!!! tip "Interactive Diagram"
-    **Click on the diagram below to zoom in.** Click again to zoom out.
-
-    The diagram shows the relationships between the key sections in this vertical domain.
 
 
 ![numerical_settings_0 diagram](../assets/diagrams/numerical_settings_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}

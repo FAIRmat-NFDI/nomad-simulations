@@ -4,30 +4,19 @@
 
 **In scope:**
 
-Root Simulation section that contains all simulation metadata
-
-Timing information (cpu1_start, cpu1_end, wall_start, wall_end)
-
-Program details (name, version, link)
-
-Entry point that references the four main subsections
+- Root Simulation section that contains all simulation metadata
+- Timing information (cpu1_start, cpu1_end, wall_start, wall_end)
+- Program details (name, version, link)
+- Entry point that references the four main subsections
 
 **Out of scope:**
 
-ModelSystem details (see model_system vertical)
-
-ModelMethod details (see model_method vertical)
-
-Outputs details (see dedicated output verticals)
-
-Workflow classes (separate schema)
+- ModelSystem details
+- ModelMethod details
+- Outputs details
+- Workflow classes (separate schema)
 
 ## Relationship map
-
-!!! tip "Interactive Diagram"
-    **Click on the diagram below to zoom in.** Click again to zoom out.
-
-    The diagram shows the relationships between the key sections in this vertical domain.
 
 
 ![simulation_0 diagram](../assets/diagrams/simulation_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}

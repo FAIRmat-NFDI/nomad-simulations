@@ -4,30 +4,19 @@
 
 **In scope:**
 
-OrbitalsState: quantum numbers (n, l, ml, j, mj, ms)
-
-Orbital degeneracy and occupation
-
-CoreHole: excited electron states for spectroscopy
-
-HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems
-
-Slater integrals for many-body interactions
+- OrbitalsState: quantum numbers (n, l, ml, j, mj, ms)
+- Orbital degeneracy and occupation
+- CoreHole: excited electron states for spectroscopy
+- HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems
+- Slater integrals for many-body interactions
 
 **Out of scope:**
 
-Basic particle information (see model_system)
-
-Methods that use these properties like DMFT (see model_method)
-
-CoreHoleSpectra method (see model_method)
+- Basic particle information
+- Methods that use these properties like DMFT
+- CoreHoleSpectra method
 
 ## Relationship map
-
-!!! tip "Interactive Diagram"
-    **Click on the diagram below to zoom in.** Click again to zoom out.
-
-    The diagram shows the relationships between the key sections in this vertical domain.
 
 
 ![atoms_state_0 diagram](../assets/diagrams/atoms_state_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}

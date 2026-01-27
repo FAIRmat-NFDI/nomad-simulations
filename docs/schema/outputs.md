@@ -4,34 +4,21 @@
 
 **In scope:**
 
-Outputs section that references ModelSystem and ModelMethod
-
-SCFOutputs with scf_steps for iteration history
-
-PhysicalProperty base class for all computed properties
-
-Property contributions and derivations
-
-SCF convergence checking
+- Outputs section that references ModelSystem and ModelMethod
+- SCFOutputs with scf_steps for iteration history
+- PhysicalProperty base class for all computed properties
+- Property contributions and derivations
+- SCF convergence checking
 
 **Out of scope:**
 
-Specific property types (see specialized verticals)
-
-Electronic structure properties (see electronic_properties)
-
-Many-body properties (see manybody_properties)
-
-Spectroscopic properties (see spectroscopy)
-
-Thermodynamic properties (see thermodynamics)
+- Specific property types
+- Electronic structure properties
+- Many-body properties
+- Spectroscopic properties
+- Thermodynamic properties
 
 ## Relationship map
-
-!!! tip "Interactive Diagram"
-    **Click on the diagram below to zoom in.** Click again to zoom out.
-
-    The diagram shows the relationships between the key sections in this vertical domain.
 
 
 ![outputs_0 diagram](../assets/diagrams/outputs_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}

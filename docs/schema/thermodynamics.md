@@ -4,32 +4,20 @@
 
 **In scope:**
 
-Energy hierarchy: BaseEnergy → specific energy types
-
-Free energies: Gibbs, Helmholtz
-
-Force hierarchy: BaseForce → TotalForce
-
-Thermodynamic state variables: pressure, volume, temperature
-
-Entropy and heat capacities
-
-Virial tensor for stress calculations
-
-Hessian matrices for phonon calculations
+- Energy hierarchy: BaseEnergy → specific energy types
+- Free energies: Gibbs, Helmholtz
+- Force hierarchy: BaseForce → TotalForce
+- Thermodynamic state variables: pressure, volume, temperature
+- Entropy and heat capacities
+- Virial tensor for stress calculations
+- Hessian matrices for phonon calculations
 
 **Out of scope:**
 
-Electronic structure properties (see electronic_properties)
-
-Spectroscopic properties (see spectroscopy)
+- Electronic structure properties
+- Spectroscopic properties
 
 ## Relationship map
-
-!!! tip "Interactive Diagram"
-    **Click on the diagram below to zoom in.** Click again to zoom out.
-
-    The diagram shows the relationships between the key sections in this vertical domain.
 
 
 ![thermodynamics_0 diagram](../assets/diagrams/thermodynamics_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}

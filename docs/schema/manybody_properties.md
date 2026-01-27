@@ -4,30 +4,19 @@
 
 **In scope:**
 
-Green's function base class and electronic specialization
-
-Self-energies from GW and DMFT
-
-Hybridization functions for impurity problems
-
-Quasiparticle renormalization weights
-
-Hopping matrices from tight-binding
-
-Crystal field splittings in correlated systems
+- Green's function base class and electronic specialization
+- Self-energies from GW and DMFT
+- Hybridization functions for impurity problems
+- Quasiparticle renormalization weights
+- Hopping matrices from tight-binding
+- Crystal field splittings in correlated systems
 
 **Out of scope:**
 
-Methods that compute these (GW, BSE, DMFT in model_method)
-
-Basic electronic properties (see electronic_properties)
+- Methods that compute these (GW, BSE, DMFT in model_method)
+- Basic electronic properties
 
 ## Relationship map
-
-!!! tip "Interactive Diagram"
-    **Click on the diagram below to zoom in.** Click again to zoom out.
-
-    The diagram shows the relationships between the key sections in this vertical domain.
 
 
 ![manybody_properties_0 diagram](../assets/diagrams/manybody_properties_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}

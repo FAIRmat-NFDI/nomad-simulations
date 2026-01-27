@@ -4,26 +4,17 @@
 
 **In scope:**
 
-Spectral profile base class
-
-Absorption spectra from BSE calculations
-
-X-ray absorption spectra (XAS) from core hole calculations
-
-Frequency-dependent dielectric functions (permittivity)
+- Spectral profile base class
+- Absorption spectra from BSE calculations
+- X-ray absorption spectra (XAS) from core hole calculations
+- Frequency-dependent dielectric functions (permittivity)
 
 **Out of scope:**
 
-Methods that compute spectra (BSE, CoreHoleSpectra in model_method)
-
-DOS profiles (see electronic_properties)
+- Methods that compute spectra (BSE, CoreHoleSpectra in model_method)
+- DOS profiles
 
 ## Relationship map
-
-!!! tip "Interactive Diagram"
-    **Click on the diagram below to zoom in.** Click again to zoom out.
-
-    The diagram shows the relationships between the key sections in this vertical domain.
 
 
 ![spectroscopy_0 diagram](../assets/diagrams/spectroscopy_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}

@@ -4,38 +4,23 @@
 
 **In scope:**
 
-ModelSystem as the root of the system tree
-
-Geometric spaces: Cell and AtomicCell with lattice vectors
-
-Symmetry information: space groups, point groups, Bravais lattices
-
-Chemical formulas: descriptive, reduced, IUPAC, Hill, anonymous
-
-Particle states: AtomsState for atoms, CGBeadState for coarse-grained beads
-
-Recursive sub_systems containment (ModelSystem contains ModelSystem)
-
-Positions, velocities, particle_indices
-
-System type and dimensionality
+- ModelSystem as the root of the system tree
+- Geometric spaces: Cell and AtomicCell with lattice vectors
+- Symmetry information: space groups, point groups, Bravais lattices
+- Chemical formulas: descriptive, reduced, IUPAC, Hill, anonymous
+- Particle states: AtomsState for atoms, CGBeadState for coarse-grained beads
+- Recursive sub_systems containment (ModelSystem contains ModelSystem)
+- Positions, velocities, particle_indices
+- System type and dimensionality
 
 **Out of scope:**
 
-Detailed atomic properties like orbitals (see atoms_state)
-
-Core holes and Hubbard interactions (see atoms_state)
-
-Methods that use the system (see model_method)
-
-Outputs computed from the system (see output verticals)
+- Detailed atomic properties like orbitals
+- Core holes and Hubbard interactions
+- Methods that use the system
+- Outputs computed from the system
 
 ## Relationship map
-
-!!! tip "Interactive Diagram"
-    **Click on the diagram below to zoom in.** Click again to zoom out.
-
-    The diagram shows the relationships between the key sections in this vertical domain.
 
 
 ![model_system_0 diagram](../assets/diagrams/model_system_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}

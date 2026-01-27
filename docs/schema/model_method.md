@@ -4,34 +4,21 @@
 
 **In scope:**
 
-Method inheritance hierarchy: BaseModelMethod → ModelMethod → ModelMethodElectronic
-
-DFT: Jacobs ladder, XC functionals, exact exchange, van der Waals
-
-Tight-binding (TB): DFTB, xTB, Wannier, Slater-Koster
-
-Excited states: ExcitedStateMethodology → GW, BSE
-
-Screening for many-body methods
-
-CoreHoleSpectra for X-ray spectroscopy
-
-DMFT for strongly correlated systems
-
-Method contributions and references between methods
+- Method inheritance hierarchy: BaseModelMethod → ModelMethod → ModelMethodElectronic
+- DFT: Jacobs ladder, XC functionals, exact exchange, van der Waals
+- Tight-binding (TB): DFTB, xTB, Wannier, Slater-Koster
+- Excited states: ExcitedStateMethodology → GW, BSE
+- Screening for many-body methods
+- CoreHoleSpectra for X-ray spectroscopy
+- DMFT for strongly correlated systems
+- Method contributions and references between methods
 
 **Out of scope:**
 
-Numerical settings like meshes and basis sets (see numerical_settings)
-
-Output properties computed by these methods (see output verticals)
+- Numerical settings like meshes and basis sets
+- Output properties computed by these methods
 
 ## Relationship map
-
-!!! tip "Interactive Diagram"
-    **Click on the diagram below to zoom in.** Click again to zoom out.
-
-    The diagram shows the relationships between the key sections in this vertical domain.
 
 
 ![model_method_0 diagram](../assets/diagrams/model_method_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
