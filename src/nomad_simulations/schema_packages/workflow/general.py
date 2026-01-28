@@ -386,7 +386,9 @@ class SimulationWorkflow(Workflow, SimulationTask):
             # and somehow here it is just a value. Can we have it as a quantity?
             if (
                 isinstance(convergence_data, Iterable)
-                and hasattr(convergence_data, '__getitem__') # TODO this is all due to the type checker
+                and hasattr(
+                    convergence_data, '__getitem__'
+                )  # TODO this is all due to the type checker
                 and hasattr(convergence_data, 'shape')
                 and len(convergence_data.shape) > 0
             ):  # the threshold is relative
