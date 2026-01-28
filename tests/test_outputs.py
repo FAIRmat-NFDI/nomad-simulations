@@ -182,4 +182,3 @@ class TestOutputs:
             assert outputs.model_method_ref.name == 'example method'
         else:
             assert outputs.model_method_ref is None
-

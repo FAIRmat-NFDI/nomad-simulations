@@ -118,22 +118,22 @@ class Program(Entity):
         type=str,
         description="""
         Name of the compiler that was used to compile the program code.
-        """
+        """,
     )
 
     compiler_version = Quantity(
         type=str,
         description="""
         Version of the compiler that was used to compile the program code.
-        """
+        """,
     )
 
     warnings = Quantity(
         type=str,
-        shape=["*"],
+        shape=['*'],
         description="""
         Warnings emitted by the code.
-        """
+        """,
     )
 
 
@@ -195,7 +195,7 @@ class BaseSimulation(Activity, SimulationTime):
         description="""
         Indicates whether this code run terminated without error (true), 
         or if it exited with an error code unequal to zero (false).
-        """
+        """,
     )
 
     program = SubSection(sub_section=Program.m_def, repeats=False)

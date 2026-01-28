@@ -39,7 +39,7 @@ from nomad_simulations.schema_packages.properties import (
 from .common import SimulationTime
 
 
-# MK: I don't think this should live here. 
+# MK: I don't think this should live here.
 # @all: where to move this?
 class SCFSteps(ArchiveSection):
     """
@@ -53,7 +53,7 @@ class SCFSteps(ArchiveSection):
         unit='joule',
         description="""
         Total energy at each SCF step.
-        """
+        """,
     )
 
     delta_energies_total = Quantity(
@@ -62,7 +62,7 @@ class SCFSteps(ArchiveSection):
         unit='joule',
         description="""
         Absolute change of total energy at each SCF step.
-        """
+        """,
     )
 
     delta_potential_rms = Quantity(
@@ -71,7 +71,7 @@ class SCFSteps(ArchiveSection):
         unit='joule',
         description="""
         Root mean square of change of potential energy at each SCF step.
-        """
+        """,
     )
 
     delta_density_rms = Quantity(
@@ -80,7 +80,7 @@ class SCFSteps(ArchiveSection):
         unit='coulomb',
         description="""
         Root mean square of change of potential energy at each SCF step.
-        """
+        """,
     )
 
     delta_force_abs = Quantity(
@@ -89,7 +89,7 @@ class SCFSteps(ArchiveSection):
         unit='newton',
         description="""
         Absolute change of forces at each SCF step.
-        """
+        """,
     )
 
     durations = Quantity(
@@ -105,8 +105,9 @@ class SCFSteps(ArchiveSection):
         type=JSON,
         description="""
         Code specific quantities that are recorded during SCF convergence.
-        """
+        """,
     )
+
 
 # TODO: Outputs should not be of type time, but the workflow should be instead?
 class Outputs(SimulationTime):
