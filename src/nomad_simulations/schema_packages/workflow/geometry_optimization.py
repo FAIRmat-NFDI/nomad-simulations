@@ -74,19 +74,20 @@ class GeometryOptimizationMethod(SimulationWorkflowMethod):
         """,
     )
 
-    single_point_convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
+    single_point_convergence = SubSection(
+        sub_section=WorkflowConvergenceTarget.m_def, repeats=True
+    )
 
 
 class GeometryOptimizationResults(SimulationWorkflowResults):
     _label = 'Geometry optimiztation results'
-
 
     is_single_point_converged = Quantity(
         type=bool,
         description="""
         Indicates if all single point SCF runs (if applicable) have converged to the
         specified target (true), or not (false).
-        """
+        """,
     )
     n_steps = Quantity(
         type=int,
@@ -166,7 +167,7 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
             final_forces = jmespath.search('data.outputs[-1].total_forces[-1]', archive)
             if final_forces is not None:
                 force_abs = np.linalg.norm(final_forces.value, axis=1)
-                self.final_force_maximum = max(force_abs) 
+                self.final_force_maximum = max(force_abs)
 
 
 class GeometryOptimization(SerialWorkflow):
@@ -202,7 +203,7 @@ class GeometryOptimization(SerialWorkflow):
 
         if not archive.data or not archive.data.outputs:
             return
-        
+
         # do not overwrite if tasks are set but give out a warning that it maybe
         # inconsistent with the outputs
         logger = self.map_tasks.__annotations__['logger']
@@ -216,18 +217,19 @@ class GeometryOptimization(SerialWorkflow):
         parent_n = 0
         root_n = 0
         for n, output in enumerate(outputs):
-            if output.get("scf_steps") is not None:
+            if output.get('scf_steps') is not None:
                 task = SinglePoint(
                     name=f'{self._task_label} {n}',
                     outputs=[Link(name='Outputs', section=output)],
-                    results=SimulationWorkflowResults()                 
+                    results=SimulationWorkflowResults(),
                 )
-                single_point_convergence = jmespath.search("workflow2.method.single_point_convergence", archive)
+                single_point_convergence = jmespath.search(
+                    'workflow2.method.single_point_convergence', archive
+                )
                 if single_point_convergence is not None:
-                    single_point_convergence_result = task._resolve_convergence(archive, 
-                                                                                single_point_convergence,
-                                                                                logger, 
-                                                                                output_index=n)
+                    single_point_convergence_result = task._resolve_convergence(
+                        archive, single_point_convergence, logger, output_index=n
+                    )
                     task.results.convergence = single_point_convergence_result
             else:
                 task = Task(
@@ -257,10 +259,13 @@ class GeometryOptimization(SerialWorkflow):
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
-        single_point_convergence_results = jmespath.search("workflow2.tasks[*].results.convergence[*].is_reached", archive)
+        single_point_convergence_results = jmespath.search(
+            'workflow2.tasks[*].results.convergence[*].is_reached', archive
+        )
         if single_point_convergence_results is None:
             return
         all_scf_converged = all(all(x) for x in single_point_convergence_results)
         self.results.is_single_point_converged = all_scf_converged
+
 
 m_package.__init_metainfo__()
