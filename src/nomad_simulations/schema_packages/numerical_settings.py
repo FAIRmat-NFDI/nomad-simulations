@@ -1357,7 +1357,7 @@ class MultireferencePTSettings(NumericalSettings):
 class DMRGSettings(NumericalSettings):
     """
     Matrix-product-state solver controls for DMRG-SCF/DMRG-CI/DMRG-PT workflows.
-    Use alongside `CASSCFSettings` when orbital-shift knobs are also needed.
+    Use alongside `MultireferenceSCFSettings` when orbital-shift knobs are also needed.
     """
 
     max_bond_dimension = Quantity(
