@@ -1,26 +1,13 @@
 classDiagram
     class AbsorptionSpectrum
-    class DOSProfile
     class Energy2
     class Frequency
-    class KMesh
-    class Outputs
     class Permittivity
-    class PhysicalProperty
     class SpectralProfile
     class XASSpectrum
     SpectralProfile <|-- AbsorptionSpectrum
-    SpectralProfile <|-- DOSProfile
-    PhysicalProperty <|-- Permittivity
-    PhysicalProperty <|-- SpectralProfile
     AbsorptionSpectrum <|-- XASSpectrum
-    DOSProfile --> Energy2 : energies
-    Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> Permittivity : permittivities
-    Outputs --> XASSpectrum : xas_spectra
     Permittivity --> Frequency : frequencies
-    Permittivity --> KMesh : q_mesh
-    PhysicalProperty --> PhysicalProperty : contributions
     SpectralProfile --> Energy2 : energies
     SpectralProfile --> Energy2 : frequencies
     XASSpectrum --> AbsorptionSpectrum : exafs_spectrum

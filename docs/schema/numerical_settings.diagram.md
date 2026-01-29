@@ -15,25 +15,9 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class APWLChannel {
-    }
     class APWPlaneWaveBasisSet {
     }
-    class AtomCenteredBasisSet {
-    }
-    class AtomCenteredFunction {
-    }
-    class BaseGreensFunction {
-    }
-    class BaseModelMethod {
-    }
     class BasisSetComponent {
-    }
-    class BasisSetContainer {
-    }
-    class EffectiveCorePotential {
-    }
-    class ElectronicBandStructure {
     }
     class ForceCalculations {
     }
@@ -45,11 +29,7 @@ classDiagram
     }
     class Mesh {
     }
-    class MuffinTinRegion {
-    }
     class NumericalSettings {
-    }
-    class Permittivity {
     }
     class PlaneWaveBasisSet {
     }
@@ -57,32 +37,37 @@ classDiagram
     }
     class Smearing {
     }
-    class Variables {
-    }
-    BasisSetComponent <|-- APWLChannel
     PlaneWaveBasisSet <|-- APWPlaneWaveBasisSet
-    BasisSetComponent <|-- AtomCenteredBasisSet
-    NumericalSettings <|-- BasisSetContainer
-    BasisSetComponent <|-- EffectiveCorePotential
     NumericalSettings <|-- ForceCalculations
-    Variables <|-- KLinePath
     Mesh <|-- KMesh
-    Variables <|-- KMesh
     NumericalSettings <|-- KSpace
-    BasisSetComponent <|-- MuffinTinRegion
-    Mesh <|-- MuffinTinRegion
     BasisSetComponent <|-- PlaneWaveBasisSet
     KMesh <|-- PlaneWaveBasisSet
     NumericalSettings <|-- SelfConsistency
     NumericalSettings <|-- Smearing
-    AtomCenteredBasisSet --> AtomCenteredFunction : functional_compositions
-    AtomCenteredBasisSet --> EffectiveCorePotential : ecps
-    BaseGreensFunction --> KMesh
-    BaseModelMethod --> NumericalSettings
-    BasisSetContainer --> BasisSetComponent
-    ElectronicBandStructure --> KLinePath : k_path
     KSpace --> KLinePath
     KSpace --> KMesh
-    MuffinTinRegion --> APWLChannel : l_channels
-    Permittivity --> KMesh : q_mesh
 ```
+
+<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">
+<b>Legend:</b>
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference
+</div>
+
+
+---
+
+```mermaid
+classDiagram
+    class AtomCenteredFunction {
+    }
+```
+
+<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">
+<b>Legend:</b>
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference
+</div>

@@ -1,9 +1,5 @@
 classDiagram
     class AbsorptionSpectrum
-    class BaseElectronicEigenvalues
-    class BaseEnergy
-    class BaseForce
-    class BaseGreensFunction
     class ChemicalPotential
     class CrystalFieldSplitting
     class ElectronicBandGap
@@ -12,67 +8,22 @@ classDiagram
     class ElectronicEigenvalues
     class ElectronicGreensFunction
     class ElectronicSelfEnergy
-    class Entropy
     class FermiSurface
-    class HeatCapacity
-    class Hessian
     class HoppingMatrix
     class HybridizationFunction
     class KineticEnergy
-    class MassDensity
     class Occupancy
     class Outputs
     class Permittivity
     class PhysicalProperty
     class PotentialEnergy
-    class Pressure
     class QuasiparticleWeight
     class SCFOutputs
-    class Simulation
-    class SpectralProfile
     class Temperature
-    class Time
     class TotalEnergy
     class TotalForce
-    class Volume
-    class WorkflowOutputs
     class XASSpectrum
-    SpectralProfile <|-- AbsorptionSpectrum
-    PhysicalProperty <|-- BaseElectronicEigenvalues
-    PhysicalProperty <|-- BaseEnergy
-    PhysicalProperty <|-- BaseForce
-    PhysicalProperty <|-- BaseGreensFunction
-    BaseEnergy <|-- ChemicalPotential
-    PhysicalProperty <|-- CrystalFieldSplitting
-    PhysicalProperty <|-- ElectronicBandGap
-    ElectronicEigenvalues <|-- ElectronicBandStructure
-    BaseElectronicEigenvalues <|-- ElectronicEigenvalues
-    BaseGreensFunction <|-- ElectronicGreensFunction
-    BaseGreensFunction <|-- ElectronicSelfEnergy
-    PhysicalProperty <|-- Entropy
-    PhysicalProperty <|-- FermiSurface
-    PhysicalProperty <|-- HeatCapacity
-    PhysicalProperty <|-- Hessian
-    PhysicalProperty <|-- HoppingMatrix
-    BaseGreensFunction <|-- HybridizationFunction
-    BaseEnergy <|-- KineticEnergy
-    PhysicalProperty <|-- MassDensity
-    PhysicalProperty <|-- Occupancy
-    Time <|-- Outputs
-    PhysicalProperty <|-- Permittivity
-    BaseEnergy <|-- PotentialEnergy
-    PhysicalProperty <|-- Pressure
-    PhysicalProperty <|-- QuasiparticleWeight
     Outputs <|-- SCFOutputs
-    PhysicalProperty <|-- SpectralProfile
-    PhysicalProperty <|-- Temperature
-    BaseEnergy <|-- TotalEnergy
-    BaseForce <|-- TotalForce
-    PhysicalProperty <|-- Volume
-    Outputs <|-- WorkflowOutputs
-    AbsorptionSpectrum <|-- XASSpectrum
-    BaseGreensFunction --> Time : time
-    ElectronicEigenvalues --> BaseElectronicEigenvalues : value_contributions
     Outputs --> AbsorptionSpectrum : absorption_spectra
     Outputs --> ChemicalPotential : chemical_potentials
     Outputs --> CrystalFieldSplitting : crystal_field_splittings
@@ -96,8 +47,3 @@ classDiagram
     Outputs --> XASSpectrum : xas_spectra
     PhysicalProperty --> PhysicalProperty : contributions
     SCFOutputs --> Outputs : scf_steps
-    Simulation --> Outputs : outputs
-    TotalEnergy --> BaseEnergy : contributions
-    TotalForce --> BaseForce : contributions
-    XASSpectrum --> AbsorptionSpectrum : exafs_spectrum
-    XASSpectrum --> AbsorptionSpectrum : xanes_spectrum

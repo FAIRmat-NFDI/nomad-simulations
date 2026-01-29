@@ -22,11 +22,11 @@ Complete ModelSystem tree: geometric spaces, cells, symmetry, and particle organ
 
 ## [Atomic State Properties](atoms_state.md)
 
-Detailed atomic-level properties: orbitals, core holes, and Hubbard interactions
+Detailed atomic-level properties within AtomsState: orbitals, core holes, and Hubbard interactions
 
-**In scope:** OrbitalsState: quantum numbers (n, l, ml, j, mj, ms), Orbital degeneracy and occupation, CoreHole: excited electron states for spectroscopy, HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems, Slater integrals for many-body interactions
+**In scope:** AtomsState as the container for atomic property details, OrbitalsState: quantum numbers (n, l, ml, j, mj, ms), Orbital degeneracy and occupation, CoreHole: excited electron states for spectroscopy, HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems, Slater integrals for many-body interactions
 
-**Key sections:** OrbitalsState, CoreHole, HubbardInteractions
+**Key sections:** AtomsState, OrbitalsState, CoreHole, HubbardInteractions
 
 ## [Model Methods](model_method.md)
 

@@ -11,6 +11,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 from verticals import VERTICALS
 from meta_introspect import collect_edges, iter_section_classes
+from gen_diagrams import filter_edges_for_vertical
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 
@@ -91,15 +92,30 @@ def resolve_section_classes(
     return [registry[n] for n in names]
 
 
-def mermaid_for_vertical(title: str, allowlist: list[str], edges: dict) -> str:
+def mermaid_for_vertical(
+    title: str,
+    allowlist: list[str],
+    edges: dict,
+    vert_key: str = None,
+    verticals_dict: dict = None,
+) -> str:
     """
     Emit a properly fenced Mermaid block (with leading/trailing blank lines),
     so MkDocs/Material v9 renders it without any extra JS.
     Shows inheritance, containment, and reference relationships.
+    Applies filtering to exclude parent connections and child subsections.
     """
+    # Apply vertical-specific filtering if verticals dict and key provided
+    if verticals_dict and vert_key:
+        filtered_edges = filter_edges_for_vertical(
+            vert_key, allowlist, edges, verticals_dict
+        )
+    else:
+        filtered_edges = edges
+
     nodes = set(allowlist)
     for edge_type in ['contain', 'refs', 'inherit']:
-        for a, b, _ in edges.get(edge_type, []):
+        for a, b, _ in filtered_edges.get(edge_type, []):
             if a in allowlist or b in allowlist:
                 nodes.update([a, b])
 
@@ -108,24 +124,34 @@ def mermaid_for_vertical(title: str, allowlist: list[str], edges: dict) -> str:
     lines.append('classDiagram')
     for n in sorted(nodes):
         lines.append(f'    class {n}')
-    
+
     # Add inheritance edges first (most important)
-    for a, b, _ in edges.get('inherit', []):
+    for a, b, _ in filtered_edges.get('inherit', []):
         if a in nodes and b in nodes:
             lines.append(f'    {b} <|-- {a}')
-    
+
     # Add containment edges
-    for a, b, label in edges.get('contain', []):
+    for a, b, label in filtered_edges.get('contain', []):
         if a in nodes and b in nodes:
             lines.append(f'    {a} --> {b} : {label}')
-    
+
     # Add reference edges
-    for a, b, label in edges.get('refs', []):
+    for a, b, label in filtered_edges.get('refs', []):
         if a in nodes and b in nodes:
             lines.append(f'    {a} ..> {b} : {label}')
     lines.append('```')
     # Wrap with blank lines (very important for Markdown parsing)
-    return '\n' + '\n'.join(lines) + '\n'
+    diagram = '\n' + '\n'.join(lines) + '\n'
+    # Add visual legend with inline SVG arrows
+    diagram += """
+<div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
+<b>Legend:</b>
+<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="20" y1="6" x2="4" y2="6" stroke="currentColor" stroke-width="1.5"/><polygon points="4,6 8,3 8,9" fill="none" stroke="currentColor" stroke-width="1.5"/></svg> inheritance ·
+<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5"/><polygon points="20,6 16,3 16,9" fill="currentColor"/></svg> containment ·
+<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2,2"/><polygon points="20,6 16,3 16,9" fill="currentColor"/></svg> reference
+</div>
+"""
+    return diagram
 
 
 # ---- main generation --------------------------------------------------------
@@ -156,7 +182,9 @@ def build_vertical(
         purpose, in_scope, out_of_scope = '', [], []
 
     # Diagram (already fenced and with blank lines)
-    mermaid_block = mermaid_for_vertical(title, sections, edges_all)
+    mermaid_block = mermaid_for_vertical(
+        title, sections, edges_all, vert_key=vert_key, verticals_dict=VERTICALS
+    )
 
     # Micro-examples (combined dict keyed by section)
     section_classes = resolve_section_classes(sections, registry)

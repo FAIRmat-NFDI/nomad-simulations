@@ -4,7 +4,7 @@ Defines documentation 'verticals' for the auto-generated MkDocs pages.
 
 Author: JLM-FAU, JFrudzinski
 Purpose: Manual curation of documentation organization following the clear schema tree structure.
-         
+
 Schema Structure:
 - Simulation (root entry) contains 4 main subsections:
   1. Program - Software information
@@ -56,7 +56,6 @@ VERTICALS = {
             'Workflow classes (separate schema)',
         ],
     },
-    
     # =========================================================================
     # MODEL SYSTEM TREE
     # =========================================================================
@@ -91,16 +90,17 @@ VERTICALS = {
             'Outputs computed from the system (see output verticals)',
         ],
     },
-    
     'atoms_state': {
         'title': 'Atomic State Properties',
-        'purpose': 'Detailed atomic-level properties: orbitals, core holes, and Hubbard interactions',
+        'purpose': 'Detailed atomic-level properties within AtomsState: orbitals, core holes, and Hubbard interactions',
         'sections': [
+            'AtomsState',
             'OrbitalsState',
             'CoreHole',
             'HubbardInteractions',
         ],
         'in_scope': [
+            'AtomsState as the container for atomic property details',
             'OrbitalsState: quantum numbers (n, l, ml, j, mj, ms)',
             'Orbital degeneracy and occupation',
             'CoreHole: excited electron states for spectroscopy',
@@ -108,12 +108,12 @@ VERTICALS = {
             'Slater integrals for many-body interactions',
         ],
         'out_of_scope': [
-            'Basic particle information (see model_system)',
+            'Basic particle positions and velocities (see model_system)',
+            'Cell and geometric information (see model_system)',
             'Methods that use these properties like DMFT (see model_method)',
             'CoreHoleSpectra method (see model_method)',
         ],
     },
-    
     # =========================================================================
     # MODEL METHOD TREE
     # =========================================================================
@@ -154,7 +154,6 @@ VERTICALS = {
             'Output properties computed by these methods (see output verticals)',
         ],
     },
-    
     'numerical_settings': {
         'title': 'Numerical Settings',
         'purpose': 'Computational parameters: meshes, basis sets, convergence, and discretization',
@@ -185,7 +184,6 @@ VERTICALS = {
             'Systems these apply to (see model_system)',
         ],
     },
-    
     # =========================================================================
     # OUTPUTS TREE
     # =========================================================================
@@ -212,7 +210,6 @@ VERTICALS = {
             'Thermodynamic properties (see thermodynamics)',
         ],
     },
-    
     'electronic_properties': {
         'title': 'Electronic Structure Properties',
         'purpose': 'Electronic eigenvalues, band structures, DOS, band gaps, occupancies, and Fermi surfaces',
@@ -235,15 +232,14 @@ VERTICALS = {
             'Fermi surface topology',
         ],
         'out_of_scope': [
-            'Many-body properties like Green\'s functions (see manybody_properties)',
+            "Many-body properties like Green's functions (see manybody_properties)",
             'Spectroscopic properties (see spectroscopy)',
             'Thermodynamic properties (see thermodynamics)',
         ],
     },
-    
     'manybody_properties': {
         'title': 'Many-Body Properties',
-        'purpose': 'Green\'s functions, self-energies, hybridization, quasiparticle weights, hopping matrices',
+        'purpose': "Green's functions, self-energies, hybridization, quasiparticle weights, hopping matrices",
         'sections': [
             'BaseGreensFunction',
             'ElectronicGreensFunction',
@@ -254,7 +250,7 @@ VERTICALS = {
             'CrystalFieldSplitting',
         ],
         'in_scope': [
-            'Green\'s function base class and electronic specialization',
+            "Green's function base class and electronic specialization",
             'Self-energies from GW and DMFT',
             'Hybridization functions for impurity problems',
             'Quasiparticle renormalization weights',
@@ -266,7 +262,6 @@ VERTICALS = {
             'Basic electronic properties (see electronic_properties)',
         ],
     },
-    
     'spectroscopy': {
         'title': 'Spectroscopic Properties',
         'purpose': 'Absorption spectra, XAS, and dielectric response',
@@ -287,7 +282,6 @@ VERTICALS = {
             'DOS profiles (see electronic_properties)',
         ],
     },
-    
     'thermodynamics': {
         'title': 'Thermodynamic Properties',
         'purpose': 'Energies, forces, pressure, temperature, and thermodynamic state functions',

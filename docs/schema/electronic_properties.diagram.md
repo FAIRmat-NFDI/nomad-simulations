@@ -17,51 +17,90 @@ This diagram shows the relationships between schema classes:
 classDiagram
     class BaseElectronicEigenvalues {
     }
-    class DOSProfile {
-    }
-    class ElectronicBandGap {
-    }
     class ElectronicBandStructure {
-    }
-    class ElectronicDensityOfStates {
     }
     class ElectronicEigenvalues {
     }
+    ElectronicEigenvalues <|-- ElectronicBandStructure
+    BaseElectronicEigenvalues <|-- ElectronicEigenvalues
+    ElectronicEigenvalues --> BaseElectronicEigenvalues : value_contributions
+```
+
+<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">
+<b>Legend:</b>
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference
+</div>
+
+
+---
+
+```mermaid
+classDiagram
+    class DOSProfile {
+    }
+    class ElectronicDensityOfStates {
+    }
     class Energy2 {
     }
-    class FermiSurface {
-    }
-    class KLinePath {
-    }
-    class Occupancy {
-    }
-    class Outputs {
-    }
-    class PhysicalProperty {
-    }
-    class SpectralProfile {
-    }
-    PhysicalProperty <|-- BaseElectronicEigenvalues
-    SpectralProfile <|-- DOSProfile
-    PhysicalProperty <|-- ElectronicBandGap
-    ElectronicEigenvalues <|-- ElectronicBandStructure
     DOSProfile <|-- ElectronicDensityOfStates
-    BaseElectronicEigenvalues <|-- ElectronicEigenvalues
-    PhysicalProperty <|-- FermiSurface
-    PhysicalProperty <|-- Occupancy
-    PhysicalProperty <|-- SpectralProfile
     DOSProfile --> Energy2 : energies
-    ElectronicBandStructure --> KLinePath : k_path
     ElectronicDensityOfStates --> DOSProfile : projected_dos
     ElectronicDensityOfStates --> Energy2 : energies
-    ElectronicEigenvalues --> BaseElectronicEigenvalues : value_contributions
-    Outputs --> ElectronicBandGap
-    Outputs --> ElectronicBandStructure
-    Outputs --> ElectronicDensityOfStates : electronic_dos
-    Outputs --> ElectronicEigenvalues
-    Outputs --> FermiSurface
-    Outputs --> Occupancy : occupancies
-    PhysicalProperty --> PhysicalProperty : contributions
-    SpectralProfile --> Energy2 : energies
-    SpectralProfile --> Energy2 : frequencies
 ```
+
+<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">
+<b>Legend:</b>
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference
+</div>
+
+
+---
+
+```mermaid
+classDiagram
+    class ElectronicBandGap {
+    }
+```
+
+<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">
+<b>Legend:</b>
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference
+</div>
+
+
+---
+
+```mermaid
+classDiagram
+    class FermiSurface {
+    }
+```
+
+<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">
+<b>Legend:</b>
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference
+</div>
+
+
+---
+
+```mermaid
+classDiagram
+    class Occupancy {
+    }
+```
+
+<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">
+<b>Legend:</b>
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·
+<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference
+</div>

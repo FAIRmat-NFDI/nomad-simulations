@@ -5,15 +5,11 @@ classDiagram
     class DFT
     class DMFT
     class ExcitedStateMethodology
-    class ForceField
     class GW
     class ModelMethod
     class ModelMethodElectronic
-    class NumericalSettings
     class Photon
-    class Potential
     class Screening
-    class Simulation
     class SlaterKoster
     class SlaterKosterBond
     class TB
@@ -25,20 +21,15 @@ classDiagram
     ModelMethodElectronic <|-- DFT
     ModelMethodElectronic <|-- DMFT
     ModelMethodElectronic <|-- ExcitedStateMethodology
-    ModelMethod <|-- ForceField
     ExcitedStateMethodology <|-- GW
     BaseModelMethod <|-- ModelMethod
     ModelMethod <|-- ModelMethodElectronic
-    BaseModelMethod <|-- Potential
     ExcitedStateMethodology <|-- Screening
     TB <|-- SlaterKoster
     ModelMethodElectronic <|-- TB
     TB <|-- Wannier
     TB <|-- xTB
-    BaseModelMethod --> NumericalSettings : numerical_settings
     DFT --> XCFunctional : xc_functionals
-    ForceField --> Potential : contributions
     ModelMethod --> BaseModelMethod : contributions
-    Simulation --> ModelMethod : model_method
     SlaterKoster --> SlaterKosterBond : bonds
     SlaterKoster --> SlaterKosterBond : overlaps

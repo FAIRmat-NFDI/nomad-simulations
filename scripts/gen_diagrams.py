@@ -87,6 +87,75 @@ def find_connected_components(nodes: set[str], all_edges: dict) -> list[set[str]
     return components
 
 
+def filter_edges_for_vertical(
+    vert_key: str,
+    allowlist: list[str],
+    all_edges: dict,
+    verticals_dict: dict,
+) -> dict:
+    """
+    Filter edges according to vertical-specific design rules:
+    1. Don't show connections FROM child to parent sections (redundant - shown on parent page)
+    2. DO show connections FROM parent to child sections (documenting the parent's structure)
+    3. Show inheriting subclasses but not their subsections
+
+    Returns filtered edges dict with 'contain', 'refs', 'inherit' keys.
+    """
+    # Get all classes that have their own verticals/pages
+    classes_with_pages = set()
+    for v_spec in verticals_dict.values():
+        if isinstance(v_spec, dict):
+            classes_with_pages.update(v_spec.get('sections', []))
+        else:
+            classes_with_pages.update(v_spec)
+
+    # Parent sections that children should not show connections TO
+    parent_sections = {
+        'Simulation',
+        'BaseSimulation',
+        'ModelSystem',
+        'ModelMethod',
+        'Outputs',
+    }
+
+    allowlist_set = set(allowlist)
+    filtered = {'contain': [], 'refs': [], 'inherit': []}
+
+    # Filter containment edges
+    for a, b, label in all_edges.get('contain', []):
+        # Only process edges where source is in this vertical's allowlist
+        if a not in allowlist_set:
+            continue
+
+        # If source is a parent section (Simulation, etc), show all its direct children
+        if a in parent_sections and a in allowlist_set:
+            filtered['contain'].append((a, b, label))
+            continue
+
+        # For non-parent sections: exclude connections to parent sections
+        if b in parent_sections and b not in allowlist_set:
+            continue
+
+        # Exclude connections to classes that have their own pages (unless both in allowlist)
+        if b in classes_with_pages and b not in allowlist_set:
+            continue
+
+        # Include everything else
+        filtered['contain'].append((a, b, label))
+
+    # Filter reference edges
+    for a, b, label in all_edges.get('refs', []):
+        if a in allowlist_set and b in allowlist_set:
+            filtered['refs'].append((a, b, label))
+
+    # Filter inheritance edges - always show if both are in allowlist
+    for a, b, _ in all_edges.get('inherit', []):
+        if a in allowlist_set and b in allowlist_set:
+            filtered['inherit'].append((a, b, ''))
+
+    return filtered
+
+
 def categorize_nodes(nodes: set[str], all_edges: dict, allowlist: list[str]) -> dict:
     """
     Categorize nodes into:
@@ -136,16 +205,26 @@ def mermaid_for_vertical(
     all_edges: dict,
     add_header: bool = False,
     key: str = '',
+    verticals_dict: dict = None,
 ) -> str:
     """
     Build Mermaid classDiagram(s) for a vertical with improved organization:
     1. Show inheritance explicitly using <|--
     2. Separate disconnected components into different diagrams
     3. Organize hierarchically: root connections first, then detailed inheritance
+    4. Filter edges per vertical design rules (no parent connections, no child subsections)
     """
+    # Apply vertical-specific filtering if verticals dict provided
+    if verticals_dict:
+        filtered_edges = filter_edges_for_vertical(
+            key, allowlist, all_edges, verticals_dict
+        )
+    else:
+        filtered_edges = all_edges
+
     nodes = set(allowlist)
     for edge_type in ['contain', 'refs', 'inherit']:
-        for a, b, _ in all_edges.get(edge_type, []):
+        for a, b, _ in filtered_edges.get(edge_type, []):
             if a in allowlist or b in allowlist:
                 nodes.update([a, b])
 
@@ -172,10 +251,10 @@ def mermaid_for_vertical(
         )
 
     # Find connected components
-    components = find_connected_components(nodes, all_edges)
+    components = find_connected_components(nodes, filtered_edges)
 
     # Sort components by size (largest first) and if they contain root connections
-    categories = categorize_nodes(nodes, all_edges, allowlist)
+    categories = categorize_nodes(nodes, filtered_edges, allowlist)
 
     def component_priority(comp):
         has_root = bool(comp & categories['root_connectors'])
@@ -213,12 +292,12 @@ def mermaid_for_vertical(
             return label
 
         # Add inheritance edges first (most important for understanding)
-        for a, b, _ in all_edges.get('inherit', []):
+        for a, b, _ in filtered_edges.get('inherit', []):
             if a in component and b in component:
                 lines.append(f'    {b} <|-- {a}')
 
         # Add containment edges
-        for a, b, label in all_edges.get('contain', []):
+        for a, b, label in filtered_edges.get('contain', []):
             if a in component and b in component:
                 clean_label = normalize_label(label, b)
                 if clean_label:
@@ -227,7 +306,7 @@ def mermaid_for_vertical(
                     lines.append(f'    {a} --> {b}')
 
         # Add reference edges
-        for a, b, label in all_edges.get('refs', []):
+        for a, b, label in filtered_edges.get('refs', []):
             if a in component and b in component:
                 clean_label = normalize_label(label, b)
                 if clean_label:
@@ -236,6 +315,20 @@ def mermaid_for_vertical(
                     lines.append(f'    {a} ..> {b}')
 
         lines.append('```')
+
+        # Add visual legend with inline SVG arrows
+        lines.extend(
+            [
+                '',
+                '<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">',
+                '<b>Legend:</b>',
+                '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·',
+                '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·',
+                '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference',
+                '</div>',
+                '',
+            ]
+        )
 
     return '\n'.join(lines)
 
@@ -278,7 +371,12 @@ def main(argv=None):
     for key, spec in VERTICALS.items():
         allowlist = list(spec['sections'])
         md = mermaid_for_vertical(
-            spec.get('title', key), allowlist, edges, add_header=True, key=key
+            spec.get('title', key),
+            allowlist,
+            edges,
+            add_header=True,
+            key=key,
+            verticals_dict=VERTICALS,
         )
 
         if args.stdout:
