@@ -1287,7 +1287,7 @@ class MultireferenceSCFSettings(NumericalSettings):
         unit='hartree',
         description="""
         Level shift applied to the active orbitals (e.g., Molpro `SHIFTO`).
-        Can be positive or negative; defaults are typically 0.0 unless specified.
+        Can be positive or negative.
         """,
     )
 

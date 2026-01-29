@@ -1898,15 +1898,6 @@ class ActiveSpace(ArchiveSection):
         """,
     )
 
-    ras_total_max_excitations = Quantity(
-        type=np.int32,
-        description="""
-        Optional overall cap on the total number of excitations between RAS blocks.
-        Useful when the input specifies a global excitation limit in addition to the
-        per-block hole/particle caps.
-        """,
-    )
-
 
 class BaseMultireferenceMethod(BaseModelMethod):
     """

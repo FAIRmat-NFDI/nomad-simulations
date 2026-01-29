@@ -13,6 +13,7 @@ from nomad_simulations.schema_packages.model_method import (
     ActiveSpace,
     ExplicitDispersionModel,
     ImplicitSolvationModel,
+    MultireferencePT,
     MultireferenceSCF,
     RelativityModel,
     SlaterKoster,
