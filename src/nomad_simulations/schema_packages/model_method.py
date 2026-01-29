@@ -1860,6 +1860,53 @@ class ActiveSpace(ArchiveSection):
         """,
     )
 
+    # RAS-specific method quantities
+    ras1_n_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of orbitals in the RAS1 (hole-restricted) subspace.
+        """,
+    )
+
+    ras2_n_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of orbitals in the RAS2 (fully flexible) subspace.
+        """,
+    )
+
+    ras3_n_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of orbitals in the RAS3 (particle-restricted) subspace.
+        """,
+    )
+
+    ras1_max_holes = Quantity(
+        type=np.int32,
+        description="""
+        Maximum number of holes allowed in RAS1 (electrons that may be excited out of
+        the nominally doubly occupied subspace).
+        """,
+    )
+
+    ras3_max_particles = Quantity(
+        type=np.int32,
+        description="""
+        Maximum number of electrons allowed in RAS3 (electrons that may be excited into
+        the nominally empty subspace).
+        """,
+    )
+
+    ras_total_max_excitations = Quantity(
+        type=np.int32,
+        description="""
+        Optional overall cap on the total number of excitations between RAS blocks.
+        Useful when the input specifies a global excitation limit in addition to the
+        per-block hole/particle caps.
+        """,
+    )
+
 
 class BaseMultireferenceMethod(BaseModelMethod):
     """
