@@ -23,9 +23,6 @@ from nomad_simulations.schema_packages.model_method import (
     XCFunctional,
 )
 from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
-from nomad_simulations.schema_packages.properties.molecular_orbitals import (
-    MolecularOrbitals,
-)
 
 from . import logger
 from .conftest import generate_simulation
