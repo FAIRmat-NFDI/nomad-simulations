@@ -1749,7 +1749,7 @@ class ConfigurationInteraction(ModelMethodElectronic):
 
     This captures CI expansions built on top of a single-determinant reference
     (e.g., RHF/UHF/ROHF), not multireference active-space CI variants. For
-    CAS/RAS/GAS-based CI, use `MultireferenceCI`.
+    CAS/RAS-based CI, use `MultireferenceCI`.
 
     Variants include:
       - CIS    : Configuration Interaction Singles
@@ -1808,13 +1808,22 @@ class ActiveSpace(ArchiveSection):
 
     Captures just the counts and labeling needed to identify the orbital/electron
     subspace used by CASSCF/CASPT2-style calculations.
+
+    CAS vs RAS (complete vs restricted active space)
+    ---------------------------------
+    - CAS: `n_active_orbitals` / `n_active_electrons` (and optional spin-resolved
+      counts) fully define the space.
+    - RAS: split the space into RAS1 (hole-restricted), RAS2 (full), RAS3
+      (particle-restricted). Use `ras1_n_orbitals`, `ras2_n_orbitals`,
+      `ras3_n_orbitals` plus caps `ras1_max_holes` and `ras3_max_particles`
+      to express the allowed excitations. Set `orbital_space_type='RAS'`.
     """
 
     n_active_orbitals = Quantity(
         type=np.int32,
         description="""
         Number of spatial orbitals in the active space (same orbitals available to both
-        spin channels). Mirrors the CAS/RAS/GAS definition used in the corresponding
+        spin channels). Mirrors the CAS/RAS definition used in the corresponding
         input.
         """,
     )
@@ -1843,12 +1852,11 @@ class ActiveSpace(ArchiveSection):
     )
 
     orbital_space_type = Quantity(
-        type=MEnum('CAS', 'RAS', 'GAS'),
+        type=MEnum('CAS', 'RAS'),
         description="""
         Partitioning scheme used for the active space:
           - CAS: complete active space (Roos et al., Chem. Phys. Lett. 48, 157, 1977)
           - RAS: restricted active space (Olsen et al., J. Chem. Phys. 89, 2185, 1988)
-          - GAS: generalized active space (Ma et al., J. Chem. Theory Comput. 7, 433, 2011)
         """,
     )
 
@@ -1974,11 +1982,11 @@ class BaseMultireferenceMethod(BaseModelMethod):
 
 class MultireferenceSCF(BaseMultireferenceMethod):
     """
-    Multiconfigurational SCF calculations (e.g., CASSCF, RASSCF, GASSCF, DMRG-SCF).
+    Multiconfigurational SCF calculations (e.g., CASSCF, RASSCF, DMRG-SCF).
     """
 
     type = Quantity(
-        type=MEnum('CASSCF', 'RASSCF', 'GASSCF', 'DMRGSCF'),
+        type=MEnum('CASSCF', 'RASSCF', 'DMRGSCF'),
         description="""
         Multiconfigurational SCF flavour for the active-space calculation. Use
         `MultireferenceCI` with `type='CASCI'` when orbitals are not
@@ -1993,7 +2001,7 @@ class MultireferenceCI(BaseMultireferenceMethod):
     """
 
     type = Quantity(
-        type=MEnum('MRCI', 'MR-ACPF', 'MR-AQCC', 'CASCI', 'RASCI', 'GASCI', 'DMRGCI'),
+        type=MEnum('MRCI', 'MR-ACPF', 'MR-AQCC', 'CASCI', 'RASCI', 'DMRGCI'),
         description="""
         CI flavour applied on top of a multireference space.
         """,
@@ -2002,13 +2010,13 @@ class MultireferenceCI(BaseMultireferenceMethod):
 
 class MultireferencePT(BaseMultireferenceMethod):
     """
-    Multireference perturbation theory methods (CASPTn/NEVPTn/RASPTn/GASPTn).
+    Multireference perturbation theory methods (CASPTn/NEVPTn/RASPTn).
 
     Defaults are PT2-style, but `order` can capture higher-order variants.
     """
 
     type = Quantity(
-        type=MEnum('CASPT', 'NEVPT', 'RASPT', 'GASPT', 'MRMP', 'XMCQDPT'),
+        type=MEnum('CASPT', 'NEVPT', 'RASPT', 'MRMP', 'XMCQDPT'),
         description="""
         Multireference perturbation flavour applied to the reference state.
         Examples: CASPT with order=2 → CASPT2; NEVPT with order=2 → NEVPT2;

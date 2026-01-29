@@ -1261,7 +1261,7 @@ class IntegralDecomposition(ArchiveSection):
 
 class MultireferenceSCFSettings(NumericalSettings):
     """
-    Numerical knobs for multireference SCF optimizations (CASSCF/RASSCF/GASSCF/DMRG-SCF).
+    Numerical knobs for multireference SCF optimizations (CASSCF/RASSCF/DMRG-SCF).
     """
 
     shift_virtual = Quantity(
@@ -1304,7 +1304,7 @@ class MultireferenceSCFSettings(NumericalSettings):
 class MultireferencePTSettings(NumericalSettings):
     """
     Numerical controls for multireference perturbation treatments
-    (CASPT/NEVPT/RASPT/GASPT/MRMP/XMCQDPT).
+    (CASPT/NEVPT/RASPT/MRMP/XMCQDPT).
 
     These settings capture intruder-state mitigation (real/imaginary level shifts,
     IPEA shift) and contraction choices.
@@ -1332,8 +1332,8 @@ class MultireferencePTSettings(NumericalSettings):
         type=np.float64,
         unit='hartree',
         description="""
-        IPEA shift applied to the zeroth-order Hamiltonian (CASPT2-style).
-        Defaults vary by code (often 0.25 Ha); set explicitly when known.
+        IPEA shift applied to the zeroth-order Hamiltonian.
+        Defaults vary by code (often 0.25 Ha).
         """,
     )
 
