@@ -1920,7 +1920,7 @@ class ActiveSpace(ArchiveSection):
         if any(value is not None for value in ras_fields):
             if self.orbital_space_type != 'RAS':
                 logger.error(
-                    'RAS parameters provided but orbital_space_type is not RAS.'
+                    'Restricted active space (RAS) parameters provided but orbital_space_type is not RAS.'
                 )
 
 
