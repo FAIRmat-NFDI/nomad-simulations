@@ -1,17 +1,9 @@
 classDiagram
-    class AtomicCell
-    class AtomsState
-    class CGBeadState
     class Cell
     class ChemicalFormula
-    class GeometricSpace
     class ModelSystem
     class ParticleState
     class Symmetry
-    Cell <|-- AtomicCell
-    ParticleState <|-- AtomsState
-    ParticleState <|-- CGBeadState
-    GeometricSpace <|-- Cell
     ModelSystem --> Cell : cell
     ModelSystem --> ChemicalFormula : chemical_formula
     ModelSystem --> ModelSystem : sub_systems

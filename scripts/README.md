@@ -56,15 +56,35 @@ A vertical is a curated documentation page that focuses on a specific domain or 
    - `model_method` - Computational methods (DFT, GW, BSE, etc.)
    - `outputs` - Output properties and results
 
-2. **Parent-Child Separation**: 
+2. **Parent-Child Separation**:
    - Parent pages show their direct children
    - Child pages show their internal structure
-   - No redundant upward connections (child → parent)
+### Design Principles
 
-3. **Inheritance Visibility**:
-   - Inheritance arrows (`<|--`) always shown when relevant
-   - Subclass implementation details hidden on parent pages
-   - Full details visible on dedicated subclass pages
+1. **Inheritance-Based Organization**:
+   - Each vertical represents ONE inheritance hierarchy
+   - Parent class and ALL child classes on the same page
+   - Child classes' subsections also included on the same page
+   - Example: `particle_state` contains ParticleState → AtomsState (with OrbitalsState, CoreHole, HubbardInteractions) + CGBeadState
+
+2. **Complete Hierarchy Per Page**:
+   - Include parent class
+   - Include all direct child classes (via inheritance)
+   - Include all subsections of those child classes
+   - Do NOT split inheritance families across multiple pages
+
+3. **Top-Level Entry Points**:
+   - `simulation` - Root Simulation entry (references other top-level sections)
+   - `model_system` - Root ModelSystem (references Cell, ParticleState, etc.)
+   - Other top-level pages just reference their subsections
+
+4. **No Redundant Upward Connections**:
+   - Child pages don't show connections back to parents
+   - Subsection pages don't show connections to containing classes from other verticals
+
+5. **Inheritance Visibility**:
+   - Inheritance arrows (`<|--`) always shown when both classes in allowlist
+   - Shows complete class hierarchy on one page
 
 ### Vertical Definition Structure
 
@@ -75,15 +95,46 @@ Each vertical in `verticals.py` includes:
     'title': 'Display Title',
     'purpose': 'One-line purpose statement',
     'sections': [
-        'ClassName1',  # Classes to include in this vertical
-        'ClassName2',
+        'ParentClass',      # Base class of inheritance hierarchy
+        'ChildClass1',      # Direct child via inheritance
+        'ChildClass2',      # Another child
+        'SubSection1',      # Subsection of ChildClass1
+        'SubSection2',      # Another subsection of ChildClass1
     ],
     'in_scope': [
-        'Brief description of what is included',
+        'ParentClass: description',
+        'ChildClass1: description with subsections SubSection1, SubSection2',
+        'ChildClass2: description',
     ],
     'out_of_scope': [
         'What is NOT included (with references to other verticals)',
     ],
+}
+```
+
+### Organization Examples
+
+**Good** ✓ Complete inheritance hierarchy on one page:
+```python
+'particle_state': {
+    'sections': [
+        'ParticleState',        # Parent
+        'AtomsState',           # Child 1
+        'CGBeadState',          # Child 2
+        'OrbitalsState',        # Subsection of AtomsState
+        'CoreHole',             # Subsection of AtomsState
+        'HubbardInteractions',  # Subsection of AtomsState
+    ],
+}
+```
+
+**Bad** ✗ Splitting subsections to separate page:
+```python
+'particle_state': {
+    'sections': ['ParticleState', 'AtomsState', 'CGBeadState'],
+}
+'atomic_properties': {  # DON'T DO THIS
+    'sections': ['OrbitalsState', 'CoreHole', 'HubbardInteractions'],
 }
 ```
 
@@ -140,7 +191,7 @@ ModelSystem Page:
   ModelSystem → Cell        ✓ (showing direct children)
   ModelSystem → AtomsState  ✓
   Cell <|-- AtomicCell      ✓ (inheritance always shown)
-  
+
 AtomsState Page:
   ModelSystem → AtomsState  ✗ (child hiding parent)
   AtomsState → OrbitalsState ✓ (showing subsections)
@@ -192,11 +243,11 @@ SVG benefits:
 
 ### 5. Navigation Update
 
-Generates:
-- `mkdocs.yml`: Main navigation structure
-- `docs/schema/.pages`: Awesome-pages plugin config
+Automatically updates:
+- `docs/schema/.pages`: Awesome-pages plugin config (list of all vertical .md files)
+- `mkdocs.yml`: Main navigation structure (Schema Navigation section with titles)
 
-Auto-syncs navigation with verticals defined in `verticals.py`.
+The pipeline uses regex to find and replace the "Schema Navigation:" section in `mkdocs.yml`, automatically syncing it with all verticals defined in `verticals.py`. Each vertical's title is used in the navigation menu.
 
 ### 6. Validation
 
@@ -268,6 +319,180 @@ Each diagram includes an inline SVG legend:
    - Check `docs/schema/my_new_vertical.diagram.md`
    - Verify navigation updated automatically
 
+## Updating Verticals When Schema Changes
+
+The verticals in `verticals.py` are the **single source of truth** for documentation organization. When the schema changes (new classes, renamed classes, refactored hierarchies), you must manually update the verticals. The pipeline does NOT automatically detect schema changes.
+
+### When to Update Verticals
+
+Update `verticals.py` when:
+
+1. **New schema classes are added**
+   - Add class names to appropriate vertical's `sections` list
+   - Follow inheritance-based organization (parent + children on same page)
+
+2. **Classes are renamed**
+   - Update class names in all affected `sections` lists
+   - Update cross-references in `in_scope` and `out_of_scope`
+
+3. **Inheritance hierarchy changes**
+   - Reorganize verticals to group parent/child classes together
+   - Example: If `Cell` gains a new subclass, add it to the `cell` vertical
+
+4. **New subsections added to existing classes**
+   - If subsection has its own inheritance tree, create new vertical
+   - If subsection is a simple container, add to parent's vertical
+
+5. **Classes moved between modules**
+   - No update needed - introspection handles module paths automatically
+
+### Organization Principles
+
+**Rule 1: Inheritance Families Together**
+- Parent class and all direct children on the same page
+- Example: `cell` vertical contains `GeometricSpace`, `Cell`, `AtomicCell`
+
+**Rule 2: Subsection Details Separate**
+- Classes that are contained WITHIN others get their own vertical
+- Example: `atoms_state` shows `AtomsState → OrbitalsState, CoreHole, HubbardInteractions`
+
+**Rule 3: One Responsibility Per Page**
+- Each vertical should focus on one concept/hierarchy level
+- Don't mix unrelated classes just to reduce page count
+
+### Update Workflow
+
+1. **Identify schema changes**:
+   ```bash
+   # Check what classes exist in the schema
+   uv run python -c "
+   from nomad_simulations.schema_packages import model_system, atoms_state, model_method
+   for module in [model_system, atoms_state, model_method]:
+       print(f'\n{module.__name__}:')
+       for name in dir(module):
+           obj = getattr(module, name)
+           if hasattr(obj, 'm_def') and hasattr(obj.m_def, 'name'):
+               print(f'  - {name}')
+   "
+   ```
+
+2. **Update `verticals.py`**:
+   - Add new classes to `sections` lists
+   - Update `purpose`, `in_scope`, `out_of_scope` descriptions
+   - Maintain alphabetical order within sections (optional but helpful)
+
+3. **Run pipeline**:
+   ```bash
+   uv run python scripts/generate_docs_pipeline.py
+   ```
+
+4. **Review generated docs**:
+   - Check diagrams show expected relationships
+   - Verify no missing classes (pipeline doesn't warn about this)
+   - Ensure cross-references in `out_of_scope` are still valid
+
+### Example: Adding a New Class
+
+Scenario: New class `PeriodicCell` added that inherits from `Cell`.
+
+**Before:**
+```python
+'cell': {
+    'sections': [
+        'GeometricSpace',
+        'Cell',
+        'AtomicCell',
+    ],
+}
+```
+
+**After:**
+```python
+'cell': {
+    'sections': [
+        'GeometricSpace',
+        'Cell',
+        'AtomicCell',
+        'PeriodicCell',  # New class added
+    ],
+    'in_scope': [
+        'GeometricSpace: base section for defining geometrical spaces',
+        'Cell: cell quantities and lattice vectors',
+        'AtomicCell: atomic cell information extending Cell',
+        'PeriodicCell: periodic cell with explicit periodicity flags',  # New description
+        # ... rest
+    ],
+}
+```
+
+### Example: Refactoring Hierarchy
+
+Scenario: `ModelMethod` hierarchy reorganized - `DFT` split into `KSDFT` and `OFDFT`.
+
+**Before:**
+```python
+'model_method': {
+    'sections': [
+        'ModelMethod',
+        'ModelMethodElectronic',
+        'DFT',
+        'XCFunctional',
+    ],
+}
+```
+
+**After:**
+```python
+'model_method': {
+    'sections': [
+        'ModelMethod',
+        'ModelMethodElectronic',
+        'DFT',
+        'KSDFT',          # New: Kohn-Sham DFT
+        'OFDFT',          # New: Orbital-Free DFT
+        'XCFunctional',
+    ],
+}
+```
+
+### Common Mistakes
+
+❌ **Don't**: Split inheritance hierarchies across multiple verticals
+- All parent + children + their subsections must be on ONE page
+- Example: Don't create separate pages for AtomsState and OrbitalsState
+
+❌ **Don't**: Forget to include subsections of child classes
+- If AtomsState has OrbitalsState, CoreHole subsections, include them all in particle_state vertical
+
+❌ **Don't**: Forget to remove deleted classes
+- Old class names will cause pipeline errors
+
+❌ **Don't**: Mix unrelated inheritance hierarchies on one page
+- Keep `Cell` family separate from `ParticleState` family
+
+❌ **Don't**: Create too many small verticals
+- Balance between focused pages and navigation complexity
+
+✅ **Do**: Keep complete inheritance families together (parent + all children + all subsections)
+
+✅ **Do**: Document purpose clearly in `purpose` field
+
+✅ **Do**: Maintain cross-references in `out_of_scope`
+
+✅ **Do**: List all subsections of child classes in the `sections` list
+
+### Validation Checklist
+
+After updating verticals, verify:
+
+- [ ] All class names in `sections` exist in schema (no typos)
+- [ ] Inheritance families are complete (parent + all children + subsections of children)
+- [ ] No inheritance hierarchy is split across multiple verticals
+- [ ] Cross-references in `out_of_scope` point to existing verticals
+- [ ] `purpose` field accurately describes page content
+- [ ] Diagrams render correctly without errors
+- [ ] Navigation structure makes sense
+
 ## Troubleshooting
 
 ### Diagrams Too Complex
@@ -330,7 +555,7 @@ docs/schema/
 
 **v4** (current): Smart hierarchical filtering
 - Parent pages show children
-- Child pages hide parents  
+- Child pages hide parents
 - Subsection details contextual
 - Inheritance always visible
 
@@ -348,7 +573,7 @@ Typical full regeneration: ~5-10 seconds
 
 Breakdown:
 - Introspection: ~1s
-- Diagram generation: ~1s  
+- Diagram generation: ~1s
 - Doc generation: ~1s
 - SVG conversion: ~2-6s (depends on diagram count)
 - Navigation update: <1s

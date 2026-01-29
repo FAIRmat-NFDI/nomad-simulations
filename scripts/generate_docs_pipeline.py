@@ -23,7 +23,7 @@ from pathlib import Path
 import shutil
 
 
-def run_command(description: str, command: list, cwd = None) -> bool:
+def run_command(description: str, command: list, cwd=None) -> bool:
     """
     Run a subprocess command with progress reporting.
 
@@ -58,34 +58,63 @@ def update_navigation_files(repo_root: Path) -> bool:
     print('\n' + '=' * 60)
     print('Updating navigation configuration')
     print('=' * 60)
-    
+
     try:
         # Import verticals to get current structure
         sys.path.insert(0, str(repo_root / 'scripts'))
         from verticals import VERTICALS
-        
+
         # Update .pages file in docs/schema/
         pages_file = repo_root / 'docs' / 'schema' / '.pages'
-        pages_content = '''# docs/schema/.pages
+        pages_content = """# docs/schema/.pages
 title: Schema Documentation
 index: index.md
 nav:
-'''
+"""
         for vert_key in VERTICALS.keys():
             pages_content += f'  - {vert_key}.md\n'
-        
+
         pages_file.write_text(pages_content, encoding='utf-8')
         print(f'✓ Updated {pages_file.name} with {len(VERTICALS)} verticals')
-        
-        # Validate that mkdocs.yml exists (manual update recommended)
+
+        # Update mkdocs.yml navigation section
         mkdocs_file = repo_root / 'mkdocs.yml'
         if mkdocs_file.exists():
-            print('ℹ Note: Please manually verify mkdocs.yml "Schema Navigation" section')
-            print('  matches the generated pages in docs/schema/')
-        
+            import re
+
+            mkdocs_content = mkdocs_file.read_text(encoding='utf-8')
+
+            # Build new nav items for Schema Navigation section
+            nav_items = []
+            nav_items.append('      - Overview: schema/index.md')
+            for vert_key, vert_spec in VERTICALS.items():
+                title = vert_spec.get('title', vert_key.replace('_', ' ').title())
+                nav_items.append(f'      - {title}: schema/{vert_key}.md')
+
+            new_nav_section = '\n'.join(nav_items)
+
+            # Replace the Schema Navigation section
+            # Pattern: match from "Schema Navigation:" to the next top-level nav item or closing bracket
+            pattern = r'(  - Schema Navigation:\s*\n)((?:      - .*\n)*)'
+            replacement = f'\\1{new_nav_section}\n'
+
+            updated_content = re.sub(pattern, replacement, mkdocs_content)
+
+            if updated_content != mkdocs_content:
+                mkdocs_file.write_text(updated_content, encoding='utf-8')
+                print(
+                    f'✓ Updated mkdocs.yml Schema Navigation with {len(VERTICALS)} verticals'
+                )
+            else:
+                print('⚠ Could not find Schema Navigation section in mkdocs.yml')
+                print('  Please manually add vertical pages to mkdocs.yml nav section')
+
         return True
     except Exception as e:
         print(f'✗ Error updating navigation: {e}')
+        import traceback
+
+        traceback.print_exc()
         return False
 
 
@@ -94,25 +123,25 @@ def validate_navigation(repo_root: Path) -> bool:
     print('\n' + '=' * 60)
     print('Validating navigation consistency')
     print('=' * 60)
-    
+
     try:
         # Import verticals
         sys.path.insert(0, str(repo_root / 'scripts'))
         from verticals import VERTICALS
-        
+
         docs_schema_dir = repo_root / 'docs' / 'schema'
-        
+
         # Check that all vertical pages exist
         missing_pages = []
         for vert_key in VERTICALS.keys():
             page_file = docs_schema_dir / f'{vert_key}.md'
             diagram_file = docs_schema_dir / f'{vert_key}.diagram.md'
-            
+
             if not page_file.exists():
                 missing_pages.append(f'{vert_key}.md')
             if not diagram_file.exists():
                 missing_pages.append(f'{vert_key}.diagram.md')
-        
+
         # Check for orphaned pages (exist but not in VERTICALS)
         orphaned_pages = []
         for md_file in docs_schema_dir.glob('*.md'):
@@ -121,20 +150,22 @@ def validate_navigation(repo_root: Path) -> bool:
             base_name = md_file.stem.replace('.diagram', '')
             if base_name not in VERTICALS and not md_file.name.endswith('.diagram.md'):
                 orphaned_pages.append(md_file.name)
-        
+
         # Report results
         if missing_pages:
             print(f'✗ Missing pages: {", ".join(missing_pages)}')
             return False
-        
+
         if orphaned_pages:
-            print(f'⚠ Orphaned pages (not in verticals.py): {", ".join(orphaned_pages)}')
+            print(
+                f'⚠ Orphaned pages (not in verticals.py): {", ".join(orphaned_pages)}'
+            )
             print('  Consider removing these manually')
-        
+
         print(f'✓ All {len(VERTICALS)} verticals have corresponding pages')
         print('✓ Navigation is consistent')
         return True
-        
+
     except Exception as e:
         print(f'✗ Error validating navigation: {e}')
         return False
@@ -145,28 +176,28 @@ def clean_old_docs(repo_root: Path) -> bool:
     print('\n' + '=' * 60)
     print('Cleaning old generated documentation files')
     print('=' * 60)
-    
+
     docs_schema_dir = repo_root / 'docs' / 'schema'
-    
+
     if not docs_schema_dir.exists():
         print('✓ No old docs to clean')
         return True
-    
+
     try:
         # Import verticals to know which files are generated
         sys.path.insert(0, str(repo_root / 'scripts'))
         from verticals import VERTICALS
-        
+
         # Only remove files that are generated by the script
         removed_count = 0
-        
+
         # Remove index.md (always generated)
         index_file = docs_schema_dir / 'index.md'
         if index_file.exists():
             index_file.unlink()
             removed_count += 1
             print(f'  Removed: {index_file.name}')
-        
+
         # Remove vertical pages and diagram pages based on VERTICALS
         for vert_key in VERTICALS.keys():
             # Remove the main vertical page
@@ -175,20 +206,20 @@ def clean_old_docs(repo_root: Path) -> bool:
                 vert_file.unlink()
                 removed_count += 1
                 print(f'  Removed: {vert_file.name}')
-            
+
             # Remove the diagram page
             diagram_file = docs_schema_dir / f'{vert_key}.diagram.md'
             if diagram_file.exists():
                 diagram_file.unlink()
                 removed_count += 1
                 print(f'  Removed: {diagram_file.name}')
-        
+
         # Clean old diagram images
         assets_diagrams = repo_root / 'docs' / 'assets' / 'diagrams'
         if assets_diagrams.exists():
             shutil.rmtree(assets_diagrams)
             print(f'  Removed: docs/assets/diagrams/')
-        
+
         print(f'✓ Cleaned {removed_count} generated documentation files')
         print('  (Manual files in docs/schema/ were preserved)')
         return True
@@ -280,7 +311,7 @@ def main():
             'Documentation generated but diagrams are in Mermaid format (not clickable)'
         )
         sys.exit(1)
-    
+
     # Step 4: Convert PNG references to SVG (vector graphics with click-zoom)
     print('\n' + '=' * 60)
     print('Converting PNG to SVG for vector quality')
@@ -296,13 +327,13 @@ def main():
 
     # Step 5: Update navigation files
     step5_success = update_navigation_files(repo_root)
-    
+
     if not step5_success:
         print('\n⚠ Warning: Navigation update failed')
 
     # Step 6: Validate navigation consistency
     step6_success = validate_navigation(repo_root)
-    
+
     if not step6_success:
         print('\n⚠ Warning: Navigation validation found issues')
 

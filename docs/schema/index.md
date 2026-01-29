@@ -14,19 +14,43 @@ Root entry point for simulations: Simulation, BaseSimulation, and Program
 
 ## [Model System](model_system.md)
 
-Complete ModelSystem tree: geometric spaces, cells, symmetry, and particle organization
+Root ModelSystem section containing the complete system tree
 
-**In scope:** ModelSystem as the root of the system tree, Geometric spaces: Cell and AtomicCell with lattice vectors, Symmetry information: space groups, point groups, Bravais lattices, Chemical formulas: descriptive, reduced, IUPAC, Hill, anonymous, Particle states: AtomsState for atoms, CGBeadState for coarse-grained beads, Recursive sub_systems containment (ModelSystem contains ModelSystem), Positions, velocities, particle_indices, System type and dimensionality
+**In scope:** ModelSystem as the root of the system tree, Recursive sub_systems containment (ModelSystem contains ModelSystem), System type and dimensionality, References to Cell, ParticleState, Symmetry, ChemicalFormula subsections
 
-**Key sections:** ModelSystem, GeometricSpace, Cell, AtomicCell, Symmetry, ChemicalFormula, ParticleState, AtomsState, CGBeadState
+**Key sections:** ModelSystem
 
-## [Atomic State Properties](atoms_state.md)
+## [Cell and Geometric Spaces](cell.md)
 
-Detailed atomic-level properties within AtomsState: orbitals, core holes, and Hubbard interactions
+Geometric space hierarchy: GeometricSpace, Cell, and AtomicCell with lattice vectors
 
-**In scope:** AtomsState as the container for atomic property details, OrbitalsState: quantum numbers (n, l, ml, j, mj, ms), Orbital degeneracy and occupation, CoreHole: excited electron states for spectroscopy, HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems, Slater integrals for many-body interactions
+**In scope:** GeometricSpace: base section for defining geometrical spaces, Cell: cell quantities and lattice vectors, AtomicCell: atomic cell information extending Cell, Lattice vectors, periodic boundary conditions, Positions and cell geometry
 
-**Key sections:** AtomsState, OrbitalsState, CoreHole, HubbardInteractions
+**Key sections:** GeometricSpace, Cell, AtomicCell
+
+## [Particle States](particle_state.md)
+
+Complete particle state hierarchy: ParticleState base class, AtomsState with detailed atomic properties, and CGBeadState
+
+**In scope:** ParticleState: base class for all particle information, AtomsState: atomic particle states with chemical symbols, CGBeadState: coarse-grained bead states, OrbitalsState: quantum numbers (n, l, ml, j, mj, ms) within AtomsState, Orbital degeneracy and occupation, CoreHole: excited electron states for spectroscopy, HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems, Slater integrals for many-body interactions, Particle indices, velocities, forces, Chemical symbols and particle organization
+
+**Key sections:** ParticleState, AtomsState, CGBeadState, OrbitalsState, CoreHole, HubbardInteractions
+
+## [Symmetry](symmetry.md)
+
+Crystallographic symmetry: space groups, point groups, Bravais lattices
+
+**In scope:** Space group symbols and numbers, Point group symbols, Bravais lattice classifications, Symmetry operations
+
+**Key sections:** Symmetry
+
+## [Chemical Formula](chemical_formula.md)
+
+Chemical formulas in different formats: descriptive, reduced, IUPAC, Hill, anonymous
+
+**In scope:** Descriptive formula, Reduced formula, IUPAC formula, Hill formula, Anonymous formula, Automatic formula generation
+
+**Key sections:** ChemicalFormula
 
 ## [Model Methods](model_method.md)
 

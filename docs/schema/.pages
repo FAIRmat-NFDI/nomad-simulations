@@ -4,7 +4,10 @@ index: index.md
 nav:
   - simulation.md
   - model_system.md
-  - atoms_state.md
+  - cell.md
+  - particle_state.md
+  - symmetry.md
+  - chemical_formula.md
   - model_method.md
   - numerical_settings.md
   - outputs.md

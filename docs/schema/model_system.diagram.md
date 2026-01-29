@@ -15,17 +15,9 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AtomicCell {
-    }
-    class AtomsState {
-    }
-    class CGBeadState {
-    }
     class Cell {
     }
     class ChemicalFormula {
-    }
-    class GeometricSpace {
     }
     class ModelSystem {
     }
@@ -33,10 +25,6 @@ classDiagram
     }
     class Symmetry {
     }
-    Cell <|-- AtomicCell
-    ParticleState <|-- AtomsState
-    ParticleState <|-- CGBeadState
-    GeometricSpace <|-- Cell
     ModelSystem --> Cell
     ModelSystem --> ChemicalFormula
     ModelSystem --> ModelSystem : sub_systems
