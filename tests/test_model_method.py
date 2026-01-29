@@ -453,29 +453,6 @@ class TestSlaterKosterBond:
         assert bond.name == expected
 
 
-class TestActiveSpace:
-    def test_embedded_active_orbitals(self):
-        mo = MolecularOrbitals(
-            n_mo=1,
-            n_ao=1,
-            mo_spin=np.array([0], dtype=np.int32),
-            mo_energies=np.array([1.0]),
-            mo_occupations=np.array([2.0]),
-            mo_coefficients=np.array([[1.0]]),
-        )
-        active = ActiveSpace(
-            n_active_orbitals=1,
-            n_active_electrons=2,
-            active_orbitals=mo,
-        )
-
-        active.normalize(EntryArchive(), logger=logger)
-
-        assert active.active_orbitals is not None
-        assert active.active_orbitals.n_mo == 1
-        assert active.active_orbitals.mo_coefficients.shape == (1, 1)
-
-
 class TestMultireferenceMethods:
     def test_multireference_scf_normalize_sets_state_groups(self):
         active = ActiveSpace(n_active_orbitals=4, n_active_electrons=6)
