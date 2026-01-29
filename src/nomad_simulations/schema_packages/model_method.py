@@ -20,9 +20,6 @@ from nomad_simulations.schema_packages.atoms_state import CoreHole, ElectronicSt
 from nomad_simulations.schema_packages.data_types import positive_int, unit_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
-from nomad_simulations.schema_packages.properties.molecular_orbitals import (
-    MolecularOrbitals,
-)
 from nomad_simulations.schema_packages.utils.libxc.build import (
     spec_from_label,
 )
