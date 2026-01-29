@@ -1906,6 +1906,23 @@ class ActiveSpace(ArchiveSection):
         """,
     )
 
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        ras_fields = [
+            self.ras1_n_orbitals,
+            self.ras2_n_orbitals,
+            self.ras3_n_orbitals,
+            self.ras1_max_holes,
+            self.ras3_max_particles,
+        ]
+
+        if any(value is not None for value in ras_fields):
+            if self.orbital_space_type != 'RAS':
+                logger.error(
+                    'RAS parameters provided but orbital_space_type is not RAS.'
+                )
+
 
 class BaseMultireferenceMethod(BaseModelMethod):
     """
