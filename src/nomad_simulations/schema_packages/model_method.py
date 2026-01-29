@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import CoreHole, ElectronicState
-from nomad_simulations.schema_packages.data_types import unit_float
+from nomad_simulations.schema_packages.data_types import positive_int, unit_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 from nomad_simulations.schema_packages.properties.molecular_orbitals import (
@@ -1820,7 +1820,7 @@ class ActiveSpace(ArchiveSection):
     """
 
     n_active_orbitals = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description="""
         Number of spatial orbitals in the active space (same orbitals available to both
         spin channels). Mirrors the CAS/RAS definition used in the corresponding
@@ -1829,14 +1829,14 @@ class ActiveSpace(ArchiveSection):
     )
 
     n_active_electrons = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description="""
         Total electrons assigned to the active space.
         """,
     )
 
     n_active_alpha = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description="""
         Optional number of α-spin electrons in the active space. Use when the input
         distinguishes spin channels (e.g., unrestricted references).
@@ -1844,7 +1844,7 @@ class ActiveSpace(ArchiveSection):
     )
 
     n_active_beta = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description="""
         Optional number of β-spin electrons in the active space. Use when the input
         distinguishes spin channels (e.g., unrestricted references).
@@ -1870,28 +1870,28 @@ class ActiveSpace(ArchiveSection):
 
     # RAS-specific method quantities
     ras1_n_orbitals = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description="""
         Number of orbitals in the RAS1 (hole-restricted) subspace.
         """,
     )
 
     ras2_n_orbitals = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description="""
         Number of orbitals in the RAS2 (fully flexible) subspace.
         """,
     )
 
     ras3_n_orbitals = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description="""
         Number of orbitals in the RAS3 (particle-restricted) subspace.
         """,
     )
 
     ras1_max_holes = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description="""
         Maximum number of holes allowed in RAS1 (electrons that may be excited out of
         the nominally doubly occupied subspace).
@@ -1899,7 +1899,7 @@ class ActiveSpace(ArchiveSection):
     )
 
     ras3_max_particles = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description="""
         Maximum number of electrons allowed in RAS3 (electrons that may be excited into
         the nominally empty subspace).
@@ -1922,6 +1922,27 @@ class ActiveSpace(ArchiveSection):
                 logger.error(
                     'Restricted active space (RAS) parameters provided but orbital_space_type is not RAS.'
                 )
+        if self.orbital_space_type == 'RAS':
+            ras_orb_counts = [
+                self.ras1_n_orbitals,
+                self.ras2_n_orbitals,
+                self.ras3_n_orbitals,
+            ]
+            if all(val is None for val in ras_orb_counts):
+                logger.warning(
+                    'orbital_space_type=RAS but RAS orbital counts are all missing '
+                    '(ras1_n_orbitals, ras2_n_orbitals, ras3_n_orbitals).'
+                )
+            elif self.n_active_orbitals is not None and all(
+                val is not None for val in ras_orb_counts
+            ):
+                total_ras = sum(ras_orb_counts)
+                if total_ras != self.n_active_orbitals:
+                    logger.warning(
+                        'RAS orbital counts sum to %s but n_active_orbitals is %s.',
+                        total_ras,
+                        self.n_active_orbitals,
+                    )
 
 
 class BaseMultireferenceMethod(BaseModelMethod):
@@ -1940,7 +1961,7 @@ class BaseMultireferenceMethod(BaseModelMethod):
     )
 
     n_state_groups = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description="""
         Number of state groups specified (typically one per spin multiplicity). Mirrors
         the length of `state_multiplicities` and `n_roots_per_multiplicity` inputs such
@@ -1959,7 +1980,7 @@ class BaseMultireferenceMethod(BaseModelMethod):
     )
 
     n_roots_per_multiplicity = Quantity(
-        type=np.int32,
+        type=positive_int(),
         shape=['n_state_groups'],
         description="""
         Number of roots requested for each entry in `state_multiplicities` (e.g., [10,15]
@@ -2042,7 +2063,7 @@ class MultireferencePT(BaseMultireferenceMethod):
     )
 
     order = Quantity(
-        type=np.int32,
+        type=positive_int(),
         default=2,
         description="""
         Perturbation order (2 for CASPT2/NEVPT2; higher for CASPT3, etc.).
