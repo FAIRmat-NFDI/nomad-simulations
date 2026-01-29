@@ -1295,7 +1295,7 @@ class MultireferenceSCFSettings(NumericalSettings):
         type=np.float64,
         unit='hartree',
         description="""
-        Minimum enforced energy separation between orbital subspaces, 
+        Minimum enforced energy separation between orbital subspaces,
         typically to keep active/inactive/virtual spaces apart.
         """,
     )
