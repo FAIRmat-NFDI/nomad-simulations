@@ -476,6 +476,11 @@ class KMesh(Mesh):
         return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # Ensure parent KSpace has normalized reciprocal_lattice_vectors first
+        k_space = self.m_parent
+        if k_space is not None and isinstance(k_space, KSpace):
+            k_space.normalize_reciprocal_lattice_vectors()
+
         super().normalize(archive, logger)
 
         # If `grid` is not defined, we do not normalize the KMesh
@@ -491,8 +496,9 @@ class KMesh(Mesh):
         model_systems = self.m_xpath(
             'm_parent.m_parent.m_parent.model_system', dict=False
         )
-        reciprocal_lattice_vectors = self.m_xpath(
-            'm_parent.reciprocal_lattice_vectors', dict=False
+        # Access reciprocal_lattice_vectors directly from parent to preserve units
+        reciprocal_lattice_vectors = (
+            self.m_parent.reciprocal_lattice_vectors if self.m_parent else None
         )
         if self.k_line_density is None:
             self.k_line_density = self.resolve_k_line_density(
@@ -756,14 +762,20 @@ class KLinePath(ArchiveSection):
         self.points = new_points
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # Ensure parent KSpace has normalized reciprocal_lattice_vectors first
+        k_space = self.m_parent
+        if k_space is not None and isinstance(k_space, KSpace):
+            k_space.normalize_reciprocal_lattice_vectors()
+
         super().normalize(archive, logger)
 
         # Resolves `high_symmetry_path_values` from `high_symmetry_path_names`
         model_systems = self.m_xpath(
             'm_parent.m_parent.m_parent.model_system', dict=False
         )
-        reciprocal_lattice_vectors = self.m_xpath(
-            'm_parent.reciprocal_lattice_vectors', dict=False
+        # Access reciprocal_lattice_vectors directly from parent to preserve units
+        reciprocal_lattice_vectors = (
+            self.m_parent.reciprocal_lattice_vectors if self.m_parent else None
         )
         if (
             self.high_symmetry_path_values is None
@@ -848,15 +860,28 @@ class KSpace(NumericalSettings):
             return 2 * np.pi * ase_atoms.get_reciprocal_cell() / ureg.angstrom
         return None
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
+    @log
+    def normalize_reciprocal_lattice_vectors(self) -> None:
+        """
+        Ensure `reciprocal_lattice_vectors` are normalized if not already set.
+        This method is separated to allow subsections (`KMesh` and `KLinePath`) to
+        call it and ensure the parent's `reciprocal_lattice_vectors` are available.
+        """
+        if self.reciprocal_lattice_vectors is not None:
+            return
 
-        # Resolve `reciprocal_lattice_vectors` from the `ModelSystem` ASE object
+        logger = self.normalize_reciprocal_lattice_vectors.__annotations__['logger']
         model_systems = self.m_xpath('m_parent.m_parent.model_system', dict=False)
-        if self.reciprocal_lattice_vectors is None:
-            self.reciprocal_lattice_vectors = self.resolve_reciprocal_lattice_vectors(
-                model_systems=model_systems, logger=logger
-            )
+        self.reciprocal_lattice_vectors = self.resolve_reciprocal_lattice_vectors(
+            model_systems=model_systems, logger=logger
+        )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # Normalize `reciprocal_lattice_vectors` BEFORE calling super().normalize()
+        # so that subsections can access it during their normalization
+        self.normalize_reciprocal_lattice_vectors()
+
+        super().normalize(archive, logger)
 
 
 class SelfConsistency(NumericalSettings):

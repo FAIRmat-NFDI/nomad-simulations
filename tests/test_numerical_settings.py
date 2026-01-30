@@ -156,6 +156,70 @@ class TestKSpaceFunctionalities:
             assert high_symmetry_points == expected_result
 
 
+@pytest.mark.parametrize(
+    'subsection_kwargs, subsection_accessor, expected_attrs',
+    [
+        pytest.param(
+            {'grid': [6, 6, 6]},
+            lambda k_space: k_space.k_mesh[0],
+            ['k_line_density', 'high_symmetry_points'],
+            id='KMesh',
+        ),
+        pytest.param(
+            {
+                'high_symmetry_path_names': ['Gamma', 'X', 'R'],
+                'high_symmetry_path_values': None,
+            },
+            lambda k_space: k_space.k_line_path,
+            ['high_symmetry_path_values'],
+            id='KLinePath',
+        ),
+    ],
+)
+def test_kspace_subsection_normalization_order(
+    subsection_kwargs, subsection_accessor, expected_attrs
+):
+    """
+    Test that KSpace subsections (KMesh and KLinePath) can access
+    reciprocal_lattice_vectors even when normalized before their parent KSpace.
+    This tests the fix for issue #126.
+    """
+    # Create a simulation with KSpace subsection and proper lattice vectors
+    # Don't pre-set reciprocal_lattice_vectors - let normalization resolve them
+    simulation = generate_k_space_simulation(
+        system_type='bulk',
+        is_representative=True,
+        reciprocal_lattice_vectors=None,  # Will be resolved from ModelSystem
+        lattice_vectors=[[5.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 0.0, 5.0]],
+        pbc=[True, True, True],
+        **subsection_kwargs,
+    )
+
+    # Create archive and set simulation as root of the msection hierarchy
+    archive = EntryArchive()
+    archive.data = simulation
+
+    # Normalize ModelSystem first so it's available for KSpace
+    simulation.model_system[0].normalize(archive, logger)
+
+    k_space = simulation.model_method[0].numerical_settings[0]
+    subsection = subsection_accessor(k_space)
+
+    # Explicitly normalize subsection before KSpace (simulating NOMAD's subsection-first order)
+    # This should trigger the fix where subsection calls k_space.normalize_reciprocal_lattice_vectors()
+    subsection.normalize(archive, logger)
+
+    # Verify that reciprocal_lattice_vectors were resolved and are now available in KSpace
+    assert k_space.reciprocal_lattice_vectors is not None
+
+    # Verify that subsection successfully accessed them during normalization
+    for attr in expected_attrs:
+        assert getattr(subsection, attr) is not None
+    # Special check for KLinePath length
+    if 'high_symmetry_path_values' in expected_attrs:
+        assert len(subsection.high_symmetry_path_values) == 3
+
+
 class TestKMesh:
     """
     Test the `KMesh` class defined in `numerical_settings.py`.
