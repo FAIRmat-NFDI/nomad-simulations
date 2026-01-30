@@ -44,64 +44,64 @@
 | `FermiSurface` | Energy boundary in reciprocal space that separates the filled and empty electronic states in a metal. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.fermi_surface.FermiSurface){:target="_blank"} |
 
 
-## Micro-examples
+## Quantities by section
 
-=== "YAML"
+### `BaseElectronicEigenvalues`
 
-    ```yaml
-    BaseElectronicEigenvalues:
-      n_bands:
-      - null
-      value:
-      - null
-    ElectronicEigenvalues:
-      spin_channel:
-      - null
-      occupation:
-      - null
-      highest_occupied:
-      - null
-      lowest_unoccupied:
-      - null
-      reciprocal_cell:
-      - null
-      value_contributions:
-      - {}
-    ElectronicBandStructure:
-      k_path: {}
-    ElectronicBandGap:
-      type:
-      - null
-      momentum_transfer:
-      - null
-      spin_channel:
-      - null
-      value:
-      - null
-    DOSProfile:
-      value:
-      - null
-      energies: {}
-    ElectronicDensityOfStates:
-      spin_channel:
-      - null
-      energies_origin:
-      - null
-      normalization_factor:
-      - null
-      energies: {}
-      projected_dos:
-      - {}
-    Occupancy:
-      atoms_state_ref:
-      - null
-      orbitals_state_ref:
-      - null
-      spin_channel:
-      - null
-      value:
-      - null
-    FermiSurface:
-      n_bands:
-      - null
-    ```
+| Quantity | Type | Description |
+|---|---|---|
+| `n_bands` | m_int32(int32) | Number of bands / eigenvalues. |
+| `value` | m_float64(float64) (shape: ['*', '*']) | Value of the electronic eigenvalues. |
+
+### `ElectronicEigenvalues`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic eigenvalues. It can take values of 0 or 1. |
+| `occupation` | m_float64(float64) (shape: ['*', 'n_bands']) | Occupation of the electronic eigenvalues. This is a number depending whether the `spin_channel` has been set or not. If `spin_channel` is set, then this number is between 0 and 1, where 0 means that the state is unoccupied and 1 means that the state is fully occupied; if `spin_channel` is not set, then this number is between 0 and 2. The shape of this quantity is defined as `[K.n_points, K.dimensionality, n_bands]`, where `K` is a `variable` which can be `KMesh` or `KLinePath`, depending whether the simulation mapped the whole Brillouin zone or just a specific path. |
+| `highest_occupied` | m_float64(float64) | Highest occupied electronic eigenvalue. Together with `lowest_unoccupied`, it defines the electronic band gap. |
+| `lowest_unoccupied` | m_float64(float64) | Lowest unoccupied electronic eigenvalue. Together with `highest_occupied`, it defines the electronic band gap. |
+| `reciprocal_cell` | <nomad.metainfo.metainfo.QuantityReference object at 0x788f056b6660> | Reference to the reciprocal lattice vectors stored under `KSpace`. |
+
+### `ElectronicBandStructure`
+
+*This section has no direct quantities.*
+
+### `ElectronicBandGap`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `type` | Enum | Type categorization of the electronic band gap. This quantity is directly related with `momentum_transfer` as by definition, the electronic band gap is `'direct'` for zero momentum transfer (or if `momentum_transfer` is `None`) and `'indirect'` for finite momentum transfer. |
+| `momentum_transfer` | m_float64(float64) (shape: [2, 3]) | If the electronic band gap is `'indirect'`, the reciprocal momentum transfer for which the band gap is defined in units of the `reciprocal_lattice_vectors`. The initial and final momentum 3D vectors are given in the first and second element. Example, the momentum transfer in bulk Si2 happens between the Γ and the (approximately) X points in the Brillouin zone; thus: `momentum_transfer = [[0, 0, 0], [0.5, 0.5, 0]]`. Note: this quantity only refers to scalar `value`, not to arrays of `value`. |
+| `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic band gap. It can take values of 0 or 1. |
+| `value` | m_float_bounded(float) | The value of the electronic band gap. This value must be positive. |
+
+### `DOSProfile`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `value` | m_float_bounded(float) (shape: ['*']) | The value of the electronic DOS. Must be positive. |
+
+### `ElectronicDensityOfStates`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic DOS. It can take values of 0 or 1. |
+| `energies_origin` | m_float64(float64) | Energy level denoting the origin along the energy axis, used for comparison and visualization. It is defined as the `ElectronicEigenvalues.highest_occupied_energy`. |
+| `normalization_factor` | m_float64(float64) | Normalization factor for electronic DOS to get a cell-independent intensive DOS. The cell-independent intensive DOS is as the integral from the lowest (most negative) energy to the Fermi level for a neutrally charged system (i.e., the sum of `AtomsState.charge` is zero). |
+
+### `Occupancy`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `atoms_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x788f056830e0> | Reference to the `AtomsState` section in which the occupancy is calculated. |
+| `orbitals_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x788f05683740> | Reference to the `OrbitalsState` section in which the occupancy is calculated. |
+| `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic property. It can take values of 0 and 1. |
+| `value` | m_float64(float64) | Value of the electronic occupancy in the atom defined by `atoms_state_ref` and the orbital defined by `orbitals_state_ref`. the orbital. If `spin_channel` is set, then this number is between 0 and 1, where 0 means that the state is unoccupied and 1 means that the state is fully occupied; if `spin_channel` is not set, then this number is between 0 and 2. |
+
+### `FermiSurface`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `n_bands` | m_int32(int32) | Number of bands / eigenvalues. |
+

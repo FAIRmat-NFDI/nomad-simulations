@@ -37,27 +37,28 @@
 | `Permittivity` | Response of the material to polarize in the presence of an electric field. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.permittivity.Permittivity){:target="_blank"} |
 
 
-## Micro-examples
+## Quantities by section
 
-=== "YAML"
+### `SpectralProfile`
 
-    ```yaml
-    SpectralProfile:
-      value:
-      - null
-      energies: {}
-      frequencies: {}
-    AbsorptionSpectrum:
-      axis:
-      - null
-    XASSpectrum:
-      xanes_spectrum: {}
-      exafs_spectrum: {}
-    Permittivity:
-      type:
-      - null
-      value:
-      - null
-      frequencies: {}
-      q_mesh: {}
-    ```
+| Quantity | Type | Description |
+|---|---|---|
+| `value` | m_float_bounded(float) (shape: ['*']) | The value of the intensities of a spectral profile. Must be positive. |
+
+### `AbsorptionSpectrum`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `axis` | Enum | Axis of the absorption spectrum. This is related with the polarization direction, and can be seen as the principal term in the tensor `Permittivity.value` (see permittivity.py module). |
+
+### `XASSpectrum`
+
+*This section has no direct quantities.*
+
+### `Permittivity`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `type` | Enum | Type of permittivity which allows to identify if the permittivity depends on the frequency or not. |
+| `value` | m_complex128(complex) (shape: ['*']) | Value of the permittivity tensor. If the value does not depend on the scattering vector `q`, then we can extract the optical absorption spectrum from the imaginary part of the permittivity tensor (this is also called macroscopic dielectric function). |
+

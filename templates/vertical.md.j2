@@ -34,10 +34,19 @@
 {% endfor %}
 
 
-## Micro-examples
+## Quantities by section
 
-=== "YAML"
+{% for s in section_info %}
+### `{{ s.name }}`
 
-    ```yaml
-    {{ example_yaml | trim | indent(4) }}
-    ```
+{% if s.quantities %}
+| Quantity | Type | Description |
+|---|---|---|
+{% for q in s.quantities %}
+| `{{ q.name }}` | {{ q.type }} | {{ q.description }} |
+{% endfor %}
+{% else %}
+*This section has no direct quantities.*
+{% endif %}
+
+{% endfor %}

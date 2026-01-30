@@ -57,60 +57,112 @@
 | `Hessian` | A square matrix of second-order partial derivatives of a potential energy function, describing the local curvature of the energy surface. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.thermodynamics.Hessian){:target="_blank"} |
 
 
-## Micro-examples
+## Quantities by section
 
-=== "YAML"
+### `BaseEnergy`
 
-    ```yaml
-    BaseEnergy:
-      value:
-      - null
-    TotalEnergy:
-      contributions:
-      - {}
-    KineticEnergy: {}
-    PotentialEnergy: {}
-    Heat: {}
-    Work: {}
-    InternalEnergy: {}
-    Enthalpy: {}
-    GibbsFreeEnergy: {}
-    HelmholtzFreeEnergy: {}
-    ChemicalPotential:
-      temperature:
-      - null
-      particle_number:
-      - null
-      fermi_energy:
-      - null
-      type:
-      - null
-    VirialTensor: {}
-    BaseForce:
-      value:
-      - null
-    TotalForce:
-      contributions:
-      - {}
-    Pressure:
-      value:
-      - null
-    Volume:
-      value:
-      - null
-    Temperature:
-      points:
-      - null
-    Entropy:
-      value:
-      - null
-    HeatCapacity:
-      value:
-      - null
-    MassDensity:
-      value:
-      - null
-    Hessian:
-      value:
-      - null
-    ```
+| Quantity | Type | Description |
+|---|---|---|
+| `value` | m_float64(float64) | No description available. |
+
+### `TotalEnergy`
+
+*This section has no direct quantities.*
+
+### `KineticEnergy`
+
+*This section has no direct quantities.*
+
+### `PotentialEnergy`
+
+*This section has no direct quantities.*
+
+### `Heat`
+
+*This section has no direct quantities.*
+
+### `Work`
+
+*This section has no direct quantities.*
+
+### `InternalEnergy`
+
+*This section has no direct quantities.*
+
+### `Enthalpy`
+
+*This section has no direct quantities.*
+
+### `GibbsFreeEnergy`
+
+*This section has no direct quantities.*
+
+### `HelmholtzFreeEnergy`
+
+*This section has no direct quantities.*
+
+### `ChemicalPotential`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `temperature` | m_float64(float64) | Temperature at which the chemical potential is calculated. Essential for finite-temperature calculations. |
+| `particle_number` | m_float64(float64) | Number of particles (or particle density) for which the chemical potential applies. Can represent electron number, atom number, or other relevant particle count. |
+| `fermi_energy` | m_float64(float64) | Fermi energy at T=0K, used as reference for finite-temperature chemical potential. At T=0, the chemical potential equals the Fermi energy. |
+| `type` | m_str(str) | Type of chemical potential calculation. Examples: 'electronic', 'atomic', 'ionic', 'molecular'. Helps identify what kind of particles this applies to. |
+
+### `VirialTensor`
+
+*This section has no direct quantities.*
+
+### `BaseForce`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `value` | m_float64(float64) (shape: ['*', '*']) | No description available. |
+
+### `TotalForce`
+
+*This section has no direct quantities.*
+
+### `Pressure`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `value` | m_float64(float64) | No description available. |
+
+### `Volume`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `value` | m_float64(float64) | No description available. |
+
+### `Temperature`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `points` | m_float64(float64) (shape: ['n_points']) | Points in which the temperature is discretized. |
+
+### `Entropy`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `value` | m_float64(float64) | No description available. |
+
+### `HeatCapacity`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `value` | m_float64(float64) | No description available. |
+
+### `MassDensity`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `value` | m_float64(float64) | No description available. |
+
+### `Hessian`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `value` | m_float64(float64) | No description available. |
+

@@ -38,43 +38,32 @@
 | `Program` | A base section used to specify a well-defined program used for computation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.general.Program){:target="_blank"} |
 
 
-## Micro-examples
+## Quantities by section
 
-=== "YAML"
+### `Simulation`
 
-    ```yaml
-    Simulation:
-      representative_system_index:
-      - null
-      model_system:
-      - {}
-      model_method:
-      - {}
-      outputs:
-      - {}
-    BaseSimulation:
-      datetime_end:
-      - null
-      cpu1_start:
-      - null
-      cpu1_end:
-      - null
-      wall_start:
-      - null
-      wall_end:
-      - null
-      program: {}
-    Program:
-      name:
-      - null
-      version:
-      - null
-      link:
-      - null
-      version_internal:
-      - null
-      subroutine_name_internal:
-      - null
-      compilation_host:
-      - null
-    ```
+| Quantity | Type | Description |
+|---|---|---|
+| `representative_system_index` | m_int32(int32) | The index of the "representative system" in the `model_system` list. |
+
+### `BaseSimulation`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `datetime_end` | Datetime | The date and time when this computation ended. |
+| `cpu1_start` | m_float64(float64) | The starting time of the computation on the (first) CPU 1. |
+| `cpu1_end` | m_float64(float64) | The end time of the computation on the (first) CPU 1. |
+| `wall_start` | m_float64(float64) | The internal wall-clock time from the starting of the computation. |
+| `wall_end` | m_float64(float64) | The internal wall-clock time from the end of the computation. |
+
+### `Program`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `name` | m_str(str) | The name of the program. |
+| `version` | m_str(str) | The version label of the program. |
+| `link` | m_str(str) | Website link to the program in published information. |
+| `version_internal` | m_str(str) | Specifies a program version tag used internally for development purposes. Any kind of tagging system is supported, including git commit hashes. |
+| `subroutine_name_internal` | m_str(str) | Specifies the name of the subroutine of the program at large. This only applies when the routine produced (almost) all of the output, so the naming is representative. This naming is mostly meant for users who are familiar with the program's structure. |
+| `compilation_host` | m_str(str) | Specifies the host on which the program was compiled. |
+

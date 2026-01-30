@@ -38,53 +38,41 @@
 | `AtomicCell` | A base section used to specify the atomic cell information of a system. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.AtomicCell){:target="_blank"} |
 
 
-## Micro-examples
+## Quantities by section
 
-=== "YAML"
+### `GeometricSpace`
 
-    ```yaml
-    GeometricSpace:
-      length_vector_a:
-      - null
-      length_vector_b:
-      - null
-      length_vector_c:
-      - null
-      angle_vectors_b_c:
-      - null
-      angle_vectors_a_c:
-      - null
-      angle_vectors_a_b:
-      - null
-      volume:
-      - null
-      surface_area:
-      - null
-      area:
-      - null
-      length:
-      - null
-      coordinates_system: cartesian
-      origin_shift:
-      - null
-      transformation_matrix:
-      - null
-    Cell:
-      name:
-      - null
-      type:
-      - null
-      n_cell_points:
-      - null
-      lattice_vectors:
-      - null
-      periodic_boundary_conditions:
-      - null
-      supercell_matrix:
-      - null
-    AtomicCell:
-      equivalent_atoms:
-      - null
-      wyckoff_letters:
-      - null
-    ```
+| Quantity | Type | Description |
+|---|---|---|
+| `length_vector_a` | m_float64(float64) | Length of the first basis vector. |
+| `length_vector_b` | m_float64(float64) | Length of the second basis vector. |
+| `length_vector_c` | m_float64(float64) | Length of the third basis vector. |
+| `angle_vectors_b_c` | m_float64(float64) | Angle between second and third basis vector. |
+| `angle_vectors_a_c` | m_float64(float64) | Angle between first and third basis vector. |
+| `angle_vectors_a_b` | m_float64(float64) | Angle between first and second basis vector. |
+| `volume` | m_float64(float64) | Volume of a 3D real space entity. |
+| `surface_area` | m_float64(float64) | Surface area of a 3D real space entity. |
+| `area` | m_float64(float64) | Area of a 2D real space entity. |
+| `length` | m_float64(float64) | Total length of a 1D real space entity. |
+| `coordinates_system` | Enum | Coordinate system used to define geometrical primitives of a shape in real space. Defaults to 'cartesian'. \| name \| description \| dimensionalities \| coordinates \| \|------------\|-------------\|------------------\|-------------\| \| cartesian \| coordinate system with fixed angles between the axes (not necessarily 90°) \| 1, 2, 3 \| x, y, z \| \| cylindrical\| cylindrical symmetry \| 3 \| r, theta, z \| \| spherical \| spherical symmetry \| 3 \| r, theta, phi \| \| ellipsoidal\| spherically elongated system \| 3 \| r, theta, phi \| \| polar \| spherical symmetry \| 2 \| r, theta \| |
+| `origin_shift` | m_float64(float64) (shape: [3]) | Vector `p` from the origin of a custom coordinates system to the origin of the global coordinates system. Together with the matrix `P` (stored in transformation_matrix), the transformation between the custom coordinates `x` and global coordinates `X` is then given by: `x` = `P` `X` + `p`. |
+| `transformation_matrix` | m_float64(float64) (shape: [3, 3]) | Matrix `P` used to transform the custom coordinates system to the global coordinates system. Together with the vector `p` (stored in origin_shift), the transformation between the custom coordinates `x` and global coordinates `X` is then given by: `x` = `P` `X` + `p`. |
+
+### `Cell`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `name` | m_str(str) | Name of the specific cell section. This is typically used to easy identification of the `Cell` section. Possible values: "AtomicCell". |
+| `type` | Enum | Representation type of the cell structure. It might be: - 'original' as in originally parsed, - 'primitive' as the primitive unit cell, - 'conventional' as the conventional cell used for referencing. |
+| `n_cell_points` | m_int32(int32) | Number of cell points. |
+| `lattice_vectors` | m_float64(float64) (shape: [3, 3]) | Lattice vectors of the simulated cell in Cartesian coordinates. The first index runs over each lattice vector. The second index runs over the $x, y, z$ Cartesian coordinates. |
+| `periodic_boundary_conditions` | m_bool(bool) (shape: [3]) | If periodic boundary conditions are applied to each direction of the crystal axes. |
+| `supercell_matrix` | m_int32(int32) (shape: [3, 3]) | Specifies the matrix that transforms the primitive unit cell into the supercell in which the actual calculation is performed. In the easiest example, it is a diagonal matrix whose elements multiply the lattice_vectors, e.g., [[3, 0, 0], [0, 3, 0], [0, 0, 3]] is a $3 x 3 x 3$ superlattice. |
+
+### `AtomicCell`
+
+| Quantity | Type | Description |
+|---|---|---|
+| `equivalent_atoms` | m_int32(int32) (shape: ['*']) | List of equivalent atoms as defined in `atoms`. If no equivalent atoms are found, then the list is simply the index of each element, e.g.: - [0, 1, 2, 3] all four atoms are non-equivalent. - [0, 0, 0, 3] three equivalent atoms and one non-equivalent. |
+| `wyckoff_letters` | m_str(str) (shape: ['*']) | Wyckoff letters associated with each atom. |
+

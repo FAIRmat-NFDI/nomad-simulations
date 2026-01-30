@@ -51,6 +51,65 @@ def clean_scope_item(item: str) -> str:
     return re.sub(r'\s*\(see\s+[^)]+\)', '', item).strip()
 
 
+def collect_quantities_info(section_cls) -> list[dict]:
+    """Collect quantity names, types, and docstrings from a section class."""
+    from nomad.metainfo import MSection
+
+    if not isinstance(section_cls, type) or not issubclass(section_cls, MSection):
+        return []
+
+    sdef = section_cls.m_def
+    quantities_info = []
+
+    for q in getattr(sdef, 'quantities', []):
+        # Get quantity name
+        name = q.name
+
+        # Get type information
+        type_str = 'Any'
+        if hasattr(q, 'type'):
+            q_type = q.type
+            if hasattr(q_type, '__name__'):
+                type_str = q_type.__name__
+            else:
+                type_str = str(q_type)
+
+        # Get shape information if it's an array
+        shape_str = ''
+        if hasattr(q, 'shape') and q.shape:
+            shape_str = f' (shape: {q.shape})'
+
+        # Get docstring/description
+        description = ''
+        if hasattr(q, 'description') and q.description:
+            description = q.description.strip()
+        elif hasattr(q, '__doc__') and q.__doc__:
+            description = q.__doc__.strip()
+
+        # Clean description for markdown table:
+        # 1. Replace newlines with spaces
+        # 2. Collapse multiple spaces
+        # 3. Escape pipe characters
+        if description:
+            description = ' '.join(description.split())
+            description = description.replace('|', '\\|')
+
+        # Combine type and shape
+        full_type = type_str + shape_str
+
+        quantities_info.append(
+            {
+                'name': name,
+                'type': full_type,
+                'description': description
+                if description
+                else 'No description available.',
+            }
+        )
+
+    return quantities_info
+
+
 def build_registry(
     pkg: str, extra_modules: list[str] | None = None
 ) -> dict[str, object]:
@@ -186,15 +245,10 @@ def build_vertical(
         title, sections, edges_all, vert_key=vert_key, verticals_dict=VERTICALS
     )
 
-    # Micro-examples (combined dict keyed by section)
+    # Collect section info with quantities
     section_classes = resolve_section_classes(sections, registry)
-    ex_map = {}
     section_info = []
     for cls in section_classes:
-        ex = example_for_section(cls)
-        ex_map[cls.__name__] = (
-            ex if isinstance(ex, dict) else (yaml.safe_load(ex) or {})
-        )
         # Extract docstring for section description
         docstring = (cls.__doc__ or '').strip()
         # Get first complete sentence (up to first period followed by space or newline)
@@ -226,10 +280,17 @@ def build_vertical(
             f'{metainfo_base}/{pkg}/section_definitions@{module}.{class_name}'
         )
 
+        # Collect quantities information for this section
+        quantities = collect_quantities_info(cls)
+
         section_info.append(
-            {'name': cls.__name__, 'description': brief, 'metainfo_url': metainfo_url}
+            {
+                'name': cls.__name__,
+                'description': brief,
+                'metainfo_url': metainfo_url,
+                'quantities': quantities,
+            }
         )
-    example_yaml = yaml.safe_dump(ex_map, sort_keys=False)
 
     # Render template
     env = Environment(
@@ -249,7 +310,6 @@ def build_vertical(
         section_info=section_info,
         metainfo_base=metainfo_base,
         mermaid_block=mermaid_block,  # already fenced
-        example_yaml=example_yaml,
         feedback_url=f'{feedback_url_base}&labels=schema-review,vertical:{vert_key}'
         f'&title=[Review]%20{vert_key}',
     )
