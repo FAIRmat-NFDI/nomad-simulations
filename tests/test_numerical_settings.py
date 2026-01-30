@@ -195,8 +195,9 @@ def test_kspace_subsection_normalization_order(
         **subsection_kwargs,
     )
 
-    # Create a single archive instance as the root context for all normalize calls
+    # Create archive and set simulation as root of the msection hierarchy
     archive = EntryArchive()
+    archive.data = simulation
 
     # Normalize ModelSystem first so it's available for KSpace
     simulation.model_system[0].normalize(archive, logger)
