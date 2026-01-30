@@ -194,15 +194,19 @@ def test_kspace_subsection_normalization_order(
         pbc=[True, True, True],
         **subsection_kwargs,
     )
+
+    # Create a single archive instance as the root context for all normalize calls
+    archive = EntryArchive()
+
     # Normalize ModelSystem first so it's available for KSpace
-    simulation.model_system[0].normalize(EntryArchive(), logger)
+    simulation.model_system[0].normalize(archive, logger)
 
     k_space = simulation.model_method[0].numerical_settings[0]
     subsection = subsection_accessor(k_space)
 
     # Explicitly normalize subsection before KSpace (simulating NOMAD's subsection-first order)
     # This should trigger the fix where subsection calls k_space.normalize_reciprocal_lattice_vectors()
-    subsection.normalize(EntryArchive(), logger)
+    subsection.normalize(archive, logger)
 
     # Verify that reciprocal_lattice_vectors were resolved and are now available in KSpace
     assert k_space.reciprocal_lattice_vectors is not None

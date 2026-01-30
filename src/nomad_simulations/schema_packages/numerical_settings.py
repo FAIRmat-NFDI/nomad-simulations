@@ -484,9 +484,7 @@ class KMesh(Mesh):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         # Ensure parent KSpace has normalized reciprocal_lattice_vectors first
         k_space = self.m_parent
-        if k_space is not None and hasattr(
-            k_space, 'normalize_reciprocal_lattice_vectors'
-        ):
+        if k_space is not None and isinstance(k_space, KSpace):
             k_space.normalize_reciprocal_lattice_vectors()
 
         super().normalize(archive, logger)
@@ -772,9 +770,7 @@ class KLinePath(ArchiveSection):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         # Ensure parent KSpace has normalized reciprocal_lattice_vectors first
         k_space = self.m_parent
-        if k_space is not None and hasattr(
-            k_space, 'normalize_reciprocal_lattice_vectors'
-        ):
+        if k_space is not None and isinstance(k_space, KSpace):
             k_space.normalize_reciprocal_lattice_vectors()
 
         super().normalize(archive, logger)
