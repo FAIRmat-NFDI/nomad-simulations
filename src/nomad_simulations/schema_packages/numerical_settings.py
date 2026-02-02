@@ -1235,14 +1235,14 @@ class DispersionKnob(ArchiveSection):
             'b',
             # Many-body screening / range separation
             'beta',
-            # Practical truncations
-            'cutoff_radius',
             # Fallback
             'unavailable',
         ),
         description="""
-        Identifies the dispersion parameter using standard community notation
+        Identifies the dispersion parameter using standard notation.
         (e.g. s6, a1, beta, b).
+
+        All dispersion knobs are dimensionless.
         """,
     )
 
@@ -1263,15 +1263,7 @@ class DispersionKnob(ArchiveSection):
     value = Quantity(
         type=np.float64,
         description="""
-        Numerical value of the parameter.
-        """,
-    )
-
-    unit = Quantity(
-        type=str,
-        description="""
-        Unit in pint notation. Leave unset/empty for dimensionless knobs.
-        Examples: 'meter', 'angstrom'. For most s6/s8/a1/a2/b/beta this is dimensionless.
+        Numerical value of the parameter (dimensionless).
         """,
     )
 

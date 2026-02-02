@@ -519,12 +519,6 @@ class TestDispersionNumericalSettings:
                 DispersionKnob(kind='s6', applies_to='pairwise', value=1.0),
                 DispersionKnob(kind='a1', applies_to='pairwise', value=0.40),
                 DispersionKnob(kind='a2', applies_to='pairwise', value=4.00),
-                DispersionKnob(
-                    kind='cutoff_radius',
-                    applies_to='pairwise',
-                    value=15.0,
-                    unit='angstrom',
-                ),
             ],
         )
 
@@ -536,14 +530,10 @@ class TestDispersionNumericalSettings:
         assert dns.density_source == 'valence-only'
 
         assert dns.knobs is not None
-        assert len(dns.knobs) == 4
+        assert len(dns.knobs) == 3
         assert dns.knobs[0].kind == 's6'
         assert dns.knobs[0].applies_to == 'pairwise'
         assert dns.knobs[0].value == pytest.approx(1.0)
-        assert dns.knobs[0].unit is None  # left unset
-
-        assert dns.knobs[3].kind == 'cutoff_radius'
-        assert dns.knobs[3].unit == 'angstrom'
 
     @pytest.mark.parametrize(
         'include_three_body_atm, include_c8, include_c10, max_order',
