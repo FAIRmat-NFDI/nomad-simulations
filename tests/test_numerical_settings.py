@@ -4,6 +4,8 @@ from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.numerical_settings import (
+    DispersionKnob,
+    DispersionNumericalSettings,
     KLinePath,
     KMesh,
     KSpaceFunctionalities,
@@ -487,3 +489,130 @@ class TestKLinePath:
             ]
         )
         assert np.allclose(k_line_path.points, points)
+
+
+class TestDispersionNumericalSettings:
+    """
+    Tests for dispersion numerical settings schema:
+      - typed physical constraints via DispersionKnob
+      - container section DispersionNumericalSettings
+    """
+
+    def test_init_sets_name(self):
+        """
+        __init__ sets self.name to the section name.
+        """
+        dns = DispersionNumericalSettings()
+        assert dns.name == 'DispersionNumericalSettings'
+
+    def test_knobs_roundtrip_and_normalize_noop(self):
+        """
+        Knobs should be storable and survive normalize() unchanged
+        (no special normalization is defined currently).
+        """
+        dns = DispersionNumericalSettings(
+            include_c8=True,
+            include_three_body_atm=False,
+            partition_scheme='Hirshfeld',
+            density_source='valence-only',
+            knobs=[
+                DispersionKnob(kind='s6', applies_to='pairwise', value=1.0),
+                DispersionKnob(kind='a1', applies_to='pairwise', value=0.40),
+                DispersionKnob(kind='a2', applies_to='pairwise', value=4.00),
+                DispersionKnob(
+                    kind='cutoff_radius',
+                    applies_to='pairwise',
+                    value=15.0,
+                    unit='angstrom',
+                ),
+            ],
+        )
+
+        dns.normalize(EntryArchive(), logger=logger)
+
+        assert dns.include_c8 is True
+        assert dns.include_three_body_atm is False
+        assert dns.partition_scheme == 'Hirshfeld'
+        assert dns.density_source == 'valence-only'
+
+        assert dns.knobs is not None
+        assert len(dns.knobs) == 4
+        assert dns.knobs[0].kind == 's6'
+        assert dns.knobs[0].applies_to == 'pairwise'
+        assert dns.knobs[0].value == pytest.approx(1.0)
+        assert dns.knobs[0].unit is None  # left unset
+
+        assert dns.knobs[3].kind == 'cutoff_radius'
+        assert dns.knobs[3].unit == 'angstrom'
+
+    @pytest.mark.parametrize(
+        'include_three_body_atm, include_c8, include_c10, max_order',
+        [
+            (None, None, None, None),
+            (True, None, None, None),
+            (False, True, False, 8),
+            (True, True, True, 10),
+        ],
+    )
+    def test_switch_fields(
+        self, include_three_body_atm, include_c8, include_c10, max_order
+    ):
+        """
+        Basic storage test for the inclusion switches and max_dispersion_order.
+        """
+        dns = DispersionNumericalSettings(
+            include_three_body_atm=include_three_body_atm,
+            include_c8=include_c8,
+            include_c10=include_c10,
+            max_dispersion_order=max_order,
+        )
+        dns.normalize(EntryArchive(), logger=logger)
+
+        assert dns.include_three_body_atm == include_three_body_atm
+        assert dns.include_c8 == include_c8
+        assert dns.include_c10 == include_c10
+        assert dns.max_dispersion_order == max_order
+
+    @pytest.mark.parametrize(
+        'partition_scheme, charge_model, density_source',
+        [
+            (None, None, None),
+            ('Hirshfeld', None, None),
+            ('Hirshfeld-I', 'EEQ', 'PAW-reconstructed'),
+            ('MBIS', 'CM5', 'all-electron'),
+            ('MBIS', 'NPA', 'valence-only'),
+        ],
+    )
+    def test_environment_fields(self, partition_scheme, charge_model, density_source):
+        """
+        Storage test for environment/charge/density-source categorical fields.
+        """
+        dns = DispersionNumericalSettings(
+            partition_scheme=partition_scheme,
+            charge_model=charge_model,
+            density_source=density_source,
+        )
+        dns.normalize(EntryArchive(), logger=logger)
+
+        assert dns.partition_scheme == partition_scheme
+        assert dns.charge_model == charge_model
+        assert dns.density_source == density_source
+
+    def test_multiple_knobs_same_kind_allowed(self):
+        """
+        It should be allowed to store multiple knobs of the same kind if they
+        apply to different contributions (or even if not, schema-wise).
+        """
+        dns = DispersionNumericalSettings(
+            knobs=[
+                DispersionKnob(kind='s9', applies_to='three_body_atm', value=1.0),
+                DispersionKnob(kind='s9', applies_to='pairwise', value=0.0),
+            ]
+        )
+        dns.normalize(EntryArchive(), logger=logger)
+
+        assert len(dns.knobs) == 2
+        assert dns.knobs[0].kind == 's9'
+        assert dns.knobs[0].applies_to == 'three_body_atm'
+        assert dns.knobs[1].kind == 's9'
+        assert dns.knobs[1].applies_to == 'pairwise'
