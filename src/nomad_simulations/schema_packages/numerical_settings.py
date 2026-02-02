@@ -1282,3 +1282,145 @@ class IntegralDecomposition(ArchiveSection):
             inferred = _TERM_BY_TYPE.get(self.approximation_type)
             if inferred is not None:
                 self.approximated_term = inferred
+
+
+class MultireferenceSCFSettings(NumericalSettings):
+    """
+    Numerical knobs for multireference SCF optimizations (CASSCF/RASSCF/DMRG-SCF).
+    """
+
+    shift_virtual = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Static up-shift applied to the virtual orbital block during macro iterations.
+        Use when virtuals alone are shifted.
+        """,
+    )
+
+    shift_core = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Static down-shift applied to the core/internal block.
+        Helps decouple inactive orbitals from the active space.
+        """,
+    )
+
+    shift_active = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Level shift applied to the active orbitals (e.g., Molpro `SHIFTO`).
+        Can be positive or negative.
+        """,
+    )
+
+    min_subspace_gap = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Minimum enforced energy separation between orbital subspaces,
+        typically to keep active/inactive/virtual spaces apart.
+        """,
+    )
+
+
+class MultireferencePTSettings(NumericalSettings):
+    """
+    Numerical controls for multireference perturbation treatments
+    (CASPT/NEVPT/RASPT/MRMP/XMCQDPT).
+
+    These settings capture intruder-state mitigation (real/imaginary level shifts,
+    IPEA shift) and contraction choices.
+    """
+
+    real_level_shift = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Real level shift applied to denominators to mitigate intruder states.
+        Common values are 0.1-0.3 Ha.
+        """,
+    )
+
+    imaginary_level_shift = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Imaginary level shift used as an alternative intruder-state stabilizer.
+        Typically a small positive value (e.g., 0.1 Ha).
+        """,
+    )
+
+    ipea_shift = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        IPEA shift applied to the zeroth-order Hamiltonian.
+        Defaults vary by code (often 0.25 Ha).
+        """,
+    )
+
+    contraction_type = Quantity(
+        type=MEnum(
+            'strongly_contracted',
+            'partially_contracted',
+            'internally_contracted',
+            'uncontracted',
+        ),
+        description="""
+        Contraction flavour used for the perturbative correction.
+          • strongly_contracted : strongly contracted NEVPT / CASPT variants
+          • partially_contracted: partially contracted NEVPT / CASPT variants
+          • internally_contracted: generic internal contraction (e.g., MRMP)
+          • uncontracted: no contraction of perturber space
+        """,
+    )
+
+
+class DMRGSettings(NumericalSettings):
+    """
+    Matrix-product-state solver controls for DMRG-SCF/DMRG-CI/DMRG-PT workflows.
+    Use alongside `MultireferenceSCFSettings` when orbital-shift knobs are also needed.
+    """
+
+    max_bond_dimension = Quantity(
+        type=np.int32,
+        description="""
+        Maximum MPS bond dimension (M). Primary accuracy knob; larger values
+        increase cost but reduce truncation error.
+        """,
+    )
+
+    sweep_schedule = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Optional per-sweep bond-dimension schedule. If provided, its length gives
+        the number of sweeps; otherwise `n_sweeps` is used.
+        """,
+    )
+
+    n_sweeps = Quantity(
+        type=np.int32,
+        description="""
+        Number of sweeps when no explicit `sweep_schedule` is supplied.
+        """,
+    )
+
+    discarded_weight_threshold = Quantity(
+        type=np.float64,
+        description="""
+        Target (or maximum) discarded weight per sweep. Used to adapt the bond
+        dimension or assess convergence quality.
+        """,
+    )
+
+    noise = Quantity(
+        type=np.float64,
+        description="""
+        Stochastic noise amplitude (if used) to escape local minima during early
+        sweeps.
+        """,
+    )

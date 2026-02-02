@@ -3,7 +3,13 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import URL, MEnum, Quantity, Section, SubSection
+from nomad.metainfo import (
+    URL,
+    MEnum,
+    Quantity,
+    Section,
+    SubSection,
+)
 
 if TYPE_CHECKING:
     from nomad.datamodel.context import Context
@@ -11,7 +17,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import CoreHole, ElectronicState
-from nomad_simulations.schema_packages.data_types import unit_float
+from nomad_simulations.schema_packages.data_types import positive_int, unit_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 from nomad_simulations.schema_packages.utils.libxc.build import (
@@ -1738,6 +1744,10 @@ class ConfigurationInteraction(ModelMethodElectronic):
     """
     Single-reference Configuration Interaction (CI) methods using atom-centered basis sets.
 
+    This captures CI expansions built on top of a single-determinant reference
+    (e.g., RHF/UHF/ROHF), not multireference active-space CI variants. For
+    CAS/RAS-based CI, use `MultireferenceCI`.
+
     Variants include:
       - CIS    : Configuration Interaction Singles
       - CID    : Configuration Interaction Doubles
@@ -1787,3 +1797,259 @@ class ConfigurationInteraction(ModelMethodElectronic):
             orders = default_orders.get(self.type)
             if orders is not None:
                 self.excitation_order = np.array(orders, dtype=np.int32)
+
+
+class ActiveSpace(ArchiveSection):
+    """
+    Minimal active-space definition for multiconfigurational quantum chemistry.
+
+    Captures just the counts and labeling needed to identify the orbital/electron
+    subspace used by CASSCF/CASPT2-style calculations.
+
+    - CAS: complete active space (Roos et al., Chem. Phys. Lett. 48, 157, 1980)
+    - RAS: restricted active space (Olsen et al., J. Chem. Phys. 89, 2185, 1988)
+
+    CAS vs RAS
+    ---------------------------------
+    - CAS: `n_active_orbitals` / `n_active_electrons` (and optional spin-resolved
+      counts) fully define the space.
+    - RAS: split the space into RAS1 (hole-restricted), RAS2 (full), RAS3
+      (particle-restricted). Use `ras1_n_orbitals`, `ras2_n_orbitals`,
+      `ras3_n_orbitals` plus caps `ras1_max_holes` and `ras3_max_particles`
+      to express the allowed excitations. Set `orbital_space_type='RAS'`.
+    """
+
+    n_active_orbitals = Quantity(
+        type=positive_int(),
+        description="""
+        Number of spatial orbitals in the active space (same orbitals available to both
+        spin channels). Mirrors the CAS/RAS definition used in the corresponding
+        input.
+        """,
+    )
+
+    n_active_electrons = Quantity(
+        type=positive_int(),
+        description="""
+        Total electrons assigned to the active space.
+        """,
+    )
+
+    orbital_space_type = Quantity(
+        type=MEnum('CAS', 'RAS'),
+        description="""
+        Partitioning scheme used for the active space:
+          - CAS: complete active space 
+          - RAS: restricted active space 
+        """,
+    )
+
+    selection_method = Quantity(
+        type=MEnum('manual', 'AVAS', 'UNO', 'localized'),
+        description="""
+        Procedure used to choose the active space. Choose 'manual' when the selection
+        method is not known.
+        """,
+    )
+
+    # RAS-specific method quantities
+    ras1_n_orbitals = Quantity(
+        type=positive_int(),
+        description="""
+        Number of orbitals in the RAS1 (hole-restricted) subspace.
+        """,
+    )
+
+    ras2_n_orbitals = Quantity(
+        type=positive_int(),
+        description="""
+        Number of orbitals in the RAS2 (fully flexible) subspace.
+        """,
+    )
+
+    ras3_n_orbitals = Quantity(
+        type=positive_int(),
+        description="""
+        Number of orbitals in the RAS3 (particle-restricted) subspace.
+        """,
+    )
+
+    ras1_max_holes = Quantity(
+        type=positive_int(),
+        description="""
+        Maximum number of holes allowed in RAS1 (electrons that may be excited out of
+        the nominally doubly occupied subspace).
+        """,
+    )
+
+    ras3_max_particles = Quantity(
+        type=positive_int(),
+        description="""
+        Maximum number of electrons allowed in RAS3 (electrons that may be excited into
+        the nominally empty subspace).
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        ras_fields = [
+            self.ras1_n_orbitals,
+            self.ras2_n_orbitals,
+            self.ras3_n_orbitals,
+            self.ras1_max_holes,
+            self.ras3_max_particles,
+        ]
+
+        if any(value is not None for value in ras_fields):
+            if self.orbital_space_type != 'RAS':
+                logger.error(
+                    'Restricted active space (RAS) parameters provided but orbital_space_type is not RAS.'
+                )
+        if self.orbital_space_type == 'RAS':
+            ras_orb_counts = [
+                self.ras1_n_orbitals,
+                self.ras2_n_orbitals,
+                self.ras3_n_orbitals,
+            ]
+            if all(val is None for val in ras_orb_counts):
+                logger.warning(
+                    'orbital_space_type=RAS but RAS orbital counts are all missing '
+                    '(ras1_n_orbitals, ras2_n_orbitals, ras3_n_orbitals).'
+                )
+            elif self.n_active_orbitals is not None and all(
+                val is not None for val in ras_orb_counts
+            ):
+                total_ras = sum(ras_orb_counts)
+                if total_ras != self.n_active_orbitals:
+                    logger.warning(
+                        'RAS orbital counts sum to %s but n_active_orbitals is %s.',
+                        total_ras,
+                        self.n_active_orbitals,
+                    )
+
+
+class BaseMultireferenceMethod(BaseModelMethod):
+    """
+    Shared multireference parameters (active space, state-averaging, symmetry).
+    """
+
+    active_space = SubSection(sub_section=ActiveSpace.m_def, repeats=False)
+
+    reference_type = Quantity(
+        type=MEnum('state_specific', 'state_averaged'),
+        description="""
+        Whether the reference wavefunction is optimized for a single state or averaged
+        over multiple states.
+        """,
+    )
+
+    n_state_groups = Quantity(
+        type=positive_int(),
+        description="""
+        Number of state groups specified (typically one per spin multiplicity). Mirrors
+        the length of `state_multiplicities` and `n_roots_per_multiplicity` inputs such
+        as `mult 3,1` / `nroots 10,15`.
+        """,
+    )
+
+    state_multiplicities = Quantity(
+        type=np.int32,
+        shape=['n_state_groups'],
+        description="""
+        Spin multiplicity (2S+1) for each state group (e.g., [3,1] for triplet/singlet).
+        Use together with `n_roots_per_multiplicity` to map how many roots are taken for
+        each multiplicity in the active space.
+        """,
+    )
+
+    n_roots_per_multiplicity = Quantity(
+        type=positive_int(),
+        shape=['n_state_groups'],
+        description="""
+        Number of roots requested for each entry in `state_multiplicities` (e.g., [10,15]
+        to represent 10 triplet and 15 singlet roots in a shared active space).
+        """,
+    )
+
+    state_weights = Quantity(
+        type=np.float64,
+        shape=['*'],
+        description="""
+        Optional weights applied to individual states for state-averaged references. When
+        provided, the flattened order should follow the multiplicity groups implied by
+        `state_multiplicities` and `n_roots_per_multiplicity`.
+        """,
+    )
+
+    # TODO: connect with new Symmetry implementation
+    symmetry_label = Quantity(
+        type=str,
+        description="""
+        Symmetry irrep label used for this calculation, if symmetry constraints or labels
+        were applied.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Derive n_state_groups if absent
+        if self.n_state_groups is None:
+            if self.state_multiplicities is not None:
+                self.n_state_groups = len(self.state_multiplicities)
+            elif self.n_roots_per_multiplicity is not None:
+                self.n_state_groups = len(self.n_roots_per_multiplicity)
+
+
+class MultireferenceSCF(BaseMultireferenceMethod):
+    """
+    Multiconfigurational SCF calculations (e.g., CASSCF, RASSCF, DMRG-SCF).
+    """
+
+    type = Quantity(
+        type=MEnum('CASSCF', 'RASSCF', 'DMRGSCF'),
+        description="""
+        Multiconfigurational SCF flavour for the active-space calculation. Use
+        `MultireferenceCI` with `type='CASCI'` when orbitals are not
+        reoptimized.
+        """,
+    )
+
+
+class MultireferenceCI(BaseMultireferenceMethod):
+    """
+    Multireference configuration interaction methods (e.g., MRCI).
+    """
+
+    type = Quantity(
+        type=MEnum('MRCI', 'MR-ACPF', 'MR-AQCC', 'CASCI', 'RASCI', 'DMRGCI'),
+        description="""
+        CI flavour applied on top of a multireference space.
+        """,
+    )
+
+
+class MultireferencePT(BaseMultireferenceMethod):
+    """
+    Multireference perturbation theory methods (CASPTn/NEVPTn/RASPTn).
+
+    Defaults are PT2-style, but `order` can capture higher-order variants.
+    """
+
+    type = Quantity(
+        type=MEnum('CASPT', 'NEVPT', 'RASPT', 'MRMP', 'XMCQDPT'),
+        description="""
+        Multireference perturbation flavour applied to the reference state.
+        Examples: CASPT with order=2 → CASPT2; NEVPT with order=2 → NEVPT2;
+        MRMP with order=2 → MRMP2.
+        """,
+    )
+
+    order = Quantity(
+        type=positive_int(),
+        default=2,
+        description="""
+        Perturbation order (2 for CASPT2/NEVPT2; higher for CASPT3, etc.).
+        """,
+    )
