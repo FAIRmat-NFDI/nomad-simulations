@@ -1806,7 +1806,10 @@ class ActiveSpace(ArchiveSection):
     Captures just the counts and labeling needed to identify the orbital/electron
     subspace used by CASSCF/CASPT2-style calculations.
 
-    CAS vs RAS (complete vs restricted active space)
+    - CAS: complete active space (Roos et al., Chem. Phys. Lett. 48, 157, 1980)
+    - RAS: restricted active space (Olsen et al., J. Chem. Phys. 89, 2185, 1988)
+
+    CAS vs RAS
     ---------------------------------
     - CAS: `n_active_orbitals` / `n_active_electrons` (and optional spin-resolved
       counts) fully define the space.
@@ -1852,8 +1855,8 @@ class ActiveSpace(ArchiveSection):
         type=MEnum('CAS', 'RAS'),
         description="""
         Partitioning scheme used for the active space:
-          - CAS: complete active space (Roos et al., Chem. Phys. Lett. 48, 157, 1977)
-          - RAS: restricted active space (Olsen et al., J. Chem. Phys. 89, 2185, 1988)
+          - CAS: complete active space 
+          - RAS: restricted active space 
         """,
     )
 
