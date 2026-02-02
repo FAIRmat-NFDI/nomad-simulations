@@ -1835,22 +1835,6 @@ class ActiveSpace(ArchiveSection):
         """,
     )
 
-    n_active_alpha = Quantity(
-        type=positive_int(),
-        description="""
-        Optional number of α-spin electrons in the active space. Use when the input
-        distinguishes spin channels (e.g., unrestricted references).
-        """,
-    )
-
-    n_active_beta = Quantity(
-        type=positive_int(),
-        description="""
-        Optional number of β-spin electrons in the active space. Use when the input
-        distinguishes spin channels (e.g., unrestricted references).
-        """,
-    )
-
     orbital_space_type = Quantity(
         type=MEnum('CAS', 'RAS'),
         description="""
