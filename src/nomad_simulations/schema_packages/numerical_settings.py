@@ -1272,8 +1272,6 @@ class SolvationSettings(NumericalSettings):
         shape=['n_born'],
         description="""
         Per-particle effective Born radii R_i^Born used by GB/GBSA electrostatics.
-        Units match the code's length unit; ordering defined by born_radii_system_ref
-        plus optional born_radii_particle_indices.
         """,
     )
 
@@ -1309,8 +1307,6 @@ class DispersionKnob(ArchiveSection):
             'b',
             # Many-body screening / range separation
             'beta',
-            # Fallback
-            'unavailable',
         ),
         description="""
         Identifies the dispersion parameter using standard notation.
@@ -1327,7 +1323,6 @@ class DispersionKnob(ArchiveSection):
             'many_body',
             'nonlocal_kernel',
             'density_partitioning',
-            'unavailable',
         ),
         description="""
         Identifies which dispersion contribution this knob controls.
@@ -1416,13 +1411,8 @@ class DispersionSettings(NumericalSettings):
         Examples:
           • D3BJ:  s6/s8 (pairwise), a1/a2 (pairwise), optionally s9 (three_body_atm)
           • rVV10: b (nonlocal_kernel)
-          • MBD:   beta (many_body), optionally cutoff_radius (many_body)
         """,
     )
-
-    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
-        super().__init__(m_def, m_context, **kwargs)
-        self.name = self.m_def.name
 
 
 class IntegralDecomposition(ArchiveSection):

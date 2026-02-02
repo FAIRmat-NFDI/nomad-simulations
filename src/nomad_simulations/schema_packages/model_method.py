@@ -105,9 +105,9 @@ class ImplicitSolvationModel(BaseModelMethod):
 
     References
     ----------
-    •  J. Tomasi, B. Mennucci, R. Cammi, *Chem. Rev.* **105**, 2999 (2005) — PCM overview
-    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) — COSMO
-    •  A. V. Marenich *et al.*, *J. Chem. Phys. B* **113**, 6378 (2009) — SMD
+    •  J. Tomasi, B. Mennucci, R. Cammi, *Chem. Rev.* **105**, 2999 (2005) - PCM overview
+    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) - COSMO
+    •  A. V. Marenich *et al.*, *J. Chem. Phys. B* **113**, 6378 (2009) - SMD
     """
 
     model = Quantity(
