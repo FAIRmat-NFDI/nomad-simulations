@@ -1213,6 +1213,81 @@ class Pseudopotential(NumericalSettings):
             self.xc_functional.normalize(archive, logger)
 
 
+class SolvationNumericalSettings(NumericalSettings):
+    """
+    Numerical and evaluation settings for implicit-solvation models.
+
+    Stores discretization and solver choices (surface tessellation, PB grids, etc.)
+    and typed scalar parameters as `SolvationKnob`.
+    """
+
+    # TODO: revisit here after the final Mesh implementation
+    surface_tessellation = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Number of Lebedev/Geodesic points per atom used in the cavity
+        discretisation (relevant for surface-integral PCM codes).
+
+        Semantics:
+        • Single value → global default applied to all atoms.
+        • Length == n_species → per-species values (ordered like the model's species list).
+        • Length == n_atoms → per-atom values (in atomic order).
+
+        Many codes expose a global setting but internally vary with element; this
+        shape allows parsers to emit either a single global value or an explicit
+        vector when the input/output is species- or atom-resolved.
+        """,
+    )
+
+    #  minimal PB/GB knobs for classical comparability
+    epsilon_interior = Quantity(
+        type=np.float64,
+        description='Interior (solute) dielectric ε_in; GB/PB often use ε_in > 1. Default is 1.0 if missing.',
+    )
+
+    ionic_strength = Quantity(
+        type=np.float64,
+        unit='mole / liter',
+        description='Bulk ionic strength (salt) for PB; optional for GB parameterizations.',
+    )
+
+    # GB/GBSA per-atom Born radii
+    born_radii_system_ref = Quantity(
+        type=ModelSystem,
+        description="""
+        ModelSystem whose particle ordering the Born radii refer to. If omitted,
+        normalization should default to the last representative ModelSystem.
+        """,
+    )
+
+    # Local count specifically for this array (avoids clashing with ModelSystem.n_particles)
+    n_born = Quantity(
+        type=np.int32,
+        description='Number of Born radii provided (length of effective_born_radii).',
+    )
+
+    effective_born_radii = Quantity(
+        type=np.float64,
+        unit='meter',
+        shape=['n_born'],
+        description="""
+        Per-particle effective Born radii R_i^Born used by GB/GBSA electrostatics.
+        Units match the code's length unit; ordering defined by born_radii_system_ref
+        plus optional born_radii_particle_indices.
+        """,
+    )
+
+    born_radii_particle_indices = Quantity(
+        type=np.int32,
+        shape=['n_born'],
+        description="""
+        Optional indices into born_radii_system_ref's particle list. If omitted, a 1:1
+        mapping to that system's particle ordering is assumed.
+        """,
+    )
+
+
 class DispersionKnob(ArchiveSection):
     """
     A single typed numerical knob for an explicit dispersion / vdW correction.
