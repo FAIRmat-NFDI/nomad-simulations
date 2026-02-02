@@ -680,6 +680,27 @@ class DFT(ModelMethodElectronic):
     A base section used to define the parameters used in a density functional theory (DFT) calculation.
     """
 
+    type = Quantity(
+        type=MEnum(
+            'KS',
+            'BSDFT',
+            'OFDFT',
+            'ADFT',
+            'cDFT',
+            'DFT+U',
+        ),
+        default='KS',
+        description="""
+        NOMAD-style identifier for the DFT flavour:
+        - KS    : conventional (generalized) Kohn-Sham DFT
+        - BSDFT : broken-symmetry DFT
+        - OFDFT : orbital-free DFT
+        - ADFT  : analytic/integral-direct DFT formulations
+        - cDFT  : constrained DFT with explicit density/charge/spin constraints
+        - DFT+U : Hubbard-corrected DFT (DFT+U)
+        """,
+    )
+
     # TODO : improve and rename this classification
     jacobs_ladder = Quantity(
         type=MEnum(
