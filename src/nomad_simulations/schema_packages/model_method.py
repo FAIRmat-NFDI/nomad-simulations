@@ -263,10 +263,6 @@ class ExplicitDispersionModel(BaseModelMethod):
         ),
         description="""
         Identifier of the explicit dispersion / vdW model.
-
-        This selects the formal dispersion scheme. Numerical parameters,
-        damping constants, and evaluation switches are specified separately
-        in `DispersionNumericalSettings`.
         """,
     )
 

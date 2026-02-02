@@ -5,7 +5,7 @@ from nomad.units import ureg
 
 from nomad_simulations.schema_packages.numerical_settings import (
     DispersionKnob,
-    DispersionNumericalSettings,
+    DispersionSettings,
     KLinePath,
     KMesh,
     KSpaceFunctionalities,
@@ -491,26 +491,19 @@ class TestKLinePath:
         assert np.allclose(k_line_path.points, points)
 
 
-class TestDispersionNumericalSettings:
+class TestDispersionSettings:
     """
     Tests for dispersion numerical settings schema:
       - typed physical constraints via DispersionKnob
-      - container section DispersionNumericalSettings
+      - container section DispersionSettings
     """
-
-    def test_init_sets_name(self):
-        """
-        __init__ sets self.name to the section name.
-        """
-        dns = DispersionNumericalSettings()
-        assert dns.name == 'DispersionNumericalSettings'
 
     def test_knobs_roundtrip_and_normalize_noop(self):
         """
         Knobs should be storable and survive normalize() unchanged
         (no special normalization is defined currently).
         """
-        dns = DispersionNumericalSettings(
+        dns = DispersionSettings(
             include_c8=True,
             include_three_body_atm=False,
             partition_scheme='Hirshfeld',
@@ -550,7 +543,7 @@ class TestDispersionNumericalSettings:
         """
         Basic storage test for the inclusion switches and max_dispersion_order.
         """
-        dns = DispersionNumericalSettings(
+        dns = DispersionSettings(
             include_three_body_atm=include_three_body_atm,
             include_c8=include_c8,
             include_c10=include_c10,
@@ -577,7 +570,7 @@ class TestDispersionNumericalSettings:
         """
         Storage test for environment/charge/density-source categorical fields.
         """
-        dns = DispersionNumericalSettings(
+        dns = DispersionSettings(
             partition_scheme=partition_scheme,
             charge_model=charge_model,
             density_source=density_source,
@@ -593,7 +586,7 @@ class TestDispersionNumericalSettings:
         It should be allowed to store multiple knobs of the same kind if they
         apply to different contributions (or even if not, schema-wise).
         """
-        dns = DispersionNumericalSettings(
+        dns = DispersionSettings(
             knobs=[
                 DispersionKnob(kind='s9', applies_to='three_body_atm', value=1.0),
                 DispersionKnob(kind='s9', applies_to='pairwise', value=0.0),

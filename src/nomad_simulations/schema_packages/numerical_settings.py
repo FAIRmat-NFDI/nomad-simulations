@@ -1213,12 +1213,11 @@ class Pseudopotential(NumericalSettings):
             self.xc_functional.normalize(archive, logger)
 
 
-class SolvationNumericalSettings(NumericalSettings):
+class SolvationSettings(NumericalSettings):
     """
     Numerical and evaluation settings for implicit-solvation models.
 
-    Stores discretization and solver choices (surface tessellation, PB grids, etc.)
-    and typed scalar parameters as `SolvationKnob`.
+    Stores discretization and solver choices (surface tessellation, PB grids, etc.).
     """
 
     # TODO: revisit here after the final Mesh implementation
@@ -1343,7 +1342,7 @@ class DispersionKnob(ArchiveSection):
     )
 
 
-class DispersionNumericalSettings(NumericalSettings):
+class DispersionSettings(NumericalSettings):
     """
     Numerical and evaluation settings for an explicit dispersion / vdW correction.
 
