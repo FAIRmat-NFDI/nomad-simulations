@@ -1213,6 +1213,152 @@ class Pseudopotential(NumericalSettings):
             self.xc_functional.normalize(archive, logger)
 
 
+class DispersionKnob(ArchiveSection):
+    """
+    A single typed numerical knob for an explicit dispersion / vdW correction.
+
+    This is a "typed physical constraint" record: it stores one scalar value
+    together with semantics that disambiguate what the value controls.
+    """
+
+    kind = Quantity(
+        type=MEnum(
+            # Pairwise scaling factors
+            's6',
+            's8',
+            's9',
+            # Damping / range parameters
+            'a1',
+            'a2',
+            'sR',
+            # Nonlocal kernel parameter
+            'b',
+            # Many-body screening / range separation
+            'beta',
+            # Practical truncations
+            'cutoff_radius',
+            # Fallback
+            'unavailable',
+        ),
+        description="""
+        Identifies the dispersion parameter using standard community notation
+        (e.g. s6, a1, beta, b).
+        """,
+    )
+
+    applies_to = Quantity(
+        type=MEnum(
+            'pairwise',
+            'three_body_atm',
+            'many_body',
+            'nonlocal_kernel',
+            'density_partitioning',
+            'unavailable',
+        ),
+        description="""
+        Identifies which dispersion contribution this knob controls.
+        """,
+    )
+
+    value = Quantity(
+        type=np.float64,
+        description="""
+        Numerical value of the parameter.
+        """,
+    )
+
+    unit = Quantity(
+        type=str,
+        description="""
+        Unit in pint notation. Leave unset/empty for dimensionless knobs.
+        Examples: 'meter', 'angstrom'. For most s6/s8/a1/a2/b/beta this is dimensionless.
+        """,
+    )
+
+
+class DispersionNumericalSettings(NumericalSettings):
+    """
+    Numerical and evaluation settings for an explicit dispersion / vdW correction.
+
+    This section contains discrete switches and environment choices (e.g. whether
+    to include higher-order dispersion terms, which density partitioning is used),
+    as well as typed scalar parameters stored as `DispersionKnob`.
+    """
+
+    # switches for term inclusion / order
+    include_three_body_atm = Quantity(
+        type=bool,
+        description="""
+        Whether a 3-body Axilrod-Teller-Muto (ATM) contribution is included.
+        Relevant for D3/D4 when the 3-body term is enabled.
+        """,
+    )
+
+    include_c8 = Quantity(
+        type=bool,
+        description="""
+        Whether the C8/R^8 term is included in the pairwise dispersion sum.
+        Relevant for D3/D4 style models.
+        """,
+    )
+
+    include_c10 = Quantity(
+        type=bool,
+        description="""
+        Whether the C10/R^10 term is included.
+        Relevant for models such as XDM that may include higher-order terms.
+        """,
+    )
+
+    max_dispersion_order = Quantity(
+        type=np.int32,
+        description="""
+        Highest n in Cn/R^n included by the dispersion model (e.g. 6, 8, 10).
+        """,
+    )
+
+    # environment/charges for density-dependent schemes
+    partition_scheme = Quantity(
+        type=MEnum('Hirshfeld', 'Hirshfeld-I', 'MBIS'),
+        description="""
+        Density partitioning scheme used to obtain atom-in-molecule quantities
+        (e.g. TS/MBD polarizabilities).
+        """,
+    )
+
+    charge_model = Quantity(
+        type=MEnum('EEQ', 'CM5', 'NPA'),
+        description="""
+        Atomic charge model used by charge-dependent dispersion schemes (e.g. D4).
+        """,
+    )
+
+    density_source = Quantity(
+        type=MEnum('all-electron', 'PAW-reconstructed', 'valence-only'),
+        description="""
+        Source of the electron density used for partitioning (e.g. Hirshfeld/MBIS).
+        """,
+    )
+
+    # typed scalar parameters
+    knobs = SubSection(
+        sub_section=DispersionKnob.m_def,
+        repeats=True,
+        description="""
+        Typed scalar parameters (knobs) for the dispersion correction.
+
+        Examples:
+          • D3BJ:  s6/s8 (pairwise), a1/a2 (pairwise), optionally s9 (three_body_atm)
+          • rVV10: b (nonlocal_kernel)
+          • MBD:   beta (many_body), optionally cutoff_radius (many_body)
+        """,
+    )
+
+    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
+        super().__init__(m_def, m_context, **kwargs)
+        self.name = self.m_def.name
+
+
 class IntegralDecomposition(ArchiveSection):
     """
     A general class for integral decomposition techniques that approximate

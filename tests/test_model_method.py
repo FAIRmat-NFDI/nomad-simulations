@@ -629,13 +629,12 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
         dielectric_constant=78.4,
         refractive_index=1.33,
     )
+
     edm = ExplicitDispersionModel(
         model='D3BJ',
         damping_function='BJ',
-        s6=1.0,
-        a1=0.40,
-        a2=4.00,
     )
+
     rel = RelativityModel(
         level='two-component',
         approximation='X2C',
@@ -654,6 +653,7 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
     assert isinstance(dft.contributions[1], ExplicitDispersionModel)
     assert isinstance(dft.contributions[2], RelativityModel)
 
+    # Solvation
     assert (
         pytest.approx(dft.contributions[0].dielectric_constant_optical, rel=1e-12)
         == 1.33**2
@@ -661,12 +661,11 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
     assert dft.contributions[0].dielectric_constant == 78.4
     assert dft.contributions[0].solvent == 'water'
 
+    # Dispersion (method identity only in model_method.py tests)
     assert dft.contributions[1].model == 'D3BJ'
     assert dft.contributions[1].damping_function == 'BJ'
-    assert dft.contributions[1].s6 == 1.0
-    assert dft.contributions[1].a1 == 0.40
-    assert dft.contributions[1].a2 == 4.00
 
+    # Relativity
     assert dft.contributions[2].level == 'two-component'
     assert dft.contributions[2].approximation == 'X2C'
     assert dft.contributions[2].dkh_order is None
