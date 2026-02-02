@@ -5,6 +5,10 @@ from typing import TYPE_CHECKING
 import ase
 import numpy as np
 import pint
+from nomad.datamodel.metainfo.basesections.base_atoms_state import (
+    BaseAtomsState,
+    BaseParticleState,
+)
 from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy, SubSection
 from nomad.units import ureg
@@ -620,10 +624,10 @@ class ElectronicState(Entity):
         section_def=BaseSpinOrbitalState.m_def,
         description="""
         The actual quantum state descriptor at this level of the hierarchy.
-        This `BaseSpinOrbitalState` (typically `SphericalSymmetryState`) defines the 
+        This `BaseSpinOrbitalState` (typically `SphericalSymmetryState`) defines the
         quantum numbers and properties of the state in a modular fashion.
         Child states in `sub_states` may inherit quantum numbers from this parent descriptor.
-        
+
         For example, if parent has `spin_orbit_state=SphericalSymmetryState(n=3, l=2)`,
         a child might only specify `spin_orbit_state=SphericalSymmetryState(ml=-2)`,
         with n=3, l=2 implied from the parent.
@@ -637,7 +641,7 @@ class ElectronicState(Entity):
         - For single orbitals: typically 1 (if ml, ms specified) or 2*l+1 (orbital only)
         - For manifolds: sum of constituent state degeneracies
         - For symmetry-adapted states: dimension of irreducible representation
-        
+
         Can be computed from `spin_orbit_state` or summed from `sub_states`.
         For correlated systems, represents the many-body state degeneracy.
         """,
@@ -647,11 +651,11 @@ class ElectronicState(Entity):
         type=positive_float(),
         description="""
         Electronic occupation of this state or manifold.
-        
+
         - For decomposable states: sum of occupations in `sub_states`
         - For correlated systems: effective occupation from many-body calculation (can be fractional)
         - For non-interacting: integer or follows Fermi-Dirac distribution
-        
+
         Note: For correlated electrons, fractional occupation does NOT mean partial occupancy
         of individual orbitals, but rather reflects the many-body quantum state.
         """,
@@ -674,17 +678,17 @@ class ElectronicState(Entity):
         repeats=True,
         description="""
         Hierarchical decomposition of this electronic state into finer-grained components.
-        
+
         The decomposition can follow different schemes depending on physics context:
         - **Orbital decomposition**: Split by ml quantum number (e.g., p → px, py, pz)
         - **Spin decomposition**: Split by ms quantum number (e.g., orbital → spin up/down)
         - **Symmetry decomposition**: Split by crystal field irreps (e.g., d → t2g, eg)
         - **Coupling scheme**: Split by j,mj for j-j coupling vs. ml,ms for L-S coupling
-        
+
         Multiple decomposition schemes can coexist for the same electrons - choose the one
         appropriate for your analysis. For strongly correlated systems where electrons cannot
         be assigned to individual orbitals, this may be empty or contain only a reference basis.
-        
+
         Child states inherit quantum number information from parent's `spin_orbit_state`,
         only specifying additional refinements (e.g., parent has l=2, child adds ml=-1).
         """,
@@ -694,26 +698,26 @@ class ElectronicState(Entity):
         section_def=BaseSpinOrbitalState.m_def,  # @EBB2675: do you see numerical_settings.basis_set also fit here?
         repeats=True,
         description="""
-        References to basis orbitals (as `BaseSpinOrbitalState` instances) used to construct 
+        References to basis orbitals (as `BaseSpinOrbitalState` instances) used to construct
         this state as a linear combination.
-        
+
         Used when this electronic state cannot be described by a single quantum state but rather
         as a superposition of simpler orbital states:
         - Hybrid orbitals: sp³ = linear combination of s, px, py, pz orbitals
         - Molecular orbitals: LCAO construction from atomic orbitals
         - Wannier functions: linear combination of Bloch states
         - Symmetry-adapted linear combinations (SALC)
-        
+
         Each entry is a simple quantum state (e.g., `SphericalSymmetryState(n=2, l=0)` for 2s,
-        `SphericalSymmetryState(n=2, l=1, ml=1)` for 2px, etc.) without the navigation 
+        `SphericalSymmetryState(n=2, l=1, ml=1)` for 2px, etc.) without the navigation
         structure of `ElectronicState`.
-        
+
         The actual expansion coefficients should be stored in the relevant electronic eigenvalue
         sections (e.g., `BandStructure.eigenvectors`, `DOSElectronicNew.value_projection`, etc.)
-        rather than duplicated here. This field provides the ordered basis set definition that 
+        rather than duplicated here. This field provides the ordered basis set definition that
         those coefficients correspond to.
-        
-        If this state has a simple symmetry description (`spin_orbit_state`), this field 
+
+        If this state has a simple symmetry description (`spin_orbit_state`), this field
         is typically empty. It's primarily for composite states that lack simple quantum number labels.
         """,
     )
@@ -1061,75 +1065,16 @@ class HubbardInteractions(ElectronicState):
                 )
 
 
-class ParticleState(Entity):
+# Backward compatibility alias: ParticleState is equivalent to BaseParticleState
+# This ensures that isinstance(atoms_state, ParticleState) returns True since
+# AtomsState inherits from BaseAtomsState -> BaseParticleState
+ParticleState = BaseParticleState
+
+
+class AtomsState(BaseAtomsState):
     """
-    Generic base section representing the state of a particle in a simulation.
-    This can be extended to include any common quantities in the future.
+    A section to define each atom state information.
     """
-
-    label = Quantity(
-        type=str,
-        description="""
-        User- or program-package-defined identifier for this particle.
-        """,
-    )
-
-    def get_label(self) -> str | None:
-        """
-        Returns the label of the particle.
-        """
-        return self.label
-
-
-class AtomsState(ParticleState):
-    """
-    A base section to define each atom state information.
-    """
-
-    chemical_symbol = Quantity(
-        type=MEnum(ase.data.chemical_symbols[1:]),
-        description="""
-        Symbol of the element, e.g. 'H', 'Pb'. This quantity is equivalent to `atomic_numbers`.
-        """,
-    )
-
-    atomic_number = Quantity(
-        type=np.int32,
-        description="""
-        Atomic number Z. This quantity is equivalent to `chemical_symbol`.
-        """,
-    )
-
-    charge = Quantity(
-        type=np.int32,
-        default=0,
-        description="""
-        Charge of the atom. It is defined as the number of extra electrons or holes in the
-        atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`ElectronicState.occupation`
-        coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)
-        for cations or any negative integer (-1, -2...) for anions.
-
-        Note: for `CoreHole` systems we do not consider the charge of the atom even if
-        we do not store the final `ElectronicState` where the electron was excited to.
-        """,
-    )
-
-    spin = Quantity(
-        type=np.int32,
-        default=0,
-        description="""
-        Total spin quantum number, S.
-        """,
-    )
-
-    label = Quantity(
-        type=str,
-        description="""
-        User- or program-package-defined identifier for this atomic site.
-        e.g. 'H1', 'H1a', 'C_eq'.
-        It doesn't replace `chemical_symbol`, but merely gives users a more specialized token for the unique site name.
-        """,
-    )
 
     electronic_state = SubSection(sub_section=ElectronicState.m_def)
 
@@ -1147,71 +1092,11 @@ class AtomsState(ParticleState):
         """,
     )
 
-    @log
-    def get_label(self) -> str | None:
-        """
-        Returns the label of the particle.
-        """
-        return self.chemical_symbol if self.chemical_symbol else self.label
-
-    def resolve_chemical_symbol(self, logger: 'BoundLogger') -> str | None:
-        """
-        Resolves the `chemical_symbol` from the `atomic_number`.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[str]): The resolved `chemical_symbol`.
-        """
-        logger = self.resolve_chemical_symbol.__annotations__['logger']
-        if self.atomic_number is not None:
-            try:
-                return ase.data.chemical_symbols[self.atomic_number]
-            except IndexError:
-                logger.error(
-                    'The `AtomsState.atomic_number` is out of range of the periodic table.'
-                )
-        return None
-
-    @log
-    def resolve_atomic_number(self) -> int | None:
-        """
-        Resolves the `atomic_number` from the `chemical_symbol`.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[int]): The resolved `atomic_number`.
-        """
-        logger = self.resolve_atomic_number.__annotations__['logger']
-        if self.chemical_symbol is not None:
-            try:
-                return ase.data.atomic_numbers[self.chemical_symbol]
-            except IndexError:
-                logger.error(
-                    'The `AtomsState.chemical_symbol` is not recognized in the periodic table.'
-                )
-        return None
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Get chemical_symbol from atomic_number and viceversa
-        if self.chemical_symbol is None:
-            self.chemical_symbol = self.resolve_chemical_symbol(logger=logger)
-        elif self.atomic_number is None:
-            self.atomic_number = self.resolve_atomic_number(logger=logger)
-        else:
-            # If both are set, check if they match
-            if self.atomic_number != ase.data.atomic_numbers[self.chemical_symbol]:
-                logger.error(
-                    'The `AtomsState.atomic_number` and `chemical_symbol` do not match.'
-                )
 
-
-class CGBeadState(ParticleState):
+class CGBeadState(BaseParticleState):
     """
     A section to define coarse-grained bead state information.
     """
