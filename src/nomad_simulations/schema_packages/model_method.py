@@ -680,7 +680,7 @@ class DFT(ModelMethodElectronic):
     A base section used to define the parameters used in a density functional theory (DFT) calculation.
     """
 
-    type = Quantity(
+    formulation = Quantity(
         type=MEnum('KS', 'OFDFT', 'Ensemble', 'Finite-T'),
         default='KS',
         description="""
