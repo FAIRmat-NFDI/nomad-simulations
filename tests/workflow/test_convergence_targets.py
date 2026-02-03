@@ -52,7 +52,7 @@ class TestEnergyConvergenceTarget:
     """Test the EnergyConvergenceTarget class."""
 
     @pytest.mark.parametrize(
-        'threshold, convergence_type, energy_values, expected_reached',
+        'threshold, threshold_type, energy_values, expected_reached',
         [
             # Absolute convergence - converged
             (1e-6, 'absolute', [1e-10, 1e-11, 5e-12], True),
@@ -65,7 +65,7 @@ class TestEnergyConvergenceTarget:
     def test_energy_convergence(
         self,
         threshold: float,
-        convergence_type: str,
+        threshold_type: str,
         energy_values: list[float],
         expected_reached: bool,
         archive,
@@ -77,13 +77,13 @@ class TestEnergyConvergenceTarget:
 
         Args:
             threshold: Convergence threshold value.
-            convergence_type: Type of convergence check ('absolute' or 'relative').
+            threshold_type: Type of convergence check ('absolute' or 'relative').
             energy_values: List of energy values to test.
             expected_reached: Expected value of is_reached flag.
         """
         # Set up convergence target
         energy_target.threshold = threshold
-        energy_target.convergence_type = convergence_type
+        energy_target.threshold_type = threshold_type
 
         # Create SCF steps with energy delta values
         scf_step = SCFSteps()
@@ -107,7 +107,7 @@ class TestEnergyConvergenceTarget:
     def test_energy_missing_data(self, archive, logger, energy_target):
         """Test energy convergence with missing data."""
         energy_target.threshold = 1e-6
-        energy_target.convergence_type = 'absolute'
+        energy_target.threshold_type = 'absolute'
 
         # Empty archive
         energy_target.normalize(archive, logger)
@@ -121,7 +121,7 @@ class TestEnergyConvergenceTarget:
     def test_energy_units(self, archive, logger, energy_target):
         """Test that energy convergence handles units correctly."""
         energy_target.threshold = 1e-6  # joule
-        energy_target.convergence_type = 'absolute'
+        energy_target.threshold_type = 'absolute'
 
         # Create SCF steps with energy in different unit (hartree)
         scf_step = SCFSteps()
@@ -140,7 +140,7 @@ class TestForceConvergenceTarget:
     """Test the ForceConvergenceTarget class."""
 
     @pytest.mark.parametrize(
-        'threshold, convergence_type, force_values, expected_reached',
+        'threshold, threshold_type, force_values, expected_reached',
         [
             # Maximum convergence - converged
             (
@@ -177,7 +177,7 @@ class TestForceConvergenceTarget:
     def test_force_convergence(
         self,
         threshold: float,
-        convergence_type: str,
+        threshold_type: str,
         force_values: np.ndarray,
         expected_reached: bool,
         archive,
@@ -189,12 +189,12 @@ class TestForceConvergenceTarget:
 
         Args:
             threshold: Convergence threshold value in newton.
-            convergence_type: Type of convergence check ('maximum' or 'rms').
+            threshold_type: Type of convergence check ('maximum' or 'rms').
             force_values: Array of force values (n_atoms, 3).
             expected_reached: Expected value of is_reached flag.
         """
         force_target.threshold = threshold
-        force_target.convergence_type = convergence_type
+        force_target.threshold_type = threshold_type
 
         # Create outputs with forces
         forces = TotalForce(value=force_values * ureg.newton)
@@ -207,7 +207,7 @@ class TestForceConvergenceTarget:
     def test_force_missing_data(self, archive, logger, force_target):
         """Test force convergence with missing data."""
         force_target.threshold = 1e-8
-        force_target.convergence_type = 'maximum'
+        force_target.threshold_type = 'maximum'
 
         # Empty archive
         force_target.normalize(archive, logger)
@@ -221,7 +221,7 @@ class TestForceConvergenceTarget:
     def test_force_absolute_convergence(self, archive, logger, force_target):
         """Test absolute force convergence from SCF delta."""
         force_target.threshold = 1e-8
-        force_target.convergence_type = 'absolute'
+        force_target.threshold_type = 'absolute'
 
         # Create SCF steps with delta_force_abs showing convergence
         scf_step = SCFSteps()
@@ -238,7 +238,7 @@ class TestPotentialConvergenceTarget:
     """Test the PotentialConvergenceTarget class."""
 
     @pytest.mark.parametrize(
-        'threshold, convergence_type, potential_values, expected_reached',
+        'threshold, threshold_type, potential_values, expected_reached',
         [
             # RMS convergence - converged
             (1e-5, 'rms', np.array([1e-7, 1e-7, 1e-7, 1e-7]), True),
@@ -253,7 +253,7 @@ class TestPotentialConvergenceTarget:
     def test_potential_convergence(
         self,
         threshold: float,
-        convergence_type: str,
+        threshold_type: str,
         potential_values: np.ndarray,
         expected_reached: bool,
         archive,
@@ -265,12 +265,12 @@ class TestPotentialConvergenceTarget:
 
         Args:
             threshold: Convergence threshold value in joule.
-            convergence_type: Type of convergence check ('rms' or 'absolute').
+            threshold_type: Type of convergence check ('rms' or 'absolute').
             potential_values: Array of potential values.
             expected_reached: Expected value of is_reached flag.
         """
         potential_target.threshold = threshold
-        potential_target.convergence_type = convergence_type
+        potential_target.threshold_type = threshold_type
 
         # Create SCF steps with potential RMS values
         scf_step = SCFSteps()
@@ -285,7 +285,7 @@ class TestPotentialConvergenceTarget:
     def test_potential_missing_data(self, archive, logger, potential_target):
         """Test potential convergence with missing data."""
         potential_target.threshold = 1e-5
-        potential_target.convergence_type = 'rms'
+        potential_target.threshold_type = 'rms'
 
         # Empty archive
         potential_target.normalize(archive, logger)
@@ -301,7 +301,7 @@ class TestChargeConvergenceTarget:
     """Test the ChargeConvergenceTarget class."""
 
     @pytest.mark.parametrize(
-        'threshold, convergence_type, charge_values, expected_reached',
+        'threshold, threshold_type, charge_values, expected_reached',
         [
             # Absolute convergence - converged
             (1e-7, 'absolute', np.array([1e-10, 1e-10, 1e-10]), True),
@@ -316,7 +316,7 @@ class TestChargeConvergenceTarget:
     def test_charge_convergence(
         self,
         threshold: float,
-        convergence_type: str,
+        threshold_type: str,
         charge_values: np.ndarray,
         expected_reached: bool,
         archive,
@@ -328,12 +328,12 @@ class TestChargeConvergenceTarget:
 
         Args:
             threshold: Convergence threshold (dimensionless).
-            convergence_type: Type of convergence check ('absolute' or 'rms').
+            threshold_type: Type of convergence check ('absolute' or 'rms').
             charge_values: Array of charge difference values.
             expected_reached: Expected value of is_reached flag.
         """
         charge_target.threshold = threshold
-        charge_target.convergence_type = convergence_type
+        charge_target.threshold_type = threshold_type
 
         # Create SCF steps with density RMS values (charge convergence)
         scf_step = SCFSteps()
@@ -348,7 +348,7 @@ class TestChargeConvergenceTarget:
     def test_charge_missing_data(self, archive, logger, charge_target):
         """Test charge convergence with missing data."""
         charge_target.threshold = 1e-7
-        charge_target.convergence_type = 'absolute'
+        charge_target.threshold_type = 'absolute'
 
         # Empty archive
         charge_target.normalize(archive, logger)
@@ -442,26 +442,26 @@ class TestConvergenceHelperMethods:
 
 
 class TestConvergenceTypeEnumeration:
-    """Test convergence_type enum validation."""
+    """Test threshold_type enum validation."""
 
     @pytest.mark.parametrize(
-        'convergence_type',
+        'threshold_type',
         ['absolute', 'relative', 'maximum', 'rms', 'residuum'],
     )
     def test_valid_convergence_types(
-        self, convergence_type: str, archive, logger, energy_target
+        self, threshold_type: str, archive, logger, energy_target
     ):
         """Test that all valid convergence types are accepted."""
-        energy_target.convergence_type = convergence_type
+        energy_target.threshold_type = threshold_type
         energy_target.threshold = 1e-6
 
         # Should not raise an error
         energy_target.normalize(archive, logger)
 
     def test_default_convergence_type(self, archive, logger, energy_target):
-        """Test that default convergence_type is handled."""
+        """Test that default threshold_type is handled."""
         energy_target.threshold = 1e-6
-        # Don't set convergence_type explicitly
+        # Don't set threshold_type explicitly
 
         # Create test data
         scf_step = SCFSteps()
@@ -484,9 +484,9 @@ class TestConvergenceInWorkflow:
 
         # Add multiple convergence targets
         workflow.method.convergence_targets = [
-            EnergyConvergenceTarget(threshold=1e-6, convergence_type='absolute'),
-            ForceConvergenceTarget(threshold=1e-8, convergence_type='maximum'),
-            ChargeConvergenceTarget(threshold=1e-7, convergence_type='rms'),
+            EnergyConvergenceTarget(threshold=1e-6, threshold_type='absolute'),
+            ForceConvergenceTarget(threshold=1e-8, threshold_type='maximum'),
+            ChargeConvergenceTarget(threshold=1e-7, threshold_type='rms'),
         ]
 
         # Create test data
@@ -536,10 +536,10 @@ class TestConvergenceInWorkflow:
 
         workflow.method.convergence_targets = [
             EnergyConvergenceTarget(
-                threshold=1e-6, convergence_type='absolute'
+                threshold=1e-6, threshold_type='absolute'
             ),  # Will converge
             ForceConvergenceTarget(
-                threshold=1e-20, convergence_type='maximum'
+                threshold=1e-20, threshold_type='maximum'
             ),  # Won't converge
         ]
 
@@ -567,7 +567,7 @@ class TestEdgeCases:
     def test_zero_threshold(self, archive, logger, energy_target):
         """Test with zero threshold (only exact zero should converge)."""
         energy_target.threshold = 0.0
-        energy_target.convergence_type = 'absolute'
+        energy_target.threshold_type = 'absolute'
 
         scf_step = SCFSteps()
         scf_step.delta_energies_total = np.array([0.0]) * ureg.joule
@@ -581,7 +581,7 @@ class TestEdgeCases:
     def test_negative_threshold(self, archive, logger, energy_target):
         """Test that negative threshold is handled (should use absolute value)."""
         energy_target.threshold = -1e-6  # Negative threshold
-        energy_target.convergence_type = 'absolute'
+        energy_target.threshold_type = 'absolute'
 
         scf_step = SCFSteps()
         scf_step.delta_energies_total = np.array([5e-7]) * ureg.joule
@@ -595,7 +595,7 @@ class TestEdgeCases:
     def test_very_large_values(self, archive, logger, force_target):
         """Test with very large force values."""
         force_target.threshold = 1e10
-        force_target.convergence_type = 'maximum'
+        force_target.threshold_type = 'maximum'
 
         forces = TotalForce(value=np.array([[1e5, 1e5, 1e5]]) * ureg.newton)
         archive.data.outputs = [Outputs(total_forces=[forces])]
@@ -606,7 +606,7 @@ class TestEdgeCases:
     def test_nan_values(self, archive, logger, force_target):
         """Test handling of NaN values in data."""
         force_target.threshold = 1e-8
-        force_target.convergence_type = 'maximum'
+        force_target.threshold_type = 'maximum'
 
         # Create forces with NaN
         forces = TotalForce(value=np.array([[np.nan, 1e-5, 1e-5]]) * ureg.newton)

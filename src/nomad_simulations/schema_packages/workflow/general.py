@@ -36,30 +36,27 @@ class WorkflowConvergenceTarget(ArchiveSection):
 
     Child classes define specific physical properties
     (e.g., energy, force) with proper units. The base class handles all convergence
-    checking logic based on the convergence_type enum.
+    checking logic based on the threshold_type enum.
     """
 
     threshold: Quantity = None
 
-    convergence_type = Quantity(
+    threshold_type = Quantity(
         type=MEnum('absolute', 'relative', 'maximum', 'rms', 'residuum'),
-        description=r"""
-        Specifies how convergence is evaluated:
+        description="""Specifies the mathematical method used to evaluate convergence between successive self-consistent field (SCF) iterations.
+This determines how differences between iterations are calculated and compared against the convergence threshold.
 
-        | Type | Description |
-        | ---- | ----------- |
-        | `'absolute'` | Absolute difference between iterations: \|X_n - X_{n-1}\| < threshold |
-        | `'relative'` | Relative difference: \|X_n - X_{n-1}\|/\|X_n\| < threshold |
-        | `'maximum'` | Maximum component difference: max\|X_i,n - X_i,{n-1}\| < threshold |
-        | `'rms'` | Root mean square: sqrt(Σ\|X_i,n - X_i,{n-1}\|²/N) < threshold |
-        | `'residuum'` | Difference from initial estimate at step start |
-        """,
-    )
+The available comparison modes are:
 
-    is_reached = Quantity(
-        type=bool,
-        description="""
-        Indicates whether the convergence criterion was met (True) or not (False).
+| Mode | Description |
+| --------- | -------------------------------- |
+| `'absolute'` | Measures the absolute difference between two subsequent iterations (e.g., \|E_n - E_{n-1}\|). Most common for energy convergence. |
+| `'relative'` | Calculates the relative difference as a fraction of the total property value (e.g., \|E_n - E_{n-1}\|/\|E_n\|). Useful when the magnitude of the property varies widely across systems. |
+| `'residuum'` | Computes the absolute difference between the current value and the value estimated from the wavefunction at the start of the step. Often used for evaluating convergence of the electron density. |
+| `'maximum'` | Reports the maximum absolute difference across all components of a multi-component property (e.g., max\|F_i,n - F_i,{n-1}\| for forces). Suitable for vector quantities like forces or stress tensor elements. |
+| `'rms'` | Calculates the root mean square of differences across all components (e.g., √(∑\|F_i,n - F_i,{n-1}\|²/N)). Provides a statistical measure of overall convergence for multi-component properties. |
+
+The mode used affects both convergence behavior and computational efficiency. Different codes may default to different comparison modes for the same physical property.
         """,
     )
 
@@ -186,57 +183,61 @@ class WorkflowConvergenceTarget(ArchiveSection):
         )
         return np.sqrt(np.mean(values**2)) < threshold_val
 
-    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> bool | None:
         """
-        Check convergence by comparing current value against threshold.
-        Uses the convergence_type to determine the comparison method.
+        Check if convergence criterion is met.
+
+        Returns:
+            True if converged, False if not, None if cannot be determined.
         """
         if not archive.data:
-            return
+            return None
 
         try:
             value = self._get_convergence_value(archive, logger)
             if value is None:
-                return
+                return None
 
-            conv_type = self.convergence_type or 'absolute'
+            conv_type = self.threshold_type or 'absolute'
 
             # Handle scalar vs array values
             if isinstance(value, int | float | np.floating):
                 # Scalar value - use absolute or relative
                 if conv_type == 'absolute':
-                    self.is_reached = self._check_absolute(value)
+                    return self._check_absolute(value)
                 elif conv_type == 'relative':
                     # For relative, child class should provide reference
                     logger.warning(
                         f'Relative convergence requires reference value in '
                         f'{self.__class__.__name__}'
                     )
+                    return None
                 else:
-                    self.is_reached = self._check_absolute(value)
+                    return self._check_absolute(value)
 
             elif isinstance(value, np.ndarray):
                 # Array value - can use maximum or rms
                 if conv_type == 'maximum':
-                    self.is_reached = self._check_maximum(value)
+                    return self._check_maximum(value)
                 elif conv_type == 'rms':
-                    self.is_reached = self._check_rms(value)
+                    return self._check_rms(value)
                 elif conv_type == 'absolute':
                     # For array, treat as maximum
-                    self.is_reached = self._check_maximum(value)
+                    return self._check_maximum(value)
                 else:
-                    self.is_reached = self._check_maximum(value)
+                    return self._check_maximum(value)
 
         except Exception as e:
             logger.debug(
                 f'Could not check convergence for {self.__class__.__name__}: {e}'
             )
+        return None
 
 
 class EnergyConvergenceTarget(WorkflowConvergenceTarget):
     """
     Convergence target for energy in SCF or optimization workflows.
-    The convergence_type determines how energy convergence is evaluated.
+    The threshold_type determines how energy convergence is evaluated.
     """
 
     threshold = Quantity(
@@ -254,7 +255,7 @@ class EnergyConvergenceTarget(WorkflowConvergenceTarget):
 class ForceConvergenceTarget(WorkflowConvergenceTarget):
     """
     Convergence target for forces in optimization or SCF workflows.
-    The convergence_type determines how force convergence is evaluated.
+    The threshold_type determines how force convergence is evaluated.
     """
 
     threshold = Quantity(
@@ -265,7 +266,7 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
         """,
     )
 
-    # Note: ForceConvergenceTarget has multiple extraction paths depending on convergence_type
+    # Note: ForceConvergenceTarget has multiple extraction paths depending on threshold_type
     # and data availability. The simple path approach works for 'absolute' type:
     _convergence_property_path = 'scf_steps.delta_force_abs'
 
@@ -280,7 +281,7 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
     ) -> float | np.ndarray | None:
         """Extract force convergence value from archive."""
         try:
-            conv_type = self.convergence_type or 'maximum'
+            conv_type = self.threshold_type or 'maximum'
 
             # For maximum force in geometry optimization, check workflow level
             if (
@@ -317,7 +318,7 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
 class PotentialConvergenceTarget(WorkflowConvergenceTarget):
     """
     Convergence target for potential in SCF workflows.
-    The convergence_type determines how potential convergence is evaluated.
+    The threshold_type determines how potential convergence is evaluated.
     """
 
     threshold = Quantity(
@@ -335,7 +336,7 @@ class PotentialConvergenceTarget(WorkflowConvergenceTarget):
 class ChargeConvergenceTarget(WorkflowConvergenceTarget):
     """
     Convergence target for charge/electron density in SCF workflows.
-    The convergence_type determines how density convergence is evaluated.
+    The threshold_type determines how density convergence is evaluated.
     """
 
     threshold = Quantity(
@@ -617,9 +618,11 @@ class SimulationWorkflow(Workflow, SimulationTask):
         if not convergence_targets:
             return
 
-        # Normalize each convergence target (triggers convergence checks)
+        # Normalize each convergence target and collect results
+        convergence_status = {}  # Map target -> is_reached
         for target in convergence_targets:
-            target.normalize(archive, logger)
+            is_reached = target.normalize(archive, logger)
+            convergence_status[target] = is_reached
 
         # Copy normalized targets to results for visibility (simple workflow pattern)
         if not self.results.convergence_targets:
@@ -633,19 +636,19 @@ class SimulationWorkflow(Workflow, SimulationTask):
             for target in convergence_targets:
                 result = WorkflowConvergenceResults()
                 result.convergence_target_ref = target
-                result.is_reached = target.is_reached
+                result.is_reached = convergence_status[target]
                 convergence_results.append(result)
             if convergence_results:
                 self.results.convergence = convergence_results
 
         # Determine overall convergence status
         all_reached = all(
-            target.is_reached
+            convergence_status[target]
             for target in convergence_targets
-            if target.is_reached is not None
+            if convergence_status[target] is not None
         )
         any_checked = any(
-            target.is_reached is not None for target in convergence_targets
+            convergence_status[target] is not None for target in convergence_targets
         )
 
         if any_checked:
