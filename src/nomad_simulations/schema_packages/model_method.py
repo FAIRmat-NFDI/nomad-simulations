@@ -105,9 +105,9 @@ class ImplicitSolvationModel(BaseModelMethod):
 
     References
     ----------
-    •  J. Tomasi, B. Mennucci, R. Cammi, *Chem. Rev.* **105**, 2999 (2005) — PCM overview
-    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) — COSMO
-    •  A. V. Marenich *et al.*, *J. Chem. Phys. B* **113**, 6378 (2009) — SMD
+    •  J. Tomasi, B. Mennucci, R. Cammi, *Chem. Rev.* **105**, 2999 (2005) - PCM overview
+    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) - COSMO
+    •  A. V. Marenich *et al.*, *J. Chem. Phys. B* **113**, 6378 (2009) - SMD
     """
 
     model = Quantity(
@@ -192,72 +192,6 @@ class ImplicitSolvationModel(BaseModelMethod):
         """,
     )
 
-    # TODO: revisit here after the final Mesh implementation
-    surface_tessellation = Quantity(
-        type=np.int32,
-        shape=['*'],
-        description="""
-        Number of Lebedev/Geodesic points per atom used in the cavity
-        discretisation (relevant for surface-integral PCM codes).
-
-        Semantics:
-        • Single value → global default applied to all atoms.
-        • Length == n_species → per-species values (ordered like the model's species list).
-        • Length == n_atoms → per-atom values (in atomic order).
-
-        Many codes expose a global setting but internally vary with element; this
-        shape allows parsers to emit either a single global value or an explicit
-        vector when the input/output is species- or atom-resolved.
-        """,
-    )
-
-    #  minimal PB/GB knobs for classical comparability
-    epsilon_interior = Quantity(
-        type=np.float64,
-        description='Interior (solute) dielectric ε_in; GB/PB often use ε_in > 1. Default is 1.0 if missing.',
-    )
-
-    ionic_strength = Quantity(
-        type=np.float64,
-        unit='mole / liter',
-        description='Bulk ionic strength (salt) for PB; optional for GB parameterizations.',
-    )
-
-    # GB/GBSA per-atom Born radii
-    born_radii_system_ref = Quantity(
-        type=ModelSystem,
-        description="""
-        ModelSystem whose particle ordering the Born radii refer to. If omitted,
-        normalization should default to the last representative ModelSystem.
-        """,
-    )
-
-    # Local count specifically for this array (avoids clashing with ModelSystem.n_particles)
-    n_born = Quantity(
-        type=np.int32,
-        description='Number of Born radii provided (length of effective_born_radii).',
-    )
-
-    effective_born_radii = Quantity(
-        type=np.float64,
-        unit='meter',
-        shape=['n_born'],
-        description="""
-        Per-particle effective Born radii R_i^Born used by GB/GBSA electrostatics.
-        Units match the code's length unit; ordering defined by born_radii_system_ref
-        plus optional born_radii_particle_indices.
-        """,
-    )
-
-    born_radii_particle_indices = Quantity(
-        type=np.int32,
-        shape=['n_born'],
-        description="""
-        Optional indices into born_radii_system_ref's particle list. If omitted, a 1:1
-        mapping to that system's particle ordering is assumed.
-        """,
-    )
-
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
 
@@ -288,15 +222,17 @@ class ExplicitDispersionModel(BaseModelMethod):
 
     Covers pairwise-additive (D2/D3/D3(BJ)/D4), density-dependent (TS/TS-SCS),
     many-body dispersion (MBD, e.g. MBD@rsSCS), and non-local correlation
-    functionals (VV10, rVV10, vdW-DF family, XDM). Records key numerical knobs
-    (s6/s8/s9, BJ a1/a2, VV10 b, MBD beta, TS sR).
+    functionals (VV10, rVV10, vdW-DF family, XDM).
 
     References
     ----------
-    •  S. Grimme, *J. Comp. Chem.* **27**, 1787 (2006) — DFT-D2
-    •  S. Grimme *et al.*, *J. Chem. Phys.* **132**, 154104 (2010) — DFT-D3
-    •  S. Grimme *et al.*, *J. Chem. Phys.* **136**, 154105 (2012) — DFT-D3(BJ)
-    •  C. Steinmann, *WIREs Comput. Mol. Sci.* **10**, e1438 (2020) — overview
+    • S. Grimme, J. Comp. Chem. 27, 1787 (2006) - DFT-D2
+    • S. Grimme et al., J. Chem. Phys. 132, 154104 (2010) - DFT-D3
+    • S. Grimme et al., J. Chem. Phys. 136, 154105 (2012) - DFT-D3(BJ)
+    • A. Tkatchenko, M. Scheffler, Phys. Rev. Lett. 102, 073005 (2009) - TS
+    • A. Tkatchenko et al., Phys. Rev. Lett. 108, 236402 (2012) - MBD
+    • O. A. Vydrov, T. Van Voorhis, J. Chem. Phys. 133, 244103 (2010) - VV10
+    • C. Steinmann, WIREs Comput. Mol. Sci. 10, e1438 (2020) - overview
     """
 
     model = Quantity(
@@ -325,81 +261,31 @@ class ExplicitDispersionModel(BaseModelMethod):
             'SCAN+rVV10',
             'BEEF-vdW',
         ),
-        description='Dispersion/vdW scheme.',
+        description="""
+        Identifier of the explicit dispersion / vdW model.
+        """,
     )
 
-    # application context
     is_embedded_in_xc = Quantity(
         type=bool,
         description='True if dispersion is part of the XC functional (e.g. SCAN+rVV10).',
     )
 
-    # Damping form
     damping_function = Quantity(
         type=MEnum('zero', 'BJ', 'fermi', 'rational'),
         description='Short-range damping: D3{zero,BJ}, TS{fermi}, XDM{rational}.',
     )
 
-    # TODO @ EBB: link this to XCComponent(s) when available
+    # TODO later: link to XCComponent(s)
     xc_partner = Quantity(
         type=str,
         description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
     )
 
-    # Core scalar knobs (only some are relevant for each model)
-    s6 = Quantity(type=np.float64, description='Global s6 scaling for C6/R6.')
-    s8 = Quantity(type=np.float64, description='Global s8 scaling for C8/R8 (D3/D4).')
-    s9 = Quantity(
-        type=np.float64, description='Global s9 for 3-body ATM term (if enabled).'
-    )
-    a1 = Quantity(type=np.float64, description='BJ damping a1 (D3BJ/D4).')
-    a2 = Quantity(type=np.float64, description='BJ damping a2 (D3BJ/D4).')
-    sR = Quantity(type=np.float64, description='Range/damping length for TS/TS-SCS.')
-    b = Quantity(type=np.float64, description='VV10/rVV10 kernel parameter b.')
-    beta = Quantity(
-        type=np.float64, description='MBD range-separation / screening parameter.'
-    )
-
-    # Method-specific switches
-    include_three_body_atm = Quantity(
-        type=bool,
-        description='If a 3-body Axilrod-Teller-Muto term is included (D3/D4).',
-    )
-    include_c8 = Quantity(
-        type=bool, description='If C8 term is included in the pairwise sum.'
-    )
-    include_c10 = Quantity(type=bool, description='If C10 term is included (e.g. XDM).')
-    max_dispersion_order = Quantity(
-        type=np.int32, description='Highest n in Cn/R^n used (e.g., 6, 8, 10).'
-    )
-
-    # Environment/charges for density-dependent schemes
-    partition_scheme = Quantity(
-        type=MEnum('Hirshfeld', 'Hirshfeld-I', 'MBIS'),
-        description='Density partition for TS/MBD polarizabilities.',
-    )
-    charge_model = Quantity(
-        type=MEnum('EEQ', 'CM5', 'NPA'),
-        description='Atomic charge model used by D4 (e.g., EEQ).',
-    )
-
-    # Kernel flavor (vdW-DF family)
+    # Kernel family choice, when applicable. This is a model identifier, not a numerical knob.
     nonlocal_kernel = Quantity(
         type=MEnum('DRSLL', 'LMKLL', 'VV10', 'rVV10'),
         description='Nonlocal correlation kernel flavor (when applicable).',
-    )
-
-    # Density source for TS/MBD
-    density_source = Quantity(
-        type=MEnum('all-electron', 'PAW-reconstructed', 'valence-only'),
-        description='Source of electron density used for Hirshfeld/MBIS partitioning.',
-    )
-
-    # Practical cutoffs
-    cutoff_radius = Quantity(
-        type=np.float64,
-        unit='meter',
-        description='Pairwise/MBD real-space cutoff (if any).',
     )
 
 
