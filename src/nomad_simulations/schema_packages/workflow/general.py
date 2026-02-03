@@ -431,6 +431,39 @@ class WorkflowTime(ArchiveSection):
     )
 
 
+class WorkflowConvergenceResults(ArchiveSection):
+    """
+    Results of workflow convergence checks.
+
+    This class allows for flexible convergence result reporting, especially useful
+    in nested workflow hierarchies where convergence results may need to be
+    aggregated from multiple sources or represent composite convergence criteria.
+
+    For simple cases, convergence targets can use their built-in `is_reached` field.
+    For complex cases (e.g., nested workflows), use this class to reference targets
+    and provide aggregated results.
+    """
+
+    convergence_target_ref = Quantity(
+        type=WorkflowConvergenceTarget,
+        description="""
+        Reference to the workflow convergence target that this result corresponds to.
+        """,
+    )
+
+    is_reached = Quantity(
+        type=bool,
+        description="""
+        Indicates whether this convergence target was reached (True) or not (False).
+
+        This can represent:
+        - Direct result from the referenced target's normalization
+        - Aggregated result from nested workflows
+        - Composite result from multiple convergence criteria
+        """,
+    )
+
+
 class SimulationWorkflowResults(WorkflowTime):
     """
     Base class for simulation workflow results sub-section definition.
@@ -454,7 +487,21 @@ class SimulationWorkflowResults(WorkflowTime):
     )
 
     convergence_targets = SubSection(
-        sub_section=WorkflowConvergenceTarget.m_def, repeats=True
+        sub_section=WorkflowConvergenceTarget.m_def,
+        repeats=True,
+        description="""
+        Direct references to convergence targets for simple workflows.
+        Targets contain their own `is_reached` field after normalization.
+        """,
+    )
+
+    convergence = SubSection(
+        sub_section=WorkflowConvergenceResults.m_def,
+        repeats=True,
+        description="""
+        Convergence results for complex workflows (e.g., nested hierarchies).
+        Each result references a target and provides aggregated/composite convergence status.
+        """,
     )
 
 
@@ -557,6 +604,9 @@ class SimulationWorkflow(Workflow, SimulationTask):
     def map_convergence(self, archive: EntryArchive) -> None:
         """
         Normalize convergence targets and determine overall convergence status.
+
+        For simple workflows: targets are normalized and copied to results.convergence_targets
+        For complex workflows: WorkflowConvergenceResults instances are created in results.convergence
         """
         if not archive.data or not archive.data.outputs:
             return
@@ -571,9 +621,22 @@ class SimulationWorkflow(Workflow, SimulationTask):
         for target in convergence_targets:
             target.normalize(archive, logger)
 
-        # Copy normalized targets to results for visibility
+        # Copy normalized targets to results for visibility (simple workflow pattern)
         if not self.results.convergence_targets:
             self.results.convergence_targets = convergence_targets
+
+        # Create WorkflowConvergenceResults if needed (complex workflow pattern)
+        # This is used when parsers populate results.convergence or for nested workflows
+        if not self.results.convergence:
+            # Create results for each target to support nested workflow aggregation
+            convergence_results = []
+            for target in convergence_targets:
+                result = WorkflowConvergenceResults()
+                result.convergence_target_ref = target
+                result.is_reached = target.is_reached
+                convergence_results.append(result)
+            if convergence_results:
+                self.results.convergence = convergence_results
 
         # Determine overall convergence status
         all_reached = all(

@@ -9,6 +9,7 @@ from .general import (
     PotentialConvergenceTarget,
     SerialWorkflow,
     SimulationWorkflow,
+    WorkflowConvergenceResults,
     WorkflowConvergenceTarget,
 )
 from .geometry_optimization import GeometryOptimization
