@@ -227,8 +227,8 @@ class GeometryOptimization(SerialWorkflow):
                     'workflow2.method.single_point_convergence_targets', archive
                 )
                 if single_point_convergence is not None:
-                    single_point_convergence_result = task._resolve_convergence_for_output(
-                        archive, single_point_convergence, logger, output_index=n
+                    single_point_convergence_result = task._resolve_convergence(
+                        archive, single_point_convergence, logger
                     )
                     task.results.convergence_targets = single_point_convergence_result
             else:

@@ -91,6 +91,9 @@ The mode used affects both convergence behavior and computational efficiency. Di
             if not archive.data or not archive.data.outputs:
                 return None
 
+            # TODO: Should this be hardcoded to [-1]? For multi-step workflows (e.g., geometry
+            # optimization), we may need to check convergence at specific output indices rather
+            # than always using the last output.
             last_output = archive.data.outputs[-1]
 
             # Parse the property path and navigate through nested attributes
@@ -452,16 +455,10 @@ class WorkflowConvergenceResults(ArchiveSection):
         """,
     )
 
-    # TODO - Check docstring concerning usage
     is_reached = Quantity(
         type=bool,
         description="""
         Indicates whether this convergence target was reached (True) or not (False).
-
-        This can represent:
-        - Direct result from the referenced target's normalization
-        - Aggregated result from nested workflows
-        - Composite result from multiple convergence criteria
         """,
     )
 
@@ -676,19 +673,18 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
         self.map_convergence(archive, logger=logger)
 
-    def _resolve_convergence_for_output(
+    def _resolve_convergence(
         self,
         archive: EntryArchive,
         convergence_targets: list[WorkflowConvergenceTarget],
         logger: BoundLogger,
-        output_index: int = -1,
     ) -> list[WorkflowConvergenceTarget]:
         """
-        Helper method to resolve convergence targets for a specific output index.
+        Helper method to resolve convergence targets for outputs.
         Used primarily for multi-step workflows like geometry optimization.
 
-        Creates temporary copies of convergence targets and normalizes them
-        against a specific output step.
+        Creates temporary copies of convergence targets and normalizes them.
+        Note: Currently checks convergence against the last output only.
         """
         resolved_targets = []
 

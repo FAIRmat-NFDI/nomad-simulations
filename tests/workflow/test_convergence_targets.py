@@ -231,7 +231,7 @@ class TestForceConvergenceTarget:
 
         is_reached = force_target.normalize(archive, logger)
         # Last delta force (1e-10) should be below threshold (1e-8)
-        assert is_reached == True
+        assert is_reached is True
 
 
 class TestPotentialConvergenceTarget:
@@ -369,34 +369,34 @@ class TestConvergenceHelperMethods:
         energy_target.threshold = 1e-6
 
         # Test converged case
-        assert energy_target._check_absolute(5e-7) == True
-        assert energy_target._check_absolute(-5e-7) == True
+        assert energy_target._check_absolute(5e-7) is True
+        assert energy_target._check_absolute(-5e-7) is True
 
         # Test not converged case
-        assert energy_target._check_absolute(5e-5) == False
-        assert energy_target._check_absolute(-5e-5) == False
+        assert energy_target._check_absolute(5e-5) is False
+        assert energy_target._check_absolute(-5e-5) is False
 
         # Test boundary (now uses <=)
-        assert energy_target._check_absolute(1e-6) == True
-        assert energy_target._check_absolute(9e-7) == True
+        assert energy_target._check_absolute(1e-6) is True
+        assert energy_target._check_absolute(9e-7) is True
 
     def test_check_relative(self, energy_target):
         """Test _check_relative helper method."""
         energy_target.threshold = 1e-6
 
         # Test converged case
-        assert energy_target._check_relative(1e-7, 1.0) == True
-        assert energy_target._check_relative(-1e-7, 1.0) == True
+        assert energy_target._check_relative(1e-7, 1.0) is True
+        assert energy_target._check_relative(-1e-7, 1.0) is True
 
         # Test not converged case
-        assert energy_target._check_relative(1e-3, 1.0) == False
+        assert energy_target._check_relative(1e-3, 1.0) is False
 
         # Test with different reference values
-        assert energy_target._check_relative(1e-6, 100.0) == True
-        assert energy_target._check_relative(1e-4, 100.0) == False
+        assert energy_target._check_relative(1e-6, 100.0) is True
+        assert energy_target._check_relative(1e-4, 100.0) is False
 
         # Test edge case: zero reference
-        assert energy_target._check_relative(0.0, 0.0) == True
+        assert energy_target._check_relative(0.0, 0.0) is True
 
     def test_check_maximum(self):
         """Test _check_maximum helper method."""
@@ -406,15 +406,15 @@ class TestConvergenceHelperMethods:
 
         # Test converged case
         values_converged = np.array([1e-10, -5e-10, 3e-10])
-        assert force_target._check_maximum(values_converged) == True
+        assert force_target._check_maximum(values_converged) is True
 
         # Test not converged case
         values_not_converged = np.array([1e-5, 1e-6, 1e-7])
-        assert force_target._check_maximum(values_not_converged) == False
+        assert force_target._check_maximum(values_not_converged) is False
 
         # Test multidimensional array
         values_2d = np.array([[1e-10, 2e-10], [3e-10, 4e-10]])
-        assert force_target._check_maximum(values_2d) == True
+        assert force_target._check_maximum(values_2d) is True
 
     def test_check_rms(self):
         """Test _check_rms helper method."""
@@ -425,15 +425,15 @@ class TestConvergenceHelperMethods:
 
         # Test converged case
         values_converged = np.array([1e-10, 1e-10, 1e-10])
-        assert force_target._check_rms(values_converged) == True
+        assert force_target._check_rms(values_converged) is True
 
         # Test not converged case
         values_not_converged = np.array([1e-5, 1e-5, 1e-5])
-        assert force_target._check_rms(values_not_converged) == False
+        assert force_target._check_rms(values_not_converged) is False
 
         # Test with zeros
         values_zero = np.array([0.0, 0.0, 0.0])
-        assert force_target._check_rms(values_zero) == True
+        assert force_target._check_rms(values_zero) is True
 
         # Test multidimensional array
         values_2d = np.array([[1e-10, 2e-10], [3e-10, 4e-10]])
@@ -514,9 +514,9 @@ class TestConvergenceInWorkflow:
             convergence_results.append(is_reached)
 
         # Check individual convergence
-        assert convergence_results[0] == True  # Energy
-        assert convergence_results[1] == True  # Force
-        assert convergence_results[2] == True  # Charge
+        assert convergence_results[0] is True  # Energy
+        assert convergence_results[1] is True  # Force
+        assert convergence_results[2] is True  # Charge
 
     def test_convergence_targets_empty(self, archive, logger):
         """Test workflow with no convergence targets."""
@@ -561,8 +561,8 @@ class TestConvergenceInWorkflow:
             is_reached = target.normalize(archive, logger)
             convergence_results.append(is_reached)
 
-        assert convergence_results[0] == True
-        assert convergence_results[1] == False
+        assert convergence_results[0] is True
+        assert convergence_results[1] is False
 
 
 class TestEdgeCases:
@@ -580,7 +580,7 @@ class TestEdgeCases:
         is_reached = energy_target.normalize(archive, logger)
 
         # With <= comparison, exact zero matches zero threshold
-        assert is_reached == True
+        assert is_reached is True
 
     def test_negative_threshold(self, archive, logger, energy_target):
         """Test that negative threshold is handled (should use absolute value)."""
@@ -605,7 +605,7 @@ class TestEdgeCases:
         archive.data.outputs = [Outputs(total_forces=[forces])]
 
         is_reached = force_target.normalize(archive, logger)
-        assert is_reached == True
+        assert is_reached is True
 
     def test_nan_values(self, archive, logger, force_target):
         """Test handling of NaN values in data."""
