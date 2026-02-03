@@ -34,18 +34,12 @@ class WorkflowConvergenceTarget(ArchiveSection):
     """
     Abstract base class for defining convergence targets.
 
-    Following the PhysicalProperty pattern, this provides a common interface for
-    all convergence criteria. Child classes define specific physical properties
+    Child classes define specific physical properties
     (e.g., energy, force) with proper units. The base class handles all convergence
     checking logic based on the convergence_type enum.
     """
 
-    threshold = Quantity(
-        type=np.float64,
-        description="""
-        Threshold value for convergence. Units are defined in child classes.
-        """,
-    )
+    threshold: Quantity = None
 
     convergence_type = Quantity(
         type=MEnum('absolute', 'relative', 'maximum', 'rms', 'residuum'),
@@ -69,20 +63,73 @@ class WorkflowConvergenceTarget(ArchiveSection):
         """,
     )
 
+    # Class attribute to be overridden in child classes
+    # Should be set to the path to the convergence property in outputs
+    # e.g., 'scf_steps.delta_energies_total' for energy convergence
+    _convergence_property_path: str = None
+
     def _get_convergence_value(
         self, archive: EntryArchive, logger: BoundLogger
     ) -> float | np.ndarray | None:
         """
         Extract the value to check for convergence from the archive.
-        Child classes must override this to return the appropriate value.
+
+        This base implementation provides a generalized approach that searches for
+        the property specified in `_convergence_property_path`. Child classes can
+        override this for custom extraction logic if needed.
 
         Returns:
             The value to check (should already be converted to appropriate units),
             or None if the value cannot be determined.
         """
-        raise NotImplementedError(
-            f'{self.__class__.__name__} must implement _get_convergence_value()'
-        )
+        if self._convergence_property_path is None:
+            logger.warning(
+                f'{self.__class__.__name__} does not define _convergence_property_path. '
+                f'Either set this class attribute or override _get_convergence_value().'
+            )
+            return None
+
+        try:
+            # Navigate to the last output
+            if not archive.data or not archive.data.outputs:
+                return None
+
+            last_output = archive.data.outputs[-1]
+
+            # Parse the property path and navigate through nested attributes
+            path_parts = self._convergence_property_path.split('.')
+            current_obj = last_output
+
+            for part in path_parts:
+                if current_obj is None:
+                    return None
+                current_obj = getattr(current_obj, part, None)
+
+            if current_obj is None:
+                return None
+
+            # Handle the value: extract last element if it's an array with units
+            if hasattr(current_obj, '__getitem__'):
+                value = current_obj[-1]
+            else:
+                value = current_obj
+
+            # Convert to magnitude if it has units
+            if hasattr(value, 'magnitude'):
+                # Get the unit from the threshold to ensure consistent conversion
+                if hasattr(self.threshold, 'units'):
+                    target_unit = str(self.threshold.units)
+                    value = value.to(target_unit).magnitude
+                else:
+                    value = value.magnitude
+
+            return value
+
+        except (AttributeError, IndexError, TypeError) as e:
+            logger.debug(
+                f'Could not extract convergence value from {self._convergence_property_path}: {e}'
+            )
+        return None
 
     def _check_absolute(self, value: float) -> bool:
         """Check absolute convergence: |value| < threshold"""
@@ -200,18 +247,8 @@ class EnergyConvergenceTarget(WorkflowConvergenceTarget):
         """,
     )
 
-    def _get_convergence_value(
-        self, archive: EntryArchive, logger: BoundLogger
-    ) -> float | None:
-        """Extract energy convergence value from archive."""
-        try:
-            # Try to get SCF energy difference (most common case)
-            delta_energies = archive.data.outputs[-1].scf_steps.delta_energies_total
-            if delta_energies is not None:
-                return delta_energies[-1].to('joule').magnitude
-        except (AttributeError, IndexError, TypeError):
-            logger.debug('Could not extract energy convergence value from outputs.')
-        return None
+    # Property path for automatic extraction
+    _convergence_property_path = 'scf_steps.delta_energies_total'
 
 
 class ForceConvergenceTarget(WorkflowConvergenceTarget):
@@ -227,6 +264,16 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
         Force convergence threshold.
         """,
     )
+
+    # Note: ForceConvergenceTarget has multiple extraction paths depending on convergence_type
+    # and data availability. The simple path approach works for 'absolute' type:
+    _convergence_property_path = 'scf_steps.delta_force_abs'
+
+    # TODO: The current implementation below has custom logic for different convergence types
+    # and fallback paths. Consider whether to:
+    # 1. Keep custom implementation for complex cases like this
+    # 2. Extend the base class to support multiple property paths with conditions
+    # 3. Use the simple path for common case and override only for special cases
 
     def _get_convergence_value(
         self, archive: EntryArchive, logger: BoundLogger
@@ -245,7 +292,7 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
                 if final_force_max is not None:
                     return final_force_max.to('newton').magnitude
 
-            # For absolute (SCF force delta)
+            # For absolute (SCF force delta) - could use base class with _convergence_property_path
             if conv_type == 'absolute' and archive.data.outputs:
                 delta_forces = archive.data.outputs[-1].scf_steps.delta_force_abs
                 if delta_forces is not None:
@@ -281,18 +328,8 @@ class PotentialConvergenceTarget(WorkflowConvergenceTarget):
         """,
     )
 
-    def _get_convergence_value(
-        self, archive: EntryArchive, logger: BoundLogger
-    ) -> float | None:
-        """Extract potential convergence value from archive."""
-        try:
-            # Most common: RMS potential difference
-            delta_potentials = archive.data.outputs[-1].scf_steps.delta_potential_rms
-            if delta_potentials is not None:
-                return delta_potentials[-1].to('joule').magnitude
-        except (AttributeError, IndexError, TypeError):
-            logger.debug('Could not extract potential convergence value from outputs.')
-        return None
+    # Property path for automatic extraction
+    _convergence_property_path = 'scf_steps.delta_potential_rms'
 
 
 class ChargeConvergenceTarget(WorkflowConvergenceTarget):
@@ -308,26 +345,8 @@ class ChargeConvergenceTarget(WorkflowConvergenceTarget):
         """,
     )
 
-    def _get_convergence_value(
-        self, archive: EntryArchive, logger: BoundLogger
-    ) -> float | None:
-        """Extract charge/density convergence value from archive."""
-        try:
-            delta_densities = archive.data.outputs[-1].scf_steps.delta_density_rms
-            if delta_densities is not None:
-                # Extract last value from the array
-                delta_density = delta_densities[-1]
-                # Handle pint Quantity by extracting magnitude
-                if hasattr(delta_density, 'magnitude'):
-                    return float(delta_density.magnitude)
-                return (
-                    float(delta_density)
-                    if not isinstance(delta_density, int | float)
-                    else delta_density
-                )
-        except (AttributeError, IndexError, TypeError):
-            logger.debug('Could not extract charge convergence value from outputs.')
-        return None
+    # Property path for automatic extraction
+    _convergence_property_path = 'scf_steps.delta_density_rms'
 
 
 class SimulationWorkflowMethod(ArchiveSection):
