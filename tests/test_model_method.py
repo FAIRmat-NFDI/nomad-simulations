@@ -701,6 +701,61 @@ def test_dft_functional_key_population_is_idempotent():
     assert len(dft.xc.components or []) == n1
 
 
+def test_dft_normalize_infers_solvated():
+    dft = DFT()
+    dft.m_add_sub_section(type(dft).contributions, ImplicitSolvationModel(model='PCM'))
+
+    dft.normalize(EntryArchive(), logger=logger)
+    assert 'solvated' in dft.extensions
+
+
+def test_dft_normalize_infers_dispersion():
+    dft = DFT()
+    dft.m_add_sub_section(
+        type(dft).contributions, ExplicitDispersionModel(model='D3BJ')
+    )
+
+    dft.normalize(EntryArchive(), logger=logger)
+    assert 'dispersion' in dft.extensions
+
+
+def test_dft_normalize_infers_relativistic():
+    dft = DFT()
+    rel = RelativityModel(level='two-component')
+    dft.m_add_sub_section(type(dft).contributions, rel)
+
+    dft.normalize(EntryArchive(), logger=logger)
+    assert 'relativistic' in dft.extensions
+
+
+def test_dft_normalize_infers_spin_orbit():
+    dft = DFT()
+    rel = RelativityModel(level='two-component', approximation='SOMF')
+    dft.m_add_sub_section(type(dft).contributions, rel)
+
+    dft.normalize(EntryArchive(), logger=logger)
+    assert 'spin_orbit' in dft.extensions
+
+
+def test_dft_normalize_infers_range_separated():
+    dft = DFT()
+    xc_comp = XCComponent(
+        canonical_label='XC_HYB_GGA_XC_CAM_B3LYP', range_separation_parameter=0.33
+    )
+    dft.xc = XCFunctional(components=[xc_comp])
+
+    dft.normalize(EntryArchive(), logger=logger)
+    assert 'range_separated' in dft.extensions
+
+
+def test_dft_normalize_merges_with_existing_extensions():
+    dft = DFT(extensions=['solvated'])
+    dft.m_add_sub_section(type(dft).contributions, ExplicitDispersionModel(model='D3'))
+
+    dft.normalize(EntryArchive(), logger=logger)
+    assert sorted(dft.extensions) == sorted(['solvated', 'dispersion'])
+
+
 _COMMON_XC_CASES = [
     # ---------------- LDA ----------------
     ('LDA', 'LDA', ['XC_LDA_X', 'XC_LDA_C_PW', 'XC_LDA_C_PZ']),

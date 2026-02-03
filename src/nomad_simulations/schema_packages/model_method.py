@@ -691,23 +691,23 @@ class DFT(ModelMethodElectronic):
 
         Allowed values:
 
-        • "KS" — **Kohn-Sham DFT**, the standard formulation where the interacting 
-                electron system is mapped to a system of non-interacting particles 
-                with orbitals. The total energy includes a non-interacting kinetic energy
-                and an exchange-correlation potential. Most DFT calculations fall under
-                this category, including hybrids and spin-polarized setups.
+        • "KS" -    **Kohn-Sham DFT**, the standard formulation where the interacting 
+                        electron system is mapped to a system of non-interacting particles 
+                        with orbitals. The total energy includes a non-interacting kinetic energy
+                        and an exchange-correlation potential. Most DFT calculations fall under
+                        this category, including hybrids and spin-polarized setups.
 
-        • "OFDFT" — **Orbital-Free DFT**, a simplified variant where the kinetic energy 
-                    of electrons is modeled directly as a functional of the density,
-                    without introducing Kohn-Sham orbitals. Used in large-scale or 
-                    warm-dense systems where orbital scaling is prohibitive.
+        • "OFDFT" - **Orbital-Free DFT**, a simplified variant where the kinetic energy 
+                        of electrons is modeled directly as a functional of the density,
+                        without introducing Kohn-Sham orbitals. Used in large-scale or 
+                        warm-dense systems where orbital scaling is prohibitive.
 
-        • "Ensemble" — **Ensemble DFT**, where the system is described as a weighted 
+        • "Ensemble" - **Ensemble DFT**, where the system is described as a weighted 
                         ensemble of quantum states (pure or mixed) to handle excited-state 
                         properties or fractional occupation phenomena. This includes 
                         approaches like ensemble Kohn-Sham or EDFT.
 
-        • "Finite-T" — **Finite-temperature DFT**, an extension of Kohn-Sham DFT 
+        • "Finite-T" - **Finite-temperature DFT**, an extension of Kohn-Sham DFT 
                         to non-zero electronic temperatures, following the Mermin 
                         formulation. This includes explicit Fermi-Dirac smearing in 
                         orbital occupations, important for metals, warm-dense matter, 
@@ -758,8 +758,8 @@ class DFT(ModelMethodElectronic):
                                 standard DFT energy, such as D3, D4, VV10, or MBD. This flag is used only
                                 when dispersion is modeled separately from the XC functional.
 
-        • "relativistic"     - Scalar or spin-orbit relativistic corrections are applied to the valence
-                                Hamiltonian, typically via ZORA, DKH, X2C, or four-component Dirac schemes.
+        • "relativistic"     - Scalar-relativistic or four-component relativistic treatment of
+                                the valence Hamiltonian (e.g., ZORA, DKH, X2C), *excluding* spin-orbit coupling.
 
         • "range_separated"  - A range-separated hybrid exchange-correlation functional is used, such as
                                 wB97X, CAM-B3LYP, or HSE. Identified by a non-zero range-separation parameter ω.
@@ -776,13 +776,13 @@ class DFT(ModelMethodElectronic):
         • "noncollinear"     - The spin density is treated as a vector field (noncollinear spin),
                                 often used for spin-orbit coupled or topological materials.
 
-        • "spin_orbit"       - Spin-orbit coupling (SOC) is included either explicitly in the Hamiltonian
-                                or via mean-field corrections (e.g., SOMF). Used when SOC affects electronic states.
+        • "spin_orbit"       - Spin-orbit coupling (SOC) included explicitly in the Hamiltonian or
+                                via mean-field corrections (e.g., SOMF).
 
         Note: these extensions are not mutually exclusive and can coexist within the same calculation.
         
         For example, a calculation with ZORA-wB97X-D3-CPCM in broken-symmetry formulation
-        would include multiple extensions simultaneously, ("relativistic", "range_separated", "dispersion",
+        would include multiple extension flags simultaneously, ("relativistic", "range_separated", "dispersion",
         "solvated", "broken_symmetry").
         """,
     )
@@ -825,6 +825,50 @@ class DFT(ModelMethodElectronic):
             self.jacobs_ladder = max(families, key=lambda f: rank.get(f, -1))
         else:
             self.jacobs_ladder = self.jacobs_ladder or 'unavailable'
+
+        # --- Inferred extensions ---
+        inferred = set()
+        contributions = self.contributions or []
+
+        for term in contributions:
+            # Solvation model
+            if isinstance(term, ImplicitSolvationModel):
+                inferred.add('solvated')
+
+            # Dispersion
+            if isinstance(term, ExplicitDispersionModel):
+                inferred.add('dispersion')
+
+            # Relativity and spin-orbit
+            if isinstance(term, RelativityModel):
+                if term.level and term.level != 'non-relativistic':
+                    inferred.add('relativistic')
+                if term.approximation in (
+                    'SOMF',
+                    'ZORA',
+                    'DKH',
+                    'X2C',
+                    'BSS',
+                    'NESC',
+                    'FORA',
+                    'IORA',
+                    'Pauli',
+                ):
+                    if (
+                        term.level in ('two-component', 'four-component')
+                        or term.approximation == 'SOMF'
+                    ):
+                        inferred.add('spin_orbit')
+
+        # Range-separated hybrid (ω present)
+        for comp in self.xc.components or []:
+            if comp.range_separation_parameter is not None:
+                inferred.add('range_separated')
+                break
+
+        # --- Merge with any existing extensions ---
+        existing = set(self.extensions or [])
+        self.extensions = sorted(existing.union(inferred))
 
 
 class TB(ModelMethodElectronic):
