@@ -827,7 +827,7 @@ class DFT(ModelMethodElectronic):
         contributions = self.contributions or []
 
         for term in contributions:
-            # Solvation model
+            # Solvation
             if isinstance(term, ImplicitSolvationModel):
                 inferred.add('solvated')
 
@@ -836,26 +836,15 @@ class DFT(ModelMethodElectronic):
             if isinstance(term, ExplicitDispersionModel):
                 inferred.add('dispersion')
 
-            # Relativity and spin-orbit
+            # Relativity
             if isinstance(term, RelativityModel):
                 if term.level and term.level != 'non-relativistic':
                     inferred.add('relativistic')
-                if term.approximation in (
-                    'SOMF',
-                    'ZORA',
-                    'DKH',
-                    'X2C',
-                    'BSS',
-                    'NESC',
-                    'FORA',
-                    'IORA',
-                    'Pauli',
-                ):
-                    if (
-                        term.level in ('two-component', 'four-component')
-                        or term.approximation == 'SOMF'
-                    ):
-                        inferred.add('spin_orbit')
+
+                if term.level in ('two-component', 'four-component'):
+                    inferred.add('spin_orbit')
+                elif term.approximation == 'SOMF':
+                    inferred.add('spin_orbit')
 
         # Range-separated hybrid (ω present, ω ≠ 0)
         for comp in self.xc.components or []:

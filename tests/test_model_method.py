@@ -748,6 +748,25 @@ def test_dft_normalize_infers_range_separated():
     assert 'range_separated' in dft.extensions
 
 
+def test_dft_normalize_zero_range_separation_does_not_infer():
+    dft = DFT()
+    dft.xc = XCFunctional(components=[XCComponent(range_separation_parameter=0.0)])
+    dft.normalize(EntryArchive(), logger=logger)
+
+    assert 'range_separated' not in dft.extensions
+
+
+def test_dft_normalize_four_component_relativistic_infers_spin_orbit():
+    dft = DFT()
+    rel = RelativityModel(level='four-component')  # No approximation set
+    dft.m_add_sub_section(type(dft).contributions, rel)
+
+    dft.normalize(EntryArchive(), logger=logger)
+
+    assert 'relativistic' in dft.extensions
+    assert 'spin_orbit' in dft.extensions
+
+
 def test_dft_normalize_merges_with_existing_extensions():
     dft = DFT(extensions=['solvated'])
     dft.m_add_sub_section(type(dft).contributions, ExplicitDispersionModel(model='D3'))
