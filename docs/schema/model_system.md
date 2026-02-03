@@ -53,29 +53,12 @@
 | `time_step` | m_int32(int32) | Specific time snapshot of the ModelSystem. The time evolution is then encoded in a list of ModelSystems under Computation where for each element this quantity defines the time step. |
 | `branch_label` | m_str(str) | Label of the specific branch in the hierarchical `ModelSystem` tree. |
 | `branch_depth` | m_int32(int32) | Index refering to the depth of a branch in the hierarchical `ModelSystem` tree. |
-| `particle_indices` | m_int32(int32) (shape: ['*']) | Global indices of the particles that belong to this subsystem, counted from the representative (top-level) ModelSystem. **Example (SrTiO_3 primitive cell)** parent particle_states : ['Sr', 'Ti', 'O', 'O', 'O'] # → indices 0-4 Ti-only subsystem : particle_indices = [1] Ti + apical-O subsystem: particle_indices = [1, 4] |
+| `particle_indices` | m_int32(int32) (shape: ['*']) | <details><summary>Global indices of the particles that belong to this subsystem,</summary>Global indices of the particles that belong to this subsystem,<br>counted from the representative (top-level) ModelSystem.<br>**Example (SrTiO_3 primitive cell)**<br>parent particle_states   : ['Sr', 'Ti', 'O', 'O', 'O']  # → indices 0-4<br>Ti-only subsystem      : particle_indices = [1]<br>Ti + apical-O subsystem: particle_indices = [1, 4]</details> |
 | `n_particles` | m_int32(int32) | Number of particles/atoms in the simulation. |
 | `positions` | m_float64(float64) (shape: ['*', 3]) | Cartesian coordinates of all atoms in the top-level system. All subsystems will reference these positions via particle_indices. |
 | `velocities` | m_float64(float64) (shape: ['*', 3]) | Velocities of the particles: I.e., the change in cartesian coordinates of the particle position with time. |
 | `bond_list` | m_int32(int32) (shape: ['*', 2]) | List of pairs of atom indices corresponding to bonds (e.g., as defined by a force field) within this atoms_group. |
-| `composition_formula` | m_str(str) | The overall composition of the system with respect to its subsystems.
-The syntax for a system composed of X and Y with x and y components of each,
-respectively, is X(x)Y(y). At the deepest branch in the hierarchy, the
-composition_formula is expressed in terms of the atomic labels.
-
-Example: A system composed of 3 water molecules with the following hierarchy
-
-TotalSystem
-|
-group_H2O
-|   |   |
-H2O H2O H2O
-
-has the following compositional formulas at each branch:
-
-branch 0, index 0: "Total_System" composition_formula = group_H2O(1)
-branch 1, index 0: "group_H2O"    composition_formula = H2O(3)
-branch 2, index 0: "H2O"          composition_formula = H(1)O(2) |
+| `composition_formula` | m_str(str) | <details><summary>The overall composition of the system with respect to its subsystems.</summary>The overall composition of the system with respect to its subsystems.<br>The syntax for a system composed of X and Y with x and y components of each,<br>respectively, is X(x)Y(y). At the deepest branch in the hierarchy, the<br>composition_formula is expressed in terms of the atomic labels.<br>Example: A system composed of 3 water molecules with the following hierarchy<br>TotalSystem<br>\|<br>group_H2O<br>\|   \|   \|<br>H2O H2O H2O<br>has the following compositional formulas at each branch:<br>branch 0, index 0: "Total_System" composition_formula = group_H2O(1)<br>branch 1, index 0: "group_H2O"    composition_formula = H2O(3)<br>branch 2, index 0: "H2O"          composition_formula = H(1)O(2)</details> |
 | `total_charge` | m_int32(int32) | Total charge of the system. |
-| `total_spin` | m_int32(int32) | Total spin quantum number **S** of the system (so Ŝ² ψ = S(S+1) ħ² ψ). Stored as an integer or half-integer represented in doubled form (e.g. singlet → 0, doublet → 1, triplet → 2). Not to be confused with the spin multiplicity 2S+1. |
+| `total_spin` | m_int32(int32) | <details><summary>Total spin quantum number **S** of the system (so Ŝ² ψ = S(S+1) ħ² ψ).</summary>Total spin quantum number **S** of the system (so Ŝ² ψ = S(S+1) ħ² ψ).<br>Stored as an integer or half-integer represented in doubled form<br>(e.g. singlet → 0, doublet → 1, triplet → 2).<br>Not to be confused with the spin multiplicity 2S+1.</details> |
 

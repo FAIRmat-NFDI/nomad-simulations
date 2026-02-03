@@ -49,29 +49,12 @@
 | Quantity | Type | Description |
 |---|---|---|
 | `n_atoms` | m_int32(int32) | Number of atoms involved in the correlations effect and used for the matrix representation of the property. |
-| `atoms_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x706240772ba0> (shape: ['n_atoms']) | Reference to the `AtomsState` section in which the Green's function properties are calculated. |
+| `atoms_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x75391522fe00> (shape: ['n_atoms']) | Reference to the `AtomsState` section in which the Green's function properties are calculated. |
 | `n_correlated_orbitals` | m_int32(int32) | Number of orbitals involved in the correlations effect and used for the matrix representation of the property. |
-| `correlated_orbitals_ref` | <nomad.metainfo.metainfo.Reference object at 0x706240772cc0> (shape: ['n_correlated_orbitals']) | Reference to the `OrbitalsState` section in which the Green's function properties are calculated. |
+| `correlated_orbitals_ref` | <nomad.metainfo.metainfo.Reference object at 0x75391522ff20> (shape: ['n_correlated_orbitals']) | Reference to the `OrbitalsState` section in which the Green's function properties are calculated. |
 | `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic property. It can take values of 0 and 1. |
-| `local_model_type` | Enum | Type of Green's function calculated from the mapping of the local Hubbard-Kanamori model into the Anderson impurity model. The `impurity` Green's function describe the electronic correlations for the impurity, and it is a local function. The `lattice` Green's function includes the coupling to the lattice and hence it is a non-local function. In DMFT, the `lattice` term is approximated to be the `impurity` one, so that these simulations are converged if both types of the local part of the `lattice` Green's function coincides with the `impurity` Green's function. |
-| `space_id` | Enum | String used to identify the space in which the Green's function property is represented. The spaces are:
-
-| `space_id` | variable type |
-| ------ | ------ |
-| 'r' | WignerSeitz |
-| 'rt' | WignerSeitz + Time |
-| 'rw' | WignerSeitz + Frequency |
-| 'rit' | WignerSeitz + ImaginaryTime |
-| 'riw' | WignerSeitz + MatsubaraFrequency |
-| 'k' | KMesh |
-| 'kt' | KMesh + Time |
-| 'kw' | KMesh + Frequency |
-| 'kit' | KMesh + ImaginaryTime |
-| 'kiw' | KMesh + MatsubaraFrequency |
-| 't' | Time |
-| 'it' | Frequency |
-| 'w' | ImaginaryTime |
-| 'iw' | MatsubaraFrequency | |
+| `local_model_type` | Enum | <details><summary>Type of Green's function calculated from the mapping of the local Hubbard-Kanamo...</summary>Type of Green's function calculated from the mapping of the local Hubbard-Kanamori model<br>into the Anderson impurity model.<br>The `impurity` Green's function describe the electronic correlations for the impurity, and it<br>is a local function. The `lattice` Green's function includes the coupling to the lattice<br>and hence it is a non-local function. In DMFT, the `lattice` term is approximated to be the<br>`impurity` one, so that these simulations are converged if both types of the local<br>part of the `lattice` Green's function coincides with the `impurity` Green's function.</details> |
+| `space_id` | Enum | <details><summary>String used to identify the space in which the Green's function property is represented.</summary>String used to identify the space in which the Green's function property is represented. The spaces are:<br>\| `space_id` \| variable type \|<br>\| ------ \| ------ \|<br>\| 'r' \| WignerSeitz \|<br>\| 'rt' \| WignerSeitz + Time \|<br>\| 'rw' \| WignerSeitz + Frequency \|<br>\| 'rit' \| WignerSeitz + ImaginaryTime \|<br>\| 'riw' \| WignerSeitz + MatsubaraFrequency \|<br>\| 'k' \| KMesh \|<br>\| 'kt' \| KMesh + Time \|<br>\| 'kw' \| KMesh + Frequency \|<br>\| 'kit' \| KMesh + ImaginaryTime \|<br>\| 'kiw' \| KMesh + MatsubaraFrequency \|<br>\| 't' \| Time \|<br>\| 'it' \| Frequency \|<br>\| 'w' \| ImaginaryTime \|<br>\| 'iw' \| MatsubaraFrequency \|</details> |
 
 ### `ElectronicGreensFunction`
 
@@ -95,18 +78,11 @@
 
 | Quantity | Type | Description |
 |---|---|---|
-| `system_correlation_strengths` | Enum | String used to identify the type of system based on the strength of the electron-electron interactions.
-
-| `type` | Description |
-| ------ | ------ |
-| 'non-correlated metal' | All `value` are above 0.7. Renormalization effects are negligible. |
-| 'strongly-correlated metal' | All `value` are below 0.4 and above 0. Renormalization effects are important. |
-| 'OSMI' | Orbital-selective Mott insulator: some orbitals have a zero `value` while others a finite one. |
-| 'Mott insulator' | All `value` are 0.0. Mott insulator state. | |
+| `system_correlation_strengths` | Enum | <details><summary>String used to identify the type of system based on the strength of the electron-electron interactions.</summary>String used to identify the type of system based on the strength of the electron-electron interactions.<br>\| `type` \| Description \|<br>\| ------ \| ------ \|<br>\| 'non-correlated metal' \| All `value` are above 0.7. Renormalization effects are negligible. \|<br>\| 'strongly-correlated metal' \| All `value` are below 0.4 and above 0. Renormalization effects are important. \|<br>\| 'OSMI' \| Orbital-selective Mott insulator: some orbitals have a zero `value` while others a finite one. \|<br>\| 'Mott insulator' \| All `value` are 0.0. Mott insulator state. \|</details> |
 | `n_atoms` | m_int32(int32) | Number of atoms involved in the correlations effect and used for the matrix representation of the quasiparticle weight. |
-| `atoms_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x7062407730e0> (shape: ['n_atoms']) | Reference to the `AtomsState` section in which the Green's function properties are calculated. |
+| `atoms_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x75391522e630> (shape: ['n_atoms']) | Reference to the `AtomsState` section in which the Green's function properties are calculated. |
 | `n_correlated_orbitals` | m_int32(int32) | Number of orbitals involved in the correlations effect and used for the matrix representation of the quasiparticle weight. |
-| `correlated_orbitals_ref` | <nomad.metainfo.metainfo.Reference object at 0x706240772d50> (shape: ['n_correlated_orbitals']) | Reference to the `OrbitalsState` section in which the Green's function properties are calculated. |
+| `correlated_orbitals_ref` | <nomad.metainfo.metainfo.Reference object at 0x75391522ed80> (shape: ['n_correlated_orbitals']) | Reference to the `OrbitalsState` section in which the Green's function properties are calculated. |
 | `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic property. It can take values of 0 and 1. |
 | `value` | m_float_bounded(float) (shape: ['*']) | Value of the quasi-particle weight matrices. Must be between 0 and 1. |
 

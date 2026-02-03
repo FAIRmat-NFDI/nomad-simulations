@@ -88,26 +88,45 @@ def collect_quantities_info(section_cls) -> list[dict]:
 
         # Clean description for markdown table:
         if description:
-            # Check if description contains a markdown table (multiple lines with pipes)
-            lines = description.split('\n')
-            has_table = sum(1 for line in lines if '|' in line) >= 2
+            import re
 
-            if has_table:
-                # Preserve table structure: keep newlines, just strip each line
-                # and remove excessive blank lines
-                cleaned_lines = []
-                for line in lines:
-                    stripped = line.strip()
-                    if stripped or (cleaned_lines and cleaned_lines[-1]):
-                        # Keep non-empty lines, or empty lines that aren't consecutive
-                        cleaned_lines.append(stripped)
-                # Remove trailing empty lines
-                while cleaned_lines and not cleaned_lines[-1]:
-                    cleaned_lines.pop()
-                description = '\n'.join(cleaned_lines)
+            # Split into lines and clean
+            lines = description.split('\n')
+            cleaned_lines = [line.strip() for line in lines if line.strip()]
+
+            # Check if this is a complex multi-paragraph/multi-line description
+            # Complex = has blank lines separating paragraphs OR has multiple lines
+            has_multiple_paragraphs = len(cleaned_lines) > 3
+
+            if has_multiple_paragraphs:
+                # Use collapsible details for complex descriptions
+                # Extract first sentence as summary
+                first_line = cleaned_lines[0]
+                match = re.match(r'^(.*?[.!?])\s', first_line + ' ')
+                if match:
+                    summary = match.group(1)
+                else:
+                    # No sentence boundary, use first line or truncate
+                    summary = first_line[:80] + ('...' if len(first_line) > 80 else '')
+
+                # Build full description with proper formatting
+                # Escape pipes and preserve structure
+                full_text_lines = []
+                for line in cleaned_lines:
+                    # Escape pipes
+                    escaped_line = line.replace('|', '\\|')
+                    full_text_lines.append(escaped_line)
+
+                full_text = '<br>'.join(full_text_lines)
+
+                # Create collapsible element
+                description = (
+                    f'<details><summary>{summary}</summary>{full_text}</details>'
+                )
             else:
-                # No table: collapse whitespace and escape pipes
-                description = ' '.join(description.split())
+                # Simple description: join lines with space
+                description = ' '.join(cleaned_lines)
+                # Escape any pipe characters that might break the table
                 description = description.replace('|', '\\|')
 
         # Combine type and shape

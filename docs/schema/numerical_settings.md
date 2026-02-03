@@ -59,21 +59,8 @@
 
 | Quantity | Type | Description |
 |---|---|---|
-| `spacing` | Enum (shape: ['dimensionality']) | Identifier for the spacing of the Mesh. Defaults to 'Equidistant' if not defined. It can take the values:
-
-| Name      | Description                      |
-| --------- | -------------------------------- |
-| `'Equidistant'`  | Equidistant grid (also known as 'Newton-Cotes') |
-| `'Logarithmic'`  | log distance grid |
-| `'Tan'`  | Non-uniform tan mesh for grids. More dense at low abs values of the points, while less dense for higher values | |
-| `quadrature` | Enum | Quadrature rule used for integration of the Mesh. This quantity is relevant for 1D meshes:
-
-| Name      | Description                      |
-| --------- | -------------------------------- |
-| `'Gauss-Legendre'` | Quadrature rule for integration using Legendre polynomials |
-| `'Gauss-Laguerre'` | Quadrature rule for integration using Laguerre polynomials |
-| `'Clenshaw-Curtis'`  | Quadrature rule for integration using Chebyshev polynomials using discrete cosine transformations |
-| `'Gauss-Hermite'`  | Quadrature rule for integration using Hermite polynomials | |
+| `spacing` | Enum (shape: ['dimensionality']) | <details><summary>Identifier for the spacing of the Mesh.</summary>Identifier for the spacing of the Mesh. Defaults to 'Equidistant' if not defined. It can take the values:<br>\| Name      \| Description                      \|<br>\| --------- \| -------------------------------- \|<br>\| `'Equidistant'`  \| Equidistant grid (also known as 'Newton-Cotes') \|<br>\| `'Logarithmic'`  \| log distance grid \|<br>\| `'Tan'`  \| Non-uniform tan mesh for grids. More dense at low abs values of the points, while less dense for higher values \|</details> |
+| `quadrature` | Enum | <details><summary>Quadrature rule used for integration of the Mesh.</summary>Quadrature rule used for integration of the Mesh. This quantity is relevant for 1D meshes:<br>\| Name      \| Description                      \|<br>\| --------- \| -------------------------------- \|<br>\| `'Gauss-Legendre'` \| Quadrature rule for integration using Legendre polynomials \|<br>\| `'Gauss-Laguerre'` \| Quadrature rule for integration using Laguerre polynomials \|<br>\| `'Clenshaw-Curtis'`  \| Quadrature rule for integration using Chebyshev polynomials using discrete cosine transformations \|<br>\| `'Gauss-Hermite'`  \| Quadrature rule for integration using Hermite polynomials \|</details> |
 | `n_points` | m_int32(int32) | Number of points in the mesh. |
 | `dimensionality` | m_int32(int32) | Dimensionality of the mesh: 1, 2, or 3. Defaults to 3. |
 | `grid` | m_int32(int32) (shape: ['dimensionality']) | Amount of mesh point sampling along each axis. See `type` for the axes definition. |
@@ -85,17 +72,11 @@
 
 | Quantity | Type | Description |
 |---|---|---|
-| `label` | Enum | Label used to identify the meaning of the reciprocal grid. The actual meaning of `k` vs `g` vs `q` is context-dependent, though typically: - `g` is used for the primitive vectors (typically within the Brillouin zone). - `k` for a generic reciprocal vector. - `q` for any momentum change imparted by a scattering event. |
-| `center` | Enum | Identifier for the center of the Mesh:
-
-| Name      | Description                      |
-| --------- | -------------------------------- |
-| `'Gamma-centered'` | Regular mesh is centered around Gamma. No offset. |
-| `'Monkhorst-Pack'` | Regular mesh with an offset of half the reciprocal lattice vector. |
-| `'Gamma-offcenter'` | Regular mesh with an offset that is neither `'Gamma-centered'`, nor `'Monkhorst-Pack'`. | |
+| `label` | Enum | <details><summary>Label used to identify the meaning of the reciprocal grid.</summary>Label used to identify the meaning of the reciprocal grid.<br>The actual meaning of `k` vs `g` vs `q` is context-dependent, though typically:<br>- `g` is used for the primitive vectors (typically within the Brillouin zone).<br>- `k` for a generic reciprocal vector.<br>- `q` for any momentum change imparted by a scattering event.</details> |
+| `center` | Enum | <details><summary>Identifier for the center of the Mesh:</summary>Identifier for the center of the Mesh:<br>\| Name      \| Description                      \|<br>\| --------- \| -------------------------------- \|<br>\| `'Gamma-centered'` \| Regular mesh is centered around Gamma. No offset. \|<br>\| `'Monkhorst-Pack'` \| Regular mesh with an offset of half the reciprocal lattice vector. \|<br>\| `'Gamma-offcenter'` \| Regular mesh with an offset that is neither `'Gamma-centered'`, nor `'Monkhorst-Pack'`. \|</details> |
 | `offset` | m_float64(float64) (shape: [3]) | Offset vector shifting the mesh with respect to a Gamma-centered case (where it is defined as [0, 0, 0]). |
 | `all_points` | m_float64(float64) (shape: ['*', 3]) | Full list of the mesh points without any symmetry operations in units of the `reciprocal_lattice_vectors`. In the presence of symmetry operations, this quantity is a larger list than `points` (as it will contain all the points in the Brillouin zone). |
-| `high_symmetry_points` | JSON | Dictionary containing the high-symmetry point labels and their values in units of `reciprocal_lattice_vectors`. E.g., in a cubic lattice: high_symmetry_points = { 'Gamma': [0, 0, 0], 'X': [0.5, 0, 0], 'Y': [0, 0.5, 0], ... ] |
+| `high_symmetry_points` | JSON | <details><summary>Dictionary containing the high-symmetry point labels and their values in units of `reciprocal_lattice_vectors`.</summary>Dictionary containing the high-symmetry point labels and their values in units of `reciprocal_lattice_vectors`.<br>E.g., in a cubic lattice:<br>high_symmetry_points = {<br>'Gamma': [0, 0, 0],<br>'X': [0.5, 0, 0],<br>'Y': [0, 0.5, 0],<br>...<br>]</details> |
 | `k_line_density` | m_float64(float64) | Amount of sampled k-points per unit reciprocal length along each axis. Contains the least precise density out of all axes. Should only be compared between calculations of similar dimensionality. |
 
 ### `KLinePath`
@@ -133,31 +114,7 @@
 | Quantity | Type | Description |
 |---|---|---|
 | `vdw_cutoff` | m_float64(float64) | Cutoff for calculating VDW forces. |
-| `coulomb_type` | Enum | Method used for calculating long-ranged Coulomb forces.
-
-Allowed values are:
-
-| Method Name          | Description                               |
-
-| ---------------------- | ----------------------------------------- |
-
-| `""`                   | No thermostat               |
-
-| `"Cutoff"`          | Simple cutoff scheme. |
-
-| `"Ewald"` | Standard Ewald summation as described in any solid-state physics text. |
-
-| `"Multi-Level Summation"` |  D. Hardy, J.E. Stone, and K. Schulten,
-[Parallel. Comput. **35**, 164](https://doi.org/10.1016/j.parco.2008.12.005)|
-
-| `"Particle-Mesh-Ewald"`        | T. Darden, D. York, and L. Pedersen,
-[J. Chem. Phys. **98**, 10089 (1993)](https://doi.org/10.1063/1.464397) |
-
-| `"Particle-Particle Particle-Mesh"` | See e.g. Hockney and Eastwood, Computer Simulation Using Particles,
-Adam Hilger, NY (1989). |
-
-| `"Reaction-Field"` | J.A. Barker and R.O. Watts,
-[Mol. Phys. **26**, 789 (1973)](https://doi.org/10.1080/00268977300102101)| |
+| `coulomb_type` | Enum | <details><summary>Method used for calculating long-ranged Coulomb forces.</summary>Method used for calculating long-ranged Coulomb forces.<br>Allowed values are:<br>\| Method Name          \| Description                               \|<br>\| ---------------------- \| ----------------------------------------- \|<br>\| `""`                   \| No thermostat               \|<br>\| `"Cutoff"`          \| Simple cutoff scheme. \|<br>\| `"Ewald"` \| Standard Ewald summation as described in any solid-state physics text. \|<br>\| `"Multi-Level Summation"` \|  D. Hardy, J.E. Stone, and K. Schulten,<br>[Parallel. Comput. **35**, 164](https://doi.org/10.1016/j.parco.2008.12.005)\|<br>\| `"Particle-Mesh-Ewald"`        \| T. Darden, D. York, and L. Pedersen,<br>[J. Chem. Phys. **98**, 10089 (1993)](https://doi.org/10.1063/1.464397) \|<br>\| `"Particle-Particle Particle-Mesh"` \| See e.g. Hockney and Eastwood, Computer Simulation Using Particles,<br>Adam Hilger, NY (1989). \|<br>\| `"Reaction-Field"` \| J.A. Barker and R.O. Watts,<br>[Mol. Phys. **26**, 789 (1973)](https://doi.org/10.1080/00268977300102101)\|</details> |
 | `coulomb_cutoff` | m_float64(float64) | Cutoff for calculating short-ranged Coulomb forces. |
 | `neighbor_update_frequency` | m_int32(int) | Number of timesteps between updating the neighbor list. |
 | `neighbor_update_cutoff` | m_float64(float64) | The distance cutoff for determining the neighbor list. |
@@ -167,8 +124,8 @@ Adam Hilger, NY (1989). |
 | Quantity | Type | Description |
 |---|---|---|
 | `name` | m_str(str) | Name of the basis set component. |
-| `species_scope` | <nomad.metainfo.metainfo.Reference object at 0x70624079d460> (shape: ['*']) | Reference to the section `AtomsState` specifying the localization of the basis set. |
-| `hamiltonian_scope` | <nomad.metainfo.metainfo.Reference object at 0x70624079c1d0> (shape: ['*']) | Reference to the section `BaseModelMethod` containing the information of the Hamiltonian term to which the basis set applies. |
+| `species_scope` | <nomad.metainfo.metainfo.Reference object at 0x75391522cf80> (shape: ['*']) | Reference to the section `AtomsState` specifying the localization of the basis set. |
+| `hamiltonian_scope` | <nomad.metainfo.metainfo.Reference object at 0x75391522de50> (shape: ['*']) | Reference to the section `BaseModelMethod` containing the information of the Hamiltonian term to which the basis set applies. |
 
 ### `PlaneWaveBasisSet`
 
