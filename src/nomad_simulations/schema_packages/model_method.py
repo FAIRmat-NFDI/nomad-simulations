@@ -860,9 +860,12 @@ class DFT(ModelMethodElectronic):
                     ):
                         inferred.add('spin_orbit')
 
-        # Range-separated hybrid (ω present)
+        # Range-separated hybrid (ω present, ω ≠ 0)
         for comp in self.xc.components or []:
-            if comp.range_separation_parameter is not None:
+            if (
+                comp.range_separation_parameter is not None
+                and not np.isclose(comp.range_separation_parameter, 0.0)
+            ):
                 inferred.add('range_separated')
                 break
 
