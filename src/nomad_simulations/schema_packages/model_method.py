@@ -727,7 +727,6 @@ class DFT(ModelMethodElectronic):
             'dispersion',
             'relativistic',
             'range_separated',
-            'double_hybrid',
             'embedding',
             'solvated',
             'noncollinear',
@@ -763,9 +762,6 @@ class DFT(ModelMethodElectronic):
 
         • "range_separated"  - A range-separated hybrid exchange-correlation functional is used, such as
                                 wB97X, CAM-B3LYP, or HSE. Identified by a non-zero range-separation parameter ω.
-
-        • "double_hybrid"    - A double hybrid functional includes post-DFT correlation corrections,
-                                typically MP2 or Laplace-transformed terms, beyond standard hybrid DFT.
 
         • "embedding"        - Subsystem-DFT, frozen-density embedding, or other multi-level partitioning
                                 of the electronic system, where parts are treated with separate DFTs or QM/MM schemes.
@@ -836,6 +832,7 @@ class DFT(ModelMethodElectronic):
                 inferred.add('solvated')
 
             # Dispersion
+            # TODO : Implement implicit dispersion in XCFunctional and adjust this
             if isinstance(term, ExplicitDispersionModel):
                 inferred.add('dispersion')
 
