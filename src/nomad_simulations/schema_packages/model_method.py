@@ -681,23 +681,109 @@ class DFT(ModelMethodElectronic):
     """
 
     type = Quantity(
-        type=MEnum(
-            'KS',
-            'BSDFT',
-            'OFDFT',
-            'ADFT',
-            'cDFT',
-            'DFT+U',
-        ),
+        type=MEnum('KS', 'OFDFT', 'Ensemble', 'Finite-T'),
         default='KS',
         description="""
-        NOMAD-style identifier for the DFT flavour:
-        - KS    : conventional (generalized) Kohn-Sham DFT
-        - BSDFT : broken-symmetry DFT
-        - OFDFT : orbital-free DFT
-        - ADFT  : analytic/integral-direct DFT formulations
-        - cDFT  : constrained DFT with explicit density/charge/spin constraints
-        - DFT+U : Hubbard-corrected DFT (DFT+U)
+        Identifies the fundamental formulation of density functional theory (DFT) used
+        in the simulation, based on the variational structure and degrees of freedom.
+        This classification distinguishes between major theoretical frameworks that 
+        define how the electron density is treated and how the total energy is computed.
+
+        Allowed values:
+
+        • "KS" — **Kohn-Sham DFT**, the standard formulation where the interacting 
+                electron system is mapped to a system of non-interacting particles 
+                with orbitals. The total energy includes a non-interacting kinetic energy
+                and an exchange-correlation potential. Most DFT calculations fall under
+                this category, including hybrids and spin-polarized setups.
+
+        • "OFDFT" — **Orbital-Free DFT**, a simplified variant where the kinetic energy 
+                    of electrons is modeled directly as a functional of the density,
+                    without introducing Kohn-Sham orbitals. Used in large-scale or 
+                    warm-dense systems where orbital scaling is prohibitive.
+
+        • "Ensemble" — **Ensemble DFT**, where the system is described as a weighted 
+                        ensemble of quantum states (pure or mixed) to handle excited-state 
+                        properties or fractional occupation phenomena. This includes 
+                        approaches like ensemble Kohn-Sham or EDFT.
+
+        • "Finite-T" — **Finite-temperature DFT**, an extension of Kohn-Sham DFT 
+                        to non-zero electronic temperatures, following the Mermin 
+                        formulation. This includes explicit Fermi-Dirac smearing in 
+                        orbital occupations, important for metals, warm-dense matter, 
+                        and plasma simulations.
+
+        This field defines the baseline variational structure. Additional methodological
+        features (e.g., dispersion corrections, spin-orbit coupling, solvation models)
+        are recorded separately under the `extensions` field.
+        """,
+    )
+
+    extensions = Quantity(
+        type=MEnum(
+            'DFT+U',
+            'constrained',
+            'broken_symmetry',
+            'dispersion',
+            'relativistic',
+            'range_separated',
+            'double_hybrid',
+            'embedding',
+            'solvated',
+            'noncollinear',
+            'spin_orbit',
+        ),
+        shape=['*'],
+        description="""
+        High-level methodological extensions or modifications applied to the core DFT formalism.
+        These flags provide a semantically meaningful summary of key physical or algorithmic
+        modifications to the standard Kohn-Sham or orbital-free DFT setup. They are automatically
+        inferred from the presence of corresponding model sections and parameters.
+
+        Each extension represents a conceptually orthogonal feature that affects the physical model,
+        variational structure, or solution symmetry:
+
+        • "DFT+U"            - On-site Hubbard U correction applied to localized orbitals
+                                (e.g., transition metal d or f states), often used in solid-state systems.
+                                Typically modeled via a +U energy correction term.
+
+        • "constrained"      - Constrained DFT (cDFT), where additional variational constraints are
+                                imposed on quantities like charge, spin, or density to enforce target values.
+
+        • "broken_symmetry"  - Self-consistent field solution intentionally breaks symmetry (e.g., spin or
+                                spatial), often via an unrestricted determinant, to access magnetically ordered
+                                or electronically degenerate states (e.g., AFM, open-shell singlet).
+
+        • "dispersion"       - An explicit dispersion or van der Waals model is applied on top of the
+                                standard DFT energy, such as D3, D4, VV10, or MBD. This flag is used only
+                                when dispersion is modeled separately from the XC functional.
+
+        • "relativistic"     - Scalar or spin-orbit relativistic corrections are applied to the valence
+                                Hamiltonian, typically via ZORA, DKH, X2C, or four-component Dirac schemes.
+
+        • "range_separated"  - A range-separated hybrid exchange-correlation functional is used, such as
+                                wB97X, CAM-B3LYP, or HSE. Identified by a non-zero range-separation parameter ω.
+
+        • "double_hybrid"    - A double hybrid functional includes post-DFT correlation corrections,
+                                typically MP2 or Laplace-transformed terms, beyond standard hybrid DFT.
+
+        • "embedding"        - Subsystem-DFT, frozen-density embedding, or other multi-level partitioning
+                                of the electronic system, where parts are treated with separate DFTs or QM/MM schemes.
+
+        • "solvated"         - Implicit solvation or polarizable continuum model (e.g., PCM, SMD, COSMO)
+                                is used to simulate solvent effects on the electronic structure.
+
+        • "noncollinear"     - The spin density is treated as a vector field (noncollinear spin),
+                                often used for spin-orbit coupled or topological materials.
+
+        • "spin_orbit"       - Spin-orbit coupling (SOC) is included either explicitly in the Hamiltonian
+                                or via mean-field corrections (e.g., SOMF). Used when SOC affects electronic states.
+
+        Note: these extensions are not mutually exclusive and can coexist within the same calculation.
+        
+        For example, a calculation with ZORA-wB97X-D3-CPCM in broken-symmetry formulation
+        would include multiple extensions simultaneously, ("relativistic", "range_separated", "dispersion",
+        "solvated", "broken_symmetry").
         """,
     )
 
