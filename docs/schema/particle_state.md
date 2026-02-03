@@ -93,7 +93,7 @@
 
 | Quantity | Type | Description |
 |---|---|---|
-| `orbital_ref` | <nomad.metainfo.metainfo.Reference object at 0x788f1dc6ef60> | Reference to the OrbitalsState section that is used as a basis to obtain the `CoreHole` section. |
+| `orbital_ref` | <nomad.metainfo.metainfo.Reference object at 0x706258ce61e0> | Reference to the OrbitalsState section that is used as a basis to obtain the `CoreHole` section. |
 | `n_excited_electrons` | m_float64(float64) | The electron charge excited for modelling purposes. This is a number between 0 and 1 (Janak state). If `dscf_state` is set to 'initial', then this quantity is set to None (but assumed to be excited to an excited state). |
 | `dscf_state` | Enum | Tag used to identify the role in the workflow of the same name. Allowed values are 'initial' (not to be confused with the _initial-state approximation_) and 'final'. If 'initial' is used, then `n_excited_electrons` is set to None and the `orbital_ref.degeneracy` is set to 1. |
 
@@ -102,7 +102,7 @@
 | Quantity | Type | Description |
 |---|---|---|
 | `n_orbitals` | m_int32(int32) | Number of orbitals used to define the Hubbard interactions. |
-| `orbitals_ref` | <nomad.metainfo.metainfo.Reference object at 0x788f1dc45250> (shape: ['n_orbitals']) | Reference to the `OrbitalsState` sections that are used as a basis to obtain the Hubbard interaction matrices. |
+| `orbitals_ref` | <nomad.metainfo.metainfo.Reference object at 0x706258ce4710> (shape: ['n_orbitals']) | Reference to the `OrbitalsState` sections that are used as a basis to obtain the Hubbard interaction matrices. |
 | `u_matrix` | m_float64(float64) (shape: ['n_orbitals', 'n_orbitals']) | Value of the local Hubbard interaction matrix. The order of the rows and columns coincide with the elements in `orbital_ref`. |
 | `u_interaction` | m_float64(float64) | Value of the (intraorbital) Hubbard interaction |
 | `j_hunds_coupling` | m_float64(float64) | Value of the (interorbital) Hund's coupling. |

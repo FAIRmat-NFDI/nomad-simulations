@@ -87,12 +87,28 @@ def collect_quantities_info(section_cls) -> list[dict]:
             description = q.__doc__.strip()
 
         # Clean description for markdown table:
-        # 1. Replace newlines with spaces
-        # 2. Collapse multiple spaces
-        # 3. Escape pipe characters
         if description:
-            description = ' '.join(description.split())
-            description = description.replace('|', '\\|')
+            # Check if description contains a markdown table (multiple lines with pipes)
+            lines = description.split('\n')
+            has_table = sum(1 for line in lines if '|' in line) >= 2
+
+            if has_table:
+                # Preserve table structure: keep newlines, just strip each line
+                # and remove excessive blank lines
+                cleaned_lines = []
+                for line in lines:
+                    stripped = line.strip()
+                    if stripped or (cleaned_lines and cleaned_lines[-1]):
+                        # Keep non-empty lines, or empty lines that aren't consecutive
+                        cleaned_lines.append(stripped)
+                # Remove trailing empty lines
+                while cleaned_lines and not cleaned_lines[-1]:
+                    cleaned_lines.pop()
+                description = '\n'.join(cleaned_lines)
+            else:
+                # No table: collapse whitespace and escape pipes
+                description = ' '.join(description.split())
+                description = description.replace('|', '\\|')
 
         # Combine type and shape
         full_type = type_str + shape_str

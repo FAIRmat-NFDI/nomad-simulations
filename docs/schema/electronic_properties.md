@@ -61,7 +61,7 @@
 | `occupation` | m_float64(float64) (shape: ['*', 'n_bands']) | Occupation of the electronic eigenvalues. This is a number depending whether the `spin_channel` has been set or not. If `spin_channel` is set, then this number is between 0 and 1, where 0 means that the state is unoccupied and 1 means that the state is fully occupied; if `spin_channel` is not set, then this number is between 0 and 2. The shape of this quantity is defined as `[K.n_points, K.dimensionality, n_bands]`, where `K` is a `variable` which can be `KMesh` or `KLinePath`, depending whether the simulation mapped the whole Brillouin zone or just a specific path. |
 | `highest_occupied` | m_float64(float64) | Highest occupied electronic eigenvalue. Together with `lowest_unoccupied`, it defines the electronic band gap. |
 | `lowest_unoccupied` | m_float64(float64) | Lowest unoccupied electronic eigenvalue. Together with `highest_occupied`, it defines the electronic band gap. |
-| `reciprocal_cell` | <nomad.metainfo.metainfo.QuantityReference object at 0x788f056b6660> | Reference to the reciprocal lattice vectors stored under `KSpace`. |
+| `reciprocal_cell` | <nomad.metainfo.metainfo.QuantityReference object at 0x706240772120> | Reference to the reciprocal lattice vectors stored under `KSpace`. |
 
 ### `ElectronicBandStructure`
 
@@ -94,8 +94,8 @@
 
 | Quantity | Type | Description |
 |---|---|---|
-| `atoms_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x788f056830e0> | Reference to the `AtomsState` section in which the occupancy is calculated. |
-| `orbitals_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x788f05683740> | Reference to the `OrbitalsState` section in which the occupancy is calculated. |
+| `atoms_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x706240733110> | Reference to the `AtomsState` section in which the occupancy is calculated. |
+| `orbitals_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x706240733320> | Reference to the `OrbitalsState` section in which the occupancy is calculated. |
 | `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic property. It can take values of 0 and 1. |
 | `value` | m_float64(float64) | Value of the electronic occupancy in the atom defined by `atoms_state_ref` and the orbital defined by `orbitals_state_ref`. the orbital. If `spin_channel` is set, then this number is between 0 and 1, where 0 means that the state is unoccupied and 1 means that the state is fully occupied; if `spin_channel` is not set, then this number is between 0 and 2. |
 

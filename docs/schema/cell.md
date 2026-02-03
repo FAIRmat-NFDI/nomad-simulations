@@ -54,7 +54,16 @@
 | `surface_area` | m_float64(float64) | Surface area of a 3D real space entity. |
 | `area` | m_float64(float64) | Area of a 2D real space entity. |
 | `length` | m_float64(float64) | Total length of a 1D real space entity. |
-| `coordinates_system` | Enum | Coordinate system used to define geometrical primitives of a shape in real space. Defaults to 'cartesian'. \| name \| description \| dimensionalities \| coordinates \| \|------------\|-------------\|------------------\|-------------\| \| cartesian \| coordinate system with fixed angles between the axes (not necessarily 90°) \| 1, 2, 3 \| x, y, z \| \| cylindrical\| cylindrical symmetry \| 3 \| r, theta, z \| \| spherical \| spherical symmetry \| 3 \| r, theta, phi \| \| ellipsoidal\| spherically elongated system \| 3 \| r, theta, phi \| \| polar \| spherical symmetry \| 2 \| r, theta \| |
+| `coordinates_system` | Enum | Coordinate system used to define geometrical primitives of a shape in real
+space. Defaults to 'cartesian'.
+
+| name       | description | dimensionalities | coordinates |
+|------------|-------------|------------------|-------------|
+| cartesian  | coordinate system with fixed angles between the axes (not necessarily 90°) | 1, 2, 3 | x, y, z |
+| cylindrical| cylindrical symmetry | 3 | r, theta, z |
+| spherical  | spherical symmetry | 3 | r, theta, phi |
+| ellipsoidal| spherically elongated system | 3 | r, theta, phi |
+| polar      | spherical symmetry | 2 | r, theta | |
 | `origin_shift` | m_float64(float64) (shape: [3]) | Vector `p` from the origin of a custom coordinates system to the origin of the global coordinates system. Together with the matrix `P` (stored in transformation_matrix), the transformation between the custom coordinates `x` and global coordinates `X` is then given by: `x` = `P` `X` + `p`. |
 | `transformation_matrix` | m_float64(float64) (shape: [3, 3]) | Matrix `P` used to transform the custom coordinates system to the global coordinates system. Together with the vector `p` (stored in origin_shift), the transformation between the custom coordinates `x` and global coordinates `X` is then given by: `x` = `P` `X` + `p`. |
 

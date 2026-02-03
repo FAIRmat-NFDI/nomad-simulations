@@ -48,5 +48,5 @@
 | `strukturbericht_designation` | m_str(str) | Classification of the material according to the historically grown and similar crystal structures ('strukturbericht'). Useful when using altogether with `space_group_symbol`. Examples: - `C1B`, `B3`, `C15b`, - `L10`, `L60`, - `L21`. Extracted from the AFLOW encyclopedia of crystallographic prototypes. |
 | `prototype_formula` | m_str(str) | The formula of the prototypical material for this structure as extracted from the AFLOW encyclopedia of crystallographic prototypes. It is a string with the chemical symbols: - https://aflowlib.org/prototype-encyclopedia/chemical_symbols.html |
 | `prototype_aflow_id` | m_str(str) | The identifier of this structure in the AFLOW encyclopedia of crystallographic prototypes: http://www.aflowlib.org/prototype-encyclopedia/index.html |
-| `atomic_cell_ref` | <nomad.metainfo.metainfo.Reference object at 0x788f1d29d430> | Reference to the AtomicCell section that the symmetry refers to. |
+| `atomic_cell_ref` | <nomad.metainfo.metainfo.Reference object at 0x7062581f4aa0> | Reference to the AtomicCell section that the symmetry refers to. |
 

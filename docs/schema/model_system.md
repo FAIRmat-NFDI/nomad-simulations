@@ -58,7 +58,24 @@
 | `positions` | m_float64(float64) (shape: ['*', 3]) | Cartesian coordinates of all atoms in the top-level system. All subsystems will reference these positions via particle_indices. |
 | `velocities` | m_float64(float64) (shape: ['*', 3]) | Velocities of the particles: I.e., the change in cartesian coordinates of the particle position with time. |
 | `bond_list` | m_int32(int32) (shape: ['*', 2]) | List of pairs of atom indices corresponding to bonds (e.g., as defined by a force field) within this atoms_group. |
-| `composition_formula` | m_str(str) | The overall composition of the system with respect to its subsystems. The syntax for a system composed of X and Y with x and y components of each, respectively, is X(x)Y(y). At the deepest branch in the hierarchy, the composition_formula is expressed in terms of the atomic labels. Example: A system composed of 3 water molecules with the following hierarchy TotalSystem \| group_H2O \| \| \| H2O H2O H2O has the following compositional formulas at each branch: branch 0, index 0: "Total_System" composition_formula = group_H2O(1) branch 1, index 0: "group_H2O" composition_formula = H2O(3) branch 2, index 0: "H2O" composition_formula = H(1)O(2) |
+| `composition_formula` | m_str(str) | The overall composition of the system with respect to its subsystems.
+The syntax for a system composed of X and Y with x and y components of each,
+respectively, is X(x)Y(y). At the deepest branch in the hierarchy, the
+composition_formula is expressed in terms of the atomic labels.
+
+Example: A system composed of 3 water molecules with the following hierarchy
+
+TotalSystem
+|
+group_H2O
+|   |   |
+H2O H2O H2O
+
+has the following compositional formulas at each branch:
+
+branch 0, index 0: "Total_System" composition_formula = group_H2O(1)
+branch 1, index 0: "group_H2O"    composition_formula = H2O(3)
+branch 2, index 0: "H2O"          composition_formula = H(1)O(2) |
 | `total_charge` | m_int32(int32) | Total charge of the system. |
 | `total_spin` | m_int32(int32) | Total spin quantum number **S** of the system (so Ŝ² ψ = S(S+1) ħ² ψ). Stored as an integer or half-integer represented in doubled form (e.g. singlet → 0, doublet → 1, triplet → 2). Not to be confused with the spin multiplicity 2S+1. |
 
