@@ -99,10 +99,10 @@ class TestEnergyConvergenceTarget:
         archive.data.outputs = [Outputs(scf_steps=scf_step)]
 
         # Normalize and check
-        energy_target.normalize(archive, logger)
+        is_reached = energy_target.normalize(archive, logger)
 
         if len(energy_values) > 1 and energy_values[-1] != 0:
-            assert energy_target.is_reached == expected_reached
+            assert is_reached == expected_reached
 
     def test_energy_missing_data(self, archive, logger, energy_target):
         """Test energy convergence with missing data."""
@@ -110,13 +110,13 @@ class TestEnergyConvergenceTarget:
         energy_target.threshold_type = 'absolute'
 
         # Empty archive
-        energy_target.normalize(archive, logger)
-        assert energy_target.is_reached is None
+        is_reached = energy_target.normalize(archive, logger)
+        assert is_reached is None
 
         # Archive with outputs but no SCF steps
         archive.data.outputs = [Outputs()]
-        energy_target.normalize(archive, logger)
-        assert energy_target.is_reached is None
+        is_reached = energy_target.normalize(archive, logger)
+        assert is_reached is None
 
     def test_energy_units(self, archive, logger, energy_target):
         """Test that energy convergence handles units correctly."""
@@ -130,10 +130,10 @@ class TestEnergyConvergenceTarget:
         )  # Should convert to joule
 
         archive.data.outputs = [Outputs(scf_steps=scf_step)]
-        energy_target.normalize(archive, logger)
+        is_reached = energy_target.normalize(archive, logger)
 
         # Check that conversion happened and convergence was checked
-        assert energy_target.is_reached is not None
+        assert is_reached is not None
 
 
 class TestForceConvergenceTarget:
@@ -201,8 +201,8 @@ class TestForceConvergenceTarget:
         archive.data.outputs = [Outputs(total_forces=[forces])]
 
         # Normalize and check
-        force_target.normalize(archive, logger)
-        assert force_target.is_reached == expected_reached
+        is_reached = force_target.normalize(archive, logger)
+        assert is_reached == expected_reached
 
     def test_force_missing_data(self, archive, logger, force_target):
         """Test force convergence with missing data."""
@@ -210,13 +210,13 @@ class TestForceConvergenceTarget:
         force_target.threshold_type = 'maximum'
 
         # Empty archive
-        force_target.normalize(archive, logger)
-        assert force_target.is_reached is None
+        is_reached = force_target.normalize(archive, logger)
+        assert is_reached is None
 
         # Archive with outputs but no force data
         archive.data.outputs = [Outputs()]
-        force_target.normalize(archive, logger)
-        assert force_target.is_reached is None
+        is_reached = force_target.normalize(archive, logger)
+        assert is_reached is None
 
     def test_force_absolute_convergence(self, archive, logger, force_target):
         """Test absolute force convergence from SCF delta."""
@@ -229,9 +229,9 @@ class TestForceConvergenceTarget:
 
         archive.data.outputs = [Outputs(scf_steps=scf_step)]
 
-        force_target.normalize(archive, logger)
+        is_reached = force_target.normalize(archive, logger)
         # Last delta force (1e-10) should be below threshold (1e-8)
-        assert force_target.is_reached == True
+        assert is_reached == True
 
 
 class TestPotentialConvergenceTarget:
@@ -279,8 +279,8 @@ class TestPotentialConvergenceTarget:
         archive.data.outputs = [Outputs(scf_steps=scf_step)]
 
         # Normalize and check
-        potential_target.normalize(archive, logger)
-        assert potential_target.is_reached == expected_reached
+        is_reached = potential_target.normalize(archive, logger)
+        assert is_reached == expected_reached
 
     def test_potential_missing_data(self, archive, logger, potential_target):
         """Test potential convergence with missing data."""
@@ -288,13 +288,13 @@ class TestPotentialConvergenceTarget:
         potential_target.threshold_type = 'rms'
 
         # Empty archive
-        potential_target.normalize(archive, logger)
-        assert potential_target.is_reached is None
+        is_reached = potential_target.normalize(archive, logger)
+        assert is_reached is None
 
         # Archive with SCF but no potential values
         archive.data.outputs = [Outputs(scf_steps=SCFSteps())]
-        potential_target.normalize(archive, logger)
-        assert potential_target.is_reached is None
+        is_reached = potential_target.normalize(archive, logger)
+        assert is_reached is None
 
 
 class TestChargeConvergenceTarget:
@@ -342,8 +342,8 @@ class TestChargeConvergenceTarget:
         archive.data.outputs = [Outputs(scf_steps=scf_step)]
 
         # Normalize and check
-        charge_target.normalize(archive, logger)
-        assert charge_target.is_reached == expected_reached
+        is_reached = charge_target.normalize(archive, logger)
+        assert is_reached == expected_reached
 
     def test_charge_missing_data(self, archive, logger, charge_target):
         """Test charge convergence with missing data."""
@@ -351,13 +351,13 @@ class TestChargeConvergenceTarget:
         charge_target.threshold_type = 'absolute'
 
         # Empty archive
-        charge_target.normalize(archive, logger)
-        assert charge_target.is_reached is None
+        is_reached = charge_target.normalize(archive, logger)
+        assert is_reached is None
 
         # Archive with SCF but no charge values
         archive.data.outputs = [Outputs(scf_steps=SCFSteps())]
-        charge_target.normalize(archive, logger)
-        assert charge_target.is_reached is None
+        is_reached = charge_target.normalize(archive, logger)
+        assert is_reached is None
 
 
 class TestConvergenceHelperMethods:
@@ -507,14 +507,16 @@ class TestConvergenceInWorkflow:
         assert workflow.method.convergence_targets is not None
         assert len(workflow.method.convergence_targets) == 3
 
-        # Normalize individual targets to check is_reached
+        # Normalize individual targets to check convergence status
+        convergence_results = []
         for target in workflow.method.convergence_targets:
-            target.normalize(archive, logger)
+            is_reached = target.normalize(archive, logger)
+            convergence_results.append(is_reached)
 
         # Check individual convergence
-        assert workflow.method.convergence_targets[0].is_reached == True  # Energy
-        assert workflow.method.convergence_targets[1].is_reached == True  # Force
-        assert workflow.method.convergence_targets[2].is_reached == True  # Charge
+        assert convergence_results[0] == True  # Energy
+        assert convergence_results[1] == True  # Force
+        assert convergence_results[2] == True  # Charge
 
     def test_convergence_targets_empty(self, archive, logger):
         """Test workflow with no convergence targets."""
@@ -553,12 +555,14 @@ class TestConvergenceInWorkflow:
 
         archive.data.outputs = [Outputs(scf_steps=scf_step, total_forces=[forces])]
 
-        # Normalize targets
+        # Normalize targets and capture results
+        convergence_results = []
         for target in workflow.method.convergence_targets:
-            target.normalize(archive, logger)
+            is_reached = target.normalize(archive, logger)
+            convergence_results.append(is_reached)
 
-        assert workflow.method.convergence_targets[0].is_reached == True
-        assert workflow.method.convergence_targets[1].is_reached == False
+        assert convergence_results[0] == True
+        assert convergence_results[1] == False
 
 
 class TestEdgeCases:
@@ -573,10 +577,10 @@ class TestEdgeCases:
         scf_step.delta_energies_total = np.array([0.0]) * ureg.joule
 
         archive.data.outputs = [Outputs(scf_steps=scf_step)]
-        energy_target.normalize(archive, logger)
+        is_reached = energy_target.normalize(archive, logger)
 
         # With <= comparison, exact zero matches zero threshold
-        assert energy_target.is_reached == True
+        assert is_reached == True
 
     def test_negative_threshold(self, archive, logger, energy_target):
         """Test that negative threshold is handled (should use absolute value)."""
@@ -587,10 +591,10 @@ class TestEdgeCases:
         scf_step.delta_energies_total = np.array([5e-7]) * ureg.joule
 
         archive.data.outputs = [Outputs(scf_steps=scf_step)]
-        energy_target.normalize(archive, logger)
+        is_reached = energy_target.normalize(archive, logger)
 
         # Should still check convergence (implementation dependent)
-        assert energy_target.is_reached is not None
+        assert is_reached is not None
 
     def test_very_large_values(self, archive, logger, force_target):
         """Test with very large force values."""
@@ -600,8 +604,8 @@ class TestEdgeCases:
         forces = TotalForce(value=np.array([[1e5, 1e5, 1e5]]) * ureg.newton)
         archive.data.outputs = [Outputs(total_forces=[forces])]
 
-        force_target.normalize(archive, logger)
-        assert force_target.is_reached == True
+        is_reached = force_target.normalize(archive, logger)
+        assert is_reached == True
 
     def test_nan_values(self, archive, logger, force_target):
         """Test handling of NaN values in data."""

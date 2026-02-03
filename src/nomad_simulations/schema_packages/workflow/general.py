@@ -452,6 +452,7 @@ class WorkflowConvergenceResults(ArchiveSection):
         """,
     )
 
+    # TODO - Check docstring concerning usage
     is_reached = Quantity(
         type=bool,
         description="""
