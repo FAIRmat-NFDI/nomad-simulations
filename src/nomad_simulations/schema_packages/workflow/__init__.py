@@ -1,7 +1,16 @@
 from .dmft import DFTTBDMFTWorkflow
 from .elastic import Elastic
 from .equation_of_state import EquationOfState
-from .general import ParallelWorkflow, SerialWorkflow, SimulationWorkflow
+from .general import (
+    ChargeConvergenceTarget,
+    EnergyConvergenceTarget,
+    ForceConvergenceTarget,
+    ParallelWorkflow,
+    PotentialConvergenceTarget,
+    SerialWorkflow,
+    SimulationWorkflow,
+    WorkflowConvergenceTarget,
+)
 from .geometry_optimization import GeometryOptimization
 from .gw import DFTGWWorkflow
 from .max_ent import DMFTMaxEntWorkflow

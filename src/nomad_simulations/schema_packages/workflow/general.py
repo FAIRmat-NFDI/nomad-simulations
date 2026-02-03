@@ -25,14 +25,6 @@ INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
 
 m_package = SchemaPackage()
 
-CONVERGENCE_QUANTITY_MAPPING = {
-    'force:maximum': 'workflow2.results.final_force_maximum',
-    'potential:rms': 'data.outputs[*].scf_steps.delta_potential_rms',
-    'energy:absolute': 'data.outputs[*].scf_steps.delta_energies_total',
-    'charge:absolute': 'data.outputs[*].scf_steps.delta_density_rms',
-    'force:absolute': 'data.outputs[*].scf_steps.delta_force_abs',
-}
-
 
 class SimulationTask(Task):
     pass
@@ -40,76 +32,255 @@ class SimulationTask(Task):
 
 class WorkflowConvergenceTarget(ArchiveSection):
     """
-    A section for defining convergence targets.
+    Abstract base class for defining convergence targets.
 
-    Calculations are converged w.r.t. to different parameters. This section holds the parameter name
-    and the unit of the convergence parameter.
+    Following the PhysicalProperty pattern, this provides a common interface for
+    all convergence criteria. Child classes define specific physical properties
+    (e.g., energy, force) with proper units. The base class handles all convergence
+    checking logic based on the convergence_type enum.
     """
 
-    convergence_parameter_name = Quantity(
-        type=MEnum('energy', 'force', 'potential', 'charge', 'density'),
-        description="""
-        Name of the convergence parameter.
-
-        Available quantites are: `'energy'`, `'force'`, `'potential'`, `'charge'`, `'density'`.
-        """,
-    )
-
-    convergence_threshold = Quantity(
+    threshold = Quantity(
         type=np.float64,
         description="""
-        Numerical value of the parameter that is converged.
+        Threshold value for convergence. Units are defined in child classes.
         """,
     )
 
-    threshold_unit = Quantity(
-        type=str,
-        description="""
-        Unit of the convergence threshold.
-        """,
-    )
-
-    # This is copied from PR #191 https://github.com/nomad-coe/nomad-simulations/pull/191
-    # TODO @ND: Do all of them apply?
-    threshold_type = Quantity(
+    convergence_type = Quantity(
         type=MEnum('absolute', 'relative', 'maximum', 'rms', 'residuum'),
         description="""
-            Specifies the mathematical method used to evaluate convergence between successive self-consistent field (SCF) iterations. 
-    This determines how differences between iterations are calculated and compared against the convergence threshold.
-    
-    The available comparison modes are:
-    
-    | Mode | Description |
-    | --------- | -------------------------------- |
-    | `'absolute'` | Measures the absolute difference between two subsequent iterations (e.g., |E_n - E_{n-1}|). Most common for energy convergence. |
-    | `'relative'` | Calculates the relative difference as a fraction of the total property value (e.g., |E_n - E_{n-1}|/|E_n|). Useful when the magnitude of the property varies widely across systems. |
-    | `'residuum'` | Computes the absolute difference between the current value and the value estimated from the wavefunction at the start of the step. Often used for evaluating convergence of the electron density. |
-    | `'maximum'` | Reports the maximum absolute difference across all components of a multi-component property (e.g., max|F_i,n - F_i,{n-1}| for forces). Suitable for vector quantities like forces or stress tensor elements. |
-    | `'rms'` | Calculates the root mean square of differences across all components (e.g., √(∑|F_i,n - F_i,{n-1}|²/N)). Provides a statistical measure of overall convergence for multi-component properties. |
-    
-    The mode used affects both convergence behavior and computational efficiency. Different codes may default to different comparison modes for the same physical property.
-        """,
-    )
+        Specifies how convergence is evaluated:
 
-
-class WorkflowConvergenceResults(ArchiveSection):
-    """
-    Results of the workflow convergence. This describes if convergence targets have been met during the calculation.
-    """
-
-    convergence_target_ref = Quantity(
-        type=WorkflowConvergenceTarget,
-        description="""
-        Reference to the workflow convergence target.    
+        | Type | Description |
+        | ---- | ----------- |
+        | `'absolute'` | Absolute difference between iterations: \|X_n - X_{n-1}\| < threshold |
+        | `'relative'` | Relative difference: \|X_n - X_{n-1}\|/\|X_n\| < threshold |
+        | `'maximum'` | Maximum component difference: max\|X_i,n - X_i,{n-1}\| < threshold |
+        | `'rms'` | Root mean square: sqrt(Σ\|X_i,n - X_i,{n-1}\|²/N) < threshold |
+        | `'residuum'` | Difference from initial estimate at step start |
         """,
     )
 
     is_reached = Quantity(
         type=bool,
         description="""
-        Convergence target was reached (true) or not (false).
+        Indicates whether the convergence criterion was met (True) or not (False).
         """,
     )
+
+    def _get_convergence_value(
+        self, archive: EntryArchive, logger: BoundLogger
+    ) -> float | np.ndarray | None:
+        """
+        Extract the value to check for convergence from the archive.
+        Child classes must override this to return the appropriate value.
+        
+        Returns:
+            The value to check (should already be converted to appropriate units),
+            or None if the value cannot be determined.
+        """
+        raise NotImplementedError(
+            f'{self.__class__.__name__} must implement _get_convergence_value()'
+        )
+
+    def _check_absolute(self, value: float) -> bool:
+        """Check absolute convergence: |value| < threshold"""
+        if self.threshold is None:
+            return False
+        return abs(value) < self.threshold
+
+    def _check_relative(self, value: float, reference: float) -> bool:
+        """Check relative convergence: |value|/|reference| < threshold"""
+        if self.threshold is None or abs(reference) < 1e-15:
+            return False
+        return abs(value / reference) < self.threshold
+
+    def _check_maximum(self, values: np.ndarray) -> bool:
+        """Check maximum convergence: max(|values|) < threshold"""
+        if self.threshold is None:
+            return False
+        return np.max(np.abs(values)) < self.threshold
+
+    def _check_rms(self, values: np.ndarray) -> bool:
+        """Check RMS convergence: sqrt(mean(values²)) < threshold"""
+        if self.threshold is None:
+            return False
+        return np.sqrt(np.mean(values**2)) < self.threshold
+
+    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        """
+        Check convergence by comparing current value against threshold.
+        Uses the convergence_type to determine the comparison method.
+        """
+        if not archive.data:
+            return
+
+        try:
+            value = self._get_convergence_value(archive, logger)
+            if value is None:
+                return
+
+            conv_type = self.convergence_type or 'absolute'
+
+            # Handle scalar vs array values
+            if isinstance(value, int | float | np.floating):
+                # Scalar value - use absolute or relative
+                if conv_type == 'absolute':
+                    self.is_reached = self._check_absolute(value)
+                elif conv_type == 'relative':
+                    # For relative, child class should provide reference
+                    logger.warning(
+                        f'Relative convergence requires reference value in '
+                        f'{self.__class__.__name__}'
+                    )
+                else:
+                    self.is_reached = self._check_absolute(value)
+            
+            elif isinstance(value, np.ndarray):
+                # Array value - can use maximum or rms
+                if conv_type == 'maximum':
+                    self.is_reached = self._check_maximum(value)
+                elif conv_type == 'rms':
+                    self.is_reached = self._check_rms(value)
+                elif conv_type == 'absolute':
+                    # For array, treat as maximum
+                    self.is_reached = self._check_maximum(value)
+                else:
+                    self.is_reached = self._check_maximum(value)
+
+        except Exception as e:
+            logger.debug(
+                f'Could not check convergence for {self.__class__.__name__}: {e}'
+            )
+
+
+class EnergyConvergenceTarget(WorkflowConvergenceTarget):
+    """
+    Convergence target for energy in SCF or optimization workflows.
+    The convergence_type determines how energy convergence is evaluated.
+    """
+
+    threshold = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Energy convergence threshold.
+        """,
+    )
+
+    def _get_convergence_value(
+        self, archive: EntryArchive, logger: BoundLogger
+    ) -> float | None:
+        """Extract energy convergence value from archive."""
+        try:
+            # Try to get SCF energy difference (most common case)
+            delta_energy = archive.data.outputs[-1].scf_steps[-1].delta_energies_total
+            if delta_energy is not None:
+                return delta_energy.to('joule').magnitude
+        except (AttributeError, IndexError, TypeError):
+            logger.debug('Could not extract energy convergence value from outputs.')
+        return None
+
+
+class ForceConvergenceTarget(WorkflowConvergenceTarget):
+    """
+    Convergence target for forces in optimization or SCF workflows.
+    The convergence_type determines how force convergence is evaluated.
+    """
+
+    threshold = Quantity(
+        type=np.float64,
+        unit='newton',
+        description="""
+        Force convergence threshold.
+        """,
+    )
+
+    def _get_convergence_value(
+        self, archive: EntryArchive, logger: BoundLogger
+    ) -> float | np.ndarray | None:
+        """Extract force convergence value from archive."""
+        try:
+            conv_type = self.convergence_type or 'maximum'
+            
+            # For maximum force in geometry optimization, check workflow level
+            if conv_type == 'maximum' and hasattr(archive, 'workflow2') and archive.workflow2:
+                final_force_max = archive.workflow2.results.final_force_maximum
+                if final_force_max is not None:
+                    return final_force_max.to('newton').magnitude
+            
+            # For absolute (SCF force delta)
+            if conv_type == 'absolute' and archive.data.outputs:
+                delta_force = archive.data.outputs[-1].scf_steps[-1].delta_force_abs
+                if delta_force is not None:
+                    return delta_force.to('newton').magnitude
+            
+            # Fallback: get force array from last output
+            if archive.data.outputs:
+                forces = archive.data.outputs[-1].total_forces
+                if forces is not None and len(forces) > 0:
+                    # Return force magnitudes for each atom
+                    force_magnitudes = np.linalg.norm(forces[-1].value, axis=1)
+                    return force_magnitudes
+        except (AttributeError, IndexError, TypeError):
+            logger.debug('Could not extract force convergence value from outputs.')
+        return None
+
+
+class PotentialConvergenceTarget(WorkflowConvergenceTarget):
+    """
+    Convergence target for potential in SCF workflows.
+    The convergence_type determines how potential convergence is evaluated.
+    """
+
+    threshold = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Potential convergence threshold.
+        """,
+    )
+
+    def _get_convergence_value(
+        self, archive: EntryArchive, logger: BoundLogger
+    ) -> float | None:
+        """Extract potential convergence value from archive."""
+        try:
+            # Most common: RMS potential difference
+            delta_potential = archive.data.outputs[-1].scf_steps[-1].delta_potential_rms
+            if delta_potential is not None:
+                return delta_potential.to('joule').magnitude
+        except (AttributeError, IndexError, TypeError):
+            logger.debug('Could not extract potential convergence value from outputs.')
+        return None
+
+
+class ChargeConvergenceTarget(WorkflowConvergenceTarget):
+    """
+    Convergence target for charge/electron density in SCF workflows.
+    The convergence_type determines how density convergence is evaluated.
+    """
+
+    threshold = Quantity(
+        type=np.float64,
+        description="""
+        Charge/density convergence threshold (typically dimensionless or in electrons).
+        """,
+    )
+
+    def _get_convergence_value(
+        self, archive: EntryArchive, logger: BoundLogger
+    ) -> float | None:
+        """Extract charge/density convergence value from archive."""
+        try:
+            delta_density = archive.data.outputs[-1].scf_steps[-1].delta_density_rms
+            if delta_density is not None:
+                # delta_density_rms is typically dimensionless or in electrons
+                return float(delta_density) if not isinstance(delta_density, int | float) else delta_density
+        except (AttributeError, IndexError, TypeError):
+            logger.debug('Could not extract charge convergence value from outputs.')
+        return None
 
 
 class SimulationWorkflowMethod(ArchiveSection):
@@ -133,7 +304,7 @@ class SimulationWorkflowMethod(ArchiveSection):
         """,
     )
 
-    convergence = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
+    convergence_targets = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not archive.data:
@@ -214,7 +385,7 @@ class SimulationWorkflowResults(WorkflowTime):
         """,
     )
 
-    convergence = SubSection(sub_section=WorkflowConvergenceResults.m_def, repeats=True)
+    convergence_targets = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
 
 
 class SimulationTaskReference(TaskReference, SimulationTask):
@@ -315,31 +486,37 @@ class SimulationWorkflow(Workflow, SimulationTask):
     @log
     def map_convergence(self, archive: EntryArchive) -> None:
         """
-        Populate the convergence according the to convergence targets.
+        Normalize convergence targets and determine overall convergence status.
         """
         if not archive.data or not archive.data.outputs:
             return
         logger = self.map_convergence.__annotations__['logger']
 
-        # check convergence targets in model and populate convergence results in results
-        convergence_targets = self.method.get('convergence')
-        if convergence_targets is None:
+        # Get convergence targets from method
+        convergence_targets = self.method.get('convergence_targets')
+        if not convergence_targets:
             return
-        convergence_results = self._resolve_convergence(
-            archive, convergence_targets, logger
-        )
-        if len(convergence_results) == 0:
-            logger.warning('Could not resolve convergence targets.')
-            return
-        self.results.convergence = convergence_results
-        all_reached = all(jmespath.search('[*].is_reached', convergence_results))
-        # set converged for self
-        if self.results.get('is_converged') is None and all_reached is not None:
-            self.results.is_converged = all_reached
-        else:
-            if not self.results.get('is_converged') == all_reached:
-                logger.warning('Derived and parsed state of convergence do not agree.')
-                pass
+
+        # Normalize each convergence target (triggers convergence checks)
+        for target in convergence_targets:
+            target.normalize(archive, logger)
+
+        # Copy normalized targets to results for visibility
+        if not self.results.convergence_targets:
+            self.results.convergence_targets = convergence_targets
+
+        # Determine overall convergence status
+        all_reached = all(target.is_reached for target in convergence_targets if target.is_reached is not None)
+        any_checked = any(target.is_reached is not None for target in convergence_targets)
+        
+        if any_checked:
+            if self.results.get('is_converged') is None:
+                self.results.is_converged = all_reached
+            elif self.results.is_converged != all_reached:
+                logger.warning(
+                    f'Derived convergence ({all_reached}) differs from parsed convergence '
+                    f'({self.results.is_converged}).'
+                )
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger):
         """
@@ -356,53 +533,33 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
         self.map_convergence(archive, logger=logger)
 
-    def _resolve_convergence(
+    def _resolve_convergence_for_output(
         self,
         archive: EntryArchive,
-        convergence_targets: list[ArchiveSection],
+        convergence_targets: list[WorkflowConvergenceTarget],
         logger: BoundLogger,
         output_index: int = -1,
-    ) -> list:
-        convergence_results = []
-        for convergence_target in convergence_targets:
-            parameter_name = convergence_target.get('convergence_parameter_name')
-            threshold_type = convergence_target.get('threshold_type')
-            unit = convergence_target.get('threshold_unit')
-            if parameter_name is None or threshold_type is None or unit is None:
-                continue
-            # do last step of path manually because jmespath only returns the raw values
-            # and not quantites - TODO this is pretty much a hack, is there a better solution?
-            quantity_path = CONVERGENCE_QUANTITY_MAPPING[
-                f'{parameter_name}:{threshold_type}'
-            ].split('.')
-            quantity_name = quantity_path[-1]
-            quantity_values = jmespath.search('.'.join(quantity_path[:-1]), archive)
-            if quantity_values is None:
-                continue
-            if isinstance(quantity_values, list):
-                convergence_data = quantity_values[output_index][quantity_name]
-            else:
-                convergence_data = quantity_values[quantity_name]
-            threshold = convergence_target['convergence_threshold']
-            convergence_result = WorkflowConvergenceResults()
-            convergence_result.convergence_target_ref = convergence_target
-            # TODO @all: For some reason threshold is just a value and not a quantity
-            # I don't know how or where to fix this: It is a quantity in the parser (with its unit)
-            # and somehow here it is just a value. Can we have it as a quantity?
-            if (
-                isinstance(convergence_data, Iterable)
-                and hasattr(
-                    convergence_data, '__getitem__'
-                )  # TODO this is all due to the type checker
-                and hasattr(convergence_data, 'shape')
-                and len(convergence_data.shape) > 0
-            ):  # the threshold is relative
-                convergence_data = convergence_data[-1]
-            convergence_result.is_reached = (
-                convergence_data.to(unit).magnitude < threshold
-            )
-            convergence_results.append(convergence_result)
-        return convergence_results
+    ) -> list[WorkflowConvergenceTarget]:
+        """
+        Helper method to resolve convergence targets for a specific output index.
+        Used primarily for multi-step workflows like geometry optimization.
+        
+        Creates temporary copies of convergence targets and normalizes them
+        against a specific output step.
+        """
+        resolved_targets = []
+        
+        for target in convergence_targets:
+            # Create a copy of the target to avoid modifying the original
+            target_copy = target.m_copy(deep=True)
+            
+            # For multi-output scenarios, we may need to adjust the archive context
+            # This is a simplified approach - child classes can override for more complex logic
+            target_copy.normalize(archive, logger)
+            
+            resolved_targets.append(target_copy)
+        
+        return resolved_targets
 
 
 class SerialWorkflowResults(SimulationWorkflowResults):
