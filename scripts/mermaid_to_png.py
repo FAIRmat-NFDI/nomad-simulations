@@ -89,15 +89,47 @@ def convert_mermaid_to_png(mermaid_code: str, output_path: Path) -> bool:
         return False
 
 
-def update_markdown_with_png(md_file: Path, title: str, png_rel_path: str):
+def analyze_diagram_width(mermaid_code: str) -> str:
+    """
+    Analyze Mermaid diagram structure to determine appropriate display width.
+
+    Returns CSS width value (e.g., '40%', '60%', '80%')
+    """
+    # Count the number of unique classes in the diagram
+    class_pattern = r'class\s+(\w+)'
+    classes = set(re.findall(class_pattern, mermaid_code))
+    num_classes = len(classes)
+
+    # Count relationships to estimate complexity/width
+    # Arrows: -->, <|--, ..>, etc.
+    relationship_pattern = r'(\w+)\s+(?:-->|<\|--|\.\.>|--)'
+    relationships = re.findall(relationship_pattern, mermaid_code)
+    num_relationships = len(relationships)
+
+    # Heuristic: if very few classes and relationships, it's likely narrow
+    # Single-column diagrams typically have <= 3 classes with minimal relationships
+    if num_classes <= 3 and num_relationships <= 4:
+        return '40%'  # Narrow diagram
+    elif num_classes <= 5 and num_relationships <= 8:
+        return '60%'  # Medium diagram
+    else:
+        return '80%'  # Wide diagram
+
+
+def update_markdown_with_png(
+    md_file: Path, title: str, png_rel_path: str, mermaid_code: str = ''
+):
     """Replace Mermaid code block with click-zoom PNG reference."""
     content = md_file.read_text()
 
     # Find the mermaid block (first occurrence for simplicity)
     pattern = r'```mermaid\n.*?```'
 
+    # Determine appropriate width based on diagram structure
+    width = analyze_diagram_width(mermaid_code) if mermaid_code else '80%'
+
     # Use simple markdown image first to test
-    replacement = f"""![{title} diagram]({png_rel_path}){{: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}}"""
+    replacement = f"""![{title} diagram]({png_rel_path}){{: style="width: {width}; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}}"""
 
     # Replace only the first match
     new_content = re.sub(pattern, replacement, content, count=1, flags=re.DOTALL)
@@ -145,8 +177,8 @@ def process_docs(
                 # Calculate relative path from md_file to PNG
                 png_rel_path = f'../assets/diagrams/{png_filename}'
 
-                # Update markdown
-                if update_markdown_with_png(md_file, title, png_rel_path):
+                # Update markdown with adaptive width
+                if update_markdown_with_png(md_file, title, png_rel_path, mermaid_code):
                     print(f'  ✓ Converted and updated {png_filename}')
                     total_converted += 1
                 else:

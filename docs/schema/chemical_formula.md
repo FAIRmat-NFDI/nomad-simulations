@@ -19,7 +19,7 @@
 ## Relationship map
 
 
-![chemical_formula_0 diagram](../assets/diagrams/chemical_formula_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+![chemical_formula_0 diagram](../assets/diagrams/chemical_formula_0.svg){: style="width: 40%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
 
 <div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
 <b>Legend:</b>

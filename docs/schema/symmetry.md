@@ -17,7 +17,7 @@
 ## Relationship map
 
 
-![symmetry_0 diagram](../assets/diagrams/symmetry_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+![symmetry_0 diagram](../assets/diagrams/symmetry_0.svg){: style="width: 40%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
 
 <div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
 <b>Legend:</b>
@@ -48,5 +48,5 @@
 | `strukturbericht_designation` | m_str(str) | <details><summary>Classification of the material according to the historically grown and similar c...</summary>Classification of the material according to the historically grown and similar crystal<br>structures ('strukturbericht'). Useful when using altogether with `space_group_symbol`.<br>Examples:<br>- `C1B`, `B3`, `C15b`,<br>- `L10`, `L60`,<br>- `L21`.<br>Extracted from the AFLOW encyclopedia of crystallographic prototypes.</details> |
 | `prototype_formula` | m_str(str) | <details><summary>The formula of the prototypical material for this structure as extracted from th...</summary>The formula of the prototypical material for this structure as extracted from the<br>AFLOW encyclopedia of crystallographic prototypes. It is a string with the chemical<br>symbols:<br>- https://aflowlib.org/prototype-encyclopedia/chemical_symbols.html</details> |
 | `prototype_aflow_id` | m_str(str) | The identifier of this structure in the AFLOW encyclopedia of crystallographic prototypes: http://www.aflowlib.org/prototype-encyclopedia/index.html |
-| `atomic_cell_ref` | <nomad.metainfo.metainfo.Reference object at 0x75392cd9dbe0> | Reference to the AtomicCell section that the symmetry refers to. |
+| `atomic_cell_ref` | <nomad.metainfo.metainfo.Reference object at 0x7dc4208f2de0> | Reference to the AtomicCell section that the symmetry refers to. |
 
