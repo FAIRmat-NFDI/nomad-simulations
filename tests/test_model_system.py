@@ -572,9 +572,9 @@ class TestModelSystem:
                 for rec in caplog.records
             ), f'Warning not logged for {description}'
         else:
-            assert (
-                sys.periodic_boundary_conditions != []
-            ), f'PBC incorrectly cleared for {description}'
+            assert sys.periodic_boundary_conditions != [], (
+                f'PBC incorrectly cleared for {description}'
+            )
 
 
 @pytest.mark.parametrize('branching', [True, False])
