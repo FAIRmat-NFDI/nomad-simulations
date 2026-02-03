@@ -699,7 +699,9 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
             # Create a result object that holds both the target and the convergence status
             result = WorkflowConvergenceResults()
-            result.convergence_target_ref = target_copy
+            # Reference the original target (which is in the archive hierarchy),
+            # not the copy (which would be orphaned and cause serialization errors)
+            result.convergence_target_ref = target
             result.is_reached = is_reached
             convergence_results.append(result)
 
