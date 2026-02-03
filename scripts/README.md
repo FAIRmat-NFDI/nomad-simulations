@@ -146,6 +146,7 @@ Without filtering, diagrams become cluttered:
 - ModelSystem page shows redundant connection back to Simulation
 - Child class diagrams show all parent connections
 - Implementation details leak into high-level overviews
+- Base pages show ALL descendants, even those with specialized pages
 
 ### The Solution: Smart Edge Filtering
 
@@ -155,28 +156,41 @@ Implemented in `gen_diagrams.py::filter_edges_for_vertical()`:
 def filter_edges_for_vertical(vert_key, allowlist, all_edges, verticals_dict):
     """
     Design Rules:
-    1. Parent sections (Simulation, ModelSystem, etc.) SHOW all their direct children
+    1. Parent sections on "base" pages ONLY show children in the allowlist
     2. Non-parent sections DON'T show connections to parent sections
     3. Classes with their own pages don't show their subsections on other pages
+    4. Inheritance always shown if both classes in allowlist
     """
 ```
 
 #### Filtering Rules
 
-1. **Parent → Child (SHOW)**
+1. **Parent → Child on Base Pages (STRICT)**
    - If source is a parent section (Simulation, ModelSystem, ModelMethod, Outputs)
    - AND source is in this vertical's allowlist
-   - THEN show all its direct children (even if they have their own pages)
+   - THEN **ONLY** show children that are **also in the allowlist**
+   - This prevents "outputs" base page from showing all 50+ property classes
+   - Example: `outputs` vertical only shows Outputs → SCFOutputs, PhysicalProperty (not all the specialized properties)
 
-2. **Child → Parent (HIDE)**
+2. **Parent → Child on Specialized Pages (PERMISSIVE)**
+   - If source is NOT a parent section (e.g., ElectronicEigenvalues)
+   - THEN show all direct children that don't have their own specialized pages
+   - This allows detailed pages to show their complete structure
+
+3. **Child → Parent (HIDE)**
    - If target is a parent section
    - AND target is NOT in this vertical's allowlist
    - THEN hide the connection (redundant with parent page)
 
-3. **Subsection Detail (CONTEXT-DEPENDENT)**
+4. **Subsection Detail (CONTEXT-DEPENDENT)**
    - If target has its own vertical/page
    - AND target is NOT in current allowlist
    - THEN hide its subsections (they're shown on the target's own page)
+
+5. **Inheritance (ALWAYS SHOW)**
+   - If both parent and child are in the allowlist
+   - THEN always show inheritance edges
+   - Inheritance structure is fundamental to understanding the schema
 
 ### Example: ModelSystem Vertical
 
@@ -492,6 +506,148 @@ After updating verticals, verify:
 - [ ] `purpose` field accurately describes page content
 - [ ] Diagrams render correctly without errors
 - [ ] Navigation structure makes sense
+
+## Managing Diagram Complexity
+
+### The Problem: Huge Diagrams
+
+Some inheritance hierarchies (especially outputs and properties) can have 20+ classes with complex interconnections, leading to:
+- Overwhelming visual complexity
+- Slow diagram rendering
+- Poor readability
+- Difficult navigation
+
+### Design Rules for Complex Hierarchies
+
+**Rule 1: Split by Domain/Purpose**
+- Instead of one massive "outputs" page with 50+ classes
+- Create focused domain pages: electronic_properties, thermodynamics, spectroscopy, etc.
+- Each page should cover 5-15 classes maximum
+
+**Rule 2: Hierarchical Layering**
+- Top-level page: Base classes only (Outputs, PhysicalProperty)
+- Second-level pages: Specialized domains (ElectronicEigenvalues, BaseEnergy, SpectralProfile)
+- Keep inheritance depth ≤ 3 levels on a single diagram
+
+**Rule 3: Cross-Reference, Don't Duplicate**
+- Use `out_of_scope` to point to related verticals
+- Example: "Electronic structure properties (see electronic_properties)"
+- Don't show all possible connections - focus on the current domain
+
+**Rule 4: Hide Implementation Details**
+- Abstract base classes on top-level pages
+- Concrete implementations on specialized pages
+- Example: `BaseElectronicEigenvalues` on outputs page, `ElectronicBandStructure` on electronic_properties page
+
+### Example: Outputs Hierarchy Split
+
+**Bad** ✗ One huge diagram:
+```python
+'outputs': {
+    'sections': [
+        'Outputs', 'SCFOutputs', 'PhysicalProperty',
+        'BaseElectronicEigenvalues', 'ElectronicEigenvalues', 'ElectronicBandStructure',
+        'ElectronicBandGap', 'DOSProfile', 'ElectronicDensityOfStates',
+        'BaseEnergy', 'TotalEnergy', 'KineticEnergy', 'PotentialEnergy',
+        'BaseGreensFunction', 'ElectronicGreensFunction', 'ElectronicSelfEnergy',
+        # ... 40+ more classes
+    ],
+}
+```
+
+**Good** ✓ Domain-focused verticals:
+```python
+'outputs': {
+    'title': 'Outputs Base',
+    'sections': ['Outputs', 'SCFOutputs', 'PhysicalProperty'],
+    'out_of_scope': [
+        'Electronic properties (see electronic_properties)',
+        'Thermodynamics (see thermodynamics)',
+        'Many-body properties (see manybody_properties)',
+    ],
+},
+'electronic_properties': {
+    'title': 'Electronic Structure Properties',
+    'sections': [
+        'BaseElectronicEigenvalues',
+        'ElectronicEigenvalues',
+        'ElectronicBandStructure',
+        'ElectronicBandGap',
+        'DOSProfile',
+        'ElectronicDensityOfStates',
+    ],
+},
+'thermodynamics': {
+    'title': 'Thermodynamic Properties',
+    'sections': [
+        'BaseEnergy',
+        'TotalEnergy',
+        'KineticEnergy',
+        'PotentialEnergy',
+        # ... related energy classes only
+    ],
+},
+```
+
+### Diagram Size Guidelines
+
+| Classes | Recommendation | Action |
+|---------|---------------|--------|
+| 1-5 | Perfect | Single vertical, simple diagram |
+| 6-15 | Good | Single vertical, manageable diagram |
+| 16-25 | Complex | Consider splitting by subdomain |
+| 26+ | Too large | **Must split** into multiple verticals |
+
+### When to Split a Vertical
+
+Split when:
+1. **Visual complexity**: Diagram is hard to read even with filtering
+2. **Multiple domains**: Classes serve different conceptual purposes
+3. **Deep hierarchies**: >3 levels of inheritance on one page
+4. **Unrelated groups**: Classes that don't directly relate to each other
+
+Don't split when:
+1. **Tight coupling**: Classes frequently reference each other
+2. **Shallow hierarchy**: All classes at same level
+3. **Single purpose**: All classes serve one focused goal
+
+### Refactoring Strategy
+
+To refactor a large vertical:
+
+1. **Identify natural groupings**:
+   ```bash
+   # Analyze the inheritance tree
+   # Look for common base classes or functional domains
+   ```
+
+2. **Create new verticals for each group**:
+   ```python
+   'base_vertical': {
+       'sections': ['BaseClass1', 'BaseClass2'],  # Abstract bases only
+       'out_of_scope': ['Specializations (see specialized_vertical)'],
+   },
+   'specialized_vertical': {
+       'sections': ['ConcreteClass1', 'ConcreteClass2', ...],
+       'out_of_scope': ['Base definitions (see base_vertical)'],
+   },
+   ```
+
+3. **Update cross-references** in all affected `out_of_scope` lists
+
+4. **Test rendering**: Verify each diagram is readable
+
+### Filtering Enhancements for Large Diagrams
+
+The filtering logic already helps by:
+- Hiding parent connections from child pages
+- Excluding subsections when target has own page
+- Showing only allowlisted connections
+
+For very large hierarchies, consider:
+- Keeping only inheritance edges (`<|--`) on base pages
+- Moving containment edges (`-->`) to specialized pages
+- Minimizing reference edges (`..>`) to reduce clutter
 
 ## Troubleshooting
 

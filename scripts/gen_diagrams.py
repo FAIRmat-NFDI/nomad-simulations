@@ -96,8 +96,9 @@ def filter_edges_for_vertical(
     """
     Filter edges according to vertical-specific design rules:
     1. Don't show connections FROM child to parent sections (redundant - shown on parent page)
-    2. DO show connections FROM parent to child sections (documenting the parent's structure)
-    3. Show inheriting subclasses but not their subsections
+    2. For parent sections on "base" pages: ONLY show children that are in the allowlist
+    3. For non-base pages: show all children that don't have their own specialized pages
+    4. Show inheriting subclasses but not their subsections
 
     Returns filtered edges dict with 'contain', 'refs', 'inherit' keys.
     """
@@ -127,9 +128,11 @@ def filter_edges_for_vertical(
         if a not in allowlist_set:
             continue
 
-        # If source is a parent section (Simulation, etc), show all its direct children
+        # For parent sections: ONLY show children that are explicitly in the allowlist
+        # This prevents "base" pages from showing all specialized children
         if a in parent_sections and a in allowlist_set:
-            filtered['contain'].append((a, b, label))
+            if b in allowlist_set:
+                filtered['contain'].append((a, b, label))
             continue
 
         # For non-parent sections: exclude connections to parent sections

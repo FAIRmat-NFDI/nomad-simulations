@@ -15,74 +15,11 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum {
-    }
-    class ChemicalPotential {
-    }
-    class CrystalFieldSplitting {
-    }
-    class ElectronicBandGap {
-    }
-    class ElectronicBandStructure {
-    }
-    class ElectronicDensityOfStates {
-    }
-    class ElectronicEigenvalues {
-    }
-    class ElectronicGreensFunction {
-    }
-    class ElectronicSelfEnergy {
-    }
-    class FermiSurface {
-    }
-    class HoppingMatrix {
-    }
-    class HybridizationFunction {
-    }
-    class KineticEnergy {
-    }
-    class Occupancy {
-    }
     class Outputs {
-    }
-    class Permittivity {
-    }
-    class PotentialEnergy {
-    }
-    class QuasiparticleWeight {
     }
     class SCFOutputs {
     }
-    class Temperature {
-    }
-    class TotalEnergy {
-    }
-    class TotalForce {
-    }
-    class XASSpectrum {
-    }
     Outputs <|-- SCFOutputs
-    Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ChemicalPotential
-    Outputs --> CrystalFieldSplitting
-    Outputs --> ElectronicBandGap
-    Outputs --> ElectronicBandStructure
-    Outputs --> ElectronicDensityOfStates : electronic_dos
-    Outputs --> ElectronicEigenvalues
-    Outputs --> ElectronicGreensFunction
-    Outputs --> ElectronicSelfEnergy : electronic_self_energies
-    Outputs --> FermiSurface
-    Outputs --> HoppingMatrix : hopping_matrices
-    Outputs --> HybridizationFunction
-    Outputs --> KineticEnergy : kinetic_energies
-    Outputs --> Occupancy : occupancies
-    Outputs --> Permittivity : permittivities
-    Outputs --> PotentialEnergy : potential_energies
-    Outputs --> QuasiparticleWeight
-    Outputs --> Temperature
-    Outputs --> TotalEnergy : total_energies
-    Outputs --> TotalForce
-    Outputs --> XASSpectrum : xas_spectra
     SCFOutputs --> Outputs : scf_steps
 ```
 

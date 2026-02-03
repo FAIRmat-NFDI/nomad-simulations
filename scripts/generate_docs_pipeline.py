@@ -118,6 +118,125 @@ nav:
         return False
 
 
+def validate_diagram_complexity(repo_root: Path) -> bool:
+    """
+    Validate diagram complexity according to design rules.
+    
+    Design Rules:
+    - 1-5 classes: Perfect
+    - 6-15 classes: Good
+    - 16-25 classes: Complex - consider splitting
+    - 26+ classes: Too large - must split
+    """
+    print('\n' + '=' * 60)
+    print('Validating diagram complexity')
+    print('=' * 60)
+
+    try:
+        sys.path.insert(0, str(repo_root / 'scripts'))
+        from verticals import VERTICALS
+        from meta_introspect import collect_edges, iter_section_classes
+
+        # Collect all edges to analyze inheritance depth
+        pkg = 'nomad_simulations'
+        all_edges = collect_edges(pkg)
+        
+        has_warnings = False
+        has_errors = False
+        
+        for vert_key, spec in VERTICALS.items():
+            if not isinstance(spec, dict):
+                continue
+                
+            sections = spec.get('sections', [])
+            num_classes = len(sections)
+            
+            # Size validation
+            if num_classes <= 5:
+                status = '✓ Perfect'
+                level = 'good'
+            elif num_classes <= 15:
+                status = '✓ Good'
+                level = 'good'
+            elif num_classes <= 25:
+                status = '⚠ Complex - consider splitting'
+                level = 'warning'
+                has_warnings = True
+            else:
+                status = '✗ TOO LARGE - must split into multiple verticals'
+                level = 'error'
+                has_errors = True
+            
+            # Calculate inheritance depth for this vertical
+            inheritance_edges = all_edges.get('inherit', [])
+            vert_classes = set(sections)
+            
+            # Build inheritance tree
+            children_map = {}
+            for parent, child, _ in inheritance_edges:
+                if parent in vert_classes and child in vert_classes:
+                    if parent not in children_map:
+                        children_map[parent] = []
+                    children_map[parent].append(child)
+            
+            # Find max depth using BFS
+            max_depth = 0
+            if children_map:
+                # Find root classes (those that are not children)
+                all_children = set()
+                for children_list in children_map.values():
+                    all_children.update(children_list)
+                roots = vert_classes - all_children
+                
+                # BFS from each root
+                for root in roots:
+                    queue = [(root, 1)]
+                    visited = {root}
+                    while queue:
+                        node, depth = queue.pop(0)
+                        max_depth = max(max_depth, depth)
+                        for child in children_map.get(node, []):
+                            if child not in visited:
+                                visited.add(child)
+                                queue.append((child, depth + 1))
+            
+            depth_status = ''
+            if max_depth > 3:
+                depth_status = f' | Depth: {max_depth} levels (>3, consider splitting)'
+                has_warnings = True
+            elif max_depth > 0:
+                depth_status = f' | Depth: {max_depth} levels'
+            
+            # Print status
+            if level == 'error':
+                print(f'  {vert_key}: {num_classes} classes - {status}{depth_status}')
+            elif level == 'warning':
+                print(f'  {vert_key}: {num_classes} classes - {status}{depth_status}')
+            elif num_classes > 10 or max_depth > 2:
+                # Show larger verticals even if still "good"
+                print(f'  {vert_key}: {num_classes} classes - {status}{depth_status}')
+        
+        # Summary
+        print()
+        if has_errors:
+            print('✗ Some verticals are too large and must be split')
+            print('  See scripts/README.md "Managing Diagram Complexity" for guidelines')
+            return False
+        elif has_warnings:
+            print('⚠ Some verticals are complex - consider splitting for better readability')
+            print('  Complexity is acceptable but could be improved')
+            return True
+        else:
+            print('✓ All diagrams have good complexity')
+            return True
+            
+    except Exception as e:
+        print(f'✗ Error validating complexity: {e}')
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def validate_navigation(repo_root: Path) -> bool:
     """Validate that navigation matches generated pages."""
     print('\n' + '=' * 60)
@@ -331,10 +450,17 @@ def main():
     if not step5_success:
         print('\n⚠ Warning: Navigation update failed')
 
-    # Step 6: Validate navigation consistency
-    step6_success = validate_navigation(repo_root)
+    # Step 6: Validate diagram complexity
+    step6_success = validate_diagram_complexity(repo_root)
 
     if not step6_success:
+        print('\n⚠ Warning: Some diagrams are too complex')
+        print('  See output above for details and splitting recommendations')
+
+    # Step 7: Validate navigation consistency
+    step7_success = validate_navigation(repo_root)
+
+    if not step7_success:
         print('\n⚠ Warning: Navigation validation found issues')
 
     # Final summary
@@ -360,6 +486,13 @@ def main():
         print('  ✓ Smaller file sizes than PNG')
     else:
         print('  ✓ PNG with click-to-zoom (2x scale)')
+    
+    # Complexity warnings in summary
+    if not step6_success:
+        print('\n⚠ COMPLEXITY WARNING:')
+        print('  Some verticals exceed recommended size (>25 classes)')
+        print('  Consider splitting them for better readability')
+        print('  See scripts/README.md "Managing Diagram Complexity"')
 
 
 if __name__ == '__main__':
