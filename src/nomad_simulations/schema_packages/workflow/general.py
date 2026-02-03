@@ -49,7 +49,7 @@ class WorkflowConvergenceTarget(ArchiveSection):
 
     convergence_type = Quantity(
         type=MEnum('absolute', 'relative', 'maximum', 'rms', 'residuum'),
-        description="""
+        description=r"""
         Specifies how convergence is evaluated:
 
         | Type | Description |
@@ -75,7 +75,7 @@ class WorkflowConvergenceTarget(ArchiveSection):
         """
         Extract the value to check for convergence from the archive.
         Child classes must override this to return the appropriate value.
-        
+
         Returns:
             The value to check (should already be converted to appropriate units),
             or None if the value cannot be determined.
@@ -88,25 +88,56 @@ class WorkflowConvergenceTarget(ArchiveSection):
         """Check absolute convergence: |value| < threshold"""
         if self.threshold is None:
             return False
-        return abs(value) < self.threshold
+        # threshold may be a pint Quantity - get magnitude if so
+        threshold_val = (
+            self.threshold.magnitude
+            if hasattr(self.threshold, 'magnitude')
+            else self.threshold
+        )
+        # Use <= to allow exact zero with zero threshold
+        return abs(value) <= threshold_val
 
     def _check_relative(self, value: float, reference: float) -> bool:
         """Check relative convergence: |value|/|reference| < threshold"""
-        if self.threshold is None or abs(reference) < 1e-15:
+        if self.threshold is None:
             return False
-        return abs(value / reference) < self.threshold
+        # Special case: both zero means converged
+        if abs(reference) < 1e-15 and abs(value) < 1e-15:
+            return True
+        # Cannot compute relative if reference is zero
+        if abs(reference) < 1e-15:
+            return False
+        # threshold may be a pint Quantity - get magnitude if so
+        threshold_val = (
+            self.threshold.magnitude
+            if hasattr(self.threshold, 'magnitude')
+            else self.threshold
+        )
+        return abs(value / reference) < threshold_val
 
     def _check_maximum(self, values: np.ndarray) -> bool:
         """Check maximum convergence: max(|values|) < threshold"""
         if self.threshold is None:
             return False
-        return np.max(np.abs(values)) < self.threshold
+        # threshold may be a pint Quantity - get magnitude if so
+        threshold_val = (
+            self.threshold.magnitude
+            if hasattr(self.threshold, 'magnitude')
+            else self.threshold
+        )
+        return np.max(np.abs(values)) < threshold_val
 
     def _check_rms(self, values: np.ndarray) -> bool:
         """Check RMS convergence: sqrt(mean(values²)) < threshold"""
         if self.threshold is None:
             return False
-        return np.sqrt(np.mean(values**2)) < self.threshold
+        # threshold may be a pint Quantity - get magnitude if so
+        threshold_val = (
+            self.threshold.magnitude
+            if hasattr(self.threshold, 'magnitude')
+            else self.threshold
+        )
+        return np.sqrt(np.mean(values**2)) < threshold_val
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         """
@@ -136,7 +167,7 @@ class WorkflowConvergenceTarget(ArchiveSection):
                     )
                 else:
                     self.is_reached = self._check_absolute(value)
-            
+
             elif isinstance(value, np.ndarray):
                 # Array value - can use maximum or rms
                 if conv_type == 'maximum':
@@ -175,9 +206,9 @@ class EnergyConvergenceTarget(WorkflowConvergenceTarget):
         """Extract energy convergence value from archive."""
         try:
             # Try to get SCF energy difference (most common case)
-            delta_energy = archive.data.outputs[-1].scf_steps[-1].delta_energies_total
-            if delta_energy is not None:
-                return delta_energy.to('joule').magnitude
+            delta_energies = archive.data.outputs[-1].scf_steps.delta_energies_total
+            if delta_energies is not None:
+                return delta_energies[-1].to('joule').magnitude
         except (AttributeError, IndexError, TypeError):
             logger.debug('Could not extract energy convergence value from outputs.')
         return None
@@ -203,28 +234,36 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
         """Extract force convergence value from archive."""
         try:
             conv_type = self.convergence_type or 'maximum'
-            
+
             # For maximum force in geometry optimization, check workflow level
-            if conv_type == 'maximum' and hasattr(archive, 'workflow2') and archive.workflow2:
+            if (
+                conv_type == 'maximum'
+                and hasattr(archive, 'workflow2')
+                and archive.workflow2
+            ):
                 final_force_max = archive.workflow2.results.final_force_maximum
                 if final_force_max is not None:
                     return final_force_max.to('newton').magnitude
-            
+
             # For absolute (SCF force delta)
             if conv_type == 'absolute' and archive.data.outputs:
-                delta_force = archive.data.outputs[-1].scf_steps[-1].delta_force_abs
-                if delta_force is not None:
-                    return delta_force.to('newton').magnitude
-            
+                delta_forces = archive.data.outputs[-1].scf_steps.delta_force_abs
+                if delta_forces is not None:
+                    return delta_forces[-1].to('newton').magnitude
+
             # Fallback: get force array from last output
             if archive.data.outputs:
                 forces = archive.data.outputs[-1].total_forces
                 if forces is not None and len(forces) > 0:
+                    # Get force values and convert to magnitudes if needed
+                    force_values = forces[-1].value
+                    if hasattr(force_values, 'magnitude'):
+                        force_values = force_values.to('newton').magnitude
                     # Return force magnitudes for each atom
-                    force_magnitudes = np.linalg.norm(forces[-1].value, axis=1)
+                    force_magnitudes = np.linalg.norm(force_values, axis=1)
                     return force_magnitudes
-        except (AttributeError, IndexError, TypeError):
-            logger.debug('Could not extract force convergence value from outputs.')
+        except (AttributeError, IndexError, TypeError) as e:
+            logger.debug(f'Could not extract force convergence value from outputs: {e}')
         return None
 
 
@@ -248,9 +287,9 @@ class PotentialConvergenceTarget(WorkflowConvergenceTarget):
         """Extract potential convergence value from archive."""
         try:
             # Most common: RMS potential difference
-            delta_potential = archive.data.outputs[-1].scf_steps[-1].delta_potential_rms
-            if delta_potential is not None:
-                return delta_potential.to('joule').magnitude
+            delta_potentials = archive.data.outputs[-1].scf_steps.delta_potential_rms
+            if delta_potentials is not None:
+                return delta_potentials[-1].to('joule').magnitude
         except (AttributeError, IndexError, TypeError):
             logger.debug('Could not extract potential convergence value from outputs.')
         return None
@@ -274,10 +313,18 @@ class ChargeConvergenceTarget(WorkflowConvergenceTarget):
     ) -> float | None:
         """Extract charge/density convergence value from archive."""
         try:
-            delta_density = archive.data.outputs[-1].scf_steps[-1].delta_density_rms
-            if delta_density is not None:
-                # delta_density_rms is typically dimensionless or in electrons
-                return float(delta_density) if not isinstance(delta_density, int | float) else delta_density
+            delta_densities = archive.data.outputs[-1].scf_steps.delta_density_rms
+            if delta_densities is not None:
+                # Extract last value from the array
+                delta_density = delta_densities[-1]
+                # Handle pint Quantity by extracting magnitude
+                if hasattr(delta_density, 'magnitude'):
+                    return float(delta_density.magnitude)
+                return (
+                    float(delta_density)
+                    if not isinstance(delta_density, int | float)
+                    else delta_density
+                )
         except (AttributeError, IndexError, TypeError):
             logger.debug('Could not extract charge convergence value from outputs.')
         return None
@@ -304,7 +351,9 @@ class SimulationWorkflowMethod(ArchiveSection):
         """,
     )
 
-    convergence_targets = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
+    convergence_targets = SubSection(
+        sub_section=WorkflowConvergenceTarget.m_def, repeats=True
+    )
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not archive.data:
@@ -385,7 +434,9 @@ class SimulationWorkflowResults(WorkflowTime):
         """,
     )
 
-    convergence_targets = SubSection(sub_section=WorkflowConvergenceTarget.m_def, repeats=True)
+    convergence_targets = SubSection(
+        sub_section=WorkflowConvergenceTarget.m_def, repeats=True
+    )
 
 
 class SimulationTaskReference(TaskReference, SimulationTask):
@@ -506,9 +557,15 @@ class SimulationWorkflow(Workflow, SimulationTask):
             self.results.convergence_targets = convergence_targets
 
         # Determine overall convergence status
-        all_reached = all(target.is_reached for target in convergence_targets if target.is_reached is not None)
-        any_checked = any(target.is_reached is not None for target in convergence_targets)
-        
+        all_reached = all(
+            target.is_reached
+            for target in convergence_targets
+            if target.is_reached is not None
+        )
+        any_checked = any(
+            target.is_reached is not None for target in convergence_targets
+        )
+
         if any_checked:
             if self.results.get('is_converged') is None:
                 self.results.is_converged = all_reached
@@ -543,22 +600,22 @@ class SimulationWorkflow(Workflow, SimulationTask):
         """
         Helper method to resolve convergence targets for a specific output index.
         Used primarily for multi-step workflows like geometry optimization.
-        
+
         Creates temporary copies of convergence targets and normalizes them
         against a specific output step.
         """
         resolved_targets = []
-        
+
         for target in convergence_targets:
             # Create a copy of the target to avoid modifying the original
             target_copy = target.m_copy(deep=True)
-            
+
             # For multi-output scenarios, we may need to adjust the archive context
             # This is a simplified approach - child classes can override for more complex logic
             target_copy.normalize(archive, logger)
-            
+
             resolved_targets.append(target_copy)
-        
+
         return resolved_targets
 
 
