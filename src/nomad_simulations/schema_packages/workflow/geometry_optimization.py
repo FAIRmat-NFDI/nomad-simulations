@@ -230,7 +230,7 @@ class GeometryOptimization(SerialWorkflow):
                     single_point_convergence_result = task._resolve_convergence(
                         archive, single_point_convergence, logger
                     )
-                    task.results.convergence_targets = single_point_convergence_result
+                    task.results.convergence = single_point_convergence_result
             else:
                 task = Task(
                     name=f'{self._task_label} {n}',
@@ -260,7 +260,7 @@ class GeometryOptimization(SerialWorkflow):
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
         single_point_convergence_results = jmespath.search(
-            'workflow2.tasks[*].results.convergence_targets[*].is_reached', archive
+            'workflow2.tasks[*].results.convergence[*].is_reached', archive
         )
         if single_point_convergence_results is None:
             return

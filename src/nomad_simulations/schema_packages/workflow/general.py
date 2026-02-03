@@ -142,7 +142,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
             else self.threshold
         )
         # Use <= to allow exact zero with zero threshold
-        return abs(value) <= threshold_val
+        return bool(abs(value) <= threshold_val)
 
     def _check_relative(self, value: float, reference: float) -> bool:
         """Check relative convergence: |value|/|reference| < threshold"""
@@ -160,7 +160,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
             if hasattr(self.threshold, 'magnitude')
             else self.threshold
         )
-        return abs(value / reference) < threshold_val
+        return bool(abs(value / reference) < threshold_val)
 
     def _check_maximum(self, values: np.ndarray) -> bool:
         """Check maximum convergence: max(|values|) < threshold"""
@@ -172,7 +172,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
             if hasattr(self.threshold, 'magnitude')
             else self.threshold
         )
-        return np.max(np.abs(values)) < threshold_val
+        return bool(np.max(np.abs(values)) < threshold_val)
 
     def _check_rms(self, values: np.ndarray) -> bool:
         """Check RMS convergence: sqrt(mean(values²)) < threshold"""
@@ -184,7 +184,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
             if hasattr(self.threshold, 'magnitude')
             else self.threshold
         )
-        return np.sqrt(np.mean(values**2)) < threshold_val
+        return bool(np.sqrt(np.mean(values**2)) < threshold_val)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> bool | None:
         """
@@ -678,15 +678,16 @@ class SimulationWorkflow(Workflow, SimulationTask):
         archive: EntryArchive,
         convergence_targets: list[WorkflowConvergenceTarget],
         logger: BoundLogger,
-    ) -> list[WorkflowConvergenceTarget]:
+    ) -> list[WorkflowConvergenceResults]:
         """
         Helper method to resolve convergence targets for outputs.
         Used primarily for multi-step workflows like geometry optimization.
 
-        Creates temporary copies of convergence targets and normalizes them.
+        Creates temporary copies of convergence targets, normalizes them, and returns
+        WorkflowConvergenceResults with the convergence status.
         Note: Currently checks convergence against the last output only.
         """
-        resolved_targets = []
+        convergence_results = []
 
         for target in convergence_targets:
             # Create a copy of the target to avoid modifying the original
@@ -694,11 +695,15 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
             # For multi-output scenarios, we may need to adjust the archive context
             # This is a simplified approach - child classes can override for more complex logic
-            target_copy.normalize(archive, logger)
+            is_reached = target_copy.normalize(archive, logger)
 
-            resolved_targets.append(target_copy)
+            # Create a result object that holds both the target and the convergence status
+            result = WorkflowConvergenceResults()
+            result.convergence_target_ref = target_copy
+            result.is_reached = is_reached
+            convergence_results.append(result)
 
-        return resolved_targets
+        return convergence_results
 
 
 class SerialWorkflowResults(SimulationWorkflowResults):
