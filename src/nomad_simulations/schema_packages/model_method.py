@@ -715,11 +715,11 @@ class DFT(ModelMethodElectronic):
 
         This field defines the baseline variational structure. Additional methodological
         features (e.g., dispersion corrections, spin-orbit coupling, solvation models)
-        are recorded separately under the `extensions` field.
+        are recorded separately under the `treatments` field.
         """,
     )
 
-    extensions = Quantity(
+    treatments = Quantity(
         type=MEnum(
             'DFT+U',
             'constrained',
@@ -734,12 +734,12 @@ class DFT(ModelMethodElectronic):
         ),
         shape=['*'],
         description="""
-        High-level methodological extensions or modifications applied to the core DFT formalism.
+        High-level methodological treatments or modifications applied to the core DFT formalism.
         These flags provide a semantically meaningful summary of key physical or algorithmic
         modifications to the standard Kohn-Sham or orbital-free DFT setup. They are automatically
         inferred from the presence of corresponding model sections and parameters.
 
-        Each extension represents a conceptually orthogonal feature that affects the physical model,
+        Each treatment represents a conceptually orthogonal feature that affects the physical model,
         variational structure, or solution symmetry:
 
         • "DFT+U"            - On-site Hubbard U correction applied to localized orbitals
@@ -775,10 +775,10 @@ class DFT(ModelMethodElectronic):
         • "spin_orbit"       - Spin-orbit coupling (SOC) included explicitly in the Hamiltonian or
                                 via mean-field corrections (e.g., SOMF).
 
-        Note: these extensions are not mutually exclusive and can coexist within the same calculation.
-        
+        Note: these treatments are not mutually exclusive and can coexist within the same calculation.
+
         For example, a calculation with ZORA-wB97X-D3-CPCM in broken-symmetry formulation
-        would include multiple extension flags simultaneously, ("relativistic", "range_separated", "dispersion",
+        would include multiple treatment flags simultaneously, ("relativistic", "range_separated", "dispersion",
         "solvated", "broken_symmetry").
         """,
     )
@@ -822,7 +822,7 @@ class DFT(ModelMethodElectronic):
         else:
             self.jacobs_ladder = self.jacobs_ladder or 'unavailable'
 
-        # --- Inferred extensions ---
+        # --- Inferred treatments ---
         inferred = set()
         contributions = self.contributions or []
 
@@ -854,9 +854,9 @@ class DFT(ModelMethodElectronic):
                 inferred.add('range_separated')
                 break
 
-        # --- Merge with any existing extensions ---
-        existing = set(self.extensions or [])
-        self.extensions = sorted(existing.union(inferred))
+        # --- Merge with any existing treatments ---
+        existing = set(self.treatments or [])
+        self.treatments = sorted(existing.union(inferred))
 
 
 class TB(ModelMethodElectronic):

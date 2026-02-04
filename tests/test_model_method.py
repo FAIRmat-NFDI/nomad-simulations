@@ -706,7 +706,7 @@ def test_dft_normalize_infers_solvated():
     dft.m_add_sub_section(type(dft).contributions, ImplicitSolvationModel(model='PCM'))
 
     dft.normalize(EntryArchive(), logger=logger)
-    assert 'solvated' in dft.extensions
+    assert 'solvated' in dft.treatments
 
 
 def test_dft_normalize_infers_dispersion():
@@ -716,7 +716,7 @@ def test_dft_normalize_infers_dispersion():
     )
 
     dft.normalize(EntryArchive(), logger=logger)
-    assert 'dispersion' in dft.extensions
+    assert 'dispersion' in dft.treatments
 
 
 def test_dft_normalize_infers_relativistic():
@@ -725,7 +725,7 @@ def test_dft_normalize_infers_relativistic():
     dft.m_add_sub_section(type(dft).contributions, rel)
 
     dft.normalize(EntryArchive(), logger=logger)
-    assert 'relativistic' in dft.extensions
+    assert 'relativistic' in dft.treatments
 
 
 def test_dft_normalize_infers_spin_orbit():
@@ -734,7 +734,7 @@ def test_dft_normalize_infers_spin_orbit():
     dft.m_add_sub_section(type(dft).contributions, rel)
 
     dft.normalize(EntryArchive(), logger=logger)
-    assert 'spin_orbit' in dft.extensions
+    assert 'spin_orbit' in dft.treatments
 
 
 def test_dft_normalize_infers_range_separated():
@@ -745,7 +745,7 @@ def test_dft_normalize_infers_range_separated():
     dft.xc = XCFunctional(components=[xc_comp])
 
     dft.normalize(EntryArchive(), logger=logger)
-    assert 'range_separated' in dft.extensions
+    assert 'range_separated' in dft.treatments
 
 
 def test_dft_normalize_zero_range_separation_does_not_infer():
@@ -753,7 +753,7 @@ def test_dft_normalize_zero_range_separation_does_not_infer():
     dft.xc = XCFunctional(components=[XCComponent(range_separation_parameter=0.0)])
     dft.normalize(EntryArchive(), logger=logger)
 
-    assert 'range_separated' not in dft.extensions
+    assert 'range_separated' not in dft.treatments
 
 
 def test_dft_normalize_four_component_relativistic_infers_spin_orbit():
@@ -763,16 +763,16 @@ def test_dft_normalize_four_component_relativistic_infers_spin_orbit():
 
     dft.normalize(EntryArchive(), logger=logger)
 
-    assert 'relativistic' in dft.extensions
-    assert 'spin_orbit' in dft.extensions
+    assert 'relativistic' in dft.treatments
+    assert 'spin_orbit' in dft.treatments
 
 
-def test_dft_normalize_merges_with_existing_extensions():
-    dft = DFT(extensions=['solvated'])
+def test_dft_normalize_merges_with_existing_treatments():
+    dft = DFT(treatments=['solvated'])
     dft.m_add_sub_section(type(dft).contributions, ExplicitDispersionModel(model='D3'))
 
     dft.normalize(EntryArchive(), logger=logger)
-    assert sorted(dft.extensions) == sorted(['solvated', 'dispersion'])
+    assert sorted(dft.treatments) == sorted(['solvated', 'dispersion'])
 
 
 _COMMON_XC_CASES = [
