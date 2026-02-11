@@ -15,29 +15,82 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
+    class AbsorptionSpectrum {
+    }
+    class ChemicalPotential {
+    }
+    class CrystalFieldSplitting {
+    }
+    class ElectronicBandStructure {
+    }
+    class HybridizationFunction {
+    }
+    class KineticEnergy {
+    }
     class Outputs {
     }
-    class SCFOutputs {
+    class Permittivity {
     }
-    Outputs <|-- SCFOutputs
-    SCFOutputs --> Outputs : scf_steps
+    class PotentialEnergy {
+    }
+    class QuasiparticleWeight {
+    }
+    class Temperature {
+    }
+    class TotalEnergy {
+    }
+    class XASSpectrum {
+    }
+    Outputs --> AbsorptionSpectrum : absorption_spectra
+    Outputs --> ChemicalPotential
+    Outputs --> CrystalFieldSplitting
+    Outputs --> ElectronicBandStructure
+    Outputs --> HybridizationFunction
+    Outputs --> KineticEnergy : kinetic_energies
+    Outputs --> Permittivity : permittivities
+    Outputs --> PotentialEnergy : potential_energies
+    Outputs --> QuasiparticleWeight
+    Outputs --> Temperature
+    Outputs --> TotalEnergy : total_energies
+    Outputs --> XASSpectrum : xas_spectra
 ```
-
-<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">
-<b>Legend:</b>
-<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·
-<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·
-<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference
-</div>
-
 
 ---
 
+
+_Diagram 2 of 2 (split due to large number of children)_
+
 ```mermaid
 classDiagram
-    class PhysicalProperty {
+    class ElectronicBandGap {
     }
-    PhysicalProperty --> PhysicalProperty : contributions
+    class ElectronicDensityOfStates {
+    }
+    class ElectronicEigenvalues {
+    }
+    class ElectronicGreensFunction {
+    }
+    class ElectronicSelfEnergy {
+    }
+    class FermiSurface {
+    }
+    class HoppingMatrix {
+    }
+    class Occupancy {
+    }
+    class Outputs {
+    }
+    class TotalForce {
+    }
+    Outputs --> ElectronicBandGap
+    Outputs --> ElectronicDensityOfStates : electronic_dos
+    Outputs --> ElectronicEigenvalues
+    Outputs --> ElectronicGreensFunction
+    Outputs --> ElectronicSelfEnergy : electronic_self_energies
+    Outputs --> FermiSurface
+    Outputs --> HoppingMatrix : hopping_matrices
+    Outputs --> Occupancy : occupancies
+    Outputs --> TotalForce
 ```
 
 <div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">

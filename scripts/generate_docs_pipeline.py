@@ -54,7 +54,7 @@ def run_command(description: str, command: list, cwd=None) -> bool:
 
 
 def update_navigation_files(repo_root: Path) -> bool:
-    """Update .pages and mkdocs.yml navigation to match generated verticals."""
+    """Update .pages and mkdocs.yml navigation to match generated verticals with hierarchical structure."""
     print('\n' + '=' * 60)
     print('Updating navigation configuration')
     print('=' * 60)
@@ -63,6 +63,20 @@ def update_navigation_files(repo_root: Path) -> bool:
         # Import verticals to get current structure
         sys.path.insert(0, str(repo_root / 'scripts'))
         from verticals import VERTICALS
+
+        # Define hierarchical structure: parent -> [children]
+        # Based on the schema tree: Simulation contains ModelSystem, ModelMethod, Outputs
+        hierarchy = {
+            'simulation': [],  # Top level
+            'model_system': ['cell', 'particle_state', 'symmetry', 'chemical_formula'],
+            'model_method': ['numerical_settings'],
+            'outputs': [
+                'electronic_properties',
+                'manybody_properties',
+                'spectroscopy',
+                'thermodynamics',
+            ],
+        }
 
         # Update .pages file in docs/schema/
         pages_file = repo_root / 'docs' / 'schema' / '.pages'
@@ -84,12 +98,57 @@ nav:
 
             mkdocs_content = mkdocs_file.read_text(encoding='utf-8')
 
-            # Build new nav items for Schema Navigation section
+            # Build hierarchical nav items for Schema Navigation section
             nav_items = []
             nav_items.append('      - Overview: schema/index.md')
+
+            # Track which verticals have been added
+            added = set()
+
+            # Add top-level parent verticals with their children
+            for parent_key in ['simulation', 'model_system', 'model_method', 'outputs']:
+                if parent_key not in VERTICALS:
+                    continue
+
+                parent_spec = VERTICALS[parent_key]
+                parent_title = parent_spec.get(
+                    'title', parent_key.replace('_', ' ').title()
+                )
+                children = hierarchy.get(parent_key, [])
+
+                # Add parent with children
+                if children:
+                    # Parent with nested children
+                    nav_items.append(f'      - {parent_title}:')
+                    nav_items.append(
+                        f'          - {parent_title}: schema/{parent_key}.md'
+                    )
+
+                    # Add children under parent
+                    for child_key in children:
+                        if child_key in VERTICALS:
+                            child_spec = VERTICALS[child_key]
+                            child_title = child_spec.get(
+                                'title', child_key.replace('_', ' ').title()
+                            )
+                            nav_items.append(
+                                f'          - {child_title}: schema/{child_key}.md'
+                            )
+                            added.add(child_key)
+                else:
+                    # Top-level item without children
+                    nav_items.append(f'      - {parent_title}: schema/{parent_key}.md')
+
+                added.add(parent_key)
+
+            # Add any remaining verticals that weren't in the hierarchy
             for vert_key, vert_spec in VERTICALS.items():
-                title = vert_spec.get('title', vert_key.replace('_', ' ').title())
-                nav_items.append(f'      - {title}: schema/{vert_key}.md')
+                if vert_key not in added:
+                    title = vert_spec.get('title', vert_key.replace('_', ' ').title())
+                    nav_items.append(f'      - {title}: schema/{vert_key}.md')
+                    print(
+                        f'⚠ Vertical "{vert_key}" not in hierarchy - added at top level'
+                    )
 
             new_nav_section = '\n'.join(nav_items)
 
@@ -103,7 +162,11 @@ nav:
             if updated_content != mkdocs_content:
                 mkdocs_file.write_text(updated_content, encoding='utf-8')
                 print(
-                    f'✓ Updated mkdocs.yml Schema Navigation with {len(VERTICALS)} verticals'
+                    f'✓ Updated mkdocs.yml Schema Navigation with hierarchical structure'
+                )
+                print(f'  - {len(hierarchy)} parent sections')
+                print(
+                    f'  - {sum(len(children) for children in hierarchy.values())} child sections'
                 )
             else:
                 print('⚠ Could not find Schema Navigation section in mkdocs.yml')
@@ -121,7 +184,7 @@ nav:
 def validate_diagram_complexity(repo_root: Path) -> bool:
     """
     Validate diagram complexity according to design rules.
-    
+
     Design Rules:
     - 1-5 classes: Perfect
     - 6-15 classes: Good
@@ -140,17 +203,17 @@ def validate_diagram_complexity(repo_root: Path) -> bool:
         # Collect all edges to analyze inheritance depth
         pkg = 'nomad_simulations'
         all_edges = collect_edges(pkg)
-        
+
         has_warnings = False
         has_errors = False
-        
+
         for vert_key, spec in VERTICALS.items():
             if not isinstance(spec, dict):
                 continue
-                
+
             sections = spec.get('sections', [])
             num_classes = len(sections)
-            
+
             # Size validation
             if num_classes <= 5:
                 status = '✓ Perfect'
@@ -166,11 +229,11 @@ def validate_diagram_complexity(repo_root: Path) -> bool:
                 status = '✗ TOO LARGE - must split into multiple verticals'
                 level = 'error'
                 has_errors = True
-            
+
             # Calculate inheritance depth for this vertical
             inheritance_edges = all_edges.get('inherit', [])
             vert_classes = set(sections)
-            
+
             # Build inheritance tree
             children_map = {}
             for parent, child, _ in inheritance_edges:
@@ -178,7 +241,7 @@ def validate_diagram_complexity(repo_root: Path) -> bool:
                     if parent not in children_map:
                         children_map[parent] = []
                     children_map[parent].append(child)
-            
+
             # Find max depth using BFS
             max_depth = 0
             if children_map:
@@ -187,7 +250,7 @@ def validate_diagram_complexity(repo_root: Path) -> bool:
                 for children_list in children_map.values():
                     all_children.update(children_list)
                 roots = vert_classes - all_children
-                
+
                 # BFS from each root
                 for root in roots:
                     queue = [(root, 1)]
@@ -199,14 +262,14 @@ def validate_diagram_complexity(repo_root: Path) -> bool:
                             if child not in visited:
                                 visited.add(child)
                                 queue.append((child, depth + 1))
-            
+
             depth_status = ''
             if max_depth > 3:
                 depth_status = f' | Depth: {max_depth} levels (>3, consider splitting)'
                 has_warnings = True
             elif max_depth > 0:
                 depth_status = f' | Depth: {max_depth} levels'
-            
+
             # Print status
             if level == 'error':
                 print(f'  {vert_key}: {num_classes} classes - {status}{depth_status}')
@@ -215,24 +278,29 @@ def validate_diagram_complexity(repo_root: Path) -> bool:
             elif num_classes > 10 or max_depth > 2:
                 # Show larger verticals even if still "good"
                 print(f'  {vert_key}: {num_classes} classes - {status}{depth_status}')
-        
+
         # Summary
         print()
         if has_errors:
             print('✗ Some verticals are too large and must be split')
-            print('  See scripts/README.md "Managing Diagram Complexity" for guidelines')
+            print(
+                '  See scripts/README.md "Managing Diagram Complexity" for guidelines'
+            )
             return False
         elif has_warnings:
-            print('⚠ Some verticals are complex - consider splitting for better readability')
+            print(
+                '⚠ Some verticals are complex - consider splitting for better readability'
+            )
             print('  Complexity is acceptable but could be improved')
             return True
         else:
             print('✓ All diagrams have good complexity')
             return True
-            
+
     except Exception as e:
         print(f'✗ Error validating complexity: {e}')
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -486,7 +554,7 @@ def main():
         print('  ✓ Smaller file sizes than PNG')
     else:
         print('  ✓ PNG with click-to-zoom (2x scale)')
-    
+
     # Complexity warnings in summary
     if not step6_success:
         print('\n⚠ COMPLEXITY WARNING:')

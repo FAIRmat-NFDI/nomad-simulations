@@ -146,51 +146,77 @@ Without filtering, diagrams become cluttered:
 - ModelSystem page shows redundant connection back to Simulation
 - Child class diagrams show all parent connections
 - Implementation details leak into high-level overviews
-- Base pages show ALL descendants, even those with specialized pages
+- Pages with many children create very wide, hard-to-read diagrams
 
-### The Solution: Smart Edge Filtering
+### The Solution: Smart Edge Filtering + Diagram Partitioning
 
-Implemented in `gen_diagrams.py::filter_edges_for_vertical()`:
+Implemented in `gen_diagrams.py::filter_edges_for_vertical()` and `partition_children_for_diagrams()`:
 
 ```python
 def filter_edges_for_vertical(vert_key, allowlist, all_edges, verticals_dict):
     """
     Design Rules:
-    1. Parent sections on "base" pages ONLY show children in the allowlist
+    1. Parent sections SHOW all their direct children
     2. Non-parent sections DON'T show connections to parent sections
     3. Classes with their own pages don't show their subsections on other pages
     4. Inheritance always shown if both classes in allowlist
+    """
+
+def partition_children_for_diagrams(parent_nodes, all_children, filtered_edges):
+    """
+    When a parent has >12 children, split into multiple diagrams:
+    - Keep connected children together
+    - Show parent(s) in each diagram
+    - Stack diagrams vertically on the same page
     """
 ```
 
 #### Filtering Rules
 
-1. **Parent → Child on Base Pages (STRICT)**
+1. **Parent → Child (ALWAYS SHOW)**
    - If source is a parent section (Simulation, ModelSystem, ModelMethod, Outputs)
    - AND source is in this vertical's allowlist
-   - THEN **ONLY** show children that are **also in the allowlist**
-   - This prevents "outputs" base page from showing all 50+ property classes
-   - Example: `outputs` vertical only shows Outputs → SCFOutputs, PhysicalProperty (not all the specialized properties)
+   - THEN show ALL its direct children
+   - Maintains complete visibility of parent-child relationships
 
-2. **Parent → Child on Specialized Pages (PERMISSIVE)**
-   - If source is NOT a parent section (e.g., ElectronicEigenvalues)
-   - THEN show all direct children that don't have their own specialized pages
-   - This allows detailed pages to show their complete structure
-
-3. **Child → Parent (HIDE)**
+2. **Child → Parent (HIDE)**
    - If target is a parent section
    - AND target is NOT in this vertical's allowlist
    - THEN hide the connection (redundant with parent page)
 
-4. **Subsection Detail (CONTEXT-DEPENDENT)**
+3. **Subsection Detail (CONTEXT-DEPENDENT)**
    - If target has its own vertical/page
    - AND target is NOT in current allowlist
    - THEN hide its subsections (they're shown on the target's own page)
 
-5. **Inheritance (ALWAYS SHOW)**
+4. **Inheritance (ALWAYS SHOW)**
    - If both parent and child are in the allowlist
    - THEN always show inheritance edges
    - Inheritance structure is fundamental to understanding the schema
+
+#### Diagram Partitioning Rules
+
+When a parent class has many children (>12), the diagram is automatically split:
+
+1. **Multiple Diagrams on Same Page**
+   - Split children into groups of ≤12 per diagram
+   - Show parent node in each diagram
+   - Stack diagrams vertically with separators
+
+2. **Keep Connected Children Together**
+   - If children have edges between them (containment, reference, or inheritance)
+   - Keep them in the same diagram
+   - Use DFS to find connected components among children
+
+3. **Balanced Partitioning**
+   - Find connected groups of children
+   - Pack groups into diagrams to balance size
+   - Prefer diagrams with similar numbers of children
+
+4. **Visual Clarity**
+   - Each sub-diagram labeled "Diagram X of Y"
+   - Horizontal separator (---) between diagrams
+   - Single legend after final diagram
 
 ### Example: ModelSystem Vertical
 
@@ -200,16 +226,43 @@ Simulation Entry Page:
   Simulation → ModelMethod  ✓
   Simulation → Outputs      ✓
 
-ModelSystem Page:
-  Simulation → ModelSystem  ✗ (child hiding parent - redundant)
-  ModelSystem → Cell        ✓ (showing direct children)
-  ModelSystem → AtomsState  ✓
-  Cell <|-- AtomicCell      ✓ (inheritance always shown)
+ModelSystem Page (if many children, split into diagrams):
+  Diagram 1:
+    ModelSystem → Cell        ✓
+    ModelSystem → AtomicCell  ✓
+    ModelSystem → Symmetry    ✓
+    ... (up to 12 children)
 
-AtomsState Page:
-  ModelSystem → AtomsState  ✗ (child hiding parent)
-  AtomsState → OrbitalsState ✓ (showing subsections)
-  AtomsState → CoreHole      ✓
+  Diagram 2:
+    ModelSystem → ParticleState  ✓
+    ModelSystem → ChemicalFormula ✓
+    ... (remaining children)
+
+  (Simulation → ModelSystem NOT shown - child hiding parent)
+
+Cell Page:
+  ModelSystem → Cell  ✗ (child hiding parent)
+  Cell <|-- AtomicCell      ✓ (inheritance always shown)
+```
+
+### Example: Outputs with Many Properties
+
+```
+Outputs Base Page (20+ children → split into diagrams):
+  Diagram 1 (Electronic properties group):
+    Outputs → BaseElectronicEigenvalues  ✓
+    Outputs → ElectronicEigenvalues      ✓
+    BaseElectronicEigenvalues <|-- ElectronicEigenvalues  ✓
+    ElectronicEigenvalues <|-- ElectronicBandStructure    ✓
+    ... (connected children kept together)
+
+  Diagram 2 (Energy properties group):
+    Outputs → BaseEnergy    ✓
+    Outputs → TotalEnergy   ✓
+    BaseEnergy <|-- TotalEnergy  ✓
+    ... (another group of children)
+
+  (All parent-child relationships preserved, just split across diagrams)
 ```
 
 ## Pipeline Steps Explained

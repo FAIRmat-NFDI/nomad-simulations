@@ -15,9 +15,21 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
+    class Cell {
+    }
+    class ChemicalFormula {
+    }
     class ModelSystem {
     }
+    class ParticleState {
+    }
+    class Symmetry {
+    }
+    ModelSystem --> Cell
+    ModelSystem --> ChemicalFormula
     ModelSystem --> ModelSystem : sub_systems
+    ModelSystem --> ParticleState
+    ModelSystem --> Symmetry
 ```
 
 <div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">

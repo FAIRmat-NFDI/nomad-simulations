@@ -87,6 +87,78 @@ def find_connected_components(nodes: set[str], all_edges: dict) -> list[set[str]
     return components
 
 
+def partition_children_for_diagrams(
+    parent_nodes: set[str],
+    all_children: set[str],
+    filtered_edges: dict,
+    max_children_per_diagram: int = 12
+) -> list[set[str]]:
+    """
+    Partition children into groups for multiple diagrams when there are too many.
+    
+    Rules:
+    - If children <= max_children_per_diagram, return single group
+    - If children > max_children_per_diagram, split into multiple groups
+    - Keep connected children in the same group
+    - Each group should have parent_nodes + subset of children
+    
+    Returns: List of node sets (each includes parents + some children)
+    """
+    if len(all_children) <= max_children_per_diagram:
+        # Small enough - single diagram
+        return [parent_nodes | all_children]
+    
+    # Build child-to-child adjacency (connections between children)
+    child_adj = {c: set() for c in all_children}
+    
+    for edge_type in ['contain', 'refs', 'inherit']:
+        for a, b, _ in filtered_edges.get(edge_type, []):
+            # Only track edges between children (not parent-child)
+            if a in all_children and b in all_children:
+                child_adj[a].add(b)
+                child_adj[b].add(a)
+    
+    # Find connected components among children
+    visited = set()
+    child_groups = []
+    
+    def dfs(node, group):
+        visited.add(node)
+        group.add(node)
+        for neighbor in child_adj[node]:
+            if neighbor not in visited:
+                dfs(neighbor, group)
+    
+    for child in all_children:
+        if child not in visited:
+            group = set()
+            dfs(child, group)
+            child_groups.append(group)
+    
+    # Sort groups by size (larger first)
+    child_groups.sort(key=lambda g: -len(g))
+    
+    # Pack groups into diagrams, trying to balance size
+    diagrams = []
+    current_diagram_children = set()
+    
+    for group in child_groups:
+        if len(current_diagram_children) + len(group) <= max_children_per_diagram:
+            # Add to current diagram
+            current_diagram_children.update(group)
+        else:
+            # Start new diagram if current has content
+            if current_diagram_children:
+                diagrams.append(parent_nodes | current_diagram_children)
+            current_diagram_children = group.copy()
+    
+    # Add final diagram
+    if current_diagram_children:
+        diagrams.append(parent_nodes | current_diagram_children)
+    
+    return diagrams
+
+
 def filter_edges_for_vertical(
     vert_key: str,
     allowlist: list[str],
@@ -96,9 +168,8 @@ def filter_edges_for_vertical(
     """
     Filter edges according to vertical-specific design rules:
     1. Don't show connections FROM child to parent sections (redundant - shown on parent page)
-    2. For parent sections on "base" pages: ONLY show children that are in the allowlist
-    3. For non-base pages: show all children that don't have their own specialized pages
-    4. Show inheriting subclasses but not their subsections
+    2. DO show connections FROM parent to child sections (documenting the parent's structure)
+    3. Show inheriting subclasses but not their subsections
 
     Returns filtered edges dict with 'contain', 'refs', 'inherit' keys.
     """
@@ -128,11 +199,9 @@ def filter_edges_for_vertical(
         if a not in allowlist_set:
             continue
 
-        # For parent sections: ONLY show children that are explicitly in the allowlist
-        # This prevents "base" pages from showing all specialized children
+        # If source is a parent section (Simulation, etc), show all its direct children
         if a in parent_sections and a in allowlist_set:
-            if b in allowlist_set:
-                filtered['contain'].append((a, b, label))
+            filtered['contain'].append((a, b, label))
             continue
 
         # For non-parent sections: exclude connections to parent sections
@@ -213,9 +282,10 @@ def mermaid_for_vertical(
     """
     Build Mermaid classDiagram(s) for a vertical with improved organization:
     1. Show inheritance explicitly using <|--
-    2. Separate disconnected components into different diagrams
-    3. Organize hierarchically: root connections first, then detailed inheritance
-    4. Filter edges per vertical design rules (no parent connections, no child subsections)
+    2. If a parent class has too many children (>12), split into multiple diagrams
+    3. Keep connected children in the same diagram
+    4. Each diagram shows parent(s) + subset of children
+    5. Filter edges per vertical design rules (no parent connections, no child subsections)
     """
     # Apply vertical-specific filtering if verticals dict provided
     if verticals_dict:
@@ -225,11 +295,43 @@ def mermaid_for_vertical(
     else:
         filtered_edges = all_edges
 
+    # Collect all nodes that will appear in diagram
     nodes = set(allowlist)
     for edge_type in ['contain', 'refs', 'inherit']:
         for a, b, _ in filtered_edges.get(edge_type, []):
             if a in allowlist or b in allowlist:
                 nodes.update([a, b])
+
+    # Identify parent sections
+    parent_sections = {
+        'Simulation',
+        'BaseSimulation',
+        'ModelSystem',
+        'ModelMethod',
+        'Outputs',
+    }
+    
+    # Find which parent sections are in this vertical
+    parents_in_vertical = parent_sections & nodes
+    
+    # Find all immediate children of parent sections (from all edge types)
+    all_parent_children = set()
+    if parents_in_vertical:
+        for edge_type in ['contain', 'refs', 'inherit']:
+            for a, b, _ in filtered_edges.get(edge_type, []):
+                if a in parents_in_vertical and b in nodes:
+                    all_parent_children.add(b)
+    
+    # Decide if we need to partition
+    # Use threshold of 12 children per diagram
+    if parents_in_vertical and len(all_parent_children) > 12:
+        # Partition children into multiple diagrams
+        diagram_node_sets = partition_children_for_diagrams(
+            parents_in_vertical, all_parent_children, filtered_edges, max_children_per_diagram=12
+        )
+    else:
+        # Single diagram with all nodes
+        diagram_node_sets = [nodes]
 
     lines = []
     if add_header:
@@ -253,31 +355,22 @@ def mermaid_for_vertical(
             ]
         )
 
-    # Find connected components
-    components = find_connected_components(nodes, filtered_edges)
-
-    # Sort components by size (largest first) and if they contain root connections
-    categories = categorize_nodes(nodes, filtered_edges, allowlist)
-
-    def component_priority(comp):
-        has_root = bool(comp & categories['root_connectors'])
-        return (
-            -len(comp & categories['root_connectors']),
-            -len(comp),
-            min(comp) if comp else 'z',
-        )
-
-    components.sort(key=component_priority)
-
     # Generate diagram(s)
-    for idx, component in enumerate(components):
-        if idx > 0:
-            lines.extend(['', '---', ''])  # Separator between components
+    for diagram_idx, diagram_nodes in enumerate(diagram_node_sets):
+        if diagram_idx > 0:
+            # Add separator and note between diagrams
+            lines.extend(['', '---', ''])
+            if parents_in_vertical:
+                lines.extend([
+                    f'',
+                    f'_Diagram {diagram_idx + 1} of {len(diagram_node_sets)} (split due to large number of children)_',
+                    '',
+                ])
 
         lines.extend(['```mermaid', 'classDiagram'])
 
         # Define classes
-        for n in sorted(component):
+        for n in sorted(diagram_nodes):
             lines.append(f'    class {n} {{')
             lines.append(f'    }}')
 
@@ -296,12 +389,12 @@ def mermaid_for_vertical(
 
         # Add inheritance edges first (most important for understanding)
         for a, b, _ in filtered_edges.get('inherit', []):
-            if a in component and b in component:
+            if a in diagram_nodes and b in diagram_nodes:
                 lines.append(f'    {b} <|-- {a}')
 
         # Add containment edges
         for a, b, label in filtered_edges.get('contain', []):
-            if a in component and b in component:
+            if a in diagram_nodes and b in diagram_nodes:
                 clean_label = normalize_label(label, b)
                 if clean_label:
                     lines.append(f'    {a} --> {b} : {clean_label}')
@@ -310,7 +403,7 @@ def mermaid_for_vertical(
 
         # Add reference edges
         for a, b, label in filtered_edges.get('refs', []):
-            if a in component and b in component:
+            if a in diagram_nodes and b in diagram_nodes:
                 clean_label = normalize_label(label, b)
                 if clean_label:
                     lines.append(f'    {a} ..> {b} : {clean_label}')
@@ -319,19 +412,20 @@ def mermaid_for_vertical(
 
         lines.append('```')
 
-        # Add visual legend with inline SVG arrows
-        lines.extend(
-            [
-                '',
-                '<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">',
-                '<b>Legend:</b>',
-                '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·',
-                '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·',
-                '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference',
-                '</div>',
-                '',
-            ]
-        )
+        # Add visual legend (only after last diagram)
+        if diagram_idx == len(diagram_node_sets) - 1:
+            lines.extend(
+                [
+                    '',
+                    '<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">',
+                    '<b>Legend:</b>',
+                    '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·',
+                    '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·',
+                    '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference',
+                    '</div>',
+                    '',
+                ]
+            )
 
     return '\n'.join(lines)
 

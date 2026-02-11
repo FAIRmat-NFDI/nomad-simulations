@@ -23,7 +23,7 @@
 ## Relationship map
 
 
-![model_system_0 diagram](../assets/diagrams/model_system_0.svg){: style="width: 40%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+![model_system_0 diagram](../assets/diagrams/model_system_0.svg){: style="width: 60%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
 
 <div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
 <b>Legend:</b>

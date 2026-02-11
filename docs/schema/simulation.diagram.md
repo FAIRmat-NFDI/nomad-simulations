@@ -17,12 +17,21 @@ This diagram shows the relationships between schema classes:
 classDiagram
     class BaseSimulation {
     }
+    class ModelMethod {
+    }
+    class ModelSystem {
+    }
+    class Outputs {
+    }
     class Program {
     }
     class Simulation {
     }
     BaseSimulation <|-- Simulation
     BaseSimulation --> Program
+    Simulation --> ModelMethod
+    Simulation --> ModelSystem
+    Simulation --> Outputs
 ```
 
 <div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">
