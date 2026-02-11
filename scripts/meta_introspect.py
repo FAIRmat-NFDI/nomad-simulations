@@ -3,12 +3,57 @@ from __future__ import annotations
 import importlib
 import inspect
 import pkgutil
+import sys
 from typing import Any, Iterable, Optional, get_args, get_origin
 
 from nomad.metainfo import MSection
 
 
 # ------------------------- discovery -------------------------
+
+
+def ensure_nomad_datamodel_compat() -> None:
+    """
+    Backfill symbols removed from newer ``nomad.datamodel`` releases.
+
+    The schema package still imports several metainfo symbols from
+    ``nomad.datamodel``. Newer NOMAD versions moved these under
+    ``nomad.metainfo``. This shim keeps introspection scripts working
+    without requiring mass refactors across schema files.
+    """
+    try:
+        datamodel = importlib.import_module('nomad.datamodel')
+        metainfo = importlib.import_module('nomad.metainfo')
+    except Exception:
+        return
+
+    moved_symbols = (
+        'Datetime',
+        'JSON',
+        'MEnum',
+        'Quantity',
+        'Reference',
+        'SchemaPackage',
+        'Section',
+        'SectionProxy',
+        'SubSection',
+        'URL',
+    )
+    for symbol in moved_symbols:
+        if hasattr(datamodel, symbol):
+            continue
+        try:
+            setattr(datamodel, symbol, getattr(metainfo, symbol))
+        except Exception:
+            continue
+
+    # Older code imports nomad.datamodel.data_type, now in nomad.metainfo.data_type
+    if 'nomad.datamodel.data_type' not in sys.modules:
+        try:
+            data_type_mod = importlib.import_module('nomad.metainfo.data_type')
+            sys.modules['nomad.datamodel.data_type'] = data_type_mod
+        except Exception:
+            pass
 
 
 def _iter_modules_recursively(root_module):
@@ -38,6 +83,7 @@ def iter_section_classes(pkg: str) -> Iterable[type[MSection]]:
     Yield all MSection subclasses defined under a package (recursively).
     Only returns concrete subclasses (excludes MSection itself).
     """
+    ensure_nomad_datamodel_compat()
     root = importlib.import_module(pkg)
     for m in _iter_modules_recursively(root):
         for _, obj in inspect.getmembers(m, inspect.isclass):

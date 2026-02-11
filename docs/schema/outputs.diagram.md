@@ -15,9 +15,13 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
+    class AbsorptionSpectrum {
+    }
+    class ChemicalPotential {
+    }
     class CrystalFieldSplitting {
     }
-    class ElectronicBandStructure {
+    class ElectronicDensityOfStates {
     }
     class ElectronicGreensFunction {
     }
@@ -25,33 +29,29 @@ classDiagram
     }
     class FermiSurface {
     }
-    class HybridizationFunction {
-    }
-    class KineticEnergy {
-    }
     class Occupancy {
     }
     class Outputs {
     }
     class Permittivity {
     }
-    class PotentialEnergy {
-    }
     class Temperature {
+    }
+    class TotalEnergy {
     }
     class XASSpectrum {
     }
+    Outputs --> AbsorptionSpectrum : absorption_spectra
+    Outputs --> ChemicalPotential
     Outputs --> CrystalFieldSplitting
-    Outputs --> ElectronicBandStructure
+    Outputs --> ElectronicDensityOfStates : electronic_dos
     Outputs --> ElectronicGreensFunction
     Outputs --> ElectronicSelfEnergy : electronic_self_energies
     Outputs --> FermiSurface
-    Outputs --> HybridizationFunction
-    Outputs --> KineticEnergy : kinetic_energies
     Outputs --> Occupancy : occupancies
     Outputs --> Permittivity : permittivities
-    Outputs --> PotentialEnergy : potential_energies
     Outputs --> Temperature
+    Outputs --> TotalEnergy : total_energies
     Outputs --> XASSpectrum : xas_spectra
 ```
 
@@ -62,34 +62,34 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum {
-    }
-    class ChemicalPotential {
-    }
     class ElectronicBandGap {
     }
-    class ElectronicDensityOfStates {
+    class ElectronicBandStructure {
     }
     class ElectronicEigenvalues {
     }
     class HoppingMatrix {
     }
+    class HybridizationFunction {
+    }
+    class KineticEnergy {
+    }
     class Outputs {
+    }
+    class PotentialEnergy {
     }
     class QuasiparticleWeight {
     }
-    class TotalEnergy {
-    }
     class TotalForce {
     }
-    Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ChemicalPotential
     Outputs --> ElectronicBandGap
-    Outputs --> ElectronicDensityOfStates : electronic_dos
+    Outputs --> ElectronicBandStructure
     Outputs --> ElectronicEigenvalues
     Outputs --> HoppingMatrix : hopping_matrices
+    Outputs --> HybridizationFunction
+    Outputs --> KineticEnergy : kinetic_energies
+    Outputs --> PotentialEnergy : potential_energies
     Outputs --> QuasiparticleWeight
-    Outputs --> TotalEnergy : total_energies
     Outputs --> TotalForce
 ```
 
