@@ -23,7 +23,19 @@
 ## Relationship map
 
 
-![model_system_0 diagram](../assets/diagrams/model_system_0.svg){: style="width: 60%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class Cell
+    class ChemicalFormula
+    class ModelSystem
+    class ParticleState
+    class Symmetry
+    ModelSystem --> Cell : cell
+    ModelSystem --> ChemicalFormula : chemical_formula
+    ModelSystem --> ModelSystem : sub_systems
+    ModelSystem --> ParticleState : particle_states
+    ModelSystem --> Symmetry : symmetry
+```
 
 <div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
 <b>Legend:</b>

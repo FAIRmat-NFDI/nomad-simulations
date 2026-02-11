@@ -3,7 +3,7 @@ from ase.eos import EquationOfState as aseEOS
 from nomad.atomutils import get_volume
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import (
+from nomad.datamodel import (
     MEnum,
     Quantity,
     Reference,

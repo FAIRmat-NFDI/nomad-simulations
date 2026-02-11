@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from nomad import utils
 from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
-from nomad.metainfo import URL, Quantity, Reference, SectionProxy, SubSection
+from nomad.datamodel import URL, Quantity, Reference, SectionProxy, SubSection
 
 from nomad_simulations.schema_packages.errors import ErrorEstimate
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency

@@ -17,7 +17,22 @@
 ## Relationship map
 
 
-![spectroscopy_0 diagram](../assets/diagrams/spectroscopy_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class AbsorptionSpectrum
+    class Energy2
+    class Frequency
+    class Permittivity
+    class SpectralProfile
+    class XASSpectrum
+    SpectralProfile <|-- AbsorptionSpectrum
+    AbsorptionSpectrum <|-- XASSpectrum
+    Permittivity --> Frequency : frequencies
+    SpectralProfile --> Energy2 : energies
+    SpectralProfile --> Energy2 : frequencies
+    XASSpectrum --> AbsorptionSpectrum : exafs_spectrum
+    XASSpectrum --> AbsorptionSpectrum : xanes_spectrum
+```
 
 <div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
 <b>Legend:</b>

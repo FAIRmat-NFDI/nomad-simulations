@@ -15,17 +15,21 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum {
-    }
-    class ChemicalPotential {
-    }
     class CrystalFieldSplitting {
     }
     class ElectronicBandStructure {
     }
+    class ElectronicGreensFunction {
+    }
+    class ElectronicSelfEnergy {
+    }
+    class FermiSurface {
+    }
     class HybridizationFunction {
     }
     class KineticEnergy {
+    }
+    class Occupancy {
     }
     class Outputs {
     }
@@ -33,25 +37,21 @@ classDiagram
     }
     class PotentialEnergy {
     }
-    class QuasiparticleWeight {
-    }
     class Temperature {
-    }
-    class TotalEnergy {
     }
     class XASSpectrum {
     }
-    Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ChemicalPotential
     Outputs --> CrystalFieldSplitting
     Outputs --> ElectronicBandStructure
+    Outputs --> ElectronicGreensFunction
+    Outputs --> ElectronicSelfEnergy : electronic_self_energies
+    Outputs --> FermiSurface
     Outputs --> HybridizationFunction
     Outputs --> KineticEnergy : kinetic_energies
+    Outputs --> Occupancy : occupancies
     Outputs --> Permittivity : permittivities
     Outputs --> PotentialEnergy : potential_energies
-    Outputs --> QuasiparticleWeight
     Outputs --> Temperature
-    Outputs --> TotalEnergy : total_energies
     Outputs --> XASSpectrum : xas_spectra
 ```
 
@@ -62,34 +62,34 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
+    class AbsorptionSpectrum {
+    }
+    class ChemicalPotential {
+    }
     class ElectronicBandGap {
     }
     class ElectronicDensityOfStates {
     }
     class ElectronicEigenvalues {
     }
-    class ElectronicGreensFunction {
-    }
-    class ElectronicSelfEnergy {
-    }
-    class FermiSurface {
-    }
     class HoppingMatrix {
-    }
-    class Occupancy {
     }
     class Outputs {
     }
+    class QuasiparticleWeight {
+    }
+    class TotalEnergy {
+    }
     class TotalForce {
     }
+    Outputs --> AbsorptionSpectrum : absorption_spectra
+    Outputs --> ChemicalPotential
     Outputs --> ElectronicBandGap
     Outputs --> ElectronicDensityOfStates : electronic_dos
     Outputs --> ElectronicEigenvalues
-    Outputs --> ElectronicGreensFunction
-    Outputs --> ElectronicSelfEnergy : electronic_self_energies
-    Outputs --> FermiSurface
     Outputs --> HoppingMatrix : hopping_matrices
-    Outputs --> Occupancy : occupancies
+    Outputs --> QuasiparticleWeight
+    Outputs --> TotalEnergy : total_energies
     Outputs --> TotalForce
 ```
 

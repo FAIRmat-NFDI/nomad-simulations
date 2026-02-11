@@ -20,7 +20,44 @@
 ## Relationship map
 
 
-![thermodynamics_0 diagram](../assets/diagrams/thermodynamics_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class BaseEnergy
+    class BaseForce
+    class ChemicalPotential
+    class Enthalpy
+    class Entropy
+    class GibbsFreeEnergy
+    class Heat
+    class HeatCapacity
+    class HelmholtzFreeEnergy
+    class Hessian
+    class InternalEnergy
+    class KineticEnergy
+    class MassDensity
+    class PotentialEnergy
+    class Pressure
+    class Temperature
+    class TotalEnergy
+    class TotalForce
+    class VirialTensor
+    class Volume
+    class Work
+    BaseEnergy <|-- ChemicalPotential
+    BaseEnergy <|-- Enthalpy
+    BaseEnergy <|-- GibbsFreeEnergy
+    BaseEnergy <|-- Heat
+    BaseEnergy <|-- HelmholtzFreeEnergy
+    BaseEnergy <|-- InternalEnergy
+    BaseEnergy <|-- KineticEnergy
+    BaseEnergy <|-- PotentialEnergy
+    BaseEnergy <|-- TotalEnergy
+    BaseForce <|-- TotalForce
+    BaseEnergy <|-- VirialTensor
+    BaseEnergy <|-- Work
+    TotalEnergy --> BaseEnergy : contributions
+    TotalForce --> BaseForce : contributions
+```
 
 <div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
 <b>Legend:</b>

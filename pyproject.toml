@@ -59,6 +59,7 @@ docs = [
     'pymdown-extensions>=10.5',
     'mkdocs-click',
     'mkdocs-awesome-pages-plugin',
+    'mkdocs-panzoom-plugin>=0.5.2',
 ]
 
 [tool.uv]

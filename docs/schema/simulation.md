@@ -19,7 +19,20 @@
 ## Relationship map
 
 
-![simulation_0 diagram](../assets/diagrams/simulation_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class BaseSimulation
+    class ModelMethod
+    class ModelSystem
+    class Outputs
+    class Program
+    class Simulation
+    BaseSimulation <|-- Simulation
+    BaseSimulation --> Program : program
+    Simulation --> ModelMethod : model_method
+    Simulation --> ModelSystem : model_system
+    Simulation --> Outputs : outputs
+```
 
 <div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
 <b>Legend:</b>

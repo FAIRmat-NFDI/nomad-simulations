@@ -1,5 +1,5 @@
 import numpy as np
-from nomad.metainfo import Quantity, SectionProxy, SubSection
+from nomad.datamodel import Quantity, SectionProxy, SubSection
 
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 

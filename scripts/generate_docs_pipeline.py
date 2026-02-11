@@ -22,6 +22,15 @@ import sys
 from pathlib import Path
 import shutil
 
+# ============================================================================
+# DIAGRAM ZOOM CONFIGURATION
+# ============================================================================
+# Toggle between 'panzoom' (advanced plugin) and 'simple' (custom JS)
+# - 'panzoom': Uses mkdocs-panzoom-plugin for scroll-wheel zoom + drag pan
+# - 'simple': Uses custom click-to-zoom JavaScript (fallback)
+DIAGRAM_ZOOM_METHOD = 'panzoom'  # Change to 'simple' to revert to old behavior
+# ============================================================================
+
 
 def run_command(description: str, command: list, cwd=None) -> bool:
     """
@@ -415,12 +424,137 @@ def clean_old_docs(repo_root: Path) -> bool:
         return False
 
 
+def configure_diagram_zoom(repo_root: Path, method: str) -> bool:
+    """Configure mkdocs.yml for the selected diagram zoom method."""
+    print('\n' + '=' * 60)
+    print(f'Configuring diagram zoom method: {method}')
+    print('=' * 60)
+
+    mkdocs_file = repo_root / 'mkdocs.yml'
+    if not mkdocs_file.exists():
+        print('✗ mkdocs.yml not found')
+        return False
+
+    try:
+        import re
+        content = mkdocs_file.read_text(encoding='utf-8')
+
+        if method == 'panzoom':
+            # Add panzoom plugin if not present
+            if 'panzoom' not in content:
+                # Add after search plugin (no additional config needed - works by default)
+                content = re.sub(
+                    r'(plugins:\s*\n\s*- search)',
+                    r'\1\n  - panzoom',
+                    content
+                )
+                print('✓ Added panzoom plugin to mkdocs.yml')
+            
+            # Comment out custom zoom JS
+            content = re.sub(
+                r"^(\s*- assets/click-zoom\.js)$",
+                r"  # \1  # Disabled: using panzoom plugin",
+                content,
+                flags=re.MULTILINE
+            )
+            content = re.sub(
+                r"^(\s*- assets/svg-pan-zoom-diagram\.js)$",
+                r"  # \1  # Disabled: using panzoom plugin",
+                content,
+                flags=re.MULTILINE
+            )
+            
+            # Comment out custom zoom CSS
+            content = re.sub(
+                r"^(\s*- stylesheets/mermaid-zoom\.css)$",
+                r"  # \1  # Disabled: using panzoom plugin",
+                content,
+                flags=re.MULTILINE
+            )
+            content = re.sub(
+                r"^(\s*- stylesheets/svg-diagram\.css)$",
+                r"  # \1  # Disabled: using panzoom plugin",
+                content,
+                flags=re.MULTILINE
+            )
+            
+            print('✓ Enabled panzoom plugin, disabled custom zoom JS/CSS')
+
+        else:  # simple method
+            # Remove or comment out panzoom plugin
+            content = re.sub(
+                r'^(\s*- panzoom:.*?)$',
+                r'  # \1  # Disabled: using simple click-zoom',
+                content,
+                flags=re.MULTILINE | re.DOTALL
+            )
+            content = re.sub(
+                r'^(\s*default_enable:.*?)$',
+                r'  # \1',
+                content,
+                flags=re.MULTILINE
+            )
+            
+            # Uncomment custom zoom JS
+            content = re.sub(
+                r"^\s*#\s*(- assets/click-zoom\.js).*$",
+                r"  \1",
+                content,
+                flags=re.MULTILINE
+            )
+            content = re.sub(
+                r"^\s*#\s*(- assets/svg-pan-zoom-diagram\.js).*$",
+                r"  \1",
+                content,
+                flags=re.MULTILINE
+            )
+            
+            # Uncomment custom zoom CSS
+            content = re.sub(
+                r"^\s*#\s*(- stylesheets/mermaid-zoom\.css).*$",
+                r"  \1",
+                content,
+                flags=re.MULTILINE
+            )
+            content = re.sub(
+                r"^\s*#\s*(- stylesheets/svg-diagram\.css).*$",
+                r"  \1",
+                content,
+                flags=re.MULTILINE
+            )
+            
+            print('✓ Enabled simple click-zoom, disabled panzoom plugin')
+
+        mkdocs_file.write_text(content, encoding='utf-8')
+        return True
+
+    except Exception as e:
+        print(f'✗ Error configuring zoom method: {e}')
+        import traceback
+        traceback.print_exc()
+        return False
+
+
 def check_prerequisites() -> bool:
     """Check if required tools are available."""
     print('Checking prerequisites...')
 
     # Check Python
     print(f'✓ Python {sys.version_info.major}.{sys.version_info.minor} found')
+
+    # Check for panzoom plugin if needed
+    if DIAGRAM_ZOOM_METHOD == 'panzoom':
+        try:
+            import importlib.util
+            spec = importlib.util.find_spec('mkdocs_panzoom_plugin')
+            if spec is None:
+                print('⚠ mkdocs-panzoom-plugin not found')
+                print('  Install with: pip install mkdocs-panzoom-plugin')
+                print('  Or switch to simple mode by changing DIAGRAM_ZOOM_METHOD')
+                return False
+            print('✓ mkdocs-panzoom-plugin found')
+        except Exception as e:
+            print(f'⚠ Could not check for panzoom plugin: {e}')
 
     # Check npx (for Mermaid conversion)
     try:
@@ -485,50 +619,62 @@ def main():
         print('\n✗ Error: Schema documentation generation failed')
         sys.exit(1)
 
-    # Step 3: Convert Mermaid to PNG
-    step3_success = run_command(
-        description='Convert Mermaid diagrams to PNG images',
-        command=[sys.executable, 'scripts/mermaid_to_png.py'],
-        cwd=repo_root,
-    )
 
-    if not step3_success:
-        print('\n⚠ Warning: PNG conversion failed')
-        print(
-            'Documentation generated but diagrams are in Mermaid format (not clickable)'
+    # Step 3/4: Image generation (only for simple mode)
+    if DIAGRAM_ZOOM_METHOD == 'simple':
+        # Step 3: Convert Mermaid to PNG
+        step3_success = run_command(
+            description='Convert Mermaid diagrams to PNG images',
+            command=[sys.executable, 'scripts/mermaid_to_png.py'],
+            cwd=repo_root,
         )
-        sys.exit(1)
 
-    # Step 4: Convert PNG references to SVG (vector graphics with click-zoom)
-    print('\n' + '=' * 60)
-    print('Converting PNG to SVG for vector quality')
-    print('=' * 60)
-    step4_success = run_command(
-        description='Convert diagrams to SVG with click-zoom',
-        command=[sys.executable, 'scripts/mermaid_to_svg_simple.py'],
-        cwd=repo_root,
-    )
+        if not step3_success:
+            print('\n⚠ Warning: PNG conversion failed')
+            print(
+                'Documentation generated but diagrams are in Mermaid format (not clickable)'
+            )
+            sys.exit(1)
 
-    if not step4_success:
-        print('\n⚠ Note: SVG conversion failed, but PNG version is available')
+        # Step 4: Convert PNG references to SVG (vector graphics with click-zoom)
+        print('\n' + '=' * 60)
+        print('Converting PNG to SVG for vector quality')
+        print('=' * 60)
+        step4_success = run_command(
+            description='Convert diagrams to SVG with click-zoom',
+            command=[sys.executable, 'scripts/mermaid_to_svg_simple.py'],
+            cwd=repo_root,
+        )
 
-    # Step 5: Update navigation files
-    step5_success = update_navigation_files(repo_root)
+        if not step4_success:
+            print('\n⚠ Note: SVG conversion failed, but PNG version is available')
+    else:
+        step3_success = True
+        step4_success = False  # No SVGs generated in panzoom mode
+
+    # Step 5: Configure diagram zoom method
+    step5_success = configure_diagram_zoom(repo_root, DIAGRAM_ZOOM_METHOD)
 
     if not step5_success:
-        print('\n⚠ Warning: Navigation update failed')
+        print('\n⚠ Warning: Diagram zoom configuration failed')
 
-    # Step 6: Validate diagram complexity
-    step6_success = validate_diagram_complexity(repo_root)
+    # Step 6: Update navigation files
+    step6_success = update_navigation_files(repo_root)
 
     if not step6_success:
+        print('\n⚠ Warning: Navigation update failed')
+
+    # Step 7: Validate diagram complexity
+    step7_success = validate_diagram_complexity(repo_root)
+
+    if not step7_success:
         print('\n⚠ Warning: Some diagrams are too complex')
         print('  See output above for details and splitting recommendations')
 
-    # Step 7: Validate navigation consistency
-    step7_success = validate_navigation(repo_root)
+    # Step 8: Validate navigation consistency
+    step8_success = validate_navigation(repo_root)
 
-    if not step7_success:
+    if not step8_success:
         print('\n⚠ Warning: Navigation validation found issues')
 
     # Final summary
@@ -539,24 +685,35 @@ def main():
     print('  - docs/schema/index.md (overview page)')
     print('  - docs/schema/*.md (vertical domain pages)')
     print('  - docs/schema/*.diagram.md (standalone diagram pages)')
-    if step4_success:
-        print('  - docs/assets/diagrams/*.svg (SVG vector images with click-zoom)')
+    if DIAGRAM_ZOOM_METHOD == 'simple':
+        if step4_success:
+            print('  - docs/assets/diagrams/*.svg (SVG vector images)')
+        else:
+            print('  - docs/assets/diagrams/*.png (PNG images)')
     else:
-        print('  - docs/assets/diagrams/*.png (PNG images with click-zoom)')
+        print('  - (No PNG/SVG images generated; using Mermaid diagrams with panzoom)')
     print('\nNext steps:')
     print('  1. Review the generated documentation:')
     print('     mkdocs serve')
     print('  2. View at http://127.0.0.1:8000')
     print('\nDiagram features:')
-    if step4_success:
-        print('  ✓ SVG vector graphics - infinite zoom quality')
-        print('  ✓ Click to zoom (2x scale)')
-        print('  ✓ Smaller file sizes than PNG')
+    if DIAGRAM_ZOOM_METHOD == 'panzoom':
+        print('  ✓ Pan/Zoom Mode: mkdocs-panzoom-plugin')
+        print('  ✓ Scroll-wheel zoom + drag to pan')
+        print('  ✓ Fullscreen mode available')
+        print('  ✓ Works with SVG vector graphics')
+        print('\n  To switch to simple mode: Set DIAGRAM_ZOOM_METHOD="simple" in generate_docs_pipeline.py')
     else:
-        print('  ✓ PNG with click-to-zoom (2x scale)')
+        print('  ✓ Simple Mode: Custom click-to-zoom JavaScript')
+        print('  ✓ Click to zoom (2x scale)')
+        if step4_success:
+            print('  ✓ SVG vector graphics - infinite zoom quality')
+        else:
+            print('  ✓ PNG images')
+        print('\n  To enable advanced pan/zoom: Set DIAGRAM_ZOOM_METHOD="panzoom" in generate_docs_pipeline.py')
 
     # Complexity warnings in summary
-    if not step6_success:
+    if not step7_success:
         print('\n⚠ COMPLEXITY WARNING:')
         print('  Some verticals exceed recommended size (>25 classes)')
         print('  Consider splitting them for better readability')

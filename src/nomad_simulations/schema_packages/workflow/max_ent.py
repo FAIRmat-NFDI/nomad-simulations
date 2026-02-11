@@ -1,5 +1,5 @@
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import SchemaPackage
+from nomad.datamodel import SchemaPackage
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log

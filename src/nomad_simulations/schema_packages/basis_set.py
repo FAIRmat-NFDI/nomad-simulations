@@ -12,7 +12,7 @@ import numpy as np
 import pint
 from nomad import utils
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import JSON, MEnum, Quantity, SubSection
+from nomad.datamodel import JSON, MEnum, Quantity, SubSection
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState

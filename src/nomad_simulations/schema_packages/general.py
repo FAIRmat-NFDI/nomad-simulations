@@ -10,7 +10,7 @@ import numpy as np
 from nomad.config import config
 from nomad.datamodel.data import Schema
 from nomad.datamodel.metainfo.basesections import Activity, Entity
-from nomad.metainfo import Datetime, Quantity, SchemaPackage, Section, SubSection
+from nomad.datamodel import Datetime, Quantity, SchemaPackage, Section, SubSection
 
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,

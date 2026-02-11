@@ -20,7 +20,7 @@ import re
 from typing import Any
 
 import numpy as np
-from nomad.metainfo.data_type import ExactNumber, InexactNumber
+from nomad.datamodel.data_type import ExactNumber, InexactNumber
 
 # Match patterns like '[0,3)', '(0,5]', '[1,)', '(,10)', etc.
 bounds_patt = re.compile(r'^([\[\(])(-?\d*\.?\d*|),\s*(-?\d*\.?\d*|)([\]\)])$')

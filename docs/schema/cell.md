@@ -19,7 +19,14 @@
 ## Relationship map
 
 
-![cell_0 diagram](../assets/diagrams/cell_0.svg){: style="width: 40%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class AtomicCell
+    class Cell
+    class GeometricSpace
+    Cell <|-- AtomicCell
+    GeometricSpace <|-- Cell
+```
 
 <div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
 <b>Legend:</b>

@@ -19,7 +19,31 @@
 ## Relationship map
 
 
-![numerical_settings_0 diagram](../assets/diagrams/numerical_settings_0.svg){: style="width: 80%; cursor: pointer;" class="click-zoom-img" title="Click to zoom"}
+```mermaid
+classDiagram
+    class APWPlaneWaveBasisSet
+    class AtomCenteredFunction
+    class BasisSetComponent
+    class ForceCalculations
+    class KLinePath
+    class KMesh
+    class KSpace
+    class Mesh
+    class NumericalSettings
+    class PlaneWaveBasisSet
+    class SelfConsistency
+    class Smearing
+    PlaneWaveBasisSet <|-- APWPlaneWaveBasisSet
+    NumericalSettings <|-- ForceCalculations
+    Mesh <|-- KMesh
+    NumericalSettings <|-- KSpace
+    BasisSetComponent <|-- PlaneWaveBasisSet
+    KMesh <|-- PlaneWaveBasisSet
+    NumericalSettings <|-- SelfConsistency
+    NumericalSettings <|-- Smearing
+    KSpace --> KLinePath : k_line_path
+    KSpace --> KMesh : k_mesh
+```
 
 <div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
 <b>Legend:</b>
@@ -124,8 +148,8 @@
 | Quantity | Type | Description |
 |---|---|---|
 | `name` | m_str(str) | Name of the basis set component. |
-| `species_scope` | <nomad.metainfo.metainfo.Reference object at 0x7773ae5cb6e0> (shape: ['*']) | Reference to the section `AtomsState` specifying the localization of the basis set. |
-| `hamiltonian_scope` | <nomad.metainfo.metainfo.Reference object at 0x7773ae5cb9b0> (shape: ['*']) | Reference to the section `BaseModelMethod` containing the information of the Hamiltonian term to which the basis set applies. |
+| `species_scope` | <nomad.metainfo.metainfo.Reference object at 0x7601b8fa4140> (shape: ['*']) | Reference to the section `AtomsState` specifying the localization of the basis set. |
+| `hamiltonian_scope` | <nomad.metainfo.metainfo.Reference object at 0x7601b8fa4ef0> (shape: ['*']) | Reference to the section `BaseModelMethod` containing the information of the Hamiltonian term to which the basis set applies. |
 
 ### `PlaneWaveBasisSet`
 

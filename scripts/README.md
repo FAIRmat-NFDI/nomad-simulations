@@ -16,8 +16,58 @@ This runs the complete pipeline:
 2. Generates Mermaid diagrams
 3. Generates documentation pages
 4. Converts diagrams to PNG/SVG
-5. Updates navigation
-6. Validates output
+5. Configures diagram zoom method (panzoom or simple)
+6. Updates navigation (including hierarchical structure)
+7. Validates output
+
+## Diagram Zoom Configuration
+
+The pipeline supports two methods for diagram interaction:
+
+- **`panzoom`** (default): Advanced scroll-wheel zoom + drag pan using `mkdocs-panzoom-plugin`
+- **`simple`**: Basic click-to-zoom using custom JavaScript
+
+To switch between methods, edit `generate_docs_pipeline.py`:
+
+```python
+# Around line 28
+DIAGRAM_ZOOM_METHOD = 'panzoom'  # or 'simple'
+```
+
+See [DIAGRAM_ZOOM.md](DIAGRAM_ZOOM.md) for detailed configuration guide.
+
+## Switching Between Diagram Modes
+
+You can control whether the pipeline generates PNG/SVG images or just uses fast Mermaid diagrams with pan/zoom by setting the `DIAGRAM_ZOOM_METHOD` variable at the top of `scripts/generate_docs_pipeline.py`:
+
+- **Fast Mermaid diagrams with pan/zoom (recommended for large docs):**
+  ```python
+  DIAGRAM_ZOOM_METHOD = 'panzoom'
+  ```
+  - No PNG/SVG images are generated (pipeline is much faster)
+  - Diagrams are rendered as Mermaid code blocks in Markdown
+  - Pan/zoom is enabled via the mkdocs-panzoom-plugin
+
+- **Classic image-based docs (PNG/SVG, click-to-zoom):**
+  ```python
+  DIAGRAM_ZOOM_METHOD = 'simple'
+  ```
+  - Pipeline generates PNG and SVG images for all diagrams (slower)
+  - Diagrams are embedded as images in the docs
+  - Click-to-zoom is enabled via custom JavaScript
+
+**How to switch:**
+1. Edit `scripts/generate_docs_pipeline.py` and set `DIAGRAM_ZOOM_METHOD` as above.
+2. Run the pipeline:
+   ```bash
+   uv run python scripts/generate_docs_pipeline.py
+   ```
+3. Serve your docs:
+   ```bash
+   uv run mkdocs serve
+   ```
+
+The pipeline will automatically handle all configuration and file generation for the selected mode. The summary output will indicate which files were generated and which zoom method is active.
 
 ## Architecture
 
@@ -40,6 +90,7 @@ This runs the complete pipeline:
 | `meta_introspect.py` | Introspects schema to collect edges (contain, refs, inherit) |
 | `mermaid_to_svg.py` | Converts Mermaid to SVG for better rendering |
 | `templates/vertical.md.j2` | Jinja2 template for documentation pages |
+| `DIAGRAM_ZOOM.md` | Guide for configuring diagram zoom/pan methods |
 
 ## The Verticals System
 
