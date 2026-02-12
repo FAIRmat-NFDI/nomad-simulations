@@ -77,9 +77,19 @@ def update_navigation_files(repo_root: Path) -> bool:
         # Based on the schema tree: Simulation contains ModelSystem, ModelMethod, Outputs
         hierarchy = {
             'simulation': [],  # Top level
-            'model_system': ['cell', 'particle_state', 'symmetry', 'chemical_formula'],
-            'model_method': ['numerical_settings'],
+            'model_system': [
+                'representations',
+                'particle_states',
+                'symmetry',
+                'chemical_formula',
+            ],
+            'model_method': [
+                'model_method_electronic',
+                'force_field',
+                'numerical_settings',
+            ],
             'outputs': [
+                'physical_property',
                 'electronic_properties',
                 'manybody_properties',
                 'spectroscopy',
@@ -103,8 +113,6 @@ nav:
         # Update mkdocs.yml navigation section
         mkdocs_file = repo_root / 'mkdocs.yml'
         if mkdocs_file.exists():
-            import re
-
             mkdocs_content = mkdocs_file.read_text(encoding='utf-8')
 
             # Build hierarchical nav items for Schema Navigation section
@@ -161,12 +169,29 @@ nav:
 
             new_nav_section = '\n'.join(nav_items)
 
-            # Replace the Schema Navigation section
-            # Pattern: match from "Schema Navigation:" to the next top-level nav item or closing bracket
-            pattern = r'(  - Schema Navigation:\s*\n)((?:      - .*\n)*)'
-            replacement = f'\\1{new_nav_section}\n'
+            # Replace the entire Schema Navigation block, including nested items.
+            lines = mkdocs_content.splitlines()
+            schema_idx = None
+            for i, line in enumerate(lines):
+                if line.strip() == '- Schema Navigation:':
+                    schema_idx = i
+                    break
 
-            updated_content = re.sub(pattern, replacement, mkdocs_content)
+            if schema_idx is None:
+                print('⚠ Could not find Schema Navigation section in mkdocs.yml')
+                print('  Please manually add vertical pages to mkdocs.yml nav section')
+                return True
+
+            end_idx = len(lines)
+            for i in range(schema_idx + 1, len(lines)):
+                # Next top-level nav item has exactly 2 leading spaces.
+                if lines[i].startswith('  - ') and not lines[i].startswith('      - '):
+                    end_idx = i
+                    break
+
+            replacement_lines = ['  - Schema Navigation:'] + new_nav_section.split('\n')
+            updated_lines = lines[:schema_idx] + replacement_lines + lines[end_idx:]
+            updated_content = '\n'.join(updated_lines) + '\n'
 
             if updated_content != mkdocs_content:
                 mkdocs_file.write_text(updated_content, encoding='utf-8')
@@ -178,8 +203,7 @@ nav:
                     f'  - {sum(len(children) for children in hierarchy.values())} child sections'
                 )
             else:
-                print('⚠ Could not find Schema Navigation section in mkdocs.yml')
-                print('  Please manually add vertical pages to mkdocs.yml nav section')
+                print('✓ Schema Navigation already up to date')
 
         return True
     except Exception as e:

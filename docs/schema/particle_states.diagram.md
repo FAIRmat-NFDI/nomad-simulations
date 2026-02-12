@@ -1,4 +1,4 @@
-# Simulation Entry - Full Screen Diagram
+# Particle States - Full Screen Diagram
 
 !!! tip "Interactive Zoom & Pan"
     - **Scroll wheel** or **+/-** buttons to zoom
@@ -15,21 +15,22 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BaseSimulation {
+    class AtomicOrbitals {
     }
-    class ModelMethod {
+    class AtomsState {
     }
-    class ModelSystem {
+    class CGBeadState {
     }
-    class Outputs {
+    class CoreHole {
     }
-    class Program {
+    class ElectronicState {
     }
-    class Simulation {
+    class HubbardInteractions {
     }
-    BaseSimulation <|-- Simulation
-    BaseSimulation --> Program
-    Simulation --> ModelMethod
-    Simulation --> ModelSystem
-    Simulation --> Outputs
+    class ParticleState {
+    }
+    ParticleState <|-- AtomsState
+    ParticleState <|-- CGBeadState
+    AtomsState --> ElectronicState
+    HubbardInteractions --> ElectronicState : orbitals_ref
 ```

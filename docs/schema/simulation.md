@@ -34,12 +34,11 @@ classDiagram
     Simulation --> Outputs : outputs
 ```
 
-<div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
-<b>Legend:</b>
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="20" y1="6" x2="4" y2="6" stroke="currentColor" stroke-width="1.5"/><polygon points="4,6 8,3 8,9" fill="none" stroke="currentColor" stroke-width="1.5"/></svg> inheritance ·
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5"/><polygon points="20,6 16,3 16,9" fill="currentColor"/></svg> containment ·
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2,2"/><polygon points="20,6 16,3 16,9" fill="currentColor"/></svg> reference
-</div>
+**Legend**
+
+- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
+- `Owner --> SubSection`: containment/subsection relationship
+- `Source ..> Target`: typed reference from one section to another
 
 
 ## Key sections
@@ -61,13 +60,7 @@ classDiagram
 
 ### `BaseSimulation`
 
-| Quantity | Type | Description |
-|---|---|---|
-| `datetime_end` | Datetime | The date and time when this computation ended. |
-| `cpu1_start` | m_float64(float64) | The starting time of the computation on the (first) CPU 1. |
-| `cpu1_end` | m_float64(float64) | The end time of the computation on the (first) CPU 1. |
-| `wall_start` | m_float64(float64) | The internal wall-clock time from the starting of the computation. |
-| `wall_end` | m_float64(float64) | The internal wall-clock time from the end of the computation. |
+*This section has no direct quantities.*
 
 ### `Program`
 

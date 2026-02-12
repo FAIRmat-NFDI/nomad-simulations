@@ -1,4 +1,4 @@
-# Many-Body Properties - Full Screen Diagram
+# Physical Property Backbone - Full Screen Diagram
 
 !!! tip "Interactive Zoom & Pan"
     - **Scroll wheel** or **+/-** buttons to zoom
@@ -15,36 +15,43 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
+    class BaseElectronicEigenvalues {
+    }
+    class BaseEnergy {
+    }
+    class BaseForce {
+    }
     class BaseGreensFunction {
     }
-    class CrystalFieldSplitting {
+    class Energy2 {
     }
-    class ElectronicGreensFunction {
-    }
-    class ElectronicSelfEnergy {
+    class ErrorEstimate {
     }
     class Frequency {
-    }
-    class HoppingMatrix {
-    }
-    class HybridizationFunction {
     }
     class ImaginaryTime {
     }
     class MatsubaraFrequency {
     }
-    class QuasiparticleWeight {
+    class PhysicalProperty {
+    }
+    class SpectralProfile {
     }
     class Time {
     }
     class WignerSeitz {
     }
-    BaseGreensFunction <|-- ElectronicGreensFunction
-    BaseGreensFunction <|-- ElectronicSelfEnergy
-    BaseGreensFunction <|-- HybridizationFunction
+    PhysicalProperty <|-- BaseElectronicEigenvalues
+    PhysicalProperty <|-- BaseEnergy
+    PhysicalProperty <|-- BaseForce
+    PhysicalProperty <|-- BaseGreensFunction
+    PhysicalProperty <|-- SpectralProfile
     BaseGreensFunction --> Frequency : real_frequency
     BaseGreensFunction --> ImaginaryTime
     BaseGreensFunction --> MatsubaraFrequency
     BaseGreensFunction --> Time
     BaseGreensFunction --> WignerSeitz
+    PhysicalProperty --> ErrorEstimate : errors
+    SpectralProfile --> Energy2 : energies
+    SpectralProfile --> Energy2 : frequencies
 ```

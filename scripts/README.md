@@ -102,8 +102,9 @@ A vertical is a curated documentation page that focuses on a specific domain or 
 
 1. **Hierarchical Organization**: Verticals follow the natural schema hierarchy
    - `simulation` - Root entry point (Simulation, BaseSimulation, Program)
-   - `model_system` - Physical system definition (ModelSystem, Cell, AtomicCell, etc.)
-   - `atoms_state` - Detailed atomic properties (AtomsState → OrbitalsState, CoreHole, etc.)
+   - `model_system` - Physical system definition (ModelSystem and its direct links to representations, particle states, symmetry)
+   - `representations` - Detailed representation hierarchy (ModelSystem → Representation → AlternativeRepresentation)
+   - `particle_states` - Detailed particle properties (ParticleState → AtomsState, CGBeadState, AtomicOrbitals, CoreHole)
    - `model_method` - Computational methods (DFT, GW, BSE, etc.)
    - `outputs` - Output properties and results
 
@@ -116,7 +117,7 @@ A vertical is a curated documentation page that focuses on a specific domain or 
    - Each vertical represents ONE inheritance hierarchy
    - Parent class and ALL child classes on the same page
    - Child classes' subsections also included on the same page
-   - Example: `particle_state` contains ParticleState → AtomsState (with OrbitalsState, CoreHole, HubbardInteractions) + CGBeadState
+   - Example: `particle_states` contains ParticleState → AtomsState (with OrbitalsState, CoreHole, HubbardInteractions) + CGBeadState
 
 2. **Complete Hierarchy Per Page**:
    - Include parent class
@@ -126,7 +127,7 @@ A vertical is a curated documentation page that focuses on a specific domain or 
 
 3. **Top-Level Entry Points**:
    - `simulation` - Root Simulation entry (references other top-level sections)
-   - `model_system` - Root ModelSystem (references Cell, ParticleState, etc.)
+   - `model_system` - Root ModelSystem (references representations, particle states, symmetry, chemical formulas)
    - Other top-level pages just reference their subsections
 
 4. **No Redundant Upward Connections**:
@@ -163,11 +164,18 @@ Each vertical in `verticals.py` includes:
 }
 ```
 
+### Naming Conventions (Keep This Consistent)
+
+- Vertical keys should match the schema subsection/domain name used in docs navigation.
+- Use domain-style plural names for grouped subsection domains (for example `representations`), not legacy or obsolete aliases (for example `cell`).
+- Keep page titles aligned with vertical keys to avoid stale labels after rebases.
+- If a vertical key is renamed, rerun the pipeline (`generate_docs_pipeline.py`) so orphaned generated files are removed and navigation is rebuilt.
+
 ### Organization Examples
 
 **Good** ✓ Complete inheritance hierarchy on one page:
 ```python
-'particle_state': {
+'particle_states': {
     'sections': [
         'ParticleState',        # Parent
         'AtomsState',           # Child 1
@@ -181,7 +189,7 @@ Each vertical in `verticals.py` includes:
 
 **Bad** ✗ Splitting subsections to separate page:
 ```python
-'particle_state': {
+'particle_states': {
     'sections': ['ParticleState', 'AtomsState', 'CGBeadState'],
 }
 'atomic_properties': {  # DON'T DO THIS
@@ -455,7 +463,7 @@ Update `verticals.py` when:
 
 3. **Inheritance hierarchy changes**
    - Reorganize verticals to group parent/child classes together
-   - Example: If `Cell` gains a new subclass, add it to the `cell` vertical
+   - Example: If `Representation` gains a new subclass, add it to the `representations` vertical
 
 4. **New subsections added to existing classes**
    - If subsection has its own inheritance tree, create new vertical
@@ -468,11 +476,11 @@ Update `verticals.py` when:
 
 **Rule 1: Inheritance Families Together**
 - Parent class and all direct children on the same page
-- Example: `cell` vertical contains `GeometricSpace`, `Cell`, `AtomicCell`
+- Example: `representations` vertical contains `ModelSystem`, `Representation`, `AlternativeRepresentation`
 
 **Rule 2: Subsection Details Separate**
 - Classes that are contained WITHIN others get their own vertical
-- Example: `atoms_state` shows `AtomsState → OrbitalsState, CoreHole, HubbardInteractions`
+- Example: `particle_states` shows `ParticleState → AtomsState, CGBeadState, AtomicOrbitals, CoreHole, HubbardInteractions`
 
 **Rule 3: One Responsibility Per Page**
 - Each vertical should focus on one concept/hierarchy level
@@ -484,8 +492,8 @@ Update `verticals.py` when:
    ```bash
    # Check what classes exist in the schema
    uv run python -c "
-   from nomad_simulations.schema_packages import model_system, atoms_state, model_method
-   for module in [model_system, atoms_state, model_method]:
+   from nomad_simulations.schema_packages import model_system, model_method
+   for module in [model_system, model_method]:
        print(f'\n{module.__name__}:')
        for name in dir(module):
            obj = getattr(module, name)
@@ -511,33 +519,33 @@ Update `verticals.py` when:
 
 ### Example: Adding a New Class
 
-Scenario: New class `PeriodicCell` added that inherits from `Cell`.
+Scenario: New class `ExperimentalRepresentation` added that inherits from `Representation`.
 
 **Before:**
 ```python
-'cell': {
+'representations': {
     'sections': [
-        'GeometricSpace',
-        'Cell',
-        'AtomicCell',
+        'ModelSystem',
+        'Representation',
+        'AlternativeRepresentation',
     ],
 }
 ```
 
 **After:**
 ```python
-'cell': {
+'representations': {
     'sections': [
-        'GeometricSpace',
-        'Cell',
-        'AtomicCell',
-        'PeriodicCell',  # New class added
+        'ModelSystem',
+        'Representation',
+        'AlternativeRepresentation',
+        'ExperimentalRepresentation',  # New class added
     ],
     'in_scope': [
-        'GeometricSpace: base section for defining geometrical spaces',
-        'Cell: cell quantities and lattice vectors',
-        'AtomicCell: atomic cell information extending Cell',
-        'PeriodicCell: periodic cell with explicit periodicity flags',  # New description
+        'ModelSystem links to all representations',
+        'Representation: base system representation',
+        'AlternativeRepresentation: optional alternate representation',
+        'ExperimentalRepresentation: representation for non-standard coordinates',  # New description
         # ... rest
     ],
 }
@@ -580,7 +588,7 @@ Scenario: `ModelMethod` hierarchy reorganized - `DFT` split into `KSDFT` and `OF
 - Example: Don't create separate pages for AtomsState and OrbitalsState
 
 ❌ **Don't**: Forget to include subsections of child classes
-- If AtomsState has OrbitalsState, CoreHole subsections, include them all in particle_state vertical
+- If AtomsState has OrbitalsState, CoreHole subsections, include them all in particle_states vertical
 
 ❌ **Don't**: Forget to remove deleted classes
 - Old class names will cause pipeline errors

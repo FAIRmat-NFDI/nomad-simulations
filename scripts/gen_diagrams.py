@@ -200,6 +200,13 @@ def filter_edges_for_vertical(
         if a not in allowlist_set:
             continue
 
+        # Keep method pages focused on the inheritance tree and declared method
+        # classes; omit extra subsection/detail nodes that are not in allowlist.
+        if vert_key in {'model_method', 'model_method_electronic'} and b not in allowlist_set:
+            continue
+        if vert_key in {'model_method', 'model_method_electronic'} and label == 'contributions':
+            continue
+
         # If source is a parent section (Simulation, etc), show all its direct children
         if a in parent_sections and a in allowlist_set:
             filtered['contain'].append((a, b, label))
@@ -327,12 +334,14 @@ def mermaid_for_vertical(
     # Use threshold of 12 children per diagram
     if parents_in_vertical and len(all_parent_children) > 12:
         # Partition children into multiple diagrams
+        fixed_nodes = set(allowlist) - all_parent_children
         diagram_node_sets = partition_children_for_diagrams(
             parents_in_vertical,
             all_parent_children,
             filtered_edges,
             max_children_per_diagram=12,
         )
+        diagram_node_sets = [fixed_nodes | s for s in diagram_node_sets]
     else:
         # Single diagram with all nodes
         diagram_node_sets = [nodes]
@@ -352,9 +361,9 @@ def mermaid_for_vertical(
                 '',
                 'This diagram shows the relationships between schema classes:',
                 '',
-                '- **Solid arrows** (-->) represent SubSection containment',
-                '- **Dashed arrows** (..->) represent Quantity references',
-                '- **Inheritance arrows** (<|--) represent class inheritance',
+                '- `Owner --> SubSection`: containment/subsection relationship',
+                '- `Source ..> Target`: typed reference from one section to another',
+                '- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)',
                 '',
             ]
         )
@@ -400,6 +409,8 @@ def mermaid_for_vertical(
 
         # Add containment edges
         for a, b, label in filtered_edges.get('contain', []):
+            if a == b:
+                continue
             if a in diagram_nodes and b in diagram_nodes:
                 clean_label = normalize_label(label, b)
                 if clean_label:
@@ -409,6 +420,8 @@ def mermaid_for_vertical(
 
         # Add reference edges
         for a, b, label in filtered_edges.get('refs', []):
+            if a == b:
+                continue
             if a in diagram_nodes and b in diagram_nodes:
                 clean_label = normalize_label(label, b)
                 if clean_label:
@@ -416,19 +429,23 @@ def mermaid_for_vertical(
                 else:
                     lines.append(f'    {a} ..> {b}')
 
+        if key == 'outputs' and 'Outputs' in diagram_nodes and 'PhysicalProperty' in diagram_nodes:
+            lines.append(
+                '    Outputs ..> PhysicalProperty : base type for most outputs'
+            )
+
         lines.append('```')
 
-        # Add visual legend (only after last diagram)
-        if diagram_idx == len(diagram_node_sets) - 1:
+        # Add notation legend (only after last diagram, and only when header is absent).
+        if diagram_idx == len(diagram_node_sets) - 1 and not add_header:
             lines.extend(
                 [
                     '',
-                    '<div style="font-size: 1em; color: #666; margin-top: 12px; margin-bottom: 12px;">',
-                    '<b>Legend:</b>',
-                    '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="50" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="10,15 20,8 20,22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="miter"/></svg> inheritance ·',
-                    '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> containment ·',
-                    '<svg width="60" height="30" style="vertical-align: middle; margin: 0 6px;"><line x1="10" y1="15" x2="50" y2="15" stroke="currentColor" stroke-width="2.5" stroke-dasharray="4,4"/><polygon points="50,15 40,8 40,22" fill="currentColor"/></svg> reference',
-                    '</div>',
+                    '**Legend**',
+                    '',
+                    '- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)',
+                    '- `Owner --> SubSection`: containment/subsection relationship',
+                    '- `Source ..> Target`: typed reference from one section to another',
                     '',
                 ]
             )

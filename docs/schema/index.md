@@ -14,35 +14,35 @@ Root entry point for simulations: Simulation, BaseSimulation, and Program
 
 ## [Model System](model_system.md)
 
-Root ModelSystem section containing the complete system tree
+Root ModelSystem section with direct representation relationships and complete system tree
 
-**In scope:** ModelSystem as the root of the system tree, Recursive sub_systems containment (ModelSystem contains ModelSystem), System type and dimensionality, References to Cell, ParticleState, Symmetry, ChemicalFormula subsections
+**In scope:** ModelSystem as the root of the system tree, Recursive sub_systems containment (ModelSystem contains ModelSystem), System type and dimensionality, Direct relationships to Representation and AlternativeRepresentation, References to ParticleState, Local/Global symmetry, and ChemicalFormula subsections
 
-**Key sections:** ModelSystem
+**Key sections:** ModelSystem, Representation, AlternativeRepresentation
 
-## [Cell and Geometric Spaces](cell.md)
+## [Alternative Representations](representations.md)
 
-Geometric space hierarchy: GeometricSpace, Cell, and AtomicCell with lattice vectors
+AlternativeRepresentation subsection details: transforms and mapping to a reference representation
 
-**In scope:** GeometricSpace: base section for defining geometrical spaces, Cell: cell quantities and lattice vectors, AtomicCell: atomic cell information extending Cell, Lattice vectors, periodic boundary conditions, Positions and cell geometry
+**In scope:** AlternativeRepresentation subsection of ModelSystem, Reference representation linkage, Transformation matrix and origin shift between representations, How alternative cells are mapped from the original representation
 
-**Key sections:** GeometricSpace, Cell, AtomicCell
+**Key sections:** AlternativeRepresentation
 
-## [Particle States](particle_state.md)
+## [Particle States](particle_states.md)
 
 Complete particle state hierarchy: ParticleState base class, AtomsState with detailed atomic properties, and CGBeadState
 
-**In scope:** ParticleState: base class for all particle information, AtomsState: atomic particle states with chemical symbols, CGBeadState: coarse-grained bead states, OrbitalsState: quantum numbers (n, l, ml, j, mj, ms) within AtomsState, Orbital degeneracy and occupation, CoreHole: excited electron states for spectroscopy, HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems, Slater integrals for many-body interactions, Particle indices, velocities, forces, Chemical symbols and particle organization
+**In scope:** ParticleState: base class for all particle information, AtomsState: atomic particle states with chemical symbols, CGBeadState: coarse-grained bead states, AtomicOrbitals: quantum numbers (n, l, ml, j, mj, ms) within AtomsState, Orbital degeneracy and occupation, CoreHole: excited electron states for spectroscopy, HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems, Slater integrals for many-body interactions, Particle indices, velocities, forces, Chemical symbols and particle organization
 
-**Key sections:** ParticleState, AtomsState, CGBeadState, OrbitalsState, CoreHole, HubbardInteractions
+**Key sections:** ParticleState, AtomsState, CGBeadState, AtomicOrbitals, CoreHole, HubbardInteractions
 
 ## [Symmetry](symmetry.md)
 
-Crystallographic symmetry: space groups, point groups, Bravais lattices
+Crystallographic symmetry: local/global symmetry, space groups, point groups, Bravais lattices
 
-**In scope:** Space group symbols and numbers, Point group symbols, Bravais lattice classifications, Symmetry operations
+**In scope:** Local and global symmetry section hierarchy, Space group symbols and numbers, Point group symbols, Bravais lattice classifications, Symmetry operations
 
-**Key sections:** Symmetry
+**Key sections:** LocalSymmetry, LocalCrystalSymmetry, GlobalSymmetry, GlobalCrystalSymmetry
 
 ## [Chemical Formula](chemical_formula.md)
 
@@ -52,13 +52,29 @@ Chemical formulas in different formats: descriptive, reduced, IUPAC, Hill, anony
 
 **Key sections:** ChemicalFormula
 
-## [Model Methods](model_method.md)
+## [Model Method](model_method.md)
 
-Complete ModelMethod tree: electronic structure methods and their hierarchy
+Base method hierarchy up to ModelMethodElectronic
 
-**In scope:** Method inheritance hierarchy: BaseModelMethod → ModelMethod → ModelMethodElectronic, DFT: Jacobs ladder, XC functionals, exact exchange, van der Waals, Tight-binding (TB): DFTB, xTB, Wannier, Slater-Koster, Excited states: ExcitedStateMethodology → GW, BSE, Screening for many-body methods, CoreHoleSpectra for X-ray spectroscopy, DMFT for strongly correlated systems, Method contributions and references between methods
+**In scope:** Top-level inheritance chain: BaseModelMethod → ModelMethod → ModelMethodElectronic, Entry point for all electronic-method subclasses
 
-**Key sections:** BaseModelMethod, ModelMethod, ModelMethodElectronic, DFT, XCFunctional, TB, Wannier, SlaterKoster, SlaterKosterBond, xTB, ExcitedStateMethodology, Screening, GW, BSE, CoreHoleSpectra, Photon, DMFT
+**Key sections:** BaseModelMethod, ModelMethod, ModelMethodElectronic
+
+## [Model Method Electronic](model_method_electronic.md)
+
+Electronic method subclasses branching from ModelMethodElectronic
+
+**In scope:** Electronic-method inheritance rooted at ModelMethodElectronic, Ground-state electronic methods (DFT, HartreeFock, coupled-cluster, CI, perturbative approaches), Tight-binding family (TB, xTB, Wannier, SlaterKoster), Excited-state methodology branch (ExcitedStateMethodology, Screening, GW, BSE, TDDFT), Core-hole and many-body electronic methods (CoreHoleSpectra, DMFT)
+
+**Key sections:** ModelMethodElectronic, DFT, TB, xTB, Wannier, SlaterKoster, ExcitedStateMethodology, Screening, GW, BSE, TDDFT, HartreeFock, CoupledCluster, ConfigurationInteraction, PerturbationMethod, CoreHoleSpectra, DMFT
+
+## [Force Field](force_field.md)
+
+Classical force-field model method branch rooted at ForceField
+
+**In scope:** ForceField as a ModelMethod subclass, Potential family entry-point used by ForceField contributions, Bridge between model methods and classical interaction potentials
+
+**Key sections:** ModelMethod, ForceField, Potential
 
 ## [Numerical Settings](numerical_settings.md)
 
@@ -68,13 +84,21 @@ Computational parameters: meshes, basis sets, convergence, and discretization
 
 **Key sections:** NumericalSettings, Mesh, KMesh, KLinePath, KSpace, Smearing, SelfConsistency, ForceCalculations, BasisSetComponent, PlaneWaveBasisSet, APWPlaneWaveBasisSet, AtomCenteredFunction
 
-## [Outputs Base](outputs.md)
+## [Outputs](outputs.md)
 
 Base output structure and common property definitions
 
 **In scope:** Outputs section that references ModelSystem and ModelMethod, SCFOutputs with scf_steps for iteration history, PhysicalProperty base class for all computed properties, Property contributions and derivations, SCF convergence checking
 
 **Key sections:** Outputs, SCFOutputs, PhysicalProperty
+
+## [Physical Property Backbone](physical_property.md)
+
+Shared base classes for physical-property types and their common metadata structure
+
+**In scope:** PhysicalProperty as the common base for computed properties, ErrorEstimate subsection used for uncertainty/error metadata, Abstract/base property families for electronic, Green-function, energy, force, and spectral data, Cross-domain backbone used by specialized output verticals
+
+**Key sections:** PhysicalProperty, ErrorEstimate, BaseElectronicEigenvalues, BaseGreensFunction, BaseEnergy, BaseForce, SpectralProfile
 
 ## [Electronic Structure Properties](electronic_properties.md)
 

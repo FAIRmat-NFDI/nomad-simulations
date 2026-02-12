@@ -10,71 +10,18 @@ nav:
       - Simulation Entry: schema/simulation.md
       - Model System:
           - Model System: schema/model_system.md
-          - Cell and Geometric Spaces: schema/cell.md
-          - Particle States: schema/particle_state.md
+          - Alternative Representations: schema/representations.md
+          - Particle States: schema/particle_states.md
           - Symmetry: schema/symmetry.md
           - Chemical Formula: schema/chemical_formula.md
-      - Model Methods:
-          - Model Methods: schema/model_method.md
+      - Model Method:
+          - Model Method: schema/model_method.md
+          - Model Method Electronic: schema/model_method_electronic.md
+          - Force Field: schema/force_field.md
           - Numerical Settings: schema/numerical_settings.md
-      - Outputs Base:
-          - Outputs Base: schema/outputs.md
-          - Electronic Structure Properties: schema/electronic_properties.md
-          - Many-Body Properties: schema/manybody_properties.md
-          - Spectroscopic Properties: schema/spectroscopy.md
-          - Thermodynamic Properties: schema/thermodynamics.md
-          - Model System: schema/model_system.md
-          - Cell and Geometric Spaces: schema/cell.md
-          - Particle States: schema/particle_state.md
-          - Symmetry: schema/symmetry.md
-          - Chemical Formula: schema/chemical_formula.md
-      - Model Methods:
-          - Model Methods: schema/model_method.md
-          - Numerical Settings: schema/numerical_settings.md
-      - Outputs Base:
-          - Outputs Base: schema/outputs.md
-          - Electronic Structure Properties: schema/electronic_properties.md
-          - Many-Body Properties: schema/manybody_properties.md
-          - Spectroscopic Properties: schema/spectroscopy.md
-          - Thermodynamic Properties: schema/thermodynamics.md
-          - Model System: schema/model_system.md
-          - Cell and Geometric Spaces: schema/cell.md
-          - Particle States: schema/particle_state.md
-          - Symmetry: schema/symmetry.md
-          - Chemical Formula: schema/chemical_formula.md
-      - Model Methods:
-          - Model Methods: schema/model_method.md
-          - Numerical Settings: schema/numerical_settings.md
-      - Outputs Base:
-          - Outputs Base: schema/outputs.md
-          - Electronic Structure Properties: schema/electronic_properties.md
-          - Many-Body Properties: schema/manybody_properties.md
-          - Spectroscopic Properties: schema/spectroscopy.md
-          - Thermodynamic Properties: schema/thermodynamics.md
-          - Model System: schema/model_system.md
-          - Cell and Geometric Spaces: schema/cell.md
-          - Particle States: schema/particle_state.md
-          - Symmetry: schema/symmetry.md
-          - Chemical Formula: schema/chemical_formula.md
-      - Model Methods:
-          - Model Methods: schema/model_method.md
-          - Numerical Settings: schema/numerical_settings.md
-      - Outputs Base:
-          - Outputs Base: schema/outputs.md
-          - Electronic Structure Properties: schema/electronic_properties.md
-          - Many-Body Properties: schema/manybody_properties.md
-          - Spectroscopic Properties: schema/spectroscopy.md
-          - Thermodynamic Properties: schema/thermodynamics.md
-          - Model System: schema/model_system.md
-          - Cell and Geometric Spaces: schema/cell.md
-          - Particle States: schema/particle_state.md
-          - Symmetry: schema/symmetry.md
-          - Chemical Formula: schema/chemical_formula.md
-      - Model Methods:
-          - Model Methods: schema/model_method.md
-          - Numerical Settings: schema/numerical_settings.md
-      - Outputs Base:
-          - Outputs Base: schema/outputs.md
+      - Outputs:
+          - Outputs: schema/outputs.md
+          - Physical Property Backbone: schema/physical_property.md
           - Electronic Structure Properties: schema/electronic_properties.md
           - Many-Body Properties: schema/manybody_properties.md
           - Spectroscopic Properties: schema/spectroscopy.md

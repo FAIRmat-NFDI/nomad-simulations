@@ -229,24 +229,37 @@ def mermaid_for_vertical(
 
     # Add containment edges
     for a, b, label in filtered_edges.get('contain', []):
+        if a == b:
+            continue
         if a in nodes and b in nodes:
             lines.append(f'    {a} --> {b} : {label}')
 
     # Add reference edges
     for a, b, label in filtered_edges.get('refs', []):
+        if a == b:
+            continue
         if a in nodes and b in nodes:
             lines.append(f'    {a} ..> {b} : {label}')
+
+    # Add one summarized anchor relation for outputs diagrams:
+    # many output sections derive from PhysicalProperty, but drawing every
+    # inheritance edge here would make the diagram too dense.
+    if (
+        vert_key == 'outputs'
+        and 'Outputs' in nodes
+        and 'PhysicalProperty' in nodes
+    ):
+        lines.append('    Outputs ..> PhysicalProperty : base type for most outputs')
     lines.append('```')
     # Wrap with blank lines (very important for Markdown parsing)
     diagram = '\n' + '\n'.join(lines) + '\n'
-    # Add visual legend with inline SVG arrows
+    # Use notation-based legend to avoid arrow-direction ambiguity.
     diagram += """
-<div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
-<b>Legend:</b>
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="20" y1="6" x2="4" y2="6" stroke="currentColor" stroke-width="1.5"/><polygon points="4,6 8,3 8,9" fill="none" stroke="currentColor" stroke-width="1.5"/></svg> inheritance ·
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5"/><polygon points="20,6 16,3 16,9" fill="currentColor"/></svg> containment ·
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2,2"/><polygon points="20,6 16,3 16,9" fill="currentColor"/></svg> reference
-</div>
+**Legend**
+
+- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
+- `Owner --> SubSection`: containment/subsection relationship
+- `Source ..> Target`: typed reference from one section to another
 """
     return diagram
 

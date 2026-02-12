@@ -37,28 +37,27 @@ classDiagram
     DOSProfile --> Energy2 : energies
     ElectronicDensityOfStates --> DOSProfile : projected_dos
     ElectronicDensityOfStates --> Energy2 : energies
-    ElectronicEigenvalues --> BaseElectronicEigenvalues : value_contributions
+    ElectronicEigenvalues --> BaseElectronicEigenvalues : contributions
 ```
 
-<div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
-<b>Legend:</b>
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="20" y1="6" x2="4" y2="6" stroke="currentColor" stroke-width="1.5"/><polygon points="4,6 8,3 8,9" fill="none" stroke="currentColor" stroke-width="1.5"/></svg> inheritance ·
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5"/><polygon points="20,6 16,3 16,9" fill="currentColor"/></svg> containment ·
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2,2"/><polygon points="20,6 16,3 16,9" fill="currentColor"/></svg> reference
-</div>
+**Legend**
+
+- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
+- `Owner --> SubSection`: containment/subsection relationship
+- `Source ..> Target`: typed reference from one section to another
 
 
 ## Key sections
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `BaseElectronicEigenvalues` | A base section used to define basic quantities for the `ElectronicEigenvalues`  and `ElectronicBandStructure` properties. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.band_structure.BaseElectronicEigenvalues){:target="_blank"} |
-| `ElectronicEigenvalues` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.band_structure.ElectronicEigenvalues){:target="_blank"} |
+| `BaseElectronicEigenvalues` | A base section used to define basic quantities for the `ElectronicEigenvalues`  and `ElectronicBandStructure` properties. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.electronic_eigenvalues.BaseElectronicEigenvalues){:target="_blank"} |
+| `ElectronicEigenvalues` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.electronic_eigenvalues.ElectronicEigenvalues){:target="_blank"} |
 | `ElectronicBandStructure` | Accessible energies by the charges (electrons and holes) in the reciprocal space. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.band_structure.ElectronicBandStructure){:target="_blank"} |
 | `ElectronicBandGap` | Energy difference between the highest occupied electronic state and the lowest unoccupied electronic state. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.band_gap.ElectronicBandGap){:target="_blank"} |
 | `DOSProfile` | A base section used to define the `value` of the `ElectronicDensityOfState` property. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.spectral_profile.DOSProfile){:target="_blank"} |
 | `ElectronicDensityOfStates` | Number of electronic states accessible for the charges per energy and per volume. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.spectral_profile.ElectronicDensityOfStates){:target="_blank"} |
-| `Occupancy` | Electrons occupancy of an atom per orbital and spin. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.band_structure.Occupancy){:target="_blank"} |
+| `Occupancy` | Electrons occupancy of an atom per orbital and spin. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.electronic_eigenvalues.Occupancy){:target="_blank"} |
 | `FermiSurface` | Energy boundary in reciprocal space that separates the filled and empty electronic states in a metal. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.fermi_surface.FermiSurface){:target="_blank"} |
 
 
@@ -68,7 +67,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `n_bands` | m_int32(int32) | Number of bands / eigenvalues. |
+| `n_levels` | m_int32(int32) | <details><summary>Number of energy levels per sampling point.</summary>Number of energy levels per sampling point.<br>In periodic systems these correspond to electronic bands; in molecular<br>calculations they correspond to (spin-resolved) molecular orbitals or<br>similar one-particle states.</details> |
 | `value` | m_float64(float64) (shape: ['*', '*']) | Value of the electronic eigenvalues. |
 
 ### `ElectronicEigenvalues`
@@ -76,14 +75,15 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic eigenvalues. It can take values of 0 or 1. |
-| `occupation` | m_float64(float64) (shape: ['*', 'n_bands']) | <details><summary>Occupation of the electronic eigenvalues.</summary>Occupation of the electronic eigenvalues. This is a number depending whether the `spin_channel` has been set or not.<br>If `spin_channel` is set, then this number is between 0 and 1, where 0 means that the state is unoccupied and 1 means<br>that the state is fully occupied; if `spin_channel` is not set, then this number is between 0 and 2. The shape of<br>this quantity is defined as `[K.n_points, K.dimensionality, n_bands]`, where `K` is a `variable` which can<br>be `KMesh` or `KLinePath`, depending whether the simulation mapped the whole Brillouin zone or just a specific<br>path.</details> |
+| `occupation` | m_float64(float64) (shape: ['*', 'n_levels']) | <details><summary>Occupation of the electronic eigenvalues.</summary>Occupation of the electronic eigenvalues. This is a number depending whether the `spin_channel` has been set or not.<br>If `spin_channel` is set, then this number is between 0 and 1, where 0 means that the state is unoccupied and 1 means<br>that the state is fully occupied; if `spin_channel` is not set, then this number is between 0 and 2. The shape of<br>this quantity is defined as `[K.n_points, K.dimensionality, n_levels]`, where `K` is a `variable` which can<br>be `KMesh` or `KLinePath`, depending whether the simulation mapped the whole Brillouin zone or just a specific<br>path.</details> |
 | `highest_occupied` | m_float64(float64) | Highest occupied electronic eigenvalue. Together with `lowest_unoccupied`, it defines the electronic band gap. |
 | `lowest_unoccupied` | m_float64(float64) | Lowest unoccupied electronic eigenvalue. Together with `highest_occupied`, it defines the electronic band gap. |
-| `reciprocal_cell` | <nomad.metainfo.metainfo.QuantityReference object at 0x77b0cafbf050> | Reference to the reciprocal lattice vectors stored under `KSpace`. |
 
 ### `ElectronicBandStructure`
 
-*This section has no direct quantities.*
+| Quantity | Type | Description |
+|---|---|---|
+| `reciprocal_cell` | <nomad.metainfo.metainfo.QuantityReference object at 0x7b59f330e900> | Reciprocal lattice vectors associated with the k-space sampling used for these eigenvalues, taken from the corresponding `KSpace` numerical settings. |
 
 ### `ElectronicBandGap`
 
@@ -112,10 +112,9 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `atoms_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x77b0caf8a1b0> | Reference to the `AtomsState` section in which the occupancy is calculated. |
-| `orbitals_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x77b0caf8be90> | Reference to the `OrbitalsState` section in which the occupancy is calculated. |
+| `orbitals_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x7b59f32dc350> | Reference to the `ElectronicState` section in which the occupancy is calculated. This can reference individual orbitals, orbital manifolds, or hybrid/molecular orbitals. The parent AtomsState can be accessed via `orbitals_state_ref.get_parent_entity()`. |
 | `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic property. It can take values of 0 and 1. |
-| `value` | m_float64(float64) | <details><summary>Value of the electronic occupancy in the atom defined by `atoms_state_ref` and t...</summary>Value of the electronic occupancy in the atom defined by `atoms_state_ref` and the orbital<br>defined by `orbitals_state_ref`. the orbital. If `spin_channel` is set, then this number is<br>between 0 and 1, where 0 means that the state is unoccupied and 1 means that the state is<br>fully occupied; if `spin_channel` is not set, then this number is between 0 and 2.</details> |
+| `value` | m_float64(float64) | <details><summary>Value of the electronic occupancy for the orbital defined by `orbitals_state_ref`.</summary>Value of the electronic occupancy for the orbital defined by `orbitals_state_ref`.<br>If `spin_channel` is set, then this number is between 0 and 1, where 0 means that<br>the state is unoccupied and 1 means that the state is fully occupied; if `spin_channel`<br>is not set, then this number is between 0 and 2.</details> |
 
 ### `FermiSurface`
 

@@ -1,4 +1,4 @@
-# Simulation Entry - Full Screen Diagram
+# Force Field - Full Screen Diagram
 
 !!! tip "Interactive Zoom & Pan"
     - **Scroll wheel** or **+/-** buttons to zoom
@@ -15,21 +15,18 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BaseSimulation {
+    class BaseModelMethod {
+    }
+    class ForceField {
     }
     class ModelMethod {
     }
-    class ModelSystem {
+    class ParameterEntry {
     }
-    class Outputs {
+    class Potential {
     }
-    class Program {
-    }
-    class Simulation {
-    }
-    BaseSimulation <|-- Simulation
-    BaseSimulation --> Program
-    Simulation --> ModelMethod
-    Simulation --> ModelSystem
-    Simulation --> Outputs
+    ModelMethod <|-- ForceField
+    ForceField --> Potential : contributions
+    ModelMethod --> BaseModelMethod : contributions
+    Potential --> ParameterEntry : parameters
 ```

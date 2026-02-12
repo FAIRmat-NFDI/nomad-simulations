@@ -1,4 +1,4 @@
-# Simulation Entry - Full Screen Diagram
+# Alternative Representations - Full Screen Diagram
 
 !!! tip "Interactive Zoom & Pan"
     - **Scroll wheel** or **+/-** buttons to zoom
@@ -15,21 +15,6 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BaseSimulation {
+    class AlternativeRepresentation {
     }
-    class ModelMethod {
-    }
-    class ModelSystem {
-    }
-    class Outputs {
-    }
-    class Program {
-    }
-    class Simulation {
-    }
-    BaseSimulation <|-- Simulation
-    BaseSimulation --> Program
-    Simulation --> ModelMethod
-    Simulation --> ModelSystem
-    Simulation --> Outputs
 ```

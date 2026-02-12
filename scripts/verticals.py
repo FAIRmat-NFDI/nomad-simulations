@@ -20,15 +20,19 @@ Each vertical represents a "cut-out" from the schema tree, showing:
 
 Verticals:
 (1) simulation - Root entry point with Program
-(2) model_system - Complete ModelSystem tree (cells, symmetry, particle states)
-(3) atoms_state - Detailed atomic properties (orbitals, core holes, Hubbard)
-(4) model_method - Method hierarchy (DFT, TB, GW, BSE, DMFT)
-(5) numerical_settings - Meshes, basis sets, convergence parameters
-(6) outputs - Output properties base classes
-(7) electronic_properties - Electronic structure outputs
-(8) manybody_properties - Many-body theory outputs
-(9) spectroscopy - Spectroscopic properties
-(10) thermodynamics - Energies, forces, thermodynamic properties
+(2) model_system - Complete ModelSystem tree (representations, symmetry, particle states)
+(3) representations - Representation hierarchy and cell geometry
+(4) particle_states - Detailed particle and orbital properties (atoms, core holes, Hubbard)
+(5) model_method - Base method hierarchy up to ModelMethodElectronic
+(6) model_method_electronic - Electronic method subclasses (DFT, TB, GW, BSE, DMFT, etc.)
+(7) force_field - Classical force-field method family
+(8) numerical_settings - Meshes, basis sets, convergence parameters
+(9) outputs - Output properties base classes
+(10) physical_property - Base physical-property backbone and shared abstractions
+(11) electronic_properties - Electronic structure outputs
+(12) manybody_properties - Many-body theory outputs
+(13) spectroscopy - Spectroscopic properties
+(14) thermodynamics - Energies, forces, thermodynamic properties
 """
 
 VERTICALS = {
@@ -61,56 +65,58 @@ VERTICALS = {
     # =========================================================================
     'model_system': {
         'title': 'Model System',
-        'purpose': 'Root ModelSystem section containing the complete system tree',
+        'purpose': 'Root ModelSystem section with direct representation relationships and complete system tree',
         'sections': [
             'ModelSystem',
+            'Representation',
+            'AlternativeRepresentation',
         ],
         'in_scope': [
             'ModelSystem as the root of the system tree',
             'Recursive sub_systems containment (ModelSystem contains ModelSystem)',
             'System type and dimensionality',
-            'References to Cell, ParticleState, Symmetry, ChemicalFormula subsections',
+            'Direct relationships to Representation and AlternativeRepresentation',
+            'References to ParticleState, Local/Global symmetry, and ChemicalFormula subsections',
         ],
         'out_of_scope': [
-            'Cell and geometric details (see cell vertical)',
-            'Particle state details (see particle_state vertical)',
+            'Detailed representation geometry fields (see representations vertical)',
+            'Particle state details (see particle_states vertical)',
             'Symmetry details (see symmetry vertical)',
             'Chemical formula details (see chemical_formula vertical)',
-            'Detailed atomic properties like orbitals (see atoms_state)',
-            'Core holes and Hubbard interactions (see atoms_state)',
+            'Detailed atomic properties like orbitals (see particle_states)',
+            'Core holes and Hubbard interactions (see particle_states)',
             'Methods that use the system (see model_method)',
             'Outputs computed from the system (see output verticals)',
         ],
     },
-    'cell': {
-        'title': 'Cell and Geometric Spaces',
-        'purpose': 'Geometric space hierarchy: GeometricSpace, Cell, and AtomicCell with lattice vectors',
+    'representations': {
+        'title': 'Alternative Representations',
+        'purpose': 'AlternativeRepresentation subsection details: transforms and mapping to a reference representation',
         'sections': [
-            'GeometricSpace',
-            'Cell',
-            'AtomicCell',
+            'AlternativeRepresentation',
         ],
         'in_scope': [
-            'GeometricSpace: base section for defining geometrical spaces',
-            'Cell: cell quantities and lattice vectors',
-            'AtomicCell: atomic cell information extending Cell',
-            'Lattice vectors, periodic boundary conditions',
-            'Positions and cell geometry',
+            'AlternativeRepresentation subsection of ModelSystem',
+            'Reference representation linkage',
+            'Transformation matrix and origin shift between representations',
+            'How alternative cells are mapped from the original representation',
         ],
         'out_of_scope': [
-            'Particle states within the cell (see particle_state)',
+            'ModelSystem root relationships (see model_system)',
+            'General representation geometry fields (see model_system)',
+            'Particle states within the representations (see particle_states)',
             'Symmetry information (see symmetry)',
-            'Chemical formulas (see chemical_formula)',
+            'Chemical formula details (see chemical_formula)',
         ],
     },
-    'particle_state': {
+    'particle_states': {
         'title': 'Particle States',
         'purpose': 'Complete particle state hierarchy: ParticleState base class, AtomsState with detailed atomic properties, and CGBeadState',
         'sections': [
             'ParticleState',
             'AtomsState',
             'CGBeadState',
-            'OrbitalsState',
+            'AtomicOrbitals',
             'CoreHole',
             'HubbardInteractions',
         ],
@@ -118,7 +124,7 @@ VERTICALS = {
             'ParticleState: base class for all particle information',
             'AtomsState: atomic particle states with chemical symbols',
             'CGBeadState: coarse-grained bead states',
-            'OrbitalsState: quantum numbers (n, l, ml, j, mj, ms) within AtomsState',
+            'AtomicOrbitals: quantum numbers (n, l, ml, j, mj, ms) within AtomsState',
             'Orbital degeneracy and occupation',
             'CoreHole: excited electron states for spectroscopy',
             'HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems',
@@ -127,25 +133,29 @@ VERTICALS = {
             'Chemical symbols and particle organization',
         ],
         'out_of_scope': [
-            'Cell and geometric information (see cell)',
+            'Representation and geometric information (see representations)',
             'Methods that use these properties (see model_method)',
         ],
     },
     'symmetry': {
         'title': 'Symmetry',
-        'purpose': 'Crystallographic symmetry: space groups, point groups, Bravais lattices',
+        'purpose': 'Crystallographic symmetry: local/global symmetry, space groups, point groups, Bravais lattices',
         'sections': [
-            'Symmetry',
+            'LocalSymmetry',
+            'LocalCrystalSymmetry',
+            'GlobalSymmetry',
+            'GlobalCrystalSymmetry',
         ],
         'in_scope': [
+            'Local and global symmetry section hierarchy',
             'Space group symbols and numbers',
             'Point group symbols',
             'Bravais lattice classifications',
             'Symmetry operations',
         ],
         'out_of_scope': [
-            'Cell structure (see cell)',
-            'Atomic positions (see cell and particle_state)',
+            'Representation structure (see representations)',
+            'Atomic positions (see representations and particle_states)',
         ],
     },
     'chemical_formula': {
@@ -163,48 +173,84 @@ VERTICALS = {
             'Automatic formula generation',
         ],
         'out_of_scope': [
-            'Atomic positions (see cell)',
-            'Particle states (see particle_state)',
+            'Atomic positions (see representations)',
+            'Particle states (see particle_states)',
         ],
     },
     # =========================================================================
     # MODEL METHOD TREE
     # =========================================================================
     'model_method': {
-        'title': 'Model Methods',
-        'purpose': 'Complete ModelMethod tree: electronic structure methods and their hierarchy',
+        'title': 'Model Method',
+        'purpose': 'Base method hierarchy up to ModelMethodElectronic',
         'sections': [
             'BaseModelMethod',
             'ModelMethod',
             'ModelMethodElectronic',
+        ],
+        'in_scope': [
+            'Top-level inheritance chain: BaseModelMethod → ModelMethod → ModelMethodElectronic',
+            'Entry point for all electronic-method subclasses',
+        ],
+        'out_of_scope': [
+            'Detailed electronic method subclasses (see model_method_electronic)',
+            'Classical force-field methods (see force_field)',
+            'Numerical settings like meshes and basis sets (see numerical_settings)',
+            'Output properties computed by these methods (see output verticals)',
+        ],
+    },
+    'model_method_electronic': {
+        'title': 'Model Method Electronic',
+        'purpose': 'Electronic method subclasses branching from ModelMethodElectronic',
+        'sections': [
+            'ModelMethodElectronic',
             'DFT',
-            'XCFunctional',
             'TB',
+            'xTB',
             'Wannier',
             'SlaterKoster',
-            'SlaterKosterBond',
-            'xTB',
             'ExcitedStateMethodology',
             'Screening',
             'GW',
             'BSE',
+            'TDDFT',
+            'HartreeFock',
+            'CoupledCluster',
+            'ConfigurationInteraction',
+            'PerturbationMethod',
             'CoreHoleSpectra',
-            'Photon',
             'DMFT',
         ],
         'in_scope': [
-            'Method inheritance hierarchy: BaseModelMethod → ModelMethod → ModelMethodElectronic',
-            'DFT: Jacobs ladder, XC functionals, exact exchange, van der Waals',
-            'Tight-binding (TB): DFTB, xTB, Wannier, Slater-Koster',
-            'Excited states: ExcitedStateMethodology → GW, BSE',
-            'Screening for many-body methods',
-            'CoreHoleSpectra for X-ray spectroscopy',
-            'DMFT for strongly correlated systems',
-            'Method contributions and references between methods',
+            'Electronic-method inheritance rooted at ModelMethodElectronic',
+            'Ground-state electronic methods (DFT, HartreeFock, coupled-cluster, CI, perturbative approaches)',
+            'Tight-binding family (TB, xTB, Wannier, SlaterKoster)',
+            'Excited-state methodology branch (ExcitedStateMethodology, Screening, GW, BSE, TDDFT)',
+            'Core-hole and many-body electronic methods (CoreHoleSpectra, DMFT)',
         ],
         'out_of_scope': [
-            'Numerical settings like meshes and basis sets (see numerical_settings)',
-            'Output properties computed by these methods (see output verticals)',
+            'Non-electronic ModelMethod subclasses (see model_method)',
+            'Method parameter detail sections not in this inheritance branch',
+            'Numerical settings and output properties (see numerical_settings and outputs)',
+        ],
+    },
+    'force_field': {
+        'title': 'Force Field',
+        'purpose': 'Classical force-field model method branch rooted at ForceField',
+        'sections': [
+            'ModelMethod',
+            'ForceField',
+            'Potential',
+        ],
+        'in_scope': [
+            'ForceField as a ModelMethod subclass',
+            'Potential family entry-point used by ForceField contributions',
+            'Bridge between model methods and classical interaction potentials',
+        ],
+        'out_of_scope': [
+            'Electronic method hierarchy (see model_method_electronic)',
+            'Detailed potential subclasses (bond, angle, dihedral variants)',
+            'Numerical settings and outputs',
         ],
     },
     'numerical_settings': {
@@ -241,7 +287,7 @@ VERTICALS = {
     # OUTPUTS TREE
     # =========================================================================
     'outputs': {
-        'title': 'Outputs Base',
+        'title': 'Outputs',
         'purpose': 'Base output structure and common property definitions',
         'sections': [
             'Outputs',
@@ -256,11 +302,38 @@ VERTICALS = {
             'SCF convergence checking',
         ],
         'out_of_scope': [
+            'Physical-property inheritance backbone (see physical_property)',
             'Specific property types (see specialized verticals)',
             'Electronic structure properties (see electronic_properties)',
             'Many-body properties (see manybody_properties)',
             'Spectroscopic properties (see spectroscopy)',
             'Thermodynamic properties (see thermodynamics)',
+        ],
+    },
+    'physical_property': {
+        'title': 'Physical Property Backbone',
+        'purpose': 'Shared base classes for physical-property types and their common metadata structure',
+        'sections': [
+            'PhysicalProperty',
+            'ErrorEstimate',
+            'BaseElectronicEigenvalues',
+            'BaseGreensFunction',
+            'BaseEnergy',
+            'BaseForce',
+            'SpectralProfile',
+        ],
+        'in_scope': [
+            'PhysicalProperty as the common base for computed properties',
+            'ErrorEstimate subsection used for uncertainty/error metadata',
+            'Abstract/base property families for electronic, Green-function, energy, force, and spectral data',
+            'Cross-domain backbone used by specialized output verticals',
+        ],
+        'out_of_scope': [
+            'Concrete electronic outputs (see electronic_properties)',
+            'Concrete many-body outputs (see manybody_properties)',
+            'Concrete spectroscopic outputs (see spectroscopy)',
+            'Concrete thermodynamic outputs (see thermodynamics)',
+            'Outputs container structure (see outputs)',
         ],
     },
     'electronic_properties': {

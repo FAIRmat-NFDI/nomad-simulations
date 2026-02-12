@@ -45,12 +45,11 @@ classDiagram
     KSpace --> KMesh : k_mesh
 ```
 
-<div style="font-size: 0.9em; color: #666; margin-top: 8px; margin-bottom: 8px;">
-<b>Legend:</b>
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="20" y1="6" x2="4" y2="6" stroke="currentColor" stroke-width="1.5"/><polygon points="4,6 8,3 8,9" fill="none" stroke="currentColor" stroke-width="1.5"/></svg> inheritance ·
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5"/><polygon points="20,6 16,3 16,9" fill="currentColor"/></svg> containment ·
-<svg width="24" height="12" style="vertical-align: middle; margin: 0 2px;"><line x1="4" y1="6" x2="20" y2="6" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2,2"/><polygon points="20,6 16,3 16,9" fill="currentColor"/></svg> reference
-</div>
+**Legend**
+
+- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
+- `Owner --> SubSection`: containment/subsection relationship
+- `Source ..> Target`: typed reference from one section to another
 
 
 ## Key sections
@@ -64,7 +63,7 @@ classDiagram
 | `KSpace` | A base section used to specify the settings of the k-space. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.KSpace){:target="_blank"} |
 | `Smearing` | Section specifying the smearing of the occupation numbers to either simulate temperature effects or improve SCF convergence. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.Smearing){:target="_blank"} |
 | `SelfConsistency` | A base section used to define the convergence settings of self-consistent field (SCF) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.SelfConsistency){:target="_blank"} |
-| `ForceCalculations` | Section containing the parameters for force calculations according to a ForceField model. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.ForceCalculations){:target="_blank"} |
+| `ForceCalculations` | Section containing the parameters describing how a ForceField model is evaluated during a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.force_field.ForceCalculations){:target="_blank"} |
 | `BasisSetComponent` | A type section denoting a basis set component of a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.BasisSetComponent){:target="_blank"} |
 | `PlaneWaveBasisSet` | Basis set over a reciprocal mesh, where each point $k_n$ represents a planar-wave basis function $rac{1}{\sqrt{\omega}} e^{i k_n r}$. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.PlaneWaveBasisSet){:target="_blank"} |
 | `APWPlaneWaveBasisSet` | A `PlaneWaveBasisSet` specialized to the APW use case. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.APWPlaneWaveBasisSet){:target="_blank"} |
@@ -148,8 +147,8 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `name` | m_str(str) | Name of the basis set component. |
-| `species_scope` | <nomad.metainfo.metainfo.Reference object at 0x77b0cafe8110> (shape: ['*']) | Reference to the section `AtomsState` specifying the localization of the basis set. |
-| `hamiltonian_scope` | <nomad.metainfo.metainfo.Reference object at 0x77b0cafeb2f0> (shape: ['*']) | Reference to the section `BaseModelMethod` containing the information of the Hamiltonian term to which the basis set applies. |
+| `species_scope` | <nomad.metainfo.metainfo.Reference object at 0x7b59f3fe0680> (shape: ['*']) | Reference to the section `AtomsState` specifying the localization of the basis set. |
+| `hamiltonian_scope` | <nomad.metainfo.metainfo.Reference object at 0x7b59f32dfdd0> (shape: ['*']) | Reference to the section `BaseModelMethod` containing the information of the Hamiltonian term to which the basis set applies. |
 
 ### `PlaneWaveBasisSet`
 
