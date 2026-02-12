@@ -147,8 +147,8 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `name` | m_str(str) | Name of the basis set component. |
-| `species_scope` | <nomad.metainfo.metainfo.Reference object at 0x7b59f3fe0680> (shape: ['*']) | Reference to the section `AtomsState` specifying the localization of the basis set. |
-| `hamiltonian_scope` | <nomad.metainfo.metainfo.Reference object at 0x7b59f32dfdd0> (shape: ['*']) | Reference to the section `BaseModelMethod` containing the information of the Hamiltonian term to which the basis set applies. |
+| `species_scope` | <nomad.metainfo.metainfo.Reference object at 0x7326b1ec3b60> (shape: ['*']) | Reference to the section `AtomsState` specifying the localization of the basis set. |
+| `hamiltonian_scope` | <nomad.metainfo.metainfo.Reference object at 0x7326b1ec0c20> (shape: ['*']) | Reference to the section `BaseModelMethod` containing the information of the Hamiltonian term to which the basis set applies. |
 
 ### `PlaneWaveBasisSet`
 

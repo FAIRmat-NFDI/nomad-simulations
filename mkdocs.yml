@@ -26,9 +26,19 @@ nav:
           - Many-Body Properties: schema/manybody_properties.md
           - Spectroscopic Properties: schema/spectroscopy.md
           - Thermodynamic Properties: schema/thermodynamics.md
-  - How to use the Simulation schema: howto_use.md
-  - The normalize function: normalize.md
-  - Bounded Data Types: data_types.md
+  - Schema Explanation:
+      - General Overview: explanation/general.md
+      - Model System:
+          - Model System: explanation/model_system/model_system.md
+          - Representation Architecture: explanation/model_system/representation.md
+          - Representation Design History: explanation/model_system/representation_history.md
+          - Electronic States: explanation/model_system/electronic_states.md
+      - Model Method:
+          - Basis Sets: explanation/model_method/basis_sets.md
+      # - Outputs:
+      #     - Outputs: explanation/outputs/outputs.md
+      - Bounded Data Types: explanation/data_types.md
+      - Normalization: explanation/normalize.md
   - Contact: contact.md
 theme:
   name: material

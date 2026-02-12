@@ -15,19 +15,19 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class CrystalFieldSplitting {
+    class AbsorptionSpectrum {
     }
-    class ElectronicBandStructure {
+    class ChemicalPotential {
+    }
+    class CrystalFieldSplitting {
     }
     class ElectronicDensityOfStates {
     }
-    class ElectronicGreensFunction {
+    class FermiSurface {
     }
-    class ElectronicSelfEnergy {
+    class KineticEnergy {
     }
-    class HoppingMatrix {
-    }
-    class HybridizationFunction {
+    class Occupancy {
     }
     class Outputs {
     }
@@ -35,29 +35,29 @@ classDiagram
     }
     class PhysicalProperty {
     }
-    class PotentialEnergy {
+    class QuasiparticleWeight {
+    }
+    class RadiusOfGyration {
     }
     class SCFOutputs {
     }
     class Temperature {
     }
-    class TotalForce {
-    }
-    class XASSpectrum {
+    class TotalEnergy {
     }
     Outputs <|-- SCFOutputs
+    Outputs --> AbsorptionSpectrum : absorption_spectra
+    Outputs --> ChemicalPotential
     Outputs --> CrystalFieldSplitting
-    Outputs --> ElectronicBandStructure
     Outputs --> ElectronicDensityOfStates : electronic_dos
-    Outputs --> ElectronicGreensFunction
-    Outputs --> ElectronicSelfEnergy : electronic_self_energies
-    Outputs --> HoppingMatrix : hopping_matrices
-    Outputs --> HybridizationFunction
+    Outputs --> FermiSurface
+    Outputs --> KineticEnergy : kinetic_energies
+    Outputs --> Occupancy : occupancies
     Outputs --> Permittivity : permittivities
-    Outputs --> PotentialEnergy : potential_energies
+    Outputs --> QuasiparticleWeight
+    Outputs --> RadiusOfGyration : radii_of_gyration
     Outputs --> Temperature
-    Outputs --> TotalForce
-    Outputs --> XASSpectrum : xas_spectra
+    Outputs --> TotalEnergy : total_energies
     SCFOutputs --> Outputs : scf_steps
     Outputs ..> PhysicalProperty : base type for most outputs
 ```
@@ -69,43 +69,43 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum {
-    }
-    class ChemicalPotential {
-    }
     class ElectronicBandGap {
+    }
+    class ElectronicBandStructure {
     }
     class ElectronicEigenvalues {
     }
-    class FermiSurface {
+    class ElectronicGreensFunction {
     }
-    class KineticEnergy {
+    class ElectronicSelfEnergy {
     }
-    class Occupancy {
+    class HoppingMatrix {
+    }
+    class HybridizationFunction {
     }
     class Outputs {
     }
     class PhysicalProperty {
     }
-    class QuasiparticleWeight {
-    }
-    class RadiusOfGyration {
+    class PotentialEnergy {
     }
     class SCFOutputs {
     }
-    class TotalEnergy {
+    class TotalForce {
+    }
+    class XASSpectrum {
     }
     Outputs <|-- SCFOutputs
-    Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ChemicalPotential
     Outputs --> ElectronicBandGap
+    Outputs --> ElectronicBandStructure
     Outputs --> ElectronicEigenvalues
-    Outputs --> FermiSurface
-    Outputs --> KineticEnergy : kinetic_energies
-    Outputs --> Occupancy : occupancies
-    Outputs --> QuasiparticleWeight
-    Outputs --> RadiusOfGyration : radii_of_gyration
-    Outputs --> TotalEnergy : total_energies
+    Outputs --> ElectronicGreensFunction
+    Outputs --> ElectronicSelfEnergy : electronic_self_energies
+    Outputs --> HoppingMatrix : hopping_matrices
+    Outputs --> HybridizationFunction
+    Outputs --> PotentialEnergy : potential_energies
+    Outputs --> TotalForce
+    Outputs --> XASSpectrum : xas_spectra
     SCFOutputs --> Outputs : scf_steps
     Outputs ..> PhysicalProperty : base type for most outputs
 ```

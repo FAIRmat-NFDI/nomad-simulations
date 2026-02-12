@@ -179,5 +179,5 @@ This means you can explore different geometric descriptions (primitive cells, co
 ## See Also
 
 - [ModelSystem Overview](model_system.md): General introduction to the ModelSystem class
-- [Electronic States](../atoms_state/electronic_states.md): Similar hierarchical design pattern for electronic structure
+- [Electronic States](electronic_states.md): Similar hierarchical design pattern for electronic structure
 - [Normalization](../normalize.md): How normalization populates alternative representations
