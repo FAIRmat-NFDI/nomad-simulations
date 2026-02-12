@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
+
 from nomad_simulations.schema_packages.numerical_settings import (
     DispersionKnob,
     DispersionSettings,

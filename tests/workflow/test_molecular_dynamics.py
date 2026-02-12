@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
     BarostatParameters,

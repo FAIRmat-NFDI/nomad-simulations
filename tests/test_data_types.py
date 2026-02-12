@@ -11,6 +11,7 @@ from nomad.metainfo.data_type import (
     normalize_type,
 )
 from nomad.units import ureg
+
 from nomad_simulations.schema_packages.data_types import (
     Bound,
     m_float_bounded,

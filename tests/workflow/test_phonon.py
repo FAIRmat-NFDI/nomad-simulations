@@ -1,4 +1,5 @@
 from nomad.datamodel.metainfo.workflow import Link
+
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.workflow.phonon import (

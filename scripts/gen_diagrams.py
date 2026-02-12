@@ -483,7 +483,7 @@ def main(argv=None):
         )
 
         if args.stdout:
-            print(f"# {spec.get('title', key)}")
+            print(f'# {spec.get("title", key)}')
             print(md)
             print()
         else:

@@ -1,5 +1,6 @@
 from nomad.datamodel import EntryMetadata
 from nomad.datamodel.metainfo.workflow import TaskReference
+
 from nomad_simulations.schema_packages.workflow.beyond_hf import (
     BeyondHFMethod,
     BeyondHFResults,

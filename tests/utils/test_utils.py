@@ -1,6 +1,7 @@
 import pytest
 import structlog
 from nomad.utils import get_logger
+
 from nomad_simulations.schema_packages.model_system import (
     ModelSystem,
     Representation,

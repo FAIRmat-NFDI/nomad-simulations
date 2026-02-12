@@ -52,14 +52,14 @@ def create_test_upload_files(
 
     for archive in archives:
         mainfile = archive.metadata.mainfile
-        assert (
-            mainfile is not None
-        ), 'Archives to create test upload must have a mainfile'
+        assert mainfile is not None, (
+            'Archives to create test upload must have a mainfile'
+        )
         # create an archive "file" for each archive
         entry_id = archive.metadata.entry_id
-        assert (
-            entry_id is not None
-        ), 'Archives to create test upload must have an entry_id'
+        assert entry_id is not None, (
+            'Archives to create test upload must have an entry_id'
+        )
         upload_files.write_archive(entry_id, archive.m_to_dict())
 
     if published:

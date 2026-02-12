@@ -1,5 +1,6 @@
 import pytest
 from nomad.datamodel import EntryArchive
+
 from nomad_simulations.schema_packages.model_method import DFT, XCFunctional
 from nomad_simulations.schema_packages.utils.libxc import registry as libxc_registry
 
