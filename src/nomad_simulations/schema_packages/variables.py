@@ -2,11 +2,12 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel import Quantity
+from nomad.metainfo import Quantity
 
 if TYPE_CHECKING:
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.datamodel import Context, Section
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.numerical_settings import (
@@ -108,9 +109,6 @@ class Energy2(Variables):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class WignerSeitz(Variables):
     """
@@ -126,9 +124,6 @@ class WignerSeitz(Variables):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class Frequency(Variables):
     """ """
@@ -141,9 +136,6 @@ class Frequency(Variables):
         Points in which the frequency is discretized, in joules.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class MatsubaraFrequency(Variables):
@@ -158,9 +150,6 @@ class MatsubaraFrequency(Variables):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class Time(Variables):
     """ """
@@ -174,9 +163,6 @@ class Time(Variables):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class ImaginaryTime(Variables):
     """ """
@@ -189,9 +175,6 @@ class ImaginaryTime(Variables):
         Points in which the imaginary time is discretized, in seconds.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
 
 class KMesh(Variables):
@@ -207,9 +190,6 @@ class KMesh(Variables):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class KLinePath(Variables):
     """ """
@@ -220,6 +200,3 @@ class KLinePath(Variables):
         Reference to the `KLinePath.points` in which the physical property is calculated. These are 3D arrays stored in fractional coordinates.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)

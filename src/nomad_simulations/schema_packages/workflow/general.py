@@ -1,13 +1,21 @@
+import numpy as np
 from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflow
-from nomad.datamodel import Quantity, SchemaPackage, SubSection
+from nomad.metainfo import Datetime, Quantity, SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.common import SimulationTime
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import ElectronicDensityOfStates
 from nomad_simulations.schema_packages.utils import log
+from nomad_simulations.schema_packages.workflow.trajectory import (
+    FreeEnergyCalculations,
+    Pressures,
+    RadiiOfGyration,
+    Temperatures,
+)
 
 # TODO make this a function to check required number of tasks
 INCORRECT_N_TASKS = 'Incorrect number of tasks found.'
@@ -19,7 +27,7 @@ class SimulationTask(Task):
     pass
 
 
-class SimulationWorkflowModel(ArchiveSection):
+class SimulationWorkflowMethod(ArchiveSection):
     """
     Base class for simulation workflow model sub-section definition.
     """
@@ -50,26 +58,81 @@ class SimulationWorkflowModel(ArchiveSection):
             self.initial_method = archive.data.model_method[0]
 
 
-class SimulationWorkflowResults(ArchiveSection):
+class WorkflowTime(ArchiveSection):
+    """
+    Contains time-related quantities.
+    """
+
+    datetime_end = Quantity(
+        type=Datetime,
+        description="""
+        The date and time when the workflow ended.
+        """,
+    )
+
+    cpu1_start = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The starting time of the workflow on the (first) CPU 1.
+        """,
+    )
+
+    cpu1_end = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The end time of the workflow on the (first) CPU 1.
+        """,
+    )
+
+    wall_start = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The internal wall-clock time from the starting of the workflow.
+        """,
+    )
+
+    wall_end = Quantity(
+        type=np.float64,
+        unit='second',
+        description="""
+        The internal wall-clock time from the end of the workflow.
+        """,
+    )
+
+
+class SimulationWorkflowResults(WorkflowTime):
     """
     Base class for simulation workflow results sub-section definition.
     """
 
-    _label = 'Output results'
+    _label = 'Workflow results'
 
-    final_outputs = Quantity(
-        type=Outputs,
+    finished_normally = Quantity(
+        type=bool,
+        shape=[],
         description="""
-        Reference to the final outputs.
+        Indicates if calculation terminated normally.
         """,
     )
 
-    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if not archive.data or not archive.data.outputs:
-            return
+    # TODO add generic convergence results here
 
-        if not self.final_outputs:
-            self.final_outputs = archive.data.outputs[-1]
+    # final_outputs = Quantity(
+    #     type=Outputs,
+    #     description="""
+    #     Reference to the final outputs.
+    #     """,
+    # )
+
+    # def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+    #     if not archive.data or not archive.data.outputs:
+    #         return
+
+    #     if not self.final_outputs:
+    #         self.final_outputs = archive.data.outputs[-1]
 
 
 class SimulationTaskReference(TaskReference, SimulationTask):
@@ -86,22 +149,22 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     _task_label = 'Task'
 
-    model = SubSection(sub_section=SimulationWorkflowModel.m_def)
+    method = SubSection(sub_section=SimulationWorkflowMethod.m_def)
 
     results = SubSection(sub_section=SimulationWorkflowResults.m_def)
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        if not self.model:
-            self.model = SimulationWorkflowModel()
+        if not self.method:
+            self.method = SimulationWorkflowMethod()
 
-        if self.model in [inp.section for inp in self.inputs]:
+        if self.method in [inp.section for inp in self.inputs]:
             return
 
         logger = self.map_inputs.__annotations__['logger']
-        self.model.normalize(archive, logger)
+        self.method.normalize(archive, logger)
         # add method to inputs
-        self.inputs.append(Link(name=self.model._label, section=self.model))
+        self.inputs.append(Link(name=self.method._label, section=self.method))
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
@@ -181,10 +244,29 @@ class SimulationWorkflow(Workflow, SimulationTask):
         self.map_tasks(archive, logger=logger)
 
 
+class SerialWorkflowResults(SimulationWorkflowResults):
+    temperatures = SubSection(sub_section=Temperatures.m_def, repeats=True)
+
+    pressures = SubSection(sub_section=Pressures.m_def, repeats=True)
+
+    radii_of_gyration = SubSection(sub_section=RadiiOfGyration.m_def, repeats=True)
+
+    free_energy_calculations = SubSection(
+        sub_section=FreeEnergyCalculations.m_def, repeats=True
+    )
+
+
 class SerialWorkflow(SimulationWorkflow):
     """
     Base class for workflows where tasks are executed sequentially.
     """
+
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
+        if not self.results:
+            self.results = SerialWorkflowResults()
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)

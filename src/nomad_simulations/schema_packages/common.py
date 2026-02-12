@@ -1,7 +1,7 @@
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.annotations import ELNAnnotation
-from nomad.datamodel import Datetime, Quantity
+from nomad.metainfo import Datetime, Quantity
 
 
 class SimulationTime(ArchiveSection):

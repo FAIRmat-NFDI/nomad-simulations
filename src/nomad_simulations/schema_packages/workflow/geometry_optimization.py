@@ -1,6 +1,6 @@
 import numpy as np
 from nomad.datamodel import EntryArchive
-from nomad.datamodel import MEnum, Quantity, SchemaPackage
+from nomad.metainfo import MEnum, Quantity, SchemaPackage
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.properties.energies import BaseEnergy

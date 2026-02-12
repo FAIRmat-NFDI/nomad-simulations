@@ -1,6 +1,6 @@
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, TaskReference
-from nomad.datamodel import Quantity
+from nomad.metainfo import Quantity
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log

@@ -2,7 +2,7 @@ import numpy as np
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.metainfo.workflow import Link, TaskReference
-from nomad.datamodel import (
+from nomad.metainfo import (
     MEnum,
     Quantity,
     Reference,

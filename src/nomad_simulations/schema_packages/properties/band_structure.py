@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pint
 from nomad.config import config
-from nomad.datamodel import Quantity, SubSection
+from nomad.metainfo import Quantity, SubSection
 
 from nomad_simulations.schema_packages.variables import KLinePath
 

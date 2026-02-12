@@ -1,6 +1,6 @@
 import numpy as np
 from nomad.datamodel import EntryArchive
-from nomad.datamodel import Quantity, Reference, SchemaPackage
+from nomad.metainfo import Quantity, Reference, SchemaPackage
 
 from nomad_simulations.schema_packages.model_method import BSE as BSEMethodology
 from nomad_simulations.schema_packages.properties import SpectralProfile as Spectra

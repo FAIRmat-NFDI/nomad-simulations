@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from itertools import accumulate, chain, tee
 from typing import TYPE_CHECKING, Union
 
@@ -5,12 +6,13 @@ import numpy as np
 import pint
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.datamodel.data import ArchiveSection
-from nomad.datamodel import JSON, MEnum, Quantity, SubSection
+from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.datamodel import Context, Section
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.model_system import ModelSystem
@@ -140,17 +142,14 @@ class Mesh(ArchiveSection):
         """,
     )
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
 
 class KSpaceFunctionalities:
     """
     A functionality class useful for defining methods shared between `KSpace`, `KMesh`, and `KLinePath`.
     """
 
+    @staticmethod
     def validate_reciprocal_lattice_vectors(
-        self,
         reciprocal_lattice_vectors: pint.Quantity | None,
         logger: 'BoundLogger',
         check_grid: bool | None = False,
@@ -198,6 +197,10 @@ class KSpaceFunctionalities:
         information in the sub-sections `Symmetry` and `AtomicCell`, and uses the ASE package to extract the
         special (high symmetry) points information.
 
+        Note:
+            This method should be called after `ModelSystem.normalize()` has been executed, as it depends on
+            normalized `symmetry` and `representations` data populated during ModelSystem normalization.
+
         Args:
             model_systems (list[ModelSystem]): The list of `ModelSystem` sections.
             logger (BoundLogger): The logger to log messages.
@@ -206,38 +209,43 @@ class KSpaceFunctionalities:
         Returns:
             (dict | None): The resolved `high_symmetry_points`.
         """
-        # Extracting `bravais_lattice` from `ModelSystem.symmetry` section and `ASE.cell` from `ModelSystem.cell`
+        # Extracting `bravais_lattice` from `ModelSystem.symmetry` section and `ASE.cell` from `ModelSystem.representations`
         lattice = None
+        if model_systems is None:
+            logger.warning(
+                'Could not find `model_systems` to resolve high symmetry points.'
+            )
+            return None
         for model_system in model_systems:
             # General checks to proceed with normalization
             if not model_system.is_representative:
                 continue
-            if model_system.symmetry is None:
-                logger.warning('Could not find `ModelSystem.symmetry`.')
-                continue
-            bravais_lattice = [symm.bravais_lattice for symm in model_system.symmetry]
-            if len(bravais_lattice) != 1:
-                logger.warning(
-                    'Could not uniquely determine `bravais_lattice` from `ModelSystem.symmetry`.'
-                )
-                continue
-            bravais_lattice = bravais_lattice[0]
+            # Symmetry is now a single subsection, not a list
+            # Extract bravais_lattice if symmetry exists, otherwise use None
+            bravais_lattice = (
+                model_system.symmetry.bravais_lattice
+                if model_system.symmetry is not None
+                else None
+            )
 
-            if model_system.cell is None:
-                logger.warning('Could not find `ModelSystem.cell`.')
+            if model_system.representations is None:
+                logger.warning('Could not find `ModelSystem.representations`.')
                 continue
             prim_atomic_cell = None
-            for atomic_cell in model_system.cell:
-                if atomic_cell.type == 'primitive':
+            for atomic_cell in model_system.representations:
+                if atomic_cell.name == 'primitive':
                     prim_atomic_cell = atomic_cell
                     break
             if prim_atomic_cell is None:
                 logger.warning(
-                    'Could not find the primitive `AtomicCell` under `ModelSystem.cell`.'
+                    'Could not find primitive representation under `ModelSystem.representations`.'
                 )
                 continue
             # function defined in ModelSystem
-            atoms = model_system.to_ase_atoms(logger=logger)
+            atoms = model_system.to_ase_atoms(
+                representation_index=0 if model_system.representations else None,
+                logger=logger,
+            )
             cell = atoms.get_cell()
             lattice = cell.get_bravais_lattice(eps=eps)
             break  # only cover the first representative `ModelSystem`
@@ -358,7 +366,7 @@ class KMesh(Mesh):
 
     def resolve_points_and_offset(
         self, logger: 'BoundLogger'
-    ) -> tuple[list[np.ndarray] | None, np.ndarray | None]:
+    ) -> tuple[np.ndarray | None, np.ndarray | None]:
         """
         Resolves the `points` and `offset` of the `KMesh` from the `grid` and the `center`.
 
@@ -366,7 +374,7 @@ class KMesh(Mesh):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (tuple[list[np.ndarray] | None, np.ndarray | None]): The resolved `points` and `offset` of the `KMesh`.
+            (tuple[np.ndarray | None, np.ndarray | None]): The resolved `points` and `offset` of the `KMesh`.
         """
         if self.grid is None:
             logger.warning('Could not find `KMesh.grid`.')
@@ -376,12 +384,14 @@ class KMesh(Mesh):
         offset = None
         if self.center == 'Gamma-centered':  # ! fix this (@ndaelman-hu)
             grid_space = [np.linspace(0, 1, n) for n in self.grid]
-            points = np.meshgrid(grid_space)
+            points_meshgrid = np.meshgrid(*grid_space, indexing='ij')
+            points = np.column_stack([grid.ravel() for grid in points_meshgrid])
             offset = np.array([0, 0, 0])
         elif self.center == 'Monkhorst-Pack':
             try:
-                points = monkhorst_pack(size=self.grid)
-                offset = get_monkhorst_pack_size_and_offset(kpts=points)[-1]
+                points_array = monkhorst_pack(size=self.grid)
+                points = points_array
+                offset = get_monkhorst_pack_size_and_offset(kpts=points_array)[-1]
             except ValueError:
                 logger.warning(
                     'Could not resolve `KMesh.points` and `KMesh.offset` from `KMesh.grid`. ASE `monkhorst_pack` failed.'
@@ -404,11 +414,14 @@ class KMesh(Mesh):
             (np.float64): The k-line density of the `KMesh`.
         """
         # Initial check
-        if not KSpaceFunctionalities().validate_reciprocal_lattice_vectors(
-            reciprocal_lattice_vectors=reciprocal_lattice_vectors,
-            logger=logger,
-            check_grid=True,
-            grid=self.grid,
+        if (
+            reciprocal_lattice_vectors is None
+            or not KSpaceFunctionalities().validate_reciprocal_lattice_vectors(
+                reciprocal_lattice_vectors=reciprocal_lattice_vectors,
+                logger=logger,
+                check_grid=True,
+                grid=self.grid,
+            )
         ):
             return None
 
@@ -463,6 +476,11 @@ class KMesh(Mesh):
         return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # Ensure parent KSpace has normalized reciprocal_lattice_vectors first
+        k_space = self.m_parent
+        if k_space is not None and isinstance(k_space, KSpace):
+            k_space.normalize_reciprocal_lattice_vectors()
+
         super().normalize(archive, logger)
 
         # If `grid` is not defined, we do not normalize the KMesh
@@ -478,8 +496,9 @@ class KMesh(Mesh):
         model_systems = self.m_xpath(
             'm_parent.m_parent.m_parent.model_system', dict=False
         )
-        reciprocal_lattice_vectors = self.m_xpath(
-            'm_parent.reciprocal_lattice_vectors', dict=False
+        # Access reciprocal_lattice_vectors directly from parent to preserve units
+        reciprocal_lattice_vectors = (
+            self.m_parent.reciprocal_lattice_vectors if self.m_parent else None
         )
         if self.k_line_density is None:
             self.k_line_density = self.resolve_k_line_density(
@@ -699,6 +718,8 @@ class KLinePath(ArchiveSection):
         high_symmetry_path_value_norms = self.get_high_symmetry_path_norms(
             reciprocal_lattice_vectors=reciprocal_lattice_vectors, logger=logger
         )
+        if high_symmetry_path_value_norms is None:
+            return None
         closest_indices = list(
             map(
                 lambda norm: (np.abs(points_norm - norm.magnitude)).argmin(),
@@ -741,14 +762,20 @@ class KLinePath(ArchiveSection):
         self.points = new_points
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # Ensure parent KSpace has normalized reciprocal_lattice_vectors first
+        k_space = self.m_parent
+        if k_space is not None and isinstance(k_space, KSpace):
+            k_space.normalize_reciprocal_lattice_vectors()
+
         super().normalize(archive, logger)
 
         # Resolves `high_symmetry_path_values` from `high_symmetry_path_names`
         model_systems = self.m_xpath(
             'm_parent.m_parent.m_parent.model_system', dict=False
         )
-        reciprocal_lattice_vectors = self.m_xpath(
-            'm_parent.reciprocal_lattice_vectors', dict=False
+        # Access reciprocal_lattice_vectors directly from parent to preserve units
+        reciprocal_lattice_vectors = (
+            self.m_parent.reciprocal_lattice_vectors if self.m_parent else None
         )
         if (
             self.high_symmetry_path_values is None
@@ -771,7 +798,7 @@ class KSpace(NumericalSettings):
     depending on the k-space sampling: `k_mesh` or `k_line_path`.
     """
 
-    # ! This needs to be normalized first in order to extract the `reciprocal_lattice_vectors` from the `ModelSystem.cell` information
+    # ! This needs to be normalized first in order to extract the `reciprocal_lattice_vectors` from the `ModelSystem.representations` information
     reciprocal_lattice_vectors = Quantity(
         type=np.float64,
         shape=[3, 3],
@@ -805,6 +832,11 @@ class KSpace(NumericalSettings):
         Returns:
             (pint.Quantity | None): The resolved `reciprocal_lattice_vectors` of the `KSpace`.
         """
+        if model_systems is None:
+            logger.warning(
+                'Could not find `model_systems` to resolve reciprocal lattice vectors.'
+            )
+            return None
         for model_system in model_systems:
             # General checks to proceed with normalization
             if not model_system.is_representative:
@@ -815,25 +847,41 @@ class KSpace(NumericalSettings):
                 logger.warning('`ModelSystem.type` is not describing a bulk system.')
                 continue
 
-            atomic_cell = model_system.cell
+            atomic_cell = model_system.representations
             if atomic_cell is None:
-                logger.warning('`ModelSystem.cell` was not found.')
+                logger.warning('`ModelSystem.representations` was not found.')
                 continue
 
             # Set the `reciprocal_lattice_vectors` using ASE
-            ase_atoms = model_system.to_ase_atoms(logger=logger)
+            ase_atoms = model_system.to_ase_atoms(
+                representation_index=0 if model_system.representations else None,
+                logger=logger,
+            )
             return 2 * np.pi * ase_atoms.get_reciprocal_cell() / ureg.angstrom
         return None
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
+    @log
+    def normalize_reciprocal_lattice_vectors(self) -> None:
+        """
+        Ensure `reciprocal_lattice_vectors` are normalized if not already set.
+        This method is separated to allow subsections (`KMesh` and `KLinePath`) to
+        call it and ensure the parent's `reciprocal_lattice_vectors` are available.
+        """
+        if self.reciprocal_lattice_vectors is not None:
+            return
 
-        # Resolve `reciprocal_lattice_vectors` from the `ModelSystem` ASE object
+        logger = self.normalize_reciprocal_lattice_vectors.__annotations__['logger']
         model_systems = self.m_xpath('m_parent.m_parent.model_system', dict=False)
-        if self.reciprocal_lattice_vectors is None:
-            self.reciprocal_lattice_vectors = self.resolve_reciprocal_lattice_vectors(
-                model_systems=model_systems, logger=logger
-            )
+        self.reciprocal_lattice_vectors = self.resolve_reciprocal_lattice_vectors(
+            model_systems=model_systems, logger=logger
+        )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        # Normalize `reciprocal_lattice_vectors` BEFORE calling super().normalize()
+        # so that subsections can access it during their normalization
+        self.normalize_reciprocal_lattice_vectors()
+
+        super().normalize(archive, logger)
 
 
 class SelfConsistency(NumericalSettings):
@@ -884,88 +932,697 @@ class SelfConsistency(NumericalSettings):
         # Set the name of the section
         self.name = self.m_def.name
 
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
 
-
-class ForceCalculations(NumericalSettings):
+class FrozenCore(NumericalSettings):
     """
-    Section containing the parameters for force calculations according to a ForceField model.
+    Section defining the frozen-core approximation settings for molecular electronic-structure methods.
+
+    In the frozen-core approximation, selected inner-shell (core) orbitals are excluded from
+    the orbital optimization or post-SCF correlation treatment, retaining them at their
+    reference-determinant (e.g., Hartree-Fock or Kohn-Sham) values. This significantly
+    reduces the number of 'valence' orbitals, lowering computational cost.
+
+    The frozen-core scheme can be specified either by enumerating the exact orbitals to
+    freeze or by using simple threshold rules based on quantum numbers or atomic numbers.
+
     """
 
-    vdw_cutoff = Quantity(
-        type=np.float64,
-        shape=[],
-        unit='m',
+    ####  MolecularOrbitalsState has not been implemented yet.
+    # core_orbitals_ref = Quantity(
+    #     type=MolecularOrbitalsState,
+    #     shape=['n_frozen_core_orbitals'],
+    #     description="""
+    #     References to the atomic OrbitalsState sections to keep frozen.
+    #     """,
+    # )
+
+    per_atom_n_threshold = Quantity(
+        type=np.int32,
+        shape=['*'],
         description="""
-        Cutoff for calculating VDW forces.
+        For each atom (in input order), maximum principal quantum number *n*
+        that will be **frozen**.  -1 means “no freezing for that atom”.
         """,
     )
 
-    coulomb_type = Quantity(
+    per_atom_z_threshold = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Alternative per-atom rule: freeze all core shells with atomic number Z ≤ value.
+        Entries of 0 disable the rule for that atom.
+        """,
+    )
+
+
+class PPCutoff(ArchiveSection):
+    """
+    A single plane-wave cutoff recommendation for a pseudopotential, specifying context metadata
+    such as which physical expansion it controls (wavefunction, charge density, etc.) and its precision
+    (package recommendation, library tier, or range bound).
+    """
+
+    cutoff_kind = Quantity(
         type=MEnum(
-            'cutoff',
-            'ewald',
-            'multilevel_summation',
-            'particle_mesh_ewald',
-            'particle_particle_particle_mesh',
-            'reaction_field',
+            'wavefunction',
+            'charge_density',
+            'augmentation',
+            'response',
+            'unavailable',
+        ),
+        description="""
+        Identifies which physical expansion this cutoff controls. Plane-wave DFT codes
+        use different cutoffs for the wavefunction basis, charge density grid, PAW
+        augmentation charges, and response functions (e.g., for GW calculations). This
+        field disambiguates which expansion the cutoff value applies to.
+        """,
+    )
+
+    cutoff_role = Quantity(
+        type=MEnum(
+            'recommended',
+            'recommended_min',
+            'recommended_max',
+            'fast',
+            'balanced',
+            'stringent',
+        ),
+        description="""
+        Pseudopotential files may provide more than one cutoff recommendation.
+        This field captures the recommendation context for the cutoff value: whether it
+        represents a single simulation package recommendation, bounds in a recommended range (min/max),
+        or a precision tier from a standard library.
+
+        The precision tiers follow the SSSP (Standard Solid-State Pseudopotentials)
+        protocol nomenclature: `'fast'` for testing and preliminary calculations,
+        `'balanced'` for high-throughput screening and most practical applications,
+        and `'stringent'` for production calculations requiring maximum precision
+        (Beal et al., arXiv:2504.03962, 2025).
+        """,
+    )
+
+    value = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        The cutoff energy.
+        """,
+    )
+
+
+class Pseudopotential(NumericalSettings):
+    """
+    Section containing high-level metadata (type, cutoff energy, XC functional) that identifies which pseudopotential was used.
+    Pseudopotentials approximate the potential of core electrons and the nucleus, enabling
+    efficient treatment of valence electrons in plane-wave codes.
+
+    The actual numerical pseudopotential data (radial functions, projectors, augmentation charges)
+    is typically stored in external files which are not parsed into the archive due to size and licensing constraints.
+
+    Note: This class is distinct from `EffectiveCorePotential` in basis_set.py, which stores
+    analytical ECP representations for quantum chemistry codes with Gaussian basis sets. ECPs
+    cannot represent PAW or ultrasoft pseudopotentials used in plane-wave calculations.
+    """
+
+    name = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Native code name of the pseudopotential.
+        """,
+    )
+
+    type = Quantity(
+        type=MEnum('NC', 'US', 'PAW', 'NC-PAW', 'NC-PAW-GW'),
+        shape=[],
+        description="""
+        Pseudopotential formalism classification.
+
+        Norm-conserving (NC) pseudopotentials maintain the charge norm within the core region,
+        providing the highest transferability between chemical environments. They guarantee
+        correct scattering properties across all energy ranges but require higher plane-wave
+        cutoffs than other types. Key references: Hamann et al., Phys. Rev. Lett. 43, 1494 (1979);
+        Troullier & Martins, Phys. Rev. B 43, 1993 (1991).
+
+        Ultrasoft (US) pseudopotentials use Vanderbilt's formalism to relax the norm-conservation
+        constraint, producing softer pseudopotentials that converge with lower cutoffs. This reduces
+        computational cost but may sacrifice some transferability. All ultrasoft pseudopotentials
+        follow the same fundamental formalism regardless of generation method. Reference:
+        Vanderbilt, Phys. Rev. B 41, 7892 (1990).
+
+        Projector Augmented Wave (PAW) is a frozen-core all-electron method that reconstructs the
+        full wavefunction within augmentation spheres. Standard PAW uses non-norm-conserving partial
+        waves optimized for ground-state DFT accuracy and computational efficiency. References:
+        Blöchl, Phys. Rev. B 50, 17953 (1994); Kresse & Joubert, Phys. Rev. B 59, 1758 (1999).
+
+        NC-PAW is a PAW variant with norm-conserving partial waves. While more expensive than
+        standard PAW, NC-PAW provides better scattering properties for high-energy states, making
+        it more suitable for calculations requiring accurate unoccupied states. Reference:
+        Kresse & Joubert, Phys. Rev. B 59, 1758 (1999).
+
+        NC-PAW-GW pseudopotentials are NC-PAW optimized specifically for GW and BSE calculations.
+        They include additional projectors at higher energies to accurately describe quasiparticle
+        states far above the Fermi level. Standard PAW and US pseudopotentials systematically
+        underestimate scattering into high-energy unoccupied states, which is critical for GW
+        many-body perturbation theory. See VASP _GW potentials documentation.
+
+        Note: The Morrison-Bylander-Kleinman (MBK) separable form is an implementation technique
+        used across all types, not a distinct pseudopotential formalism.
+        """,
+    )
+
+    n_valence_electrons = Quantity(
+        type=np.float64,
+        shape=[],
+        description="""
+        Number of valence electrons explicitly treated by the pseudopotential.
+        This also determines the effective ionic charge seen by the valence electrons.
+
+        Should equal the sum of electrons in `reference_configuration`, though the
+        configuration string may omit deeper semi-core levels that are included in
+        the valence count.
+        """,
+    )
+
+    reference_configuration = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        Electronic configuration used to generate the pseudopotential (e.g., "3s1 3d0.5" or "3p6 3d7 4s1").
+        Documents the valence electron occupations used during generation.
+        The configuration string may only show the outermost valence orbitals explicitly.
+        """,
+    )
+
+    is_norm_conserving = Quantity(
+        type=bool,
+        shape=[],
+        description="""
+        Denotes whether the pseudopotential is norm-conserving.
+        """,
+    )
+
+    is_gw_optimized = Quantity(
+        type=bool,
+        default=False,
+        description="""
+        Whether this pseudopotential was optimized for GW/excited-state calculations.
+        GW-optimized pseudopotentials are validated for scattering properties far above
+        the Fermi level and typically include more semi-core states. They remain valid
+        for standard DFT calculations but are computationally more expensive.
+        """,
+    )
+
+    cutoffs = SubSection(sub_section=PPCutoff.m_def, repeats=True)
+
+    r_core = Quantity(
+        type=np.float64,
+        shape=[],
+        unit='meter',
+        description="""
+        Core radius defining the pseudopotential smoothing region:
+        - For norm-conserving and ultrasoft pseudopotentials: smaller values require higher
+          cutoff energies but provide better transferability and accuracy
+        - For PAW: augmentation sphere radius; PAW's all-electron reconstruction mitigates
+          the traditional hardness/cutoff tradeoff while maintaining accuracy
+        - Useful for detecting overlapping augmentation spheres in small unit cells
+        """,
+    )
+
+    l_max = Quantity(
+        type=np.int32,
+        shape=[],
+        description="""
+        Maximum angular momentum of the pseudopotential projectors.
+        """,
+    )
+
+    lm_max = Quantity(
+        type=np.int32,
+        shape=[],
+        description="""
+        Maximum magnetic quantum number of the pseudopotential projectors.
+        """,
+    )
+
+    # generation details
+
+    pseudization_scheme = Quantity(
+        type=MEnum(
+            'Troullier-Martins', 'Polynomial', 'Bessel', 'Extra-Soft', 'unavailable'
         ),
         shape=[],
         description="""
-        Method used for calculating long-ranged Coulomb forces.
-
-        Allowed values are:
-
-        | Method Name          | Description                               |
-
-        | ---------------------- | ----------------------------------------- |
-
-        | `""`                   | No thermostat               |
-
-        | `"Cutoff"`          | Simple cutoff scheme. |
-
-        | `"Ewald"` | Standard Ewald summation as described in any solid-state physics text. |
-
-        | `"Multi-Level Summation"` |  D. Hardy, J.E. Stone, and K. Schulten,
-        [Parallel. Comput. **35**, 164](https://doi.org/10.1016/j.parco.2008.12.005)|
-
-        | `"Particle-Mesh-Ewald"`        | T. Darden, D. York, and L. Pedersen,
-        [J. Chem. Phys. **98**, 10089 (1993)](https://doi.org/10.1063/1.464397) |
-
-        | `"Particle-Particle Particle-Mesh"` | See e.g. Hockney and Eastwood, Computer Simulation Using Particles,
-        Adam Hilger, NY (1989). |
-
-        | `"Reaction-Field"` | J.A. Barker and R.O. Watts,
-        [Mol. Phys. **26**, 789 (1973)](https://doi.org/10.1080/00268977300102101)|
+        Method used to generate the smooth pseudopotential:
+        - `'Troullier-Martins'`: Standard scheme with continuous derivatives
+        - `'Polynomial'`: Polynomial matching at core radius
+        - `'Bessel'`: Bessel function based construction
+        - `'Extra-Soft'`: Optimized for low cutoff energies
+        - `'unavailable'`: Pseudization scheme not specified or unknown
         """,
     )
 
-    coulomb_cutoff = Quantity(
-        type=np.float64,
-        shape=[],
-        unit='m',
+    xc_functional = SubSection(
+        sub_section=SectionProxy(
+            'nomad_simulations.schema_packages.model_method.XCFunctional'
+        ),
         description="""
-        Cutoff for calculating short-ranged Coulomb forces.
+        Exchange-correlation functional used to generate this pseudopotential.
+
+        Should match (or be compatible with) the XC functional used in the calculation.
+        The functional_key field allows parsers to store simple aliases (e.g., 'PBE', 'LDA'),
+        which are automatically expanded to LibXC components during normalization.
         """,
     )
 
-    neighbor_update_frequency = Quantity(
-        type=int,
-        shape=[],
+    relativistic_treatment = SubSection(
+        sub_section=SectionProxy(
+            'nomad_simulations.schema_packages.model_method.RelativityModel'
+        ),
         description="""
-        Number of timesteps between updating the neighbor list.
+        Relativistic treatment used during pseudopotential generation.
+        Does not imply anything about treatment of the valence electrons.
         """,
     )
 
-    neighbor_update_cutoff = Quantity(
-        type=np.float64,
-        shape=[],
-        unit='m',
-        description="""
-        The distance cutoff for determining the neighbor list.
-        """,
-    )
-
-    def normalize(self, archive, logger) -> None:
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+        # Normalize XC functional to expand functional_key into LibXC components
+        if self.xc_functional:
+            self.xc_functional.normalize(archive, logger)
+
+
+class SolvationSettings(NumericalSettings):
+    """
+    Numerical and evaluation settings for implicit-solvation models.
+
+    Stores discretization and solver choices (surface tessellation, PB grids, etc.).
+    """
+
+    # TODO: revisit here after the final Mesh implementation
+    surface_tessellation = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Number of Lebedev/Geodesic points per atom used in the cavity
+        discretisation (relevant for surface-integral PCM codes).
+
+        Semantics:
+        • Single value → global default applied to all atoms.
+        • Length == n_species → per-species values (ordered like the model's species list).
+        • Length == n_atoms → per-atom values (in atomic order).
+
+        Many codes expose a global setting but internally vary with element; this
+        shape allows parsers to emit either a single global value or an explicit
+        vector when the input/output is species- or atom-resolved.
+        """,
+    )
+
+    #  minimal PB/GB knobs for classical comparability
+    epsilon_interior = Quantity(
+        type=np.float64,
+        description='Interior (solute) dielectric ε_in; GB/PB often use ε_in > 1. Default is 1.0 if missing.',
+    )
+
+    ionic_strength = Quantity(
+        type=np.float64,
+        unit='mole / liter',
+        description='Bulk ionic strength (salt) for PB; optional for GB parameterizations.',
+    )
+
+    # GB/GBSA per-atom Born radii
+    born_radii_system_ref = Quantity(
+        type=ModelSystem,
+        description="""
+        ModelSystem whose particle ordering the Born radii refer to. If omitted,
+        normalization should default to the last representative ModelSystem.
+        """,
+    )
+
+    # Local count specifically for this array (avoids clashing with ModelSystem.n_particles)
+    n_born = Quantity(
+        type=np.int32,
+        description='Number of Born radii provided (length of effective_born_radii).',
+    )
+
+    effective_born_radii = Quantity(
+        type=np.float64,
+        unit='meter',
+        shape=['n_born'],
+        description="""
+        Per-particle effective Born radii R_i^Born used by GB/GBSA electrostatics.
+        """,
+    )
+
+    born_radii_particle_indices = Quantity(
+        type=np.int32,
+        shape=['n_born'],
+        description="""
+        Optional indices into born_radii_system_ref's particle list. If omitted, a 1:1
+        mapping to that system's particle ordering is assumed.
+        """,
+    )
+
+
+class DispersionKnob(ArchiveSection):
+    """
+    A single typed numerical knob for an explicit dispersion / vdW correction.
+
+    This is a "typed physical constraint" record: it stores one scalar value
+    together with semantics that disambiguate what the value controls.
+    """
+
+    kind = Quantity(
+        type=MEnum(
+            # Pairwise scaling factors
+            's6',
+            's8',
+            's9',
+            # Damping / range parameters
+            'a1',
+            'a2',
+            'sR',
+            # Nonlocal kernel parameter
+            'b',
+            # Many-body screening / range separation
+            'beta',
+        ),
+        description="""
+        Identifies the dispersion parameter using standard notation.
+        (e.g. s6, a1, beta, b).
+
+        All dispersion knobs are dimensionless.
+        """,
+    )
+
+    applies_to = Quantity(
+        type=MEnum(
+            'pairwise',
+            'three_body_atm',
+            'many_body',
+            'nonlocal_kernel',
+            'density_partitioning',
+        ),
+        description="""
+        Identifies which dispersion contribution this knob controls.
+        """,
+    )
+
+    value = Quantity(
+        type=np.float64,
+        description="""
+        Numerical value of the parameter (dimensionless).
+        """,
+    )
+
+
+class DispersionSettings(NumericalSettings):
+    """
+    Numerical and evaluation settings for an explicit dispersion / vdW correction.
+
+    This section contains discrete switches and environment choices (e.g. whether
+    to include higher-order dispersion terms, which density partitioning is used),
+    as well as typed scalar parameters stored as `DispersionKnob`.
+    """
+
+    # switches for term inclusion / order
+    include_three_body_atm = Quantity(
+        type=bool,
+        description="""
+        Whether a 3-body Axilrod-Teller-Muto (ATM) contribution is included.
+        Relevant for D3/D4 when the 3-body term is enabled.
+        """,
+    )
+
+    include_c8 = Quantity(
+        type=bool,
+        description="""
+        Whether the C8/R^8 term is included in the pairwise dispersion sum.
+        Relevant for D3/D4 style models.
+        """,
+    )
+
+    include_c10 = Quantity(
+        type=bool,
+        description="""
+        Whether the C10/R^10 term is included.
+        Relevant for models such as XDM that may include higher-order terms.
+        """,
+    )
+
+    max_dispersion_order = Quantity(
+        type=np.int32,
+        description="""
+        Highest n in Cn/R^n included by the dispersion model (e.g. 6, 8, 10).
+        """,
+    )
+
+    # environment/charges for density-dependent schemes
+    partition_scheme = Quantity(
+        type=MEnum('Hirshfeld', 'Hirshfeld-I', 'MBIS'),
+        description="""
+        Density partitioning scheme used to obtain atom-in-molecule quantities
+        (e.g. TS/MBD polarizabilities).
+        """,
+    )
+
+    charge_model = Quantity(
+        type=MEnum('EEQ', 'CM5', 'NPA'),
+        description="""
+        Atomic charge model used by charge-dependent dispersion schemes (e.g. D4).
+        """,
+    )
+
+    density_source = Quantity(
+        type=MEnum('all-electron', 'PAW-reconstructed', 'valence-only'),
+        description="""
+        Source of the electron density used for partitioning (e.g. Hirshfeld/MBIS).
+        """,
+    )
+
+    # typed scalar parameters
+    knobs = SubSection(
+        sub_section=DispersionKnob.m_def,
+        repeats=True,
+        description="""
+        Typed scalar parameters (knobs) for the dispersion correction.
+
+        Examples:
+          • D3BJ:  s6/s8 (pairwise), a1/a2 (pairwise), optionally s9 (three_body_atm)
+          • rVV10: b (nonlocal_kernel)
+        """,
+    )
+
+
+class IntegralDecomposition(ArchiveSection):
+    """
+    A general class for integral decomposition techniques that approximate
+    Coulomb and/or exchange integrals to reduce computational cost in quantum
+    chemistry.
+
+    Captures common families such as RIJ, RIJK, RIJCOSX, SENEX, and Cholesky
+    Decomposition (CD / CD_F12). The `approximated_term` encodes which part of
+    the electronic structure workload is approximated. This class self-normalizes
+    legacy/narrow settings to lossless semantics:
+      • RIJ        → J only                      → 'coulomb'
+      • RIJK       → J and K together            → 'jk'
+      • RIJCOSX    → J (RI) + K (COSX)           → 'jk'
+      • CD         → ERI-tensor level            → 'two_electron'
+      • CD_F12     → explicit-correlation terms  → 'explicit_correlation'
+
+    Typical references:
+      - F. Weigend, M. Häser, The RI-MP2 method: Algorithmic
+        implementation of efficient, approximate MP2 theories,
+        Theor. Chem. Acc. 97, 331-340 (1997).
+      - S. Hättig, F. Weigend, J. Chem. Phys. 113, 5154 (2000). (RI-J)
+      - Neese et al., "Chain-of-spheres algorithms for HF exchange,"
+        Chem. Phys. 356 (2008), 98-109.
+    """
+
+    approximation_type = Quantity(
+        type=MEnum('RIJ', 'RIJK', 'RIJCOSX', 'SENEX', 'CD', 'CD_F12'),
+        description="""
+        RIJ     : also known as RIJONX, where only Coulomb integrals are approximated.
+        RIJK    : both Coulomb and exchange integrals.
+        RIJCOSX : RIJ for Coulomb and COSX for HF exchange.
+        SENEX   : Similar to COSX, relevant for Turbomole.
+        CD      : Cholesky decomposition of the two-electron integral tensor
+        CD_F12  : Cholesky decomposition specialized for F12/explicit-correlation integrals
+        """,
+    )
+
+    approximated_term = Quantity(
+        type=MEnum(
+            'coulomb',  # J only
+            'exchange',  # K only
+            'jk',  # J and K together (e.g., RIJK/RIJCOSX)
+            'two_electron',  # ERI-level (e.g., plain CD)
+            'mp2',
+            'cc',
+            'explicit_correlation',
+        ),
+        description="""
+        The targeted term(s) being approximated. If not provided, it will be
+        inferred from `approximation_type`. For backward compatibility, narrow
+        values are safely widened (e.g., RIJK + 'exchange' → 'jk').
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        _TERM_BY_TYPE = {
+            'RIJ': 'coulomb',
+            'RIJK': 'jk',
+            'RIJCOSX': 'jk',
+            'CD': 'two_electron',
+            'CD_F12': 'explicit_correlation',
+        }
+
+        if self.approximated_term is None:
+            inferred = _TERM_BY_TYPE.get(self.approximation_type)
+            if inferred is not None:
+                self.approximated_term = inferred
+
+
+class MultireferenceSCFSettings(NumericalSettings):
+    """
+    Numerical knobs for multireference SCF optimizations (CASSCF/RASSCF/DMRG-SCF).
+    """
+
+    shift_virtual = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Static up-shift applied to the virtual orbital block during macro iterations.
+        Use when virtuals alone are shifted.
+        """,
+    )
+
+    shift_core = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Static down-shift applied to the core/internal block.
+        Helps decouple inactive orbitals from the active space.
+        """,
+    )
+
+    shift_active = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Level shift applied to the active orbitals (e.g., Molpro `SHIFTO`).
+        Can be positive or negative.
+        """,
+    )
+
+    min_subspace_gap = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Minimum enforced energy separation between orbital subspaces,
+        typically to keep active/inactive/virtual spaces apart.
+        """,
+    )
+
+
+class MultireferencePTSettings(NumericalSettings):
+    """
+    Numerical controls for multireference perturbation treatments
+    (CASPT/NEVPT/RASPT/MRMP/XMCQDPT).
+
+    These settings capture intruder-state mitigation (real/imaginary level shifts,
+    IPEA shift) and contraction choices.
+    """
+
+    real_level_shift = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Real level shift applied to denominators to mitigate intruder states.
+        Common values are 0.1-0.3 Ha.
+        """,
+    )
+
+    imaginary_level_shift = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        Imaginary level shift used as an alternative intruder-state stabilizer.
+        Typically a small positive value (e.g., 0.1 Ha).
+        """,
+    )
+
+    ipea_shift = Quantity(
+        type=np.float64,
+        unit='hartree',
+        description="""
+        IPEA shift applied to the zeroth-order Hamiltonian.
+        Defaults vary by code (often 0.25 Ha).
+        """,
+    )
+
+    contraction_type = Quantity(
+        type=MEnum(
+            'strongly_contracted',
+            'partially_contracted',
+            'internally_contracted',
+            'uncontracted',
+        ),
+        description="""
+        Contraction flavour used for the perturbative correction.
+          • strongly_contracted : strongly contracted NEVPT / CASPT variants
+          • partially_contracted: partially contracted NEVPT / CASPT variants
+          • internally_contracted: generic internal contraction (e.g., MRMP)
+          • uncontracted: no contraction of perturber space
+        """,
+    )
+
+
+class DMRGSettings(NumericalSettings):
+    """
+    Matrix-product-state solver controls for DMRG-SCF/DMRG-CI/DMRG-PT workflows.
+    Use alongside `MultireferenceSCFSettings` when orbital-shift knobs are also needed.
+    """
+
+    max_bond_dimension = Quantity(
+        type=np.int32,
+        description="""
+        Maximum MPS bond dimension (M). Primary accuracy knob; larger values
+        increase cost but reduce truncation error.
+        """,
+    )
+
+    sweep_schedule = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Optional per-sweep bond-dimension schedule. If provided, its length gives
+        the number of sweeps; otherwise `n_sweeps` is used.
+        """,
+    )
+
+    n_sweeps = Quantity(
+        type=np.int32,
+        description="""
+        Number of sweeps when no explicit `sweep_schedule` is supplied.
+        """,
+    )
+
+    discarded_weight_threshold = Quantity(
+        type=np.float64,
+        description="""
+        Target (or maximum) discarded weight per sweep. Used to adapt the bond
+        dimension or assess convergence quality.
+        """,
+    )
+
+    noise = Quantity(
+        type=np.float64,
+        description="""
+        Stochastic noise amplitude (if used) to escape local minima during early
+        sweeps.
+        """,
+    )

@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 
 import numpy as np
-from nomad.datamodel import Quantity, SubSection
+from nomad.metainfo import Quantity, SubSection
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive

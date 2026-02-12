@@ -1,11 +1,12 @@
 from typing import TYPE_CHECKING, Optional
 
-from nomad.datamodel import MEnum, Quantity, SubSection
-from nomad.datamodel.data_type import m_complex128
+from nomad.metainfo import MEnum, Quantity, SubSection
+from nomad.metainfo.data_type import m_complex128
 
 if TYPE_CHECKING:
+    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.datamodel import Context, Section
+    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty

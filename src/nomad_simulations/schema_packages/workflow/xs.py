@@ -1,6 +1,6 @@
 import numpy as np
 from nomad.datamodel import EntryArchive
-from nomad.datamodel import SchemaPackage
+from nomad.metainfo import SchemaPackage
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
