@@ -69,6 +69,7 @@ def convert_mermaid_to_png(mermaid_code: str, output_path: Path) -> bool:
             capture_output=True,
             text=True,
             timeout=30,
+            check=False,
         )
 
         if result.returncode != 0:
@@ -162,7 +163,7 @@ def process_docs(
         mermaid_blocks = extract_mermaid_blocks(md_file)
 
         if not mermaid_blocks:
-            print(f'  No Mermaid diagrams found')
+            print('  No Mermaid diagrams found')
             continue
 
         for title, mermaid_code in mermaid_blocks:

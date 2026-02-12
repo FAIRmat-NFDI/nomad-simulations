@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 from nomad.units import ureg
-
 from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties.energies import TotalEnergy

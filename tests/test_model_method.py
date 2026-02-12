@@ -1,6 +1,5 @@
 import pytest
 from nomad.datamodel import EntryArchive
-
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
     ElectronicState,

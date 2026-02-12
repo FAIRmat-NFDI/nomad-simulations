@@ -6,9 +6,8 @@ from nomad.datamodel import EntryArchive, EntryMetadata
 from nomad.datamodel.context import ServerContext
 from nomad.utils import create_uuid, get_logger
 from nomad.utils.exampledata import ExampleData
-from structlog.stdlib import BoundLogger
-
 from nomad_simulations.schema_packages.general import Simulation
+from structlog.stdlib import BoundLogger
 
 
 @pytest.fixture(scope='session', autouse=True)

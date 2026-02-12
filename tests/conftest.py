@@ -7,8 +7,6 @@ import pytest
 import structlog
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
-from structlog.testing import LogCapture
-
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
     BaseSpinOrbitalState,
@@ -32,6 +30,7 @@ from nomad_simulations.schema_packages.properties import (
 )
 from nomad_simulations.schema_packages.variables import Energy2 as Energy
 from nomad_simulations.schema_packages.variables import KLinePath
+from structlog.testing import LogCapture
 
 from . import logger
 

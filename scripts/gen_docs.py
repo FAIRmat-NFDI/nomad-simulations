@@ -1,19 +1,20 @@
 # scripts/gen_docs.py
 from __future__ import annotations
+
 import argparse
-from pathlib import Path
 import sys
+from pathlib import Path
+
 import yaml
 
 # Ensure sibling imports work when run from repo root
 SCRIPT_DIR = Path(__file__).parent.resolve()
 sys.path.insert(0, str(SCRIPT_DIR))
 
-from verticals import VERTICALS
-from meta_introspect import collect_edges, iter_section_classes
 from gen_diagrams import filter_edges_for_vertical
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-
+from meta_introspect import collect_edges, iter_section_classes
+from verticals import VERTICALS
 
 # ---- optional: richer example generator if present --------------------------
 try:
@@ -149,7 +150,9 @@ def build_registry(
     pkg: str, extra_modules: list[str] | None = None
 ) -> dict[str, object]:
     """Map {ClassName -> MSection subclass} discovered under the package."""
-    import importlib, inspect
+    import importlib
+    import inspect
+
     from nomad.metainfo import MSection
 
     reg: dict[str, object] = {}

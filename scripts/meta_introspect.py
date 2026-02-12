@@ -1,13 +1,14 @@
 # scripts/meta_introspect.py
 from __future__ import annotations
+
 import importlib
 import inspect
 import pkgutil
 import sys
-from typing import Any, Iterable, Optional, get_args, get_origin
+from collections.abc import Iterable
+from typing import Any, Optional, get_args, get_origin
 
 from nomad.metainfo import MSection
-
 
 # ------------------------- discovery -------------------------
 
@@ -221,14 +222,18 @@ def section_edges(section_cls: type[MSection]) -> dict[str, list[tuple[str, str,
             # Inheritance: child <|-- parent
             inherit.add((section_cls.__name__, base.__name__, ''))
 
-    return {'contain': sorted(contain), 'refs': sorted(refs), 'inherit': sorted(inherit)}
+    return {
+        'contain': sorted(contain),
+        'refs': sorted(refs),
+        'inherit': sorted(inherit),
+    }
 
 
 # ------------------------- aggregate across package -------------------------
 
 
 def _include_edge(
-    edge: tuple[str, str, str], module_by_name: dict[str, str], prefix: Optional[str]
+    edge: tuple[str, str, str], module_by_name: dict[str, str], prefix: str | None
 ) -> bool:
     if not prefix:
         return True
@@ -239,7 +244,7 @@ def _include_edge(
 
 
 def collect_edges(
-    pkg: str, only_modules_prefix: Optional[str] = None
+    pkg: str, only_modules_prefix: str | None = None
 ) -> dict[str, list[tuple[str, str, str]]]:
     """
     Aggregate 'contain', 'refs', and 'inherit' edges across all MSection classes found

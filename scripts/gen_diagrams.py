@@ -27,9 +27,10 @@ Current simplified format removes:
 """
 
 from __future__ import annotations
+
 import argparse
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Ensure we can import sibling modules (verticals.py, meta_introspect.py)
 SCRIPT_DIR = Path(__file__).parent.resolve()
@@ -91,57 +92,57 @@ def partition_children_for_diagrams(
     parent_nodes: set[str],
     all_children: set[str],
     filtered_edges: dict,
-    max_children_per_diagram: int = 12
+    max_children_per_diagram: int = 12,
 ) -> list[set[str]]:
     """
     Partition children into groups for multiple diagrams when there are too many.
-    
+
     Rules:
     - If children <= max_children_per_diagram, return single group
     - If children > max_children_per_diagram, split into multiple groups
     - Keep connected children in the same group
     - Each group should have parent_nodes + subset of children
-    
+
     Returns: List of node sets (each includes parents + some children)
     """
     if len(all_children) <= max_children_per_diagram:
         # Small enough - single diagram
         return [parent_nodes | all_children]
-    
+
     # Build child-to-child adjacency (connections between children)
     child_adj = {c: set() for c in all_children}
-    
+
     for edge_type in ['contain', 'refs', 'inherit']:
         for a, b, _ in filtered_edges.get(edge_type, []):
             # Only track edges between children (not parent-child)
             if a in all_children and b in all_children:
                 child_adj[a].add(b)
                 child_adj[b].add(a)
-    
+
     # Find connected components among children
     visited = set()
     child_groups = []
-    
+
     def dfs(node, group):
         visited.add(node)
         group.add(node)
         for neighbor in child_adj[node]:
             if neighbor not in visited:
                 dfs(neighbor, group)
-    
+
     for child in all_children:
         if child not in visited:
             group = set()
             dfs(child, group)
             child_groups.append(group)
-    
+
     # Sort groups by size (larger first)
     child_groups.sort(key=lambda g: -len(g))
-    
+
     # Pack groups into diagrams, trying to balance size
     diagrams = []
     current_diagram_children = set()
-    
+
     for group in child_groups:
         if len(current_diagram_children) + len(group) <= max_children_per_diagram:
             # Add to current diagram
@@ -151,11 +152,11 @@ def partition_children_for_diagrams(
             if current_diagram_children:
                 diagrams.append(parent_nodes | current_diagram_children)
             current_diagram_children = group.copy()
-    
+
     # Add final diagram
     if current_diagram_children:
         diagrams.append(parent_nodes | current_diagram_children)
-    
+
     return diagrams
 
 
@@ -310,10 +311,10 @@ def mermaid_for_vertical(
         'ModelMethod',
         'Outputs',
     }
-    
+
     # Find which parent sections are in this vertical
     parents_in_vertical = parent_sections & nodes
-    
+
     # Find all immediate children of parent sections (from all edge types)
     all_parent_children = set()
     if parents_in_vertical:
@@ -321,13 +322,16 @@ def mermaid_for_vertical(
             for a, b, _ in filtered_edges.get(edge_type, []):
                 if a in parents_in_vertical and b in nodes:
                     all_parent_children.add(b)
-    
+
     # Decide if we need to partition
     # Use threshold of 12 children per diagram
     if parents_in_vertical and len(all_parent_children) > 12:
         # Partition children into multiple diagrams
         diagram_node_sets = partition_children_for_diagrams(
-            parents_in_vertical, all_parent_children, filtered_edges, max_children_per_diagram=12
+            parents_in_vertical,
+            all_parent_children,
+            filtered_edges,
+            max_children_per_diagram=12,
         )
     else:
         # Single diagram with all nodes
@@ -361,18 +365,20 @@ def mermaid_for_vertical(
             # Add separator and note between diagrams
             lines.extend(['', '---', ''])
             if parents_in_vertical:
-                lines.extend([
-                    f'',
-                    f'_Diagram {diagram_idx + 1} of {len(diagram_node_sets)} (split due to large number of children)_',
-                    '',
-                ])
+                lines.extend(
+                    [
+                        '',
+                        f'_Diagram {diagram_idx + 1} of {len(diagram_node_sets)} (split due to large number of children)_',
+                        '',
+                    ]
+                )
 
         lines.extend(['```mermaid', 'classDiagram'])
 
         # Define classes
         for n in sorted(diagram_nodes):
             lines.append(f'    class {n} {{')
-            lines.append(f'    }}')
+            lines.append('    }')
 
         # Helper function to normalize labels
         def normalize_label(label: str, target: str) -> str:

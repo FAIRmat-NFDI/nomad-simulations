@@ -1,10 +1,10 @@
 # scripts/gen_examples.py
 from __future__ import annotations
+
 import inspect
-from typing import Any, get_origin, get_args
+from typing import Any, get_args, get_origin
 
 from nomad.metainfo import MSection
-
 
 # ----------------- helpers -----------------
 
@@ -80,7 +80,6 @@ def _placeholder_for_quantity(q) -> Any:
 
     # Primitive placeholders by dtype name (best-effort)
     dtype = getattr(q, 'dtype', None)
-    unit = getattr(q, 'unit', None)
     shape = getattr(q, 'shape', None)
 
     base = None

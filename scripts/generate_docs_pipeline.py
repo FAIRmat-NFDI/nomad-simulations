@@ -17,10 +17,10 @@ Usage:
 The complete pipeline takes ~1-2 minutes depending on the number of diagrams.
 """
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
-import shutil
 
 # ============================================================================
 # DIAGRAM ZOOM CONFIGURATION
@@ -171,7 +171,7 @@ nav:
             if updated_content != mkdocs_content:
                 mkdocs_file.write_text(updated_content, encoding='utf-8')
                 print(
-                    f'✓ Updated mkdocs.yml Schema Navigation with hierarchical structure'
+                    '✓ Updated mkdocs.yml Schema Navigation with hierarchical structure'
                 )
                 print(f'  - {len(hierarchy)} parent sections')
                 print(
@@ -206,8 +206,8 @@ def validate_diagram_complexity(repo_root: Path) -> bool:
 
     try:
         sys.path.insert(0, str(repo_root / 'scripts'))
-        from verticals import VERTICALS
         from meta_introspect import collect_edges, iter_section_classes
+        from verticals import VERTICALS
 
         # Collect all edges to analyze inheritance depth
         pkg = 'nomad_simulations'
@@ -431,7 +431,8 @@ def clean_old_docs(repo_root: Path) -> bool:
                     if not is_diagram
                     else (
                         content.lstrip().startswith('```mermaid')
-                        or 'This diagram shows the relationships between schema classes' in content
+                        or 'This diagram shows the relationships between schema classes'
+                        in content
                     )
                 )
                 if looks_generated:
@@ -469,6 +470,7 @@ def configure_diagram_zoom(repo_root: Path, method: str) -> bool:
 
     try:
         import re
+
         content = mkdocs_file.read_text(encoding='utf-8')
 
         if method == 'panzoom':
@@ -510,35 +512,35 @@ def configure_diagram_zoom(repo_root: Path, method: str) -> bool:
                 print('✓ Updated panzoom plugin configuration in mkdocs.yml')
             else:
                 print('✓ Added panzoom plugin to mkdocs.yml')
-            
+
             # Comment out custom zoom JS
             content = re.sub(
-                r"^(\s*- assets/click-zoom\.js)$",
-                r"  # \1  # Disabled: using panzoom plugin",
+                r'^(\s*- assets/click-zoom\.js)$',
+                r'  # \1  # Disabled: using panzoom plugin',
                 content,
-                flags=re.MULTILINE
+                flags=re.MULTILINE,
             )
             content = re.sub(
-                r"^(\s*- assets/svg-pan-zoom-diagram\.js)$",
-                r"  # \1  # Disabled: using panzoom plugin",
+                r'^(\s*- assets/svg-pan-zoom-diagram\.js)$',
+                r'  # \1  # Disabled: using panzoom plugin',
                 content,
-                flags=re.MULTILINE
+                flags=re.MULTILINE,
             )
-            
+
             # Comment out custom zoom CSS
             content = re.sub(
-                r"^(\s*- stylesheets/mermaid-zoom\.css)$",
-                r"  # \1  # Disabled: using panzoom plugin",
+                r'^(\s*- stylesheets/mermaid-zoom\.css)$',
+                r'  # \1  # Disabled: using panzoom plugin',
                 content,
-                flags=re.MULTILINE
+                flags=re.MULTILINE,
             )
             content = re.sub(
-                r"^(\s*- stylesheets/svg-diagram\.css)$",
-                r"  # \1  # Disabled: using panzoom plugin",
+                r'^(\s*- stylesheets/svg-diagram\.css)$',
+                r'  # \1  # Disabled: using panzoom plugin',
                 content,
-                flags=re.MULTILINE
+                flags=re.MULTILINE,
             )
-            
+
             print('✓ Enabled panzoom plugin, disabled custom zoom JS/CSS')
 
         else:  # simple method
@@ -556,10 +558,7 @@ def configure_diagram_zoom(repo_root: Path, method: str) -> bool:
                 flags=re.MULTILINE,
             )
             content = re.sub(
-                r'^(\s*default_enable:.*?)$',
-                r'  # \1',
-                content,
-                flags=re.MULTILINE
+                r'^(\s*default_enable:.*?)$', r'  # \1', content, flags=re.MULTILINE
             )
             # Also comment panzoom option lines if present
             content = re.sub(
@@ -568,35 +567,35 @@ def configure_diagram_zoom(repo_root: Path, method: str) -> bool:
                 content,
                 flags=re.MULTILINE,
             )
-            
+
             # Uncomment custom zoom JS
             content = re.sub(
-                r"^\s*#\s*(- assets/click-zoom\.js).*$",
-                r"  \1",
+                r'^\s*#\s*(- assets/click-zoom\.js).*$',
+                r'  \1',
                 content,
-                flags=re.MULTILINE
+                flags=re.MULTILINE,
             )
             content = re.sub(
-                r"^\s*#\s*(- assets/svg-pan-zoom-diagram\.js).*$",
-                r"  \1",
+                r'^\s*#\s*(- assets/svg-pan-zoom-diagram\.js).*$',
+                r'  \1',
                 content,
-                flags=re.MULTILINE
+                flags=re.MULTILINE,
             )
-            
+
             # Uncomment custom zoom CSS
             content = re.sub(
-                r"^\s*#\s*(- stylesheets/mermaid-zoom\.css).*$",
-                r"  \1",
+                r'^\s*#\s*(- stylesheets/mermaid-zoom\.css).*$',
+                r'  \1',
                 content,
-                flags=re.MULTILINE
+                flags=re.MULTILINE,
             )
             content = re.sub(
-                r"^\s*#\s*(- stylesheets/svg-diagram\.css).*$",
-                r"  \1",
+                r'^\s*#\s*(- stylesheets/svg-diagram\.css).*$',
+                r'  \1',
                 content,
-                flags=re.MULTILINE
+                flags=re.MULTILINE,
             )
-            
+
             print('✓ Enabled simple click-zoom, disabled panzoom plugin')
 
         mkdocs_file.write_text(content, encoding='utf-8')
@@ -605,6 +604,7 @@ def configure_diagram_zoom(repo_root: Path, method: str) -> bool:
     except Exception as e:
         print(f'✗ Error configuring zoom method: {e}')
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -620,6 +620,7 @@ def check_prerequisites() -> bool:
     if DIAGRAM_ZOOM_METHOD == 'panzoom':
         try:
             import importlib.util
+
             spec = importlib.util.find_spec('mkdocs_panzoom_plugin')
             if spec is None:
                 print('⚠ mkdocs-panzoom-plugin not found')
@@ -692,7 +693,6 @@ def main():
     if not step2_success:
         print('\n✗ Error: Schema documentation generation failed')
         sys.exit(1)
-
 
     # Step 3/4: Image generation (only for simple mode)
     if DIAGRAM_ZOOM_METHOD == 'simple':
@@ -776,7 +776,9 @@ def main():
         print('  ✓ Scroll-wheel zoom + drag to pan')
         print('  ✓ Fullscreen mode available')
         print('  ✓ Works with SVG vector graphics')
-        print('\n  To switch to simple mode: Set DIAGRAM_ZOOM_METHOD="simple" in generate_docs_pipeline.py')
+        print(
+            '\n  To switch to simple mode: Set DIAGRAM_ZOOM_METHOD="simple" in generate_docs_pipeline.py'
+        )
     else:
         print('  ✓ Simple Mode: Custom click-to-zoom JavaScript')
         print('  ✓ Click to zoom (2x scale)')
@@ -784,7 +786,9 @@ def main():
             print('  ✓ SVG vector graphics - infinite zoom quality')
         else:
             print('  ✓ PNG images')
-        print('\n  To enable advanced pan/zoom: Set DIAGRAM_ZOOM_METHOD="panzoom" in generate_docs_pipeline.py')
+        print(
+            '\n  To enable advanced pan/zoom: Set DIAGRAM_ZOOM_METHOD="panzoom" in generate_docs_pipeline.py'
+        )
 
     # Complexity warnings in summary
     if not step7_success:

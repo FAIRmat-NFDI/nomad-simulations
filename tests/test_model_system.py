@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
-
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
     CGBeadState,
@@ -574,9 +573,9 @@ class TestModelSystem:
                 for rec in caplog.records
             ), f'Warning not logged for {description}'
         else:
-            assert sys.periodic_boundary_conditions != [], (
-                f'PBC incorrectly cleared for {description}'
-            )
+            assert (
+                sys.periodic_boundary_conditions != []
+            ), f'PBC incorrectly cleared for {description}'
 
 
 @pytest.mark.parametrize('branching', [True, False])
@@ -1488,7 +1487,6 @@ def test_symmetry_analysis_fields(
     analysis_transformation_matrix, and site_symmetries for various crystal structures.
     """
     import ase
-
     from nomad_simulations.schema_packages.model_system import (
         ModelSystem,
         Symmetry,
