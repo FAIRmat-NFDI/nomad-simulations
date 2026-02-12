@@ -244,11 +244,7 @@ def mermaid_for_vertical(
     # Add one summarized anchor relation for outputs diagrams:
     # many output sections derive from PhysicalProperty, but drawing every
     # inheritance edge here would make the diagram too dense.
-    if (
-        vert_key == 'outputs'
-        and 'Outputs' in nodes
-        and 'PhysicalProperty' in nodes
-    ):
+    if vert_key == 'outputs' and 'Outputs' in nodes and 'PhysicalProperty' in nodes:
         lines.append('    Outputs ..> PhysicalProperty : base type for most outputs')
     lines.append('```')
     # Wrap with blank lines (very important for Markdown parsing)

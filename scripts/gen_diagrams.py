@@ -202,9 +202,15 @@ def filter_edges_for_vertical(
 
         # Keep method pages focused on the inheritance tree and declared method
         # classes; omit extra subsection/detail nodes that are not in allowlist.
-        if vert_key in {'model_method', 'model_method_electronic'} and b not in allowlist_set:
+        if (
+            vert_key in {'model_method', 'model_method_electronic'}
+            and b not in allowlist_set
+        ):
             continue
-        if vert_key in {'model_method', 'model_method_electronic'} and label == 'contributions':
+        if (
+            vert_key in {'model_method', 'model_method_electronic'}
+            and label == 'contributions'
+        ):
             continue
 
         # If source is a parent section (Simulation, etc), show all its direct children
@@ -429,7 +435,11 @@ def mermaid_for_vertical(
                 else:
                     lines.append(f'    {a} ..> {b}')
 
-        if key == 'outputs' and 'Outputs' in diagram_nodes and 'PhysicalProperty' in diagram_nodes:
+        if (
+            key == 'outputs'
+            and 'Outputs' in diagram_nodes
+            and 'PhysicalProperty' in diagram_nodes
+        ):
             lines.append(
                 '    Outputs ..> PhysicalProperty : base type for most outputs'
             )
