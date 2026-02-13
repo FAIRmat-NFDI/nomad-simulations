@@ -11,12 +11,6 @@
 - Orbital occupancies
 - Fermi surface topology
 
-**Out of scope:**
-
-- Many-body properties like Green's functions
-- Spectroscopic properties
-- Thermodynamic properties
-
 ## Relationship map
 
 
@@ -42,9 +36,8 @@ classDiagram
 
 **Legend**
 
-- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
-- `Owner --> SubSection`: containment/subsection relationship
-- `Source ..> Target`: typed reference from one section to another
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/></svg><code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)</div>
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="46,8 38,4 38,12" fill="currentColor"/></svg><code>Owner --&gt; SubSection</code> containment/subsection</div>
 
 
 ## Key sections
@@ -83,7 +76,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `reciprocal_cell` | <nomad.metainfo.metainfo.QuantityReference object at 0x7326b1ec2690> | Reciprocal lattice vectors associated with the k-space sampling used for these eigenvalues, taken from the corresponding `KSpace` numerical settings. |
+| `reciprocal_cell` | <nomad.metainfo.metainfo.QuantityReference object at 0x7b28dcaf6ba0> | Reciprocal lattice vectors associated with the k-space sampling used for these eigenvalues, taken from the corresponding `KSpace` numerical settings. |
 
 ### `ElectronicBandGap`
 
@@ -112,7 +105,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `orbitals_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x7326b1ec3b00> | Reference to the `ElectronicState` section in which the occupancy is calculated. This can reference individual orbitals, orbital manifolds, or hybrid/molecular orbitals. The parent AtomsState can be accessed via `orbitals_state_ref.get_parent_entity()`. |
+| `orbitals_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x7b28dcaba150> | Reference to the `ElectronicState` section in which the occupancy is calculated. This can reference individual orbitals, orbital manifolds, or hybrid/molecular orbitals. The parent AtomsState can be accessed via `orbitals_state_ref.get_parent_entity()`. |
 | `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic property. It can take values of 0 and 1. |
 | `value` | m_float64(float64) | <details><summary>Value of the electronic occupancy for the orbital defined by `orbitals_state_ref`.</summary>Value of the electronic occupancy for the orbital defined by `orbitals_state_ref`.<br>If `spin_channel` is set, then this number is between 0 and 1, where 0 means that<br>the state is unoccupied and 1 means that the state is fully occupied; if `spin_channel`<br>is not set, then this number is between 0 and 2.</details> |
 

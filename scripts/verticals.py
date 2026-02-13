@@ -53,12 +53,6 @@ VERTICALS = {
             'Program details (name, version, link)',
             'Entry point that references the four main subsections',
         ],
-        'out_of_scope': [
-            'ModelSystem details (see model_system vertical)',
-            'ModelMethod details (see model_method vertical)',
-            'Outputs details (see dedicated output verticals)',
-            'Workflow classes (separate schema)',
-        ],
     },
     # =========================================================================
     # MODEL SYSTEM TREE
@@ -78,16 +72,6 @@ VERTICALS = {
             'Direct relationships to Representation and AlternativeRepresentation',
             'References to ParticleState, Local/Global symmetry, and ChemicalFormula subsections',
         ],
-        'out_of_scope': [
-            'Detailed representation geometry fields (see representations vertical)',
-            'Particle state details (see particle_states vertical)',
-            'Symmetry details (see symmetry vertical)',
-            'Chemical formula details (see chemical_formula vertical)',
-            'Detailed atomic properties like orbitals (see particle_states)',
-            'Core holes and Hubbard interactions (see particle_states)',
-            'Methods that use the system (see model_method)',
-            'Outputs computed from the system (see output verticals)',
-        ],
     },
     'representations': {
         'title': 'Alternative Representations',
@@ -100,13 +84,6 @@ VERTICALS = {
             'Reference representation linkage',
             'Transformation matrix and origin shift between representations',
             'How alternative cells are mapped from the original representation',
-        ],
-        'out_of_scope': [
-            'ModelSystem root relationships (see model_system)',
-            'General representation geometry fields (see model_system)',
-            'Particle states within the representations (see particle_states)',
-            'Symmetry information (see symmetry)',
-            'Chemical formula details (see chemical_formula)',
         ],
     },
     'particle_states': {
@@ -132,10 +109,6 @@ VERTICALS = {
             'Particle indices, velocities, forces',
             'Chemical symbols and particle organization',
         ],
-        'out_of_scope': [
-            'Representation and geometric information (see representations)',
-            'Methods that use these properties (see model_method)',
-        ],
     },
     'symmetry': {
         'title': 'Symmetry',
@@ -153,10 +126,6 @@ VERTICALS = {
             'Bravais lattice classifications',
             'Symmetry operations',
         ],
-        'out_of_scope': [
-            'Representation structure (see representations)',
-            'Atomic positions (see representations and particle_states)',
-        ],
     },
     'chemical_formula': {
         'title': 'Chemical Formula',
@@ -171,10 +140,6 @@ VERTICALS = {
             'Hill formula',
             'Anonymous formula',
             'Automatic formula generation',
-        ],
-        'out_of_scope': [
-            'Atomic positions (see representations)',
-            'Particle states (see particle_states)',
         ],
     },
     # =========================================================================
@@ -191,12 +156,6 @@ VERTICALS = {
         'in_scope': [
             'Top-level inheritance chain: BaseModelMethod → ModelMethod → ModelMethodElectronic',
             'Entry point for all electronic-method subclasses',
-        ],
-        'out_of_scope': [
-            'Detailed electronic method subclasses (see model_method_electronic)',
-            'Classical force-field methods (see force_field)',
-            'Numerical settings like meshes and basis sets (see numerical_settings)',
-            'Output properties computed by these methods (see output verticals)',
         ],
     },
     'model_method_electronic': {
@@ -228,11 +187,6 @@ VERTICALS = {
             'Excited-state methodology branch (ExcitedStateMethodology, Screening, GW, BSE, TDDFT)',
             'Core-hole and many-body electronic methods (CoreHoleSpectra, DMFT)',
         ],
-        'out_of_scope': [
-            'Non-electronic ModelMethod subclasses (see model_method)',
-            'Method parameter detail sections not in this inheritance branch',
-            'Numerical settings and output properties (see numerical_settings and outputs)',
-        ],
     },
     'force_field': {
         'title': 'Force Field',
@@ -246,11 +200,6 @@ VERTICALS = {
             'ForceField as a ModelMethod subclass',
             'Potential family entry-point used by ForceField contributions',
             'Bridge between model methods and classical interaction potentials',
-        ],
-        'out_of_scope': [
-            'Electronic method hierarchy (see model_method_electronic)',
-            'Detailed potential subclasses (bond, angle, dihedral variants)',
-            'Numerical settings and outputs',
         ],
     },
     'numerical_settings': {
@@ -278,10 +227,6 @@ VERTICALS = {
             'Smearing functions: Fermi-Dirac, Gaussian, Methfessel-Paxton',
             'Force calculation settings',
         ],
-        'out_of_scope': [
-            'Methods that use these settings (see model_method)',
-            'Systems these apply to (see model_system)',
-        ],
     },
     # =========================================================================
     # OUTPUTS TREE
@@ -301,14 +246,6 @@ VERTICALS = {
             'Property contributions and derivations',
             'SCF convergence checking',
         ],
-        'out_of_scope': [
-            'Physical-property inheritance backbone (see physical_property)',
-            'Specific property types (see specialized verticals)',
-            'Electronic structure properties (see electronic_properties)',
-            'Many-body properties (see manybody_properties)',
-            'Spectroscopic properties (see spectroscopy)',
-            'Thermodynamic properties (see thermodynamics)',
-        ],
     },
     'physical_property': {
         'title': 'Physical Property Backbone',
@@ -327,13 +264,6 @@ VERTICALS = {
             'ErrorEstimate subsection used for uncertainty/error metadata',
             'Abstract/base property families for electronic, Green-function, energy, force, and spectral data',
             'Cross-domain backbone used by specialized output verticals',
-        ],
-        'out_of_scope': [
-            'Concrete electronic outputs (see electronic_properties)',
-            'Concrete many-body outputs (see manybody_properties)',
-            'Concrete spectroscopic outputs (see spectroscopy)',
-            'Concrete thermodynamic outputs (see thermodynamics)',
-            'Outputs container structure (see outputs)',
         ],
     },
     'electronic_properties': {
@@ -357,11 +287,6 @@ VERTICALS = {
             'Orbital occupancies',
             'Fermi surface topology',
         ],
-        'out_of_scope': [
-            "Many-body properties like Green's functions (see manybody_properties)",
-            'Spectroscopic properties (see spectroscopy)',
-            'Thermodynamic properties (see thermodynamics)',
-        ],
     },
     'manybody_properties': {
         'title': 'Many-Body Properties',
@@ -383,10 +308,6 @@ VERTICALS = {
             'Hopping matrices from tight-binding',
             'Crystal field splittings in correlated systems',
         ],
-        'out_of_scope': [
-            'Methods that compute these (GW, BSE, DMFT in model_method)',
-            'Basic electronic properties (see electronic_properties)',
-        ],
     },
     'spectroscopy': {
         'title': 'Spectroscopic Properties',
@@ -402,10 +323,6 @@ VERTICALS = {
             'Absorption spectra from BSE calculations',
             'X-ray absorption spectra (XAS) from core hole calculations',
             'Frequency-dependent dielectric functions (permittivity)',
-        ],
-        'out_of_scope': [
-            'Methods that compute spectra (BSE, CoreHoleSpectra in model_method)',
-            'DOS profiles (see electronic_properties)',
         ],
     },
     'thermodynamics': {
@@ -442,10 +359,6 @@ VERTICALS = {
             'Entropy and heat capacities',
             'Virial tensor for stress calculations',
             'Hessian matrices for phonon calculations',
-        ],
-        'out_of_scope': [
-            'Electronic structure properties (see electronic_properties)',
-            'Spectroscopic properties (see spectroscopy)',
         ],
     },
 }

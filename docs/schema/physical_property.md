@@ -9,14 +9,6 @@
 - Abstract/base property families for electronic, Green-function, energy, force, and spectral data
 - Cross-domain backbone used by specialized output verticals
 
-**Out of scope:**
-
-- Concrete electronic outputs
-- Concrete many-body outputs
-- Concrete spectroscopic outputs
-- Concrete thermodynamic outputs
-- Outputs container structure
-
 ## Relationship map
 
 
@@ -52,9 +44,8 @@ classDiagram
 
 **Legend**
 
-- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
-- `Owner --> SubSection`: containment/subsection relationship
-- `Source ..> Target`: typed reference from one section to another
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/></svg><code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)</div>
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="46,8 38,4 38,12" fill="currentColor"/></svg><code>Owner --&gt; SubSection</code> containment/subsection</div>
 
 
 ## Key sections
@@ -81,11 +72,11 @@ classDiagram
 | `type` | m_str(str) | Type categorization of the physical property. Example: an `ElectronicBandGap` can be `'direct'` or `'indirect'`. |
 | `contribution_type` | m_str(str) | Type of contribution to the physical property. Hence, only applies to `contributions` instances. Example: `TotalEnergy` may have contributions like _kinetic_, _potential_, etc. |
 | `label` | m_str(str) | Label for additional classification of the physical property. Example: an `ElectronicBandGap` can be labeled as `'DFT'` or `'GW'` depending on the methodology used to calculate it. |
-| `entity_ref` | <nomad.metainfo.metainfo.Reference object at 0x7326b1ec1520> | <details><summary>Reference to the entity that the physical property refers to.</summary>Reference to the entity that the physical property refers to. Examples:<br>- a simulated physical property might refer to the macroscopic system or instead of a specific atom in the unit<br>cell. In the first case, `outputs.model_system_ref` (see outputs.py) will point to the `ModelSystem` section,<br>while in the second case, `entity_ref` will point to `AtomsState` section (see atoms_state.py).</details> |
+| `entity_ref` | <nomad.metainfo.metainfo.Reference object at 0x7b28dcab9580> | <details><summary>Reference to the entity that the physical property refers to.</summary>Reference to the entity that the physical property refers to. Examples:<br>- a simulated physical property might refer to the macroscopic system or instead of a specific atom in the unit<br>cell. In the first case, `outputs.model_system_ref` (see outputs.py) will point to the `ModelSystem` section,<br>while in the second case, `entity_ref` will point to `AtomsState` section (see atoms_state.py).</details> |
 | `is_derived` | m_bool(bool) | <details><summary>Flag indicating whether the physical property is derived from other physical properties.</summary>Flag indicating whether the physical property is derived from other physical properties. We make<br>the distinction between directly parsed and derived physical properties:<br>- Directly parsed: the physical property is directly parsed from the simulation output files.<br>- Derived: the physical property is derived from other physical properties. No extra numerical settings<br>are required to calculate the physical property.</details> |
-| `physical_property_ref` | <nomad.metainfo.metainfo.Reference object at 0x7326b1ec1550> | Reference to the `PhysicalProperty` section from which the physical property was derived. If `physical_property_ref` is populated, the quantity `is_derived` is set to True via normalization. |
+| `physical_property_ref` | <nomad.metainfo.metainfo.Reference object at 0x7b28dcab9850> | Reference to the `PhysicalProperty` section from which the physical property was derived. If `physical_property_ref` is populated, the quantity `is_derived` is set to True via normalization. |
 | `is_scf_converged` | m_bool(bool) | Flag indicating whether the physical property is converged or not after a SCF process. This quantity is connected with `SelfConsistency` defined in the `numerical_settings.py` module. |
-| `self_consistency_ref` | <nomad.metainfo.metainfo.Reference object at 0x7326b1ec2d80> | Reference to the `SelfConsistency` section that defines the numerical settings to converge the physical property (see numerical_settings.py). |
+| `self_consistency_ref` | <nomad.metainfo.metainfo.Reference object at 0x7b28dcabb140> | Reference to the `SelfConsistency` section that defines the numerical settings to converge the physical property (see numerical_settings.py). |
 
 ### `ErrorEstimate`
 
@@ -117,7 +108,7 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `n_atoms` | m_int32(int32) | Number of atoms involved in the correlations effect and used for the matrix representation of the property. Can be derived from entity_ref if needed. |
-| `entity_ref` | <nomad.metainfo.metainfo.Reference object at 0x7326b1eff7a0> | Reference to the `ElectronicState` section describing the correlated orbitals for which the Green's function properties are calculated. The parent AtomsState can be accessed via `entity_ref.get_parent_entity()`. |
+| `entity_ref` | <nomad.metainfo.metainfo.Reference object at 0x7b28dcaf7cb0> | Reference to the `ElectronicState` section describing the correlated orbitals for which the Green's function properties are calculated. The parent AtomsState can be accessed via `entity_ref.get_parent_entity()`. |
 | `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic property. It can take values of 0 and 1. |
 | `local_model_type` | Enum | <details><summary>Type of Green's function calculated from the mapping of the local Hubbard-Kanamo...</summary>Type of Green's function calculated from the mapping of the local Hubbard-Kanamori model<br>into the Anderson impurity model.<br>The `impurity` Green's function describe the electronic correlations for the impurity, and it<br>is a local function. The `lattice` Green's function includes the coupling to the lattice<br>and hence it is a non-local function. In DMFT, the `lattice` term is approximated to be the<br>`impurity` one, so that these simulations are converged if both types of the local<br>part of the `lattice` Green's function coincides with the `impurity` Green's function.</details> |
 | `space_id` | Enum | <details><summary>String used to identify the space in which the Green's function property is represented.</summary>String used to identify the space in which the Green's function property is represented. The spaces are:<br>\| `space_id` \| variable type \|<br>\| ------ \| ------ \|<br>\| 'r' \| WignerSeitz \|<br>\| 'rt' \| WignerSeitz + Time \|<br>\| 'rw' \| WignerSeitz + Frequency \|<br>\| 'rit' \| WignerSeitz + ImaginaryTime \|<br>\| 'riw' \| WignerSeitz + MatsubaraFrequency \|<br>\| 'k' \| KMesh \|<br>\| 'kt' \| KMesh + Time \|<br>\| 'kw' \| KMesh + Frequency \|<br>\| 'kit' \| KMesh + ImaginaryTime \|<br>\| 'kiw' \| KMesh + MatsubaraFrequency \|<br>\| 't' \| Time \|<br>\| 'it' \| Frequency \|<br>\| 'w' \| ImaginaryTime \|<br>\| 'iw' \| MatsubaraFrequency \|</details> |

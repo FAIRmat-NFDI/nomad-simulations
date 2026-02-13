@@ -222,10 +222,15 @@ def mermaid_for_vertical(
     for n in sorted(nodes):
         lines.append(f'    class {n}')
 
+    has_inherit = False
+    has_contain = False
+    has_refs = False
+
     # Add inheritance edges first (most important)
     for a, b, _ in filtered_edges.get('inherit', []):
         if a in nodes and b in nodes:
             lines.append(f'    {b} <|-- {a}')
+            has_inherit = True
 
     # Add containment edges
     for a, b, label in filtered_edges.get('contain', []):
@@ -233,6 +238,7 @@ def mermaid_for_vertical(
             continue
         if a in nodes and b in nodes:
             lines.append(f'    {a} --> {b} : {label}')
+            has_contain = True
 
     # Add reference edges
     for a, b, label in filtered_edges.get('refs', []):
@@ -240,23 +246,52 @@ def mermaid_for_vertical(
             continue
         if a in nodes and b in nodes:
             lines.append(f'    {a} ..> {b} : {label}')
+            has_refs = True
 
     # Add one summarized anchor relation for outputs diagrams:
     # many output sections derive from PhysicalProperty, but drawing every
     # inheritance edge here would make the diagram too dense.
     if vert_key == 'outputs' and 'Outputs' in nodes and 'PhysicalProperty' in nodes:
         lines.append('    Outputs ..> PhysicalProperty : base type for most outputs')
+        has_refs = True
     lines.append('```')
     # Wrap with blank lines (very important for Markdown parsing)
     diagram = '\n' + '\n'.join(lines) + '\n'
-    # Use notation-based legend to avoid arrow-direction ambiguity.
-    diagram += """
-**Legend**
+    # Use relation-aware legend to match arrow types actually present.
+    legend_items = []
+    if has_inherit:
+        legend_items.append(
+            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
+            '<svg width="56" height="16" aria-hidden="true">'
+            '<line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/>'
+            '<polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/>'
+            '</svg>'
+            '<code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)'
+            '</div>'
+        )
+    if has_contain:
+        legend_items.append(
+            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
+            '<svg width="56" height="16" aria-hidden="true">'
+            '<line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/>'
+            '<polygon points="46,8 38,4 38,12" fill="currentColor"/>'
+            '</svg>'
+            '<code>Owner --&gt; SubSection</code> containment/subsection'
+            '</div>'
+        )
+    if has_refs:
+        legend_items.append(
+            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
+            '<svg width="56" height="16" aria-hidden="true">'
+            '<line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8" stroke-dasharray="4 3"/>'
+            '<polygon points="46,8 38,4 38,12" fill="currentColor"/>'
+            '</svg>'
+            '<code>A ..&gt; B</code> dependency/reference'
+            '</div>'
+        )
 
-- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
-- `Owner --> SubSection`: containment/subsection relationship
-- `Source ..> Target`: typed reference from one section to another
-"""
+    if legend_items:
+        diagram += '\n**Legend**\n\n' + '\n'.join(legend_items) + '\n'
     return diagram
 
 
@@ -281,11 +316,10 @@ def build_vertical(
         sections = list(spec.get('sections', []))
         purpose = spec.get('purpose', '')
         in_scope = [clean_scope_item(item) for item in spec.get('in_scope', [])]
-        out_of_scope = [clean_scope_item(item) for item in spec.get('out_of_scope', [])]
     else:
         title = vert_key.title()
         sections = list(spec)
-        purpose, in_scope, out_of_scope = '', [], []
+        purpose, in_scope = '', []
 
     # Diagram (already fenced and with blank lines)
     mermaid_block = mermaid_for_vertical(
@@ -352,7 +386,6 @@ def build_vertical(
         title=title,
         purpose=purpose,
         in_scope=in_scope,
-        out_of_scope=out_of_scope,
         sections=sections,
         section_info=section_info,
         metainfo_base=metainfo_base,

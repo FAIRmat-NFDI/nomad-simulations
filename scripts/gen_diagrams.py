@@ -352,6 +352,53 @@ def mermaid_for_vertical(
         # Single diagram with all nodes
         diagram_node_sets = [nodes]
 
+    # Show only legend items for relations that are actually present.
+    has_inherit = any(
+        a in nodes and b in nodes for a, b, _ in filtered_edges.get('inherit', [])
+    )
+    has_contain = any(
+        a != b and a in nodes and b in nodes
+        for a, b, _ in filtered_edges.get('contain', [])
+    )
+    has_refs = any(
+        a != b and a in nodes and b in nodes
+        for a, b, _ in filtered_edges.get('refs', [])
+    )
+    if key == 'outputs' and 'Outputs' in nodes and 'PhysicalProperty' in nodes:
+        has_refs = True
+
+    legend_items = []
+    if has_inherit:
+        legend_items.append(
+            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
+            '<svg width="56" height="16" aria-hidden="true">'
+            '<line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/>'
+            '<polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/>'
+            '</svg>'
+            '<code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)'
+            '</div>'
+        )
+    if has_contain:
+        legend_items.append(
+            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
+            '<svg width="56" height="16" aria-hidden="true">'
+            '<line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/>'
+            '<polygon points="46,8 38,4 38,12" fill="currentColor"/>'
+            '</svg>'
+            '<code>Owner --&gt; SubSection</code> containment/subsection'
+            '</div>'
+        )
+    if has_refs:
+        legend_items.append(
+            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
+            '<svg width="56" height="16" aria-hidden="true">'
+            '<line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8" stroke-dasharray="4 3"/>'
+            '<polygon points="46,8 38,4 38,12" fill="currentColor"/>'
+            '</svg>'
+            '<code>A ..&gt; B</code> dependency/reference'
+            '</div>'
+        )
+
     lines = []
     if add_header:
         lines.extend(
@@ -367,12 +414,10 @@ def mermaid_for_vertical(
                 '',
                 'This diagram shows the relationships between schema classes:',
                 '',
-                '- `Owner --> SubSection`: containment/subsection relationship',
-                '- `Source ..> Target`: typed reference from one section to another',
-                '- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)',
-                '',
             ]
         )
+        lines.extend(legend_items)
+        lines.append('')
 
     # Generate diagram(s)
     for diagram_idx, diagram_nodes in enumerate(diagram_node_sets):
@@ -453,12 +498,10 @@ def mermaid_for_vertical(
                     '',
                     '**Legend**',
                     '',
-                    '- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)',
-                    '- `Owner --> SubSection`: containment/subsection relationship',
-                    '- `Source ..> Target`: typed reference from one section to another',
-                    '',
                 ]
             )
+            lines.extend(legend_items)
+            lines.append('')
 
     return '\n'.join(lines)
 

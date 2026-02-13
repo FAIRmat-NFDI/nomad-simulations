@@ -12,14 +12,6 @@
 {% endfor %}
 
 {% endif %}
-{% if out_of_scope %}
-**Out of scope:**
-
-{% for item in out_of_scope %}
-- {{ item }}
-{% endfor %}
-
-{% endif %}
 ## Relationship map
 
 {{ mermaid_block }}

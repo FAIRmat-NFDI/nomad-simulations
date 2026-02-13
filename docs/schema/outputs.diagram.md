@@ -9,31 +9,27 @@
 
 This diagram shows the relationships between schema classes:
 
-- `Owner --> SubSection`: containment/subsection relationship
-- `Source ..> Target`: typed reference from one section to another
-- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/></svg><code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)</div>
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="46,8 38,4 38,12" fill="currentColor"/></svg><code>Owner --&gt; SubSection</code> containment/subsection</div>
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8" stroke-dasharray="4 3"/><polygon points="46,8 38,4 38,12" fill="currentColor"/></svg><code>A ..&gt; B</code> dependency/reference</div>
 
 ```mermaid
 classDiagram
     class AbsorptionSpectrum {
     }
-    class ChemicalPotential {
-    }
     class CrystalFieldSplitting {
     }
-    class ElectronicDensityOfStates {
+    class ElectronicBandGap {
     }
-    class FermiSurface {
+    class ElectronicSelfEnergy {
     }
     class KineticEnergy {
     }
-    class Occupancy {
-    }
     class Outputs {
     }
-    class Permittivity {
-    }
     class PhysicalProperty {
+    }
+    class PotentialEnergy {
     }
     class QuasiparticleWeight {
     }
@@ -45,19 +41,23 @@ classDiagram
     }
     class TotalEnergy {
     }
+    class TotalForce {
+    }
+    class XASSpectrum {
+    }
     Outputs <|-- SCFOutputs
     Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ChemicalPotential
     Outputs --> CrystalFieldSplitting
-    Outputs --> ElectronicDensityOfStates : electronic_dos
-    Outputs --> FermiSurface
+    Outputs --> ElectronicBandGap
+    Outputs --> ElectronicSelfEnergy : electronic_self_energies
     Outputs --> KineticEnergy : kinetic_energies
-    Outputs --> Occupancy : occupancies
-    Outputs --> Permittivity : permittivities
+    Outputs --> PotentialEnergy : potential_energies
     Outputs --> QuasiparticleWeight
     Outputs --> RadiusOfGyration : radii_of_gyration
     Outputs --> Temperature
     Outputs --> TotalEnergy : total_energies
+    Outputs --> TotalForce
+    Outputs --> XASSpectrum : xas_spectra
     SCFOutputs --> Outputs : scf_steps
     Outputs ..> PhysicalProperty : base type for most outputs
 ```
@@ -69,43 +69,43 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
-    class ElectronicBandGap {
+    class ChemicalPotential {
     }
     class ElectronicBandStructure {
+    }
+    class ElectronicDensityOfStates {
     }
     class ElectronicEigenvalues {
     }
     class ElectronicGreensFunction {
     }
-    class ElectronicSelfEnergy {
+    class FermiSurface {
     }
     class HoppingMatrix {
     }
     class HybridizationFunction {
     }
+    class Occupancy {
+    }
     class Outputs {
+    }
+    class Permittivity {
     }
     class PhysicalProperty {
     }
-    class PotentialEnergy {
-    }
     class SCFOutputs {
     }
-    class TotalForce {
-    }
-    class XASSpectrum {
-    }
     Outputs <|-- SCFOutputs
-    Outputs --> ElectronicBandGap
+    Outputs --> ChemicalPotential
     Outputs --> ElectronicBandStructure
+    Outputs --> ElectronicDensityOfStates : electronic_dos
     Outputs --> ElectronicEigenvalues
     Outputs --> ElectronicGreensFunction
-    Outputs --> ElectronicSelfEnergy : electronic_self_energies
+    Outputs --> FermiSurface
     Outputs --> HoppingMatrix : hopping_matrices
     Outputs --> HybridizationFunction
-    Outputs --> PotentialEnergy : potential_energies
-    Outputs --> TotalForce
-    Outputs --> XASSpectrum : xas_spectra
+    Outputs --> Occupancy : occupancies
+    Outputs --> Permittivity : permittivities
     SCFOutputs --> Outputs : scf_steps
     Outputs ..> PhysicalProperty : base type for most outputs
 ```

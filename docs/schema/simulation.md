@@ -9,13 +9,6 @@
 - Program details (name, version, link)
 - Entry point that references the four main subsections
 
-**Out of scope:**
-
-- ModelSystem details
-- ModelMethod details
-- Outputs details
-- Workflow classes (separate schema)
-
 ## Relationship map
 
 
@@ -36,9 +29,8 @@ classDiagram
 
 **Legend**
 
-- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
-- `Owner --> SubSection`: containment/subsection relationship
-- `Source ..> Target`: typed reference from one section to another
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/></svg><code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)</div>
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="46,8 38,4 38,12" fill="currentColor"/></svg><code>Owner --&gt; SubSection</code> containment/subsection</div>
 
 
 ## Key sections

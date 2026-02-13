@@ -7,13 +7,6 @@
 - Top-level inheritance chain: BaseModelMethod → ModelMethod → ModelMethodElectronic
 - Entry point for all electronic-method subclasses
 
-**Out of scope:**
-
-- Detailed electronic method subclasses
-- Classical force-field methods
-- Numerical settings like meshes and basis sets
-- Output properties computed by these methods
-
 ## Relationship map
 
 
@@ -28,9 +21,7 @@ classDiagram
 
 **Legend**
 
-- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
-- `Owner --> SubSection`: containment/subsection relationship
-- `Source ..> Target`: typed reference from one section to another
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/></svg><code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)</div>
 
 
 ## Key sections

@@ -9,14 +9,6 @@
 - Transformation matrix and origin shift between representations
 - How alternative cells are mapped from the original representation
 
-**Out of scope:**
-
-- ModelSystem root relationships
-- General representation geometry fields
-- Particle states within the representations
-- Symmetry information
-- Chemical formula details
-
 ## Relationship map
 
 
@@ -24,12 +16,6 @@
 classDiagram
     class AlternativeRepresentation
 ```
-
-**Legend**
-
-- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
-- `Owner --> SubSection`: containment/subsection relationship
-- `Source ..> Target`: typed reference from one section to another
 
 
 ## Key sections

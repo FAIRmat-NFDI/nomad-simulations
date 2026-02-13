@@ -11,11 +11,6 @@
 - Hopping matrices from tight-binding
 - Crystal field splittings in correlated systems
 
-**Out of scope:**
-
-- Methods that compute these (GW, BSE, DMFT in model_method)
-- Basic electronic properties
-
 ## Relationship map
 
 
@@ -45,9 +40,8 @@ classDiagram
 
 **Legend**
 
-- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
-- `Owner --> SubSection`: containment/subsection relationship
-- `Source ..> Target`: typed reference from one section to another
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/></svg><code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)</div>
+<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="46,8 38,4 38,12" fill="currentColor"/></svg><code>Owner --&gt; SubSection</code> containment/subsection</div>
 
 
 ## Key sections
@@ -70,7 +64,7 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `n_atoms` | m_int32(int32) | Number of atoms involved in the correlations effect and used for the matrix representation of the property. Can be derived from entity_ref if needed. |
-| `entity_ref` | <nomad.metainfo.metainfo.Reference object at 0x7326b1eff7a0> | Reference to the `ElectronicState` section describing the correlated orbitals for which the Green's function properties are calculated. The parent AtomsState can be accessed via `entity_ref.get_parent_entity()`. |
+| `entity_ref` | <nomad.metainfo.metainfo.Reference object at 0x7b28dcaf7cb0> | Reference to the `ElectronicState` section describing the correlated orbitals for which the Green's function properties are calculated. The parent AtomsState can be accessed via `entity_ref.get_parent_entity()`. |
 | `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic property. It can take values of 0 and 1. |
 | `local_model_type` | Enum | <details><summary>Type of Green's function calculated from the mapping of the local Hubbard-Kanamo...</summary>Type of Green's function calculated from the mapping of the local Hubbard-Kanamori model<br>into the Anderson impurity model.<br>The `impurity` Green's function describe the electronic correlations for the impurity, and it<br>is a local function. The `lattice` Green's function includes the coupling to the lattice<br>and hence it is a non-local function. In DMFT, the `lattice` term is approximated to be the<br>`impurity` one, so that these simulations are converged if both types of the local<br>part of the `lattice` Green's function coincides with the `impurity` Green's function.</details> |
 | `space_id` | Enum | <details><summary>String used to identify the space in which the Green's function property is represented.</summary>String used to identify the space in which the Green's function property is represented. The spaces are:<br>\| `space_id` \| variable type \|<br>\| ------ \| ------ \|<br>\| 'r' \| WignerSeitz \|<br>\| 'rt' \| WignerSeitz + Time \|<br>\| 'rw' \| WignerSeitz + Frequency \|<br>\| 'rit' \| WignerSeitz + ImaginaryTime \|<br>\| 'riw' \| WignerSeitz + MatsubaraFrequency \|<br>\| 'k' \| KMesh \|<br>\| 'kt' \| KMesh + Time \|<br>\| 'kw' \| KMesh + Frequency \|<br>\| 'kit' \| KMesh + ImaginaryTime \|<br>\| 'kiw' \| KMesh + MatsubaraFrequency \|<br>\| 't' \| Time \|<br>\| 'it' \| Frequency \|<br>\| 'w' \| ImaginaryTime \|<br>\| 'iw' \| MatsubaraFrequency \|</details> |
@@ -100,7 +94,7 @@ classDiagram
 | `system_correlation_strengths` | Enum | <details><summary>String used to identify the type of system based on the strength of the electron-electron interactions.</summary>String used to identify the type of system based on the strength of the electron-electron interactions.<br>\| `type` \| Description \|<br>\| ------ \| ------ \|<br>\| 'non-correlated metal' \| All `value` are above 0.7. Renormalization effects are negligible. \|<br>\| 'strongly-correlated metal' \| All `value` are below 0.4 and above 0. Renormalization effects are important. \|<br>\| 'OSMI' \| Orbital-selective Mott insulator: some orbitals have a zero `value` while others a finite one. \|<br>\| 'Mott insulator' \| All `value` are 0.0. Mott insulator state. \|</details> |
 | `n_atoms` | m_int32(int32) | Number of atoms involved in the correlations effect and used for the matrix representation of the quasiparticle weight. Can be derived from entity_ref if needed. |
 | `n_correlated_orbitals` | m_int32(int32) | Number of orbitals involved in the correlations effect and used for the matrix representation of the quasiparticle weight. |
-| `entity_ref` | <nomad.metainfo.metainfo.Reference object at 0x7326b1efef30> | Reference to the `ElectronicState` section describing the correlated orbitals for which the quasiparticle weight is calculated. The parent AtomsState can be accessed via `entity_ref.get_parent_entity()`. |
+| `entity_ref` | <nomad.metainfo.metainfo.Reference object at 0x7b28dcaf6db0> | Reference to the `ElectronicState` section describing the correlated orbitals for which the quasiparticle weight is calculated. The parent AtomsState can be accessed via `entity_ref.get_parent_entity()`. |
 | `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic property. It can take values of 0 and 1. |
 | `value` | m_float_bounded(float) (shape: ['*']) | Value of the quasi-particle weight matrices. Must be between 0 and 1. |
 

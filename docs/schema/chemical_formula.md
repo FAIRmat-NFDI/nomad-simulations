@@ -11,11 +11,6 @@
 - Anonymous formula
 - Automatic formula generation
 
-**Out of scope:**
-
-- Atomic positions
-- Particle states
-
 ## Relationship map
 
 
@@ -23,12 +18,6 @@
 classDiagram
     class ChemicalFormula
 ```
-
-**Legend**
-
-- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
-- `Owner --> SubSection`: containment/subsection relationship
-- `Source ..> Target`: typed reference from one section to another
 
 
 ## Key sections

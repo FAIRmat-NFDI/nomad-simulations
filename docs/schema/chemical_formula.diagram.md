@@ -9,9 +9,6 @@
 
 This diagram shows the relationships between schema classes:
 
-- `Owner --> SubSection`: containment/subsection relationship
-- `Source ..> Target`: typed reference from one section to another
-- `Parent <|-- Child`: inheritance (`Child` extends `Parent`)
 
 ```mermaid
 classDiagram
