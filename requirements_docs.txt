@@ -3,4 +3,4 @@ mkdocs-material>=9.5
 pymdown-extensions>=10.5
 mkdocs-click
 mkdocs-awesome-pages-plugin
-
+mkdocs-panzoom-plugin
