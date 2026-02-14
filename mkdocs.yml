@@ -5,20 +5,40 @@ site_author: FAIRmat consortium
 repo_url: https://github.com/fairmat-nfdi/nomad-simulations
 nav:
   - Home: index.md
-  - Simulation schema:
-    - Overview: general.md
-    - ModelSystem:
-      - Overview: model_system/model_system.md
-      - Representation Architecture: model_system/representation.md
-    - AtomsState:
-      - Electronic States: atoms_state/electronic_states.md
-    - ModelMethod:
-      - Overview: model_method/model_method.md
-      - Basis Sets: model_method/basis_sets.md
-    - Outputs: outputs/outputs.md
-  - How to use the Simulation schema: howto_use.md
-  - The normalize function: normalize.md
-  - Bounded Data Types: data_types.md
+  - Schema Navigation:
+      - Overview: schema/index.md
+      - Simulation Entry: schema/simulation.md
+      - Model System:
+          - Model System: schema/model_system.md
+          - Alternative Representations: schema/representations.md
+          - Particle States: schema/particle_states.md
+          - Symmetry: schema/symmetry.md
+          - Chemical Formula: schema/chemical_formula.md
+      - Model Method:
+          - Model Method: schema/model_method.md
+          - Model Method Electronic: schema/model_method_electronic.md
+          - Force Field: schema/force_field.md
+          - Numerical Settings: schema/numerical_settings.md
+      - Outputs:
+          - Outputs: schema/outputs.md
+          - Physical Property Backbone: schema/physical_property.md
+          - Electronic Structure Properties: schema/electronic_properties.md
+          - Many-Body Properties: schema/manybody_properties.md
+          - Spectroscopic Properties: schema/spectroscopy.md
+          - Thermodynamic Properties: schema/thermodynamics.md
+  - Schema Explanation:
+      - General Overview: explanation/general.md
+      - Model System:
+          - Model System: explanation/model_system/model_system.md
+          - Representation Architecture: explanation/model_system/representation.md
+          - Representation Design History: explanation/model_system/representation_history.md
+          - Electronic States: explanation/model_system/electronic_states.md
+      - Model Method:
+          - Basis Sets: explanation/model_method/basis_sets.md
+      # - Outputs:
+      #     - Outputs: explanation/outputs/outputs.md
+      - Bounded Data Types: explanation/data_types.md
+      - Normalization: explanation/normalize.md
   - Contact: contact.md
 theme:
   name: material
@@ -32,22 +52,28 @@ theme:
   icon:
     repo: fontawesome/brands/github
   palette:
-    - media: "(prefers-color-scheme: light)"
+    # Default to light mode
+    - scheme: default
       # primary: '#2A4CDF'
       # accent: '#008A67'
-      scheme: default
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to dark mode
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
       toggle:
         icon: material/weather-night
+        name: Switch to dark mode
+    # Dark mode option
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
         name: Switch to light mode
 plugins:
   - search
+  - panzoom:
+      key: alt
+      always_show_hint: true
+      hint_location: top
+  - awesome-pages
   # - bibtex:
       # bib_file: docs/assets/refs.bib
+markdown_extensions:
 markdown_extensions:
   - attr_list
   - md_in_html
@@ -58,11 +84,13 @@ markdown_extensions:
       anchor_linenums: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.superfences:
+  - pymdownx.superfences     :
       custom_fences:
         - name: mermaid
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:          # ← REQUIRED for === "YAML"
+      alternate_style: true
   - toc:
       permalink: True
       toc_depth: 3
@@ -70,9 +98,14 @@ markdown_extensions:
       generic: true
 extra_css:
   - stylesheets/extra.css
+  #   - stylesheets/mermaid-zoom.css  # Disabled: using panzoom plugin
+  #   - stylesheets/svg-diagram.css  # Disabled: using panzoom plugin
 extra_javascript:
   - 'https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js'
   - 'https://unpkg.com/cytoscape@3.19.1/dist/cytoscape.min.js'
+  - 'https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js'
+  #   - assets/click-zoom.js  # Disabled: using panzoom plugin
+  #   - assets/svg-pan-zoom-diagram.js  # Disabled: using panzoom plugin
   # - assets/code/parse.js
 extra:
   version: 0.1

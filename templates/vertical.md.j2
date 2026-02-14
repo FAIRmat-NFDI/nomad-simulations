@@ -1,0 +1,44 @@
+# {{ title }}
+
+{% if purpose %}
+**Purpose:** {{ purpose }}
+
+{% endif %}
+{% if in_scope %}
+**In scope:**
+
+{% for item in in_scope %}
+- {{ item }}
+{% endfor %}
+
+{% endif %}
+## Relationship map
+
+{{ mermaid_block }}
+
+## Key sections
+
+{# Use a real Markdown table to avoid whitespace collapsing #}
+| Section | Description | MetaInfo |
+|---|---|---|
+{% for s in section_info %}
+| `{{ s.name }}` | {{ s.description }} | [Open in MetaInfo browser]({{ s.metainfo_url }}){:target="_blank"} |
+{% endfor %}
+
+
+## Quantities by section
+
+{% for s in section_info %}
+### `{{ s.name }}`
+
+{% if s.quantities %}
+| Quantity | Type | Description |
+|---|---|---|
+{% for q in s.quantities %}
+| `{{ q.name }}` | {{ q.type }} | {{ q.description }} |
+{% endfor %}
+{% else %}
+*This section has no direct quantities.*
+{% endif %}
+
+{% endfor %}

@@ -1,0 +1,20 @@
+# docs/schema/.pages
+title: Schema Documentation
+index: index.md
+nav:
+  - simulation.md
+  - model_system.md
+  - representations.md
+  - particle_states.md
+  - symmetry.md
+  - chemical_formula.md
+  - model_method.md
+  - model_method_electronic.md
+  - force_field.md
+  - numerical_settings.md
+  - outputs.md
+  - physical_property.md
+  - electronic_properties.md
+  - manybody_properties.md
+  - spectroscopy.md
+  - thermodynamics.md

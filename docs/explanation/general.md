@@ -10,7 +10,7 @@ The `Simulation` section inherits from a _base section_ `BaseSimulation`. In NOM
 <div class="click-zoom">
     <label>
         <input type="checkbox">
-        <img src="../assets/simulation_base.png" alt="Simulation base section diagram." width="80%" title="Click to zoom in">
+        <img src="../../assets/simulation_base.png" alt="Simulation base section diagram." width="80%" title="Click to zoom in">
     </label>
 </div>
 
@@ -19,7 +19,7 @@ The `Simulation` section inherits from a _base section_ `BaseSimulation`. In NOM
 <div class="click-zoom">
     <label>
         <input type="checkbox">
-        <img src="../assets/simulation.png" alt="Simulation quantities and functions UML diagram." width="50%" title="Click to zoom in">
+        <img src="../../assets/simulation.png" alt="Simulation quantities and functions UML diagram." width="50%" title="Click to zoom in">
     </label>
 </div>
 
@@ -56,7 +56,7 @@ The following schematic represents a simplified representation of the `Simulatio
 <div class="click-zoom">
     <label>
         <input type="checkbox">
-        <img src="../assets/simulation_composition.png" alt="Simulation composition diagram." width="90%" title="Click to zoom in">
+        <img src="../../assets/simulation_composition.png" alt="Simulation composition diagram." width="90%" title="Click to zoom in">
     </label>
 </div>
 
@@ -67,7 +67,7 @@ The `Program` base section contains all the information about the program / soft
 <div class="click-zoom">
     <label>
         <input type="checkbox">
-        <img src="../assets/program.png" alt="Program quantities and functions UML diagram." width="75%" title="Click to zoom in">
+        <img src="../../assets/program.png" alt="Program quantities and functions UML diagram." width="75%" title="Click to zoom in">
     </label>
 </div>
 

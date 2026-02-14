@@ -144,3 +144,69 @@
     z-index: 0;
     cursor: zoom-out
 }
+
+/* Mermaid + panzoom: keep wide diagrams readable on page */
+.md-typeset .mermaid {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.5rem 0.25rem 0.75rem;
+    min-height: clamp(240px, 40vw, 520px);
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.5rem;
+    background: var(--md-default-bg-color);
+}
+
+.md-typeset .mermaid > svg {
+    display: block;
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+    height: auto;
+    margin: 0 auto;
+}
+
+/* Preserve usable viewport on smaller screens */
+@media screen and (max-width: 76.1875em) {
+    .md-typeset .mermaid {
+        min-height: clamp(220px, 52vw, 420px);
+    }
+}
+
+/* Panzoom plugin uses md-code-bg-color (gray) by default; force white canvas. */
+.panzoom-box,
+.panzoom-fullscreen {
+    background-color: #fff !important;
+}
+
+/* Clear visual frame around pan/zoom viewport. */
+.panzoom-box {
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.6rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.panzoom-box::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px rgba(42, 76, 223, 0.08);
+    pointer-events: none;
+}
+
+/* Panzoom help discoverability: show hint when hovering/focusing the diagram box. */
+.panzoom-box:hover .panzoom-info-box.panzoom-hidden,
+.panzoom-box:focus-within .panzoom-info-box.panzoom-hidden {
+    display: block;
+}
+
+/* Clarify modifier key wording for panzoom hint (Option on macOS == Alt). */
+.panzoom-box[data-key="alt"] .panzoom-info-box {
+    color: transparent;
+}
+
+.panzoom-box[data-key="alt"] .panzoom-info-box::before {
+    content: "Hold Option (macOS) or Alt (Windows/Linux), then scroll to zoom and drag to pan.";
+    color: var(--md-default-fg-color--light);
+}

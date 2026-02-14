@@ -1,0 +1,16 @@
+# Schema Documentation
+
+This section contains auto-generated documentation for the NOMAD simulations schema.
+
+The schema is organized into vertical domains, each covering a specific aspect of simulation metadata:
+
+{% for vert in verticals %}
+## [{{ vert.title }}]({{ vert.key }}.md)
+
+{{ vert.purpose }}
+
+**In scope:** {{ vert.in_scope | join(", ") }}
+
+**Key sections:** {{ vert.sections | join(", ") }}
+
+{% endfor %}

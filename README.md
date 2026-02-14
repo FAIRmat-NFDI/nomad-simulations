@@ -120,14 +120,26 @@ The settings configuration file `.vscode/settings.json` automatically applies th
 
 ### Documentation on Github pages
 
-To view the documentation locally, install the related packages using:
+To view the documentation locally, install the documentation dependencies:
 ```sh
-uv pip install -r requirements_docs.txt
+uv pip install -e '.[docs]'
 ```
+
+**Note**: The documentation pipeline uses `npx` (Node Package Runner) to convert Mermaid diagrams to PNG images for better zoom functionality. Make sure you have Node.js/npm installed:
+```sh
+which npx  # Check if npx is available
+```
+
+If not installed, download Node.js from https://nodejs.org/
 
 Run the documentation server:
 ```sh
 mkdocs serve
+```
+
+Alternatively, you can run mkdocs directly with `uv run` without installing the dependencies:
+```sh
+uv run --extra docs mkdocs serve
 ```
 
 
@@ -179,3 +191,80 @@ Pizarro, J.M., Boydas, E.B., Daelman, N., Ladines, A.N., Mohr, B. & Rudzinski, J
 | Dr. José M. Pizarro | [jose.pizarro@physik.hu-berlin.de](mailto:jose.pizarro@physik.hu-berlin.de) | GW, DMFT, BSE | [@JosePizarro3](https://github.com/JosePizarro3) |
 | Dr. Esma B. Boydas | [esma.boydas@physik.hu-berlin.de](mailto:esma.boydas@physik.hu-berlin.de) | Quantum Chemistry | [@EBB2675](https://github.com/EBB2675) |
 | Dr. Joseph F. Rudzinski (**Coordinator**) | [joseph.rudzinski@physik.hu-berlin.de](mailto:joseph.rudzinski@physik.hu-berlin.de) | General | [@JFRudzinski](https://github.com/JFRudzinski) |
+
+
+
+## 🧩 Updating the Auto-Generated Schema Docs
+
+The schema documentation is generated directly from the NOMAD-Simulations
+plugin source. Until CI automation is configured, you can update the pages
+manually using the helper scripts in `scripts/`.
+
+### Prerequisites
+
+**Node.js/npm Required**: The documentation pipeline uses `npx` to convert Mermaid diagrams to clickable, zoomable PNG images. Install Node.js from https://nodejs.org/ if you don't have it already.
+
+### Quick Start: Generate Complete Documentation
+
+Run the complete documentation pipeline with a single command:
+```bash
+python scripts/generate_docs_pipeline.py
+```
+
+This automated pipeline will:
+1. Generate standalone diagram pages with Mermaid code
+2. Generate vertical schema documentation pages
+3. Generate the overview index page with all sections
+4. Convert all Mermaid diagrams to high-resolution PNG images
+5. Replace Mermaid code blocks with clickable zoom images
+
+The result is a fully interactive documentation site with diagrams that can be clicked to zoom 2x.
+
+### Manual Steps (Advanced)
+
+If you prefer to run individual steps:
+
+#### 1. Regenerate diagrams
+From the repository root:
+```bash
+python scripts/gen_diagrams.py
+```
+
+This generates standalone diagram pages (e.g., `methods.diagram.md`) with:
+- Full-page Mermaid diagrams for better viewing/zooming
+- Legend explaining relationship types
+- Navigation back to the main vertical page
+
+#### 2. Regenerate the schema docs
+
+```bash
+python scripts/gen_docs.py \
+  --pkg nomad_simulations \
+  --module-prefix nomad_simulations \
+  --templates-dir templates \
+  --out-dir docs/schema
+```
+
+This will generate:
+- An overview page (`docs/schema/index.md`) with links to all vertical domains
+- Individual vertical pages (e.g., `methods.md`, `basis.md`) with:
+  - Purpose and scope descriptions
+  - Mermaid relationship diagrams
+  - Detailed section tables with class descriptions extracted from docstrings
+  - Example YAML snippets for each section
+
+#### 3. Convert diagrams to PNG (for click-zoom functionality)
+
+```bash
+python scripts/mermaid_to_png.py
+```
+
+This converts all Mermaid diagrams to high-resolution PNG images with click-to-zoom wrappers.
+
+### Interactive Diagram Features
+
+All generated diagrams support:
+- **Click to zoom** - Click any diagram to enlarge it 2x
+- **Click again to reset** - Click the zoomed diagram to return to normal size
+- **High resolution** - PNG images are generated at 2000px width with 2x scaling
+- **Transparent backgrounds** - Diagrams blend seamlessly with your theme

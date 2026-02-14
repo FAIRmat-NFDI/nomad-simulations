@@ -46,7 +46,7 @@ for symbol in ['Si', 'Si']:
     model_system.particle_states.append(atom)
 ```
 
-Each `AtomsState` can include electronic structure information through the `electronic_state` field. See [Electronic States](../atoms_state/electronic_states.md) for details on describing electronic configurations.
+Each `AtomsState` can include electronic structure information through the `electronic_state` field. See [Electronic States](electronic_states.md) for details on describing electronic configurations.
 
 ### Alternative Representations
 
@@ -244,6 +244,6 @@ interface.sub_systems.append(material_B)
 ## See Also
 
 - [Representation Architecture](representation.md): Detailed documentation of the geometric representation design
-- [Electronic States](../atoms_state/electronic_states.md): How to describe electronic configurations of atoms
+- [Electronic States](electronic_states.md): How to describe electronic configurations of atoms
 - [Normalization](../normalize.md): Overview of the normalization system
 - [General Schema Overview](../general.md): Introduction to the NOMAD simulations schema package
