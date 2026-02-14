@@ -364,8 +364,6 @@ def mermaid_for_vertical(
         a != b and a in nodes and b in nodes
         for a, b, _ in filtered_edges.get('refs', [])
     )
-    if key == 'outputs' and 'Outputs' in nodes and 'PhysicalProperty' in nodes:
-        has_refs = True
 
     legend_items = []
     if has_inherit:
@@ -479,15 +477,6 @@ def mermaid_for_vertical(
                     lines.append(f'    {a} ..> {b} : {clean_label}')
                 else:
                     lines.append(f'    {a} ..> {b}')
-
-        if (
-            key == 'outputs'
-            and 'Outputs' in diagram_nodes
-            and 'PhysicalProperty' in diagram_nodes
-        ):
-            lines.append(
-                '    Outputs ..> PhysicalProperty : base type for most outputs'
-            )
 
         lines.append('```')
 

@@ -76,7 +76,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `reciprocal_cell` | <nomad.metainfo.metainfo.QuantityReference object at 0x7b28dcaf6ba0> | Reciprocal lattice vectors associated with the k-space sampling used for these eigenvalues, taken from the corresponding `KSpace` numerical settings. |
+| `reciprocal_cell` | <nomad.metainfo.metainfo.QuantityReference object at 0x7105cf463080> | Reciprocal lattice vectors associated with the k-space sampling used for these eigenvalues, taken from the corresponding `KSpace` numerical settings. |
 
 ### `ElectronicBandGap`
 
@@ -105,7 +105,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `orbitals_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x7b28dcaba150> | Reference to the `ElectronicState` section in which the occupancy is calculated. This can reference individual orbitals, orbital manifolds, or hybrid/molecular orbitals. The parent AtomsState can be accessed via `orbitals_state_ref.get_parent_entity()`. |
+| `orbitals_state_ref` | <nomad.metainfo.metainfo.Reference object at 0x7105cf625cd0> | Reference to the `ElectronicState` section in which the occupancy is calculated. This can reference individual orbitals, orbital manifolds, or hybrid/molecular orbitals. The parent AtomsState can be accessed via `orbitals_state_ref.get_parent_entity()`. |
 | `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic property. It can take values of 0 and 1. |
 | `value` | m_float64(float64) | <details><summary>Value of the electronic occupancy for the orbital defined by `orbitals_state_ref`.</summary>Value of the electronic occupancy for the orbital defined by `orbitals_state_ref`.<br>If `spin_channel` is set, then this number is between 0 and 1, where 0 means that<br>the state is unoccupied and 1 means that the state is fully occupied; if `spin_channel`<br>is not set, then this number is between 0 and 2.</details> |
 

@@ -132,16 +132,3 @@ Energies, forces, pressure, temperature, and thermodynamic state functions
 
 **Key sections:** BaseEnergy, TotalEnergy, KineticEnergy, PotentialEnergy, Heat, Work, InternalEnergy, Enthalpy, GibbsFreeEnergy, HelmholtzFreeEnergy, ChemicalPotential, VirialTensor, BaseForce, TotalForce, Pressure, Volume, Temperature, Entropy, HeatCapacity, MassDensity, Hessian
 
-
----
-
-## How to use this documentation
-
-Each vertical page contains:
-
-- **Purpose**: High-level description of what the vertical covers
-- **Relationship map**: Mermaid diagram showing connections between sections
-- **Key sections**: Table linking to detailed class definitions in the MetaInfo browser
-- **Micro-examples**: Sample YAML snippets demonstrating structure
-
-For detailed information about each class, follow the MetaInfo browser links on the individual vertical pages.
