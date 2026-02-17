@@ -1,94 +1,112 @@
-# LibXC Functional Canonicalization
+# LibXC XC Canonicalization
 
-This module converts **code-specific exchange–correlation (XC) labels** into a **canonical, LibXC-grounded representation**.  
-It accepts aliases such as `PBE`, hybrids like `B3LYP`, or composite forms like `SCAN+rVV10`, and produces normalized **LibXC components** (`XCComponent` instances) with consistent metadata (`family`, `kind`, `id`, etc.).
+Scope:
 
----
-
-## Aim
-
-1. **Unify XC naming** across electronic-structure codes by resolving them to LibXC identifiers.  
-2. **Make functional components explicit** — making functional components explicit as far as LibXC exposes them.  
-3. **Preserve hybrid parameters** when available (`α`, `ω`, SR/LR fractions).  
-4. **Provide a single canonical label** (`functional_key`) for user-facing filtering, while keeping full LibXC detail internally.
-
-> **Background:**  
-> [LibXC](https://libxc.gitlab.io/) is the reference library defining the mathematical kernels for all standard density functionals (LDA, GGA, meta-GGA, hybrids).  
-> It distinguishes each kernel by a stable name like `XC_GGA_X_PBE` and a numeric ID.  
-> This canonicalization follows the same separation principle: each kernel is treated as one building block.
+- `expand.py`
+- `build.py`
+- `registry.py`
+- `model_method.py` (`XCFunctional.normalize`, `DFT.normalize`)
 
 ---
 
-## Input Forms Accepted
+## Input
 
-- **Human-readable aliases:** `LDA`, `PBE`, `PW91`, `TPSS`, `SCAN`, `r2SCAN`, `B3LYP`, etc.  
-- **Hybrid or range-separated forms:** `PBE0`, `HSE06`, `LC-ωPBE`, `CAM-B3LYP`, etc.  
-- **Raw LibXC labels:** `XC_GGA_X_PBE`, `XC_GGA_C_PBE`, `XC_HYB_GGA_XC_B3LYP`, etc.  
-
-The module is code-agnostic — any parser providing a string can normalize it through this interface.
+`XCFunctional.functional_key` is parsed as a free-form XC string, for example:
+`PBE`, `B3LYP`, `SCAN+rVV10`, `ωB97X-V`.
 
 ---
 
-## Canonicalization Pipeline
+## Expansion pipeline
 
-### 1. Tokenization & Normalization
-- Input strings are uppercased, `ω` is normalized to `W`, all text in parentheses is dropped, and separators (`space`, `+`, `/`, `_`, `-`, `,`) are removed. Tokenization splits on `[+/,\s]+`.
-- Known suffixes like `-D3` or `+VV10` are recognized but **not yet parsed into separate dispersion or nonlocal correlation models** — they remain part of the functional key.
+### 1) Tokenization and normalization (`expand.py`)
 
-### 2. Alias Expansion → LibXC Components
-Aliases are expanded using a curated lookup table (`expand.py`):
+- Token split regex: `[+/,\s]+`
+- Per token:
+  - uppercase
+  - normalize omega (`ω`, `Ω`, `Ω` -> `W`)
+  - drop parenthesized text `(...)`
+  - remove separators: whitespace, `+`, `/`, `,`, `_`, `-`
 
-| Input Alias | Expanded Components |
-|--------------|---------------------|
-| `PBE` | `XC_GGA_X_PBE`, `XC_GGA_C_PBE` |
-| `SVWN` | `XC_LDA_X`, `XC_LDA_C_VWN` |
-| `TPSS` | `XC_MGGA_X_TPSS`, `XC_MGGA_C_TPSS` |
+### 2) Token-to-label resolution order
 
-This ensures consistent resolution against LibXC definitions.
+For each normalized token, `_labels_for_token` checks:
 
-### 3. Registry Lookup (`registry.py`)
-Each expanded label is matched against a lightweight internal registry (`xc_registry_min.json`)  
-to populate standard LibXC metadata:
+1. `XC_` label branch: return label if present in registry
+2. `HYB` aliases from `aliases.json`
+3. `BASE` aliases from `aliases.json`
+4. synonym helpers:
+   - `LCWPBE` / `LCOMEGAPBE` -> alias `LC-ωPBE`
+   - `SOGGA11X` -> `XC_GGA_X_SOGGA11`
+5. rung fallback:
+   - `RUNG_HINT[token]` chooses rung
+   - first existing option in `FALLBACK_BY_RUNG[rung]`
 
-- **`family`** → `LDA`, `GGA`, `meta-GGA`, `hybrid-GGA`, `hybrid-meta-GGA`  
-- **`kind`** → `exchange`, `correlation`, or `xc`  
-- **`libxc_id`** → stable LibXC numeric identifier  
-- **`display_name`** → human-readable name (e.g., “Perdew, Burke & Ernzerhof”)
+All candidate labels are filtered against `xc_registry_min.json`.
 
-### 4. Component Construction (`build.py`)
-Each resolved label becomes an `XCComponent`, carrying:
-- canonical label (`XC_GGA_X_PBE`)  
-- LibXC ID and family/kind metadata  
-- optional hybrid parameters (`fraction_exact_exchange`, `range_separation_parameter`)  
-- numerical `weight` (default 1.0)
+### 3) Merge
 
-### 5. Attachment to DFT Section
-During `DFT.normalize()`:
-- If `xc.components` is empty but a `functional_key` is provided,  
-  it is expanded into canonical LibXC components and attached.  
-- The **highest Jacob’s ladder family** among components sets `jacobs_ladder`.  
-- If a unique hybrid fraction (`α`) is found, it is propagated to `exact_exchange_mixing_factor`.
+`expand_to_libxc_labels(raw)` returns `sorted(set(labels))` across all tokens.
+
+Unknown tokens are ignored.
 
 ---
 
-## Canonical Functional Key (`functional_key`)
+## Component construction
 
-While LibXC defines each **exchange**, **correlation**, and **hybrid** kernel separately  
-(e.g., `XC_GGA_X_PBE`, `XC_GGA_C_PBE`), users typically refer to these collectively using one name — e.g., “PBE”.
+In `XCFunctional.normalize` (`model_method.py`):
 
-This canonicalization introduces:
+- If `xc.components` is empty and `functional_key` is set:
+  - expand using `expand_to_libxc_labels`
+  - build specs via `spec_from_label`
+  - append `XCComponent` with `weight=1.0`
+- Expansion exceptions are caught and logged as warnings.
 
-- **`functional_key`** → one user-facing alias representing the entire functional  
-  *(e.g., `PBE`, `PBE0`, `B3LYP`, `SCAN+rVV10`)*  
-- **`components`** → explicit LibXC-resolved kernels underneath  
-  *(e.g., `["XC_GGA_X_PBE", "XC_GGA_C_PBE"]`)*
+### Global exact exchange
 
-Example:
-```text
-PBE    → functional_key = "PBE"
-          components = ["XC_GGA_X_PBE", "XC_GGA_C_PBE"]
+`xc.global_exact_exchange` is inferred from `fraction_exact_exchange` in
+components:
 
-B3LYP  → functional_key = "B3LYP"
-          components = ["XC_HYB_GGA_XC_B3LYP"]
+- one value -> use it
+- multiple identical values -> use that value
+- otherwise -> keep `None`
 
+Alias names are not used to infer exact exchange.
 
+---
+
+## Jacob's ladder assignment (`DFT.normalize`)
+
+After `XCFunctional.normalize`:
+
+1. derive family from components using rank:
+   `LDA < GGA < meta-GGA < hybrid-GGA < hybrid-meta-GGA`
+2. derive hint family from `infer_rung_hint(functional_key)` using `RUNG_HINT`
+3. set `jacobs_ladder`:
+   - higher-ranked value if both derived and hinted are present
+   - hinted value if only hint exists
+   - derived value if only derived exists
+   - otherwise existing value or `'unavailable'`
+
+`RUNG_HINT` can override component-derived family when its rank is higher.
+
+---
+
+## Registry API
+
+`registry.py` provides:
+
+- `lookup_by_label(label)`
+- `lookup_by_id(id)`
+
+`lookup_by_label` supports relaxed key matching via separator-insensitive
+keyization.
+
+---
+
+## Limitations
+
+- `/` is a token separator, so aliases containing `/` in a single name (for
+  example `PBE0-1/3`) are split before alias lookup.
+- Normalization removes separators, including `_`. For raw LibXC text input,
+  this makes the `XC_` branch uncommon.
+- Expansion is alias-table driven; non-aliased unknown tokens are ignored.
