@@ -25,6 +25,7 @@ from nomad_simulations.schema_packages.utils.libxc.build import (
 )
 from nomad_simulations.schema_packages.utils.libxc.expand import (
     expand_to_libxc_labels,
+    infer_rung_hint,
 )
 
 
@@ -600,8 +601,15 @@ class DFT(ModelMethodElectronic):
             'hybrid-meta-GGA': 4,
         }
         families = [c.family for c in (self.xc.components or []) if c.family]
+        hinted = infer_rung_hint(getattr(self.xc, 'functional_key', None) or '')
         if families:
-            self.jacobs_ladder = max(families, key=lambda f: rank.get(f, -1))
+            derived = max(families, key=lambda f: rank.get(f, -1))
+            if hinted and rank.get(hinted, -1) > rank.get(derived, -1):
+                self.jacobs_ladder = hinted
+            else:
+                self.jacobs_ladder = derived
+        elif hinted:
+            self.jacobs_ladder = hinted
         else:
             self.jacobs_ladder = self.jacobs_ladder or 'unavailable'
 
