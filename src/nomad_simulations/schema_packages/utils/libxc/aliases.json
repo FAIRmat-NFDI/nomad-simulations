@@ -43,8 +43,7 @@
     "M11-L": ["XC_MGGA_X_M11_L", "XC_MGGA_C_M11_L"],
     "MN15-L": ["XC_MGGA_X_MN15_L", "XC_MGGA_C_MN15_L"],
     "TPSSLOC": ["XC_MGGA_X_TPSS", "XC_MGGA_C_TPSSLOC"],
-    "B97M-V": ["XC_MGGA_XC_B97M_V"],
-    "B97M-RV": ["XC_MGGA_XC_B97M_V"]
+    "B97M-V": ["XC_MGGA_XC_B97M_V"]
   },
   "HYB": {
     "PBE0": ["XC_HYB_GGA_XC_PBEH"],
