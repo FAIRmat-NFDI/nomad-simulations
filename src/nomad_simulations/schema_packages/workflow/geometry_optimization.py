@@ -79,6 +79,11 @@ class GeometryOptimizationModel(SimulationWorkflowModel):
     )
 
 
+# Backwards-compatible alias used across parser/tests.
+class GeometryOptimizationMethod(GeometryOptimizationModel):
+    pass
+
+
 class GeometryOptimizationResults(SimulationWorkflowResults):
     _label = 'Geometry optimiztation results'
 

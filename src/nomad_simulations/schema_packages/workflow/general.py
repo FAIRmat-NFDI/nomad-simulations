@@ -4,7 +4,7 @@ import jmespath
 import numpy as np
 from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflow
-from nomad.metainfo import MEnum, Quantity, SchemaPackage, SubSection
+from nomad.metainfo import Datetime, MEnum, Quantity, SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.common import SimulationTime
@@ -390,6 +390,11 @@ class SimulationWorkflowModel(ArchiveSection):
             self.initial_method = archive.data.model_method[0]
 
 
+# Backwards-compatible alias used across workflows/tests.
+class SimulationWorkflowMethod(SimulationWorkflowModel):
+    pass
+
+
 # TODO: Is this nomad_simulations.common.SimulationTime ?
 class WorkflowTime(ArchiveSection):
     """
@@ -516,11 +521,11 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     @log
     def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if self.model:
+        if self.method:
             logger = self.map_inputs.__annotations__['logger']
-            self.model.normalize(archive, logger)
+            self.method.normalize(archive, logger)
             # add method to inputs
-            self.inputs.append(Link(name=self.model.label, section=self.model))
+            self.inputs.append(Link(name=self.method._label, section=self.method))
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:

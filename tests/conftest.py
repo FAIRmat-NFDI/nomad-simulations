@@ -41,6 +41,9 @@ from nomad_simulations.schema_packages.variables import KLinePath
 
 from . import logger
 
+# Backwards-compatible alias for tests still using AtomicCell typing.
+AtomicCell = Representation
+
 if os.getenv('_PYTEST_RAISE', '0') != '0':
 
     @pytest.hookimpl(tryfirst=True)
