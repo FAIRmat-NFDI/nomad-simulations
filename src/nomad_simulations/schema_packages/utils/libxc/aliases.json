@@ -75,7 +75,9 @@
     "M08-SO": ["XC_HYB_MGGA_X_M08_SO", "XC_MGGA_C_M08_SO"],
     "M11": ["XC_HYB_MGGA_X_M11", "XC_MGGA_C_M11"],
     "MN15": ["XC_HYB_MGGA_X_MN15", "XC_MGGA_C_MN15"],
+    "ωB97X": ["XC_HYB_GGA_XC_WB97X"],
     "ωB97X-D": ["XC_HYB_GGA_XC_WB97X_D"],
+    "ωB97X-D3": ["XC_HYB_GGA_XC_WB97X_D3"],
     "ωB97X-V": ["XC_HYB_GGA_XC_WB97X_V"],
     "ωB97M-V": ["XC_HYB_MGGA_XC_WB97M_V"]
   },
