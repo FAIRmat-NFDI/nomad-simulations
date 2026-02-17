@@ -35,3 +35,13 @@ class TestGeometryOptimization:
             assert workflow.results.final_energy_difference.magnitude == ref_energy_diff
         else:
             assert workflow.results.final_energy_difference is None
+
+    def test_single_step_trajectory_no_energy_diff(self, logger, archive):
+        archive.data.outputs = [Outputs(total_energies=[TotalEnergy(value=1)])]
+        workflow = GeometryOptimization()
+        workflow.normalize(archive, logger)
+
+        assert isinstance(workflow.results, GeometryOptimizationResults)
+        assert workflow.results.energies is not None
+        assert len(workflow.results.energies) == 1
+        assert workflow.results.final_energy_difference is None

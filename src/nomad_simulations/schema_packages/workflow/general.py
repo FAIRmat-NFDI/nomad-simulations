@@ -344,8 +344,9 @@ class ChargeConvergenceTarget(WorkflowConvergenceTarget):
 
     threshold = Quantity(
         type=np.float64,
+        unit='coulomb',
         description="""
-        Charge/density convergence threshold (typically dimensionless or in electrons).
+        Charge/density convergence threshold.
         """,
     )
 
@@ -485,21 +486,12 @@ class SimulationWorkflowResults(WorkflowTime):
         """,
     )
 
-    convergence_targets = SubSection(
-        sub_section=WorkflowConvergenceTarget.m_def,
-        repeats=True,
-        description="""
-        Direct references to convergence targets for simple workflows.
-        Targets contain their own `is_reached` field after normalization.
-        """,
-    )
-
     convergence = SubSection(
         sub_section=WorkflowConvergenceResults.m_def,
         repeats=True,
         description="""
-        Convergence results for complex workflows (e.g., nested hierarchies).
-        Each result references a target and provides aggregated/composite convergence status.
+        Convergence results for workflows.
+        Each result references a convergence target and stores its reached status.
         """,
     )
 
@@ -603,9 +595,6 @@ class SimulationWorkflow(Workflow, SimulationTask):
     def map_convergence(self, archive: EntryArchive) -> None:
         """
         Normalize convergence targets and determine overall convergence status.
-
-        For simple workflows: targets are normalized and copied to results.convergence_targets
-        For complex workflows: WorkflowConvergenceResults instances are created in results.convergence
         """
         if not archive.data or not archive.data.outputs:
             return
@@ -622,14 +611,8 @@ class SimulationWorkflow(Workflow, SimulationTask):
             is_reached = target.normalize(archive, logger)
             convergence_status[target] = is_reached
 
-        # Copy normalized targets to results for visibility (simple workflow pattern)
-        if not self.results.convergence_targets:
-            self.results.convergence_targets = convergence_targets
-
-        # Create WorkflowConvergenceResults if needed (complex workflow pattern)
-        # This is used when parsers populate results.convergence or for nested workflows
+        # Create WorkflowConvergenceResults if needed.
         if not self.results.convergence:
-            # Create results for each target to support nested workflow aggregation
             convergence_results = []
             for target in convergence_targets:
                 result = WorkflowConvergenceResults()

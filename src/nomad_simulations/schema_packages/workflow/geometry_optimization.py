@@ -159,10 +159,14 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
             if energies_l:
                 energies = np.array(energies_l)
                 self.energies = energies * BaseEnergy.value.unit
+                # For single-step or flat trajectories there may be no non-zero energy delta.
                 denergies = energies[1:] - energies[: len(energies) - 1]
-                self.final_energy_difference = (
-                    denergies[denergies.nonzero()[0][-1]] * BaseEnergy.value.unit
-                )
+                if len(denergies) > 0:
+                    nonzero_indices = denergies.nonzero()[0]
+                    if len(nonzero_indices) > 0:
+                        self.final_energy_difference = (
+                            denergies[nonzero_indices[-1]] * BaseEnergy.value.unit
+                        )
         if self.final_force_maximum is None:
             final_forces = jmespath.search('data.outputs[-1].total_forces[-1]', archive)
             if final_forces is not None:
