@@ -14,6 +14,7 @@ from nomad_simulations.schema_packages.model_method import (
     ImplicitSolvationModel,
     MultireferencePT,
     MultireferenceSCF,
+    NonlocalCorrelation,
     RelativityModel,
     SlaterKoster,
     SlaterKosterBond,
@@ -22,6 +23,9 @@ from nomad_simulations.schema_packages.model_method import (
     XCFunctional,
 )
 from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
+from nomad_simulations.schema_packages.utils.libxc.expand import (
+    expand_to_libxc_labels,
+)
 
 from . import logger
 from .conftest import generate_simulation
@@ -698,6 +702,48 @@ def test_dft_functional_key_population_is_idempotent():
     n1 = len(dft.xc.components or [])
     dft.normalize(EntryArchive(), logger=logger)
     assert len(dft.xc.components or []) == n1
+
+
+@pytest.mark.parametrize(
+    'raw, expected_base, expected_nonlocal_model',
+    [
+        ('SCAN+rVV10', 'SCAN', 'rVV10'),
+        ('PBE+VV10', 'PBE', 'VV10'),
+    ],
+)
+def test_dft_extracts_nonlocal_addon_before_libxc_expansion(
+    raw, expected_base, expected_nonlocal_model
+):
+    dft = DFT()
+    dft.xc = XCFunctional(functional_key=raw)
+
+    dft.normalize(EntryArchive(), logger=logger)
+    dft.normalize(
+        EntryArchive(), logger=logger
+    )  # idempotence: no duplicate contribution
+
+    assert dft.xc.functional_key == expected_base
+    expected_labels = set(expand_to_libxc_labels(expected_base))
+    assert {c.canonical_label for c in dft.xc.components or []} == expected_labels
+
+    nonlocal_terms = [
+        c for c in (dft.contributions or []) if isinstance(c, NonlocalCorrelation)
+    ]
+    assert len(nonlocal_terms) == 1
+    assert nonlocal_terms[0].model == expected_nonlocal_model
+    assert nonlocal_terms[0].xc_partner == expected_base
+
+
+def test_dft_plain_functional_has_no_nonlocal_addon_contribution():
+    dft = DFT()
+    dft.xc = XCFunctional(functional_key='PBE')
+    dft.normalize(EntryArchive(), logger=logger)
+
+    assert dft.xc.functional_key == 'PBE'
+    nonlocal_terms = [
+        c for c in (dft.contributions or []) if isinstance(c, NonlocalCorrelation)
+    ]
+    assert nonlocal_terms == []
 
 
 _COMMON_XC_CASES = [
