@@ -221,8 +221,7 @@ class ExplicitDispersionModel(BaseModelMethod):
     """Explicit dispersion / vdW treatment used together with an ab-initio method.
 
     Covers pairwise-additive (D2/D3/D3(BJ)/D4), density-dependent (TS/TS-SCS),
-    many-body dispersion (MBD, e.g. MBD@rsSCS), and non-local correlation
-    functionals (VV10, rVV10, vdW-DF family, XDM).
+    many-body dispersion (MBD, e.g. MBD@rsSCS), and exchange-hole based (XDM) models.
 
     References
     ----------
