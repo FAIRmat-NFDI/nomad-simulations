@@ -731,13 +731,15 @@ class KLinePath(ArchiveSection):
         # Generate point segments using `map` and `linspace_segments`
         points_segments = list(
             map(
-                lambda i, value: linspace_segments(
-                    self.high_symmetry_path_values[i - 1],
-                    value,
-                    closest_indices[i] - closest_indices[i - 1],
-                )
-                if i > 0
-                else np.array([]),
+                lambda i, value: (
+                    linspace_segments(
+                        self.high_symmetry_path_values[i - 1],
+                        value,
+                        closest_indices[i] - closest_indices[i - 1],
+                    )
+                    if i > 0
+                    else np.array([])
+                ),
                 range(len(self.high_symmetry_path_values)),
                 self.high_symmetry_path_values,
             )
