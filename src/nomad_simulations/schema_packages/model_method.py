@@ -327,6 +327,61 @@ class RelativityModel(BaseModelMethod):
     )
 
 
+class NonlocalCorrelation(BaseModelMethod):
+    """Nonlocal correlation term used in DFT to capture dispersion-like interactions.
+
+    This section represents kernel-based nonlocal correlation models that are
+    added to (or embedded in) a baseline XC functional, e.g. vdW-DF family
+    and VV10/rVV10.
+
+    Typical energy decomposition viewpoint:
+        E_total = E_KS-DFT + E_nlc
+    where E_nlc is evaluated from a nonlocal correlation kernel.
+
+    Notes
+    -----
+    - Numerical parameters (e.g. rVV10 'b') should be stored in DispersionSettings.knobs
+      under `numerical_settings`, not as quantities here.
+    - This section captures identity/provenance of the nonlocal correlation model.
+
+    References
+    ----------
+    • Dion et al., Phys. Rev. Lett. 92, 246401 (2004)  - vdW-DF (DRSLL)
+    • Lee et al., Phys. Rev. B 82, 081101 (2010)       - vdW-DF2 (LMKLL)
+    • Vydrov & Van Voorhis, J. Chem. Phys. 133, 244103 (2010) - VV10
+    """
+
+    model = Quantity(
+        type=MEnum(
+            # VV10 family
+            'VV10',
+            'rVV10',
+            # vdW-DF family (named variants)
+            'vdW-DF',
+            'vdW-DF2',
+            'vdW-DF-cx',
+            'optB88-vdW',
+            'optB86b-vdW',
+        ),
+        description="""
+        Identifier of the nonlocal correlation functional / variant.
+        """,
+    )
+
+    kernel = Quantity(
+        type=MEnum(
+            # canonical kernel families
+            'DRSLL',  # original vdW-DF kernel
+            'LMKLL',  # vdW-DF2 kernel
+            'VV10',  # VV10 kernel
+            'rVV10',  # revised VV10 kernel
+        ),
+        description="""
+        Kernel family used by the nonlocal correlation term.
+        """,
+    )
+
+
 class OrbitalLocalization(BaseModelMethod):
     """Transforming canonical MOs into a localized representation.
 
