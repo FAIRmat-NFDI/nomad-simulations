@@ -251,15 +251,6 @@ class ExplicitDispersionModel(BaseModelMethod):
             'MBD@rsSCS',
             # Exchange-hole based
             'XDM',
-            # Non-local correlation functionals
-            'VV10',
-            'rVV10',
-            'vdW-DF',
-            'vdW-DF2',
-            'optB88-vdW',
-            'optB86b-vdW',
-            'SCAN+rVV10',
-            'BEEF-vdW',
         ),
         description="""
         Identifier of the explicit dispersion / vdW model.
