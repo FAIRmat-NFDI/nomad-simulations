@@ -381,6 +381,12 @@ class NonlocalCorrelation(BaseModelMethod):
         """,
     )
 
+    # TODO later: link to XCComponent(s)
+    xc_partner = Quantity(
+        type=str,
+        description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
+    )
+
 
 class OrbitalLocalization(BaseModelMethod):
     """Transforming canonical MOs into a localized representation.
