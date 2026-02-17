@@ -10,7 +10,7 @@ from nomad_simulations.schema_packages.utils import log
 
 from .general import (
     SerialWorkflow,
-    SimulationWorkflowModel,
+    SimulationWorkflowMethod,
     SimulationWorkflowResults,
     WorkflowConvergenceTarget,
 )
@@ -19,7 +19,7 @@ from .single_point import SinglePoint
 m_package = SchemaPackage()
 
 
-class GeometryOptimizationModel(SimulationWorkflowModel):
+class GeometryOptimizationModel(SimulationWorkflowMethod):
     """
     Workflow model describing a geometry optimization.
     """

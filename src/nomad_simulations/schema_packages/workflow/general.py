@@ -521,14 +521,19 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     @log
     def map_inputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
-        if self.method:
-            logger = self.map_inputs.__annotations__['logger']
-            self.method.normalize(archive, logger)
-            # add method to inputs
-            self.inputs.append(Link(name=self.method._label, section=self.method))
+        if not self.method:
+            self.method = SimulationWorkflowMethod()
+
+        if self.method in [inp.section for inp in self.inputs]:
+            return
+
+        logger = self.map_inputs.__annotations__['logger']
+        self.method.normalize(archive, logger)
+        # add method to inputs
+        self.inputs.append(Link(name=self.method._label, section=self.method))
 
     @log
-    def map_outputs(self, archive: EntryArchive) -> None:
+    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not self.results:
             self.results = SimulationWorkflowResults()
 
@@ -709,7 +714,7 @@ class SerialWorkflow(SimulationWorkflow):
     """
 
     @log
-    def map_outputs(self, archive: EntryArchive) -> None:
+    def map_outputs(self, archive: EntryArchive, logger: BoundLogger) -> None:
         if not self.results:
             self.results = SerialWorkflowResults()
         logger = self.map_outputs.__annotations__['logger']
