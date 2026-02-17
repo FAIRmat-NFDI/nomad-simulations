@@ -257,11 +257,6 @@ class ExplicitDispersionModel(BaseModelMethod):
         """,
     )
 
-    is_embedded_in_xc = Quantity(
-        type=bool,
-        description='True if dispersion is part of the XC functional (e.g. SCAN+rVV10).',
-    )
-
     damping_function = Quantity(
         type=MEnum('zero', 'BJ', 'fermi', 'rational'),
         description='Short-range damping: D3{zero,BJ}, TS{fermi}, XDM{rational}.',
@@ -271,12 +266,6 @@ class ExplicitDispersionModel(BaseModelMethod):
     xc_partner = Quantity(
         type=str,
         description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
-    )
-
-    # Kernel family choice, when applicable. This is a model identifier, not a numerical knob.
-    nonlocal_kernel = Quantity(
-        type=MEnum('DRSLL', 'LMKLL', 'VV10', 'rVV10'),
-        description='Nonlocal correlation kernel flavor (when applicable).',
     )
 
 
