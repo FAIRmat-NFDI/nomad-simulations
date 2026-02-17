@@ -1346,25 +1346,25 @@ class MolecularDynamicsResults(SerialWorkflowResults):
 class MolecularDynamics(SerialWorkflow):
     _task_label = 'Step'
 
-    method = SubSection(sub_section=MolecularDynamicsMethod)
+    method = SubSection(sub_section=MolecularDynamicsMethod.m_def)
 
-    results = SubSection(sub_section=MolecularDynamicsResults)
+    results = SubSection(sub_section=MolecularDynamicsResults.m_def)
 
     def map_inputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
         super().map_inputs(archive, logger)
-        if not self.method:
+        if not isinstance(self.method, MolecularDynamicsMethod):
             self.method = MolecularDynamicsMethod()
 
     def map_outputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
         super().map_outputs(archive, logger)
-        if not self.results:
+        if not isinstance(self.results, MolecularDynamicsResults):
             self.results = MolecularDynamicsResults()
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
 
-        if not self.method:
+        if not isinstance(self.method, MolecularDynamicsMethod):
             self.method = MolecularDynamicsMethod()
 
-        if not self.results:
+        if not isinstance(self.results, MolecularDynamicsResults):
             self.results = MolecularDynamicsResults()
