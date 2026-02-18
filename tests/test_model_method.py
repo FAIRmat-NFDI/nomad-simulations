@@ -683,23 +683,6 @@ def test_solvation_derives_optical_eps_if_only_n_given():
     assert pytest.approx(ism.dielectric_constant_optical, rel=1e-12) == 1.50**2
 
 
-def test_dft_expands_functional_key_into_components():
-    dft = DFT()
-    dft.xc = XCFunctional(functional_key='PBE')
-    dft.normalize(EntryArchive(), logger=logger)
-    assert dft.xc.components
-    assert all(c.canonical_label for c in dft.xc.components)
-
-
-def test_dft_functional_key_population_is_idempotent():
-    dft = DFT()
-    dft.xc = XCFunctional(functional_key='PBE')
-    dft.normalize(EntryArchive(), logger=logger)
-    n1 = len(dft.xc.components or [])
-    dft.normalize(EntryArchive(), logger=logger)
-    assert len(dft.xc.components or []) == n1
-
-
 _COMMON_XC_CASES = [
     # ---------------- LDA ----------------
     ('LDA', 'LDA'),
@@ -807,33 +790,6 @@ _COMMON_XC_CASES = [
     ('B3PW', 'hybrid-GGA'),
 ]
 
-
-@pytest.mark.parametrize('raw, expected_family', _COMMON_XC_CASES)
-def test_dft_expands_100_common_functionals(raw, expected_family):
-    dft = DFT()
-    dft.xc = XCFunctional(functional_key=raw)
-    dft.normalize(EntryArchive(), logger=logger)
-
-    assert dft.xc.components, f'Expansion produced no components for {raw}'
-    assert all(c.canonical_label for c in dft.xc.components)
-    assert dft.jacobs_ladder == expected_family
-
-    if expected_family.startswith('hybrid'):
-        # Schema must not infer α from names
-        assert dft.xc.global_exact_exchange is None
-
-
-@pytest.mark.parametrize('raw', ['PBE', 'B3LYP', 'HSE06', 'SCAN+rVV10'])
-def test_dft_expansion_is_idempotent_for_common_functionals(raw):
-    dft = DFT()
-    dft.xc = XCFunctional(functional_key=raw)
-    dft.normalize(EntryArchive(), logger=logger)
-    n1 = len(dft.xc.components or [])
-    dft.normalize(EntryArchive(), logger=logger)
-    n2 = len(dft.xc.components or [])
-    assert n2 == n1
-
-
 _WIDELY_USED_XC_LABEL_CASES = [
     ('PBE', {'XC_GGA_X_PBE', 'XC_GGA_C_PBE'}, 'GGA'),
     ('PBEsol', {'XC_GGA_X_PBE_SOL', 'XC_GGA_C_PBE_SOL'}, 'GGA'),
@@ -856,6 +812,39 @@ _WIDELY_USED_XC_LABEL_CASES = [
     ('ωB97M-V', {'XC_HYB_MGGA_XC_WB97M_V'}, 'hybrid-meta-GGA'),
 ]
 
+_WIDELY_USED_XC_NAMES = {raw for raw, _, _ in _WIDELY_USED_XC_LABEL_CASES}
+_BROAD_XC_CASES = [
+    (raw, expected_family)
+    for raw, expected_family in _COMMON_XC_CASES
+    if raw not in _WIDELY_USED_XC_NAMES
+]
+
+
+@pytest.mark.parametrize('raw, expected_family', _BROAD_XC_CASES)
+def test_dft_expands_broad_functional_set(raw, expected_family):
+    dft = DFT()
+    dft.xc = XCFunctional(functional_key=raw)
+    dft.normalize(EntryArchive(), logger=logger)
+
+    assert dft.xc.components, f'Expansion produced no components for {raw}'
+    assert all(c.canonical_label for c in dft.xc.components)
+    assert dft.jacobs_ladder == expected_family
+
+    if expected_family.startswith('hybrid'):
+        # Schema must not infer α from names
+        assert dft.xc.global_exact_exchange is None
+
+
+@pytest.mark.parametrize('raw', ['SCAN+rVV10', 'r2SCAN + D4', 'B3LYP + D3(BJ)'])
+def test_dft_expansion_is_idempotent_for_common_functionals(raw):
+    dft = DFT()
+    dft.xc = XCFunctional(functional_key=raw)
+    dft.normalize(EntryArchive(), logger=logger)
+    n1 = len(dft.xc.components or [])
+    dft.normalize(EntryArchive(), logger=logger)
+    n2 = len(dft.xc.components or [])
+    assert n2 == n1
+
 
 @pytest.mark.parametrize(
     'raw, expected_labels, expected_family', _WIDELY_USED_XC_LABEL_CASES
@@ -870,3 +859,6 @@ def test_dft_expands_widely_used_functionals_to_expected_labels(
     labels = {c.canonical_label for c in (dft.xc.components or [])}
     assert labels == expected_labels
     assert dft.jacobs_ladder == expected_family
+    if expected_family.startswith('hybrid'):
+        # Schema must not infer α from names
+        assert dft.xc.global_exact_exchange is None
