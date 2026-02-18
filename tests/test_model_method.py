@@ -832,3 +832,41 @@ def test_dft_expansion_is_idempotent_for_common_functionals(raw):
     dft.normalize(EntryArchive(), logger=logger)
     n2 = len(dft.xc.components or [])
     assert n2 == n1
+
+
+_WIDELY_USED_XC_LABEL_CASES = [
+    ('PBE', {'XC_GGA_X_PBE', 'XC_GGA_C_PBE'}, 'GGA'),
+    ('PBEsol', {'XC_GGA_X_PBE_SOL', 'XC_GGA_C_PBE_SOL'}, 'GGA'),
+    ('BLYP', {'XC_GGA_X_B88', 'XC_GGA_C_LYP'}, 'GGA'),
+    ('BP86', {'XC_GGA_X_B88', 'XC_GGA_C_P86'}, 'GGA'),
+    ('LDA', {'XC_LDA_X', 'XC_LDA_C_PW'}, 'LDA'),
+    ('SVWN', {'XC_LDA_X', 'XC_LDA_C_VWN'}, 'LDA'),
+    ('PBE0', {'XC_HYB_GGA_XC_PBEH'}, 'hybrid-GGA'),
+    ('B3LYP', {'XC_HYB_GGA_XC_B3LYP'}, 'hybrid-GGA'),
+    ('HSE06', {'XC_HYB_GGA_XC_HSE06'}, 'hybrid-GGA'),
+    ('CAM-B3LYP', {'XC_HYB_GGA_XC_CAM_B3LYP'}, 'hybrid-GGA'),
+    ('TPSS', {'XC_MGGA_X_TPSS', 'XC_MGGA_C_TPSS'}, 'meta-GGA'),
+    ('SCAN', {'XC_MGGA_X_SCAN', 'XC_MGGA_C_SCAN'}, 'meta-GGA'),
+    ('r2SCAN', {'XC_MGGA_X_R2SCAN', 'XC_MGGA_C_R2SCAN'}, 'meta-GGA'),
+    ('M06-L', {'XC_MGGA_X_M06_L', 'XC_MGGA_C_M06_L'}, 'meta-GGA'),
+    ('M06-2X', {'XC_HYB_MGGA_X_M06_2X', 'XC_MGGA_C_M06_2X'}, 'hybrid-meta-GGA'),
+    ('SCAN0', {'XC_HYB_MGGA_X_SCAN0', 'XC_MGGA_C_SCAN'}, 'hybrid-meta-GGA'),
+    ('TPSSH', {'XC_HYB_MGGA_XC_TPSSH'}, 'hybrid-meta-GGA'),
+    ('ωB97X-V', {'XC_HYB_GGA_XC_WB97X_V'}, 'hybrid-GGA'),
+    ('ωB97M-V', {'XC_HYB_MGGA_XC_WB97M_V'}, 'hybrid-meta-GGA'),
+]
+
+
+@pytest.mark.parametrize(
+    'raw, expected_labels, expected_family', _WIDELY_USED_XC_LABEL_CASES
+)
+def test_dft_expands_widely_used_functionals_to_expected_labels(
+    raw, expected_labels, expected_family
+):
+    dft = DFT()
+    dft.xc = XCFunctional(functional_key=raw)
+    dft.normalize(EntryArchive(), logger=logger)
+
+    labels = {c.canonical_label for c in (dft.xc.components or [])}
+    assert labels == expected_labels
+    assert dft.jacobs_ladder == expected_family
