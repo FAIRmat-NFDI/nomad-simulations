@@ -185,15 +185,15 @@ def label_from_codename(codename: str) -> str:
     return "XC_" + codename.upper()
 
 def norm_family(libxc_family: str, label: str) -> str:
-    if label.startswith("LDA_"):
+    if label.startswith("XC_LDA_"):
         return "LDA"
-    if label.startswith("GGA_"):
+    if label.startswith("XC_GGA_"):
         return "GGA"
-    if label.startswith("MGGA_"):
+    if label.startswith("XC_MGGA_"):
         return "meta-GGA"
-    if label.startswith("HYB_GGA_"):
+    if label.startswith("XC_HYB_GGA_"):
         return "hybrid-GGA"
-    if label.startswith("HYB_MGGA_"):
+    if label.startswith("XC_HYB_MGGA_"):
         return "hybrid-meta-GGA"
     f = libxc_family.replace("XC_FAMILY_", "").lower()
     return {
