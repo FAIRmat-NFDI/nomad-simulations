@@ -314,6 +314,8 @@ sed -n '1,20p' xc_registry_min.json
 - each source key (for example `gga_x_pbe`) becomes `XC_GGA_X_PBE`
 - `id` comes from `info["number"]`
 - `name` comes from `info["description"]`
+- `name` can be shared across exchange/correlation partner records; distinguish
+  entries by `label` and `kind`
 - `family` is derived from label prefix first, then `info["family"]`, fallback
   `GGA`
 - `kind` is derived from label token first, then `info["kind"]`, fallback `xc`

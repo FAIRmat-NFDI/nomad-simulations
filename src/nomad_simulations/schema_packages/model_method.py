@@ -434,7 +434,14 @@ class XCComponent(ArchiveSection):
     canonical_label = Quantity(
         type=str, description="LibXC label, e.g. 'XC_GGA_X_PBE'."
     )
-    display_name = Quantity(type=str, description='Human-readable name, e.g. B3LYP.')
+    display_name = Quantity(
+        type=str,
+        description="""
+        Human-readable LibXC name.
+        Note: this can be identical for exchange/correlation partner entries
+        (for example TPSS), so use `canonical_label` + `kind` for disambiguation.
+        """,
+    )
 
     # Taxonomy
     family = Quantity(
