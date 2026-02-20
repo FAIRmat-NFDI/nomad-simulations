@@ -127,3 +127,29 @@ def expand_to_libxc_labels(raw: str) -> list[str]:
             if lbl:
                 labels.add(lbl)
     return sorted(labels)
+
+
+def infer_rung_hint(raw: str) -> str | None:
+    """
+    Infer a Jacob's-ladder rung from alias hints in aliases.json.
+
+    Returns the highest hinted rung found across tokens in `raw`, or None.
+    """
+    if not raw or not raw.strip():
+        return None
+
+    rank = {
+        'LDA': 0,
+        'GGA': 1,
+        'meta-GGA': 2,
+        'hybrid-GGA': 3,
+        'hybrid-meta-GGA': 4,
+    }
+    best: str | None = None
+    for tok in _TOKEN_SPLIT.split(raw):
+        hinted = _RUNG_HINT.get(_norm(tok))
+        if hinted is None:
+            continue
+        if best is None or rank.get(hinted, -1) > rank.get(best, -1):
+            best = hinted
+    return best
