@@ -1335,7 +1335,7 @@ class CoreHoleSpectra(ModelMethodElectronic):
     also contains reference to the specific methodological section (DFT, BSE) used to obtain the core-hole spectra.
     """
 
-    m_def = Section(a_eln={'hide': ['type']})
+    m_def = Section()
 
     # # TODO add examples
     # solver = Quantity(
@@ -1401,7 +1401,7 @@ class DMFT(ModelMethodElectronic):
     A base section used to define the parameters of a DMFT calculation.
     """
 
-    m_def = Section(a_eln={'hide': ['type']})
+    m_def = Section()
 
     impurity_solver = Quantity(
         type=MEnum(
