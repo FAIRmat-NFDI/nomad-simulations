@@ -14,6 +14,7 @@ from nomad_simulations.schema_packages.model_method import (
     ImplicitSolvationModel,
     MultireferencePT,
     MultireferenceSCF,
+    NonlocalCorrelation,
     RelativityModel,
     SlaterKoster,
     SlaterKosterBond,
@@ -681,6 +682,55 @@ def test_solvation_derives_optical_eps_if_only_n_given():
     ism.normalize(EntryArchive(), logger=logger)
 
     assert pytest.approx(ism.dielectric_constant_optical, rel=1e-12) == 1.50**2
+
+
+def test_dft_nonlocal_addon_creates_nonlocal_contribution_and_sets_partner():
+    dft = DFT()
+    dft.xc = XCFunctional(functional_key='SCAN + rVV10')
+
+    dft.normalize(EntryArchive(), logger=logger)
+
+    assert dft.xc.functional_key == 'SCAN'
+    nonlocal_terms = [
+        c for c in (dft.contributions or []) if isinstance(c, NonlocalCorrelation)
+    ]
+    assert len(nonlocal_terms) == 1
+    assert nonlocal_terms[0].type == 'rVV10'
+    assert nonlocal_terms[0].xc_partner == 'SCAN'
+
+
+def test_dft_nonlocal_addon_reuses_existing_matching_nonlocal_contribution():
+    dft = DFT()
+    dft.xc = XCFunctional(functional_key='PBE + VV10')
+    existing_nonlocal = NonlocalCorrelation(type='VV10')
+    dft.m_add_sub_section(type(dft).contributions, existing_nonlocal)
+
+    dft.normalize(EntryArchive(), logger=logger)
+
+    nonlocal_terms = [
+        c for c in (dft.contributions or []) if isinstance(c, NonlocalCorrelation)
+    ]
+    assert len(nonlocal_terms) == 1
+    assert nonlocal_terms[0] is existing_nonlocal
+    assert nonlocal_terms[0].type == 'VV10'
+    assert nonlocal_terms[0].xc_partner == 'PBE'
+
+
+def test_dft_nonlocal_addon_fills_empty_existing_nonlocal_type():
+    dft = DFT()
+    dft.xc = XCFunctional(functional_key='r2SCAN + VV10')
+    existing_nonlocal = NonlocalCorrelation()
+    dft.m_add_sub_section(type(dft).contributions, existing_nonlocal)
+
+    dft.normalize(EntryArchive(), logger=logger)
+
+    nonlocal_terms = [
+        c for c in (dft.contributions or []) if isinstance(c, NonlocalCorrelation)
+    ]
+    assert len(nonlocal_terms) == 1
+    assert nonlocal_terms[0] is existing_nonlocal
+    assert nonlocal_terms[0].type == 'VV10'
+    assert nonlocal_terms[0].xc_partner == 'r2SCAN'
 
 
 _COMMON_XC_CASES = [
