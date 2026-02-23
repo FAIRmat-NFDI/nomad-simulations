@@ -25,6 +25,7 @@ from nomad_simulations.schema_packages.utils.libxc.build import (
 )
 from nomad_simulations.schema_packages.utils.libxc.expand import (
     expand_to_libxc_labels,
+    infer_rung_hint,
 )
 from nomad_simulations.schema_packages.utils.xc_addons import (
     split_xc_and_addons,
@@ -476,7 +477,14 @@ class XCComponent(ArchiveSection):
     canonical_label = Quantity(
         type=str, description="LibXC label, e.g. 'XC_GGA_X_PBE'."
     )
-    display_name = Quantity(type=str, description='Human-readable name, e.g. B3LYP.')
+    display_name = Quantity(
+        type=str,
+        description="""
+        Human-readable LibXC name.
+        Note: this can be identical for exchange/correlation partner entries
+        (for example TPSS), so use `canonical_label` + `kind` for disambiguation.
+        """,
+    )
 
     # Taxonomy
     family = Quantity(
@@ -667,8 +675,15 @@ class DFT(ModelMethodElectronic):
             'hybrid-meta-GGA': 4,
         }
         families = [c.family for c in (self.xc.components or []) if c.family]
+        hinted = infer_rung_hint(getattr(self.xc, 'functional_key', None) or '')
         if families:
-            self.jacobs_ladder = max(families, key=lambda f: rank.get(f, -1))
+            derived = max(families, key=lambda f: rank.get(f, -1))
+            if hinted and rank.get(hinted, -1) > rank.get(derived, -1):
+                self.jacobs_ladder = hinted
+            else:
+                self.jacobs_ladder = derived
+        elif hinted:
+            self.jacobs_ladder = hinted
         else:
             self.jacobs_ladder = self.jacobs_ladder or 'unavailable'
 
