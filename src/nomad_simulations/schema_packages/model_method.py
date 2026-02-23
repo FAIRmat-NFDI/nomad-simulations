@@ -355,7 +355,7 @@ class NonlocalCorrelation(BaseModelMethod):
     • Vydrov & Van Voorhis, J. Chem. Phys. 133, 244103 (2010) - VV10
     """
 
-    model = Quantity(
+    type = Quantity(
         type=MEnum(
             # VV10 family
             'VV10',
@@ -369,19 +369,6 @@ class NonlocalCorrelation(BaseModelMethod):
         ),
         description="""
         Identifier of the nonlocal correlation functional / variant.
-        """,
-    )
-
-    kernel = Quantity(
-        type=MEnum(
-            # canonical kernel families
-            'DRSLL',  # original vdW-DF kernel
-            'LMKLL',  # vdW-DF2 kernel
-            'VV10',  # VV10 kernel
-            'rVV10',  # revised VV10 kernel
-        ),
-        description="""
-        Kernel family used by the nonlocal correlation term.
         """,
     )
 
@@ -650,15 +637,15 @@ class DFT(ModelMethodElectronic):
             for contribution in self.contributions or []:
                 if not isinstance(contribution, NonlocalCorrelation):
                     continue
-                if contribution.model in (None, nonlocal_corr_addon):
+                if contribution.type in (None, nonlocal_corr_addon):
                     existing_nonlocal = contribution
                     break
 
             if existing_nonlocal is None:
-                existing_nonlocal = NonlocalCorrelation(model=nonlocal_corr_addon)
+                existing_nonlocal = NonlocalCorrelation(type=nonlocal_corr_addon)
                 self.m_add_sub_section(type(self).contributions, existing_nonlocal)
-            elif existing_nonlocal.model is None:
-                existing_nonlocal.model = nonlocal_corr_addon
+            elif existing_nonlocal.type is None:
+                existing_nonlocal.type = nonlocal_corr_addon
 
             if base_xc_key:
                 existing_nonlocal.xc_partner = base_xc_key
