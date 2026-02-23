@@ -7,7 +7,9 @@ from nomad.metainfo import (
     URL,
     MEnum,
     Quantity,
+    Reference,
     Section,
+    SectionProxy,
     SubSection,
 )
 
@@ -265,10 +267,20 @@ class ExplicitDispersionModel(BaseModelMethod):
         description='Short-range damping: D3{zero,BJ}, TS{fermi}, XDM{rational}.',
     )
 
-    # TODO later: link to XCComponent(s)
+    xc_partner_ref = Quantity(
+        type=Reference(SectionProxy('XCFunctional')),
+        description="""
+        Reference to the baseline `XCFunctional` section this model is paired with.
+        """,
+    )
+
+    # Deprecated compatibility field. Prefer `xc_partner_ref`.
     xc_partner = Quantity(
         type=str,
-        description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
+        description="""
+        Deprecated string label for the baseline XC partner
+        (e.g. 'PBE', 'SCAN', 'B3LYP'). Prefer `xc_partner_ref`.
+        """,
     )
 
 
@@ -372,10 +384,20 @@ class NonlocalCorrelation(BaseModelMethod):
         """,
     )
 
-    # TODO later: link to XCComponent(s)
+    xc_partner_ref = Quantity(
+        type=Reference(SectionProxy('XCFunctional')),
+        description="""
+        Reference to the baseline `XCFunctional` section this nonlocal term is paired with.
+        """,
+    )
+
+    # Deprecated compatibility field. Prefer `xc_partner_ref`.
     xc_partner = Quantity(
         type=str,
-        description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
+        description="""
+        Deprecated string label for the baseline XC partner
+        (e.g. 'PBE', 'SCAN', 'B3LYP'). Prefer `xc_partner_ref`.
+        """,
     )
 
 
@@ -648,6 +670,7 @@ class DFT(ModelMethodElectronic):
                 existing_nonlocal.type = nonlocal_corr_addon
 
             if base_xc_key:
+                existing_nonlocal.xc_partner_ref = self.xc
                 existing_nonlocal.xc_partner = base_xc_key
 
         # XC-specific normalization now handled by XCFunctional

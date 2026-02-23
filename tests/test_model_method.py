@@ -696,6 +696,7 @@ def test_dft_nonlocal_addon_creates_nonlocal_contribution_and_sets_partner():
     ]
     assert len(nonlocal_terms) == 1
     assert nonlocal_terms[0].type == 'rVV10'
+    assert nonlocal_terms[0].xc_partner_ref is dft.xc
     assert nonlocal_terms[0].xc_partner == 'SCAN'
 
 
@@ -713,6 +714,7 @@ def test_dft_nonlocal_addon_reuses_existing_matching_nonlocal_contribution():
     assert len(nonlocal_terms) == 1
     assert nonlocal_terms[0] is existing_nonlocal
     assert nonlocal_terms[0].type == 'VV10'
+    assert nonlocal_terms[0].xc_partner_ref is dft.xc
     assert nonlocal_terms[0].xc_partner == 'PBE'
 
 
@@ -730,6 +732,7 @@ def test_dft_nonlocal_addon_fills_empty_existing_nonlocal_type():
     assert len(nonlocal_terms) == 1
     assert nonlocal_terms[0] is existing_nonlocal
     assert nonlocal_terms[0].type == 'VV10'
+    assert nonlocal_terms[0].xc_partner_ref is dft.xc
     assert nonlocal_terms[0].xc_partner == 'r2SCAN'
 
 
