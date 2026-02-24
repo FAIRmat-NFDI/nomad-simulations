@@ -684,6 +684,17 @@ def test_solvation_derives_optical_eps_if_only_n_given():
     assert pytest.approx(ism.dielectric_constant_optical, rel=1e-12) == 1.50**2
 
 
+def test_dft_sets_explicit_dispersion_xc_partner_ref():
+    dft = DFT()
+    dft.xc = XCFunctional(functional_key='PBE')
+    edm = ExplicitDispersionModel(model='D3BJ', damping_function='BJ')
+    dft.m_add_sub_section(type(dft).contributions, edm)
+
+    dft.normalize(EntryArchive(), logger=logger)
+
+    assert edm.xc_partner_ref is dft.xc
+
+
 def test_dft_nonlocal_addon_creates_nonlocal_contribution_and_sets_partner():
     dft = DFT()
     dft.xc = XCFunctional(functional_key='SCAN + rVV10')
@@ -697,7 +708,6 @@ def test_dft_nonlocal_addon_creates_nonlocal_contribution_and_sets_partner():
     assert len(nonlocal_terms) == 1
     assert nonlocal_terms[0].type == 'rVV10'
     assert nonlocal_terms[0].xc_partner_ref is dft.xc
-    assert nonlocal_terms[0].xc_partner == 'SCAN'
 
 
 def test_dft_nonlocal_addon_reuses_existing_matching_nonlocal_contribution():
@@ -715,7 +725,6 @@ def test_dft_nonlocal_addon_reuses_existing_matching_nonlocal_contribution():
     assert nonlocal_terms[0] is existing_nonlocal
     assert nonlocal_terms[0].type == 'VV10'
     assert nonlocal_terms[0].xc_partner_ref is dft.xc
-    assert nonlocal_terms[0].xc_partner == 'PBE'
 
 
 def test_dft_nonlocal_addon_fills_empty_existing_nonlocal_type():
@@ -733,7 +742,6 @@ def test_dft_nonlocal_addon_fills_empty_existing_nonlocal_type():
     assert nonlocal_terms[0] is existing_nonlocal
     assert nonlocal_terms[0].type == 'VV10'
     assert nonlocal_terms[0].xc_partner_ref is dft.xc
-    assert nonlocal_terms[0].xc_partner == 'r2SCAN'
 
 
 _COMMON_XC_CASES = [

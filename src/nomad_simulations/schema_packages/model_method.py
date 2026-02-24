@@ -236,7 +236,6 @@ class ExplicitDispersionModel(BaseModelMethod):
     • S. Grimme et al., J. Chem. Phys. 136, 154105 (2012) - DFT-D3(BJ)
     • A. Tkatchenko, M. Scheffler, Phys. Rev. Lett. 102, 073005 (2009) - TS
     • A. Tkatchenko et al., Phys. Rev. Lett. 108, 236402 (2012) - MBD
-    • O. A. Vydrov, T. Van Voorhis, J. Chem. Phys. 133, 244103 (2010) - VV10
     • C. Steinmann, WIREs Comput. Mol. Sci. 10, e1438 (2020) - overview
     """
 
@@ -271,15 +270,6 @@ class ExplicitDispersionModel(BaseModelMethod):
         type=Reference(SectionProxy('XCFunctional')),
         description="""
         Reference to the baseline `XCFunctional` section this model is paired with.
-        """,
-    )
-
-    # Deprecated compatibility field. Prefer `xc_partner_ref`.
-    xc_partner = Quantity(
-        type=str,
-        description="""
-        Deprecated string label for the baseline XC partner
-        (e.g. 'PBE', 'SCAN', 'B3LYP'). Prefer `xc_partner_ref`.
         """,
     )
 
@@ -388,15 +378,6 @@ class NonlocalCorrelation(BaseModelMethod):
         type=Reference(SectionProxy('XCFunctional')),
         description="""
         Reference to the baseline `XCFunctional` section this nonlocal term is paired with.
-        """,
-    )
-
-    # Deprecated compatibility field. Prefer `xc_partner_ref`.
-    xc_partner = Quantity(
-        type=str,
-        description="""
-        Deprecated string label for the baseline XC partner
-        (e.g. 'PBE', 'SCAN', 'B3LYP'). Prefer `xc_partner_ref`.
         """,
     )
 
@@ -671,7 +652,14 @@ class DFT(ModelMethodElectronic):
 
             if base_xc_key:
                 existing_nonlocal.xc_partner_ref = self.xc
-                existing_nonlocal.xc_partner = base_xc_key
+
+        if base_xc_key:
+            for contribution in self.contributions or []:
+                if (
+                    isinstance(contribution, ExplicitDispersionModel)
+                    and contribution.xc_partner_ref is None
+                ):
+                    contribution.xc_partner_ref = self.xc
 
         # XC-specific normalization now handled by XCFunctional
         self.xc.normalize(archive, logger)
