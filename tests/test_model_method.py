@@ -744,6 +744,24 @@ def test_dft_nonlocal_addon_fills_empty_existing_nonlocal_type():
     assert nonlocal_terms[0].xc_partner_ref is dft.xc
 
 
+def test_dft_nonlocal_addon_creates_new_nonlocal_for_mismatched_existing_type():
+    dft = DFT()
+    dft.xc = XCFunctional(functional_key='SCAN + rVV10')
+    existing_nonlocal = NonlocalCorrelation(type='VV10')
+    dft.m_add_sub_section(type(dft).contributions, existing_nonlocal)
+
+    dft.normalize(EntryArchive(), logger=logger)
+
+    nonlocal_terms = [
+        c for c in (dft.contributions or []) if isinstance(c, NonlocalCorrelation)
+    ]
+    # The existing VV10 term should remain, and a new rVV10 term should be created.
+    assert len(nonlocal_terms) == 2
+    assert any(c is existing_nonlocal for c in nonlocal_terms)
+    new_terms = [c for c in nonlocal_terms if c is not existing_nonlocal]
+    assert len(new_terms) == 1
+    assert new_terms[0].type == 'rVV10'
+    assert new_terms[0].xc_partner_ref is dft.xc
 _COMMON_XC_CASES = [
     # ---------------- LDA ----------------
     ('LDA', 'LDA'),
