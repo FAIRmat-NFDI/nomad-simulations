@@ -650,16 +650,14 @@ class DFT(ModelMethodElectronic):
             elif existing_nonlocal.type is None:
                 existing_nonlocal.type = nonlocal_corr_addon
 
-            if base_xc_key:
-                existing_nonlocal.xc_partner_ref = self.xc
+            existing_nonlocal.xc_partner_ref = self.xc
 
-        if base_xc_key:
-            for contribution in self.contributions or []:
-                if (
-                    isinstance(contribution, ExplicitDispersionModel)
-                    and contribution.xc_partner_ref is None
-                ):
-                    contribution.xc_partner_ref = self.xc
+        for contribution in self.contributions or []:
+            if (
+                isinstance(contribution, ExplicitDispersionModel)
+                and contribution.xc_partner_ref is None
+            ):
+                contribution.xc_partner_ref = self.xc
 
         # XC-specific normalization now handled by XCFunctional
         self.xc.normalize(archive, logger)
