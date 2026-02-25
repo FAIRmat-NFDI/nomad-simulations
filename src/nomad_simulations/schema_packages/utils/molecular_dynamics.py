@@ -6,6 +6,7 @@ from collections.abc import Callable
 from itertools import chain
 from typing import TYPE_CHECKING, Any, TypedDict
 
+import ase
 import numpy as np
 from scipy import sparse
 from scipy.stats import linregress
@@ -400,44 +401,133 @@ def archive_to_universe(
     if not _check_package_dependency('MDAnalysis', 'archive_to_universe', 'md'):
         return None
 
-    # TODO explicit return until we convert to data
-    if not archive.run:
-        return None
+    # TODO: legacy archive.run - remove this branch when migration to archive.data is complete
+    _using_new_schema = False
+    if archive.run:
+        try:
+            sec_run = archive.run[-1]
+            sec_system = sec_run.system
+            sec_system_top = sec_run.system[system_index]
+            sec_atoms = sec_system_top.atoms
+            sec_atoms_group = sec_system_top.atoms_group
+            n_atoms = sec_atoms.get('n_atoms')
+            atom_names = sec_atoms.get('labels')
+            system_times = [
+                calc.time for calc in sec_run.calculation if calc.system_ref
+            ]
+            sec_method = (
+                sec_run.method[method_index]
+                if sec_run.get('method') is not None
+                else {}
+            )
+            atom_parameters = (
+                sec_method.get('atom_parameters') if sec_method is not None else []
+            )
+            # get the atom masses and charges
+            masses = np.empty(n_atoms)
+            charges = np.empty(n_atoms)
 
-    try:
-        sec_run = archive.run[-1]
-        sec_system = sec_run.system
-        sec_system_top = sec_run.system[system_index]
-        sec_atoms = sec_system_top.atoms
-        sec_atoms_group = sec_system_top.atoms_group
-        sec_calculation = sec_run.calculation
-        sec_method = (
-            sec_run.method[method_index] if sec_run.get('method') is not None else {}
-        )
-    except IndexError:
+            for atom_ind, atom in enumerate(atom_parameters):
+                if atom.get('mass'):
+                    masses[atom_ind] = ureg.convert(
+                        atom.mass.magnitude, atom.mass.units, ureg.amu
+                    )
+                if atom.get('charge'):
+                    charges[atom_ind] = ureg.convert(
+                        atom.charge.magnitude, atom.charge.units, ureg.e
+                    )
+            atom_types = (
+                [atom.label for atom in atom_parameters]
+                if atom_parameters
+                else atom_names
+            )
+        except IndexError:
+            LOGGER.warning(
+                'Supplied indices or necessary sections do not exist in archive. Cannot build the MDA universe.'
+            )
+            return None
+    elif archive.data:
+        try:
+            sec_system = archive.data.model_system[system_index]
+            # sec_system_top = archive.data.system[system_index]
+            # sec_atoms = sec_system_top.atoms
+            sec_atoms_group = sec_system.sub_systems if sec_system is not None else None
+            n_atoms = sec_system.get('n_particles') if sec_system is not None else None
+            particle_states = (
+                sec_system.particle_states if sec_system is not None else None
+            )
+            atom_names = (
+                [ps.label or ps.chemical_symbol for ps in particle_states]
+                if particle_states
+                else None
+            )
+            atom_types = [ps.chemical_symbol for ps in particle_states]
+            masses = [
+                ureg.convert(ps.mass.magnitude, ps.mass.units, ureg.amu)
+                if ps.mass is not None
+                else ase.data.atomic_masses[
+                    ase.data.atomic_numbers.get(ps.chemical_symbol, 0)
+                ]
+                for ps in particle_states
+            ]
+            charges = [
+                ureg.convert(
+                    ps.partial_charge.magnitude, ps.partial_charge.units, ureg.e
+                )
+                if ps.partial_charge is not None
+                else 0.0
+                for ps in particle_states
+            ]
+            system_times = [
+                out.time for out in archive.data.outputs if out.time is not None
+            ]
+        except Exception:
+            LOGGER.warning('Archive can not be read.')
+            return None
+    else:
         LOGGER.warning(
-            'Supplied indices or necessary sections do not exist in archive. Cannot build the MDA universe.'
+            'No run or data section found in archive. Cannot build the MDA universe.'
         )
         return None
 
-    n_atoms = sec_atoms.get('n_atoms')
     if n_atoms is None:
         LOGGER.warning('No atoms found in the archive. Cannot build the MDA universe.')
         return None
 
     n_frames = len(sec_system) if sec_system is not None else 1
-    atom_names = sec_atoms.get('labels')
-    model_atom_parameters = sec_method.get('atom_parameters')
-    atom_types = (
-        [atom.label for atom in model_atom_parameters]
-        if model_atom_parameters
-        else atom_names
-    )
+
     atom_resindex = np.arange(n_atoms)
     atoms_segindices = np.empty(n_atoms)
     atom_segids = np.array(range(n_atoms), dtype='object')
     molecule_groups = sec_atoms_group
     n_segments = len(molecule_groups)
+
+    # Attribute accessors for archive.run / archive.data backward compatibility.
+    # TODO: legacy archive.run - remove else branch and _using_new_schema flag
+    # when migration to archive.data is complete.
+    if _using_new_schema:
+
+        def _atom_idx(obj):
+            return obj.particle_indices
+
+        def _label(obj):
+            return obj.branch_label
+
+        def _sub_objs(obj):
+            subs = obj.sub_systems
+            return subs if subs is not None else []
+
+    else:
+
+        def _atom_idx(obj):
+            return obj.atom_indices
+
+        def _label(obj):
+            return obj.label
+
+        def _sub_objs(obj):
+            subs = obj.atoms_group
+            return subs if subs is not None else []
 
     n_residues = 0
     n_molecules = 0
@@ -448,29 +538,29 @@ def archive_to_universe(
     residue_n_atoms = []
     molecule_n_res = []
     for mol_group_ind, mol_group in enumerate(molecule_groups):
-        atoms_segindices[mol_group.atom_indices] = mol_group_ind
-        atom_segids[mol_group.atom_indices] = mol_group.label
-        molecules = mol_group.atoms_group if mol_group.atoms_group is not None else []
+        atoms_segindices[_atom_idx(mol_group)] = mol_group_ind
+        atom_segids[_atom_idx(mol_group)] = _label(mol_group)
+        molecules = _sub_objs(mol_group)
         for mol in molecules:
-            monomer_groups = mol.atoms_group
+            monomer_groups = _sub_objs(mol)
             mol_res_counter = 0
             if monomer_groups:
                 for mon_group in monomer_groups:
-                    monomers = mon_group.atoms_group
+                    monomers = _sub_objs(mon_group)
                     for mon in monomers:
-                        resnames.append(mon.label)
+                        resnames.append(_label(mon))
                         residue_segindex.append(mol_group_ind)
-                        residue_moltypes.append(mol.label)
-                        residue_min_atom_index.append(np.min(mon.atom_indices))
-                        residue_n_atoms.append(len(mon.atom_indices))
+                        residue_moltypes.append(_label(mol))
+                        residue_min_atom_index.append(np.min(_atom_idx(mon)))
+                        residue_n_atoms.append(len(_atom_idx(mon)))
                         n_residues += 1
                         mol_res_counter += 1
-            else:  # no monomers => whole molecule is it's own residue
-                resnames.append(mol.label)
+            else:  # no monomers => whole molecule is its own residue
+                resnames.append(_label(mol))
                 residue_segindex.append(mol_group_ind)
-                residue_moltypes.append(mol.label)
-                residue_min_atom_index.append(np.min(mol.atom_indices))
-                residue_n_atoms.append(len(mol.atom_indices))
+                residue_moltypes.append(_label(mol))
+                residue_min_atom_index.append(np.min(_atom_idx(mol)))
+                residue_n_atoms.append(len(_atom_idx(mol)))
                 n_residues += 1
                 mol_res_counter += 1
             molecule_n_res.append(mol_res_counter)
@@ -505,66 +595,47 @@ def archive_to_universe(
         residue_molnums[mol_index_counter : mol_index_counter + n_res] = i_molecule
         mol_index_counter += n_res
 
-    # get the atom masses and charges
-
-    masses = np.empty(n_atoms)
-    charges = np.empty(n_atoms)
-    atom_parameters = (
-        sec_method.get('atom_parameters') if sec_method is not None else []
-    )
-    atom_parameters = atom_parameters if atom_parameters is not None else []
-
-    for atom_ind, atom in enumerate(atom_parameters):
-        if atom.get('mass'):
-            masses[atom_ind] = ureg.convert(
-                atom.mass.magnitude, atom.mass.units, ureg.amu
-            )
-        if atom.get('charge'):
-            charges[atom_ind] = ureg.convert(
-                atom.charge.magnitude, atom.charge.units, ureg.e
-            )
-
     # get the atom positions, velocities, and box dimensions
     positions = np.empty(shape=(n_frames, n_atoms, 3))
     velocities = np.empty(shape=(n_frames, n_atoms, 3))
     dimensions = np.empty(shape=(n_frames, 6))
     for frame_ind, frame in enumerate(sec_system):
-        sec_atoms_fr = frame.get('atoms')
-        if sec_atoms_fr is not None:
+        # TODO: legacy archive.run - remove else branch when migration is complete
+        if _using_new_schema:
+            positions_frame = frame.positions
+            velocities_frame = frame.velocities
+            latt_vec_tmp = frame.lattice_vectors
+        else:
+            sec_atoms_fr = frame.get('atoms')
+            if sec_atoms_fr is None:
+                continue
             positions_frame = sec_atoms_fr.positions
-            positions[frame_ind] = (
-                ureg.convert(
-                    positions_frame.magnitude, positions_frame.units, ureg.angstrom
-                )
-                if positions_frame is not None
-                else None
-            )
             velocities_frame = sec_atoms_fr.velocities
-            velocities[frame_ind] = (
-                ureg.convert(
-                    velocities_frame.magnitude,
-                    velocities_frame.units,
-                    ureg.angstrom / ureg.picosecond,
-                )
-                if velocities_frame is not None
-                else None
-            )
             latt_vec_tmp = sec_atoms_fr.get('lattice_vectors')
-            if latt_vec_tmp is not None:
-                length_conversion = ureg.convert(
-                    1.0, sec_atoms_fr.lattice_vectors.units, ureg.angstrom
-                )
-                dimensions[frame_ind] = [
-                    sec_atoms_fr.lattice_vectors.magnitude[0][0] * length_conversion,
-                    sec_atoms_fr.lattice_vectors.magnitude[1][1] * length_conversion,
-                    sec_atoms_fr.lattice_vectors.magnitude[2][2] * length_conversion,
-                    90,
-                    90,
-                    90,
-                ]  # TODO: extend to non-cubic boxes
+        if positions_frame is not None:
+            positions[frame_ind] = ureg.convert(
+                positions_frame.magnitude, positions_frame.units, ureg.angstrom
+            )
+        if velocities_frame is not None:
+            velocities[frame_ind] = ureg.convert(
+                velocities_frame.magnitude,
+                velocities_frame.units,
+                ureg.angstrom / ureg.picosecond,
+            )
+        if latt_vec_tmp is not None:
+            length_conversion = ureg.convert(1.0, latt_vec_tmp.units, ureg.angstrom)
+            dimensions[frame_ind] = [
+                latt_vec_tmp.magnitude[0][0] * length_conversion,
+                latt_vec_tmp.magnitude[1][1] * length_conversion,
+                latt_vec_tmp.magnitude[2][2] * length_conversion,
+                90,
+                90,
+                90,
+            ]  # TODO: extend to non-cubic boxes
 
     # get the bonds  # TODO extend to multiple storage options for interactions
-    bonds = sec_atoms.bond_list
+    # TODO: legacy archive.run - remove else branch when migration is complete
+    bonds = sec_system_top.bond_list if _using_new_schema else sec_atoms.bond_list
     # TODO add back in once get_bond_list_from_model_contributions is updated
     # if bonds is None:
     #     bonds = get_bond_list_from_model_contributions(
@@ -577,7 +648,6 @@ def archive_to_universe(
     def approx(a, b, rel_tol=1e-09, abs_tol=0.0):
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
-    system_times = [calc.time for calc in sec_calculation if calc.system_ref]
     if system_times:
         try:
             method = archive.workflow2.method
