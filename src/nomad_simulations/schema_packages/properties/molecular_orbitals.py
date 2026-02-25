@@ -27,7 +27,11 @@ class MolecularOrbitals(ElectronicEigenvalues):
 
     # References
     basis_set_ref = Quantity(
-        type=Reference(SectionProxy('AtomCenteredBasisSet')),
+        type=Reference(
+            SectionProxy(
+                'nomad_simulations.schema_packages.basis_set.AtomCenteredBasisSet'
+            )
+        ),
         description="""
         Reference to the atom-centered basis set in which these molecular
         orbitals are expanded.
