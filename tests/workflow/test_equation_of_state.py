@@ -186,7 +186,7 @@ class TestEquationOfState:
         elif expected.get('inconsistent_sizes') is not None:
             assert len(workflow.results.energies) == len(workflow.results.volumes)
         if 0 < expected.get('n_eos_fit', 0) < len(FUNCTION_NAMES):
-            assert 'EOS fit unsuccesful.' in errors
+            assert 'EOS fit unsuccessful.' in errors
         assert len(workflow.results.eos_fit) == expected.get('n_eos_fit', 0)
 
         for n, expected_fit in enumerate(expected.get('eos_fit', [])):
