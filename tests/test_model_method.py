@@ -684,10 +684,10 @@ def test_solvation_derives_optical_eps_if_only_n_given():
     assert pytest.approx(ism.dielectric_constant_optical, rel=1e-12) == 1.50**2
 
 
-def test_dft_sets_explicit_dispersion_xc_partner_ref():
+def test_dft_sets_empirical_dispersion_xc_partner_ref():
     dft = DFT()
     dft.xc = XCFunctional(functional_key='PBE')
-    edm = ExplicitDispersionModel(model='D3BJ', damping_function='BJ')
+    edm = EmpiricalDispersionModel(model='D3BJ', damping_function='BJ')
     dft.m_add_sub_section(type(dft).contributions, edm)
 
     dft.normalize(EntryArchive(), logger=logger)
@@ -762,6 +762,8 @@ def test_dft_nonlocal_addon_creates_new_nonlocal_for_mismatched_existing_type():
     assert len(new_terms) == 1
     assert new_terms[0].type == 'rVV10'
     assert new_terms[0].xc_partner_ref is dft.xc
+
+
 _COMMON_XC_CASES = [
     # ---------------- LDA ----------------
     ('LDA', 'LDA'),

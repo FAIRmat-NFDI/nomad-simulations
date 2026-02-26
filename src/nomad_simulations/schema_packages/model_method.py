@@ -269,8 +269,8 @@ class EmpiricalDispersionModel(BaseModelMethod):
     )
 
     # TODO later: link to XCComponent(s)
-    xc_partner = Quantity(
-        type=str,
+    xc_partner_ref = Quantity(
+        type=Reference(SectionProxy('XCFunctional')),
         description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
     )
 
@@ -655,7 +655,7 @@ class DFT(ModelMethodElectronic):
 
         for contribution in self.contributions or []:
             if (
-                isinstance(contribution, ExplicitDispersionModel)
+                isinstance(contribution, EmpiricalDispersionModel)
                 and contribution.xc_partner_ref is None
             ):
                 contribution.xc_partner_ref = self.xc
