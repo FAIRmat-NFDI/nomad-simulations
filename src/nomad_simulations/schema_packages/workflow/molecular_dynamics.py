@@ -789,7 +789,7 @@ class MolecularDynamicsMethod(SimulationWorkflowMethod):
     integrator_type = Quantity(
         type=MEnum(
             'brownian',
-            'conjugant_gradient',
+            'conjugate_gradient',
             'langevin_goga',
             'langevin_schneider',
             'leap_frog',
