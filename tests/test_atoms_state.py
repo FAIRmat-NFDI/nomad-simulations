@@ -488,6 +488,10 @@ class TestAtomsState:
         assert atom_state.chemical_symbol == chemical_symbol
 
     def test_partial_charge_is_independent_of_formal_charge(self):
+        """
+        Test that `partial_charge` is preserved independently from the formal
+        integer `charge` after normalization.
+        """
         atom_state = AtomsState(
             chemical_symbol='O',
             charge=-1,
