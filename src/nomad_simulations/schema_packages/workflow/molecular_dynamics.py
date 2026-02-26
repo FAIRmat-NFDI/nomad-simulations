@@ -28,6 +28,7 @@ from nomad.datamodel.metainfo.workflow import Link
 from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
 from nomad.units import ureg
 
+from nomad_simulations.schema_packages.errors import ErrorEstimate
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
@@ -789,7 +790,7 @@ class MolecularDynamicsMethod(SimulationWorkflowMethod):
     integrator_type = Quantity(
         type=MEnum(
             'brownian',
-            'conjugant_gradient',
+            'conjugate_gradient',
             'langevin_goga',
             'langevin_schneider',
             'leap_frog',
@@ -1093,10 +1094,11 @@ class MolecularDynamicsResults(SerialWorkflowResults):
             return None
         try:
             universe = archive_to_universe(archive)
-        except Exception:
+        except Exception as exc:
             universe = None
             logger.warning(
-                'Could not convert archive to MDAnalysis Universe, skipping MD results normalization.'
+                'Could not convert archive to MDAnalysis Universe, skipping MD results normalization.',
+                exc_info=str(exc),
             )
         return universe
 
@@ -1105,7 +1107,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         self, archive: EntryArchive
     ) -> list[RadialDistributionFunction]:
         # logger = self._get_molecular_rdfs.__annotations__['logger']
-        if not self.radial_distribution_functions:
+        if self.radial_distribution_functions:
             return self.radial_distribution_functions
 
         n_traj_split = 10  # number of intervals to split trajectory into for averaging
@@ -1147,7 +1149,6 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                 rdf.n_variables = 1
                 rdf.variables_name = ['distance']
 
-                rdf.label = str(pair_type)
                 bins_list = rdf_results.get('bins', [])
                 value_list = rdf_results.get('value', [])
                 frame_start_list = rdf_results.get('frame_start', [])
@@ -1166,6 +1167,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                 rdf.frame_end = (
                     frame_end_list[i_pair] if i_pair < len(frame_end_list) else 0
                 )
+                rdf.label = f'{pair_type}_frames_{rdf.frame_start}-{rdf.frame_end}'
                 sec_rdfs.append(rdf)
 
         return sec_rdfs
@@ -1177,6 +1179,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         # logger = self._get_molecular_msds.__annotations__['logger']
         if (
             self.mean_squared_displacements is not None
+            and len(self.mean_squared_displacements) > 0
         ):  # TODO add check for diffusion_constants too?
             return self.mean_squared_displacements, self.diffusion_constants or []
 
@@ -1207,18 +1210,15 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                     else []
                 )
                 if diffusion_constant.value is not None:
-                    diffusion_constant.error_type = (
-                        'Pearson correlation coefficient'  # TODO Update treatment!
-                    )
                     if msd_results.get('error_diffusion_constant') is not None:
-                        errors = msd_results['error_diffusion_constant'][i_type]
-                        diffusion_constant.errors = (
-                            list(errors)
-                            if isinstance(errors, list | np.ndarray)
-                            else [errors]
+                        error_val = msd_results['error_diffusion_constant'][i_type]
+                        error_estimate = ErrorEstimate(
+                            metric='other',
+                            value=[float(error_val)],
+                            notes='Pearson correlation coefficient of the linear MSD fit',
                         )
+                        diffusion_constant.errors = [error_estimate]
                     diffusion_constant.is_derived = True
-                    diffusion_constant.physical_property_ref = [msd]
                     sec_diffusion_constants.append(diffusion_constant)
                 sec_msds.append(msd)
 
@@ -1233,7 +1233,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         """
         try:
             data = archive.data
-            sec_systems = data.system
+            sec_systems = data.model_system
             sec_outputs = data.outputs
         except Exception:
             logger.warning('Could not access archive data for populating output RGs')
@@ -1287,11 +1287,22 @@ class MolecularDynamicsResults(SerialWorkflowResults):
 
         try:
             data = archive.data
-            sec_systems = data.system
-            sec_system = sec_systems[data.representative_system_index]
+            # Use the first system that has sub_systems (topology frame),
+            # since representative_system_index may point to a trajectory frame
+            # with no sub_systems.
+            sec_system = next(
+                (s for s in data.model_system if s.sub_systems),
+                None,
+            )
             sec_outputs = data.outputs
         except Exception:
             logger.warning('Could not access archive data for RG calculation')
+            return []
+
+        if sec_system is None:
+            logger.warning(
+                'Could not find a system with sub_systems for RG calculation'
+            )
             return []
 
         # Check if RGs are already present in outputs
@@ -1350,29 +1361,18 @@ class MolecularDynamics(SerialWorkflow):
 
     results = SubSection(sub_section=MolecularDynamicsResults.m_def)
 
-<<<<<<< HEAD
-    def map_inputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
-=======
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         super().map_inputs(archive)
->>>>>>> 243eccf (WIP)
         if not self.method:
             self.method = MolecularDynamicsMethod()
-        super().map_inputs(archive, logger=logger)
+        super().map_inputs(archive)
 
-<<<<<<< HEAD
-    def map_outputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
-        if not self.results:
-            self.results = MolecularDynamicsResults()
-        super().map_outputs(archive, logger=logger)
-=======
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             self.results = MolecularDynamicsResults()
         super().map_outputs(archive)
->>>>>>> 243eccf (WIP)
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
