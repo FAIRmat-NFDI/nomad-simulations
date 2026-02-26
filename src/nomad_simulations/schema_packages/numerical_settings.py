@@ -1287,7 +1287,7 @@ class SolvationSettings(NumericalSettings):
     )
 
 
-class DispersionKnob(ArchiveSection):
+class EmpiricalDispersionKnob(ArchiveSection):
     """
     A single typed numerical knob for an empirical dispersion correction.
 
@@ -1336,13 +1336,13 @@ class DispersionKnob(ArchiveSection):
     )
 
 
-class DispersionSettings(NumericalSettings):
+class EmpiricalDispersionSettings(NumericalSettings):
     """
     Numerical and evaluation settings for an empirical dispersion correction.
 
     This section contains discrete switches and environment choices (e.g. whether
     to include higher-order dispersion terms, which density partitioning is used),
-    as well as typed scalar parameters stored as `DispersionKnob`.
+    as well as typed scalar parameters stored as `EmpiricalDispersionKnob`.
     """
 
     # switches for term inclusion / order
@@ -1402,7 +1402,7 @@ class DispersionSettings(NumericalSettings):
 
     # typed scalar parameters
     knobs = SubSection(
-        sub_section=DispersionKnob.m_def,
+        sub_section=EmpiricalDispersionKnob.m_def,
         repeats=True,
         description="""
         Typed scalar parameters (knobs) for the dispersion correction.

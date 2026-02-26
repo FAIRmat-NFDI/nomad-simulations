@@ -223,6 +223,8 @@ class EmpiricalDispersionModel(BaseModelMethod):
 
     Covers pairwise-additive (D2/D3/D3(BJ)/D4), density-dependent (TS/TS-SCS),
     many-body dispersion (MBD, e.g. MBD@rsSCS), and exchange-hole based XDM.
+    In literature, `DFT-D` is often used as an umbrella label; this schema stores
+    the concrete generation explicitly when available (e.g. D2, D3, D3BJ, D4).
 
     References
     ----------
