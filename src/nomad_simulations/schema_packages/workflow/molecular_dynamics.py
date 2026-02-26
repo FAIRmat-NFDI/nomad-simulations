@@ -1350,15 +1350,29 @@ class MolecularDynamics(SerialWorkflow):
 
     results = SubSection(sub_section=MolecularDynamicsResults.m_def)
 
+<<<<<<< HEAD
     def map_inputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
+=======
+    @log
+    def map_inputs(self, archive: EntryArchive) -> None:
+        super().map_inputs(archive)
+>>>>>>> 243eccf (WIP)
         if not self.method:
             self.method = MolecularDynamicsMethod()
         super().map_inputs(archive, logger=logger)
 
+<<<<<<< HEAD
     def map_outputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
         if not self.results:
             self.results = MolecularDynamicsResults()
         super().map_outputs(archive, logger=logger)
+=======
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
+        if not self.results:
+            self.results = MolecularDynamicsResults()
+        super().map_outputs(archive)
+>>>>>>> 243eccf (WIP)
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
