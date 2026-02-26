@@ -1289,7 +1289,7 @@ class SolvationSettings(NumericalSettings):
 
 class DispersionKnob(ArchiveSection):
     """
-    A single typed numerical knob for an explicit dispersion / vdW correction.
+    A single typed numerical knob for an empirical dispersion correction.
 
     This is a "typed physical constraint" record: it stores one scalar value
     together with semantics that disambiguate what the value controls.
@@ -1305,14 +1305,12 @@ class DispersionKnob(ArchiveSection):
             'a1',
             'a2',
             'sR',
-            # Nonlocal kernel parameter
-            'b',
             # Many-body screening / range separation
             'beta',
         ),
         description="""
         Identifies the dispersion parameter using standard notation.
-        (e.g. s6, a1, beta, b).
+        (e.g. s6, a1, beta).
 
         All dispersion knobs are dimensionless.
         """,
@@ -1323,7 +1321,6 @@ class DispersionKnob(ArchiveSection):
             'pairwise',
             'three_body_atm',
             'many_body',
-            'nonlocal_kernel',
             'density_partitioning',
         ),
         description="""
@@ -1341,7 +1338,7 @@ class DispersionKnob(ArchiveSection):
 
 class DispersionSettings(NumericalSettings):
     """
-    Numerical and evaluation settings for an explicit dispersion / vdW correction.
+    Numerical and evaluation settings for an empirical dispersion correction.
 
     This section contains discrete switches and environment choices (e.g. whether
     to include higher-order dispersion terms, which density partitioning is used),
@@ -1412,7 +1409,7 @@ class DispersionSettings(NumericalSettings):
 
         Examples:
           • D3BJ:  s6/s8 (pairwise), a1/a2 (pairwise), optionally s9 (three_body_atm)
-          • rVV10: b (nonlocal_kernel)
+          • MBD@rsSCS: beta (many_body)
         """,
     )
 
