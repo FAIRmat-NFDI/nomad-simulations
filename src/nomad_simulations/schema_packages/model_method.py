@@ -345,12 +345,6 @@ class NonlocalCorrelation(BaseModelMethod):
         E_total = E_KS-DFT + E_nlc
     where E_nlc is evaluated from a nonlocal correlation kernel.
 
-    Notes
-    -----
-    - Numerical parameters (e.g. rVV10 'b') should be stored in DispersionSettings.knobs
-      under `numerical_settings`, not as quantities here.
-    - This section captures identity/provenance of the nonlocal correlation model.
-
     References
     ----------
     • Dion et al., Phys. Rev. Lett. 92, 246401 (2004)  - vdW-DF (DRSLL)
