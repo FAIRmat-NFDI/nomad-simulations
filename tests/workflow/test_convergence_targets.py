@@ -569,7 +569,7 @@ class TestEdgeCases:
     """Test edge cases and error handling."""
 
     def test_zero_threshold(self, archive, logger, energy_target):
-        """Test with zero threshold (only exact zero should converge)."""
+        """Test that zero threshold is accepted (non-negative validation)."""
         energy_target.threshold = 0.0
         energy_target.threshold_type = 'absolute'
 
@@ -581,20 +581,6 @@ class TestEdgeCases:
 
         # With <= comparison, exact zero matches zero threshold
         assert is_reached is True
-
-    def test_negative_threshold(self, archive, logger, energy_target):
-        """Test that negative threshold is handled (should use absolute value)."""
-        energy_target.threshold = -1e-6  # Negative threshold
-        energy_target.threshold_type = 'absolute'
-
-        scf_step = SCFSteps()
-        scf_step.delta_energies_total = np.array([5e-7]) * ureg.joule
-
-        archive.data.outputs = [Outputs(scf_steps=scf_step)]
-        is_reached = energy_target.normalize(archive, logger)
-
-        # Should still check convergence (implementation dependent)
-        assert is_reached is not None
 
     def test_very_large_values(self, archive, logger, force_target):
         """Test with very large force values."""

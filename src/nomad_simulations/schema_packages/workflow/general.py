@@ -8,6 +8,7 @@ from nomad.metainfo import Datetime, MEnum, Quantity, SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.common import SimulationTime
+from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
@@ -244,10 +245,10 @@ class EnergyConvergenceTarget(WorkflowConvergenceTarget):
     """
 
     threshold = Quantity(
-        type=np.float64,
+        type=positive_float(),
         unit='joule',
         description="""
-        Energy convergence threshold.
+        Energy convergence threshold. Must be non-negative.
         """,
     )
 
@@ -262,10 +263,10 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
     """
 
     threshold = Quantity(
-        type=np.float64,
+        type=positive_float(),
         unit='newton',
         description="""
-        Force convergence threshold.
+        Force convergence threshold. Must be non-negative.
         """,
     )
 
@@ -325,10 +326,10 @@ class PotentialConvergenceTarget(WorkflowConvergenceTarget):
     """
 
     threshold = Quantity(
-        type=np.float64,
+        type=positive_float(),
         unit='joule',
         description="""
-        Potential convergence threshold.
+        Potential convergence threshold. Must be non-negative.
         """,
     )
 
@@ -343,10 +344,10 @@ class ChargeConvergenceTarget(WorkflowConvergenceTarget):
     """
 
     threshold = Quantity(
-        type=np.float64,
+        type=positive_float(),
         unit='coulomb',
         description="""
-        Charge/density convergence threshold.
+        Charge/density convergence threshold. Must be non-negative.
         """,
     )
 
