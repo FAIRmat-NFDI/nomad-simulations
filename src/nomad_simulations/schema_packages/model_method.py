@@ -218,12 +218,13 @@ class ImplicitSolvationModel(BaseModelMethod):
             )
 
 
-class ExplicitDispersionModel(BaseModelMethod):
-    """Explicit dispersion / vdW treatment used together with an ab-initio method.
+class EmpiricalDispersionModel(BaseModelMethod):
+    """Empirical dispersion correction used together with an ab-initio method.
 
     Covers pairwise-additive (D2/D3/D3(BJ)/D4), density-dependent (TS/TS-SCS),
-    many-body dispersion (MBD, e.g. MBD@rsSCS), and non-local correlation
-    functionals (VV10, rVV10, vdW-DF family, XDM).
+    many-body dispersion (MBD, e.g. MBD@rsSCS), and exchange-hole based XDM.
+    In literature, `DFT-D` is often used as an umbrella label; this schema stores
+    the concrete generation explicitly when available (e.g. D2, D3, D3BJ, D4).
 
     References
     ----------
@@ -232,13 +233,12 @@ class ExplicitDispersionModel(BaseModelMethod):
     • S. Grimme et al., J. Chem. Phys. 136, 154105 (2012) - DFT-D3(BJ)
     • A. Tkatchenko, M. Scheffler, Phys. Rev. Lett. 102, 073005 (2009) - TS
     • A. Tkatchenko et al., Phys. Rev. Lett. 108, 236402 (2012) - MBD
-    • O. A. Vydrov, T. Van Voorhis, J. Chem. Phys. 133, 244103 (2010) - VV10
     • C. Steinmann, WIREs Comput. Mol. Sci. 10, e1438 (2020) - overview
     """
 
     model = Quantity(
         type=MEnum(
-            # Pairwise / density-dependent
+            # Pairwise / density-dependent empirical models
             'D2',
             'D3',
             'D3BJ',
@@ -252,24 +252,10 @@ class ExplicitDispersionModel(BaseModelMethod):
             'MBD@rsSCS',
             # Exchange-hole based
             'XDM',
-            # Non-local correlation functionals
-            'VV10',
-            'rVV10',
-            'vdW-DF',
-            'vdW-DF2',
-            'optB88-vdW',
-            'optB86b-vdW',
-            'SCAN+rVV10',
-            'BEEF-vdW',
         ),
         description="""
-        Identifier of the explicit dispersion / vdW model.
+        Identifier of the empirical dispersion correction model.
         """,
-    )
-
-    is_embedded_in_xc = Quantity(
-        type=bool,
-        description='True if dispersion is part of the XC functional (e.g. SCAN+rVV10).',
     )
 
     damping_function = Quantity(
@@ -281,12 +267,6 @@ class ExplicitDispersionModel(BaseModelMethod):
     xc_partner = Quantity(
         type=str,
         description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
-    )
-
-    # Kernel family choice, when applicable. This is a model identifier, not a numerical knob.
-    nonlocal_kernel = Quantity(
-        type=MEnum('DRSLL', 'LMKLL', 'VV10', 'rVV10'),
-        description='Nonlocal correlation kernel flavor (when applicable).',
     )
 
 
