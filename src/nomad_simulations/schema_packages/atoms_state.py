@@ -1114,6 +1114,16 @@ class AtomsState(ParticleState):
         """,
     )
 
+    partial_charge = Quantity(
+        type=np.float64,
+        unit='elementary_charge',
+        description="""
+        Atom-centered partial charge used in force fields or population analyses
+        (e.g., Mulliken, Hirshfeld, CM5, NPA, RESP). This quantity is distinct from
+        the formal integer oxidation-like `charge`.
+        """,
+    )
+
     spin = Quantity(
         type=np.int32,
         default=0,
