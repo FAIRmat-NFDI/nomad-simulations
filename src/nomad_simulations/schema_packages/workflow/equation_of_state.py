@@ -215,7 +215,7 @@ class EquationOfStateResults(SimulationWorkflowResults):
                     )
                     self.eos_fit.append(eos_fit)
                 except Exception:
-                    logger.warning('EOS fit unsuccesful.')
+                    logger.warning('EOS fit unsuccessful.')
 
 
 class EquationOfState(ParallelWorkflow):

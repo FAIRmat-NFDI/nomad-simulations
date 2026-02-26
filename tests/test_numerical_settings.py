@@ -4,8 +4,8 @@ from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.numerical_settings import (
-    DispersionKnob,
-    DispersionSettings,
+    EmpiricalDispersionKnob,
+    EmpiricalDispersionSettings,
     KLinePath,
     KMesh,
     KSpaceFunctionalities,
@@ -491,11 +491,11 @@ class TestKLinePath:
         assert np.allclose(k_line_path.points, points)
 
 
-class TestDispersionSettings:
+class TestEmpiricalDispersionSettings:
     """
     Tests for dispersion numerical settings schema:
-      - typed physical constraints via DispersionKnob
-      - container section DispersionSettings
+      - typed physical constraints via EmpiricalDispersionKnob
+      - container section EmpiricalDispersionSettings
     """
 
     def test_knobs_roundtrip_and_normalize_noop(self):
@@ -503,15 +503,15 @@ class TestDispersionSettings:
         Knobs should be storable and survive normalize() unchanged
         (no special normalization is defined currently).
         """
-        dns = DispersionSettings(
+        dns = EmpiricalDispersionSettings(
             include_c8=True,
             include_three_body_atm=False,
             partition_scheme='Hirshfeld',
             density_source='valence-only',
             knobs=[
-                DispersionKnob(kind='s6', applies_to='pairwise', value=1.0),
-                DispersionKnob(kind='a1', applies_to='pairwise', value=0.40),
-                DispersionKnob(kind='a2', applies_to='pairwise', value=4.00),
+                EmpiricalDispersionKnob(kind='s6', applies_to='pairwise', value=1.0),
+                EmpiricalDispersionKnob(kind='a1', applies_to='pairwise', value=0.40),
+                EmpiricalDispersionKnob(kind='a2', applies_to='pairwise', value=4.00),
             ],
         )
 
@@ -543,7 +543,7 @@ class TestDispersionSettings:
         """
         Basic storage test for the inclusion switches and max_dispersion_order.
         """
-        dns = DispersionSettings(
+        dns = EmpiricalDispersionSettings(
             include_three_body_atm=include_three_body_atm,
             include_c8=include_c8,
             include_c10=include_c10,
@@ -570,7 +570,7 @@ class TestDispersionSettings:
         """
         Storage test for environment/charge/density-source categorical fields.
         """
-        dns = DispersionSettings(
+        dns = EmpiricalDispersionSettings(
             partition_scheme=partition_scheme,
             charge_model=charge_model,
             density_source=density_source,
@@ -586,10 +586,12 @@ class TestDispersionSettings:
         It should be allowed to store multiple knobs of the same kind if they
         apply to different contributions (or even if not, schema-wise).
         """
-        dns = DispersionSettings(
+        dns = EmpiricalDispersionSettings(
             knobs=[
-                DispersionKnob(kind='s9', applies_to='three_body_atm', value=1.0),
-                DispersionKnob(kind='s9', applies_to='pairwise', value=0.0),
+                EmpiricalDispersionKnob(
+                    kind='s9', applies_to='three_body_atm', value=1.0
+                ),
+                EmpiricalDispersionKnob(kind='s9', applies_to='pairwise', value=0.0),
             ]
         )
         dns.normalize(EntryArchive(), logger=logger)

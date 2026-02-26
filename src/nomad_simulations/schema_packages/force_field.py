@@ -353,7 +353,7 @@ class TabulatedPotential(Potential):
                 except ValueError as e:
                     logger.warning(
                         f'Unable to derive tabulated forces from energies in {self.name},'
-                        f'Unkown error occurred in derivation: {e}'
+                        f'Unknown error occurred in derivation: {e}'
                     )
 
             if self.forces is not None and self.energies is None:
@@ -399,7 +399,7 @@ class TabulatedPotential(Potential):
                 except ValueError as e:
                     logger.warning(
                         f'Unable to derive tabulated energies from forces in {self.name},'
-                        f'Unkown error occurred in derivation: {e}'
+                        f'Unknown error occurred in derivation: {e}'
                     )
 
 

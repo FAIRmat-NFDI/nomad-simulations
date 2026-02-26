@@ -223,11 +223,13 @@ class ImplicitSolvationModel(BaseModelMethod):
             )
 
 
-class ExplicitDispersionModel(BaseModelMethod):
-    """Explicit dispersion / vdW treatment used together with an ab-initio method.
+class EmpiricalDispersionModel(BaseModelMethod):
+    """Empirical dispersion correction used together with an ab-initio method.
 
     Covers pairwise-additive (D2/D3/D3(BJ)/D4), density-dependent (TS/TS-SCS),
-    many-body dispersion (MBD, e.g. MBD@rsSCS), and exchange-hole based (XDM) models.
+    many-body dispersion (MBD, e.g. MBD@rsSCS), and exchange-hole based XDM.
+    In literature, `DFT-D` is often used as an umbrella label; this schema stores
+    the concrete generation explicitly when available (e.g. D2, D3, D3BJ, D4).
 
     References
     ----------
@@ -241,7 +243,7 @@ class ExplicitDispersionModel(BaseModelMethod):
 
     model = Quantity(
         type=MEnum(
-            # Pairwise / density-dependent
+            # Pairwise / density-dependent empirical models
             'D2',
             'D3',
             'D3BJ',
@@ -257,7 +259,7 @@ class ExplicitDispersionModel(BaseModelMethod):
             'XDM',
         ),
         description="""
-        Identifier of the explicit dispersion / vdW model.
+        Identifier of the empirical dispersion correction model.
         """,
     )
 
@@ -266,11 +268,10 @@ class ExplicitDispersionModel(BaseModelMethod):
         description='Short-range damping: D3{zero,BJ}, TS{fermi}, XDM{rational}.',
     )
 
-    xc_partner_ref = Quantity(
-        type=Reference(SectionProxy('XCFunctional')),
-        description="""
-        Reference to the baseline `XCFunctional` section this model is paired with.
-        """,
+    # TODO later: link to XCComponent(s)
+    xc_partner = Quantity(
+        type=str,
+        description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
     )
 
 

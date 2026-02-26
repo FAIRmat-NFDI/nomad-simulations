@@ -10,7 +10,7 @@ from nomad_simulations.schema_packages.model_method import (
     DFT,
     TB,
     ActiveSpace,
-    ExplicitDispersionModel,
+    EmpiricalDispersionModel,
     ImplicitSolvationModel,
     MultireferencePT,
     MultireferenceSCF,
@@ -631,7 +631,7 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
         refractive_index=1.33,
     )
 
-    edm = ExplicitDispersionModel(
+    edm = EmpiricalDispersionModel(
         model='D3BJ',
         damping_function='BJ',
     )
@@ -651,7 +651,7 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
 
     assert len(dft.contributions) == 3
     assert isinstance(dft.contributions[0], ImplicitSolvationModel)
-    assert isinstance(dft.contributions[1], ExplicitDispersionModel)
+    assert isinstance(dft.contributions[1], EmpiricalDispersionModel)
     assert isinstance(dft.contributions[2], RelativityModel)
 
     # Solvation

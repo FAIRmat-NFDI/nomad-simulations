@@ -30,7 +30,7 @@ class GeometryOptimizationMethod(SimulationWorkflowMethod):
 
         | `"atomic"`             | the atomic coordinates alone are updated |
 
-        | `"cell_volume"`         | `"atomic"` + cell lattice paramters are updated isotropically |
+        | `"cell_volume"`         | `"atomic"` + cell lattice parameters are updated isotropically |
 
         | `"cell_shape"`        | `"cell_volume"` but without the isotropic constraint: all cell parameters are updated |
 
@@ -42,7 +42,7 @@ class GeometryOptimizationMethod(SimulationWorkflowMethod):
         shape=[],
         description="""
         The method used for geometry optimization. Some known possible values are:
-        `"steepest_descent"`, `"conjugant_gradient"`, `"low_memory_broyden_fletcher_goldfarb_shanno"`.
+        `"steepest_descent"`, `"conjugate_gradient"`, `"low_memory_broyden_fletcher_goldfarb_shanno"`.
         """,
     )
 
@@ -100,7 +100,7 @@ class GeometryOptimizationMethod(SimulationWorkflowMethod):
 
 
 class GeometryOptimizationResults(SimulationWorkflowResults):
-    _label = 'Geometry optimiztation results'
+    _label = 'Geometry optimization results'
 
     n_steps = Quantity(
         type=int,
