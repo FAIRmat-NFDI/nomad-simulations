@@ -620,10 +620,10 @@ class ElectronicState(Entity):
         section_def=BaseSpinOrbitalState.m_def,
         description="""
         The actual quantum state descriptor at this level of the hierarchy.
-        This `BaseSpinOrbitalState` (typically `SphericalSymmetryState`) defines the 
+        This `BaseSpinOrbitalState` (typically `SphericalSymmetryState`) defines the
         quantum numbers and properties of the state in a modular fashion.
         Child states in `sub_states` may inherit quantum numbers from this parent descriptor.
-        
+
         For example, if parent has `spin_orbit_state=SphericalSymmetryState(n=3, l=2)`,
         a child might only specify `spin_orbit_state=SphericalSymmetryState(ml=-2)`,
         with n=3, l=2 implied from the parent.
@@ -637,7 +637,7 @@ class ElectronicState(Entity):
         - For single orbitals: typically 1 (if ml, ms specified) or 2*l+1 (orbital only)
         - For manifolds: sum of constituent state degeneracies
         - For symmetry-adapted states: dimension of irreducible representation
-        
+
         Can be computed from `spin_orbit_state` or summed from `sub_states`.
         For correlated systems, represents the many-body state degeneracy.
         """,
@@ -647,11 +647,11 @@ class ElectronicState(Entity):
         type=positive_float(),
         description="""
         Electronic occupation of this state or manifold.
-        
+
         - For decomposable states: sum of occupations in `sub_states`
         - For correlated systems: effective occupation from many-body calculation (can be fractional)
         - For non-interacting: integer or follows Fermi-Dirac distribution
-        
+
         Note: For correlated electrons, fractional occupation does NOT mean partial occupancy
         of individual orbitals, but rather reflects the many-body quantum state.
         """,
@@ -674,17 +674,17 @@ class ElectronicState(Entity):
         repeats=True,
         description="""
         Hierarchical decomposition of this electronic state into finer-grained components.
-        
+
         The decomposition can follow different schemes depending on physics context:
         - **Orbital decomposition**: Split by ml quantum number (e.g., p → px, py, pz)
         - **Spin decomposition**: Split by ms quantum number (e.g., orbital → spin up/down)
         - **Symmetry decomposition**: Split by crystal field irreps (e.g., d → t2g, eg)
         - **Coupling scheme**: Split by j,mj for j-j coupling vs. ml,ms for L-S coupling
-        
+
         Multiple decomposition schemes can coexist for the same electrons - choose the one
         appropriate for your analysis. For strongly correlated systems where electrons cannot
         be assigned to individual orbitals, this may be empty or contain only a reference basis.
-        
+
         Child states inherit quantum number information from parent's `spin_orbit_state`,
         only specifying additional refinements (e.g., parent has l=2, child adds ml=-1).
         """,
@@ -694,26 +694,26 @@ class ElectronicState(Entity):
         section_def=BaseSpinOrbitalState.m_def,  # @EBB2675: do you see numerical_settings.basis_set also fit here?
         repeats=True,
         description="""
-        References to basis orbitals (as `BaseSpinOrbitalState` instances) used to construct 
+        References to basis orbitals (as `BaseSpinOrbitalState` instances) used to construct
         this state as a linear combination.
-        
+
         Used when this electronic state cannot be described by a single quantum state but rather
         as a superposition of simpler orbital states:
         - Hybrid orbitals: sp³ = linear combination of s, px, py, pz orbitals
         - Molecular orbitals: LCAO construction from atomic orbitals
         - Wannier functions: linear combination of Bloch states
         - Symmetry-adapted linear combinations (SALC)
-        
+
         Each entry is a simple quantum state (e.g., `SphericalSymmetryState(n=2, l=0)` for 2s,
-        `SphericalSymmetryState(n=2, l=1, ml=1)` for 2px, etc.) without the navigation 
+        `SphericalSymmetryState(n=2, l=1, ml=1)` for 2px, etc.) without the navigation
         structure of `ElectronicState`.
-        
+
         The actual expansion coefficients should be stored in the relevant electronic eigenvalue
         sections (e.g., `BandStructure.eigenvectors`, `DOSElectronicNew.value_projection`, etc.)
-        rather than duplicated here. This field provides the ordered basis set definition that 
+        rather than duplicated here. This field provides the ordered basis set definition that
         those coefficients correspond to.
-        
-        If this state has a simple symmetry description (`spin_orbit_state`), this field 
+
+        If this state has a simple symmetry description (`spin_orbit_state`), this field
         is typically empty. It's primarily for composite states that lack simple quantum number labels.
         """,
     )
@@ -1129,6 +1129,18 @@ class AtomsState(ParticleState):
         default=0,
         description="""
         Total spin quantum number, S.
+        """,
+    )
+
+    mass = Quantity(
+        type=np.float64,
+        unit='kg',
+        description="""
+        Atomic mass of the atom. Constituted by the combined mass of the protons and
+        neutrons in the nucleus, with minor contributions from the electrons and nuclear
+        binding energy.
+        In molecular dynamics force fields, the mass can be treated as a fixed parameter
+        for each particle, and does not necessarily correspond to an actual atomic mass.
         """,
     )
 
