@@ -355,6 +355,31 @@ class ChargeConvergenceTarget(WorkflowConvergenceTarget):
     _convergence_property_path = 'scf_steps.delta_density_rms'
 
 
+class WavefunctionConvergenceTarget(WorkflowConvergenceTarget):
+    """
+    Convergence target for wavefunction coefficients in SCF workflows.
+
+    Measures convergence of wavefunction or orbital coefficients between
+    successive SCF iterations. This is less commonly reported than density
+    convergence but is available in some quantum chemistry codes.
+
+    Note: This is distinct from density convergence. Some codes report both
+    wavefunction and density convergence independently.
+    """
+
+    threshold = Quantity(
+        type=positive_float(),
+        unit='dimensionless',
+        description="""
+        Wavefunction convergence threshold. Must be non-negative.
+        Typically dimensionless as it represents changes in wavefunction coefficients.
+        """,
+    )
+
+    # Property path for automatic extraction
+    _convergence_property_path = 'scf_steps.delta_wavefunction_rms'
+
+
 class SimulationWorkflowModel(ArchiveSection):
     """
     Base class for simulation workflow model sub-section definition.

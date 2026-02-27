@@ -21,6 +21,7 @@ from nomad_simulations.schema_packages.workflow.general import (
     PotentialConvergenceTarget,
     SimulationWorkflow,
     SimulationWorkflowMethod,
+    WavefunctionConvergenceTarget,
 )
 
 
@@ -46,6 +47,12 @@ def potential_target():
 def charge_target():
     """Fixture providing a ChargeConvergenceTarget instance."""
     return ChargeConvergenceTarget()
+
+
+@pytest.fixture(scope='function')
+def wavefunction_target():
+    """Fixture providing a WavefunctionConvergenceTarget instance."""
+    return WavefunctionConvergenceTarget()
 
 
 class TestEnergyConvergenceTarget:
@@ -358,6 +365,131 @@ class TestChargeConvergenceTarget:
         archive.data.outputs = [Outputs(scf_steps=SCFSteps())]
         is_reached = charge_target.normalize(archive, logger)
         assert is_reached is None
+
+
+class TestWavefunctionConvergenceTarget:
+    """Test the WavefunctionConvergenceTarget class."""
+
+    @pytest.mark.parametrize(
+        'threshold, threshold_type, wf_values, expected_reached',
+        [
+            # Absolute convergence - converged
+            (1e-8, 'absolute', [1e-10, 1e-11, 5e-12], True),
+            # Absolute convergence - not converged
+            (1e-8, 'absolute', [1e-5, 1e-6, 1e-7], False),
+            # Zero/perfect convergence
+            (1e-8, 'absolute', [0.0, 0.0, 0.0], True),
+            # RMS convergence with array data - converged
+            (1e-8, 'rms', [[1e-10, 2e-10], [5e-11, 6e-11]], True),
+            # RMS convergence with array data - not converged
+            (1e-8, 'rms', [[1e-5, 2e-5], [8e-6, 9e-6]], False),
+            # All zeros in array
+            (1e-8, 'rms', [[0.0, 0.0], [0.0, 0.0]], True),
+            # Maximum convergence - not converged
+            (1e-8, 'maximum', [[1e-7, 1e-10], [8e-7, 2e-10]], False),
+            # Values right at threshold boundary - not converged
+            (1e-8, 'absolute', [0.0, 1.1e-8, 2.2e-8], False),
+            # Very small values near machine epsilon
+            (1e-16, 'absolute', [1e-17, 5e-18, 1e-18], True),
+        ],
+    )
+    def test_wavefunction_convergence(
+        self,
+        threshold: float,
+        threshold_type: str,
+        wf_values: list,
+        expected_reached: bool,
+        archive,
+        logger,
+        wavefunction_target,
+    ):
+        """
+        Test wavefunction convergence with different thresholds and data types.
+
+        Args:
+            threshold: Convergence threshold (dimensionless).
+            threshold_type: Type of convergence check.
+            wf_values: List of wavefunction values (scalar or array).
+            expected_reached: Expected value of is_reached flag.
+        """
+        wavefunction_target.threshold = threshold
+        wavefunction_target.threshold_type = threshold_type
+
+        scf_step = SCFSteps()
+        if len(wf_values) > 1:
+            # Convert to deltas based on data type
+            if isinstance(wf_values[0], list):
+                # Array data - compute element-wise deltas
+                deltas = []
+                for i in range(1, len(wf_values)):
+                    delta = np.abs(np.array(wf_values[i]) - np.array(wf_values[i - 1]))
+                    deltas.append(delta)
+                scf_step.delta_wavefunction_rms = deltas
+            else:
+                # Scalar data - compute simple deltas
+                deltas = [
+                    abs(wf_values[i] - wf_values[i - 1])
+                    for i in range(1, len(wf_values))
+                ]
+                scf_step.delta_wavefunction_rms = np.array(deltas)
+
+        archive.data.outputs = [Outputs(scf_steps=scf_step)]
+        is_reached = wavefunction_target.normalize(archive, logger)
+        assert is_reached == expected_reached
+
+    def test_wavefunction_missing_data(self, archive, logger, wavefunction_target):
+        """Test wavefunction convergence with missing data."""
+        wavefunction_target.threshold = 1e-8
+        wavefunction_target.threshold_type = 'absolute'
+
+        # No outputs at all
+        is_reached = wavefunction_target.normalize(archive, logger)
+        assert is_reached is None
+
+        # Empty scf_steps
+        archive.data.outputs = [Outputs(scf_steps=SCFSteps())]
+        is_reached = wavefunction_target.normalize(archive, logger)
+        assert is_reached is None
+
+    def test_wavefunction_single_iteration(self, archive, logger, wavefunction_target):
+        """Test with only one iteration (cannot compute convergence)."""
+        wavefunction_target.threshold = 1e-8
+        wavefunction_target.threshold_type = 'absolute'
+
+        # Single value - no delta can be computed
+        scf_step = SCFSteps()
+        # With only one iteration, there should be no delta_wavefunction_rms
+        # or it should be empty
+        archive.data.outputs = [Outputs(scf_steps=scf_step)]
+        is_reached = wavefunction_target.normalize(archive, logger)
+        assert is_reached is None
+
+    def test_wavefunction_nan_values(self, archive, logger, wavefunction_target):
+        """Test handling of NaN values in wavefunction data."""
+        wavefunction_target.threshold = 1e-8
+        wavefunction_target.threshold_type = 'absolute'
+
+        scf_step = SCFSteps()
+        scf_step.delta_wavefunction_rms = np.array([np.nan, 1e-10])
+        archive.data.outputs = [Outputs(scf_steps=scf_step)]
+
+        # Should handle gracefully without crashing
+        wavefunction_target.normalize(archive, logger)
+        # Test passes if no exception is raised
+
+    def test_wavefunction_negative_values(self, archive, logger, wavefunction_target):
+        """Test that negative residuals are treated as absolute values."""
+        wavefunction_target.threshold = 1e-8
+        wavefunction_target.threshold_type = 'absolute'
+
+        # Negative values should be treated as absolute
+        scf_step = SCFSteps()
+        scf_step.delta_wavefunction_rms = np.array([-1e-10, -5e-11])
+        archive.data.outputs = [Outputs(scf_steps=scf_step)]
+
+        is_reached = wavefunction_target.normalize(archive, logger)
+        # Should converge since abs values are below threshold
+        assert is_reached is True
 
 
 class TestConvergenceHelperMethods:

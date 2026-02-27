@@ -83,6 +83,16 @@ class SCFSteps(ArchiveSection):
         """,
     )
 
+    delta_wavefunction_rms = Quantity(
+        shape=['*'],
+        type=float,
+        unit='dimensionless',
+        description="""
+        Root mean square of change of wavefunction coefficients at each SCF step.
+        Dimensionless quantity representing convergence of orbital coefficients.
+        """,
+    )
+
     delta_force_abs = Quantity(
         shape=['*'],
         type=float,
