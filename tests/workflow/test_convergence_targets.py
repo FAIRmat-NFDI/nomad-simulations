@@ -578,7 +578,7 @@ class TestConvergenceTypeEnumeration:
 
     @pytest.mark.parametrize(
         'threshold_type',
-        ['absolute', 'relative', 'maximum', 'rms', 'residuum'],
+        ['absolute', 'relative', 'maximum', 'rms'],
     )
     def test_valid_convergence_types(
         self, threshold_type: str, archive, logger, energy_target

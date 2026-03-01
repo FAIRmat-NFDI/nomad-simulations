@@ -1,17 +1,12 @@
-from collections.abc import Iterable
-
-import jmespath
 import numpy as np
 from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflow
 from nomad.metainfo import Datetime, MEnum, Quantity, SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.common import SimulationTime
 from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
-from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import ElectronicDensityOfStates
 from nomad_simulations.schema_packages.utils import log
 from nomad_simulations.schema_packages.workflow.trajectory import (
@@ -33,17 +28,17 @@ class SimulationTask(Task):
 
 class WorkflowConvergenceTarget(ArchiveSection):
     """
-    Abstract base class for defining convergence targets.
+    Base section for defining convergence targets.
+    It handles all convergence checking logic based on `threshold_type`.
 
-    Child classes define specific physical properties
-    (e.g., energy, force) with proper units. The base class handles all convergence
-    checking logic based on the threshold_type enum.
+    Use inheritance todefine specific physical properties (e.g., energy, force).
+    This is most relevant when defining the appropriate units. 
     """
 
-    threshold: Quantity = None
+    threshold: Quantity = None  # to be defined in child classes with appropriate type and unit
 
     threshold_type = Quantity(
-        type=MEnum('absolute', 'relative', 'maximum', 'rms', 'residuum'),
+        type=MEnum('absolute', 'relative', 'maximum', 'rms'),
         description=r"""Specifies the mathematical method used to evaluate convergence between successive self-consistent field (SCF) iterations.
 This determines how differences between iterations are calculated and compared against the convergence threshold.
 
@@ -53,7 +48,6 @@ The available comparison modes are:
 | --------- | -------------------------------- |
 | `'absolute'` | Measures the absolute difference between two subsequent iterations (e.g., \|E_n - E_{n-1}\|). Most common for energy convergence. |
 | `'relative'` | Calculates the relative difference as a fraction of the total property value (e.g., \|E_n - E_{n-1}\|/\|E_n\|). Useful when the magnitude of the property varies widely across systems. |
-| `'residuum'` | Computes the absolute difference between the current value and the value estimated from the wavefunction at the start of the step. Often used for evaluating convergence of the electron density. |
 | `'maximum'` | Reports the maximum absolute difference across all components of a multi-component property (e.g., max\|F_i,n - F_i,{n-1}\| for forces). Suitable for vector quantities like forces or stress tensor elements. |
 | `'rms'` | Calculates the root mean square of differences across all components (e.g., √(∑\|F_i,n - F_i,{n-1}\|²/N)). Provides a statistical measure of overall convergence for multi-component properties. |
 
