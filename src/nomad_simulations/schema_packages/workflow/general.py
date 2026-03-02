@@ -1,4 +1,5 @@
 import numpy as np
+import pint
 from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflow
 from nomad.metainfo import Datetime, MEnum, Quantity, SchemaPackage, SubSection
@@ -32,10 +33,12 @@ class WorkflowConvergenceTarget(ArchiveSection):
     It handles all convergence checking logic based on `threshold_type`.
 
     Use inheritance todefine specific physical properties (e.g., energy, force).
-    This is most relevant when defining the appropriate units. 
+    This is most relevant when defining the appropriate units.
     """
 
-    threshold: Quantity = None  # to be defined in child classes with appropriate type and unit
+    threshold: Quantity = (
+        None  # to be defined in child classes with appropriate type and unit
+    )
 
     threshold_type = Quantity(
         type=MEnum('absolute', 'relative', 'maximum', 'rms'),
@@ -60,9 +63,23 @@ The mode used affects both convergence behavior and computational efficiency. Di
     # e.g., 'scf_steps.delta_energies_total' for energy convergence
     _convergence_property_path: str = None
 
-    def _get_convergence_value(
-        self, archive: EntryArchive, logger: BoundLogger
-    ) -> float | np.ndarray | None:
+    @staticmethod
+    def _is_scalar_pint(value) -> bool:
+        """
+        Check if a Pint Quantity contains a scalar value or an array.
+
+        Args:
+            value: The value to check (expected to be a Pint Quantity)
+
+        Returns:
+            True if scalar Pint Quantity, False if array Pint Quantity
+        """
+        if hasattr(value, 'magnitude'):
+            return np.isscalar(value.magnitude)
+        # Fallback for non-Pint values
+        return np.isscalar(value)
+
+    def _get_convergence_value(self, archive: EntryArchive, logger: BoundLogger):
         """
         Extract the value to check for convergence from the archive.
 
@@ -71,7 +88,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
         override this for custom extraction logic if needed.
 
         Returns:
-            The value to check (should already be converted to appropriate units),
+            The value to check as a Pint Quantity (with units),
             or None if the value cannot be determined.
         """
         if self._convergence_property_path is None:
@@ -109,15 +126,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
             else:
                 value = current_obj
 
-            # Convert to magnitude if it has units
-            if hasattr(value, 'magnitude'):
-                # Get the unit from the threshold to ensure consistent conversion
-                if hasattr(self.threshold, 'units'):
-                    target_unit = str(self.threshold.units)
-                    value = value.to(target_unit).magnitude
-                else:
-                    value = value.magnitude
-
+            # Return Pint Quantity as-is (don't strip units)
             return value
 
         except (AttributeError, IndexError, TypeError) as e:
@@ -126,60 +135,77 @@ The mode used affects both convergence behavior and computational efficiency. Di
             )
         return None
 
-    def _check_absolute(self, value: float) -> bool:
+    def _check_absolute(self, value, logger: BoundLogger) -> bool | None:
         """Check absolute convergence: |value| < threshold"""
         if self.threshold is None:
-            return False
-        # threshold may be a pint Quantity - get magnitude if so
-        threshold_val = (
-            self.threshold.magnitude
-            if hasattr(self.threshold, 'magnitude')
-            else self.threshold
-        )
-        # Use <= to allow exact zero with zero threshold
-        return bool(abs(value) <= threshold_val)
+            return None
+        try:
+            # Pint handles unit conversion automatically
+            return bool(abs(value) <= self.threshold)
+        except pint.DimensionalityError:
+            logger.error(
+                f'Unit mismatch in {self.__class__.__name__}: {value.units} vs {self.threshold.units}'
+            )
+            return None
 
-    def _check_relative(self, value: float, reference: float) -> bool:
+    def _check_relative(self, value, reference, logger: BoundLogger) -> bool | None:
         """Check relative convergence: |value|/|reference| < threshold"""
         if self.threshold is None:
-            return False
-        # Special case: both zero means converged
-        if abs(reference) < 1e-15 and abs(value) < 1e-15:
-            return True
-        # Cannot compute relative if reference is zero
-        if abs(reference) < 1e-15:
-            return False
-        # threshold may be a pint Quantity - get magnitude if so
-        threshold_val = (
-            self.threshold.magnitude
-            if hasattr(self.threshold, 'magnitude')
-            else self.threshold
-        )
-        return bool(abs(value / reference) < threshold_val)
+            return None
+        try:
+            # Extract magnitudes for zero checks (handles Pint quantities)
+            ref_mag = (
+                reference.magnitude if hasattr(reference, 'magnitude') else reference
+            )
+            val_mag = value.magnitude if hasattr(value, 'magnitude') else value
 
-    def _check_maximum(self, values: np.ndarray) -> bool:
+            # Special case: both zero means converged
+            if abs(ref_mag) < 1e-15 and abs(val_mag) < 1e-15:
+                return True
+            # Cannot compute relative if reference is zero
+            if abs(ref_mag) < 1e-15:
+                return None
+
+            # For relative convergence, value/reference is dimensionless
+            # Extract threshold magnitude for comparison
+            relative_change = abs(value / reference)
+            threshold_mag = (
+                self.threshold.magnitude
+                if hasattr(self.threshold, 'magnitude')
+                else self.threshold
+            )
+            return bool(relative_change < threshold_mag)
+        except pint.DimensionalityError:
+            logger.error(
+                f'Unit mismatch in {self.__class__.__name__}: {value.units} vs {reference.units}'
+            )
+            return None
+
+    def _check_maximum(self, values, logger: BoundLogger) -> bool | None:
         """Check maximum convergence: max(|values|) < threshold"""
         if self.threshold is None:
-            return False
-        # threshold may be a pint Quantity - get magnitude if so
-        threshold_val = (
-            self.threshold.magnitude
-            if hasattr(self.threshold, 'magnitude')
-            else self.threshold
-        )
-        return bool(np.max(np.abs(values)) < threshold_val)
+            return None
+        try:
+            # Pint handles unit conversion automatically
+            return bool(np.max(np.abs(values)) < self.threshold)
+        except pint.DimensionalityError:
+            logger.error(
+                f'Unit mismatch in {self.__class__.__name__}: {values.units} vs {self.threshold.units}'
+            )
+            return None
 
-    def _check_rms(self, values: np.ndarray) -> bool:
+    def _check_rms(self, values, logger: BoundLogger) -> bool | None:
         """Check RMS convergence: sqrt(mean(values²)) < threshold"""
         if self.threshold is None:
-            return False
-        # threshold may be a pint Quantity - get magnitude if so
-        threshold_val = (
-            self.threshold.magnitude
-            if hasattr(self.threshold, 'magnitude')
-            else self.threshold
-        )
-        return bool(np.sqrt(np.mean(values**2)) < threshold_val)
+            return None
+        try:
+            # Pint handles unit conversion automatically
+            return bool(np.sqrt(np.mean(values**2)) < self.threshold)
+        except pint.DimensionalityError:
+            logger.error(
+                f'Unit mismatch in {self.__class__.__name__}: {values.units} vs {self.threshold.units}'
+            )
+            return None
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> bool | None:
         """
@@ -198,11 +224,11 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
             conv_type = self.threshold_type or 'absolute'
 
-            # Handle scalar vs array values
-            if isinstance(value, int | float | np.floating):
+            # Handle scalar vs array values using Pint-aware detection
+            if self._is_scalar_pint(value):
                 # Scalar value - use absolute or relative
                 if conv_type == 'absolute':
-                    return self._check_absolute(value)
+                    return self._check_absolute(value, logger)
                 elif conv_type == 'relative':
                     # For relative, child class should provide reference
                     logger.warning(
@@ -211,19 +237,19 @@ The mode used affects both convergence behavior and computational efficiency. Di
                     )
                     return None
                 else:
-                    return self._check_absolute(value)
+                    return self._check_absolute(value, logger)
 
-            elif isinstance(value, np.ndarray):
+            else:
                 # Array value - can use maximum or rms
                 if conv_type == 'maximum':
-                    return self._check_maximum(value)
+                    return self._check_maximum(value, logger)
                 elif conv_type == 'rms':
-                    return self._check_rms(value)
+                    return self._check_rms(value, logger)
                 elif conv_type == 'absolute':
                     # For array, treat as maximum
-                    return self._check_maximum(value)
+                    return self._check_maximum(value, logger)
                 else:
-                    return self._check_maximum(value)
+                    return self._check_maximum(value, logger)
 
         except Exception as e:
             logger.debug(
@@ -274,9 +300,7 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
     # 2. Extend the base class to support multiple property paths with conditions
     # 3. Use the simple path for common case and override only for special cases
 
-    def _get_convergence_value(
-        self, archive: EntryArchive, logger: BoundLogger
-    ) -> float | np.ndarray | None:
+    def _get_convergence_value(self, archive: EntryArchive, logger: BoundLogger):
         """Extract force convergence value from archive."""
         try:
             conv_type = self.threshold_type or 'maximum'
@@ -289,25 +313,27 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
             ):
                 final_force_max = archive.workflow2.results.final_force_maximum
                 if final_force_max is not None:
-                    return final_force_max.to('newton').magnitude
+                    return final_force_max  # Return Pint Quantity
 
             # For absolute (SCF force delta) - could use base class with _convergence_property_path
             if conv_type == 'absolute' and archive.data.outputs:
                 delta_forces = archive.data.outputs[-1].scf_steps.delta_force_abs
                 if delta_forces is not None:
-                    return delta_forces[-1].to('newton').magnitude
+                    return delta_forces[-1]  # Return Pint Quantity
 
             # Fallback: get force array from last output
             if archive.data.outputs:
                 forces = archive.data.outputs[-1].total_forces
                 if forces is not None and len(forces) > 0:
-                    # Get force values and convert to magnitudes if needed
+                    from nomad.units import ureg
+
+                    # Get force values (Pint Quantity with shape [n_atoms, 3])
                     force_values = forces[-1].value
-                    if hasattr(force_values, 'magnitude'):
-                        force_values = force_values.to('newton').magnitude
-                    # Return force magnitudes for each atom
-                    force_magnitudes = np.linalg.norm(force_values, axis=1)
-                    return force_magnitudes
+                    # Compute norm per atom, preserve units
+                    force_magnitudes = (
+                        np.linalg.norm(force_values.magnitude, axis=1) * ureg.newton
+                    )
+                    return force_magnitudes  # Return Pint Quantity array
         except (AttributeError, IndexError, TypeError) as e:
             logger.debug(f'Could not extract force convergence value from outputs: {e}')
         return None

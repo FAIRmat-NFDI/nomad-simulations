@@ -495,82 +495,100 @@ class TestWavefunctionConvergenceTarget:
 class TestConvergenceHelperMethods:
     """Test the base class helper methods for convergence checking."""
 
-    def test_check_absolute(self, energy_target):
+    def test_check_absolute(self, energy_target, logger):
         """Test _check_absolute helper method."""
-        # Set threshold without units for direct testing of helper method
-        energy_target.threshold = 1e-6
+        # Set threshold with units
+        energy_target.threshold = 1e-6 * ureg.joule
 
         # Test converged case
-        assert energy_target._check_absolute(5e-7) is True
-        assert energy_target._check_absolute(-5e-7) is True
+        assert energy_target._check_absolute(5e-7 * ureg.joule, logger) is True
+        assert energy_target._check_absolute(-5e-7 * ureg.joule, logger) is True
 
         # Test not converged case
-        assert energy_target._check_absolute(5e-5) is False
-        assert energy_target._check_absolute(-5e-5) is False
+        assert energy_target._check_absolute(5e-5 * ureg.joule, logger) is False
+        assert energy_target._check_absolute(-5e-5 * ureg.joule, logger) is False
 
         # Test boundary (now uses <=)
-        assert energy_target._check_absolute(1e-6) is True
-        assert energy_target._check_absolute(9e-7) is True
+        assert energy_target._check_absolute(1e-6 * ureg.joule, logger) is True
+        assert energy_target._check_absolute(9e-7 * ureg.joule, logger) is True
 
-    def test_check_relative(self, energy_target):
+    def test_check_relative(self, energy_target, logger):
         """Test _check_relative helper method."""
-        energy_target.threshold = 1e-6
+        # For relative convergence, threshold is dimensionless but stored in base unit
+        energy_target.threshold = 1e-6 * ureg.joule
 
         # Test converged case
-        assert energy_target._check_relative(1e-7, 1.0) is True
-        assert energy_target._check_relative(-1e-7, 1.0) is True
+        assert (
+            energy_target._check_relative(1e-7 * ureg.joule, 1.0 * ureg.joule, logger)
+            is True
+        )
+        assert (
+            energy_target._check_relative(-1e-7 * ureg.joule, 1.0 * ureg.joule, logger)
+            is True
+        )
 
         # Test not converged case
-        assert energy_target._check_relative(1e-3, 1.0) is False
+        assert (
+            energy_target._check_relative(1e-3 * ureg.joule, 1.0 * ureg.joule, logger)
+            is False
+        )
 
         # Test with different reference values
-        assert energy_target._check_relative(1e-6, 100.0) is True
-        assert energy_target._check_relative(1e-4, 100.0) is False
+        assert (
+            energy_target._check_relative(1e-6 * ureg.joule, 100.0 * ureg.joule, logger)
+            is True
+        )
+        assert (
+            energy_target._check_relative(1e-4 * ureg.joule, 100.0 * ureg.joule, logger)
+            is False
+        )
 
         # Test edge case: zero reference
-        assert energy_target._check_relative(0.0, 0.0) is True
+        assert (
+            energy_target._check_relative(0.0 * ureg.joule, 0.0 * ureg.joule, logger)
+            is True
+        )
 
-    def test_check_maximum(self):
+    def test_check_maximum(self, logger):
         """Test _check_maximum helper method."""
-        # Create a force target and bypass unit conversion
+        # Create a force target with units
         force_target = ForceConvergenceTarget()
-        object.__setattr__(force_target, 'threshold', 1e-8)
+        force_target.threshold = 1e-8 * ureg.newton
 
         # Test converged case
-        values_converged = np.array([1e-10, -5e-10, 3e-10])
-        assert force_target._check_maximum(values_converged) is True
+        values_converged = np.array([1e-10, -5e-10, 3e-10]) * ureg.newton
+        assert force_target._check_maximum(values_converged, logger) is True
 
         # Test not converged case
-        values_not_converged = np.array([1e-5, 1e-6, 1e-7])
-        assert force_target._check_maximum(values_not_converged) is False
+        values_not_converged = np.array([1e-5, 1e-6, 1e-7]) * ureg.newton
+        assert force_target._check_maximum(values_not_converged, logger) is False
 
         # Test multidimensional array
-        values_2d = np.array([[1e-10, 2e-10], [3e-10, 4e-10]])
-        assert force_target._check_maximum(values_2d) is True
+        values_2d = np.array([[1e-10, 2e-10], [3e-10, 4e-10]]) * ureg.newton
+        assert force_target._check_maximum(values_2d, logger) is True
 
-    def test_check_rms(self):
+    def test_check_rms(self, logger):
         """Test _check_rms helper method."""
-        # Create a force target and bypass unit conversion by setting threshold directly
+        # Create a force target with units
         force_target = ForceConvergenceTarget()
-        # Override threshold to be a plain float for testing the helper method
-        object.__setattr__(force_target, 'threshold', 1e-8)
+        force_target.threshold = 1e-8 * ureg.newton
 
         # Test converged case
-        values_converged = np.array([1e-10, 1e-10, 1e-10])
-        assert force_target._check_rms(values_converged) is True
+        values_converged = np.array([1e-10, 1e-10, 1e-10]) * ureg.newton
+        assert force_target._check_rms(values_converged, logger) is True
 
         # Test not converged case
-        values_not_converged = np.array([1e-5, 1e-5, 1e-5])
-        assert force_target._check_rms(values_not_converged) is False
+        values_not_converged = np.array([1e-5, 1e-5, 1e-5]) * ureg.newton
+        assert force_target._check_rms(values_not_converged, logger) is False
 
         # Test with zeros
-        values_zero = np.array([0.0, 0.0, 0.0])
-        assert force_target._check_rms(values_zero) is True
+        values_zero = np.array([0.0, 0.0, 0.0]) * ureg.newton
+        assert force_target._check_rms(values_zero, logger) is True
 
         # Test multidimensional array
-        values_2d = np.array([[1e-10, 2e-10], [3e-10, 4e-10]])
+        values_2d = np.array([[1e-10, 2e-10], [3e-10, 4e-10]]) * ureg.newton
         rms = np.sqrt(np.mean(values_2d**2))
-        assert force_target._check_rms(values_2d) == (rms < 1e-8)
+        assert force_target._check_rms(values_2d, logger) == (rms < 1e-8 * ureg.newton)
 
 
 class TestConvergenceTypeEnumeration:
