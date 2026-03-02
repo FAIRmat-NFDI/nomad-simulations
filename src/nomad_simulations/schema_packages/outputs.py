@@ -46,7 +46,6 @@ class SCFSteps(ArchiveSection):
     Data recorded at each step of a self-consistent DFT calculation.
     """
 
-    # @ND: Should this be of type TotalEnergy? Do we have a type system for this?
     energies_total = Quantity(
         shape=['*'],
         type=float,
