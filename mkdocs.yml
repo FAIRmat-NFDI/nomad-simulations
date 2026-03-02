@@ -27,7 +27,7 @@ nav:
           - Spectroscopic Properties: schema/spectroscopy.md
           - Thermodynamic Properties: schema/thermodynamics.md
   - Schema Explanation:
-      - General Overview: explanation/general.md
+      - Overview: explanation/overview.md
       - Model System:
           - Model System: explanation/model_system/model_system.md
           - Model System Usage Guidelines: explanation/model_system/usage_guidelines.md
