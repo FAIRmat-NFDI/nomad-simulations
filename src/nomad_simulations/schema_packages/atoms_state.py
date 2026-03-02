@@ -1065,8 +1065,8 @@ class ParticleState(Entity):
     """
     Generic base section for particle-level entities in a simulation.
 
-    `ParticleState` defines only metadata that can be shared across particle
-    representations. Domain-specific quantities should be introduced in
+    `ParticleState` defines representation-agnostic quantities that can be shared
+    across particle kinds. Domain-specific quantities should be introduced in
     specialized subclasses (for example `AtomsState` and `CGBeadState`).
     """
 
@@ -1074,6 +1074,21 @@ class ParticleState(Entity):
         type=str,
         description="""
         User- or program-package-defined identifier for this particle.
+        """,
+    )
+
+    mass = Quantity(
+        type=positive_float(),
+        unit='kg',
+        description="""
+        Mass associated with this particle/site, in kilograms.
+
+        This is an immutable per-particle descriptor intended for downstream
+        analyses that require per-particle masses.
+        For `AtomsState`, it is the mass of the modeled atomic site (including
+        isotope/effective choices provided by the source data). For `CGBeadState`,
+        it is the bead mass.
+        Method-related mass assignments belong in method-specific sections.
         """,
     )
 
@@ -1089,7 +1104,7 @@ class AtomsState(ParticleState):
     A base section to define each atom's state information.
 
     This section stores intrinsic atom/site-level descriptors (element identity,
-    atomic number, formal integer charge, spin, site label) and an optional
+    atomic number, mass, formal integer charge, spin, site label) and an optional
     `electronic_state` container for orbital-state metadata.
 
     Method-dependent observables that are not intrinsic atom descriptors (for example,
@@ -1255,7 +1270,7 @@ class CGBeadState(ParticleState):
     )
 
     mass = Quantity(
-        type=np.float64,
+        type=positive_float(),
         unit='kg',
         description="""
         Total mass of the particle.
