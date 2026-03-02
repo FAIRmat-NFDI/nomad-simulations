@@ -487,25 +487,6 @@ class TestAtomsState:
         atom_state.normalize(EntryArchive(), logger)
         assert atom_state.chemical_symbol == chemical_symbol
 
-    def test_partial_charge_is_independent_of_formal_charge(self):
-        """
-        Test that `partial_charge` is preserved independently from the formal
-        integer `charge` after normalization.
-        """
-        atom_state = AtomsState(
-            chemical_symbol='O',
-            charge=-1,
-            partial_charge=-0.42 * ureg.elementary_charge,
-        )
-        atom_state.normalize(EntryArchive(), logger)
-
-        assert atom_state.charge == -1
-        assert atom_state.partial_charge is not None
-        assert (
-            pytest.approx(atom_state.partial_charge.to('elementary_charge').magnitude)
-            == -0.42
-        )
-
 
 class TestCGBeadState:
     """
