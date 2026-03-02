@@ -1269,14 +1269,6 @@ class CGBeadState(ParticleState):
         """,
     )
 
-    mass = Quantity(
-        type=positive_float(),
-        unit='kg',
-        description="""
-        Total mass of the particle.
-        """,
-    )
-
     charge = Quantity(
         type=np.float64,
         unit='coulomb',
