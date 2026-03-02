@@ -39,22 +39,7 @@ Recommended parser flow:
 Minimal example:
 
 ```python
-from nomad_simulations.schema_packages.model_system import (
-    ModelSystem,
-    AlternativeRepresentation,
-)
-
-model_system = ModelSystem()
-model_system.lattice_vectors = input_lattice
-model_system.positions = input_positions
-
-model_system.representations.append(
-    AlternativeRepresentation(
-        name='primitive',
-        crystal_cell_type='primitive',
-        lattice_vectors=primitive_lattice,
-    )
-)
+--8<-- "snippets/model_system/alternative_representation_pattern.py"
 ```
 
 ## Anti-Patterns
@@ -70,4 +55,3 @@ If representation behavior changes (new invariants, naming conventions, normaliz
 1. this page (architecture intent),
 2. [Model System Patterns](patterns.md) (shared rules),
 3. relevant generated schema pages via the docs pipeline.
-

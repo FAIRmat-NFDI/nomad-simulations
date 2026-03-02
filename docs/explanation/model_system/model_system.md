@@ -47,16 +47,7 @@ For normalization execution order and mechanics, see [Normalization](../normaliz
 ## Minimal Parser Pattern
 
 ```python
-from nomad_simulations.schema_packages.model_system import ModelSystem
-from nomad_simulations.schema_packages.atoms_state import AtomsState
-
-model_system = ModelSystem(is_representative=True)
-model_system.lattice_vectors = lattice_vectors
-model_system.positions = positions
-model_system.periodic_boundary_conditions = [True, True, True]
-
-for symbol in symbols:
-    model_system.particle_states.append(AtomsState(chemical_symbol=symbol))
+--8<-- "snippets/model_system/minimal_parser_pattern.py"
 ```
 
 Add subsystem composition only when physically meaningful for analysis.
@@ -70,4 +61,3 @@ When adding new `ModelSystem`-related documentation:
 - keep explanation docs focused on modeling constraints and usage decisions,
 - link to shared patterns instead of repeating conventions,
 - include migration notes when behavior changes.
-

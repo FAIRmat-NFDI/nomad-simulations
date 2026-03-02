@@ -60,6 +60,13 @@ Use one canonical example per concept, not many variations of the same pattern.
 - Prefer short sections with explicit headings over long narrative blocks.
 - If two pages repeat the same 2+ paragraphs, extract them into a shared page.
 
+## Executable Example Snippets
+
+- Store reusable examples in `docs/snippets/*.py`.
+- In Markdown pages, include them with pymdownx snippets (`--8<-- "snippets/<path>/<file>.py"`).
+- Add/extend pytest coverage in `tests/test_doc_snippets.py` for every snippet file used in docs.
+- Keep snippet functions side-effect free and focused on schema API usage.
+
 ## Update Workflow for Schema Changes
 
 When schema structure changes:

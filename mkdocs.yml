@@ -40,6 +40,12 @@ nav:
       #     - Outputs: explanation/outputs/outputs.md
       - Bounded Data Types: explanation/data_types.md
       - Normalization: explanation/normalize.md
+  - Schema Explanation Old:
+      - Overview: explanation_old/index.md
+      - General Overview: explanation_old/general.md
+      - Model System:
+          - Model System: explanation_old/model_system/model_system.md
+          - Representation Architecture: explanation_old/model_system/representation.md
   - Contact: contact.md
 theme:
   name: material
@@ -84,7 +90,10 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      check_paths: true
+      base_path:
+        - docs
   - pymdownx.superfences     :
       custom_fences:
         - name: mermaid
