@@ -1,9 +1,9 @@
-# Model System Patterns
+# Model System Schema Usage Guidelines
 
-This page captures reusable modeling patterns for `ModelSystem` and related sections.
+This page captures reusable schema usage guidelines for `ModelSystem` and related sections.
 It is intentionally cross-cutting and should be referenced by focused pages such as `Model System` and `Representation Architecture`.
 
-## Pattern 1: One Representative System per Simulation Context
+## Guideline 1: One Representative System per Simulation Context
 
 Use one `ModelSystem` as the representative system for a calculation context.
 
@@ -16,7 +16,7 @@ Why this matters:
 - keeps formula/symmetry derivations deterministic,
 - clarifies provenance of the primary structure.
 
-## Pattern 2: Vertical vs Lateral Structure
+## Guideline 2: Vertical vs Lateral Structure
 
 There are two orthogonal ways to organize system information:
 
@@ -26,7 +26,7 @@ There are two orthogonal ways to organize system information:
 Use `sub_systems` for physical parts of a system.
 Use `representations` for equivalent geometric descriptions (primitive/conventional/supercell) of one system.
 
-## Pattern 3: Original Data on Root, Derived Data in Alternatives
+## Guideline 3: Original Data on Root, Derived Data in Alternatives
 
 Store parser-native geometry directly on the main `ModelSystem`.
 Store generated or transformed views in `representations`.
@@ -40,7 +40,7 @@ Recommended assignment order in parsers:
 
 This keeps raw input and derived views clearly separated.
 
-## Pattern 4: Reference by Identity, Not by Duplication
+## Guideline 4: Reference by Identity, Not by Duplication
 
 When connecting properties/methods to a system, prefer references to relevant sections over duplicating system descriptors.
 
@@ -49,7 +49,7 @@ When connecting properties/methods to a system, prefer references to relevant se
 
 This avoids drift between repeated copies of conceptually identical data.
 
-## Pattern 5: Normalize for Completion, Not for Reconstruction
+## Guideline 5: Normalize for Completion, Not for Reconstruction
 
 Normalization should:
 
@@ -64,7 +64,7 @@ Normalization should not:
 
 In practice, parser-side explicitness should win when information is available.
 
-## Pattern 6: Document Invariants Next to Usage
+## Guideline 6: Document Invariants Next to Usage
 
 For maintainability, every explanation page touching `ModelSystem` should explicitly state invariants it depends on, such as:
 

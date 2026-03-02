@@ -30,7 +30,7 @@ nav:
       - General Overview: explanation/general.md
       - Model System:
           - Model System: explanation/model_system/model_system.md
-          - Model System Patterns: explanation/model_system/patterns.md
+          - Model System Usage Guidelines: explanation/model_system/usage_guidelines.md
           - Representation Architecture: explanation/model_system/representation.md
           - Representation Design History: explanation/model_system/representation_history.md
           - Electronic States: explanation/model_system/electronic_states.md

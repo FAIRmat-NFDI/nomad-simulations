@@ -27,7 +27,7 @@ Use `ModelSystem` to express two different relationships:
 Do not mix these semantics.
 A subsystem is a different component; an alternative representation is the same component viewed differently.
 
-See [Model System Patterns](patterns.md) for reusable design rules.
+See [Model System Schema Usage Guidelines](usage_guidelines.md) for reusable design rules.
 
 ## Parser and Normalization Responsibilities
 
@@ -59,5 +59,5 @@ When adding new `ModelSystem`-related documentation:
 
 - keep field-level reference in generated docs,
 - keep explanation docs focused on modeling constraints and usage decisions,
-- link to shared patterns instead of repeating conventions,
+- link to shared schema usage guidelines instead of repeating conventions,
 - include migration notes when behavior changes.

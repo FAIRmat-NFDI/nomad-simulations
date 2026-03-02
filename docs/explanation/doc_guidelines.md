@@ -83,7 +83,7 @@ Before merging a docs PR, verify:
 
 - [ ] no duplicated field-level reference content between generated and hand-written pages,
 - [ ] new explanation content states rationale/invariants, not only structure,
-- [ ] shared patterns page updated when introducing cross-cutting rules,
+- [ ] shared schema usage guidelines page updated when introducing cross-cutting rules,
 - [ ] `mkdocs.yml` navigation remains coherent,
 - [ ] internal links resolve,
 - [ ] examples are small and aligned with current schema behavior.

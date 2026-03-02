@@ -16,7 +16,7 @@ This gives:
 - explicit provenance for transformed/derived cell descriptions,
 - less ambiguity than storing multiple competing geometries in one flat structure.
 
-See [Model System Patterns](patterns.md) for the reusable rule set used across related docs.
+See [Model System Schema Usage Guidelines](usage_guidelines.md) for the reusable rule set used across related docs.
 
 ## Coordinate and Transformation Semantics
 
@@ -53,5 +53,5 @@ Minimal example:
 If representation behavior changes (new invariants, naming conventions, normalization behavior), update:
 
 1. this page (architecture intent),
-2. [Model System Patterns](patterns.md) (shared rules),
+2. [Model System Schema Usage Guidelines](usage_guidelines.md) (shared rules),
 3. relevant generated schema pages via the docs pipeline.
