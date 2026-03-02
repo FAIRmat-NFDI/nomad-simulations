@@ -1063,8 +1063,11 @@ class HubbardInteractions(ElectronicState):
 
 class ParticleState(Entity):
     """
-    Generic base section representing the state of a particle in a simulation.
-    This can be extended to include any common quantities in the future.
+    Generic base section for particle-level entities in a simulation.
+
+    `ParticleState` defines only metadata that can be shared across particle
+    representations. Domain-specific quantities should be introduced in
+    specialized subclasses (for example `AtomsState` and `CGBeadState`).
     """
 
     label = Quantity(
@@ -1083,7 +1086,15 @@ class ParticleState(Entity):
 
 class AtomsState(ParticleState):
     """
-    A base section to define each atom state information.
+    A base section to define each atom's state information.
+
+    This section stores intrinsic atom/site-level descriptors (element identity,
+    atomic number, formal integer charge, spin, site label) and an optional
+    `electronic_state` container for orbital-state metadata.
+
+    Method-dependent observables that are not intrinsic atom descriptors (for example,
+    atom-in-molecule partial charges from Mulliken/Hirshfeld/RESP analyses) are
+    out of scope for `AtomsState` and should be stored in method-specific sections.
     """
 
     chemical_symbol = Quantity(
@@ -1104,23 +1115,12 @@ class AtomsState(ParticleState):
         type=np.int32,
         default=0,
         description="""
-        Charge of the atom. It is defined as the number of extra electrons or holes in the
-        atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`ElectronicState.occupation`
-        coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)
-        for cations or any negative integer (-1, -2...) for anions.
+        Formal integer charge of the atom, defined as the number of extra
+        electrons (negative) or holes (positive) relative to the neutral atom.
+        For neutral atoms `charge = 0`.
 
         Note: for `CoreHole` systems we do not consider the charge of the atom even if
         we do not store the final `ElectronicState` where the electron was excited to.
-        """,
-    )
-
-    partial_charge = Quantity(
-        type=np.float64,
-        unit='elementary_charge',
-        description="""
-        Atom-centered partial charge used in force fields or population analyses
-        (e.g., Mulliken, Hirshfeld, CM5, NPA, RESP). This quantity is distinct from
-        the formal integer oxidation-like `charge`.
         """,
     )
 
