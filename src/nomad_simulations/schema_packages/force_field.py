@@ -10,6 +10,7 @@ from nomad.metainfo import JSON, URL, MEnum, Quantity, Section, SubSection
 from nomad.units import ureg
 from scipy.interpolate import UnivariateSpline
 
+from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 
@@ -1271,10 +1272,18 @@ class ForceField(ModelMethod):
         """,
     )
 
+    n_particles = Quantity(
+        type=np.int32,
+        description="""
+        Number of particles in the system described by this force field.
+        Used as the shared dimension for per-particle arrays (partial_charges, effective_masses).
+        """,
+    )
+
     partial_charges = Quantity(
         type=np.float64,
         unit='elementary_charge',
-        shape=['*'],
+        shape=['n_particles'],
         description="""
         List of partial charges for each particle in the system, as force field
         parameters. Adjusted from partial atomic charges to model interactions
@@ -1284,9 +1293,9 @@ class ForceField(ModelMethod):
     )
 
     effective_masses = Quantity(
-        type=np.float64,
+        type=positive_float(),
         unit='kg',
-        shape=['*'],
+        shape=['n_particles'],
         description="""
         List of masses for each particle in the system, as force field parameters.
         Adjusted from atomic masses to model interactions within the context of the
@@ -1299,7 +1308,22 @@ class ForceField(ModelMethod):
         super().normalize(archive, logger)
 
         self.name = 'ForceField'
-        logger.warning('in force field')
+
+        # Infer n_particles from whichever per-particle array is present
+        if not self.n_particles:
+            if self.partial_charges is not None:
+                self.n_particles = len(self.partial_charges)
+            elif self.effective_masses is not None:
+                self.n_particles = len(self.effective_masses)
+
+        # Validate consistency when both arrays are present
+        if self.partial_charges is not None and self.effective_masses is not None:
+            if len(self.partial_charges) != len(self.effective_masses):
+                logger.warning(
+                    'partial_charges and effective_masses have different lengths: %s vs %s',
+                    len(self.partial_charges),
+                    len(self.effective_masses),
+                )
 
 
 # TODO Need to survey Lammps and maybe openmm and check for other common potential types
