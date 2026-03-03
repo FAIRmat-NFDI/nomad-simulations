@@ -6,7 +6,16 @@ import numpy as np
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.datamodel.context import Context
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import JSON, URL, MEnum, Quantity, Section, SubSection
+from nomad.metainfo import (
+    JSON,
+    URL,
+    MEnum,
+    Quantity,
+    Reference,
+    Section,
+    SectionProxy,
+    SubSection,
+)
 from nomad.units import ureg
 from scipy.interpolate import UnivariateSpline
 
@@ -1231,6 +1240,60 @@ class PeriodicImproper(ImproperDihedralPotential):
             self.functional_form = 'periodic'
 
 
+class AtomParameters(NumericalSettings):
+    """
+    Per-species force field parameters. Stores method-level atom descriptors
+    (partial charge, effective mass, atom type label) and references the
+    corresponding `AtomsState` entries via `species_scope`.
+
+    One `AtomParameters` instance covers all atoms sharing the same force field
+    type (e.g. AMBER `CT`, CHARMM `HT`). The `species_scope` list points to
+    every `AtomsState` section that carries that type.
+    """
+
+    species_scope = Quantity(
+        type=Reference(
+            SectionProxy('nomad_simulations.schema_packages.atoms_state.AtomsState')
+        ),
+        shape=['*'],
+        description="""
+        References to the `AtomsState` sections to which these force field
+        parameters apply. Mirrors the `BasisSetComponent.species_scope` pattern:
+        the method section references the system sections, not vice versa.
+        """,
+    )
+
+    atom_type = Quantity(
+        type=str,
+        description="""
+        Force field atom type label as defined by the force field (e.g. `'CT'`,
+        `'OW'`, `'HW'` in AMBER/CHARMM). Multiple atoms in `species_scope` share
+        this label.
+        """,
+    )
+
+    partial_charge = Quantity(
+        type=np.float64,
+        unit='elementary_charge',
+        description="""
+        Partial charge for this force field atom type, as a force field parameter.
+        Adjusted from formal/oxidation charges to model electrostatic interactions
+        within the context of the force field. Distinct from the formal integer
+        charge stored on `AtomsState.charge`.
+        """,
+    )
+
+    effective_mass = Quantity(
+        type=positive_float(),
+        unit='kg',
+        description="""
+        Effective mass for this force field atom type, as a force field parameter.
+        May differ from the standard atomic mass when a force field adjusts masses
+        for numerical stability or coarse-graining purposes.
+        """,
+    )
+
+
 class ForceField(ModelMethod):
     """
     Section containing the parameters of a (classical, particle-based) force field model.
@@ -1272,35 +1335,13 @@ class ForceField(ModelMethod):
         """,
     )
 
-    n_particles = Quantity(
-        type=np.int32,
+    atom_parameters = SubSection(
+        sub_section=AtomParameters.m_def,
+        repeats=True,
         description="""
-        Number of particles in the system described by this force field.
-        Used as the shared dimension for per-particle arrays (partial_charges, effective_masses).
-        """,
-    )
-
-    partial_charges = Quantity(
-        type=np.float64,
-        unit='elementary_charge',
-        shape=['n_particles'],
-        description="""
-        List of partial charges for each particle in the system, as force field
-        parameters. Adjusted from partial atomic charges to model interactions
-        within the context of the force field.
-        Different from any formal/oxidation-state style charges stored on the system/particle state.
-        """,
-    )
-
-    effective_masses = Quantity(
-        type=positive_float(),
-        unit='kg',
-        shape=['n_particles'],
-        description="""
-        List of masses for each particle in the system, as force field parameters.
-        Adjusted from atomic masses to model interactions within the context of the
-        force field.
-        Can differ from the standard atomic masses.
+        Per-species force field parameters (partial charge, effective mass, atom
+        type label). Each subsection covers one force field atom type and
+        references the corresponding `AtomsState` entries via `species_scope`.
         """,
     )
 
@@ -1308,22 +1349,7 @@ class ForceField(ModelMethod):
         super().normalize(archive, logger)
 
         self.name = 'ForceField'
-
-        # Infer n_particles from whichever per-particle array is present
-        if not self.n_particles:
-            if self.partial_charges is not None:
-                self.n_particles = len(self.partial_charges)
-            elif self.effective_masses is not None:
-                self.n_particles = len(self.effective_masses)
-
-        # Validate consistency when both arrays are present
-        if self.partial_charges is not None and self.effective_masses is not None:
-            if len(self.partial_charges) != len(self.effective_masses):
-                logger.warning(
-                    'partial_charges and effective_masses have different lengths: %s vs %s',
-                    len(self.partial_charges),
-                    len(self.effective_masses),
-                )
+        logger.warning('in force field')
 
 
 # TODO Need to survey Lammps and maybe openmm and check for other common potential types
