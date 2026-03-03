@@ -1291,7 +1291,7 @@ class ForceField(ModelMethod):
         List of masses for each particle in the system, as force field parameters.
         Adjusted from atomic masses to model interactions within the context of the
         force field.
-        Can be different from the elemental atomic masses from ParticleState.mass!
+        Can differ from the standard atomic masses.
         """,
     )
 
