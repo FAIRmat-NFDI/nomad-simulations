@@ -1271,6 +1271,30 @@ class ForceField(ModelMethod):
         """,
     )
 
+    partial_charges = Quantity(
+        type=np.float64,
+        unit='elementary_charge',
+        shape=['*'],
+        description="""
+        List of partial charges for each particle in the system, as force field
+        parameters. Adjusted from partial atomic charges to model interactions
+        within the context of the force field.
+        Different from the formal integer charges in AtomsState.charge!
+        """,
+    )
+
+    effective_masses = Quantity(
+        type=np.float64,
+        unit='kg',
+        shape=['*'],
+        description="""
+        List of masses for each particle in the system, as force field parameters.
+        Adjusted from atomic masses to model interactions within the context of the
+        force field.
+        Can be different from the elemental atomic masses from ParticleState.mass!
+        """,
+    )
+
     def normalize(self, archive, logger) -> None:
         super().normalize(archive, logger)
 
