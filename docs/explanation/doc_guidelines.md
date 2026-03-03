@@ -59,6 +59,8 @@ Use one canonical example per concept, not many variations of the same pattern.
 - Keep domain pages focused on one concern each.
 - Prefer short sections with explicit headings over long narrative blocks.
 - If two pages repeat the same 2+ paragraphs, extract them into a shared page.
+- Store page-specific image assets in an `images/` folder next to the corresponding `.md` file.
+- Reference page-specific images using `./images/<file>` paths.
 
 ## Executable Example Snippets
 

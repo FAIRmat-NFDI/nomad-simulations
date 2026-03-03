@@ -3,6 +3,10 @@
 This section contains hand-written guidance for using and extending the schema.
 It complements the generated `Schema Navigation` reference.
 
+## [Simulation Entry](simulation_entry.md)
+
+Guidance for how `Simulation`, `BaseSimulation`, and `Program` are used in parsers and normalization.
+
 ## [Model System](model_system/model_system.md)
 
 Conceptual guidance for modeling system structure and ownership.

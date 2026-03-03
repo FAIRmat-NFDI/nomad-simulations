@@ -28,6 +28,7 @@ nav:
           - Thermodynamic Properties: schema/thermodynamics.md
   - Schema Explanation:
       - Overview: explanation/overview.md
+      - Simulation Entry: explanation/simulation_entry.md
       - Model System:
           - Model System: explanation/model_system/model_system.md
           - Model System Usage Guidelines: explanation/model_system/usage_guidelines.md
@@ -40,12 +41,23 @@ nav:
       #     - Outputs: explanation/outputs/outputs.md
       - Bounded Data Types: explanation/data_types.md
       - Normalization: explanation/normalize.md
-  - Schema Explanation Old:
-      - Overview: explanation_old/index.md
-      - General Overview: explanation_old/general.md
-      - Model System:
-          - Model System: explanation_old/model_system/model_system.md
-          - Representation Architecture: explanation_old/model_system/representation.md
+  - Schema Old:
+      - Overview: schema_old/overview.md
+      - Contact: schema_old/contact.md
+      - Explanation:
+          - Model System:
+              - Model System: schema_old/explanation/model_system/model_system.md
+              - Representation Architecture: schema_old/explanation/model_system/representation.md
+              - Representation Design History: schema_old/explanation/model_system/representation_history.md
+              - Electronic States: schema_old/explanation/model_system/electronic_states.md
+          - Model Method:
+              - Basis Sets: schema_old/explanation/model_method/basis_sets.md
+          - Outputs:
+              - Outputs: schema_old/explanation/outputs/outputs.md
+          - Bounded Data Types: schema_old/explanation/data_types.md
+          - Normalization: schema_old/explanation/normalize.md
+  - References:
+      - Schema Development Guide: software-development-guide.md
   - Contact: contact.md
 theme:
   name: material

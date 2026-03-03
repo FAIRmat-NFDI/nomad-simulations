@@ -14,6 +14,9 @@ from docs.snippets.model_system.alternative_representation_pattern import (
 from docs.snippets.model_system.minimal_parser_pattern import (
     minimal_model_system_example,
 )
+from docs.snippets.simulation_entry.program_setup import (
+    build_simulation_with_program,
+)
 
 
 def test_minimal_model_system_example():
@@ -71,3 +74,10 @@ def test_data_types_standalone_roundtrip_behavior():
 def test_data_types_error_message():
     message = bounded_error_message()
     assert 'All values must be in [0.0,1.0]' in message
+
+
+def test_simulation_entry_program_setup():
+    simulation = build_simulation_with_program()
+    assert simulation.program is not None
+    assert simulation.program.name == 'SUPERCODE'
+    assert simulation.program.version == '7.0'
