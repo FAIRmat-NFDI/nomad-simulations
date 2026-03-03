@@ -409,7 +409,6 @@ def archive_to_universe(
             sec_atoms_group = (
                 sec_system_top.sub_systems if sec_system_top is not None else None
             )
-            sec_method = data.model_method[method_index] if data.model_method else None
 
         except Exception:
             LOGGER.warning('Archive can not be read.')
