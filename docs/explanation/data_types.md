@@ -31,7 +31,7 @@ The implementation consists of three main components:
 The most common usage is defining bounded quantities in NOMAD schemas:
 
 ```python
---8<-- "snippets/data_types/basic_usage.py"
+--8<-- "snippets/explanation/data_types/block_01.py"
 ```
 
 ### Interval Notation Examples
@@ -39,7 +39,7 @@ The most common usage is defining bounded quantities in NOMAD schemas:
 The `Bound` class supports standard mathematical interval notation:
 
 ```python
---8<-- "snippets/data_types/interval_notation.py"
+--8<-- "snippets/explanation/data_types/block_02.py"
 ```
 
 ### Common Masks
@@ -47,7 +47,7 @@ The `Bound` class supports standard mathematical interval notation:
 For common use cases, convenience functions are provided:
 
 ```python
---8<-- "snippets/data_types/factory_masks.py"
+--8<-- "snippets/explanation/data_types/block_03.py"
 ```
 
 ### Validation Behavior
@@ -55,7 +55,7 @@ For common use cases, convenience functions are provided:
 Bounded types automatically validate values during assignment:
 
 ```python
---8<-- "snippets/data_types/validation_behavior.py"
+--8<-- "snippets/explanation/data_types/block_04.py"
 ```
 
 ## Serialization and Deserialization
@@ -70,7 +70,7 @@ Here are the main distinguishing cases for deserialization.
 When bounded types are defined in schema quantities, serialization preserves the type information through the schema definition:
 
 ```python
---8<-- "snippets/data_types/schema_context_roundtrip.py"
+--8<-- "snippets/explanation/data_types/block_05.py"
 ```
 
 #### Standalone Type Serialization
@@ -82,7 +82,7 @@ It is therefore recommended to **limit standalone deserialization** to cases whe
 When producing code that uses this approach, make sure to **test serialization roundtrips**, add comment properly, or use _custom serialization_.
 
 ```python
---8<-- "snippets/data_types/standalone_type_roundtrip.py"
+--8<-- "snippets/explanation/data_types/block_06.py"
 ```
 
 ### Custom Serialization (Advanced)
@@ -90,24 +90,7 @@ When producing code that uses this approach, make sure to **test serialization r
 If you need to preserve bounds in standalone serialization, you can implement custom serialization:
 
 ```python
-# Custom serialization preserving bounds
-def serialize_bounded_type(bounded_type):
-    return {
-        'type_kind': 'custom',
-        'type_data': f'{bounded_type.__class__.__module__}.{bounded_type.__class__.__name__}',
-        'type_bound': str(bounded_type.bound),
-    }
-
-def deserialize_bounded_type(serialized):
-    # Import the class and reconstruct with bounds
-    module_path, class_name = serialized['type_data'].rsplit('.', 1)
-    module = importlib.import_module(module_path)
-    cls = getattr(module, class_name)
-    
-    # Create instance and set bounds
-    instance = cls()
-    instance.bound = Bound(serialized['type_bound'])
-    return instance
+--8<-- "snippets/explanation/data_types/block_07.py"
 ```
 
 ## Error Handling
@@ -115,7 +98,7 @@ def deserialize_bounded_type(serialized):
 Bounded types provide clear error messages for constraint violations:
 
 ```python
---8<-- "snippets/data_types/error_handling.py"
+--8<-- "snippets/explanation/data_types/block_08.py"
 ```
 
 The error messages indicate:

@@ -31,33 +31,19 @@ nav:
       - Simulation Entry: explanation/simulation_entry.md
       - Model System:
           - Model System: explanation/model_system/model_system.md
-          - Model System Usage Guidelines: explanation/model_system/usage_guidelines.md
           - Representation Architecture: explanation/model_system/representation.md
-          - Representation Design History: explanation/model_system/representation_history.md
           - Electronic States: explanation/model_system/electronic_states.md
+          - Usage Guidelines: explanation/model_system/usage_guidelines.md
       - Model Method:
           - Basis Sets: explanation/model_method/basis_sets.md
       # - Outputs:
       #     - Outputs: explanation/outputs/outputs.md
       - Bounded Data Types: explanation/data_types.md
       - Normalization: explanation/normalize.md
-  - Schema Old:
-      - Overview: schema_old/overview.md
-      - Contact: schema_old/contact.md
-      - Explanation:
-          - Model System:
-              - Model System: schema_old/explanation/model_system/model_system.md
-              - Representation Architecture: schema_old/explanation/model_system/representation.md
-              - Representation Design History: schema_old/explanation/model_system/representation_history.md
-              - Electronic States: schema_old/explanation/model_system/electronic_states.md
-          - Model Method:
-              - Basis Sets: schema_old/explanation/model_method/basis_sets.md
-          - Outputs:
-              - Outputs: schema_old/explanation/outputs/outputs.md
-          - Bounded Data Types: schema_old/explanation/data_types.md
-          - Normalization: schema_old/explanation/normalize.md
   - References:
-      - Schema Development Guide: software-development-guide.md
+      - Dev Docs:
+          - Schema Development Guide: software-development-guide.md
+          - Representation Design History: explanation/model_system/representation_history.md
   - Contact: contact.md
 theme:
   name: material

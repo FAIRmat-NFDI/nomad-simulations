@@ -1,63 +1,144 @@
-# Model System
+# `ModelSystem`
 
-`ModelSystem` represents the physical system used in a simulation context.
-For canonical quantity-level reference (fields, types, full relation map), use the generated page: [Schema Navigation: Model System](../../schema/model_system.md).
+## Overview
 
-This page focuses on intent, usage boundaries, and composition patterns.
+The `ModelSystem` class represents the physical system that serves as input for simulation calculations in NOMAD. It provides a comprehensive description of the atomic or coarse-grained structure, including particle positions, cell geometry, symmetry information, and chemical composition.
 
-## What `ModelSystem` Owns
+`ModelSystem` combines two fundamental capabilities: geometric representation (from the `Representation` class) and hierarchical navigation (from the `System` class). This means each model system has direct access to its geometric data (lattice vectors, atomic positions, periodic boundary conditions) while also supporting navigation through subsystem hierarchies and alternative geometric views.
 
-`ModelSystem` is the owner of structural system information:
+A `ModelSystem` can represent various types of systems: bulk crystals, surfaces, molecules, clusters, or complex hierarchical structures.
 
-- system-level geometry,
-- particle-state membership,
-- subsystem hierarchy,
-- links to symmetry and chemical formula descriptors,
-- links to alternative geometric representations.
+## Key Design Features
 
-`ModelSystem` is therefore the canonical location for "what system was simulated".
+**Direct Property Access**: `ModelSystem` provides immediate access to geometric properties like `lattice_vectors`, `positions`, and `periodic_boundary_conditions` without requiring navigation through nested subsections. This reflects the fact that a model system fundamentally is a geometric entity.
 
-## Structural Semantics
+**Hierarchical Navigation**: Systems can be nested through the `sub_systems` subsection, enabling the description of complex structures like interfaces, heterostructures, or active sites within bulk materials. This navigation happens vertically through the system hierarchy, with each subsystem being itself a complete `ModelSystem`.
 
-Use `ModelSystem` to express two different relationships:
+**Alternative Representations**: Each `ModelSystem`, at any level of the hierarchy, can have alternative geometric views (primitive cells, conventional cells, supercells) stored in the `representations` subsection. This provides lateral navigation to different geometric perspectives of the same physical system without changing your position in the hierarchy.
 
-- decomposition: `sub_systems` creates a parent-child system tree,
-- alternative views: `representations` stores equivalent geometric variants of the same system.
+**Automatic Normalization**: When `is_representative=True`, the normalization process automatically generates symmetry information, chemical formulas, primitive/conventional cell representations, and system classification (bulk, surface, molecule, etc.).
 
-Do not mix these semantics.
-A subsystem is a different component; an alternative representation is the same component viewed differently.
+## Key Components
 
-See [Model System Schema Usage Guidelines](usage_guidelines.md) for reusable design rules.
+### Geometric and Structural Properties (via Representation)
 
-## Parser and Normalization Responsibilities
+The `ModelSystem` inherits all geometric properties from the `Representation` base class, providing direct access to:
 
-Recommended split:
+- **Cell geometry**: `lattice_vectors`, `periodic_boundary_conditions`
+- **Atomic positions**: `positions` (Cartesian coordinates), `fractional_coordinates` (relative to lattice vectors)
+- **Symmetry information**: `wyckoff_letters`, `equivalent_atoms`
+- **Geometric measures**: `volume`, `area`, `length`
 
-- parser responsibilities:
-  - populate primary system geometry and particle states,
-  - populate explicit subsystem composition,
-  - add available method/system references.
-- normalization responsibilities:
-  - compute derived descriptors (for example symmetry and formulas),
-  - validate consistency,
-  - enrich metadata needed for search and interoperability.
+All geometric data follows a simple convention: values are expressed in an implicit Cartesian coordinate system (x, y, z). The frame itself is not stored—it's just the convention used to interpret the numbers.
 
-For normalization execution order and mechanics, see [Normalization](../normalize.md).
+See [Representation Architecture](representation.md) for detailed documentation of coordinate systems, these properties, and the design philosophy behind the unified architecture.
 
-## Minimal Parser Pattern
+### Particle States
+
+The `particle_states` subsection contains `ParticleState` instances (typically `AtomsState` for atomic systems) that describe each particle or group of particles in the system:
 
 ```python
---8<-- "snippets/model_system/minimal_parser_pattern.py"
+--8<-- "snippets/explanation/model_system/model_system/block_01.py"
 ```
 
-Add subsystem composition only when physically meaningful for analysis.
-Avoid creating hierarchy levels that do not encode new semantics.
+Each `AtomsState` can include electronic structure information through the `electronic_state` field. See [Electronic States](electronic_states.md) for details on describing electronic configurations.
 
-## Extension Guidance
+### Alternative Representations
 
-When adding new `ModelSystem`-related documentation:
+The `representations` subsection stores `AlternativeRepresentation` instances that provide different geometric views of the same physical system:
 
-- keep field-level reference in generated docs,
-- keep explanation docs focused on modeling constraints and usage decisions,
-- link to shared schema usage guidelines instead of repeating conventions,
-- include migration notes when behavior changes.
+```python
+--8<-- "snippets/explanation/model_system/model_system/block_02.py"
+```
+
+Common use cases include:
+
+- Primitive cells with minimal volume
+- Conventional cells following crystallographic standards
+- Supercells for defect calculations or large-scale simulations
+
+### Symmetry Information
+
+The `symmetry` subsection contains a `Symmetry` instance that describes the space group, point group, and Bravais lattice of the system. This information is typically populated automatically during normalization through integration with the MatID symmetry analyzer:
+
+```python
+--8<-- "snippets/explanation/model_system/model_system/block_03.py"
+```
+
+### Chemical Formulas
+
+The `chemical_formula` subsection contains a `ChemicalFormula` instance providing various representations of the system's composition:
+
+- Reduced formula (e.g., "SiO2")
+- Hill notation
+- Anonymous formula (e.g., "A2B")
+- Descriptive formula
+
+These are generated automatically during normalization based on the particle states.
+
+### Hierarchical Sub-systems
+
+The `sub_systems` subsection enables description of hierarchical compositions where a system contains other systems as components. This provides vertical navigation through the physical decomposition of the system:
+
+```python
+--8<-- "snippets/explanation/model_system/model_system/block_04.py"
+```
+
+Sub-systems are defined through the `branch_label`, `branch_depth`, `particle_indices`, and `bond_list` quantities that create a parent-child tree structure. Each subsystem at any level can have its own `representations` subsection for alternative geometric views of that specific subsystem.
+
+## Normalization Process
+
+The `ModelSystem.normalize()` method performs several important tasks when `is_representative=True`:
+
+1. **Parent System normalization**: Executes base class normalization logic
+2. **Particle state reassignment**: Validates and organizes particle states
+3. **System type and dimensionality**: Resolves whether the system is bulk, surface, molecule, etc., and determines dimensionality (0D, 1D, 2D, 3D)
+4. **Symmetry analysis**: For bulk systems, analyzes crystal symmetry and generates primitive and conventional cell representations
+5. **Chemical formula generation**: Creates chemical formula descriptions from particle states
+
+The normalization order ensures that dependencies between different components are respected. For example, symmetry analysis requires valid particle positions, and chemical formula generation requires properly initialized particle states.
+
+See [Normalization](../normalize.md) for more details on the normalization system across NOMAD simulations schema.
+
+## Quick Start Examples
+
+### Simple Crystal
+
+```python
+--8<-- "snippets/explanation/model_system/model_system/block_05.py"
+```
+
+### Working with Alternative Representations
+
+```python
+--8<-- "snippets/explanation/model_system/model_system/block_06.py"
+```
+
+### Heterostructure with Sub-systems
+
+```python
+--8<-- "snippets/explanation/model_system/model_system/block_07.py"
+```
+
+## Important Flags and Settings
+
+**`is_representative` (boolean)**: Controls whether this `ModelSystem` should undergo full normalization including symmetry analysis and formula generation. Typically set to `True` for the primary system description and `False` for sub-systems or intermediate calculations.
+
+**`type` (string)**: Describes the role of this system in the context of hierarchical compositions. Common values include:
+
+- `'bulk'`: Three-dimensionally periodic crystal
+- `'surface'`: Two-dimensionally periodic surface or slab
+- `'molecule / cluster'`: Zero-dimensional molecular or cluster system
+- `'active_atom'`: Specific atoms involved in a chemical reaction or property
+- `'region'`: A spatial region within a larger system
+
+**`branch_label` (string)**: Human-readable label for this system when it appears as a sub-system in a hierarchical tree.
+
+**`branch_depth` (integer)**: Depth of this system in the hierarchical tree (0 for root, 1 for direct children, etc.).
+
+## See Also
+
+- [Representation Architecture](representation.md): Detailed documentation of the geometric representation design
+- [Electronic States](electronic_states.md): How to describe electronic configurations of atoms
+- [Normalization](../normalize.md): Overview of the normalization system
+- [General Schema Overview](../overview.md): Introduction to the NOMAD simulations schema package

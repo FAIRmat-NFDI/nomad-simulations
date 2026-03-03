@@ -13,8 +13,10 @@ Conceptual guidance for modeling system structure and ownership.
 
 - [Model System Usage Guidelines](model_system/usage_guidelines.md)
 - [Representation Architecture](model_system/representation.md)
-- [Representation Design History](model_system/representation_history.md)
 - [Electronic States](model_system/electronic_states.md)
+
+Developer-focused historical context:
+- [Representation Design History](model_system/representation_history.md)
 
 ## Model Method
 

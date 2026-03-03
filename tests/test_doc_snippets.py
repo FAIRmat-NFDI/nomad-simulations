@@ -1,3 +1,8 @@
+import ast
+import re
+import runpy
+from pathlib import Path
+
 import numpy as np
 
 from docs.snippets.data_types.basic_usage import build_valid_section
@@ -17,6 +22,48 @@ from docs.snippets.model_system.minimal_parser_pattern import (
 from docs.snippets.simulation_entry.program_setup import (
     build_simulation_with_program,
 )
+
+
+SNIPPETS_ROOT = Path('docs/snippets')
+DOCS_ROOT = Path('docs')
+
+# Snippets that are executed directly by tests in this file and therefore do
+# not need to be included via --8<-- in markdown pages.
+EXECUTED_SNIPPETS = {
+    'snippets/data_types/basic_usage.py',
+    'snippets/data_types/error_handling.py',
+    'snippets/data_types/factory_masks.py',
+    'snippets/data_types/schema_context_roundtrip.py',
+    'snippets/data_types/standalone_type_roundtrip.py',
+    'snippets/data_types/validation_behavior.py',
+    'snippets/model_system/alternative_representation_pattern.py',
+    'snippets/model_system/minimal_parser_pattern.py',
+    'snippets/simulation_entry/program_setup.py',
+}
+
+# Standalone snippets that are not included in markdown pages but should still
+# be checked as runnable examples.
+RUNPY_SNIPPETS = {
+    'snippets/data_types/interval_notation.py',
+    'snippets/explanation/general/block_01.py',
+}
+
+
+def _doc_snippet_refs() -> list[str]:
+    refs: set[str] = set()
+    for md in DOCS_ROOT.rglob('*.md'):
+        text = md.read_text(encoding='utf-8')
+        refs.update(re.findall(r'--8<--\s+"([^"]+)"', text))
+    # Ignore placeholder examples in guideline text.
+    return sorted(r for r in refs if '<' not in r and '>' not in r)
+
+
+def _all_snippet_files() -> list[str]:
+    return sorted(
+        str(path.relative_to(DOCS_ROOT))
+        for path in SNIPPETS_ROOT.rglob('*.py')
+        if path.name != '__init__.py'
+    )
 
 
 def test_minimal_model_system_example():
@@ -81,3 +128,56 @@ def test_simulation_entry_program_setup():
     assert simulation.program is not None
     assert simulation.program.name == 'SUPERCODE'
     assert simulation.program.version == '7.0'
+
+
+def test_all_markdown_referenced_snippet_paths_exist():
+    refs = _doc_snippet_refs()
+    assert refs, 'No snippet references found in docs markdown.'
+    missing = [r for r in refs if not Path('docs', r).exists()]
+    assert not missing, f'Missing snippet files: {missing}'
+
+
+def test_all_markdown_referenced_python_snippets_are_syntax_valid():
+    bad = []
+    for ref in _doc_snippet_refs():
+        if not ref.endswith('.py'):
+            continue
+        source = Path('docs', ref).read_text(encoding='utf-8')
+        try:
+            ast.parse(source)
+        except SyntaxError as exc:
+            bad.append(f'{ref}: {exc}')
+    assert not bad, 'Invalid snippet syntax:\n' + '\n'.join(bad)
+
+
+def test_all_snippet_python_files_are_syntax_valid():
+    bad = []
+    for ref in _all_snippet_files():
+        source = Path('docs', ref).read_text(encoding='utf-8')
+        try:
+            ast.parse(source)
+        except SyntaxError as exc:
+            bad.append(f'{ref}: {exc}')
+    assert not bad, 'Invalid snippet syntax:\n' + '\n'.join(bad)
+
+
+def test_all_snippet_files_have_corresponding_test_coverage():
+    refs = set(_doc_snippet_refs())
+    covered = refs | EXECUTED_SNIPPETS | RUNPY_SNIPPETS
+    all_snippets = set(_all_snippet_files())
+    uncovered = sorted(all_snippets - covered)
+    assert not uncovered, (
+        'Snippets without coverage via markdown reference or executable test: '
+        f'{uncovered}'
+    )
+
+
+def test_executed_snippet_list_is_valid():
+    all_snippets = set(_all_snippet_files())
+    unknown = sorted((set(EXECUTED_SNIPPETS) | set(RUNPY_SNIPPETS)) - all_snippets)
+    assert not unknown, f'Executed snippet lists contain unknown paths: {unknown}'
+
+
+def test_runpy_snippets_execute_without_error():
+    for ref in sorted(RUNPY_SNIPPETS):
+        runpy.run_path(str(Path('docs', ref)))

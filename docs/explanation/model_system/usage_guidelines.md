@@ -1,76 +1,39 @@
 # Model System Schema Usage Guidelines
 
-This page captures reusable schema usage guidelines for `ModelSystem` and related sections.
-It is intentionally cross-cutting and should be referenced by focused pages such as `Model System` and `Representation Architecture`.
+This page is normative. It defines required usage conventions for `ModelSystem`.
+Keep this page short; implementation details and examples belong in linked pages.
 
-## Guideline 1: One Representative System per Simulation Context
+## Required Rules
 
-Use one `ModelSystem` as the representative system for a calculation context.
+1. Exactly one representative system per simulation context.
+Do: set `is_representative=True` only on the primary system.
+Do not: mark derived/contextual systems representative by default.
+Reference: [Model System](model_system.md), [Normalization](../normalize.md)
 
-- Set `is_representative=True` only on the system that should trigger full normalization logic.
-- Keep derived or contextual subsystems non-representative unless there is a clear reason to normalize them independently.
+2. Keep vertical and lateral structure separate.
+Do: use `sub_systems` for physical decomposition (`ModelSystem -> ModelSystem`).
+Do: use `representations` for alternative geometric views (`ModelSystem -> AlternativeRepresentation`).
+Do not: encode hierarchy inside `representations` or alternatives inside `sub_systems`.
+Reference: [Model System](model_system.md), [Representation Architecture](representation.md)
 
-Why this matters:
+3. Keep parser-native geometry on the root system.
+Do: store original parser geometry directly on the root `ModelSystem`.
+Do: store generated/transformed variants in `representations`.
+Do not: overwrite parser-native geometry during normalization.
+Reference: [Representation Architecture](representation.md), [Normalization](../normalize.md)
 
-- prevents duplicate normalization side effects,
-- keeps formula/symmetry derivations deterministic,
-- clarifies provenance of the primary structure.
+4. Reuse structure by reference instead of duplication.
+Do: define structural descriptors once in `ModelSystem`.
+Do: reference those sections from methods/outputs where possible.
+Do not: duplicate equivalent structural data across branches.
+Reference: [Model System](model_system.md)
 
-## Guideline 2: Vertical vs Lateral Structure
+5. Use normalization for completion and validation.
+Do: derive missing descriptors and run consistency checks.
+Do not: silently rewrite explicit parser intent.
+Reference: [Normalization](../normalize.md)
 
-There are two orthogonal ways to organize system information:
-
-- vertical hierarchy: `sub_systems` (`ModelSystem` -> `ModelSystem`) for decomposition into regions/components,
-- lateral variants: `representations` (`ModelSystem` -> `AlternativeRepresentation`) for alternate geometric views of the same physical system.
-
-Use `sub_systems` for physical parts of a system.
-Use `representations` for equivalent geometric descriptions (primitive/conventional/supercell) of one system.
-
-## Guideline 3: Original Data on Root, Derived Data in Alternatives
-
-Store parser-native geometry directly on the main `ModelSystem`.
-Store generated or transformed views in `representations`.
-
-Recommended assignment order in parsers:
-
-1. set direct geometry (`lattice_vectors`, `positions`, `periodic_boundary_conditions`) on `ModelSystem`,
-2. add `particle_states`,
-3. add derived/standardized geometry as `AlternativeRepresentation` entries,
-4. run normalization in NOMAD context.
-
-This keeps raw input and derived views clearly separated.
-
-## Guideline 4: Reference by Identity, Not by Duplication
-
-When connecting properties/methods to a system, prefer references to relevant sections over duplicating system descriptors.
-
-- Keep structural descriptors in `ModelSystem`.
-- Refer to them from outputs/method sections where needed.
-
-This avoids drift between repeated copies of conceptually identical data.
-
-## Guideline 5: Normalize for Completion, Not for Reconstruction
-
-Normalization should:
-
-- complete missing derived descriptors,
-- validate consistency,
-- enrich discoverability.
-
-Normalization should not:
-
-- silently replace parser intent,
-- require inferred assumptions that are not universally valid.
-
-In practice, parser-side explicitness should win when information is available.
-
-## Guideline 6: Document Invariants Next to Usage
-
-For maintainability, every explanation page touching `ModelSystem` should explicitly state invariants it depends on, such as:
-
-- representative-system assumptions,
-- coordinate conventions,
-- how subsystem indices map to parent particle indices,
-- whether a transformation is semantic or merely representational.
-
-When these invariants change, update all linked explanation pages in the same PR.
+6. Keep documentation invariants synchronized.
+Do: update affected explanation pages in the same PR when usage rules change.
+Do: keep this page as policy-only and move long examples elsewhere.
+Reference: [Model System](model_system.md), [Representation Architecture](representation.md), [Documentation Authoring Guide](../doc_guidelines.md)
