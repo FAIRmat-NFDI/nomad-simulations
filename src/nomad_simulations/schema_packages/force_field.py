@@ -1279,7 +1279,7 @@ class ForceField(ModelMethod):
         List of partial charges for each particle in the system, as force field
         parameters. Adjusted from partial atomic charges to model interactions
         within the context of the force field.
-        Different from the formal integer charges in AtomsState.charge!
+        Different from any formal/oxidation-state style charges stored on the system/particle state.
         """,
     )
 
