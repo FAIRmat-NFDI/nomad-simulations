@@ -29,9 +29,6 @@ from nomad_simulations.schema_packages.utils.libxc.expand import (
     expand_to_libxc_labels,
     infer_rung_hint,
 )
-from nomad_simulations.schema_packages.utils.xc_addons import (
-    split_xc_and_addons,
-)
 
 
 class BaseModelMethod(ArchiveSection):
@@ -624,32 +621,11 @@ class DFT(ModelMethodElectronic):
         if self.xc is None:
             self.xc = XCFunctional()
 
-        base_xc_key, _, nonlocal_corr_addon = split_xc_and_addons(
-            self.xc.functional_key
-        )
-        if base_xc_key is not None:
-            self.xc.functional_key = base_xc_key
-
-        if nonlocal_corr_addon:
-            existing_nonlocal = None
-            for contribution in self.contributions or []:
-                if not isinstance(contribution, NonlocalCorrelation):
-                    continue
-                if contribution.type in (None, nonlocal_corr_addon):
-                    existing_nonlocal = contribution
-                    break
-
-            if existing_nonlocal is None:
-                existing_nonlocal = NonlocalCorrelation(type=nonlocal_corr_addon)
-                self.m_add_sub_section(type(self).contributions, existing_nonlocal)
-            elif existing_nonlocal.type is None:
-                existing_nonlocal.type = nonlocal_corr_addon
-
-            existing_nonlocal.xc_partner_ref = self.xc
-
         for contribution in self.contributions or []:
             if (
-                isinstance(contribution, EmpiricalDispersionModel)
+                isinstance(
+                    contribution, (EmpiricalDispersionModel, NonlocalCorrelation)
+                )
                 and contribution.xc_partner_ref is None
             ):
                 contribution.xc_partner_ref = self.xc

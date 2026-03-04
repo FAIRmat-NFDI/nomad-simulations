@@ -695,73 +695,27 @@ def test_dft_sets_empirical_dispersion_xc_partner_ref():
     assert edm.xc_partner_ref is dft.xc
 
 
-def test_dft_nonlocal_addon_creates_nonlocal_contribution_and_sets_partner():
+def test_dft_keeps_functional_key_unchanged_during_normalization():
     dft = DFT()
     dft.xc = XCFunctional(functional_key='SCAN + rVV10')
 
     dft.normalize(EntryArchive(), logger=logger)
 
-    assert dft.xc.functional_key == 'SCAN'
-    nonlocal_terms = [
-        c for c in (dft.contributions or []) if isinstance(c, NonlocalCorrelation)
-    ]
-    assert len(nonlocal_terms) == 1
-    assert nonlocal_terms[0].type == 'rVV10'
-    assert nonlocal_terms[0].xc_partner_ref is dft.xc
+    assert dft.xc.functional_key == 'SCAN + rVV10'
 
 
-def test_dft_nonlocal_addon_reuses_existing_matching_nonlocal_contribution():
+def test_dft_sets_missing_xc_partner_refs_for_existing_contributions():
     dft = DFT()
-    dft.xc = XCFunctional(functional_key='PBE + VV10')
+    dft.xc = XCFunctional(functional_key='PBE')
+    edm = EmpiricalDispersionModel(model='D3BJ', damping_function='BJ')
     existing_nonlocal = NonlocalCorrelation(type='VV10')
+    dft.m_add_sub_section(type(dft).contributions, edm)
     dft.m_add_sub_section(type(dft).contributions, existing_nonlocal)
 
     dft.normalize(EntryArchive(), logger=logger)
 
-    nonlocal_terms = [
-        c for c in (dft.contributions or []) if isinstance(c, NonlocalCorrelation)
-    ]
-    assert len(nonlocal_terms) == 1
-    assert nonlocal_terms[0] is existing_nonlocal
-    assert nonlocal_terms[0].type == 'VV10'
-    assert nonlocal_terms[0].xc_partner_ref is dft.xc
-
-
-def test_dft_nonlocal_addon_fills_empty_existing_nonlocal_type():
-    dft = DFT()
-    dft.xc = XCFunctional(functional_key='r2SCAN + VV10')
-    existing_nonlocal = NonlocalCorrelation()
-    dft.m_add_sub_section(type(dft).contributions, existing_nonlocal)
-
-    dft.normalize(EntryArchive(), logger=logger)
-
-    nonlocal_terms = [
-        c for c in (dft.contributions or []) if isinstance(c, NonlocalCorrelation)
-    ]
-    assert len(nonlocal_terms) == 1
-    assert nonlocal_terms[0] is existing_nonlocal
-    assert nonlocal_terms[0].type == 'VV10'
-    assert nonlocal_terms[0].xc_partner_ref is dft.xc
-
-
-def test_dft_nonlocal_addon_creates_new_nonlocal_for_mismatched_existing_type():
-    dft = DFT()
-    dft.xc = XCFunctional(functional_key='SCAN + rVV10')
-    existing_nonlocal = NonlocalCorrelation(type='VV10')
-    dft.m_add_sub_section(type(dft).contributions, existing_nonlocal)
-
-    dft.normalize(EntryArchive(), logger=logger)
-
-    nonlocal_terms = [
-        c for c in (dft.contributions or []) if isinstance(c, NonlocalCorrelation)
-    ]
-    # The existing VV10 term should remain, and a new rVV10 term should be created.
-    assert len(nonlocal_terms) == 2
-    assert any(c is existing_nonlocal for c in nonlocal_terms)
-    new_terms = [c for c in nonlocal_terms if c is not existing_nonlocal]
-    assert len(new_terms) == 1
-    assert new_terms[0].type == 'rVV10'
-    assert new_terms[0].xc_partner_ref is dft.xc
+    assert edm.xc_partner_ref is dft.xc
+    assert existing_nonlocal.xc_partner_ref is dft.xc
 
 
 _COMMON_XC_CASES = [
