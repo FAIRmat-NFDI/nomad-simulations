@@ -1240,7 +1240,7 @@ class PeriodicImproper(ImproperDihedralPotential):
             self.functional_form = 'periodic'
 
 
-class AtomParameters(NumericalSettings):
+class AtomParameters(ArchiveSection):
     """
     Per-atom force field parameters. Stores method-specific atom descriptors
     (partial charge, effective mass, atom type label) and references the
