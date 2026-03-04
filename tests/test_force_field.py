@@ -5,8 +5,11 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
+from nomad_simulations.schema_packages.atoms_state import AtomsState
+
 # from nomad_simulations.schema_packages.method import ModelMethod
 from nomad_simulations.schema_packages.force_field import (
+    AtomParameters,
     BondPotential,
     CosineAngle,
     CubicBond,
@@ -34,6 +37,7 @@ from nomad_simulations.schema_packages.force_field import (
     UreyBradleyAngle,
 )
 from nomad_simulations.schema_packages.general import Simulation
+from nomad_simulations.schema_packages.model_system import ModelSystem
 
 # from structlog.stdlib import BoundLogger
 from . import logger
@@ -1067,3 +1071,74 @@ def test_missing_units_skip_derivation():
 
     # Ensure that normalization does not produce an error
     dummy.normalize(None, logger)
+
+
+def test_force_field_atom_parameters():
+    entry = EntryArchive(
+        data=Simulation(
+            model_system=[
+                ModelSystem(
+                    particle_states=[
+                        AtomsState(chemical_symbol='O'),
+                        AtomsState(chemical_symbol='H'),
+                        AtomsState(chemical_symbol='H'),
+                    ]
+                )
+            ],
+            model_method=[ForceField()],
+        )
+    )
+
+    ff = entry.data.model_method[0]
+    ff.atom_parameters.append(
+        AtomParameters(
+            species_scope=[entry.data.model_system[0].particle_states[0]],
+            atom_type='OW',
+            partial_charge=-0.834,
+            effective_mass=2.6567e-26,
+        )
+    )
+    ff.atom_parameters.append(
+        AtomParameters(
+            species_scope=[entry.data.model_system[0].particle_states[1]],
+            atom_type='HW',
+            partial_charge=0.417,
+            effective_mass=1.6735e-27,
+        )
+    )
+    ff.atom_parameters.append(
+        AtomParameters(
+            species_scope=[entry.data.model_system[0].particle_states[2]],
+            atom_type='HW',
+            partial_charge=0.417,
+            effective_mass=1.6735e-27,
+        )
+    )
+
+    ff.normalize(None, logger)
+    d = ff.m_to_dict()
+
+    assert d['name'] == 'ForceField'
+    assert len(d['atom_parameters']) == 3
+
+    o_ref = '/data/model_system/0/particle_states/0'
+    h1_ref = '/data/model_system/0/particle_states/1'
+    h2_ref = '/data/model_system/0/particle_states/2'
+
+    def ref_path(value):
+        return value[0] if isinstance(value, list) else value
+
+    ow_items = [item for item in d['atom_parameters'] if item['atom_type'] == 'OW']
+    hw_items = [item for item in d['atom_parameters'] if item['atom_type'] == 'HW']
+
+    assert len(ow_items) == 1
+    assert len(hw_items) == 2
+
+    assert ref_path(ow_items[0]['species_scope']) == o_ref
+    assert ow_items[0]['partial_charge'] == approx(-0.834)
+    assert ow_items[0]['effective_mass'] == approx(2.6567e-26)
+
+    assert {ref_path(item['species_scope']) for item in hw_items} == {h1_ref, h2_ref}
+    for item in hw_items:
+        assert item['partial_charge'] == approx(0.417)
+        assert item['effective_mass'] == approx(1.6735e-27)

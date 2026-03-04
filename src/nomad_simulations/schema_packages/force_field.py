@@ -1242,24 +1242,22 @@ class PeriodicImproper(ImproperDihedralPotential):
 
 class AtomParameters(NumericalSettings):
     """
-    Per-species force field parameters. Stores method-level atom descriptors
+    Per-atom force field parameters. Stores method-specific atom descriptors
     (partial charge, effective mass, atom type label) and references the
-    corresponding `AtomsState` entries via `species_scope`.
+    corresponding `AtomsState` instance via `species_scope`.
 
-    One `AtomParameters` instance covers all atoms sharing the same force field
-    type (e.g. AMBER `CT`, CHARMM `HT`). The `species_scope` list points to
-    every `AtomsState` section that carries that type.
+    One `AtomParameters` instance corresponds to one particle entry in
+    `ModelSystem.particle_states`.
     """
 
     species_scope = Quantity(
         type=Reference(
             SectionProxy('nomad_simulations.schema_packages.atoms_state.AtomsState')
         ),
-        shape=['*'],
+        shape=[1],
         description="""
-        References to the `AtomsState` sections to which these force field
-        parameters apply. Mirrors the `BasisSetComponent.species_scope` pattern:
-        the method section references the system sections, not vice versa.
+        Reference to the `AtomsState` instance to which this atom-parameter entry applies.
+        With repeating `atom_parameters` in `ForceField`, one entry is expected per particle.
         """,
     )
 
@@ -1267,8 +1265,10 @@ class AtomParameters(NumericalSettings):
         type=str,
         description="""
         Force field atom type label as defined by the force field (e.g. `'CT'`,
-        `'OW'`, `'HW'` in AMBER/CHARMM). Multiple atoms in `species_scope` share
-        this label.
+        `'OW'`, `'HW'` in AMBER/CHARMM). Multiple `AtomParameters` entries may
+        share this label.
+        This identifier is part of the force-field parameterization, not chemical
+        element/species identity.
         """,
     )
 
@@ -1278,8 +1278,8 @@ class AtomParameters(NumericalSettings):
         description="""
         Partial charge for this force field atom type, as a force field parameter.
         Adjusted from formal/oxidation charges to model electrostatic interactions
-        within the context of the force field. Distinct from the formal integer
-        charge stored on `AtomsState.charge`.
+        within the context of the force field. Distinct from formal or oxidation-
+        state style charges.
         """,
     )
 
@@ -1288,8 +1288,8 @@ class AtomParameters(NumericalSettings):
         unit='kg',
         description="""
         Effective mass for this force field atom type, as a force field parameter.
-        May differ from the standard atomic mass when a force field adjusts masses
-        for numerical stability or coarse-graining purposes.
+        May differ from the standard atomic mass when force-field parameterization
+        adjusts masses for numerical stability or coarse-grained representations.
         """,
     )
 
@@ -1339,9 +1339,9 @@ class ForceField(ModelMethod):
         sub_section=AtomParameters.m_def,
         repeats=True,
         description="""
-        Per-species force field parameters (partial charge, effective mass, atom
-        type label). Each subsection covers one force field atom type and
-        references the corresponding `AtomsState` entries via `species_scope`.
+        Per-particle force field parameters (partial charge, effective mass, atom
+        type label). Each subsection references one `AtomsState` entry via
+        `species_scope`.
         """,
     )
 
