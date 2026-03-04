@@ -1244,13 +1244,13 @@ class AtomParameters(ArchiveSection):
     """
     Per-atom force field parameters. Stores method-specific atom descriptors
     (partial charge, effective mass, atom type label) and references the
-    corresponding `AtomsState` instance via `species_scope`.
+    corresponding `AtomsState` instance via `atoms_state_ref`.
 
-    One `AtomParameters` instance corresponds to one particle entry in
+    One `AtomParameters` instance corresponds to one atom entry in
     `ModelSystem.particle_states`.
     """
 
-    species_scope = Quantity(
+    atoms_state_ref = Quantity(
         type=Reference(
             SectionProxy('nomad_simulations.schema_packages.atoms_state.AtomsState')
         ),
@@ -1258,7 +1258,7 @@ class AtomParameters(ArchiveSection):
         description="""
         Reference to the `AtomsState` instance to which this atom-parameter entry applies.
         With repeating `atom_parameters` in `AtomParameterSettings`, one entry is
-        expected per particle.
+        expected per atom.
         """,
     )
 
@@ -1277,10 +1277,12 @@ class AtomParameters(ArchiveSection):
         type=np.float64,
         unit='elementary_charge',
         description="""
-        Partial charge for this force field atom type, as a force field parameter.
-        Adjusted from formal/oxidation charges to model electrostatic interactions
-        within the context of the force field. Distinct from formal or oxidation-
-        state style charges.
+        Partial charge assigned in this `AtomParameters` entry for the referenced
+        `AtomsState` instance, as a force field parameter. Adjusted from formal/
+        oxidation charges to model electrostatic interactions within the context
+        of the force field. Distinct from formal or oxidation-state style charges.
+        The `atom_type` value is a grouping label and does not require identical
+        per-atom values across all entries sharing the same label.
         """,
     )
 
@@ -1288,9 +1290,12 @@ class AtomParameters(ArchiveSection):
         type=positive_float(),
         unit='kg',
         description="""
-        Effective mass for this force field atom type, as a force field parameter.
-        May differ from the standard atomic mass when force-field parameterization
-        adjusts masses for numerical stability or coarse-grained representations.
+        Effective mass assigned in this `AtomParameters` entry for the referenced
+        `AtomsState` instance, as a force field parameter. May differ from the
+        standard atomic mass when force-field parameterization adjusts masses for
+        numerical stability or coarse-grained representations.
+        The `atom_type` value is a grouping label and does not require identical
+        per-atom values across all entries sharing the same label.
         """,
     )
 
@@ -1304,9 +1309,9 @@ class AtomParameterSettings(NumericalSettings):
         sub_section=AtomParameters.m_def,
         repeats=True,
         description="""
-        Per-particle force field parameters (partial charge, effective mass, atom
+        Per-atom force field parameters (partial charge, effective mass, atom
         type label). Each subsection references one `AtomsState` entry via
-        `species_scope`.
+        `atoms_state_ref`.
         """,
     )
 
@@ -1314,7 +1319,7 @@ class AtomParameterSettings(NumericalSettings):
 class ForceField(ModelMethod):
     """
     Section containing the parameters of a (classical, particle-based) force field model.
-    Typical `numerical_settings` are ForceCalculations.
+    Typical `numerical_settings` are ForceCalculations and AtomParameterSettings.
     Lists of interactions by type and, if available, corresponding parameters can be given within `interactions`.
     Additionally, a published model can be referenced with `reference`.
     """

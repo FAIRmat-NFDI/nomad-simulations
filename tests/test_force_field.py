@@ -1094,7 +1094,7 @@ def test_force_field_atom_parameters():
     atom_parameter_settings = AtomParameterSettings()
     atom_parameter_settings.atom_parameters.append(
         AtomParameters(
-            species_scope=[entry.data.model_system[0].particle_states[0]],
+            atoms_state_ref=[entry.data.model_system[0].particle_states[0]],
             atom_type='OW',
             partial_charge=-0.834 * ureg.elementary_charge,
             effective_mass=2.6567e-26 * ureg.kg,
@@ -1102,7 +1102,7 @@ def test_force_field_atom_parameters():
     )
     atom_parameter_settings.atom_parameters.append(
         AtomParameters(
-            species_scope=[entry.data.model_system[0].particle_states[1]],
+            atoms_state_ref=[entry.data.model_system[0].particle_states[1]],
             atom_type='HW',
             partial_charge=0.417 * ureg.elementary_charge,
             effective_mass=1.6735e-27 * ureg.kg,
@@ -1110,7 +1110,7 @@ def test_force_field_atom_parameters():
     )
     atom_parameter_settings.atom_parameters.append(
         AtomParameters(
-            species_scope=[entry.data.model_system[0].particle_states[2]],
+            atoms_state_ref=[entry.data.model_system[0].particle_states[2]],
             atom_type='HW',
             partial_charge=0.417 * ureg.elementary_charge,
             effective_mass=1.6735e-27 * ureg.kg,
@@ -1144,11 +1144,11 @@ def test_force_field_atom_parameters():
     assert len(ow_items) == 1
     assert len(hw_items) == 2
 
-    assert ref_path(ow_items[0]['species_scope']) == o_ref
+    assert ref_path(ow_items[0]['atoms_state_ref']) == o_ref
     assert ow_items[0]['partial_charge'] == approx(-0.834)
     assert ow_items[0]['effective_mass'] == approx(2.6567e-26)
 
-    assert {ref_path(item['species_scope']) for item in hw_items} == {h1_ref, h2_ref}
+    assert {ref_path(item['atoms_state_ref']) for item in hw_items} == {h1_ref, h2_ref}
     for item in hw_items:
         assert item['partial_charge'] == approx(0.417)
         assert item['effective_mass'] == approx(1.6735e-27)
