@@ -11,14 +11,13 @@ from nomad.metainfo import (
     URL,
     MEnum,
     Quantity,
-    Reference,
     Section,
-    SectionProxy,
     SubSection,
 )
 from nomad.units import ureg
 from scipy.interpolate import UnivariateSpline
 
+from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
@@ -1242,23 +1241,21 @@ class PeriodicImproper(ImproperDihedralPotential):
 
 class AtomParameters(ArchiveSection):
     """
-    Per-atom force field parameters. Stores method-specific atom descriptors
+    Per-atom-type force field parameters. Stores method-specific atom descriptors
     (partial charge, effective mass, atom type label) and references the
-    corresponding `AtomsState` instance via `atoms_state_ref`.
+    corresponding `AtomsState` instances via `species_scope`.
 
-    One `AtomParameters` instance corresponds to one atom entry in
-    `ModelSystem.particle_states`.
+    One `AtomParameters` instance corresponds to one atom type and may apply
+    to multiple entries in `ModelSystem.particle_states`.
     """
 
-    atoms_state_ref = Quantity(
-        type=Reference(
-            SectionProxy('nomad_simulations.schema_packages.atoms_state.AtomsState')
-        ),
-        shape=[1],
+    species_scope = Quantity(
+        type=AtomsState,
+        shape=['*'],
         description="""
-        Reference to the `AtomsState` instance to which this atom-parameter entry applies.
-        With repeating `atom_parameters` in `AtomParameterSettings`, one entry is
-        expected per atom.
+        References to the `AtomsState` entries to which this atom-parameter entry
+        applies. With repeating `atom_parameters` in `AtomParameterSettings`, one
+        entry is expected per atom type.
         """,
     )
 
@@ -1277,8 +1274,9 @@ class AtomParameters(ArchiveSection):
         type=np.float64,
         unit='elementary_charge',
         description="""
-        Partial charge assigned in this `AtomParameters` entry for the referenced
-        `AtomsState` instance, as a force field parameter. Adjusted from formal/
+        Partial charge assigned in this `AtomParameters` entry for the
+        `AtomsState` entries in `species_scope`, as a force field parameter.
+        Adjusted from formal/
         oxidation charges to model electrostatic interactions within the context
         of the force field. Distinct from formal or oxidation-state style charges.
         """,
@@ -1288,26 +1286,27 @@ class AtomParameters(ArchiveSection):
         type=positive_float(),
         unit='kg',
         description="""
-        Effective mass assigned in this `AtomParameters` entry for the referenced
-        `AtomsState` instance, as a force field parameter. May differ from the
-        standard atomic mass when force-field parameterization adjusts masses for
-        numerical stability or coarse-grained representations.
+        Effective mass assigned in this `AtomParameters` entry for the
+        `AtomsState` entries in `species_scope`, as a force field parameter.
+        May differ from the standard atomic mass when force-field
+        parameterization adjusts masses for numerical stability or coarse-grained
+        representations.
         """,
     )
 
 
 class AtomParameterSettings(NumericalSettings):
     """
-    Numerical-settings container for per-atom force field parameter entries.
+    Numerical-settings container for per-atom-type force field parameter entries.
     """
 
     atom_parameters = SubSection(
         sub_section=AtomParameters.m_def,
         repeats=True,
         description="""
-        Per-atom force field parameters (partial charge, effective mass, atom
-        type label). Each subsection references one `AtomsState` entry via
-        `atoms_state_ref`.
+        Per-atom-type force field parameters (partial charge, effective mass,
+        atom type label). Each subsection references one or more `AtomsState`
+        entries via `species_scope`.
         """,
     )
 
