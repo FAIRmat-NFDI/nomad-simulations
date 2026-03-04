@@ -1124,8 +1124,6 @@ def test_force_field_atom_parameters():
     o_ref = '/data/model_system/0/particle_states/0'
     h1_ref = '/data/model_system/0/particle_states/1'
     h2_ref = '/data/model_system/0/particle_states/2'
-    ow_charge = (-0.834 * ureg.elementary_charge).to(ureg.coulomb).magnitude
-    hw_charge = (0.417 * ureg.elementary_charge).to(ureg.coulomb).magnitude
 
     def ref_path(value):
         return value[0] if isinstance(value, list) else value
@@ -1137,10 +1135,10 @@ def test_force_field_atom_parameters():
     assert len(hw_items) == 2
 
     assert ref_path(ow_items[0]['species_scope']) == o_ref
-    assert ow_items[0]['partial_charge'] == approx(ow_charge)
+    assert ow_items[0]['partial_charge'] == approx(-0.834)
     assert ow_items[0]['effective_mass'] == approx(2.6567e-26)
 
     assert {ref_path(item['species_scope']) for item in hw_items} == {h1_ref, h2_ref}
     for item in hw_items:
-        assert item['partial_charge'] == approx(hw_charge)
+        assert item['partial_charge'] == approx(0.417)
         assert item['effective_mass'] == approx(1.6735e-27)
