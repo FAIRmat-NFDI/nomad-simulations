@@ -10,6 +10,7 @@ from nomad_simulations.schema_packages.atoms_state import AtomsState
 # from nomad_simulations.schema_packages.method import ModelMethod
 from nomad_simulations.schema_packages.force_field import (
     AtomParameters,
+    AtomParameterSettings,
     BondPotential,
     CosineAngle,
     CubicBond,
@@ -1090,7 +1091,8 @@ def test_force_field_atom_parameters():
     )
 
     ff = entry.data.model_method[0]
-    ff.atom_parameters.append(
+    atom_parameter_settings = AtomParameterSettings()
+    atom_parameter_settings.atom_parameters.append(
         AtomParameters(
             species_scope=[entry.data.model_system[0].particle_states[0]],
             atom_type='OW',
@@ -1098,7 +1100,7 @@ def test_force_field_atom_parameters():
             effective_mass=2.6567e-26 * ureg.kg,
         )
     )
-    ff.atom_parameters.append(
+    atom_parameter_settings.atom_parameters.append(
         AtomParameters(
             species_scope=[entry.data.model_system[0].particle_states[1]],
             atom_type='HW',
@@ -1106,7 +1108,7 @@ def test_force_field_atom_parameters():
             effective_mass=1.6735e-27 * ureg.kg,
         )
     )
-    ff.atom_parameters.append(
+    atom_parameter_settings.atom_parameters.append(
         AtomParameters(
             species_scope=[entry.data.model_system[0].particle_states[2]],
             atom_type='HW',
@@ -1114,12 +1116,16 @@ def test_force_field_atom_parameters():
             effective_mass=1.6735e-27 * ureg.kg,
         )
     )
+    ff.numerical_settings.append(atom_parameter_settings)
 
     ff.normalize(None, logger)
     d = ff.m_to_dict()
 
     assert d['name'] == 'ForceField'
-    assert len(d['atom_parameters']) == 3
+    assert len(d['numerical_settings']) == 1
+    setting = d['numerical_settings'][0]
+    assert setting['m_def'].endswith('.AtomParameterSettings')
+    assert len(setting['atom_parameters']) == 3
 
     o_ref = '/data/model_system/0/particle_states/0'
     h1_ref = '/data/model_system/0/particle_states/1'
@@ -1128,8 +1134,12 @@ def test_force_field_atom_parameters():
     def ref_path(value):
         return value[0] if isinstance(value, list) else value
 
-    ow_items = [item for item in d['atom_parameters'] if item['atom_type'] == 'OW']
-    hw_items = [item for item in d['atom_parameters'] if item['atom_type'] == 'HW']
+    ow_items = [
+        item for item in setting['atom_parameters'] if item['atom_type'] == 'OW'
+    ]
+    hw_items = [
+        item for item in setting['atom_parameters'] if item['atom_type'] == 'HW'
+    ]
 
     assert len(ow_items) == 1
     assert len(hw_items) == 2

@@ -1257,7 +1257,8 @@ class AtomParameters(ArchiveSection):
         shape=[1],
         description="""
         Reference to the `AtomsState` instance to which this atom-parameter entry applies.
-        With repeating `atom_parameters` in `ForceField`, one entry is expected per particle.
+        With repeating `atom_parameters` in `AtomParameterSettings`, one entry is
+        expected per particle.
         """,
     )
 
@@ -1290,6 +1291,22 @@ class AtomParameters(ArchiveSection):
         Effective mass for this force field atom type, as a force field parameter.
         May differ from the standard atomic mass when force-field parameterization
         adjusts masses for numerical stability or coarse-grained representations.
+        """,
+    )
+
+
+class AtomParameterSettings(NumericalSettings):
+    """
+    Numerical-settings container for per-atom force field parameter entries.
+    """
+
+    atom_parameters = SubSection(
+        sub_section=AtomParameters.m_def,
+        repeats=True,
+        description="""
+        Per-particle force field parameters (partial charge, effective mass, atom
+        type label). Each subsection references one `AtomsState` entry via
+        `species_scope`.
         """,
     )
 
@@ -1332,16 +1349,6 @@ class ForceField(ModelMethod):
         repeats=True,
         description="""
         Contribution or sub-term of the total model Hamiltonian.
-        """,
-    )
-
-    atom_parameters = SubSection(
-        sub_section=AtomParameters.m_def,
-        repeats=True,
-        description="""
-        Per-particle force field parameters (partial charge, effective mass, atom
-        type label). Each subsection references one `AtomsState` entry via
-        `species_scope`.
         """,
     )
 
