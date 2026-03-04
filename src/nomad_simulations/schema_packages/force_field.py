@@ -1281,8 +1281,6 @@ class AtomParameters(ArchiveSection):
         `AtomsState` instance, as a force field parameter. Adjusted from formal/
         oxidation charges to model electrostatic interactions within the context
         of the force field. Distinct from formal or oxidation-state style charges.
-        The `atom_type` value is a grouping label and does not require identical
-        per-atom values across all entries sharing the same label.
         """,
     )
 
@@ -1294,8 +1292,6 @@ class AtomParameters(ArchiveSection):
         `AtomsState` instance, as a force field parameter. May differ from the
         standard atomic mass when force-field parameterization adjusts masses for
         numerical stability or coarse-grained representations.
-        The `atom_type` value is a grouping label and does not require identical
-        per-atom values across all entries sharing the same label.
         """,
     )
 
