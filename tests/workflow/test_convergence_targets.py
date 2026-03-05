@@ -203,11 +203,16 @@ class TestForceConvergenceTarget:
         force_target.threshold = threshold
         force_target.threshold_type = threshold_type
 
-        # Create outputs with forces
+        # Create outputs with forces and scf_steps
         forces = TotalForce(value=force_values * ureg.newton)
-        archive.data.outputs = [Outputs(total_forces=[forces])]
+        scf_steps = SCFSteps()  # Empty scf_steps for normalization to populate
+        outputs = Outputs(total_forces=[forces], scf_steps=scf_steps)
+        archive.data.outputs = [outputs]
 
-        # Normalize and check
+        # Normalize outputs to compute delta_force_abs from total_forces
+        outputs.normalize(archive, logger)
+
+        # Check convergence
         is_reached = force_target.normalize(archive, logger)
         assert is_reached == expected_reached
 
@@ -649,7 +654,11 @@ class TestConvergenceInWorkflow:
             value=np.array([[1e-9, 1e-9, 1e-9], [1e-9, 1e-9, 1e-9]]) * ureg.newton
         )
 
-        archive.data.outputs = [Outputs(scf_steps=scf_step, total_forces=[forces])]
+        outputs = Outputs(scf_steps=scf_step, total_forces=[forces])
+        archive.data.outputs = [outputs]
+
+        # Normalize outputs to compute delta_force_abs
+        outputs.normalize(archive, logger)
 
         # Normalize workflow
         workflow.normalize(archive, logger)
@@ -704,7 +713,11 @@ class TestConvergenceInWorkflow:
             value=np.array([[1e-5, 1e-5, 1e-5]]) * ureg.newton
         )  # Doesn't converge
 
-        archive.data.outputs = [Outputs(scf_steps=scf_step, total_forces=[forces])]
+        outputs = Outputs(scf_steps=scf_step, total_forces=[forces])
+        archive.data.outputs = [outputs]
+
+        # Normalize outputs to compute delta_force_abs
+        outputs.normalize(archive, logger)
 
         # Normalize targets and capture results
         convergence_results = []
@@ -739,7 +752,12 @@ class TestEdgeCases:
         force_target.threshold_type = 'maximum'
 
         forces = TotalForce(value=np.array([[1e5, 1e5, 1e5]]) * ureg.newton)
-        archive.data.outputs = [Outputs(total_forces=[forces])]
+        scf_steps = SCFSteps()
+        outputs = Outputs(total_forces=[forces], scf_steps=scf_steps)
+        archive.data.outputs = [outputs]
+
+        # Normalize outputs to compute delta_force_abs
+        outputs.normalize(archive, logger)
 
         is_reached = force_target.normalize(archive, logger)
         assert is_reached is True
@@ -778,18 +796,26 @@ class TestFallbackPaths:
         assert is_reached is True  # max([1e-9, 2e-9, 1.5e-9]) < 1e-8
 
     def test_force_fallback_to_computed(self, archive, logger):
-        """Test ForceConvergenceTarget falls back to computing from total_forces."""
+        """Test that delta_force_abs is computed from total_forces during normalization."""
         force_target = ForceConvergenceTarget()
         force_target.threshold = 1e-8
         force_target.threshold_type = 'maximum'
 
-        # Only provide total_forces (no workflow2, no scf_steps)
+        # Only provide total_forces (no workflow2, no delta_force_abs)
         forces = TotalForce(
             value=np.array([[1e-9, 1e-9, 1e-9], [2e-9, 2e-9, 2e-9]]) * ureg.newton
         )
-        archive.data.outputs = [Outputs(total_forces=[forces])]
+        scf_steps = SCFSteps()  # Empty scf_steps for normalization to populate
+        outputs = Outputs(total_forces=[forces], scf_steps=scf_steps)
+        archive.data.outputs = [outputs]
 
-        # Should compute force magnitudes
+        # Normalize outputs to compute delta_force_abs from total_forces
+        outputs.normalize(archive, logger)
+
+        # Verify delta_force_abs was computed
+        assert outputs.scf_steps.delta_force_abs is not None
+
+        # Check convergence using computed values
         is_reached = force_target.normalize(archive, logger)
         # max norm ≈ 3.46e-9 < 1e-8
         assert is_reached is True

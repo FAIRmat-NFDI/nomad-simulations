@@ -419,36 +419,10 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
         a_convergence={
             'paths': [
                 'workflow2.results.final_force_maximum',  # Absolute: workflow level
-                '@.scf_steps.delta_force_abs',  # Relative: SCF level
+                '@.scf_steps.delta_force_abs',  # Relative: SCF level (populated by normalization)
             ]
         },
     )
-
-    def _get_convergence_value(self, archive: EntryArchive, logger: BoundLogger):
-        """
-        Extract force convergence value from archive.
-
-        Uses fallback paths from annotation, then computes from total_forces if needed.
-        """
-        # Try annotation-based fallback paths first
-        value = super()._get_convergence_value(archive, logger)
-        if value is not None:
-            return value
-
-        # Final fallback: compute force norms from total_forces
-        try:
-            if archive.data and archive.data.outputs:
-                forces = archive.data.outputs[-1].total_forces
-                if forces is not None and len(forces) > 0:
-                    # Get force values (Pint Quantity with shape [n_atoms, 3])
-                    force_values = forces[-1].value
-                    # Compute norm per atom using Pint-native operations
-                    force_magnitudes = ((force_values**2).sum(axis=1)) ** 0.5
-                    return force_magnitudes
-        except (AttributeError, IndexError, TypeError) as e:
-            logger.debug(f'Could not extract force convergence value: {e}')
-
-        return None
 
 
 class PotentialConvergenceTarget(WorkflowConvergenceTarget):

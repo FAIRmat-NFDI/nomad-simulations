@@ -276,6 +276,20 @@ class Outputs(SimulationTime):
         if self.model_method_ref is None:
             self.model_method_ref = self.set_model_method_ref()
 
+        # Populate delta_force_abs from total_forces if missing
+        if self.scf_steps is not None and self.scf_steps.delta_force_abs is None:
+            if self.total_forces is not None and len(self.total_forces) > 0:
+                try:
+                    # Get force values (Pint Quantity with shape [n_atoms, 3])
+                    force_values = self.total_forces[-1].value
+                    # Compute force magnitudes (preserves Pint units)
+                    force_magnitudes = ((force_values**2).sum(axis=1)) ** 0.5
+                    self.scf_steps.delta_force_abs = force_magnitudes
+                except (AttributeError, IndexError, TypeError) as e:
+                    logger.debug(
+                        f'Could not compute delta_force_abs from total_forces: {e}'
+                    )
+
 
 class WorkflowOutputs(Outputs):
     """
