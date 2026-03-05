@@ -23,7 +23,6 @@ from docs.snippets.simulation_entry.program_setup import (
     build_simulation_with_program,
 )
 
-
 SNIPPETS_ROOT = Path('docs/snippets')
 DOCS_ROOT = Path('docs')
 

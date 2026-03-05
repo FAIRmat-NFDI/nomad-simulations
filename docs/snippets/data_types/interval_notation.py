@@ -1,6 +1,5 @@
 from nomad_simulations.schema_packages.data_types import Bound
 
-
 # Closed intervals (inclusive bounds)
 Bound('[0,1]')  # 0 <= x <= 1
 Bound('[1,10]')  # 1 <= x <= 10

@@ -1,5 +1,5 @@
 from nomad.parsing.file_parser import TextParser, Quantity
-from nomad_simulations import Simulation, Program
+from nomad_simulations.schema_packages.general import Program, Simulation
 
 
 class SUPERCODEParser:

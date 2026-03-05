@@ -1,6 +1,10 @@
 from nomad.metainfo import Quantity, Section
 
-from nomad_simulations.schema_packages.data_types import Bound, m_float_bounded, m_int_bounded
+from nomad_simulations.schema_packages.data_types import (
+    Bound,
+    m_float_bounded,
+    m_int_bounded,
+)
 
 
 class MySection(Section):
