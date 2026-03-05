@@ -514,8 +514,9 @@ class TestConvergenceHelperMethods:
 
     def test_check_relative(self, energy_target, logger):
         """Test _check_relative helper method."""
-        # For relative convergence, threshold is dimensionless but stored in base unit
-        energy_target.threshold = 1e-6 * ureg.joule
+        # For relative convergence, threshold must be dimensionless
+        # Use raw float since EnergyConvergenceTarget expects joule unit
+        energy_target.threshold = 1e-6
 
         # Test converged case
         assert (

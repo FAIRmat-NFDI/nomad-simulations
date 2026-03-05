@@ -1,9 +1,9 @@
-import jmespath
 import numpy as np
 import pint
 from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflow
 from nomad.metainfo import Datetime, MEnum, Quantity, SchemaPackage, SubSection
+from nomad.units import ureg
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.data_types import positive_float
@@ -113,15 +113,18 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
             last_output = archive.data.outputs[-1]
 
-            # Use JMESPath to navigate to the convergence value
-            value = jmespath.search(path, last_output)
-
-            if value is None:
-                logger.debug(
-                    f'Convergence path resolved to None',
-                    data={'path': path, 'class': self.__class__.__name__},
-                )
-                return None
+            # Use direct attribute access to preserve Pint quantities
+            # JMESPath strips units, so we navigate manually
+            path_parts = path.split('.')
+            value = last_output
+            for part in path_parts:
+                value = getattr(value, part, None)
+                if value is None:
+                    logger.debug(
+                        f'Convergence path resolved to None',
+                        data={'path': path, 'class': self.__class__.__name__},
+                    )
+                    return None
 
             # Handle arrays: for 'absolute' threshold_type, extract last iteration value
             # For 'rms' and 'maximum', keep full array for aggregation
@@ -131,7 +134,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
                     # Keep full array for aggregation
                     return value
                 else:
-                    # Extract last iteration value
+                    # Extract last iteration value (preserves units if Pint quantity)
                     value = value[-1]
 
             # Return Pint Quantity as-is (don't strip units)
@@ -149,15 +152,25 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if self.threshold is None:
             return None
         try:
-            # Handle case where threshold might be raw float or Pint quantity
-            # If value has units but threshold doesn't, extract magnitude for comparison
-            if hasattr(value, 'magnitude') and not hasattr(self.threshold, 'magnitude'):
+            # Handle unit mismatches between value and threshold
+            value_has_units = hasattr(value, 'magnitude')
+            threshold_has_units = hasattr(self.threshold, 'magnitude')
+
+            if value_has_units and not threshold_has_units:
+                # Value has units, threshold doesn't - compare magnitudes
                 return bool(abs(value.magnitude) <= self.threshold)
-            # Otherwise Pint handles unit conversion automatically
-            return bool(abs(value) <= self.threshold)
-        except pint.DimensionalityError:
+            elif not value_has_units and threshold_has_units:
+                # Threshold has units, value doesn't - compare with threshold magnitude
+                return bool(abs(value) <= self.threshold.magnitude)
+            elif not value_has_units and not threshold_has_units:
+                # Neither has units - direct comparison
+                return bool(abs(value) <= self.threshold)
+            else:
+                # Both have units - Pint handles unit conversion
+                return bool(abs(value) <= self.threshold)
+        except (pint.DimensionalityError, ValueError) as e:
             logger.error(
-                f'Unit mismatch in {self.__class__.__name__}: {value.units} vs {self.threshold.units}'
+                f'Unit mismatch or comparison error in {self.__class__.__name__}: {e}'
             )
             return None
 
@@ -179,17 +192,18 @@ The mode used affects both convergence behavior and computational efficiency. Di
             # Compute relative change (dimensionless)
             relative_change = abs(value / reference)
 
-            # Threshold should be dimensionless for relative convergence
-            if self.threshold.dimensionality != ureg.dimensionless.dimensionality:
-                logger.error(
-                    f'Relative threshold must be dimensionless, got {self.threshold.units}'
-                )
-                return None
+            # For relative convergence, compare with threshold magnitude
+            # (threshold may have units from the Quantity definition but should be treated as dimensionless)
+            threshold_value = (
+                self.threshold.magnitude
+                if hasattr(self.threshold, 'magnitude')
+                else self.threshold
+            )
 
-            return bool(relative_change < self.threshold)
-        except pint.DimensionalityError:
+            return bool(relative_change < threshold_value)
+        except (pint.DimensionalityError, ValueError) as e:
             logger.error(
-                f'Unit mismatch in {self.__class__.__name__}: {value.units} vs {reference.units}'
+                f'Unit mismatch or comparison error in {self.__class__.__name__}: {e}'
             )
             return None
 
@@ -198,17 +212,32 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if self.threshold is None:
             return None
         try:
+            # Convert list to numpy array if needed (preserves Pint quantities)
+            if isinstance(values, list):
+                if len(values) > 0 and hasattr(values[0], 'magnitude'):
+                    # Pint quantity list - extract magnitudes and units
+                    magnitudes = [v.magnitude for v in values]
+                    units = values[0].units
+                    values = np.array(magnitudes) * units
+                else:
+                    values = np.array(values)
+
             max_value = np.max(np.abs(values))
-            # Handle case where threshold might be raw float or Pint quantity
-            if hasattr(max_value, 'magnitude') and not hasattr(
-                self.threshold, 'magnitude'
-            ):
+
+            # Handle unit mismatches
+            value_has_units = hasattr(max_value, 'magnitude')
+            threshold_has_units = hasattr(self.threshold, 'magnitude')
+
+            if value_has_units and not threshold_has_units:
                 return bool(max_value.magnitude < self.threshold)
-            # Otherwise Pint handles unit conversion automatically
-            return bool(max_value < self.threshold)
-        except pint.DimensionalityError:
+            elif not value_has_units and threshold_has_units:
+                return bool(max_value < self.threshold.magnitude)
+            else:
+                # Both have units or both don't - direct comparison
+                return bool(max_value < self.threshold)
+        except (pint.DimensionalityError, ValueError, TypeError) as e:
             logger.error(
-                f'Unit mismatch in {self.__class__.__name__}: {values.units} vs {self.threshold.units}'
+                f'Unit mismatch or comparison error in {self.__class__.__name__}: {e}'
             )
             return None
 
@@ -217,17 +246,32 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if self.threshold is None:
             return None
         try:
+            # Convert list to numpy array if needed (preserves Pint quantities)
+            if isinstance(values, list):
+                if len(values) > 0 and hasattr(values[0], 'magnitude'):
+                    # Pint quantity list - extract magnitudes and units
+                    magnitudes = [v.magnitude for v in values]
+                    units = values[0].units
+                    values = np.array(magnitudes) * units
+                else:
+                    values = np.array(values)
+
             rms_value = np.sqrt(np.mean(values**2))
-            # Handle case where threshold might be raw float or Pint quantity
-            if hasattr(rms_value, 'magnitude') and not hasattr(
-                self.threshold, 'magnitude'
-            ):
+
+            # Handle unit mismatches
+            value_has_units = hasattr(rms_value, 'magnitude')
+            threshold_has_units = hasattr(self.threshold, 'magnitude')
+
+            if value_has_units and not threshold_has_units:
                 return bool(rms_value.magnitude < self.threshold)
-            # Otherwise Pint handles unit conversion automatically
-            return bool(rms_value < self.threshold)
-        except pint.DimensionalityError:
+            elif not value_has_units and threshold_has_units:
+                return bool(rms_value < self.threshold.magnitude)
+            else:
+                # Both have units or both don't - direct comparison
+                return bool(rms_value < self.threshold)
+        except (pint.DimensionalityError, ValueError, TypeError) as e:
             logger.error(
-                f'Unit mismatch in {self.__class__.__name__}: {values.units} vs {self.threshold.units}'
+                f'Unit mismatch or comparison error in {self.__class__.__name__}: {e}'
             )
             return None
 
