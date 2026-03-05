@@ -3,11 +3,32 @@
     <div id="cy"></div>
 -->
 
-**Welcome to the NOMAD documentation for the Schema developed for Computational Materials Scientists**, where you can find information about how to use the NOMAD schema definition to store the data output by your simulations.
-This project contains all the information about the main base sections and their `SubSections` and `Quantities` relevant for simulations. We propose here a general schema which could then be used as a basis to build more specific schemas.
+Welcome to the NOMAD documentation for `nomad-simulations`, a schema for computational materials science data.
 
-The documentation is split into two complementary sections: [Schema Navigation: Overview](schema/index.md) (auto-generated, canonical source for section trees, quantities, inheritance, and relationship diagrams) and [Schema Explanation: Overview](explanation/overview.md) (hand-written guidance for design rationale, modeling decisions, migration notes, and parser usage guidance).
+## Where to Start
 
-NOMAD is a free open-source data management platform for Materials Science which follows the F.A.I.R. (Findable, Accessible, Interoperable, and Reusable) principles. This documentation page is a part of the more [general NOMAD documentation](https://nomad-lab.eu/prod/v1/staging/docs/), as well as on the usage of [NOMAD base sections](https://nomad-lab.eu/prod/v1/staging/docs/howto/customization/base_sections.html).
+The documentation is split into three complementary sections:
 
-When designing the sections, we follow [SOLID principles](https://www.geeksforgeeks.org/solid-principle-in-programming-understand-with-real-life-examples/) for object-oriented programming. And throughout this documentation, we will use [UML diagrams](https://en.wikipedia.org/wiki/Class_diagram), both in a simplified and in a detailed manner, to draw the schemas relationships.
+- [Schema Navigation: Overview](schema/index.md): auto-generated reference for section trees, quantities, inheritance, and relationship diagrams.
+- [Schema Explanation: Overview](explanation/overview.md): hand-written guidance for design rationale, modeling conventions, and usage patterns.
+- [Dev Docs: Overview](dev_docs/overview.md): contributor-focused references, development process guidance, and historical design context.
+
+## Context
+
+NOMAD is a free, open-source data management platform for materials science aligned with FAIR principles (Findable, Accessible, Interoperable, Reusable). For broader platform documentation, see the [NOMAD docs](https://nomad-lab.eu/prod/v1/staging/docs/) and [NOMAD base sections guide](https://nomad-lab.eu/prod/v1/staging/docs/howto/customization/base_sections.html).
+
+The `nomad-simulations` schema provides reusable core sections that can be extended for code-specific and domain-specific schemas while preserving consistent structure, interoperability, and discoverability.
+
+When designing the sections, we follow [SOLID principles](https://www.geeksforgeeks.org/solid-principle-in-programming-understand-with-real-life-examples/) for object-oriented programming wherever possible.
+
+Throughout this documentation, we use [UML diagrams](https://en.wikipedia.org/wiki/Class_diagram) to represent schema relationships.
+
+## Contributing
+
+If you want to contribute schema or documentation updates:
+
+1. Fork the repository and create a focused branch.
+2. Check [Dev Docs: Overview](dev_docs/overview.md) before changing established patterns.
+3. Implement your extension following the [Schema Development Guide](software-development-guide.md).
+4. Update docs according to the [Documentation Authoring Guide](explanation/doc_guidelines.md).
+5. Open a pull request against upstream with a clear scope and test evidence.

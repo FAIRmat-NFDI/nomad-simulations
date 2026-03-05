@@ -1,4 +1,4 @@
-site_name: "Documentation: Schema for Simulation Data"
+site_name: "Documentation: nomad-simulations"
 site_description: |
   Documentation for the schema of Simulation data.
 site_author: FAIRmat consortium
@@ -40,10 +40,12 @@ nav:
       #     - Outputs: explanation/outputs/outputs.md
       - Bounded Data Types: explanation/data_types.md
       - Normalization: explanation/normalize.md
-  - References:
-      - Dev Docs:
-          - Schema Development Guide: software-development-guide.md
-          - Representation Design History: explanation/model_system/representation_history.md
+  - Dev Docs:
+      - Overview: dev_docs/overview.md
+      - Schema Development Guide: software-development-guide.md
+      - Documentation Authoring Guide: explanation/doc_guidelines.md
+      - Representation Design History: explanation/model_system/representation_history.md
+      - Electronic States Migration and Technical Notes: dev_docs/electronic_states_migration.md
   - Contact: contact.md
 theme:
   name: material
