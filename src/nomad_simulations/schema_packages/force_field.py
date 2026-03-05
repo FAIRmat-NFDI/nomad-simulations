@@ -11,9 +11,7 @@ from nomad.metainfo import (
     URL,
     MEnum,
     Quantity,
-    Reference,
     Section,
-    SectionProxy,
     SubSection,
 )
 from nomad.units import ureg
@@ -1240,26 +1238,25 @@ class PeriodicImproper(ImproperDihedralPotential):
             self.functional_form = 'periodic'
 
 
-class AtomParameters(NumericalSettings):
+class AtomParameters(ArchiveSection):
     """
-    Per-species force field parameters. Stores method-level atom descriptors
-    (partial charge, effective mass, atom type label) and references the
-    corresponding `AtomsState` entries via `species_scope`.
+    Force field parameters for one atom type. `particle_indices` lists the
+    positions in `ModelSystem.particle_states` of all atoms assigned this
+    type. All indexed atoms share the same scalar parameters (`partial_charge`,
+    `effective_mass`), avoiding per-instance duplication.
 
-    One `AtomParameters` instance covers all atoms sharing the same force field
-    type (e.g. AMBER `CT`, CHARMM `HT`). The `species_scope` list points to
-    every `AtomsState` section that carries that type.
+    Semantically equivalent to `ModelSystem.particle_indices` for subsystems:
+    indices are counted from the representative top-level `ModelSystem`.
     """
 
-    species_scope = Quantity(
-        type=Reference(
-            SectionProxy('nomad_simulations.schema_packages.atoms_state.AtomsState')
-        ),
+    particle_indices = Quantity(
+        type=np.int32,
         shape=['*'],
         description="""
-        References to the `AtomsState` sections to which these force field
-        parameters apply. Mirrors the `BasisSetComponent.species_scope` pattern:
-        the method section references the system sections, not vice versa.
+        Indices into the parent `ModelSystem.particle_states` list for all
+        atoms assigned this atom type. Counted from the representative
+        (top-level) `ModelSystem`, consistent with
+        `ModelSystem.particle_indices` used for subsystems.
         """,
     )
 
@@ -1267,8 +1264,10 @@ class AtomParameters(NumericalSettings):
         type=str,
         description="""
         Force field atom type label as defined by the force field (e.g. `'CT'`,
-        `'OW'`, `'HW'` in AMBER/CHARMM). Multiple atoms in `species_scope` share
-        this label.
+        `'OW'`, `'HW'` in AMBER/CHARMM). Multiple `AtomParameters` entries may
+        share this label.
+        This identifier is part of the force-field parameterization, not chemical
+        element/species identity.
         """,
     )
 
@@ -1276,10 +1275,10 @@ class AtomParameters(NumericalSettings):
         type=np.float64,
         unit='elementary_charge',
         description="""
-        Partial charge for this force field atom type, as a force field parameter.
-        Adjusted from formal/oxidation charges to model electrostatic interactions
-        within the context of the force field. Distinct from the formal integer
-        charge stored on `AtomsState.charge`.
+        Partial charge assigned in this `AtomParameters` entry for the referenced
+        `AtomsState` instance, as a force field parameter. Adjusted from formal/
+        oxidation charges to model electrostatic interactions within the context
+        of the force field. Distinct from formal or oxidation-state style charges.
         """,
     )
 
@@ -1287,17 +1286,47 @@ class AtomParameters(NumericalSettings):
         type=positive_float(),
         unit='kg',
         description="""
-        Effective mass for this force field atom type, as a force field parameter.
-        May differ from the standard atomic mass when a force field adjusts masses
-        for numerical stability or coarse-graining purposes.
+        Effective mass assigned in this `AtomParameters` entry for the referenced
+        `AtomsState` instance, as a force field parameter. May differ from the
+        standard atomic mass when force-field parameterization adjusts masses for
+        numerical stability or coarse-grained representations.
         """,
     )
+
+
+class AtomParametersContainer(NumericalSettings):
+    """
+    Numerical-settings container for per-atom force field parameters grouped
+    by atom type. Each `AtomParameters` subsection covers all atoms of one
+    FF atom type via `particle_indices`.
+    """
+
+    atom_parameters = SubSection(
+        sub_section=AtomParameters.m_def,
+        repeats=True,
+        description="""
+        Per-atom-type force field parameters (partial charge, effective mass,
+        atom type label). Each entry covers all atoms of one FF type via
+        `particle_indices`.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+        all_indices = [
+            int(i)
+            for ap in self.atom_parameters or []
+            for i in (ap.particle_indices if ap.particle_indices is not None else [])
+        ]
+        assert len(all_indices) == len(set(all_indices)), (
+            'Overlapping particle_indices across AtomParameters entries.'
+        )
 
 
 class ForceField(ModelMethod):
     """
     Section containing the parameters of a (classical, particle-based) force field model.
-    Typical `numerical_settings` are ForceCalculations.
+    Typical `numerical_settings` are ForceCalculations and AtomParametersContainer.
     Lists of interactions by type and, if available, corresponding parameters can be given within `interactions`.
     Additionally, a published model can be referenced with `reference`.
     """
@@ -1335,21 +1364,10 @@ class ForceField(ModelMethod):
         """,
     )
 
-    atom_parameters = SubSection(
-        sub_section=AtomParameters.m_def,
-        repeats=True,
-        description="""
-        Per-species force field parameters (partial charge, effective mass, atom
-        type label). Each subsection covers one force field atom type and
-        references the corresponding `AtomsState` entries via `species_scope`.
-        """,
-    )
-
     def normalize(self, archive, logger) -> None:
         super().normalize(archive, logger)
 
         self.name = 'ForceField'
-        logger.warning('in force field')
 
 
 # TODO Need to survey Lammps and maybe openmm and check for other common potential types
