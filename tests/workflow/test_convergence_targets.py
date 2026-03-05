@@ -756,3 +756,54 @@ class TestEdgeCases:
         # Should handle gracefully (implementation dependent)
         force_target.normalize(archive, logger)
         # Test passes if no exception is raised
+
+
+class TestFallbackPaths:
+    """Test fallback path functionality in convergence targets."""
+
+    def test_force_fallback_to_scf(self, archive, logger):
+        """Test ForceConvergenceTarget falls back from workflow to SCF level."""
+        force_target = ForceConvergenceTarget()
+        force_target.threshold = 1e-8
+        force_target.threshold_type = 'maximum'
+
+        # Create SCF force data (no workflow2)
+        scf_step = SCFSteps()
+        scf_step.delta_force_abs = np.array([1e-9, 2e-9, 1.5e-9]) * ureg.newton
+
+        archive.data.outputs = [Outputs(scf_steps=scf_step)]
+
+        # Should use scf_steps.delta_force_abs since workflow2 doesn't exist
+        is_reached = force_target.normalize(archive, logger)
+        assert is_reached is True  # max([1e-9, 2e-9, 1.5e-9]) < 1e-8
+
+    def test_force_fallback_to_computed(self, archive, logger):
+        """Test ForceConvergenceTarget falls back to computing from total_forces."""
+        force_target = ForceConvergenceTarget()
+        force_target.threshold = 1e-8
+        force_target.threshold_type = 'maximum'
+
+        # Only provide total_forces (no workflow2, no scf_steps)
+        forces = TotalForce(
+            value=np.array([[1e-9, 1e-9, 1e-9], [2e-9, 2e-9, 2e-9]]) * ureg.newton
+        )
+        archive.data.outputs = [Outputs(total_forces=[forces])]
+
+        # Should compute force magnitudes
+        is_reached = force_target.normalize(archive, logger)
+        # max norm ≈ 3.46e-9 < 1e-8
+        assert is_reached is True
+
+    def test_single_path_backwards_compatible(self, archive, logger, energy_target):
+        """Test that single 'path' annotation still works (backwards compatibility)."""
+        # EnergyConvergenceTarget uses single 'path' annotation
+        energy_target.threshold = 1e-6
+        energy_target.threshold_type = 'absolute'
+
+        scf_step = SCFSteps()
+        scf_step.delta_energies_total = np.array([5e-7]) * ureg.joule
+
+        archive.data.outputs = [Outputs(scf_steps=scf_step)]
+
+        is_reached = energy_target.normalize(archive, logger)
+        assert is_reached is True

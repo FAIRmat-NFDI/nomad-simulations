@@ -79,9 +79,21 @@ The mode used affects both convergence behavior and computational efficiency. Di
         """
         Extract the value to check for convergence from the archive.
 
-        Uses the path defined in the `a_convergence` annotation on the threshold
-        Quantity to locate convergence data. Paths are JMESPath expressions
-        relative to the last output section.
+        Uses the path(s) defined in the `a_convergence` annotation on the threshold
+        Quantity to locate convergence data. Supports fallback paths - if the first
+        path returns None, tries subsequent paths.
+
+        Annotation format:
+        - Single path: `a_convergence={'path': '@.scf_steps.delta_energies_total'}`
+        - Fallback paths: `a_convergence={'paths': ['workflow2.results.X', '@.scf_steps.X']}`
+
+        Path notation (JMESPath-inspired, uses `getattr()` for navigation):
+        - `@.scf_steps.delta_energies_total` - Relative to `archive.data.outputs[-1]` (current output)
+        - `workflow2.results.X` or `archive.X` - Absolute from archive root
+
+        The `@` prefix follows JMESPath convention where `@` represents the current node.
+        All paths must have an explicit prefix (`@.`, `workflow2.`, or `archive.`).
+        Uses direct attribute access via `getattr()` to preserve Pint Quantity units.
 
         Returns:
             The value to check as a Pint Quantity (with units),
@@ -97,52 +109,102 @@ The mode used affects both convergence behavior and computational efficiency. Di
             return None
 
         annotation = threshold_quantity.m_get_annotation('convergence')
-        if not annotation or 'path' not in annotation:
+        if not annotation:
             logger.warning(
-                f'No convergence path annotation on threshold for {self.__class__.__name__}',
+                f'No convergence annotation on threshold for {self.__class__.__name__}',
                 data={'class': self.__class__.__name__},
             )
             return None
 
-        path = annotation['path']
+        # Support both 'path' (single) and 'paths' (fallback list)
+        paths = []
+        if 'paths' in annotation:
+            paths = (
+                annotation['paths']
+                if isinstance(annotation['paths'], list)
+                else [annotation['paths']]
+            )
+        elif 'path' in annotation:
+            paths = [annotation['path']]
+        else:
+            logger.warning(
+                f'No path or paths in convergence annotation for {self.__class__.__name__}',
+                data={'class': self.__class__.__name__},
+            )
+            return None
 
+        # Try each path in order (fallback logic)
+        for path in paths:
+            value = self._resolve_path(archive, path, logger)
+            if value is not None:
+                # Handle arrays: for 'absolute' threshold_type, extract last iteration value
+                # For 'rms' and 'maximum', keep full array for aggregation
+                conv_type = self.threshold_type or 'absolute'
+                if hasattr(value, '__getitem__') and not isinstance(value, str):
+                    if conv_type in ('rms', 'maximum'):
+                        return value  # Keep full array
+                    else:
+                        return value[-1]  # Extract last iteration value
+                return value
+
+        # All paths failed
+        logger.debug(
+            f'All convergence paths resolved to None',
+            data={'paths': paths, 'class': self.__class__.__name__},
+        )
+        return None
+
+    def _resolve_path(self, archive: EntryArchive, path: str, logger: BoundLogger):
+        """
+        Resolve a single path in the archive.
+
+        Paths are dot-notation strings with required prefixes (JMESPath-inspired):
+        - `@.scf_steps.X` - Relative to `archive.data.outputs[-1]` (current output)
+        - `workflow2.X` or `archive.X` - Absolute from archive root
+
+        The `@` prefix follows JMESPath convention where `@` represents the current node.
+        All paths must have an explicit prefix.
+
+        Args:
+            archive: The archive to search
+            path: Dot-notation path string with required prefix
+            logger: Logger instance
+
+        Returns:
+            The value at the path, or None if not found
+        """
         try:
-            # Navigate to the last output
-            if not archive.data or not archive.data.outputs:
+            # Determine starting point based on path prefix
+            if path.startswith('@.'):
+                # Explicit relative path (JMESPath-inspired current node)
+                if not archive.data or not archive.data.outputs:
+                    return None
+                root = archive.data.outputs[-1]
+                path_parts = path[2:].split('.')  # Strip '@.' prefix
+            elif path.startswith('workflow2.') or path.startswith('archive.'):
+                # Absolute path from archive root
+                root = archive
+                path_parts = path.split('.')
+            else:
+                # No valid prefix - path must be explicit
+                logger.warning(
+                    f'Convergence path missing required prefix (@., workflow2., or archive.): {path}',
+                    data={'path': path, 'class': self.__class__.__name__},
+                )
                 return None
 
-            last_output = archive.data.outputs[-1]
-
-            # Use direct attribute access to preserve Pint quantities
-            # JMESPath strips units, so we navigate manually
-            path_parts = path.split('.')
-            value = last_output
+            # Navigate the path
+            value = root
             for part in path_parts:
                 value = getattr(value, part, None)
                 if value is None:
-                    logger.debug(
-                        f'Convergence path resolved to None',
-                        data={'path': path, 'class': self.__class__.__name__},
-                    )
                     return None
 
-            # Handle arrays: for 'absolute' threshold_type, extract last iteration value
-            # For 'rms' and 'maximum', keep full array for aggregation
-            conv_type = self.threshold_type or 'absolute'
-            if hasattr(value, '__getitem__') and not isinstance(value, str):
-                if conv_type in ('rms', 'maximum'):
-                    # Keep full array for aggregation
-                    return value
-                else:
-                    # Extract last iteration value (preserves units if Pint quantity)
-                    value = value[-1]
-
-            # Return Pint Quantity as-is (don't strip units)
             return value
 
         except Exception as e:
             logger.debug(
-                f'Failed to resolve convergence path',
+                f'Failed to resolve path',
                 data={'path': path, 'error': str(e), 'class': self.__class__.__name__},
             )
             return None
@@ -338,7 +400,7 @@ class EnergyConvergenceTarget(WorkflowConvergenceTarget):
         description="""
         Energy convergence threshold. Must be non-negative.
         """,
-        a_convergence={'path': 'scf_steps.delta_energies_total'},
+        a_convergence={'path': '@.scf_steps.delta_energies_total'},
     )
 
 
@@ -354,42 +416,30 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
         description="""
         Force convergence threshold. Must be non-negative.
         """,
-        a_convergence={'path': 'scf_steps.delta_force_abs'},
+        a_convergence={
+            'paths': [
+                'workflow2.results.final_force_maximum',  # Absolute: workflow level
+                '@.scf_steps.delta_force_abs',  # Relative: SCF level
+            ]
+        },
     )
 
     def _get_convergence_value(self, archive: EntryArchive, logger: BoundLogger):
         """
         Extract force convergence value from archive.
 
-        ForceConvergenceTarget has custom logic to handle multiple data sources:
-        1. Workflow-level summary (final_force_maximum) for geometry optimization
-        2. Annotation-based path for SCF force convergence
-        3. Computed force norms as fallback
+        Uses fallback paths from annotation, then computes from total_forces if needed.
         """
+        # Try annotation-based fallback paths first
+        value = super()._get_convergence_value(archive, logger)
+        if value is not None:
+            return value
+
+        # Final fallback: compute force norms from total_forces
         try:
-            conv_type = self.threshold_type or 'maximum'
-
-            # For maximum force in geometry optimization, check workflow level
-            if (
-                conv_type == 'maximum'
-                and hasattr(archive, 'workflow2')
-                and archive.workflow2
-            ):
-                final_force_max = archive.workflow2.results.final_force_maximum
-                if final_force_max is not None:
-                    return final_force_max
-
-            # For SCF force convergence, use annotation-based path
-            value = super()._get_convergence_value(archive, logger)
-            if value is not None:
-                return value
-
-            # Fallback: compute force norms from total_forces
-            if archive.data.outputs:
+            if archive.data and archive.data.outputs:
                 forces = archive.data.outputs[-1].total_forces
                 if forces is not None and len(forces) > 0:
-                    from nomad.units import ureg
-
                     # Get force values (Pint Quantity with shape [n_atoms, 3])
                     force_values = forces[-1].value
                     # Compute norm per atom using Pint-native operations
@@ -397,6 +447,7 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
                     return force_magnitudes
         except (AttributeError, IndexError, TypeError) as e:
             logger.debug(f'Could not extract force convergence value: {e}')
+
         return None
 
 
@@ -412,7 +463,7 @@ class PotentialConvergenceTarget(WorkflowConvergenceTarget):
         description="""
         Potential convergence threshold. Must be non-negative.
         """,
-        a_convergence={'path': 'scf_steps.delta_potential_rms'},
+        a_convergence={'path': '@.scf_steps.delta_potential_rms'},
     )
 
 
@@ -428,7 +479,7 @@ class ChargeConvergenceTarget(WorkflowConvergenceTarget):
         description="""
         Charge/density convergence threshold. Must be non-negative.
         """,
-        a_convergence={'path': 'scf_steps.delta_density_rms'},
+        a_convergence={'path': '@.scf_steps.delta_density_rms'},
     )
 
 
@@ -451,7 +502,7 @@ class WavefunctionConvergenceTarget(WorkflowConvergenceTarget):
         Wavefunction convergence threshold. Must be non-negative.
         Typically dimensionless as it represents changes in wavefunction coefficients.
         """,
-        a_convergence={'path': 'scf_steps.delta_wavefunction_rms'},
+        a_convergence={'path': '@.scf_steps.delta_wavefunction_rms'},
     )
 
 
