@@ -1,3 +1,4 @@
+import jmespath
 import numpy as np
 import pint
 from nomad.datamodel import ArchiveSection, EntryArchive
@@ -58,11 +59,6 @@ The mode used affects both convergence behavior and computational efficiency. Di
         """,
     )
 
-    # Class attribute to be overridden in child classes
-    # Should be set to the path to the convergence property in outputs
-    # e.g., 'scf_steps.delta_energies_total' for energy convergence
-    _convergence_property_path: str = None
-
     @staticmethod
     def _is_scalar_pint(value) -> bool:
         """
@@ -83,64 +79,81 @@ The mode used affects both convergence behavior and computational efficiency. Di
         """
         Extract the value to check for convergence from the archive.
 
-        This base implementation provides a generalized approach that searches for
-        the property specified in `_convergence_property_path`. Child classes can
-        override this for custom extraction logic if needed.
+        Uses the path defined in the `a_convergence` annotation on the threshold
+        Quantity to locate convergence data. Paths are JMESPath expressions
+        relative to the last output section.
 
         Returns:
             The value to check as a Pint Quantity (with units),
             or None if the value cannot be determined.
         """
-        if self._convergence_property_path is None:
+        # Access annotation from the threshold Quantity definition
+        threshold_quantity = self.m_def.all_quantities.get('threshold')
+        if not threshold_quantity:
             logger.warning(
-                f'{self.__class__.__name__} does not define _convergence_property_path. '
-                f'Either set this class attribute or override _get_convergence_value().'
+                f'No threshold quantity found for {self.__class__.__name__}',
+                data={'class': self.__class__.__name__},
             )
             return None
+
+        annotation = threshold_quantity.m_get_annotation('convergence')
+        if not annotation or 'path' not in annotation:
+            logger.warning(
+                f'No convergence path annotation on threshold for {self.__class__.__name__}',
+                data={'class': self.__class__.__name__},
+            )
+            return None
+
+        path = annotation['path']
 
         try:
             # Navigate to the last output
             if not archive.data or not archive.data.outputs:
                 return None
 
-            # TODO: Should this be hardcoded to [-1]? For multi-step workflows (e.g., geometry
-            # optimization), we may need to check convergence at specific output indices rather
-            # than always using the last output.
             last_output = archive.data.outputs[-1]
 
-            # Parse the property path and navigate through nested attributes
-            path_parts = self._convergence_property_path.split('.')
-            current_obj = last_output
+            # Use JMESPath to navigate to the convergence value
+            value = jmespath.search(path, last_output)
 
-            for part in path_parts:
-                if current_obj is None:
-                    return None
-                current_obj = getattr(current_obj, part, None)
-
-            if current_obj is None:
+            if value is None:
+                logger.debug(
+                    f'Convergence path resolved to None',
+                    data={'path': path, 'class': self.__class__.__name__},
+                )
                 return None
 
-            # Handle the value: extract last element if it's an array with units
-            if hasattr(current_obj, '__getitem__'):
-                value = current_obj[-1]
-            else:
-                value = current_obj
+            # Handle arrays: for 'absolute' threshold_type, extract last iteration value
+            # For 'rms' and 'maximum', keep full array for aggregation
+            conv_type = self.threshold_type or 'absolute'
+            if hasattr(value, '__getitem__') and not isinstance(value, str):
+                if conv_type in ('rms', 'maximum'):
+                    # Keep full array for aggregation
+                    return value
+                else:
+                    # Extract last iteration value
+                    value = value[-1]
 
             # Return Pint Quantity as-is (don't strip units)
             return value
 
-        except (AttributeError, IndexError, TypeError) as e:
+        except Exception as e:
             logger.debug(
-                f'Could not extract convergence value from {self._convergence_property_path}: {e}'
+                f'Failed to resolve convergence path',
+                data={'path': path, 'error': str(e), 'class': self.__class__.__name__},
             )
-        return None
+            return None
 
     def _check_absolute(self, value, logger: BoundLogger) -> bool | None:
         """Check absolute convergence: |value| < threshold"""
         if self.threshold is None:
             return None
         try:
-            # Pint handles unit conversion automatically
+            # Handle case where threshold might be raw float or Pint quantity
+            # If value has units but threshold doesn't, extract magnitude for comparison
+            if hasattr(value, 'magnitude') and not hasattr(self.threshold, 'magnitude'):
+                return bool(abs(value.magnitude) <= self.threshold)
+            # Otherwise Pint handles unit conversion automatically
             return bool(abs(value) <= self.threshold)
         except pint.DimensionalityError:
             logger.error(
@@ -153,28 +166,27 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if self.threshold is None:
             return None
         try:
-            # Extract magnitudes for zero checks (handles Pint quantities)
-            ref_mag = (
-                reference.magnitude if hasattr(reference, 'magnitude') else reference
-            )
-            val_mag = value.magnitude if hasattr(value, 'magnitude') else value
-
-            # Special case: both zero means converged
-            if abs(ref_mag) < 1e-15 and abs(val_mag) < 1e-15:
-                return True
-            # Cannot compute relative if reference is zero
-            if abs(ref_mag) < 1e-15:
+            # Check if reference is effectively zero (unit-aware)
+            ref_epsilon = 1e-15 * reference.units
+            if abs(reference) < ref_epsilon:
+                # Special case: both zero means converged
+                val_epsilon = 1e-15 * value.units
+                if abs(value) < val_epsilon:
+                    return True
+                # Cannot compute relative if reference is zero
                 return None
 
-            # For relative convergence, value/reference is dimensionless
-            # Extract threshold magnitude for comparison
+            # Compute relative change (dimensionless)
             relative_change = abs(value / reference)
-            threshold_mag = (
-                self.threshold.magnitude
-                if hasattr(self.threshold, 'magnitude')
-                else self.threshold
-            )
-            return bool(relative_change < threshold_mag)
+
+            # Threshold should be dimensionless for relative convergence
+            if self.threshold.dimensionality != ureg.dimensionless.dimensionality:
+                logger.error(
+                    f'Relative threshold must be dimensionless, got {self.threshold.units}'
+                )
+                return None
+
+            return bool(relative_change < self.threshold)
         except pint.DimensionalityError:
             logger.error(
                 f'Unit mismatch in {self.__class__.__name__}: {value.units} vs {reference.units}'
@@ -186,8 +198,14 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if self.threshold is None:
             return None
         try:
-            # Pint handles unit conversion automatically
-            return bool(np.max(np.abs(values)) < self.threshold)
+            max_value = np.max(np.abs(values))
+            # Handle case where threshold might be raw float or Pint quantity
+            if hasattr(max_value, 'magnitude') and not hasattr(
+                self.threshold, 'magnitude'
+            ):
+                return bool(max_value.magnitude < self.threshold)
+            # Otherwise Pint handles unit conversion automatically
+            return bool(max_value < self.threshold)
         except pint.DimensionalityError:
             logger.error(
                 f'Unit mismatch in {self.__class__.__name__}: {values.units} vs {self.threshold.units}'
@@ -199,8 +217,14 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if self.threshold is None:
             return None
         try:
-            # Pint handles unit conversion automatically
-            return bool(np.sqrt(np.mean(values**2)) < self.threshold)
+            rms_value = np.sqrt(np.mean(values**2))
+            # Handle case where threshold might be raw float or Pint quantity
+            if hasattr(rms_value, 'magnitude') and not hasattr(
+                self.threshold, 'magnitude'
+            ):
+                return bool(rms_value.magnitude < self.threshold)
+            # Otherwise Pint handles unit conversion automatically
+            return bool(rms_value < self.threshold)
         except pint.DimensionalityError:
             logger.error(
                 f'Unit mismatch in {self.__class__.__name__}: {values.units} vs {self.threshold.units}'
@@ -270,10 +294,8 @@ class EnergyConvergenceTarget(WorkflowConvergenceTarget):
         description="""
         Energy convergence threshold. Must be non-negative.
         """,
+        a_convergence={'path': 'scf_steps.delta_energies_total'},
     )
-
-    # Property path for automatic extraction
-    _convergence_property_path = 'scf_steps.delta_energies_total'
 
 
 class ForceConvergenceTarget(WorkflowConvergenceTarget):
@@ -288,20 +310,18 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
         description="""
         Force convergence threshold. Must be non-negative.
         """,
+        a_convergence={'path': 'scf_steps.delta_force_abs'},
     )
 
-    # Note: ForceConvergenceTarget has multiple extraction paths depending on threshold_type
-    # and data availability. The simple path approach works for 'absolute' type:
-    _convergence_property_path = 'scf_steps.delta_force_abs'
-
-    # TODO: The current implementation below has custom logic for different convergence types
-    # and fallback paths. Consider whether to:
-    # 1. Keep custom implementation for complex cases like this
-    # 2. Extend the base class to support multiple property paths with conditions
-    # 3. Use the simple path for common case and override only for special cases
-
     def _get_convergence_value(self, archive: EntryArchive, logger: BoundLogger):
-        """Extract force convergence value from archive."""
+        """
+        Extract force convergence value from archive.
+
+        ForceConvergenceTarget has custom logic to handle multiple data sources:
+        1. Workflow-level summary (final_force_maximum) for geometry optimization
+        2. Annotation-based path for SCF force convergence
+        3. Computed force norms as fallback
+        """
         try:
             conv_type = self.threshold_type or 'maximum'
 
@@ -313,15 +333,14 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
             ):
                 final_force_max = archive.workflow2.results.final_force_maximum
                 if final_force_max is not None:
-                    return final_force_max  # Return Pint Quantity
+                    return final_force_max
 
-            # For absolute (SCF force delta) - could use base class with _convergence_property_path
-            if conv_type == 'absolute' and archive.data.outputs:
-                delta_forces = archive.data.outputs[-1].scf_steps.delta_force_abs
-                if delta_forces is not None:
-                    return delta_forces[-1]  # Return Pint Quantity
+            # For SCF force convergence, use annotation-based path
+            value = super()._get_convergence_value(archive, logger)
+            if value is not None:
+                return value
 
-            # Fallback: get force array from last output
+            # Fallback: compute force norms from total_forces
             if archive.data.outputs:
                 forces = archive.data.outputs[-1].total_forces
                 if forces is not None and len(forces) > 0:
@@ -329,13 +348,11 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
 
                     # Get force values (Pint Quantity with shape [n_atoms, 3])
                     force_values = forces[-1].value
-                    # Compute norm per atom, preserve units
-                    force_magnitudes = (
-                        np.linalg.norm(force_values.magnitude, axis=1) * ureg.newton
-                    )
-                    return force_magnitudes  # Return Pint Quantity array
+                    # Compute norm per atom using Pint-native operations
+                    force_magnitudes = ((force_values**2).sum(axis=1)) ** 0.5
+                    return force_magnitudes
         except (AttributeError, IndexError, TypeError) as e:
-            logger.debug(f'Could not extract force convergence value from outputs: {e}')
+            logger.debug(f'Could not extract force convergence value: {e}')
         return None
 
 
@@ -351,10 +368,8 @@ class PotentialConvergenceTarget(WorkflowConvergenceTarget):
         description="""
         Potential convergence threshold. Must be non-negative.
         """,
+        a_convergence={'path': 'scf_steps.delta_potential_rms'},
     )
-
-    # Property path for automatic extraction
-    _convergence_property_path = 'scf_steps.delta_potential_rms'
 
 
 class ChargeConvergenceTarget(WorkflowConvergenceTarget):
@@ -369,10 +384,8 @@ class ChargeConvergenceTarget(WorkflowConvergenceTarget):
         description="""
         Charge/density convergence threshold. Must be non-negative.
         """,
+        a_convergence={'path': 'scf_steps.delta_density_rms'},
     )
-
-    # Property path for automatic extraction
-    _convergence_property_path = 'scf_steps.delta_density_rms'
 
 
 class WavefunctionConvergenceTarget(WorkflowConvergenceTarget):
@@ -394,10 +407,8 @@ class WavefunctionConvergenceTarget(WorkflowConvergenceTarget):
         Wavefunction convergence threshold. Must be non-negative.
         Typically dimensionless as it represents changes in wavefunction coefficients.
         """,
+        a_convergence={'path': 'scf_steps.delta_wavefunction_rms'},
     )
-
-    # Property path for automatic extraction
-    _convergence_property_path = 'scf_steps.delta_wavefunction_rms'
 
 
 class SimulationWorkflowModel(ArchiveSection):
@@ -545,6 +556,46 @@ class SimulationWorkflowResults(WorkflowTime):
         Each result references a convergence target and stores its reached status.
         """,
     )
+
+    def get_convergence_value(
+        self,
+        property_name: str,
+        threshold_type: str,
+        archive: 'EntryArchive',
+        logger: 'BoundLogger',
+    ) -> Quantity | None:
+        """
+        Extract convergence value for checking against convergence targets.
+
+        This method provides a standardized interface for convergence targets to
+        retrieve convergence values without needing to know the internal archive
+        structure. Subclasses override this to implement workflow-specific logic.
+
+        The default implementation handles SCF-based workflows by extracting values
+        from scf_steps in the last output.
+
+        Args:
+            property_name: Physical property to check ('energy', 'force', 'density',
+                'potential', 'wavefunction')
+            threshold_type: How to compute convergence ('absolute', 'relative',
+                'maximum', 'rms')
+            archive: Entry archive for data access
+            logger: For logging warnings
+
+        Returns:
+            Convergence value ready for threshold comparison, or None if unavailable.
+
+        Example:
+            >>> # In WorkflowConvergenceTarget.normalize()
+            >>> value = archive.workflow2.results.get_convergence_value(
+            ...     'energy', 'relative', archive, logger
+            ... )
+            >>> if value is not None:
+            ...     is_converged = value < self.threshold
+        """
+        # Default implementation returns None
+        # Subclasses override for workflow-specific logic
+        return None
 
 
 class SimulationTaskReference(TaskReference, SimulationTask):
