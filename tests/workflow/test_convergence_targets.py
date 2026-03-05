@@ -821,7 +821,7 @@ class TestFallbackPaths:
         assert is_reached is True
 
     def test_single_path_backwards_compatible(self, archive, logger, energy_target):
-        """Test that single 'path' annotation still works (backwards compatibility)."""
+        """Test that single 'path' annotation still works."""
         # EnergyConvergenceTarget uses single 'path' annotation
         energy_target.threshold = 1e-6
         energy_target.threshold_type = 'absolute'
@@ -832,4 +832,32 @@ class TestFallbackPaths:
         archive.data.outputs = [Outputs(scf_steps=scf_step)]
 
         is_reached = energy_target.normalize(archive, logger)
+        assert is_reached is True
+
+    def test_energy_delta_computed_from_total_energies(self, archive, logger):
+        """Test that delta_energies_total is computed from total_energies during normalization."""
+        energy_target = EnergyConvergenceTarget()
+        energy_target.threshold = 1e-6
+        energy_target.threshold_type = 'absolute'
+
+        # Provide total_energies but not delta_energies_total
+        energies = [
+            TotalEnergy(value=1.0 * ureg.joule),
+            TotalEnergy(value=1.0000001 * ureg.joule),  # Delta: 1e-7
+            TotalEnergy(value=1.0000002 * ureg.joule),  # Delta: 1e-7
+        ]
+        scf_steps = SCFSteps()  # Empty scf_steps for normalization to populate
+        outputs = Outputs(total_energies=energies, scf_steps=scf_steps)
+        archive.data.outputs = [outputs]
+
+        # Normalize outputs to compute delta_energies_total
+        outputs.normalize(archive, logger)
+
+        # Verify delta_energies_total was computed
+        assert outputs.scf_steps.delta_energies_total is not None
+        assert len(outputs.scf_steps.delta_energies_total) == 2  # n-1 deltas
+
+        # Check convergence using computed values
+        is_reached = energy_target.normalize(archive, logger)
+        # Last delta is 1e-7 < 1e-6
         assert is_reached is True
