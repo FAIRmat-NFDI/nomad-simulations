@@ -13,6 +13,9 @@ from docs.snippets.data_types.standalone_type_roundtrip import (
     standalone_type_roundtrip,
 )
 from docs.snippets.data_types.validation_behavior import demo_validation_behavior
+from docs.snippets.model_method.model_method_overview_example import (
+    build_model_method_overview_example,
+)
 from docs.snippets.model_system.alternative_representation_pattern import (
     alternative_representation_example,
 )
@@ -36,6 +39,7 @@ EXECUTED_SNIPPETS = {
     'snippets/data_types/standalone_type_roundtrip.py',
     'snippets/data_types/validation_behavior.py',
     'snippets/model_system/alternative_representation_pattern.py',
+    'snippets/model_method/model_method_overview_example.py',
     'snippets/model_system/minimal_parser_pattern.py',
     'snippets/simulation_entry/program_setup.py',
 }
@@ -127,6 +131,16 @@ def test_simulation_entry_program_setup():
     assert simulation.program is not None
     assert simulation.program.name == 'SUPERCODE'
     assert simulation.program.version == '7.0'
+
+
+def test_model_method_overview_example():
+    method = build_model_method_overview_example()
+    assert method.name == 'DFT'
+    assert method.type == 'KS'
+    assert method.jacobs_ladder == 'GGA'
+    assert method.numerical_settings is not None
+    assert len(method.numerical_settings) == 1
+    assert method.numerical_settings[0].n_max_iterations == 80
 
 
 def test_all_markdown_referenced_snippet_paths_exist():

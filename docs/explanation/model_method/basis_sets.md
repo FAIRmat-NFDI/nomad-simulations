@@ -4,6 +4,9 @@ The following lays down the schema annotation for several families of basis sets
 We start off genercially before running over specific examples.
 The aim is not to introduce the full theory behind every basis set, but just enough to understand its main concepts and how they relate.
 
+For model-method hierarchy conventions and generated structure references, see
+[Model Method Overview](overview.md).
+
 ## General Structure
 
 Basis sets are used by codes to represent various kinds of electronic structures, e.g. wavefunctions, densities, exchange densities, etc.
