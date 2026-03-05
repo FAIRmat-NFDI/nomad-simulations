@@ -125,7 +125,7 @@ To view the documentation locally, install the documentation dependencies:
 uv pip install -e '.[docs]'
 ```
 
-Documentation conventions for maintainers are tracked in [docs/explanation/doc_guidelines.md](docs/explanation/doc_guidelines.md).
+Documentation conventions for maintainers are tracked in [docs/dev_docs/documentation_writing_guide.md](docs/dev_docs/documentation_writing_guide.md).
 This guide is for repository development and is intentionally not linked in the deployed MkDocs navigation.
 
 **Note**: The documentation pipeline uses `npx` (Node Package Runner) to convert Mermaid diagrams to PNG images for better zoom functionality. Make sure you have Node.js/npm installed:

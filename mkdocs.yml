@@ -42,9 +42,9 @@ nav:
       - Normalization: explanation/normalize.md
   - Dev Docs:
       - Overview: dev_docs/overview.md
-      - Schema Development Guide: software-development-guide.md
-      - Documentation Authoring Guide: explanation/doc_guidelines.md
-      - Representation Design History: explanation/model_system/representation_history.md
+      - Schema Development Guide: dev_docs/schema_development_guide.md
+      - Documentation Writing Guide: dev_docs/documentation_writing_guide.md
+      - Representation Design History: dev_docs/representation_design_history.md
       - Electronic States Migration and Technical Notes: dev_docs/electronic_states_migration.md
   - Contact: contact.md
 theme:

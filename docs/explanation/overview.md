@@ -16,7 +16,7 @@ Conceptual guidance for modeling system structure and ownership.
 - [Electronic States](model_system/electronic_states.md)
 
 Developer-focused historical context:
-- [Representation Design History](model_system/representation_history.md)
+- [Representation Design History](../dev_docs/representation_design_history.md)
 
 ## Model Method
 

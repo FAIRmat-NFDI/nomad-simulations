@@ -29,6 +29,6 @@ If you want to contribute schema or documentation updates:
 
 1. Fork the repository and create a focused branch.
 2. Check [Dev Docs: Overview](dev_docs/overview.md) before changing established patterns.
-3. Implement your extension following the [Schema Development Guide](software-development-guide.md).
-4. Update docs according to the [Documentation Authoring Guide](explanation/doc_guidelines.md).
+3. Implement your extension following the [Schema Development Guide](dev_docs/schema_development_guide.md).
+4. Update docs according to the [Documentation Writing Guide](dev_docs/documentation_writing_guide.md).
 5. Open a pull request against upstream with a clear scope and test evidence.
