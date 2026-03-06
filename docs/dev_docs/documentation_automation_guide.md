@@ -62,24 +62,7 @@ Coverage checks include:
 - explicit execution for runnable examples,
 - coverage guard to prevent untested snippets.
 
-## 4) Validation Commands
-
-Use these gates before opening docs PRs:
-
-```bash
-uvx ruff@0.15.1 check --fix .
-uv run ruff format --check .
-.venv/bin/python -m pytest -q tests/test_doc_snippets.py
-.venv/bin/mkdocs build -q
-```
-
-Optional full test run:
-
-```bash
-.venv/bin/python -m pytest -q
-```
-
-## 5) Ownership and Update Rules
+## 4) Ownership and Update Rules
 
 - If schema structure changes, regenerate schema docs.
 - If explanation inventory text changes, regenerate explanation fragments.
