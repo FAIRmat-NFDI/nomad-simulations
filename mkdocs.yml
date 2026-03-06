@@ -45,6 +45,7 @@ nav:
       - Overview: dev_docs/overview.md
       - Schema Development Guide: dev_docs/schema_development_guide.md
       - Documentation Writing Guide: dev_docs/documentation_writing_guide.md
+      - Documentation Automation Guide: dev_docs/documentation_automation_guide.md
       - Representation Design History: dev_docs/representation_design_history.md
       - Electronic States Migration and Technical Notes: dev_docs/electronic_states_migration.md
   - Contact: contact.md
