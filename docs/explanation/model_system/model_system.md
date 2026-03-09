@@ -4,6 +4,9 @@
 
 The `ModelSystem` class represents the physical system that serves as input for simulation calculations in NOMAD. It provides a comprehensive description of the atomic or coarse-grained structure, including particle positions, cell geometry, symmetry information, and chemical composition.
 
+For complete field-level structure, see the generated reference:
+[Model System (Schema Navigation)](../../schema/model_system.md).
+
 `ModelSystem` combines two fundamental capabilities: geometric representation (from the `Representation` class) and hierarchical navigation (from the `System` class). This means each model system has direct access to its geometric data (lattice vectors, atomic positions, periodic boundary conditions) while also supporting navigation through subsystem hierarchies and alternative geometric views.
 
 A `ModelSystem` can represent various types of systems: bulk crystals, surfaces, molecules, clusters, or complex hierarchical structures.
@@ -85,6 +88,18 @@ The `sub_systems` subsection enables description of hierarchical compositions wh
 ```
 
 Sub-systems are defined through the `branch_label`, `branch_depth`, `particle_indices`, and `bond_list` quantities that create a parent-child tree structure. Each subsystem at any level can have its own `representations` subsection for alternative geometric views of that specific subsystem.
+
+### Hierarchy and Composition Behavior
+
+When hierarchy is populated, normalization resolves branch depth and composition
+labels consistently along the tree. In practice:
+
+- root systems summarize child groups in `composition_formula`,
+- intermediate groups summarize repeated motifs,
+- leaf systems resolve to atom-level formulas.
+
+Keep hierarchy semantics (`sub_systems`) distinct from alternative geometric
+views (`representations`).
 
 ## Normalization Process
 

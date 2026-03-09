@@ -20,6 +20,7 @@ Developer-focused historical context:
 
 ## Model Method
 
+- [Model Method Overview](model_method/overview.md): hierarchy-level conventions, invariants, and parser/normalization guidance.
 - [Basis Sets](model_method/basis_sets.md): domain-specific explanation of basis set families and modeling conventions.
 
 ## [Bounded Data Types](data_types.md)
