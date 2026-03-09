@@ -149,7 +149,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
         # All paths failed
         logger.debug(
-            f'All convergence paths resolved to None',
+            'All convergence paths resolved to None',
             data={'paths': paths, 'class': self.__class__.__name__},
         )
         return None
@@ -204,7 +204,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
         except Exception as e:
             logger.debug(
-                f'Failed to resolve path',
+                'Failed to resolve path',
                 data={'path': path, 'error': str(e), 'class': self.__class__.__name__},
             )
             return None
