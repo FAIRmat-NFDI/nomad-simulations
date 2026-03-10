@@ -1263,7 +1263,7 @@ class AtomParameters(ArchiveSection):
         type=str,
         description="""
         Force field atom type label as defined by the force field (e.g. `'CT'`,
-        `'OW'`, `'HW'` in AMBER/CHARMM). Multiple `AtomParameters` entries may
+        `'OW'`, `'HW'` in AMBER/CHARMM). Multiple particles in `species_scope` may
         share this label.
         This identifier is part of the force-field parameterization, not chemical
         element/species identity.
