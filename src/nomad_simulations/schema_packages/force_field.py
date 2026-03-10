@@ -17,6 +17,7 @@ from nomad.metainfo import (
 from nomad.units import ureg
 from scipy.interpolate import UnivariateSpline
 
+from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
@@ -1240,23 +1241,21 @@ class PeriodicImproper(ImproperDihedralPotential):
 
 class AtomParameters(ArchiveSection):
     """
-    Force field parameters for one atom type. `particle_indices` lists the
-    positions in `ModelSystem.particle_states` of all atoms assigned this
-    type. All indexed atoms share the same scalar parameters (`partial_charge`,
-    `effective_mass`), avoiding per-instance duplication.
-
-    Semantically equivalent to `ModelSystem.particle_indices` for subsystems:
-    indices are counted from the representative top-level `ModelSystem`.
+    Force field parameters for one atom type. `species_scope` holds direct
+    references to every `AtomsState` instance assigned this type, mirroring
+    the pattern of `BasisSetComponent.species_scope`. The references allow
+    navigation from an `AtomsState` back to its `AtomParameters` entry.
+    `species_scope` is resolved automatically by `AtomParametersContainer.normalize()`
+    by matching `atom_type` against `AtomsState.label`.
     """
 
-    particle_indices = Quantity(
-        type=np.int32,
+    species_scope = Quantity(
+        type=AtomsState,
         shape=['*'],
         description="""
-        Indices into the parent `ModelSystem.particle_states` list for all
-        atoms assigned this atom type. Counted from the representative
-        (top-level) `ModelSystem`, consistent with
-        `ModelSystem.particle_indices` used for subsystems.
+        References to the `AtomsState` instances assigned this atom type.
+        Resolved by `AtomParametersContainer.normalize()` from `atom_type`
+        matching against `AtomsState.label` in the representative `ModelSystem`.
         """,
     )
 
@@ -1298,7 +1297,7 @@ class AtomParametersContainer(NumericalSettings):
     """
     Numerical-settings container for per-atom force field parameters grouped
     by atom type. Each `AtomParameters` subsection covers all atoms of one
-    FF atom type via `particle_indices`.
+    FF atom type via `species_scope` (references to `AtomsState` instances).
     """
 
     atom_parameters = SubSection(
@@ -1306,20 +1305,36 @@ class AtomParametersContainer(NumericalSettings):
         repeats=True,
         description="""
         Per-atom-type force field parameters (partial charge, effective mass,
-        atom type label). Each entry covers all atoms of one FF type via
-        `particle_indices`.
+        atom type label). Each entry references its atoms via `species_scope`.
         """,
     )
 
     def normalize(self, archive, logger) -> None:
         super().normalize(archive, logger)
-        all_indices = [
-            int(i)
+        try:
+            particle_states = archive.data.model_system[0].particle_states
+        except (AttributeError, IndexError, TypeError):
+            particle_states = None
+
+        if particle_states is not None:
+            for ap in self.atom_parameters or []:
+                if ap.species_scope is not None and len(ap.species_scope) > 0:
+                    continue
+                if ap.atom_type is None:
+                    continue
+                ap.species_scope = [
+                    ps
+                    for ps in particle_states
+                    if getattr(ps, 'label', None) == ap.atom_type
+                ]
+
+        all_refs = [
+            id(ps)
             for ap in self.atom_parameters or []
-            for i in (ap.particle_indices if ap.particle_indices is not None else [])
+            for ps in (ap.species_scope if ap.species_scope is not None else [])
         ]
-        assert len(all_indices) == len(set(all_indices)), (
-            'Overlapping particle_indices across AtomParameters entries.'
+        assert len(all_refs) == len(set(all_refs)), (
+            'Overlapping species_scope references across AtomParameters entries.'
         )
 
 

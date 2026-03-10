@@ -1356,9 +1356,9 @@ class MolecularDynamics(SerialWorkflow):
             self.method = MolecularDynamicsMethod()
 
     def map_outputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
-        super().map_outputs(archive, logger)
         if not self.results:
             self.results = MolecularDynamicsResults()
+        super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
