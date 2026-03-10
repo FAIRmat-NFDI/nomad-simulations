@@ -1239,10 +1239,9 @@ class PeriodicImproper(ImproperDihedralPotential):
 
 class AtomParameters(ArchiveSection):
     """
-    Force field parameters for one atom type. `species_scope` holds direct
-    references to every `AtomsState` instance assigned this type, mirroring
-    the pattern of `BasisSetComponent.species_scope`. The references allow
-    navigation from an `AtomsState` back to its `AtomParameters` entry.
+    Force field parameters for one atom type. `species_scope` holds forward
+    references from this entry to every `AtomsState` instance assigned this
+    type, mirroring the pattern of `BasisSetComponent.species_scope`.
     `species_scope` is resolved automatically by `AtomParametersContainer.normalize()`
     by matching `atom_type` against `AtomsState.label`.
     """
