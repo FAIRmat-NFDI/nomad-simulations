@@ -7,11 +7,9 @@ from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.datamodel.context import Context
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import (
-    JSON,
     URL,
     MEnum,
     Quantity,
-    Section,
     SubSection,
 )
 from nomad.units import ureg

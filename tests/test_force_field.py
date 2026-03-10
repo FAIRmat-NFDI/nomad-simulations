@@ -38,6 +38,7 @@ from nomad_simulations.schema_packages.force_field import (
     UreyBradleyAngle,
 )
 from nomad_simulations.schema_packages.general import Simulation
+from nomad_simulations.schema_packages.model_system import ModelSystem
 
 # from structlog.stdlib import BoundLogger
 from . import logger
@@ -1107,6 +1108,49 @@ class TestAtomParametersContainer:
 
         with pytest.raises(AssertionError):
             apc.normalize(EntryArchive(), logger)
+
+    def test_normalize_resolves_species_scope_from_archive(self):
+        """species_scope is populated by matching atom_type against AtomsState.label."""
+        ps_o = AtomsState(label='OW')
+        ps_h1 = AtomsState(label='HW')
+        ps_h2 = AtomsState(label='HW')
+        ms = ModelSystem()
+        ms.particle_states = [ps_o, ps_h1, ps_h2]
+        simulation = Simulation()
+        simulation.model_system.append(ms)
+        archive = EntryArchive()
+        archive.data = simulation
+
+        apc = AtomParametersContainer()
+        ap_o = AtomParameters()
+        ap_o.atom_type = 'OW'
+        ap_h = AtomParameters()
+        ap_h.atom_type = 'HW'
+        apc.atom_parameters = [ap_o, ap_h]
+        apc.normalize(archive, logger)
+
+        assert len(ap_o.species_scope) == 1
+        assert ap_o.species_scope[0] is ps_o
+        assert len(ap_h.species_scope) == 2
+        assert set(ap_h.species_scope) == {ps_h1, ps_h2}
+
+    def test_normalize_species_scope_empty_when_no_match(self):
+        """species_scope stays empty when atom_type matches no AtomsState.label."""
+        ps_o = AtomsState(label='OW')
+        ms = ModelSystem()
+        ms.particle_states = [ps_o]
+        simulation = Simulation()
+        simulation.model_system.append(ms)
+        archive = EntryArchive()
+        archive.data = simulation
+
+        apc = AtomParametersContainer()
+        ap = AtomParameters()
+        ap.atom_type = 'CT'  # no AtomsState with this label
+        apc.atom_parameters = [ap]
+        apc.normalize(archive, logger)
+
+        assert ap.species_scope is None or len(ap.species_scope) == 0
 
     def test_fits_into_force_field_numerical_settings(self):
         ff = ForceField()
