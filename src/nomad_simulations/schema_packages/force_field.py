@@ -1310,7 +1310,10 @@ class AtomParametersContainer(NumericalSettings):
     def normalize(self, archive, logger) -> None:
         super().normalize(archive, logger)
         try:
-            particle_states = archive.data.model_system[0].particle_states
+            model_systems = archive.data.model_system
+            rep_idx = getattr(archive.data, 'representative_system_index', None)
+            idx = rep_idx if rep_idx is not None else 0
+            particle_states = model_systems[idx].particle_states
         except (AttributeError, IndexError, TypeError):
             particle_states = None
 
