@@ -1037,7 +1037,7 @@ class PeriodicDihedral(DihedralPotential):
         type=np.float64,
         unit='radian',
         shape=[],
-        description="""
+        description=r"""
         Phase shift $\delta$.
         """,
     )
@@ -1144,7 +1144,7 @@ class AngleDihedralCouplingPotential(Potential):
 
 
 class HarmonicAngleDihedralCoupling(AngleDihedralCouplingPotential):
-    """
+    r"""
     Harmonic form of an angle–dihedral coupling potential:
     $V = k_1(\theta - \theta_0)^2 + k_2(\phi - \phi_0)^2 + k_3(\theta - \theta_0)(\phi - \phi_0)$
     """
@@ -1187,7 +1187,7 @@ class HarmonicImproper(ImproperDihedralPotential):
         type=np.float64,
         unit='radian',
         shape=[],
-        description="""
+        description=r"""
         Equilibrium improper angle $\omega_0$.
         """,
     )
@@ -1227,7 +1227,7 @@ class PeriodicImproper(ImproperDihedralPotential):
         type=np.float64,
         unit='radian',
         shape=[],
-        description="""
+        description=r"""
         Phase shift $\delta$.
         """,
     )
