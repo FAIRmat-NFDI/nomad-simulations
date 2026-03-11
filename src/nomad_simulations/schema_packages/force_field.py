@@ -1333,7 +1333,6 @@ class AtomParametersContainer(NumericalSettings):
             for ap in self.atom_parameters or []
             for ps in (ap.species_scope if ap.species_scope is not None else [])
         ]
-        ref_ids = [ref_id for ref_id, _ in all_refs]
         seen: set[int] = set()
         duplicates: set[str] = set()
         for ref_id, atom_type in all_refs:
@@ -1342,8 +1341,8 @@ class AtomParametersContainer(NumericalSettings):
             seen.add(ref_id)
         if len(duplicates) > 0:
             raise ValueError(
-                'Overlapping species_scope references across AtomParameters entries'
-                ' (conflicting atom_type(s): %s).' % ', '.join(sorted(duplicates))
+                f'Overlapping species_scope references across AtomParameters entries'
+                f' (conflicting atom_type(s): {", ".join(sorted(duplicates))}).'
             )
 
 
