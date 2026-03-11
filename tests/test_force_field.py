@@ -1058,8 +1058,6 @@ def test_potentials(
 
 class TestAtomParameters:
     def test_basic_instantiation(self):
-        from nomad_simulations.schema_packages.atoms_state import AtomsState
-
         ps_o = AtomsState(label='OW')
         ps_h1 = AtomsState(label='HW1')
         ap = AtomParameters()
@@ -1106,7 +1104,7 @@ class TestAtomParametersContainer:
         ap2.species_scope = [ps_shared]  # same object → overlap
         apc.atom_parameters = [ap1, ap2]
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError, match='conflicting atom_type'):
             apc.normalize(EntryArchive(), logger)
 
     def test_normalize_resolves_species_scope_from_archive(self):

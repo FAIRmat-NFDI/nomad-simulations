@@ -1329,13 +1329,22 @@ class AtomParametersContainer(NumericalSettings):
                 ]
 
         all_refs = [
-            id(ps)
+            (id(ps), getattr(ap, 'atom_type', None))
             for ap in self.atom_parameters or []
             for ps in (ap.species_scope if ap.species_scope is not None else [])
         ]
-        assert len(all_refs) == len(set(all_refs)), (
-            'Overlapping species_scope references across AtomParameters entries.'
-        )
+        ref_ids = [ref_id for ref_id, _ in all_refs]
+        seen: set[int] = set()
+        duplicates: set[str] = set()
+        for ref_id, atom_type in all_refs:
+            if ref_id in seen:
+                duplicates.add(str(atom_type))
+            seen.add(ref_id)
+        if len(duplicates) > 0:
+            raise ValueError(
+                'Overlapping species_scope references across AtomParameters entries'
+                ' (conflicting atom_type(s): %s).' % ', '.join(sorted(duplicates))
+            )
 
 
 class ForceField(ModelMethod):
