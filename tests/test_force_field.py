@@ -1093,7 +1093,7 @@ class TestAtomParametersContainer:
         # Should not raise
         apc.normalize(EntryArchive(), logger)
 
-    def test_normalize_raises_for_overlapping_scope(self):
+    def test_normalize_logs_for_overlapping_scope(self):
         ps_shared = AtomsState(label='OW')
         apc = AtomParametersContainer()
         ap1 = AtomParameters()
@@ -1104,14 +1104,16 @@ class TestAtomParametersContainer:
         ap2.species_scope = [ps_shared]  # same object → overlap
         apc.atom_parameters = [ap1, ap2]
 
-        with pytest.raises(ValueError, match='conflicting atom_type'):
-            apc.normalize(EntryArchive(), logger)
+        apc.normalize(EntryArchive(), logger)  # must not raise
+        # scopes are left intact after the error is logged
+        assert ap1.species_scope == [ps_shared]
+        assert ap2.species_scope == [ps_shared]
 
     def test_normalize_resolves_species_scope_from_archive(self):
         """species_scope is populated by matching atom_type against AtomsState.label.
 
-        A decoy ModelSystem at index 0 holds different labels so the test would fail
-        if normalize() hardcodes model_system[0] instead of the representative system.
+        A decoy ModelSystem at index 0 holds different labels so the test fails
+        if normalize() uses model_system[0] instead of model_system[-1].
         """
         decoy_ps = AtomsState(label='DECOY')
         ms_decoy = ModelSystem()
@@ -1124,8 +1126,10 @@ class TestAtomParametersContainer:
         ms.particle_states = [ps_o, ps_h1, ps_h2]
 
         simulation = Simulation()
-        simulation.model_system = [ms_decoy, ms]
-        simulation.representative_system_index = 1
+        simulation.model_system = [
+            ms_decoy,
+            ms,
+        ]  # ms is last, selected by model_system[-1]
         archive = EntryArchive()
         archive.data = simulation
 
@@ -1141,30 +1145,6 @@ class TestAtomParametersContainer:
         assert ap_o.species_scope[0] is ps_o
         assert len(ap_h.species_scope) == 2
         assert set(ap_h.species_scope) == {ps_h1, ps_h2}
-
-    def test_normalize_uses_representative_system(self):
-        """species_scope is resolved from the representative system, not always index 0."""
-        ps_wrong = AtomsState(label='OW')  # in non-representative system
-        ps_correct = AtomsState(label='OW')  # in representative system
-        ms0 = ModelSystem()
-        ms0.particle_states = [ps_wrong]
-        ms1 = ModelSystem()
-        ms1.particle_states = [ps_correct]
-        simulation = Simulation()
-        simulation.model_system = [ms0, ms1]
-        simulation.representative_system_index = 1
-        archive = EntryArchive()
-        archive.data = simulation
-
-        apc = AtomParametersContainer()
-        ap = AtomParameters()
-        ap.atom_type = 'OW'
-        apc.atom_parameters = [ap]
-        apc.normalize(archive, logger)
-
-        assert len(ap.species_scope) == 1
-        assert ap.species_scope[0] is ps_correct
-        assert ap.species_scope[0] is not ps_wrong
 
     def test_normalize_species_scope_empty_when_no_match(self):
         """species_scope stays empty when atom_type matches no AtomsState.label."""

@@ -298,16 +298,16 @@ class TabulatedPotential(Potential):
         if not self.functional_form:
             self.functional_form = 'tabulated'
         elif self.functional_form != 'tabulated':
-            logger.warning(f'Incorrect functional form set for {self.name}.')
+            logger.warning('Incorrect functional form set for %s.', self.name)
 
         if self.bins is not None and self.energies is not None:
             if len(self.bins) != len(self.energies):
                 logger.error(
-                    f'bins and energies values have different length in {self.name}'
+                    'bins and energies values have different length in %s', self.name
                 )
         if self.bins is not None and self.forces is not None:
             if len(self.bins) != len(self.forces):
-                logger.error(f'bins and forces have different length in {self.name}')
+                logger.error('bins and forces have different length in %s', self.name)
 
         if self.bins is not None:
             smoothing_factor = len(self.bins) - np.sqrt(2 * len(self.bins))
@@ -348,19 +348,25 @@ class TabulatedPotential(Potential):
                     )
                     if np.all([np.abs(x) < FF_TOL for x in energies_diff]):
                         logger.warning(
-                            f'Tabulated forces were generated from energies in {self.name},'
-                            f'with consistency errors less than tol={FF_TOL}. '
+                            'Tabulated forces were generated from energies in %s,'
+                            'with consistency errors less than tol=%s. ',
+                            self.name,
+                            FF_TOL,
                         )
                     else:
                         logger.warning(
-                            f'Unable to derive tabulated forces from energies in {self.name},'
-                            f'consistency errors were greater than tol={FF_TOL}.'
+                            'Unable to derive tabulated forces from energies in %s,'
+                            'consistency errors were greater than tol=%s.',
+                            self.name,
+                            FF_TOL,
                         )
                         self.forces = None
                 except ValueError as e:
                     logger.warning(
-                        f'Unable to derive tabulated forces from energies in {self.name},'
-                        f'Unknown error occurred in derivation: {e}'
+                        'Unable to derive tabulated forces from energies in %s,'
+                        'Unknown error occurred in derivation: %s',
+                        self.name,
+                        e,
                     )
 
             if self.forces is not None and self.energies is None:
@@ -394,19 +400,25 @@ class TabulatedPotential(Potential):
                     )
                     if np.all([np.abs(x) < FF_TOL for x in forces_diff]):
                         logger.warning(
-                            f'Tabulated energies were generated from forces in {self.name},'
-                            f'with consistency errors less than tol={FF_TOL}. '
+                            'Tabulated energies were generated from forces in %s,'
+                            'with consistency errors less than tol=%s. ',
+                            self.name,
+                            FF_TOL,
                         )
                     else:
                         logger.warning(
-                            f'Unable to derive tabulated energies from forces in {self.name},'
-                            f'consistency errors were greater than tol={FF_TOL}.'
+                            'Unable to derive tabulated energies from forces in %s,'
+                            'consistency errors were greater than tol=%s.',
+                            self.name,
+                            FF_TOL,
                         )
                         self.energies = None
                 except ValueError as e:
                     logger.warning(
-                        f'Unable to derive tabulated energies from forces in {self.name},'
-                        f'Unknown error occurred in derivation: {e}'
+                        'Unable to derive tabulated energies from forces in %s,'
+                        'Unknown error occurred in derivation: %s',
+                        self.name,
+                        e,
                     )
 
 
@@ -1309,40 +1321,40 @@ class AtomParametersContainer(NumericalSettings):
     def normalize(self, archive, logger) -> None:
         super().normalize(archive, logger)
         try:
-            model_systems = archive.data.model_system
-            rep_idx = getattr(archive.data, 'representative_system_index', None)
-            idx = rep_idx if rep_idx is not None else 0
-            particle_states = model_systems[idx].particle_states
+            particle_states = archive.data.model_system[-1].particle_states
         except (AttributeError, IndexError, TypeError):
+            logger.error(
+                'Unable to resolve AtomParameters.species_scope references, '
+                'model_system or particle_states not accessible.'
+            )
             particle_states = None
 
         if particle_states is not None:
+            label_index: dict[str, list] = {}
+            for ps in particle_states:
+                lbl = getattr(ps, 'label', None)
+                if lbl is not None:
+                    label_index.setdefault(lbl, []).append(ps)
             for ap in self.atom_parameters or []:
                 if ap.species_scope is not None and len(ap.species_scope) > 0:
                     continue
                 if ap.atom_type is None:
                     continue
-                ap.species_scope = [
-                    ps
-                    for ps in particle_states
-                    if getattr(ps, 'label', None) == ap.atom_type
-                ]
+                ap.species_scope = label_index.get(ap.atom_type, [])
 
-        all_refs = [
-            (id(ps), getattr(ap, 'atom_type', None))
-            for ap in self.atom_parameters or []
-            for ps in (ap.species_scope if ap.species_scope is not None else [])
-        ]
         seen: set[int] = set()
         duplicates: set[str] = set()
-        for ref_id, atom_type in all_refs:
-            if ref_id in seen:
-                duplicates.add(str(atom_type))
-            seen.add(ref_id)
-        if len(duplicates) > 0:
-            raise ValueError(
-                f'Overlapping species_scope references across AtomParameters entries'
-                f' (conflicting atom_type(s): {", ".join(sorted(duplicates))}).'
+        for ap in self.atom_parameters or []:
+            for ps in ap.species_scope or []:
+                ps_id = id(ps)
+                if ps_id in seen:
+                    duplicates.add(str(getattr(ap, 'atom_type', None)))
+                seen.add(ps_id)
+        if duplicates:
+            logger.error(
+                'Overlapping species_scope references across AtomParameters entries.'
+                '(conflicting atom_type(s): %s)',
+                ', '.join(sorted(duplicates)),
             )
 
 
