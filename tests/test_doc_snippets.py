@@ -83,12 +83,16 @@ def _snippet_markers(ref: str) -> set[str]:
 
 
 def _marked_runnable_snippets() -> set[str]:
-    return {ref for ref in _all_snippet_files() if RUNNABLE_MARKER in _snippet_markers(ref)}
+    return {
+        ref for ref in _all_snippet_files() if RUNNABLE_MARKER in _snippet_markers(ref)
+    }
 
 
 def _coverage_skipped_snippets() -> set[str]:
     return {
-        ref for ref in _all_snippet_files() if SKIP_COVERAGE_MARKER in _snippet_markers(ref)
+        ref
+        for ref in _all_snippet_files()
+        if SKIP_COVERAGE_MARKER in _snippet_markers(ref)
     }
 
 
@@ -253,7 +257,9 @@ def test_marked_runnable_snippets_execute_without_error(ref):
 
 def test_skip_coverage_and_runnable_markers_do_not_overlap():
     overlap = _marked_runnable_snippets() & _coverage_skipped_snippets()
-    assert not overlap, f'Snippet cannot be both runnable and skip-coverage: {sorted(overlap)}'
+    assert not overlap, (
+        f'Snippet cannot be both runnable and skip-coverage: {sorted(overlap)}'
+    )
 
 
 def test_runnable_marker_is_present_for_standalone_examples():
