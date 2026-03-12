@@ -20,6 +20,11 @@ This runs the complete pipeline:
 6. Updates navigation (including hierarchical structure)
 7. Validates output
 
+Backlinks from generated schema pages to explanation pages are auto-discovered:
+- the generator scans `docs/explanation/**/*.md`,
+- any explanation page linking to `schema/<vertical>.md` is listed under
+  `Related Pages` on the corresponding generated schema page.
+
 Generate reusable explanation fragments (for hand-written docs):
 ```bash
 uv run python scripts/generate_explanation_fragments.py

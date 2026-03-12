@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import argparse
+import os
+import re
 import sys
 from pathlib import Path
 
@@ -144,6 +146,95 @@ def collect_quantities_info(section_cls) -> list[dict]:
         )
 
     return quantities_info
+
+
+def _extract_markdown_links(markdown_text: str) -> list[str]:
+    """Return inline markdown link targets from the given text."""
+    return re.findall(r'\[[^\]]+\]\(([^)]+)\)', markdown_text)
+
+
+def _first_heading(markdown_text: str, fallback: str) -> str:
+    """Extract first H1 title from markdown, otherwise fallback."""
+    for line in markdown_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith('# '):
+            return stripped[2:].strip().strip('`') or fallback
+    return fallback
+
+
+def collect_explanation_backlinks(
+    docs_root: Path, explanation_subdir: str = 'explanation'
+) -> dict[str, list[dict[str, str]]]:
+    """
+    Build an index of schema-page targets to explanation pages linking to them.
+
+    Returns mapping:
+        "schema/<page>.md" -> [{"title": "...", "path": "explanation/<...>.md"}, ...]
+    """
+    explanation_root = docs_root / explanation_subdir
+    if not explanation_root.exists():
+        return {}
+
+    index: dict[str, list[dict[str, str]]] = {}
+    docs_root_resolved = docs_root.resolve()
+
+    for md_file in sorted(explanation_root.rglob('*.md')):
+        content = md_file.read_text(encoding='utf-8')
+        title = _first_heading(content, md_file.stem.replace('_', ' ').title())
+        source_rel = md_file.relative_to(docs_root).as_posix()
+
+        for raw_link in _extract_markdown_links(content):
+            target = raw_link.split('#', 1)[0].strip()
+            if (
+                not target
+                or target.startswith(('http://', 'https://', 'mailto:'))
+                or target.startswith('#')
+            ):
+                continue
+
+            target_path = (md_file.parent / target).resolve()
+            try:
+                target_rel = target_path.relative_to(docs_root_resolved).as_posix()
+            except ValueError:
+                continue
+
+            if not (target_rel.startswith('schema/') and target_rel.endswith('.md')):
+                continue
+
+            index.setdefault(target_rel, []).append(
+                {
+                    'title': title,
+                    'path': source_rel,
+                }
+            )
+
+    # De-duplicate and sort for stable output.
+    for schema_target, entries in index.items():
+        dedup: dict[tuple[str, str], dict[str, str]] = {
+            (item['title'], item['path']): item for item in entries
+        }
+        index[schema_target] = sorted(
+            dedup.values(), key=lambda item: (item['title'].lower(), item['path'])
+        )
+
+    return index
+
+
+def related_explanations_for_schema_page(
+    schema_page_rel: Path, backlinks_index: dict[str, list[dict[str, str]]]
+) -> list[dict[str, str]]:
+    """Resolve explanation links relative to a generated schema page."""
+    schema_rel = schema_page_rel.as_posix()
+    candidates = backlinks_index.get(schema_rel, [])
+    if not candidates:
+        return []
+
+    result: list[dict[str, str]] = []
+    for item in candidates:
+        rel_path = Path(item['path'])
+        link = Path(os.path.relpath(rel_path, start=schema_page_rel.parent))
+        result.append({'title': item['title'], 'path': link.as_posix()})
+    return result
 
 
 def build_registry(
@@ -303,6 +394,7 @@ def build_vertical(
     out_dir: Path,
     metainfo_base: str,
     feedback_url_base: str,
+    backlinks_index: dict[str, list[dict[str, str]]],
 ):
     # Normalize spec (support dict or bare list/set)
     if isinstance(spec, dict):
@@ -375,6 +467,10 @@ def build_vertical(
         lstrip_blocks=True,
     )
     tpl = env.get_template('vertical.md.j2')
+    schema_page_rel = Path('schema') / f'{vert_key}.md'
+    related_explanations = related_explanations_for_schema_page(
+        schema_page_rel=schema_page_rel, backlinks_index=backlinks_index
+    )
     page_md = tpl.render(
         key=vert_key,
         title=title,
@@ -384,6 +480,7 @@ def build_vertical(
         section_info=section_info,
         metainfo_base=metainfo_base,
         mermaid_block=mermaid_block,  # already fenced
+        related_explanations=related_explanations,
         feedback_url=f'{feedback_url_base}&labels=schema-review,vertical:{vert_key}'
         f'&title=[Review]%20{vert_key}',
     )
@@ -491,6 +588,8 @@ def main(argv=None):
 
     templates_dir = Path(args.templates_dir)
     out_dir = Path(args.out_dir)
+    docs_root = out_dir.parent
+    backlinks_index = collect_explanation_backlinks(docs_root=docs_root)
 
     # Generate individual vertical pages
     for key, spec in VERTICALS.items():
@@ -504,6 +603,7 @@ def main(argv=None):
             out_dir=out_dir,
             metainfo_base=args.metainfo_base,
             feedback_url_base=args.feedback_url,
+            backlinks_index=backlinks_index,
         )
 
     # Generate index page

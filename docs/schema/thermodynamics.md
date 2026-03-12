@@ -12,6 +12,7 @@
 - Virial tensor for stress calculations
 - Hessian matrices for phonon calculations
 
+
 ## Relationship map
 
 
@@ -199,4 +200,5 @@ classDiagram
 | `n_negative_eigenvalues` | m_int_bounded(int) | <details><summary>Number of negative Hessian eigenvalues (imaginary vibrational frequencies).</summary>Number of negative Hessian eigenvalues (imaginary vibrational frequencies).<br>A value of 0 indicates a local minimum, 1 a first-order saddle point, and<br>>1 a higher-order saddle point. Leave unset if the Hessian was evaluated<br>away from a stationary point.</details> |
 | `eigenvalues` | m_float64(float64) (shape: ['*']) | <details><summary>Eigenvalues of the Hessian.</summary>Eigenvalues of the Hessian. Sorted during normalization with positive values<br>descending, followed by zeros, then negative values ascending (most negative<br>first). Very low-magnitude modes in solid-state phonon calculations<br>(e.g., <100 cm-1) or when using RI/DF approximations often reflect numerical<br>artifacts rather than true instabilities.</details> |
 | `stationary_point_type` | Enum | <details><summary>Stationary-point classification (requires zero gradient) based on Hessian</summary>Stationary-point classification (requires zero gradient) based on Hessian<br>eigenvalue signs. Use 'saddle_point' for any stationary point with one or<br>more negative eigenvalues (a transition state corresponds to exactly one).<br>Use 'maximum' when all eigenvalues are negative (negative-definite Hessian).<br>Use 'non_stationary' if the Hessian was evaluated where the gradient is<br>non-zero and no stationary point classification applies. Use 'unavailable'<br>when no classification could be determined from the data.</details> |
+
 

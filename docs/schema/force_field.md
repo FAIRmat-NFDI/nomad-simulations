@@ -8,6 +8,7 @@
 - Potential family entry-point used by ForceField contributions
 - Bridge between model methods and classical interaction potentials
 
+
 ## Relationship map
 
 
@@ -62,3 +63,7 @@ classDiagram
 | `particle_labels` | m_str(str_) (shape: ['n_interactions', 'n_particles']) | Labels of the particles for each instance of this potential, stored as a list of tuples. |
 | `particle_indices` | m_int32(int32) (shape: ['n_interactions', 'n_particles']) | Indices of the particles for each instance of this potential, stored as a list of tuples. |
 
+
+## Related Pages
+
+- [Model Method Overview](../explanation/model_method/overview.md)

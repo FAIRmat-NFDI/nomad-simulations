@@ -9,6 +9,7 @@
 - X-ray absorption spectra (XAS) from core hole calculations
 - Frequency-dependent dielectric functions (permittivity)
 
+
 ## Relationship map
 
 
@@ -69,4 +70,5 @@ classDiagram
 |---|---|---|
 | `type` | Enum | Type of permittivity which allows to identify if the permittivity depends on the frequency or not. |
 | `value` | m_complex128(complex) (shape: ['*']) | Value of the permittivity tensor. If the value does not depend on the scattering vector `q`, then we can extract the optical absorption spectrum from the imaginary part of the permittivity tensor (this is also called macroscopic dielectric function). |
+
 

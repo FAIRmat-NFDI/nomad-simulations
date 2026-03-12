@@ -12,6 +12,7 @@
 {% endfor %}
 
 {% endif %}
+
 ## Relationship map
 
 {{ mermaid_block }}
@@ -42,3 +43,11 @@
 {% endif %}
 
 {% endfor %}
+
+{% if related_explanations %}
+## Related Pages
+
+{% for item in related_explanations %}
+- [{{ item.title }}]({{ item.path }})
+{% endfor %}
+{% endif %}

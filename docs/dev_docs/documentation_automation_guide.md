@@ -31,6 +31,21 @@ Primary script inputs:
 - `scripts/gen_docs.py`, `scripts/gen_diagrams.py` (page + diagram generation),
 - `scripts/meta_introspect.py` (schema introspection).
 
+### Auto-discovered Backlinks to Explanation Pages
+
+Generated schema pages include a `Related Pages` section populated
+automatically from links already present in `docs/explanation/**/*.md`.
+
+Convention:
+
+- if an explanation page links to `schema/<vertical>.md`, that explanation page
+  is listed back on the corresponding generated schema page;
+- links are discovered by parsing markdown and resolving relative paths;
+- when no backlinks are found, no backlink section content is rendered.
+
+For reliable results (including agent-authored docs), always include canonical
+links to relevant `schema/*.md` pages from explanation pages.
+
 ## 2) Generated Explanation Fragments
 
 Run:

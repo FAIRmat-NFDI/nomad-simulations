@@ -11,6 +11,7 @@
 - Smearing functions: Fermi-Dirac, Gaussian, Methfessel-Paxton
 - Force calculation settings
 
+
 ## Relationship map
 
 
@@ -141,8 +142,8 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `name` | m_str(str) | Name of the basis set component. |
-| `species_scope` | <nomad.metainfo.metainfo.Reference object at 0x7105cf4cdd00> (shape: ['*']) | Reference to the section `AtomsState` specifying the localization of the basis set. |
-| `hamiltonian_scope` | <nomad.metainfo.metainfo.Reference object at 0x7105cf4cd970> (shape: ['*']) | Reference to the section `BaseModelMethod` containing the information of the Hamiltonian term to which the basis set applies. |
+| `species_scope` | <nomad.metainfo.metainfo.Reference object at 0x7bbe802ac8c0> (shape: ['*']) | Reference to the section `AtomsState` specifying the localization of the basis set. |
+| `hamiltonian_scope` | <nomad.metainfo.metainfo.Reference object at 0x7bbe802adee0> (shape: ['*']) | Reference to the section `BaseModelMethod` containing the information of the Hamiltonian term to which the basis set applies. |
 
 ### `PlaneWaveBasisSet`
 
@@ -172,3 +173,7 @@ classDiagram
 | `primitive_factor` | m_float64(float64) (shape: ['n_primitive']) | Extra per-primitive multiplier (dimensionless). |
 | `point_charge` | m_float32(float32) | Optional embedded point charge. |
 
+
+## Related Pages
+
+- [Model Method Overview](../explanation/model_method/overview.md)

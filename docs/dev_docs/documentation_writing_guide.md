@@ -7,6 +7,8 @@ Use this as a short checklist when updating docs.
 - `Schema Navigation` (generated): structure, quantities, relationships.
 - `Schema Explanation` (hand-written): rationale, invariants, usage guidance.
 - Do not duplicate generated reference content in explanation pages.
+- Add canonical links to relevant `schema/*.md` pages so generated schema docs
+  can auto-link back to explanations.
 
 ## 2) Keep Pages Focused
 
