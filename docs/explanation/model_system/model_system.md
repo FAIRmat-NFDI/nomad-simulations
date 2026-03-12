@@ -91,14 +91,14 @@ Sub-systems are defined through the `branch_label`, `branch_depth`, `particle_in
 
 ### Hierarchy and Composition Behavior
 
-When hierarchy is populated, normalization resolves branch depth and composition
-labels consistently along the tree. In practice:
+When a ModelSystem subsystem hierarchy is populated, normalization resolves
+branch depth and composition labels consistently along the tree. In practice:
 
 - root systems summarize child groups in `composition_formula`,
 - intermediate groups summarize repeated motifs,
 - leaf systems resolve to atom-level formulas.
 
-Keep hierarchy semantics (`sub_systems`) distinct from alternative geometric
+Keep subsystem-hierarchy semantics (`sub_systems`) distinct from alternative geometric
 views (`representations`).
 
 ## Normalization Process

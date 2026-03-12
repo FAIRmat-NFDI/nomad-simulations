@@ -1,8 +1,5 @@
 # Model System Schema Usage Guidelines
 
-This page is normative. It defines required usage conventions for `ModelSystem`.
-Keep this page short; implementation details and examples belong in linked pages.
-
 ## Required Rules
 
 1. Exactly one representative system per simulation context.
@@ -37,3 +34,8 @@ Reference: [Normalization](../normalize.md)
 Do: update affected explanation pages in the same PR when usage rules change.
 Do: keep this page as policy-only and move long examples elsewhere.
 Reference: [Model System](model_system.md), [Representation Architecture](representation.md), [Documentation Writing Guide](../../dev_docs/documentation_writing_guide.md)
+
+!!! info "Contributor Note"
+    This page defines required usage rules for `ModelSystem` and should stay
+    concise. Keep long implementation details and extended examples in linked
+    pages.
