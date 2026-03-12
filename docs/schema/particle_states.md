@@ -15,6 +15,7 @@
 - Particle indices, velocities, forces
 - Chemical symbols and particle organization
 
+
 ## Relationship map
 
 
@@ -43,8 +44,8 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `ParticleState` | Generic base section representing the state of a particle in a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.ParticleState){:target="_blank"} |
-| `AtomsState` | A base section to define each atom state information. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.AtomsState){:target="_blank"} |
+| `ParticleState` | Generic base section for particle-level entities in a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.ParticleState){:target="_blank"} |
+| `AtomsState` | A base section to define each atom's state information. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.AtomsState){:target="_blank"} |
 | `CGBeadState` | A section to define coarse-grained bead state information. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.CGBeadState){:target="_blank"} |
 | `AtomicOrbitals` | Expanded **atomic orbital (AO) layer** associated with a specific `AtomCenteredBasisSet`. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.AtomicOrbitals){:target="_blank"} |
 | `CoreHole` | A section used to define the core-hole state of an atom by extending the `ElectronicState` section with core-hole specific properties like excited electron count and DSCF state. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.CoreHole){:target="_blank"} |
@@ -58,6 +59,7 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `label` | m_str(str) | User- or program-package-defined identifier for this particle. |
+| `mass` | m_float_bounded(float) | <details><summary>Mass associated with this particle/site, in kilograms.</summary>Mass associated with this particle/site, in kilograms.<br>This is an immutable per-particle descriptor intended for downstream<br>analyses that require per-particle masses.<br>For `AtomsState`, it is the mass of the modeled atomic site (including<br>isotope/effective choices provided by the source data). For `CGBeadState`,<br>it is the bead mass.<br>Method-related mass assignments belong in method-specific sections.</details> |
 
 ### `AtomsState`
 
@@ -65,10 +67,10 @@ classDiagram
 |---|---|---|
 | `chemical_symbol` | Enum | Symbol of the element, e.g. 'H', 'Pb'. This quantity is equivalent to `atomic_numbers`. |
 | `atomic_number` | m_int32(int32) | Atomic number Z. This quantity is equivalent to `chemical_symbol`. |
-| `charge` | m_int32(int32) | <details><summary>Charge of the atom.</summary>Charge of the atom. It is defined as the number of extra electrons or holes in the<br>atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`ElectronicState.occupation`<br>coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)<br>for cations or any negative integer (-1, -2...) for anions.<br>Note: for `CoreHole` systems we do not consider the charge of the atom even if<br>we do not store the final `ElectronicState` where the electron was excited to.</details> |
+| `charge` | m_int32(int32) | <details><summary>Formal integer charge of the atom, defined as the number of extra</summary>Formal integer charge of the atom, defined as the number of extra<br>electrons (negative) or holes (positive) relative to the neutral atom.<br>For neutral atoms `charge = 0`.<br>Note: for `CoreHole` systems we do not consider the charge of the atom even if<br>we do not store the final `ElectronicState` where the electron was excited to.</details> |
 | `spin` | m_int32(int32) | Total spin quantum number, S. |
 | `label` | m_str(str) | User- or program-package-defined identifier for this atomic site. e.g. 'H1', 'H1a', 'C_eq'. It doesn't replace `chemical_symbol`, but merely gives users a more specialized token for the unique site name. |
-| `pseudopotential` | <nomad.metainfo.metainfo.Reference object at 0x7105e7b8a420> | <details><summary>Reference to the pseudopotential used for this atomic species in plane-wave DFT</summary>Reference to the pseudopotential used for this atomic species in plane-wave DFT<br>calculations. The referenced `Pseudopotential` section is defined in `numerical_settings`<br>and contains metadata such as pseudopotential type (PAW, ultrasoft, norm-conserving),<br>cutoff energy, and XC functional used to generate the pseudopotential.</details> |
+| `pseudopotential` | Reference | <details><summary>Reference to the pseudopotential used for this atomic species in plane-wave DFT</summary>Reference to the pseudopotential used for this atomic species in plane-wave DFT<br>calculations. The referenced `Pseudopotential` section is defined in `numerical_settings`<br>and contains metadata such as pseudopotential type (PAW, ultrasoft, norm-conserving),<br>cutoff energy, and XC functional used to generate the pseudopotential.</details> |
 
 ### `CGBeadState`
 
@@ -77,7 +79,6 @@ classDiagram
 | `bead_symbol` | m_str(str) | Symbol(s) describing the (base) CG particle type. Equivalent to chemical_symbol for atomic elements. |
 | `label` | m_str(str) | <details><summary>User- or program-package-defined identifier for this bead site.</summary>User- or program-package-defined identifier for this bead site.<br>This could be used to store primary FF labels in cases where only a<br>secondary specification is required. Otherwise, `alt_labels` are<br>used to document more complex bead identifiers, e.g., bead interactions based<br>on connectivity.</details> |
 | `alt_labels` | m_str(str) (shape: ['*']) | A list of bead labels for multifaceted bead characterization. |
-| `mass` | m_float64(float64) | Total mass of the particle. |
 | `charge` | m_float64(float64) | Total charge of the particle. |
 
 ### `AtomicOrbitals`
@@ -109,4 +110,5 @@ classDiagram
 | `u_effective` | m_float64(float64) | Value of the effective U parameter (u_interaction - j_local_exchange_interaction). |
 | `slater_integrals` | m_float64(float64) (shape: [3]) | <details><summary>Value of the Slater integrals [F0, F2, F4] in spherical harmonics used to derive</summary>Value of the Slater integrals [F0, F2, F4] in spherical harmonics used to derive<br>the local Hubbard interactions:<br>u_interaction = ((2.0 / 7.0) ** 2) * (F0 + 5.0 * F2 + 9.0 * F4) / (4.0*np.pi)<br>u_interorbital_interaction = ((2.0 / 7.0) ** 2) * (F0 - 5.0 * F2 + 3.0 * 0.5 * F4) / (4.0*np.pi)<br>j_hunds_coupling = ((2.0 / 7.0) ** 2) * (5.0 * F2 + 15.0 * 0.25 * F4) / (4.0*np.pi)<br>See e.g., Elbio Dagotto, Nanoscale Phase Separation and Colossal Magnetoresistance,<br>Chapter 4, Springer Berlin (2003).</details> |
 | `double_counting_correction` | m_str(str) | Name of the double counting correction algorithm applied. |
+
 

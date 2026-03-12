@@ -4,6 +4,9 @@
 
 The `ModelSystem` class represents the physical system that serves as input for simulation calculations in NOMAD. It provides a comprehensive description of the atomic or coarse-grained structure, including particle positions, cell geometry, symmetry information, and chemical composition.
 
+For complete field-level structure, see the generated reference:
+[Model System (Schema Navigation)](../../schema/model_system.md).
+
 `ModelSystem` combines two fundamental capabilities: geometric representation (from the `Representation` class) and hierarchical navigation (from the `System` class). This means each model system has direct access to its geometric data (lattice vectors, atomic positions, periodic boundary conditions) while also supporting navigation through subsystem hierarchies and alternative geometric views.
 
 A `ModelSystem` can represent various types of systems: bulk crystals, surfaces, molecules, clusters, or complex hierarchical structures.
@@ -38,12 +41,7 @@ See [Representation Architecture](representation.md) for detailed documentation 
 The `particle_states` subsection contains `ParticleState` instances (typically `AtomsState` for atomic systems) that describe each particle or group of particles in the system:
 
 ```python
-from nomad_simulations.schema_packages.atoms_state import AtomsState
-
-model_system = ModelSystem()
-for symbol in ['Si', 'Si']:
-    atom = AtomsState(chemical_symbol=symbol)
-    model_system.particle_states.append(atom)
+--8<-- "snippets/explanation/model_system/model_system/block_01.py"
 ```
 
 Each `AtomsState` can include electronic structure information through the `electronic_state` field. See [Electronic States](electronic_states.md) for details on describing electronic configurations.
@@ -53,14 +51,7 @@ Each `AtomsState` can include electronic structure information through the `elec
 The `representations` subsection stores `AlternativeRepresentation` instances that provide different geometric views of the same physical system:
 
 ```python
-from nomad_simulations.schema_packages.model_system import AlternativeRepresentation
-
-primitive = AlternativeRepresentation(
-    name='primitive',
-    crystal_cell_type='primitive',
-    lattice_vectors=primitive_lattice_vectors
-)
-model_system.representations.append(primitive)
+--8<-- "snippets/explanation/model_system/model_system/block_02.py"
 ```
 
 Common use cases include:
@@ -74,10 +65,7 @@ Common use cases include:
 The `symmetry` subsection contains a `Symmetry` instance that describes the space group, point group, and Bravais lattice of the system. This information is typically populated automatically during normalization through integration with the MatID symmetry analyzer:
 
 ```python
-# After normalization with is_representative=True
-if model_system.symmetry:
-    space_group = model_system.symmetry.space_group_number
-    point_group = model_system.symmetry.point_group_symbol
+--8<-- "snippets/explanation/model_system/model_system/block_03.py"
 ```
 
 ### Chemical Formulas
@@ -96,33 +84,22 @@ These are generated automatically during normalization based on the particle sta
 The `sub_systems` subsection enables description of hierarchical compositions where a system contains other systems as components. This provides vertical navigation through the physical decomposition of the system:
 
 ```python
-# Create bulk system with an active site
-bulk = ModelSystem(
-    is_representative=True,
-    lattice_vectors=...,
-    # ... bulk properties
-)
-
-# Define active site as sub-system
-active_site = ModelSystem(
-    type='active_atom',
-    particle_indices=[0, 5, 12]  # References particles in parent
-)
-bulk.sub_systems.append(active_site)
-
-# Navigate down the hierarchy
-for subsystem in bulk.sub_systems:
-    # Each subsystem is itself a ModelSystem with direct access to geometry
-    positions = subsystem.positions
-    lattice = subsystem.lattice_vectors
-
-    # And each can have its own alternative representations
-    for rep in subsystem.representations:
-        if rep.name == 'primitive':
-            primitive_lattice = rep.lattice_vectors
+--8<-- "snippets/explanation/model_system/model_system/block_04.py"
 ```
 
 Sub-systems are defined through the `branch_label`, `branch_depth`, `particle_indices`, and `bond_list` quantities that create a parent-child tree structure. Each subsystem at any level can have its own `representations` subsection for alternative geometric views of that specific subsystem.
+
+### Hierarchy and Composition Behavior
+
+When a ModelSystem subsystem hierarchy is populated, normalization resolves
+branch depth and composition labels consistently along the tree. In practice:
+
+- root systems summarize child groups in `composition_formula`,
+- intermediate groups summarize repeated motifs,
+- leaf systems resolve to atom-level formulas.
+
+Keep subsystem-hierarchy semantics (`sub_systems`) distinct from alternative geometric
+views (`representations`).
 
 ## Normalization Process
 
@@ -143,86 +120,19 @@ See [Normalization](../normalize.md) for more details on the normalization syste
 ### Simple Crystal
 
 ```python
-from nomad_simulations.schema_packages.model_system import ModelSystem
-from nomad_simulations.schema_packages.atoms_state import AtomsState
-import numpy as np
-from nomad.units import ureg
-
-# Create silicon crystal
-silicon = ModelSystem(is_representative=True)
-
-# Set cell geometry
-silicon.lattice_vectors = np.array([
-    [5.43, 0.0, 0.0],
-    [0.0, 5.43, 0.0],
-    [0.0, 0.0, 5.43]
-]) * ureg.angstrom
-silicon.periodic_boundary_conditions = [True, True, True]
-
-# Add atoms
-positions = np.array([
-    [0.0, 0.0, 0.0],
-    [1.3575, 1.3575, 1.3575]
-]) * ureg.angstrom
-silicon.positions = positions
-
-for i in range(2):
-    atom = AtomsState(chemical_symbol='Si')
-    silicon.particle_states.append(atom)
-
-# Normalization will generate symmetry info and chemical formulas
-# (archive and logger are provided by the NOMAD normalization context)
-silicon.normalize(archive, logger)
-
-# Access results
-print(f"Space group: {silicon.symmetry.space_group_number}")
-print(f"Formula: {silicon.chemical_formula.reduced}")
+--8<-- "snippets/explanation/model_system/model_system/block_05.py"
 ```
 
 ### Working with Alternative Representations
 
 ```python
-# After normalization, access alternative representations
-for rep in silicon.representations:
-    if rep.name == 'primitive':
-        print(f"Primitive cell volume: {rep.volume}")
-    elif rep.name == 'conventional':
-        print(f"Conventional cell lattice: {rep.lattice_vectors}")
-
-# Convert specific representation to ASE Atoms object
-primitive_atoms = silicon.to_ase_atoms(representation_index=0)
-conventional_atoms = silicon.to_ase_atoms(representation_index=1)
+--8<-- "snippets/explanation/model_system/model_system/block_06.py"
 ```
 
 ### Heterostructure with Sub-systems
 
 ```python
-# Create interface system
-interface = ModelSystem(is_representative=True)
-interface.lattice_vectors = ...
-interface.positions = ...
-
-# Add particle states for both materials
-for symbol in material_A_symbols + material_B_symbols:
-    atom = AtomsState(chemical_symbol=symbol)
-    interface.particle_states.append(atom)
-
-# Define material A region as sub-system
-material_A = ModelSystem(
-    type='region',
-    branch_label='Material A',
-    particle_indices=list(range(len(material_A_symbols)))
-)
-interface.sub_systems.append(material_A)
-
-# Define material B region as sub-system
-material_B = ModelSystem(
-    type='region',
-    branch_label='Material B',
-    particle_indices=list(range(len(material_A_symbols),
-                                len(material_A_symbols) + len(material_B_symbols)))
-)
-interface.sub_systems.append(material_B)
+--8<-- "snippets/explanation/model_system/model_system/block_07.py"
 ```
 
 ## Important Flags and Settings
@@ -246,4 +156,4 @@ interface.sub_systems.append(material_B)
 - [Representation Architecture](representation.md): Detailed documentation of the geometric representation design
 - [Electronic States](electronic_states.md): How to describe electronic configurations of atoms
 - [Normalization](../normalize.md): Overview of the normalization system
-- [General Schema Overview](../general.md): Introduction to the NOMAD simulations schema package
+- [General Schema Overview](../overview.md): Introduction to the NOMAD simulations schema package

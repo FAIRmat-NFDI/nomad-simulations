@@ -1,4 +1,4 @@
-# Software Development Guide
+# Schema Development Guide
 
 ---
 

@@ -23,32 +23,7 @@ The geometric quantities use a consistent implicit Cartesian frame:
 ### Setting Geometric Properties
 
 ```python
-from nomad_simulations.schema_packages.model_system import ModelSystem
-import numpy as np
-
-# Create a model system
-model_system = ModelSystem()
-
-# Set lattice vectors (each row is a vector in the implicit Cartesian frame)
-model_system.lattice_vectors = np.array([
-    [5.0, 0.0, 0.0],  # lattice vector a
-    [0.0, 5.0, 0.0],  # lattice vector b
-    [0.0, 0.0, 5.0]   # lattice vector c
-]) * ureg.angstrom
-
-model_system.periodic_boundary_conditions = [True, True, True]
-
-# Set positions in Cartesian coordinates
-model_system.positions = np.array([
-    [0.0, 0.0, 0.0],
-    [2.5, 2.5, 2.5]
-]) * ureg.angstrom
-
-# Alternatively, use fractional coordinates
-model_system.fractional_coordinates = np.array([
-    [0.0, 0.0, 0.0],
-    [0.5, 0.5, 0.5]
-])
+--8<-- "snippets/explanation/model_system/representation/block_01.py"
 ```
 
 This direct access means the geometric description is inherently part of what a model system is, rather than being stored in a separate subsection.
@@ -62,32 +37,7 @@ Importantly, all alternative representations use the **same implicit Cartesian f
 Alternative representations are stored in the `representations` subsection of `ModelSystem`:
 
 ```python
-from nomad_simulations.schema_packages.model_system import (
-    ModelSystem,
-    AlternativeRepresentation
-)
-
-# Create model system with original cell data
-model_system = ModelSystem()
-model_system.lattice_vectors = original_lattice_vectors
-model_system.positions = original_positions
-
-# Add primitive cell representation
-primitive_rep = AlternativeRepresentation(
-    name='primitive',
-    crystal_cell_type='primitive',
-    lattice_vectors=primitive_lattice_vectors,
-    transformation_matrix=primitive_transformation
-)
-model_system.representations.append(primitive_rep)
-
-# Add conventional cell representation
-conventional_rep = AlternativeRepresentation(
-    name='conventional',
-    crystal_cell_type='conventional',
-    lattice_vectors=conventional_lattice_vectors
-)
-model_system.representations.append(conventional_rep)
+--8<-- "snippets/explanation/model_system/representation/block_02.py"
 ```
 
 This pattern allows the same physical system to be described from multiple geometric perspectives while maintaining the original parser output as the primary data on the `ModelSystem` itself.
@@ -97,19 +47,7 @@ This pattern allows the same physical system to be described from multiple geome
 The `Representation` architecture integrates naturally with symmetry analysis. When `ModelSystem.normalize()` is called with `is_representative=True`, the symmetry analysis workflow automatically generates primitive and conventional cell representations:
 
 ```python
-model_system = ModelSystem(is_representative=True)
-model_system.lattice_vectors = ...
-model_system.positions = ...
-
-# Normalization triggers symmetry analysis
-model_system.normalize(archive, logger)
-
-# After normalization, alternative representations are populated
-for rep in model_system.representations:
-    if rep.name == 'primitive':
-        primitive_lattice = rep.lattice_vectors
-    elif rep.name == 'conventional':
-        conventional_lattice = rep.lattice_vectors
+--8<-- "snippets/explanation/model_system/representation/block_03.py"
 ```
 
 ## Usage Patterns and Best Practices
@@ -127,14 +65,7 @@ The design principle is straightforward: the original system description (as pro
 The `to_ase_atoms()` method allows you to convert any geometric representation to ASE format. By default, it uses the cell geometry (lattice vectors and periodic boundary conditions) directly from `ModelSystem`. The optional `representation_index` parameter lets you select an alternative representation's cell geometry instead, while atomic positions always come from the main `ModelSystem`:
 
 ```python
-# Convert using original cell geometry from ModelSystem
-atoms_original = model_system.to_ase_atoms()
-
-# Convert using primitive cell geometry from representations[0]
-atoms_primitive = model_system.to_ase_atoms(representation_index=0)
-
-# Convert using conventional cell geometry from representations[1]
-atoms_conventional = model_system.to_ase_atoms(representation_index=1)
+--8<-- "snippets/explanation/model_system/representation/block_04.py"
 ```
 
 This is particularly useful when you need to perform ASE-based analyses with different cell definitions. For example, you might want to compute phonons in the primitive cell or visualize the structure in the conventional cell, all while using the same atomic positions from the original system.
@@ -146,15 +77,7 @@ The separation between atomic positions (from `ModelSystem`) and cell geometry (
 When searching for a specific representation by name, use a simple loop:
 
 ```python
-primitive_rep = None
-for rep in model_system.representations:
-    if rep.name == 'primitive':
-        primitive_rep = rep
-        break
-
-if primitive_rep:
-    # Use the primitive representation
-    primitive_lattice = primitive_rep.lattice_vectors
+--8<-- "snippets/explanation/model_system/representation/block_05.py"
 ```
 
 This pattern is used throughout the NOMAD simulations schema, particularly in numerical settings where primitive cells are often required for k-space sampling.
@@ -166,12 +89,7 @@ The `Representation` class focuses solely on geometric details and does not affe
 What `Representation` does provide is the ability to access alternative geometric views at any point in the hierarchy. Each `ModelSystem`, at any level, can have its own `representations` subsection containing different geometric perspectives of that specific system:
 
 ```python
-# At any level of the hierarchy, access alternative geometric views
-for rep in model_system.representations:
-    if rep.name == 'primitive':
-        primitive_lattice = rep.lattice_vectors
-    elif rep.name == 'conventional':
-        conventional_lattice = rep.lattice_vectors
+--8<-- "snippets/explanation/model_system/representation/block_06.py"
 ```
 
 This means you can explore different geometric descriptions (primitive cells, conventional cells, supercells) without changing your position in the system hierarchy.

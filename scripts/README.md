@@ -20,6 +20,24 @@ This runs the complete pipeline:
 6. Updates navigation (including hierarchical structure)
 7. Validates output
 
+Backlinks from generated schema pages to explanation pages are auto-discovered:
+- the generator scans `docs/explanation/**/*.md`,
+- any explanation page linking to `schema/<vertical>.md` is listed under
+  `Related Pages` on the corresponding generated schema page.
+
+Generate reusable explanation fragments (for hand-written docs):
+```bash
+uv run python scripts/generate_explanation_fragments.py
+```
+
+This command writes deterministic Markdown fragments to
+`docs/snippets/generated/`:
+
+- `model_method_hierarchy.md`
+- `model_method_family_map.md`
+
+These fragments are included by explanation pages to reduce manual duplication.
+
 ## Diagram Zoom Configuration
 
 The pipeline supports two methods for diagram interaction:

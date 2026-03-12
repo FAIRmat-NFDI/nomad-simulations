@@ -9,6 +9,7 @@
 - Program details (name, version, link)
 - Entry point that references the four main subsections
 
+
 ## Relationship map
 
 
@@ -64,4 +65,5 @@ classDiagram
 | `version_internal` | m_str(str) | Specifies a program version tag used internally for development purposes. Any kind of tagging system is supported, including git commit hashes. |
 | `subroutine_name_internal` | m_str(str) | <details><summary>Specifies the name of the subroutine of the program at large.</summary>Specifies the name of the subroutine of the program at large.<br>This only applies when the routine produced (almost) all of the output,<br>so the naming is representative. This naming is mostly meant for users<br>who are familiar with the program's structure.</details> |
 | `compilation_host` | m_str(str) | Specifies the host on which the program was compiled. |
+
 

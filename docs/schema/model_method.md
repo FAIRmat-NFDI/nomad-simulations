@@ -7,6 +7,7 @@
 - Top-level inheritance chain: BaseModelMethod → ModelMethod → ModelMethodElectronic
 - Entry point for all electronic-method subclasses
 
+
 ## Relationship map
 
 
@@ -54,3 +55,7 @@ classDiagram
 | `is_spin_polarized` | m_bool(bool) | If the simulation is done considering the spin degrees of freedom (then there are two spin channels, 'down' and 'up') or not. |
 | `determinant` | Enum | <details><summary>The spin-coupling form of the determinant used for the</summary>The spin-coupling form of the determinant used for the<br>self-consistent field (SCF) calculation.<br>- **restricted**  (RHF/RKS): α and β electrons share the same spatial orbitals<br>- **unrestricted** (UHF/UKS): α and β orbitals are optimized independently<br>- **restricted-open-shell** (ROHF/ROKS): closed-shell core with spin-unpaired electrons<br>sharing spatial orbitals in the open-shell manifold</details> |
 
+
+## Related Pages
+
+- [Model Method Overview](../explanation/model_method/overview.md)

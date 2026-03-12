@@ -3,14 +3,14 @@
 <!--
 Improve these paragraphs once `Program` and `BaseSimulation` are integrated in `basesections.py`
 --->
-In NOMAD, all the simulation metadata is defined in the `Simulation` section. You can find its Python schema definition in [src/nomad_simulations/general.py](https://github.com/fairmat-nfdi/nomad-simulations/blob/develop/src/nomad_simulations/general.py). This section will appear under the `data` section for the [*archive*](https://nomad-lab.eu/prod/v1/staging/docs/reference/glossary.html#archive) metadata structure of each [*entry*](https://nomad-lab.eu/prod/v1/staging/docs/reference/glossary.html#entry).
+In NOMAD, all the simulation metadata is defined in the `Simulation` section. You can find its Python schema definition in [src/nomad_simulations/schema_packages/general.py](https://github.com/fairmat-nfdi/nomad-simulations/blob/develop/src/nomad_simulations/schema_packages/general.py). This section will appear under the `data` section for the [*archive*](https://nomad-lab.eu/prod/v1/staging/docs/reference/glossary.html#archive) metadata structure of each [*entry*](https://nomad-lab.eu/prod/v1/staging/docs/reference/glossary.html#entry).
 
 The `Simulation` section inherits from a _base section_ `BaseSimulation`. In NOMAD, a set of [base sections](https://nomad-lab.eu/prod/v1/staging/docs/howto/customization/base_sections.html) derived from the [Basic Formal Ontology (BFO)](https://basic-formal-ontology.org/) are defined. We used them to define `BaseSimulation` as an [`Activity`](http://purl.obolibrary.org/obo/BFO_0000015). The UML diagram is:
 
 <div class="click-zoom">
     <label>
         <input type="checkbox">
-        <img src="../../assets/simulation_base.png" alt="Simulation base section diagram." width="80%" title="Click to zoom in">
+        <img src="../images/simulation_base.png" alt="Simulation base section diagram." width="80%" title="Click to zoom in">
     </label>
 </div>
 
@@ -19,7 +19,7 @@ The `Simulation` section inherits from a _base section_ `BaseSimulation`. In NOM
 <div class="click-zoom">
     <label>
         <input type="checkbox">
-        <img src="../../assets/simulation.png" alt="Simulation quantities and functions UML diagram." width="50%" title="Click to zoom in">
+        <img src="../images/simulation.png" alt="Simulation quantities and functions UML diagram." width="50%" title="Click to zoom in">
     </label>
 </div>
 
@@ -35,7 +35,7 @@ The `Simulation` section inherits from a _base section_ `BaseSimulation`. In NOM
 
     E.g., there is a sub-section under `Simulation` named `'model_method'` whose section defintion can be found in the `ModelMethod` section. We will represent this sub-section containment in more complex UML diagrams in the future using the containment arrow (see below for [an example using `Program`](#program)).
 
-We use double inheritance from `EntryData` in order to populate the `data` section in the NOMAD archive. All of the base sections discussed here are subject to the [public normalize function](normalize.md) in NOMAD. The private function `set_system_branch_depth()` is related with the [ModelSystem base section](model_system/model_system.md).
+`Simulation` inherits from `BaseSimulation` and `Schema` and is used as the simulation entry section in the archive. All of the base sections discussed here are subject to the [public normalize function](normalize.md) in NOMAD. The private function `_set_system_branch_depth()` is related with the [ModelSystem base section](model_system/model_system.md).
 
 ## Main sub-sections in `Simulation` {#sub-sections-in-simulation}
 
@@ -56,7 +56,7 @@ The following schematic represents a simplified representation of the `Simulatio
 <div class="click-zoom">
     <label>
         <input type="checkbox">
-        <img src="../../assets/simulation_composition.png" alt="Simulation composition diagram." width="90%" title="Click to zoom in">
+        <img src="../images/simulation_composition.png" alt="Simulation composition diagram." width="90%" title="Click to zoom in">
     </label>
 </div>
 
@@ -67,7 +67,7 @@ The `Program` base section contains all the information about the program / soft
 <div class="click-zoom">
     <label>
         <input type="checkbox">
-        <img src="../../assets/program.png" alt="Program quantities and functions UML diagram." width="75%" title="Click to zoom in">
+        <img src="../images/program.png" alt="Program quantities and functions UML diagram." width="75%" title="Click to zoom in">
     </label>
 </div>
 
@@ -85,7 +85,7 @@ We can parse the program `name` and `version` by matching the texts (see, e.g., 
 
 ```python
 from nomad.parsing.file_parser import TextParser, Quantity
-from nomad_simulations import Simulation, Program
+from nomad_simulations.schema_packages.general import Simulation, Program
 
 
 class SUPERCODEParser:
