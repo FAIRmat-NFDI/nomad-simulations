@@ -2,9 +2,12 @@ import ast
 import re
 import runpy
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
+from docs.snippets.data_types import error_handling as error_handling_module
 from docs.snippets.data_types.basic_usage import build_valid_section
 from docs.snippets.data_types.error_handling import bounded_error_message
 from docs.snippets.data_types.factory_masks import factory_bounds_map
@@ -13,6 +16,7 @@ from docs.snippets.data_types.standalone_type_roundtrip import (
     standalone_type_roundtrip,
 )
 from docs.snippets.data_types.validation_behavior import demo_validation_behavior
+from docs.snippets.explanation.general.block_01 import SUPERCODEParser
 from docs.snippets.model_method.model_method_overview_example import (
     build_model_method_overview_example,
 )
@@ -42,14 +46,12 @@ EXECUTED_SNIPPETS = {
     'snippets/model_method/model_method_overview_example.py',
     'snippets/model_system/minimal_parser_pattern.py',
     'snippets/simulation_entry/program_setup.py',
-}
-
-# Standalone snippets that are not included in markdown pages but should still
-# be checked as runnable examples.
-RUNPY_SNIPPETS = {
-    'snippets/data_types/interval_notation.py',
     'snippets/explanation/general/block_01.py',
 }
+
+SNIPPET_MARKER_PREFIX = '# docs-snippet:'
+RUNNABLE_MARKER = 'runnable'
+SKIP_COVERAGE_MARKER = 'skip-coverage'
 
 
 def _doc_snippet_refs() -> list[str]:
@@ -67,6 +69,27 @@ def _all_snippet_files() -> list[str]:
         for path in SNIPPETS_ROOT.rglob('*.py')
         if path.name != '__init__.py'
     )
+
+
+def _snippet_markers(ref: str) -> set[str]:
+    markers: set[str] = set()
+    for line in Path('docs', ref).read_text(encoding='utf-8').splitlines():
+        stripped = line.strip()
+        if not stripped.startswith(SNIPPET_MARKER_PREFIX):
+            continue
+        tags = stripped.split(':', 1)[1]
+        markers.update(tag.strip() for tag in tags.split(',') if tag.strip())
+    return markers
+
+
+def _marked_runnable_snippets() -> set[str]:
+    return {ref for ref in _all_snippet_files() if RUNNABLE_MARKER in _snippet_markers(ref)}
+
+
+def _coverage_skipped_snippets() -> set[str]:
+    return {
+        ref for ref in _all_snippet_files() if SKIP_COVERAGE_MARKER in _snippet_markers(ref)
+    }
 
 
 def test_minimal_model_system_example():
@@ -126,6 +149,14 @@ def test_data_types_error_message():
     assert 'All values must be in [0.0,1.0]' in message
 
 
+def test_data_types_error_message_no_error_path(monkeypatch):
+    class NoErrorSection:
+        probability = 0.5
+
+    monkeypatch.setattr(error_handling_module, 'ProbabilitySection', NoErrorSection)
+    assert bounded_error_message() == ''
+
+
 def test_simulation_entry_program_setup():
     simulation = build_simulation_with_program()
     assert simulation.program is not None
@@ -141,6 +172,20 @@ def test_model_method_overview_example():
     assert method.numerical_settings is not None
     assert len(method.numerical_settings) == 1
     assert method.numerical_settings[0].n_max_iterations == 80
+
+
+def test_supercode_parser_parse_example(tmp_path):
+    mainfile = tmp_path / 'output.log'
+    mainfile.write_text('version 7.3\n', encoding='utf-8')
+
+    archive = SimpleNamespace(data=[])
+    parser = SUPERCODEParser()
+    parser.parse(str(mainfile), archive=archive, logger=None)
+
+    assert len(archive.data) == 1
+    simulation = archive.data[0]
+    assert simulation.program.name == 'SUPERCODE'
+    assert simulation.program.version == '7.3'
 
 
 def test_all_markdown_referenced_snippet_paths_exist():
@@ -176,7 +221,12 @@ def test_all_snippet_python_files_are_syntax_valid():
 
 def test_all_snippet_files_have_corresponding_test_coverage():
     refs = set(_doc_snippet_refs())
-    covered = refs | EXECUTED_SNIPPETS | RUNPY_SNIPPETS
+    covered = (
+        refs
+        | EXECUTED_SNIPPETS
+        | _marked_runnable_snippets()
+        | _coverage_skipped_snippets()
+    )
     all_snippets = set(_all_snippet_files())
     uncovered = sorted(all_snippets - covered)
     assert not uncovered, (
@@ -187,10 +237,27 @@ def test_all_snippet_files_have_corresponding_test_coverage():
 
 def test_executed_snippet_list_is_valid():
     all_snippets = set(_all_snippet_files())
-    unknown = sorted((set(EXECUTED_SNIPPETS) | set(RUNPY_SNIPPETS)) - all_snippets)
+    unknown = sorted(set(EXECUTED_SNIPPETS) - all_snippets)
     assert not unknown, f'Executed snippet lists contain unknown paths: {unknown}'
 
 
-def test_runpy_snippets_execute_without_error():
-    for ref in sorted(RUNPY_SNIPPETS):
-        runpy.run_path(str(Path('docs', ref)))
+@pytest.mark.parametrize('ref', sorted(_marked_runnable_snippets()))
+def test_marked_runnable_snippets_execute_without_error(ref):
+    # Runnable markers are intended for standalone examples that execute on
+    # import-like run (runpy) without extra fixtures.
+    assert ref.endswith('.py')
+    assert ref.startswith('snippets/')
+    assert ref not in _coverage_skipped_snippets()
+    runpy.run_path(str(Path('docs', ref)))
+
+
+def test_skip_coverage_and_runnable_markers_do_not_overlap():
+    overlap = _marked_runnable_snippets() & _coverage_skipped_snippets()
+    assert not overlap, f'Snippet cannot be both runnable and skip-coverage: {sorted(overlap)}'
+
+
+def test_runnable_marker_is_present_for_standalone_examples():
+    # Guard against accidentally dropping marker coverage for standalone snippets.
+    expected = {'snippets/data_types/interval_notation.py'}
+    runnable = _marked_runnable_snippets()
+    assert expected.issubset(runnable)

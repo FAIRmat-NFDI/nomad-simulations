@@ -1,3 +1,4 @@
+# docs-snippet: runnable
 from nomad_simulations.schema_packages.data_types import Bound
 
 # Closed intervals (inclusive bounds)

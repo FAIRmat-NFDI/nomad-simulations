@@ -67,6 +67,7 @@ reduce manual duplication.
 
 Canonical snippet authoring rules live in
 [Documentation Writing Guide](documentation_writing_guide.md).
+Marker and folder conventions are documented in `docs/snippets/README.md`.
 
 Run snippet validation and execution via:
 
@@ -75,7 +76,7 @@ uv run python -m pytest -q tests/test_doc_snippets.py
 ```
 
 This test module validates snippet references, syntax, and execution behavior
-for runnable examples.
+for runnable examples discovered via `# docs-snippet: runnable`.
 
 ## 4) Ownership and Update Rules
 

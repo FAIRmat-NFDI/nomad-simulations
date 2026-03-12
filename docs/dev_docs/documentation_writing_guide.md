@@ -34,7 +34,9 @@ overview/landing pages):
 
 - Store snippets in `docs/snippets/`.
 - Include snippets via `--8<-- "snippets/<path>/<file>.py"`.
+- Mark standalone runnable snippets with `# docs-snippet: runnable`.
 - Ensure every snippet has test coverage in `tests/test_doc_snippets.py`.
+- See `docs/snippets/README.md` for snippet categories and markers.
 
 ## 5) Assets and Paths
 
