@@ -15,7 +15,7 @@ from nomad.metainfo import (
 from nomad.units import ureg
 from scipy.interpolate import UnivariateSpline
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.atoms_state import ParticleState
 from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
@@ -867,7 +867,8 @@ class PolynomialAngle(PolynomialPotential, AnglePotential):
         if match:
             extracted_text = match.group().strip()  # .group(1).strip()
         self.__doc__ = rf"""{self.__doc__} {extracted_text}.
-            Here the dependent variable of the potential, $x$, corresponds to the angle between three particles."""
+            Here the dependent variable of the potential, $x$, corresponds to the angle
+            between three particles."""
 
     def normalize(self, archive, logger) -> None:
         super().normalize(archive, logger)
@@ -877,7 +878,8 @@ class PolynomialAngle(PolynomialPotential, AnglePotential):
 
 class TabulatedAngle(AnglePotential, TabulatedPotential):
     """
-    Section containing information about a tabulated bond potential. The value of the potential and/or force
+    Section containing information about a tabulated bond potential. The value of the
+    potential and/or force
     is stored for a set of corresponding bin distances.
     """
 
@@ -1249,22 +1251,22 @@ class PeriodicImproper(ImproperDihedralPotential):
             self.functional_form = 'periodic'
 
 
-class AtomParameters(ArchiveSection):
+class ParticleParameters(ArchiveSection):
     """
     Force field parameters for one atom type. `species_scope` holds forward
-    references from this entry to every `AtomsState` instance assigned this
+    references from this entry to every `ParticleState` instance assigned this
     type, mirroring the pattern of `BasisSetComponent.species_scope`.
-    `species_scope` is resolved automatically by `AtomParametersContainer.normalize()`
-    by matching `atom_type` against `AtomsState.label`.
+    `species_scope` is resolved automatically by `ParticleParametersContainer.normalize()`
+    by matching `atom_type` against `ParticleState.label`.
     """
 
     species_scope = Quantity(
-        type=AtomsState,
+        type=ParticleState,
         shape=['*'],
         description="""
-        References to the `AtomsState` instances assigned this atom type.
-        Resolved by `AtomParametersContainer.normalize()` from `atom_type`
-        matching against `AtomsState.label` in the representative `ModelSystem`.
+        References to the `ParticleState` instances assigned this atom type.
+        Resolved by `ParticleParametersContainer.normalize()` from `atom_type`
+        matching against `ParticleState.label` in the representative `ModelSystem`.
         """,
     )
 
@@ -1284,7 +1286,7 @@ class AtomParameters(ArchiveSection):
         unit='elementary_charge',
         description="""
         Partial charge assigned in this `AtomParameters` entry for the referenced
-        `AtomsState` instance, as a force field parameter. Adjusted from formal/
+        `ParticleState` instance, as a force field parameter. Adjusted from formal/
         oxidation charges to model electrostatic interactions within the context
         of the force field. Distinct from formal or oxidation-state style charges.
         """,
@@ -1295,22 +1297,22 @@ class AtomParameters(ArchiveSection):
         unit='kg',
         description="""
         Effective mass assigned in this `AtomParameters` entry for the referenced
-        `AtomsState` instance, as a force field parameter. May differ from the
+        `ParticleState` instance, as a force field parameter. May differ from the
         standard atomic mass when force-field parameterization adjusts masses for
         numerical stability or coarse-grained representations.
         """,
     )
 
 
-class AtomParametersContainer(NumericalSettings):
+class ParticleParametersContainer(NumericalSettings):
     """
     Numerical-settings container for per-atom force field parameters grouped
-    by atom type. Each `AtomParameters` subsection covers all atoms of one
-    FF atom type via `species_scope` (references to `AtomsState` instances).
+    by atom type. Each `ParticleParameters` subsection covers all atoms of one
+    FF atom type via `species_scope` (references to `ParticleState` instances).
     """
 
     atom_parameters = SubSection(
-        sub_section=AtomParameters.m_def,
+        sub_section=ParticleParameters.m_def,
         repeats=True,
         description="""
         Per-atom-type force field parameters (partial charge, effective mass,
@@ -1324,7 +1326,7 @@ class AtomParametersContainer(NumericalSettings):
             particle_states = archive.data.model_system[-1].particle_states
         except (AttributeError, IndexError, TypeError):
             logger.error(
-                'Unable to resolve AtomParameters.species_scope references, '
+                'Unable to resolve ParticleParameters.species_scope references, '
                 'model_system or particle_states not accessible.'
             )
             particle_states = None
@@ -1352,7 +1354,7 @@ class AtomParametersContainer(NumericalSettings):
                 seen.add(ps_id)
         if duplicates:
             logger.error(
-                'Overlapping species_scope references across AtomParameters entries.'
+                'Overlapping species_scope references across ParticleParameters entries.'
                 '(conflicting atom_type(s): %s)',
                 ', '.join(sorted(duplicates)),
             )
@@ -1361,8 +1363,9 @@ class AtomParametersContainer(NumericalSettings):
 class ForceField(ModelMethod):
     """
     Section containing the parameters of a (classical, particle-based) force field model.
-    Typical `numerical_settings` are ForceCalculations and AtomParametersContainer.
-    Lists of interactions by type and, if available, corresponding parameters can be given within `interactions`.
+    Typical `numerical_settings` are ForceCalculations and ParticleParametersContainer.
+    Lists of interactions by type and, if available, corresponding parameters can be given
+    within `interactions`.
     Additionally, a published model can be referenced with `reference`.
     """
 

@@ -9,8 +9,6 @@ from nomad_simulations.schema_packages.atoms_state import AtomsState
 
 # from nomad_simulations.schema_packages.method import ModelMethod
 from nomad_simulations.schema_packages.force_field import (
-    AtomParameters,
-    AtomParametersContainer,
     BondPotential,
     CosineAngle,
     CubicBond,
@@ -24,6 +22,8 @@ from nomad_simulations.schema_packages.force_field import (
     LinearBondAngleCoupling,
     MorseBond,
     ParameterEntry,
+    ParticleParameters,
+    ParticleParametersContainer,
     PeriodicDihedral,
     PeriodicImproper,
     PolynomialAngle,
@@ -1056,11 +1056,11 @@ def test_potentials(
 ## Other types of tests
 
 
-class TestAtomParameters:
+class TestParticleParameters:
     def test_basic_instantiation(self):
         ps_o = AtomsState(label='OW')
         ps_h1 = AtomsState(label='HW1')
-        ap = AtomParameters()
+        ap = ParticleParameters()
         ap.atom_type = 'OW'
         ap.species_scope = [ps_o, ps_h1]
 
@@ -1068,7 +1068,7 @@ class TestAtomParameters:
         assert len(ap.species_scope) == 2
 
     def test_partial_charge_and_mass(self):
-        ap = AtomParameters()
+        ap = ParticleParameters()
         ap.partial_charge = -0.834 * ureg.elementary_charge
         ap.effective_mass = 15.999 * ureg.amu
 
@@ -1076,16 +1076,16 @@ class TestAtomParameters:
         assert ap.effective_mass.to('amu').magnitude == pytest.approx(15.999)
 
 
-class TestAtomParametersContainer:
+class TestParticleParametersContainer:
     def test_normalize_passes_for_non_overlapping_scope(self):
         ps_o = AtomsState(label='OW')
         ps_h1 = AtomsState(label='HW1')
         ps_h2 = AtomsState(label='HW2')
-        apc = AtomParametersContainer()
-        ap_o = AtomParameters()
+        apc = ParticleParametersContainer()
+        ap_o = ParticleParameters()
         ap_o.atom_type = 'OW'
         ap_o.species_scope = [ps_o]
-        ap_h = AtomParameters()
+        ap_h = ParticleParameters()
         ap_h.atom_type = 'HW'
         ap_h.species_scope = [ps_h1, ps_h2]
         apc.atom_parameters = [ap_o, ap_h]
@@ -1095,11 +1095,11 @@ class TestAtomParametersContainer:
 
     def test_normalize_logs_for_overlapping_scope(self):
         ps_shared = AtomsState(label='OW')
-        apc = AtomParametersContainer()
-        ap1 = AtomParameters()
+        apc = ParticleParametersContainer()
+        ap1 = ParticleParameters()
         ap1.atom_type = 'OW'
         ap1.species_scope = [ps_shared]
-        ap2 = AtomParameters()
+        ap2 = ParticleParameters()
         ap2.atom_type = 'HW'
         ap2.species_scope = [ps_shared]  # same object → overlap
         apc.atom_parameters = [ap1, ap2]
@@ -1133,10 +1133,10 @@ class TestAtomParametersContainer:
         archive = EntryArchive()
         archive.data = simulation
 
-        apc = AtomParametersContainer()
-        ap_o = AtomParameters()
+        apc = ParticleParametersContainer()
+        ap_o = ParticleParameters()
         ap_o.atom_type = 'OW'
-        ap_h = AtomParameters()
+        ap_h = ParticleParameters()
         ap_h.atom_type = 'HW'
         apc.atom_parameters = [ap_o, ap_h]
         apc.normalize(archive, logger)
@@ -1156,8 +1156,8 @@ class TestAtomParametersContainer:
         archive = EntryArchive()
         archive.data = simulation
 
-        apc = AtomParametersContainer()
-        ap = AtomParameters()
+        apc = ParticleParametersContainer()
+        ap = ParticleParameters()
         ap.atom_type = 'CT'  # no AtomsState with this label
         apc.atom_parameters = [ap]
         apc.normalize(archive, logger)
@@ -1166,14 +1166,14 @@ class TestAtomParametersContainer:
 
     def test_fits_into_force_field_numerical_settings(self):
         ff = ForceField()
-        apc = AtomParametersContainer()
-        ap = AtomParameters()
+        apc = ParticleParametersContainer()
+        ap = ParticleParameters()
         ap.atom_type = 'OW'
         apc.atom_parameters = [ap]
         ff.numerical_settings.append(apc)
 
         assert len(ff.numerical_settings) == 1
-        assert isinstance(ff.numerical_settings[0], AtomParametersContainer)
+        assert isinstance(ff.numerical_settings[0], ParticleParametersContainer)
         assert ff.numerical_settings[0].atom_parameters[0].atom_type == 'OW'
 
 
