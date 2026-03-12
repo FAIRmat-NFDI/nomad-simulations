@@ -32,6 +32,7 @@ from docs.snippets.simulation_entry.program_setup import (
 
 SNIPPETS_ROOT = Path('docs/snippets')
 DOCS_ROOT = Path('docs')
+DEV_NOTES_ROOT = Path('.dev_notes')
 
 # Snippets that are executed directly by tests in this file and therefore do
 # not need to be included via --8<-- in markdown pages.
@@ -56,9 +57,14 @@ SKIP_COVERAGE_MARKER = 'skip-coverage'
 
 def _doc_snippet_refs() -> list[str]:
     refs: set[str] = set()
-    for md in DOCS_ROOT.rglob('*.md'):
-        text = md.read_text(encoding='utf-8')
-        refs.update(re.findall(r'--8<--\s+"([^"]+)"', text))
+    md_roots = [DOCS_ROOT]
+    if DEV_NOTES_ROOT.exists():
+        md_roots.append(DEV_NOTES_ROOT)
+
+    for root in md_roots:
+        for md in root.rglob('*.md'):
+            text = md.read_text(encoding='utf-8')
+            refs.update(re.findall(r'--8<--\s+"([^"]+)"', text))
     # Ignore placeholder examples in guideline text.
     return sorted(r for r in refs if '<' not in r and '>' not in r)
 
