@@ -1,6 +1,7 @@
 # Documentation Automation Guide
 
 The docs automation has two responsibilities:
+
 - generate reference pages from schema introspection (`docs/schema/*`),
 - generate reusable fragments consumed by hand-written explanation pages.
 

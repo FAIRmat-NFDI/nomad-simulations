@@ -41,13 +41,11 @@ nav:
       #     - Outputs: explanation/outputs/outputs.md
       - Bounded Data Types: explanation/data_types.md
       - Normalization: explanation/normalize.md
-  - Dev Docs:
-      - Overview: dev_docs/overview.md
-      - Schema Development Guide: dev_docs/schema_development_guide.md
-      - Documentation Writing Guide: dev_docs/documentation_writing_guide.md
-      - Documentation Automation Guide: dev_docs/documentation_automation_guide.md
-      - Representation Design History: dev_docs/representation_design_history.md
-      - Electronic States Migration and Technical Notes: dev_docs/electronic_states_migration.md
+  - Contributor Guides:
+      - Overview: contributor_guides/overview.md
+      - Schema Development Guide: contributor_guides/schema_development_guide.md
+      - Documentation Writing Guide: contributor_guides/documentation_writing_guide.md
+      - Documentation Automation Guide: contributor_guides/documentation_automation_guide.md
   - Contact: contact.md
 theme:
   name: material

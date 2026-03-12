@@ -58,5 +58,5 @@ When parsing Wannier function output, create `ElectronicState` instances with th
 
 ## Developer Notes
 
-Additional related development considerations can be found in:
-[Electronic States: Migration and Technical Notes](../../dev_docs/electronic_states_migration.md).
+Additional contributor guidance is available under
+[Contributor Guides > Overview](../../contributor_guides/overview.md).

@@ -33,7 +33,7 @@ Reference: [Normalization](../normalize.md)
 6. Keep documentation invariants synchronized.
 Do: update affected explanation pages in the same PR when usage rules change.
 Do: keep this page as policy-only and move long examples elsewhere.
-Reference: [Model System](model_system.md), [Representation Architecture](representation.md), [Documentation Writing Guide](../../dev_docs/documentation_writing_guide.md)
+Reference: [Model System](model_system.md), [Representation Architecture](representation.md), [Documentation Writing Guide](../../contributor_guides/documentation_writing_guide.md)
 
 !!! info "Contributor Note"
     This page defines required usage rules for `ModelSystem` and should stay
