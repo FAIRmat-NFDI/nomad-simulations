@@ -75,7 +75,20 @@ def collect_quantities_info(section_cls) -> list[dict]:
             if hasattr(q_type, '__name__'):
                 type_str = q_type.__name__
             else:
-                type_str = str(q_type)
+                raw_type = str(q_type)
+                # Avoid non-deterministic object reprs (memory addresses), e.g.
+                # <...Reference object at 0x...>. Keep richer string forms where
+                # stable (e.g., m_str(str), m_float64(float64)).
+                if re.search(r'0x[0-9a-fA-F]+', raw_type):
+                    q_type_class = getattr(q_type, '__class__', None)
+                    type_str = (
+                        q_type_class.__name__
+                        if q_type_class is not None
+                        and hasattr(q_type_class, '__name__')
+                        else raw_type
+                    )
+                else:
+                    type_str = raw_type
 
         # Get shape information if it's an array
         shape_str = ''
@@ -91,8 +104,6 @@ def collect_quantities_info(section_cls) -> list[dict]:
 
         # Clean description for markdown table:
         if description:
-            import re
-
             # Split into lines and clean
             lines = description.split('\n')
             cleaned_lines = [line.strip() for line in lines if line.strip()]

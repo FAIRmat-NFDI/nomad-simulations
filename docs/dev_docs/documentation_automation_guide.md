@@ -85,3 +85,16 @@ for runnable examples discovered via `# docs-snippet: runnable`.
 - If examples change, update snippets and snippet tests in the same PR.
 - Keep generated outputs deterministic and committed with the corresponding
   source-script changes.
+
+## 5) CI Docs Integrity Gate
+
+GitHub Actions includes a `docs-integrity` job in
+`.github/workflows/actions.yml` that runs:
+
+1. `scripts/gen_docs.py` and `scripts/generate_explanation_fragments.py`,
+2. a diff check on generated artifacts (`docs/schema`, `docs/snippets/generated`),
+3. `tests/test_doc_snippets.py`,
+4. `mkdocs build -q`.
+
+Use these same commands locally before opening PRs that touch documentation
+automation, snippets, or generated docs.
