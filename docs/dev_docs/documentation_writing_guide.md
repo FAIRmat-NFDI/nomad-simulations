@@ -12,11 +12,17 @@ Use this as a short checklist when updating docs.
 
 ## 2) Keep Pages Focused
 
-- One page, one concern.
-- If text repeats across pages, extract it and link.
+- Define a single primary question each page answers (for example:
+  "how to model `ModelSystem` hierarchy").
+- Move secondary material to linked pages instead of expanding scope.
+- If two pages repeat more than a short paragraph, keep one canonical version
+  and replace the duplicate with a link.
 - Prefer short sections with explicit headings.
 
 ## 3) Use a Simple Page Pattern
+
+Use this structure for technical explanation pages (not required for
+overview/landing pages):
 
 1. Purpose
 2. Link to generated page(s)

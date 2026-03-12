@@ -1,14 +1,10 @@
 # Documentation Automation Guide
 
-This page centralizes the automation workflows used to generate and validate
-documentation in `nomad-simulations`.
+The docs automation has two responsibilities:
+- generate reference pages from schema introspection (`docs/schema/*`),
+- generate reusable fragments consumed by hand-written explanation pages.
 
-## Scope
-
-Automation is split into two tracks:
-
-- generated schema reference pages (`docs/schema/*`),
-- reusable fragments/snippets used by hand-written explanation pages.
+These are script-driven outputs (not AI-generated text).
 
 ## 1) Generated Schema Navigation
 
@@ -24,6 +20,11 @@ What it does:
 2. regenerates diagrams and schema pages from introspection,
 3. updates schema navigation structure in docs config,
 4. validates generated output.
+
+Output stability:
+- for the same schema revision and script version, generated content is stable
+  because class discovery and rendered lists are sorted;
+- updates should appear only when schema/docs sources change.
 
 Primary script inputs:
 
@@ -54,7 +55,7 @@ Run:
 uv run python scripts/generate_explanation_fragments.py
 ```
 
-This writes deterministic Markdown fragments to:
+This writes stable Markdown fragments to:
 
 - `docs/snippets/generated/model_method_hierarchy.md`
 - `docs/snippets/generated/model_method_family_map.md`
@@ -64,18 +65,17 @@ reduce manual duplication.
 
 ## 3) Snippet Protocol (Executable Docs)
 
-For code examples in explanation pages:
+Canonical snippet authoring rules live in
+[Documentation Writing Guide](documentation_writing_guide.md).
 
-1. store code in `docs/snippets/...`,
-2. include in Markdown via `--8<-- "snippets/<path>/<file>.py"`,
-3. ensure test coverage in `tests/test_doc_snippets.py`.
+Run snippet validation and execution via:
 
-Coverage checks include:
+```bash
+uv run python -m pytest -q tests/test_doc_snippets.py
+```
 
-- referenced snippet path existence,
-- Python syntax validation,
-- explicit execution for runnable examples,
-- coverage guard to prevent untested snippets.
+This test module validates snippet references, syntax, and execution behavior
+for runnable examples.
 
 ## 4) Ownership and Update Rules
 
