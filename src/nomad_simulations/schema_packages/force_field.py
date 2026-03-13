@@ -6,10 +6,17 @@ import numpy as np
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.datamodel.context import Context
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import JSON, URL, MEnum, Quantity, Section, SubSection
+from nomad.metainfo import (
+    URL,
+    MEnum,
+    Quantity,
+    SubSection,
+)
 from nomad.units import ureg
 from scipy.interpolate import UnivariateSpline
 
+from nomad_simulations.schema_packages.atoms_state import ParticleState
+from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 
@@ -291,16 +298,16 @@ class TabulatedPotential(Potential):
         if not self.functional_form:
             self.functional_form = 'tabulated'
         elif self.functional_form != 'tabulated':
-            logger.warning(f'Incorrect functional form set for {self.name}.')
+            logger.warning('Incorrect functional form set for %s.', self.name)
 
         if self.bins is not None and self.energies is not None:
             if len(self.bins) != len(self.energies):
                 logger.error(
-                    f'bins and energies values have different length in {self.name}'
+                    'bins and energies values have different length in %s', self.name
                 )
         if self.bins is not None and self.forces is not None:
             if len(self.bins) != len(self.forces):
-                logger.error(f'bins and forces have different length in {self.name}')
+                logger.error('bins and forces have different length in %s', self.name)
 
         if self.bins is not None:
             smoothing_factor = len(self.bins) - np.sqrt(2 * len(self.bins))
@@ -341,19 +348,25 @@ class TabulatedPotential(Potential):
                     )
                     if np.all([np.abs(x) < FF_TOL for x in energies_diff]):
                         logger.warning(
-                            f'Tabulated forces were generated from energies in {self.name},'
-                            f'with consistency errors less than tol={FF_TOL}. '
+                            'Tabulated forces were generated from energies in %s,'
+                            'with consistency errors less than tol=%s. ',
+                            self.name,
+                            FF_TOL,
                         )
                     else:
                         logger.warning(
-                            f'Unable to derive tabulated forces from energies in {self.name},'
-                            f'consistency errors were greater than tol={FF_TOL}.'
+                            'Unable to derive tabulated forces from energies in %s,'
+                            'consistency errors were greater than tol=%s.',
+                            self.name,
+                            FF_TOL,
                         )
                         self.forces = None
                 except ValueError as e:
                     logger.warning(
-                        f'Unable to derive tabulated forces from energies in {self.name},'
-                        f'Unknown error occurred in derivation: {e}'
+                        'Unable to derive tabulated forces from energies in %s,'
+                        'Unknown error occurred in derivation: %s',
+                        self.name,
+                        e,
                     )
 
             if self.forces is not None and self.energies is None:
@@ -387,19 +400,25 @@ class TabulatedPotential(Potential):
                     )
                     if np.all([np.abs(x) < FF_TOL for x in forces_diff]):
                         logger.warning(
-                            f'Tabulated energies were generated from forces in {self.name},'
-                            f'with consistency errors less than tol={FF_TOL}. '
+                            'Tabulated energies were generated from forces in %s,'
+                            'with consistency errors less than tol=%s. ',
+                            self.name,
+                            FF_TOL,
                         )
                     else:
                         logger.warning(
-                            f'Unable to derive tabulated energies from forces in {self.name},'
-                            f'consistency errors were greater than tol={FF_TOL}.'
+                            'Unable to derive tabulated energies from forces in %s,'
+                            'consistency errors were greater than tol=%s.',
+                            self.name,
+                            FF_TOL,
                         )
                         self.energies = None
                 except ValueError as e:
                     logger.warning(
-                        f'Unable to derive tabulated energies from forces in {self.name},'
-                        f'Unknown error occurred in derivation: {e}'
+                        'Unable to derive tabulated energies from forces in %s,'
+                        'Unknown error occurred in derivation: %s',
+                        self.name,
+                        e,
                     )
 
 
@@ -848,7 +867,8 @@ class PolynomialAngle(PolynomialPotential, AnglePotential):
         if match:
             extracted_text = match.group().strip()  # .group(1).strip()
         self.__doc__ = rf"""{self.__doc__} {extracted_text}.
-            Here the dependent variable of the potential, $x$, corresponds to the angle between three particles."""
+            Here the dependent variable of the potential, $x$, corresponds to the angle
+            between three particles."""
 
     def normalize(self, archive, logger) -> None:
         super().normalize(archive, logger)
@@ -858,7 +878,8 @@ class PolynomialAngle(PolynomialPotential, AnglePotential):
 
 class TabulatedAngle(AnglePotential, TabulatedPotential):
     """
-    Section containing information about a tabulated bond potential. The value of the potential and/or force
+    Section containing information about a tabulated bond potential. The value of the
+    potential and/or force
     is stored for a set of corresponding bin distances.
     """
 
@@ -1018,7 +1039,7 @@ class PeriodicDihedral(DihedralPotential):
         type=np.float64,
         unit='radian',
         shape=[],
-        description="""
+        description=r"""
         Phase shift $\delta$.
         """,
     )
@@ -1125,7 +1146,7 @@ class AngleDihedralCouplingPotential(Potential):
 
 
 class HarmonicAngleDihedralCoupling(AngleDihedralCouplingPotential):
-    """
+    r"""
     Harmonic form of an angle–dihedral coupling potential:
     $V = k_1(\theta - \theta_0)^2 + k_2(\phi - \phi_0)^2 + k_3(\theta - \theta_0)(\phi - \phi_0)$
     """
@@ -1168,7 +1189,7 @@ class HarmonicImproper(ImproperDihedralPotential):
         type=np.float64,
         unit='radian',
         shape=[],
-        description="""
+        description=r"""
         Equilibrium improper angle $\omega_0$.
         """,
     )
@@ -1208,7 +1229,7 @@ class PeriodicImproper(ImproperDihedralPotential):
         type=np.float64,
         unit='radian',
         shape=[],
-        description="""
+        description=r"""
         Phase shift $\delta$.
         """,
     )
@@ -1230,11 +1251,121 @@ class PeriodicImproper(ImproperDihedralPotential):
             self.functional_form = 'periodic'
 
 
+class ParticleParameters(ArchiveSection):
+    """
+    Force field parameters for one atom type. `species_scope` holds forward
+    references from this entry to every `ParticleState` instance assigned this
+    type, mirroring the pattern of `BasisSetComponent.species_scope`.
+    `species_scope` is resolved automatically by `ParticleParametersContainer.normalize()`
+    by matching `particle_type` against `ParticleState.label`.
+    """
+
+    species_scope = Quantity(
+        type=ParticleState,
+        shape=['*'],
+        description="""
+        References to the `ParticleState` instances assigned this particle type.
+        Resolved by `ParticleParametersContainer.normalize()` from `particle_type`
+        matching against `ParticleState.label` in the representative `ModelSystem`.
+        """,
+    )
+
+    particle_type = Quantity(
+        type=str,
+        description="""
+        Force field particle type label as defined by the force field (e.g. `'CT'`,
+        `'OW'`, `'HW'` in AMBER/CHARMM). Multiple particles in `species_scope` may
+        share this label.
+        This identifier is part of the force-field parameterization, not chemical
+        element/species identity.
+        """,
+    )
+
+    partial_charge = Quantity(
+        type=np.float64,
+        unit='elementary_charge',
+        description="""
+        Partial charge assigned in this `AtomParameters` entry for the referenced
+        `ParticleState` instance, as a force field parameter. Adjusted from formal/
+        oxidation charges to model electrostatic interactions within the context
+        of the force field. Distinct from formal or oxidation-state style charges.
+        """,
+    )
+
+    effective_mass = Quantity(
+        type=positive_float(),
+        unit='kg',
+        description="""
+        Effective mass assigned in this `AtomParameters` entry for the referenced
+        `ParticleState` instance, as a force field parameter. May differ from the
+        standard atomic mass when force-field parameterization adjusts masses for
+        numerical stability or coarse-grained representations.
+        """,
+    )
+
+
+class ParticleParametersContainer(NumericalSettings):
+    """
+    Numerical-settings container for per-particle force field parameters grouped
+    by particle type. Each `ParticleParameters` subsection covers all particles of one
+    FF particle type via `species_scope` (references to `ParticleState` instances).
+    """
+
+    particle_parameters = SubSection(
+        sub_section=ParticleParameters.m_def,
+        repeats=True,
+        description="""
+        Per-particle-type force field parameters (partial charge, effective mass,
+        particle type label). Each entry references its particles via `species_scope`.
+        """,
+    )
+
+    def normalize(self, archive, logger) -> None:
+        super().normalize(archive, logger)
+        try:
+            particle_states = archive.data.model_system[-1].particle_states
+        except (AttributeError, IndexError, TypeError):
+            logger.error(
+                'Unable to resolve ParticleParameters.species_scope references, '
+                'model_system or particle_states not accessible.'
+            )
+            particle_states = None
+
+        if particle_states is not None:
+            label_index: dict[str, list] = {}
+            for ps in particle_states:
+                lbl = getattr(ps, 'label', None)
+                if lbl is not None:
+                    label_index.setdefault(lbl, []).append(ps)
+            for ap in self.particle_parameters or []:
+                if ap.species_scope is not None and len(ap.species_scope) > 0:
+                    continue
+                if ap.particle_type is None:
+                    continue
+                ap.species_scope = label_index.get(ap.particle_type, [])
+
+        seen: set[int] = set()
+        duplicates: set[str] = set()
+        for ap in self.particle_parameters or []:
+            for ps in ap.species_scope or []:
+                ps_id = id(ps)
+                if ps_id in seen:
+                    duplicates.add(str(getattr(ap, 'particle_type', None)))
+                seen.add(ps_id)
+        if duplicates:
+            logger.error(
+                'Overlapping species_scope references across ParticleParameters entries.'
+                '(conflicting particle_type(s): %s)',
+                ', '.join(sorted(duplicates)),
+            )
+
+
 class ForceField(ModelMethod):
     """
     Section containing the parameters of a (classical, particle-based) force field model.
-    Typical `numerical_settings` are ForceCalculations.
-    Lists of interactions by type and, if available, corresponding parameters can be given within `interactions`.
+    Typical `numerical_settings` are ForceCalculations and ParticleParametersContainer.
+    Lists of interactions by type and, if available, corresponding parameters can be given
+    within `interactions`.
     Additionally, a published model can be referenced with `reference`.
     """
 
@@ -1275,7 +1406,6 @@ class ForceField(ModelMethod):
         super().normalize(archive, logger)
 
         self.name = 'ForceField'
-        logger.warning('in force field')
 
 
 # TODO Need to survey Lammps and maybe openmm and check for other common potential types
