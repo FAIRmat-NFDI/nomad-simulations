@@ -1061,10 +1061,10 @@ class TestParticleParameters:
         ps_o = AtomsState(label='OW')
         ps_h1 = AtomsState(label='HW1')
         ap = ParticleParameters()
-        ap.atom_type = 'OW'
+        ap.particle_type = 'OW'
         ap.species_scope = [ps_o, ps_h1]
 
-        assert ap.atom_type == 'OW'
+        assert ap.particle_type == 'OW'
         assert len(ap.species_scope) == 2
 
     def test_partial_charge_and_mass(self):
@@ -1083,12 +1083,12 @@ class TestParticleParametersContainer:
         ps_h2 = AtomsState(label='HW2')
         apc = ParticleParametersContainer()
         ap_o = ParticleParameters()
-        ap_o.atom_type = 'OW'
+        ap_o.particle_type = 'OW'
         ap_o.species_scope = [ps_o]
         ap_h = ParticleParameters()
-        ap_h.atom_type = 'HW'
+        ap_h.particle_type = 'HW'
         ap_h.species_scope = [ps_h1, ps_h2]
-        apc.atom_parameters = [ap_o, ap_h]
+        apc.particle_parameters = [ap_o, ap_h]
 
         # Should not raise
         apc.normalize(EntryArchive(), logger)
@@ -1097,12 +1097,12 @@ class TestParticleParametersContainer:
         ps_shared = AtomsState(label='OW')
         apc = ParticleParametersContainer()
         ap1 = ParticleParameters()
-        ap1.atom_type = 'OW'
+        ap1.particle_type = 'OW'
         ap1.species_scope = [ps_shared]
         ap2 = ParticleParameters()
-        ap2.atom_type = 'HW'
+        ap2.particle_type = 'HW'
         ap2.species_scope = [ps_shared]  # same object → overlap
-        apc.atom_parameters = [ap1, ap2]
+        apc.particle_parameters = [ap1, ap2]
 
         apc.normalize(EntryArchive(), logger)  # must not raise
         # scopes are left intact after the error is logged
@@ -1110,7 +1110,7 @@ class TestParticleParametersContainer:
         assert ap2.species_scope == [ps_shared]
 
     def test_normalize_resolves_species_scope_from_archive(self):
-        """species_scope is populated by matching atom_type against AtomsState.label.
+        """species_scope is populated by matching particle_type against AtomsState.label.
 
         A decoy ModelSystem at index 0 holds different labels so the test fails
         if normalize() uses model_system[0] instead of model_system[-1].
@@ -1135,10 +1135,10 @@ class TestParticleParametersContainer:
 
         apc = ParticleParametersContainer()
         ap_o = ParticleParameters()
-        ap_o.atom_type = 'OW'
+        ap_o.particle_type = 'OW'
         ap_h = ParticleParameters()
-        ap_h.atom_type = 'HW'
-        apc.atom_parameters = [ap_o, ap_h]
+        ap_h.particle_type = 'HW'
+        apc.particle_parameters = [ap_o, ap_h]
         apc.normalize(archive, logger)
 
         assert len(ap_o.species_scope) == 1
@@ -1147,7 +1147,7 @@ class TestParticleParametersContainer:
         assert set(ap_h.species_scope) == {ps_h1, ps_h2}
 
     def test_normalize_species_scope_empty_when_no_match(self):
-        """species_scope stays empty when atom_type matches no AtomsState.label."""
+        """species_scope stays empty when particle_type matches no AtomsState.label."""
         ps_o = AtomsState(label='OW')
         ms = ModelSystem()
         ms.particle_states = [ps_o]
@@ -1158,8 +1158,8 @@ class TestParticleParametersContainer:
 
         apc = ParticleParametersContainer()
         ap = ParticleParameters()
-        ap.atom_type = 'CT'  # no AtomsState with this label
-        apc.atom_parameters = [ap]
+        ap.particle_type = 'CT'  # no AtomsState with this label
+        apc.particle_parameters = [ap]
         apc.normalize(archive, logger)
 
         assert ap.species_scope is None or len(ap.species_scope) == 0
@@ -1168,13 +1168,13 @@ class TestParticleParametersContainer:
         ff = ForceField()
         apc = ParticleParametersContainer()
         ap = ParticleParameters()
-        ap.atom_type = 'OW'
-        apc.atom_parameters = [ap]
+        ap.particle_type = 'OW'
+        apc.particle_parameters = [ap]
         ff.numerical_settings.append(apc)
 
         assert len(ff.numerical_settings) == 1
         assert isinstance(ff.numerical_settings[0], ParticleParametersContainer)
-        assert ff.numerical_settings[0].atom_parameters[0].atom_type == 'OW'
+        assert ff.numerical_settings[0].particle_parameters[0].particle_type == 'OW'
 
 
 def test_missing_units_skip_derivation():

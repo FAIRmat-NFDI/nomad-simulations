@@ -1257,23 +1257,23 @@ class ParticleParameters(ArchiveSection):
     references from this entry to every `ParticleState` instance assigned this
     type, mirroring the pattern of `BasisSetComponent.species_scope`.
     `species_scope` is resolved automatically by `ParticleParametersContainer.normalize()`
-    by matching `atom_type` against `ParticleState.label`.
+    by matching `particle_type` against `ParticleState.label`.
     """
 
     species_scope = Quantity(
         type=ParticleState,
         shape=['*'],
         description="""
-        References to the `ParticleState` instances assigned this atom type.
-        Resolved by `ParticleParametersContainer.normalize()` from `atom_type`
+        References to the `ParticleState` instances assigned this particle type.
+        Resolved by `ParticleParametersContainer.normalize()` from `particle_type`
         matching against `ParticleState.label` in the representative `ModelSystem`.
         """,
     )
 
-    atom_type = Quantity(
+    particle_type = Quantity(
         type=str,
         description="""
-        Force field atom type label as defined by the force field (e.g. `'CT'`,
+        Force field particle type label as defined by the force field (e.g. `'CT'`,
         `'OW'`, `'HW'` in AMBER/CHARMM). Multiple particles in `species_scope` may
         share this label.
         This identifier is part of the force-field parameterization, not chemical
@@ -1306,17 +1306,17 @@ class ParticleParameters(ArchiveSection):
 
 class ParticleParametersContainer(NumericalSettings):
     """
-    Numerical-settings container for per-atom force field parameters grouped
-    by atom type. Each `ParticleParameters` subsection covers all atoms of one
-    FF atom type via `species_scope` (references to `ParticleState` instances).
+    Numerical-settings container for per-particle force field parameters grouped
+    by particle type. Each `ParticleParameters` subsection covers all particles of one
+    FF particle type via `species_scope` (references to `ParticleState` instances).
     """
 
-    atom_parameters = SubSection(
+    particle_parameters = SubSection(
         sub_section=ParticleParameters.m_def,
         repeats=True,
         description="""
-        Per-atom-type force field parameters (partial charge, effective mass,
-        atom type label). Each entry references its atoms via `species_scope`.
+        Per-particle-type force field parameters (partial charge, effective mass,
+        particle type label). Each entry references its particles via `species_scope`.
         """,
     )
 
@@ -1337,25 +1337,25 @@ class ParticleParametersContainer(NumericalSettings):
                 lbl = getattr(ps, 'label', None)
                 if lbl is not None:
                     label_index.setdefault(lbl, []).append(ps)
-            for ap in self.atom_parameters or []:
+            for ap in self.particle_parameters or []:
                 if ap.species_scope is not None and len(ap.species_scope) > 0:
                     continue
-                if ap.atom_type is None:
+                if ap.particle_type is None:
                     continue
-                ap.species_scope = label_index.get(ap.atom_type, [])
+                ap.species_scope = label_index.get(ap.particle_type, [])
 
         seen: set[int] = set()
         duplicates: set[str] = set()
-        for ap in self.atom_parameters or []:
+        for ap in self.particle_parameters or []:
             for ps in ap.species_scope or []:
                 ps_id = id(ps)
                 if ps_id in seen:
-                    duplicates.add(str(getattr(ap, 'atom_type', None)))
+                    duplicates.add(str(getattr(ap, 'particle_type', None)))
                 seen.add(ps_id)
         if duplicates:
             logger.error(
                 'Overlapping species_scope references across ParticleParameters entries.'
-                '(conflicting atom_type(s): %s)',
+                '(conflicting particle_type(s): %s)',
                 ', '.join(sorted(duplicates)),
             )
 
