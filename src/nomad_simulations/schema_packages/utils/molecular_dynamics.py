@@ -660,10 +660,11 @@ def archive_to_universe(
         metainfo_universe.atoms.dimensions = dimensions[frame_ind]
 
     # add the bonds
-    if hasattr(metainfo_universe, 'bonds'):
-        LOGGER.warning('archive_to_universe() failed, universe already has bonds.')
-        return None
-    metainfo_universe.add_TopologyAttr('bonds', bonds)
+    if bonds is not None:
+        if hasattr(metainfo_universe, 'bonds'):
+            LOGGER.warning('archive_to_universe() failed, universe already has bonds.')
+            return None
+        metainfo_universe.add_TopologyAttr('bonds', bonds)
 
     return metainfo_universe
 

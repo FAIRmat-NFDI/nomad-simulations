@@ -1363,7 +1363,6 @@ class MolecularDynamics(SerialWorkflow):
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
-        super().map_inputs(archive)
         if not self.method:
             self.method = MolecularDynamicsMethod()
         super().map_inputs(archive)

@@ -15,7 +15,6 @@ from nomad_simulations.schema_packages.model_method import ModelMethod
 
 from . import logger
 
-
 # ---------------------------------------------------------------------------
 # getattr guard — regression tests for AttributeError: effective_masses
 # ---------------------------------------------------------------------------
@@ -56,9 +55,7 @@ def test_getattr_guard_forcefield_partial_charges_returns_value():
     result = getattr(ff, 'partial_charges', None)
     assert result is not None
     assert len(result) == 3
-    assert np.isclose(
-        result.to('elementary_charge').magnitude, charges
-    ).all()
+    assert np.isclose(result.to('elementary_charge').magnitude, charges).all()
 
 
 # ---------------------------------------------------------------------------
@@ -97,15 +94,21 @@ def _build_minimal_archive(n_atoms=3, with_ff_masses=False, with_ff_charges=Fals
         ps.label = sym
         particle_states.append(ps)
 
-    # One molecule as sole sub-system (acts as both molecule group and residue)
+    # archive_to_universe expects: molecule_groups -> molecules -> (optional monomers).
+    # A molecule with no sub_systems is treated as its own residue.
     molecule = ModelSystem()
     molecule.branch_label = 'SOL'
     molecule.particle_indices = np.arange(n_atoms)
 
+    mol_group = ModelSystem()
+    mol_group.branch_label = 'SOL_group'
+    mol_group.particle_indices = np.arange(n_atoms)
+    mol_group.sub_systems = [molecule]
+
     root_system = ModelSystem()
     root_system.n_particles = n_atoms
     root_system.particle_states = particle_states
-    root_system.sub_systems = [molecule]
+    root_system.sub_systems = [mol_group]
 
     # Method
     if with_ff_masses or with_ff_charges:
@@ -182,7 +185,9 @@ def test_archive_to_universe_charges_zero_fallback():
 
 
 def test_archive_to_universe_base_model_method_no_attribute_error():
-    """Base ModelMethod as sec_method must not raise AttributeError in archive_to_universe."""
+    """
+    Base ModelMethod as sec_method must not raise AttributeError in archive_to_universe.
+    """
     from nomad_simulations.schema_packages.utils.molecular_dynamics import (
         archive_to_universe,
     )
@@ -196,8 +201,8 @@ def test_archive_to_universe_base_model_method_no_attribute_error():
 
     # Must not raise AttributeError
     try:
-        universe = archive_to_universe(archive)
+        archive_to_universe(archive)
     except AttributeError as exc:
         pytest.fail(
-            'archive_to_universe raised AttributeError with base ModelMethod: %s' % exc
+            'archive_to_universe raised AttributeError with base ModelMethod: %s', exc
         )
