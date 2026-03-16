@@ -861,3 +861,127 @@ class TestFallbackPaths:
         is_reached = energy_target.normalize(archive, logger)
         # Last delta is 1e-7 < 1e-6
         assert is_reached is True
+
+
+class TestThresholdTypeValidation:
+    """Test threshold_type validation, especially for relative convergence."""
+
+    def test_relative_with_dimensionless_value(self, archive, logger, caplog):
+        """Test that relative convergence validation passes with dimensionless threshold."""
+        import logging
+
+        energy_target = EnergyConvergenceTarget()
+        energy_target.threshold = 1e-6  # Dimensionless float
+        energy_target.threshold_type = 'relative'
+
+        scf_steps = SCFSteps(delta_energies_total=[1e-7, 5e-8] * ureg.joule)
+        outputs = Outputs(scf_steps=scf_steps)
+        archive.data.outputs = [outputs]
+
+        # Validation should pass (dimensionless threshold is valid for relative)
+        # But relative convergence implementation is incomplete (warns and returns None)
+        with caplog.at_level(logging.WARNING):
+            is_reached = energy_target.normalize(archive, logger)
+
+        # Validation passes (no error about dimensionless requirement)
+        assert (
+            'Relative convergence requires dimensionless threshold' not in caplog.text
+        )
+        # But implementation returns None with warning
+        assert is_reached is None
+        assert 'Relative convergence requires reference value' in caplog.text
+
+    def test_relative_with_pint_dimensionless(self, archive, logger, caplog):
+        """Test that relative convergence validation passes with Pint dimensionless Quantity."""
+        import logging
+
+        energy_target = EnergyConvergenceTarget()
+        energy_target.threshold = 1e-6 * ureg.dimensionless
+        energy_target.threshold_type = 'relative'
+
+        scf_steps = SCFSteps(delta_energies_total=[1e-7, 5e-8] * ureg.joule)
+        outputs = Outputs(scf_steps=scf_steps)
+        archive.data.outputs = [outputs]
+
+        # Validation should pass (dimensionless Pint Quantity is valid for relative)
+        # But relative convergence implementation is incomplete (warns and returns None)
+        with caplog.at_level(logging.WARNING):
+            is_reached = energy_target.normalize(archive, logger)
+
+        # Validation passes (no error about dimensionless requirement)
+        assert (
+            'Relative convergence requires dimensionless threshold' not in caplog.text
+        )
+        # But implementation returns None with warning
+        assert is_reached is None
+        assert 'Relative convergence requires reference value' in caplog.text
+
+    def test_relative_with_units_fails(self, archive, logger, caplog):
+        """Test that relative convergence fails validation with dimensional units."""
+        import logging
+
+        energy_target = EnergyConvergenceTarget()
+        energy_target.threshold = (
+            1e-6 * ureg.joule
+        )  # Has energy units - invalid for relative
+        energy_target.threshold_type = 'relative'
+
+        scf_steps = SCFSteps(delta_energies_total=[1e-7, 5e-8] * ureg.joule)
+        outputs = Outputs(scf_steps=scf_steps)
+        archive.data.outputs = [outputs]
+
+        # Should fail validation and return None
+        with caplog.at_level(logging.ERROR):
+            is_reached = energy_target.normalize(archive, logger)
+
+        assert is_reached is None
+        # Should log error about dimensionless requirement
+        assert 'Relative convergence requires dimensionless threshold' in caplog.text
+        # Should NOT reach the "requires reference" warning (validation fails first)
+        assert 'Relative convergence requires reference value' not in caplog.text
+
+    def test_absolute_with_units_succeeds(self, archive, logger):
+        """Test that absolute convergence works fine with dimensional units."""
+        energy_target = EnergyConvergenceTarget()
+        energy_target.threshold = 1e-6 * ureg.joule  # Has units - valid for absolute
+        energy_target.threshold_type = 'absolute'
+
+        scf_steps = SCFSteps(delta_energies_total=[1e-7, 5e-8] * ureg.joule)
+        outputs = Outputs(scf_steps=scf_steps)
+        archive.data.outputs = [outputs]
+
+        # Should validate and check convergence
+        is_reached = energy_target.normalize(archive, logger)
+        assert is_reached is True
+
+    def test_maximum_with_units_succeeds(self, archive, logger):
+        """Test that maximum convergence works with dimensional units."""
+        force_target = ForceConvergenceTarget()
+        force_target.threshold = 1e-8 * ureg.newton  # Has units - valid for maximum
+        force_target.threshold_type = 'maximum'
+
+        scf_steps = SCFSteps(
+            delta_force_abs=[1e-9, 5e-10, 2e-10] * ureg.newton  # Array for maximum
+        )
+        outputs = Outputs(scf_steps=scf_steps)
+        archive.data.outputs = [outputs]
+
+        # Should validate and check convergence
+        is_reached = force_target.normalize(archive, logger)
+        assert is_reached is True
+
+    def test_rms_with_units_succeeds(self, archive, logger):
+        """Test that rms convergence works with dimensional units."""
+        force_target = ForceConvergenceTarget()
+        force_target.threshold = 1e-8 * ureg.newton  # Has units - valid for rms
+        force_target.threshold_type = 'rms'
+
+        scf_steps = SCFSteps(
+            delta_force_abs=[1e-9, 5e-10, 2e-10] * ureg.newton  # Array for rms
+        )
+        outputs = Outputs(scf_steps=scf_steps)
+        archive.data.outputs = [outputs]
+
+        # Should validate and check convergence
+        is_reached = force_target.normalize(archive, logger)
+        assert is_reached is True
