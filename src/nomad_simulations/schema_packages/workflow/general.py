@@ -37,8 +37,15 @@ class WorkflowConvergenceTarget(ArchiveSection):
     This is most relevant when defining the appropriate units.
     """
 
-    threshold: Quantity = (
-        None  # to be defined in child classes with appropriate type and unit
+    threshold = Quantity(
+        type=positive_float(),
+        flexible_unit=True,
+        description="""
+        Convergence threshold. Must be non-negative.
+        When threshold_type is 'relative', must be dimensionless.
+        When threshold_type is 'absolute', 'maximum', or 'rms', must have physical units.
+        Child classes override this to add convergence path annotations.
+        """,
     )
 
     threshold_type = Quantity(
@@ -213,8 +220,9 @@ The mode used affects both convergence behavior and computational efficiency. Di
         """
         Validate that threshold_type is appropriate for the current threshold configuration.
 
-        Specifically validates that when threshold_type is 'relative', the threshold must be
-        dimensionless. Other threshold_types allow thresholds with physical units.
+        Validates bidirectional unit requirements:
+        - threshold_type='relative': threshold MUST be dimensionless
+        - threshold_type in ('absolute', 'maximum', 'rms'): threshold MUST have physical units
 
         Note: Child class threshold Quantities use flexible_unit=True to preserve runtime units via
         use_full_storage mode. MEnum validation already ensures threshold_type is in the allowed set.
@@ -240,6 +248,28 @@ The mode used affects both convergence behavior and computational efficiency. Di
                         },
                     )
                     return False
+        else:
+            # Non-relative convergence requires threshold with physical units
+            if not hasattr(self.threshold, 'units'):
+                logger.error(
+                    f'{self.threshold_type} convergence requires threshold with physical units',
+                    data={
+                        'threshold_type': self.threshold_type,
+                        'threshold': self.threshold,
+                        'class': self.__class__.__name__,
+                    },
+                )
+                return False
+            if self.threshold.dimensionless:
+                logger.error(
+                    f'{self.threshold_type} convergence threshold should not be dimensionless',
+                    data={
+                        'threshold_type': self.threshold_type,
+                        'threshold': self.threshold,
+                        'class': self.__class__.__name__,
+                    },
+                )
+                return False
         return True
 
     def _check_absolute(self, value, logger: BoundLogger) -> bool | None:
@@ -431,16 +461,10 @@ class EnergyConvergenceTarget(WorkflowConvergenceTarget):
     The threshold_type determines how energy convergence is evaluated.
     """
 
-    threshold = Quantity(
-        type=positive_float(),
-        flexible_unit=True,
-        description="""
-        Energy convergence threshold. Must be non-negative.
-        When threshold_type is 'relative', must be dimensionless.
-        When threshold_type is 'absolute', 'maximum', or 'rms', should have energy units (e.g., joule).
-        """,
-        a_convergence={'path': '@.scf_steps.delta_energies_total'},
-    )
+    threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+    threshold.m_annotations['convergence'] = {
+        'path': '@.scf_steps.delta_energies_total'
+    }
 
 
 class ForceConvergenceTarget(WorkflowConvergenceTarget):
@@ -449,21 +473,13 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
     The threshold_type determines how force convergence is evaluated.
     """
 
-    threshold = Quantity(
-        type=positive_float(),
-        flexible_unit=True,
-        description="""
-        Force convergence threshold. Must be non-negative.
-        When threshold_type is 'relative', must be dimensionless.
-        When threshold_type is 'absolute', 'maximum', or 'rms', should have force units (e.g., newton).
-        """,
-        a_convergence={
-            'paths': [
-                'workflow2.results.final_force_maximum',  # Absolute: workflow level
-                '@.scf_steps.delta_force_abs',  # Relative: SCF level (populated by normalization)
-            ]
-        },
-    )
+    threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+    threshold.m_annotations['convergence'] = {
+        'paths': [
+            'workflow2.results.final_force_maximum',  # Absolute: workflow level
+            '@.scf_steps.delta_force_abs',  # Relative: SCF level (populated by normalization)
+        ]
+    }
 
 
 class PotentialConvergenceTarget(WorkflowConvergenceTarget):
@@ -472,16 +488,8 @@ class PotentialConvergenceTarget(WorkflowConvergenceTarget):
     The threshold_type determines how potential convergence is evaluated.
     """
 
-    threshold = Quantity(
-        type=positive_float(),
-        flexible_unit=True,
-        description="""
-        Potential convergence threshold. Must be non-negative.
-        When threshold_type is 'relative', must be dimensionless.
-        When threshold_type is 'absolute', 'maximum', or 'rms', should have energy units (e.g., joule).
-        """,
-        a_convergence={'path': '@.scf_steps.delta_potential_rms'},
-    )
+    threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+    threshold.m_annotations['convergence'] = {'path': '@.scf_steps.delta_potential_rms'}
 
 
 class ChargeConvergenceTarget(WorkflowConvergenceTarget):
@@ -490,16 +498,8 @@ class ChargeConvergenceTarget(WorkflowConvergenceTarget):
     The threshold_type determines how density convergence is evaluated.
     """
 
-    threshold = Quantity(
-        type=positive_float(),
-        flexible_unit=True,
-        description="""
-        Charge/density convergence threshold. Must be non-negative.
-        When threshold_type is 'relative', must be dimensionless.
-        When threshold_type is 'absolute', 'maximum', or 'rms', should have charge units (e.g., coulomb).
-        """,
-        a_convergence={'path': '@.scf_steps.delta_density_rms'},
-    )
+    threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+    threshold.m_annotations['convergence'] = {'path': '@.scf_steps.delta_density_rms'}
 
 
 class WavefunctionConvergenceTarget(WorkflowConvergenceTarget):
@@ -514,15 +514,46 @@ class WavefunctionConvergenceTarget(WorkflowConvergenceTarget):
     wavefunction and density convergence independently.
     """
 
-    threshold = Quantity(
-        type=positive_float(),
-        flexible_unit=True,
-        description="""
-        Wavefunction convergence threshold. Must be non-negative.
-        Should be dimensionless as it represents changes in wavefunction coefficients.
-        """,
-        a_convergence={'path': '@.scf_steps.delta_wavefunction_rms'},
-    )
+    threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+    threshold.m_annotations['convergence'] = {
+        'path': '@.scf_steps.delta_wavefunction_rms'
+    }
+
+    def _validate_threshold_type(self, logger: BoundLogger) -> bool:
+        """
+        Override validation to allow dimensionless units for wavefunction convergence.
+
+        Wavefunction coefficients are inherently dimensionless, so all threshold types
+        (absolute, maximum, rms, relative) can use dimensionless thresholds.
+        """
+        if self.threshold_type == 'relative':
+            # Relative convergence requires dimensionless threshold
+            if hasattr(self.threshold, 'units'):
+                if not self.threshold.dimensionless:
+                    logger.error(
+                        'Relative convergence requires dimensionless threshold',
+                        data={
+                            'threshold_type': self.threshold_type,
+                            'threshold': self.threshold,
+                            'threshold_units': str(self.threshold.units),
+                            'class': self.__class__.__name__,
+                        },
+                    )
+                    return False
+        else:
+            # For wavefunction, non-relative types still require units (but dimensionless is ok)
+            if not hasattr(self.threshold, 'units'):
+                logger.error(
+                    f'{self.threshold_type} convergence requires threshold with units',
+                    data={
+                        'threshold_type': self.threshold_type,
+                        'threshold': self.threshold,
+                        'class': self.__class__.__name__,
+                    },
+                )
+                return False
+            # Note: Unlike parent class, we allow dimensionless units for wavefunction
+        return True
 
 
 class SimulationWorkflowModel(ArchiveSection):

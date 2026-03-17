@@ -62,11 +62,11 @@ class TestEnergyConvergenceTarget:
         'threshold, threshold_type, energy_values, expected_reached',
         [
             # Absolute convergence - converged
-            (1e-6, 'absolute', [1e-10, 1e-11, 5e-12], True),
+            (1e-6 * ureg.joule, 'absolute', [1e-10, 1e-11, 5e-12], True),
             # Absolute convergence - not converged
-            (1e-6, 'absolute', [1e-3, 1e-4, 1e-5], False),
+            (1e-6 * ureg.joule, 'absolute', [1e-3, 1e-4, 1e-5], False),
             # Zero energy values
-            (1e-6, 'absolute', [0.0, 0.0, 0.0], True),
+            (1e-6 * ureg.joule, 'absolute', [0.0, 0.0, 0.0], True),
         ],
     )
     def test_energy_convergence(
@@ -113,7 +113,7 @@ class TestEnergyConvergenceTarget:
 
     def test_energy_missing_data(self, archive, logger, energy_target):
         """Test energy convergence with missing data."""
-        energy_target.threshold = 1e-6
+        energy_target.threshold = 1e-6 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
         # Empty archive
@@ -127,7 +127,7 @@ class TestEnergyConvergenceTarget:
 
     def test_energy_units(self, archive, logger, energy_target):
         """Test that energy convergence handles units correctly."""
-        energy_target.threshold = 1e-6  # joule
+        energy_target.threshold = 1e-6 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
         # Create SCF steps with energy in different unit (hartree)
@@ -151,34 +151,34 @@ class TestForceConvergenceTarget:
         [
             # Maximum convergence - converged
             (
-                1e-8,
+                1e-8 * ureg.newton,
                 'maximum',
                 np.array([[1e-10, 2e-10, 3e-10], [1e-11, 1e-11, 1e-11]]),
                 True,
             ),
             # Maximum convergence - not converged
             (
-                1e-8,
+                1e-8 * ureg.newton,
                 'maximum',
                 np.array([[1e-5, 2e-6, 3e-6], [1e-6, 1e-7, 1e-7]]),
                 False,
             ),
             # RMS convergence - converged
             (
-                1e-8,
+                1e-8 * ureg.newton,
                 'rms',
                 np.array([[1e-10, 1e-10, 1e-10], [1e-10, 1e-10, 1e-10]]),
                 True,
             ),
             # RMS convergence - not converged
             (
-                1e-8,
+                1e-8 * ureg.newton,
                 'rms',
                 np.array([[1e-5, 1e-5, 1e-5], [1e-6, 1e-6, 1e-6]]),
                 False,
             ),
             # Single atom case
-            (1e-8, 'maximum', np.array([[1e-10, 1e-10, 1e-10]]), True),
+            (1e-8 * ureg.newton, 'maximum', np.array([[1e-10, 1e-10, 1e-10]]), True),
         ],
     )
     def test_force_convergence(
@@ -218,7 +218,7 @@ class TestForceConvergenceTarget:
 
     def test_force_missing_data(self, archive, logger, force_target):
         """Test force convergence with missing data."""
-        force_target.threshold = 1e-8
+        force_target.threshold = 1e-8 * ureg.newton
         force_target.threshold_type = 'maximum'
 
         # Empty archive
@@ -232,7 +232,7 @@ class TestForceConvergenceTarget:
 
     def test_force_absolute_convergence(self, archive, logger, force_target):
         """Test absolute force convergence from SCF delta."""
-        force_target.threshold = 1e-8
+        force_target.threshold = 1e-8 * ureg.newton
         force_target.threshold_type = 'absolute'
 
         # Create SCF steps with delta_force_abs showing convergence
@@ -253,13 +253,13 @@ class TestPotentialConvergenceTarget:
         'threshold, threshold_type, potential_values, expected_reached',
         [
             # RMS convergence - converged
-            (1e-5, 'rms', np.array([1e-7, 1e-7, 1e-7, 1e-7]), True),
+            (1e-5 * ureg.joule, 'rms', np.array([1e-7, 1e-7, 1e-7, 1e-7]), True),
             # RMS convergence - not converged
-            (1e-5, 'rms', np.array([1e-3, 1e-3, 1e-3, 1e-3]), False),
+            (1e-5 * ureg.joule, 'rms', np.array([1e-3, 1e-3, 1e-3, 1e-3]), False),
             # Absolute convergence - converged
-            (1e-5, 'absolute', np.array([1e-8]), True),
+            (1e-5 * ureg.joule, 'absolute', np.array([1e-8]), True),
             # Absolute convergence - not converged
-            (1e-5, 'absolute', np.array([1e-3]), False),
+            (1e-5 * ureg.joule, 'absolute', np.array([1e-3]), False),
         ],
     )
     def test_potential_convergence(
@@ -296,7 +296,7 @@ class TestPotentialConvergenceTarget:
 
     def test_potential_missing_data(self, archive, logger, potential_target):
         """Test potential convergence with missing data."""
-        potential_target.threshold = 1e-5
+        potential_target.threshold = 1e-5 * ureg.joule
         potential_target.threshold_type = 'rms'
 
         # Empty archive
@@ -316,13 +316,13 @@ class TestChargeConvergenceTarget:
         'threshold, threshold_type, charge_values, expected_reached',
         [
             # Absolute convergence - converged
-            (1e-7, 'absolute', np.array([1e-10, 1e-10, 1e-10]), True),
+            (1e-7 * ureg.coulomb, 'absolute', np.array([1e-10, 1e-10, 1e-10]), True),
             # Absolute convergence - not converged
-            (1e-7, 'absolute', np.array([1e-5, 1e-5, 1e-5]), False),
+            (1e-7 * ureg.coulomb, 'absolute', np.array([1e-5, 1e-5, 1e-5]), False),
             # RMS convergence - converged
-            (1e-7, 'rms', np.array([1e-10, 1e-10, 1e-10, 1e-10]), True),
+            (1e-7 * ureg.coulomb, 'rms', np.array([1e-10, 1e-10, 1e-10, 1e-10]), True),
             # RMS convergence - not converged
-            (1e-7, 'rms', np.array([1e-5, 1e-5, 1e-5, 1e-5]), False),
+            (1e-7 * ureg.coulomb, 'rms', np.array([1e-5, 1e-5, 1e-5, 1e-5]), False),
         ],
     )
     def test_charge_convergence(
@@ -359,7 +359,7 @@ class TestChargeConvergenceTarget:
 
     def test_charge_missing_data(self, archive, logger, charge_target):
         """Test charge convergence with missing data."""
-        charge_target.threshold = 1e-7
+        charge_target.threshold = 1e-7 * ureg.coulomb
         charge_target.threshold_type = 'absolute'
 
         # Empty archive
@@ -379,23 +379,28 @@ class TestWavefunctionConvergenceTarget:
         'threshold, threshold_type, wf_values, expected_reached',
         [
             # Absolute convergence - converged
-            (1e-8, 'absolute', [1e-10, 1e-11, 5e-12], True),
+            (1e-8 * ureg.dimensionless, 'absolute', [1e-10, 1e-11, 5e-12], True),
             # Absolute convergence - not converged
-            (1e-8, 'absolute', [1e-5, 1e-6, 1e-7], False),
+            (1e-8 * ureg.dimensionless, 'absolute', [1e-5, 1e-6, 1e-7], False),
             # Zero/perfect convergence
-            (1e-8, 'absolute', [0.0, 0.0, 0.0], True),
+            (1e-8 * ureg.dimensionless, 'absolute', [0.0, 0.0, 0.0], True),
             # RMS convergence with array data - converged
-            (1e-8, 'rms', [[1e-10, 2e-10], [5e-11, 6e-11]], True),
+            (1e-8 * ureg.dimensionless, 'rms', [[1e-10, 2e-10], [5e-11, 6e-11]], True),
             # RMS convergence with array data - not converged
-            (1e-8, 'rms', [[1e-5, 2e-5], [8e-6, 9e-6]], False),
+            (1e-8 * ureg.dimensionless, 'rms', [[1e-5, 2e-5], [8e-6, 9e-6]], False),
             # All zeros in array
-            (1e-8, 'rms', [[0.0, 0.0], [0.0, 0.0]], True),
+            (1e-8 * ureg.dimensionless, 'rms', [[0.0, 0.0], [0.0, 0.0]], True),
             # Maximum convergence - not converged
-            (1e-8, 'maximum', [[1e-7, 1e-10], [8e-7, 2e-10]], False),
+            (
+                1e-8 * ureg.dimensionless,
+                'maximum',
+                [[1e-7, 1e-10], [8e-7, 2e-10]],
+                False,
+            ),
             # Values right at threshold boundary - not converged
-            (1e-8, 'absolute', [0.0, 1.1e-8, 2.2e-8], False),
+            (1e-8 * ureg.dimensionless, 'absolute', [0.0, 1.1e-8, 2.2e-8], False),
             # Very small values near machine epsilon
-            (1e-16, 'absolute', [1e-17, 5e-18, 1e-18], True),
+            (1e-16 * ureg.dimensionless, 'absolute', [1e-17, 5e-18, 1e-18], True),
         ],
     )
     def test_wavefunction_convergence(
@@ -444,7 +449,7 @@ class TestWavefunctionConvergenceTarget:
 
     def test_wavefunction_missing_data(self, archive, logger, wavefunction_target):
         """Test wavefunction convergence with missing data."""
-        wavefunction_target.threshold = 1e-8
+        wavefunction_target.threshold = 1e-8 * ureg.dimensionless
         wavefunction_target.threshold_type = 'absolute'
 
         # No outputs at all
@@ -458,7 +463,7 @@ class TestWavefunctionConvergenceTarget:
 
     def test_wavefunction_single_iteration(self, archive, logger, wavefunction_target):
         """Test with only one iteration (cannot compute convergence)."""
-        wavefunction_target.threshold = 1e-8
+        wavefunction_target.threshold = 1e-8 * ureg.dimensionless
         wavefunction_target.threshold_type = 'absolute'
 
         # Single value - no delta can be computed
@@ -471,7 +476,7 @@ class TestWavefunctionConvergenceTarget:
 
     def test_wavefunction_nan_values(self, archive, logger, wavefunction_target):
         """Test handling of NaN values in wavefunction data."""
-        wavefunction_target.threshold = 1e-8
+        wavefunction_target.threshold = 1e-8 * ureg.dimensionless
         wavefunction_target.threshold_type = 'absolute'
 
         scf_step = SCFSteps()
@@ -484,7 +489,7 @@ class TestWavefunctionConvergenceTarget:
 
     def test_wavefunction_negative_values(self, archive, logger, wavefunction_target):
         """Test that negative residuals are treated as absolute values."""
-        wavefunction_target.threshold = 1e-8
+        wavefunction_target.threshold = 1e-8 * ureg.dimensionless
         wavefunction_target.threshold_type = 'absolute'
 
         # Negative values should be treated as absolute
@@ -601,22 +606,27 @@ class TestConvergenceTypeEnumeration:
     """Test threshold_type enum validation."""
 
     @pytest.mark.parametrize(
-        'threshold_type',
-        ['absolute', 'relative', 'maximum', 'rms'],
+        'threshold_type, threshold',
+        [
+            ('absolute', 1e-6 * ureg.joule),
+            ('relative', 1e-6),
+            ('maximum', 1e-6 * ureg.joule),
+            ('rms', 1e-6 * ureg.joule),
+        ],
     )
     def test_valid_convergence_types(
-        self, threshold_type: str, archive, logger, energy_target
+        self, threshold_type: str, threshold, archive, logger, energy_target
     ):
         """Test that all valid convergence types are accepted."""
         energy_target.threshold_type = threshold_type
-        energy_target.threshold = 1e-6
+        energy_target.threshold = threshold
 
         # Should not raise an error
         energy_target.normalize(archive, logger)
 
     def test_default_convergence_type(self, archive, logger, energy_target):
         """Test that default threshold_type is handled."""
-        energy_target.threshold = 1e-6
+        energy_target.threshold = 1e-6 * ureg.joule
         # Don't set threshold_type explicitly
 
         # Create test data
@@ -640,9 +650,15 @@ class TestConvergenceInWorkflow:
 
         # Add multiple convergence targets
         workflow.method.convergence_targets = [
-            EnergyConvergenceTarget(threshold=1e-6, threshold_type='absolute'),
-            ForceConvergenceTarget(threshold=1e-8, threshold_type='maximum'),
-            ChargeConvergenceTarget(threshold=1e-7, threshold_type='rms'),
+            EnergyConvergenceTarget(
+                threshold=1e-6 * ureg.joule, threshold_type='absolute'
+            ),
+            ForceConvergenceTarget(
+                threshold=1e-8 * ureg.newton, threshold_type='maximum'
+            ),
+            ChargeConvergenceTarget(
+                threshold=1e-7 * ureg.coulomb, threshold_type='rms'
+            ),
         ]
 
         # Create test data
@@ -698,10 +714,10 @@ class TestConvergenceInWorkflow:
 
         workflow.method.convergence_targets = [
             EnergyConvergenceTarget(
-                threshold=1e-6, threshold_type='absolute'
+                threshold=1e-6 * ureg.joule, threshold_type='absolute'
             ),  # Will converge
             ForceConvergenceTarget(
-                threshold=1e-20, threshold_type='maximum'
+                threshold=1e-20 * ureg.newton, threshold_type='maximum'
             ),  # Won't converge
         ]
 
@@ -734,7 +750,7 @@ class TestEdgeCases:
 
     def test_zero_threshold(self, archive, logger, energy_target):
         """Test that zero threshold is accepted (non-negative validation)."""
-        energy_target.threshold = 0.0
+        energy_target.threshold = 0.0 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
         scf_step = SCFSteps()
@@ -748,7 +764,7 @@ class TestEdgeCases:
 
     def test_very_large_values(self, archive, logger, force_target):
         """Test with very large force values."""
-        force_target.threshold = 1e10
+        force_target.threshold = 1e10 * ureg.newton
         force_target.threshold_type = 'maximum'
 
         forces = TotalForce(value=np.array([[1e5, 1e5, 1e5]]) * ureg.newton)
@@ -764,7 +780,7 @@ class TestEdgeCases:
 
     def test_nan_values(self, archive, logger, force_target):
         """Test handling of NaN values in data."""
-        force_target.threshold = 1e-8
+        force_target.threshold = 1e-8 * ureg.newton
         force_target.threshold_type = 'maximum'
 
         # Create forces with NaN
@@ -782,7 +798,7 @@ class TestFallbackPaths:
     def test_force_fallback_to_scf(self, archive, logger):
         """Test ForceConvergenceTarget falls back from workflow to SCF level."""
         force_target = ForceConvergenceTarget()
-        force_target.threshold = 1e-8
+        force_target.threshold = 1e-8 * ureg.newton
         force_target.threshold_type = 'maximum'
 
         # Create SCF force data (no workflow2)
@@ -798,7 +814,7 @@ class TestFallbackPaths:
     def test_force_fallback_to_computed(self, archive, logger):
         """Test that delta_force_abs is computed from total_forces during normalization."""
         force_target = ForceConvergenceTarget()
-        force_target.threshold = 1e-8
+        force_target.threshold = 1e-8 * ureg.newton
         force_target.threshold_type = 'maximum'
 
         # Only provide total_forces (no workflow2, no delta_force_abs)
@@ -823,7 +839,7 @@ class TestFallbackPaths:
     def test_single_path_backwards_compatible(self, archive, logger, energy_target):
         """Test that single 'path' annotation still works."""
         # EnergyConvergenceTarget uses single 'path' annotation
-        energy_target.threshold = 1e-6
+        energy_target.threshold = 1e-6 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
         scf_step = SCFSteps()
@@ -837,7 +853,7 @@ class TestFallbackPaths:
     def test_energy_delta_computed_from_total_energies(self, archive, logger):
         """Test that delta_energies_total is computed from total_energies during normalization."""
         energy_target = EnergyConvergenceTarget()
-        energy_target.threshold = 1e-6
+        energy_target.threshold = 1e-6 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
         # Provide total_energies but not delta_energies_total
