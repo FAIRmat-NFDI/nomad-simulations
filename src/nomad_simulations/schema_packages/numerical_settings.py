@@ -6,7 +6,7 @@ import numpy as np
 import pint
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import JSON, MEnum, Quantity, Reference, SectionProxy, SubSection
+from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
 
@@ -1055,9 +1056,7 @@ class Pseudopotential(NumericalSettings):
     )
 
     species_scope = Quantity(
-        type=Reference(
-            SectionProxy('nomad_simulations.schema_packages.atoms_state.AtomsState')
-        ),
+        type=AtomsState,
         shape=['*'],
         description="""
         References to the `AtomsState` sections using this pseudopotential.
