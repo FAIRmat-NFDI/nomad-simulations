@@ -14,6 +14,7 @@ from nomad_simulations.schema_packages.model_method import (
     ImplicitSolvationModel,
     MultireferencePT,
     MultireferenceSCF,
+    NonlocalCorrelation,
     RelativityModel,
     SlaterKoster,
     SlaterKosterBond,
@@ -681,6 +682,17 @@ def test_solvation_derives_optical_eps_if_only_n_given():
     ism.normalize(EntryArchive(), logger=logger)
 
     assert pytest.approx(ism.dielectric_constant_optical, rel=1e-12) == 1.50**2
+
+
+def test_dft_sets_nonlocal_correlation_xc_partner_ref_when_missing():
+    dft = DFT()
+    dft.xc = XCFunctional(functional_key='PBE')
+    nonlocal_corr = NonlocalCorrelation(type='VV10')
+    dft.m_add_sub_section(type(dft).contributions, nonlocal_corr)
+
+    dft.normalize(EntryArchive(), logger=logger)
+
+    assert nonlocal_corr.xc_partner_ref is dft.xc
 
 
 _COMMON_XC_CASES = [

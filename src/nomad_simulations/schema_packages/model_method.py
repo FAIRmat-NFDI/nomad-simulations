@@ -621,6 +621,15 @@ class DFT(ModelMethodElectronic):
         if self.xc is None:
             self.xc = XCFunctional()
 
+        for contribution in self.contributions or []:
+            if (
+                isinstance(
+                    contribution, (EmpiricalDispersionModel, NonlocalCorrelation)
+                )
+                and contribution.xc_partner_ref is None
+            ):
+                contribution.xc_partner_ref = self.xc
+
         # XC-specific normalization now handled by XCFunctional
         self.xc.normalize(archive, logger)
 
