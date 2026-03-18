@@ -329,7 +329,7 @@ class SelfInteractionCorrection(BaseModelMethod):
     )
 
     n_corrected_orbitals = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description="""
         Number of explicitly corrected orbitals.
         Relevant for orbital-resolved SIC variants such as `SIC_EXPLICIT_ORBITALS`.
