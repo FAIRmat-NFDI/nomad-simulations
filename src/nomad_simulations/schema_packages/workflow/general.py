@@ -66,6 +66,11 @@ The mode used affects both convergence behavior and computational efficiency. Di
         """,
     )
 
+    def _convert_to_pint(self) -> None:
+        """Convert threshold to Pint Quantity if it's a raw number or list of numbers."""
+        if type(self.threshold) in (int, float, list, np.ndarray):
+            self.threshold = self.threshold * ureg.dimensionless
+
     @staticmethod
     def _is_scalar_pint(value) -> bool:
         """
@@ -77,10 +82,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
         Returns:
             True if scalar Pint Quantity, False if array Pint Quantity
         """
-        if hasattr(value, 'magnitude'):
-            return np.isscalar(value.magnitude)
-        # Fallback for non-Pint values
-        return np.isscalar(value)
+        return np.isscalar(value.magnitude) if hasattr(value, 'magnitude') else np.isscalar(value)
 
     def _get_convergence_value(self, archive: EntryArchive, logger: BoundLogger):
         """
@@ -233,44 +235,25 @@ The mode used affects both convergence behavior and computational efficiency. Di
         Returns:
             True if validation passes, False otherwise
         """
-        if self.threshold_type == 'relative':
-            # Relative convergence requires dimensionless threshold
-            if hasattr(self.threshold, 'units'):
-                # Check if it's dimensionless
-                if not self.threshold.dimensionless:
-                    logger.error(
-                        'Relative convergence requires dimensionless threshold',
-                        data={
-                            'threshold_type': self.threshold_type,
-                            'threshold': self.threshold,
-                            'threshold_units': str(self.threshold.units),
-                            'class': self.__class__.__name__,
-                        },
-                    )
-                    return False
+        units_required: bool = self.threshold_type != 'relative'
+        threshold_quantity = type(self).m_def.all_quantities.get('threshold')
+        expected_unit = threshold_quantity.m_get_annotation('expected_unit') if threshold_quantity else None
+        has_units: bool = hasattr(self.threshold, 'units') and (not self.threshold.dimensionless or expected_unit == 'dimensionless')
+
+        if units_required and has_units:
+            return True
+        elif not units_required and not has_units:
+            return True
         else:
-            # Non-relative convergence requires threshold with physical units
-            if not hasattr(self.threshold, 'units'):
-                logger.error(
-                    f'{self.threshold_type} convergence requires threshold with physical units',
-                    data={
-                        'threshold_type': self.threshold_type,
-                        'threshold': self.threshold,
-                        'class': self.__class__.__name__,
-                    },
-                )
-                return False
-            if self.threshold.dimensionless:
-                logger.error(
-                    f'{self.threshold_type} convergence threshold should not be dimensionless',
-                    data={
-                        'threshold_type': self.threshold_type,
-                        'threshold': self.threshold,
-                        'class': self.__class__.__name__,
-                    },
-                )
-                return False
-        return True
+            logger.error(
+                'Convergence type requires different threshold units than provided',
+                threshold_type=self.threshold_type,
+                requires_physical_units=units_required,
+                has_physical_units=has_units,
+                threshold=self.threshold,
+                class_name=self.__class__.__name__,
+            )
+            return False
 
     def _check_absolute(self, value, logger: BoundLogger) -> bool | None:
         """Check absolute convergence: |value| < threshold"""
@@ -410,6 +393,8 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if not archive.data:
             return None
 
+        self._convert_to_pint()
+
         try:
             value = self._get_convergence_value(archive, logger)
             if value is None:
@@ -462,6 +447,7 @@ class EnergyConvergenceTarget(WorkflowConvergenceTarget):
     """
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+    threshold.m_annotations['expected_unit'] = 'joule'
     threshold.m_annotations['convergence'] = {
         'path': '@.scf_steps.delta_energies_total'
     }
@@ -474,10 +460,11 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
     """
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+    threshold.m_annotations['expected_unit'] = 'newton'
     threshold.m_annotations['convergence'] = {
         'paths': [
-            'workflow2.results.final_force_maximum',  # Absolute: workflow level
-            '@.scf_steps.delta_force_abs',  # Relative: SCF level (populated by normalization)
+            'workflow2.results.final_force_maximum',
+            '@.scf_steps.delta_force_abs',
         ]
     }
 
@@ -489,6 +476,7 @@ class PotentialConvergenceTarget(WorkflowConvergenceTarget):
     """
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+    threshold.m_annotations['expected_unit'] = 'joule'
     threshold.m_annotations['convergence'] = {'path': '@.scf_steps.delta_potential_rms'}
 
 
@@ -499,6 +487,7 @@ class ChargeConvergenceTarget(WorkflowConvergenceTarget):
     """
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+    threshold.m_annotations['expected_unit'] = 'coulomb'
     threshold.m_annotations['convergence'] = {'path': '@.scf_steps.delta_density_rms'}
 
 
@@ -515,45 +504,10 @@ class WavefunctionConvergenceTarget(WorkflowConvergenceTarget):
     """
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+    threshold.m_annotations['expected_unit'] = 'dimensionless'
     threshold.m_annotations['convergence'] = {
         'path': '@.scf_steps.delta_wavefunction_rms'
     }
-
-    def _validate_threshold_type(self, logger: BoundLogger) -> bool:
-        """
-        Override validation to allow dimensionless units for wavefunction convergence.
-
-        Wavefunction coefficients are inherently dimensionless, so all threshold types
-        (absolute, maximum, rms, relative) can use dimensionless thresholds.
-        """
-        if self.threshold_type == 'relative':
-            # Relative convergence requires dimensionless threshold
-            if hasattr(self.threshold, 'units'):
-                if not self.threshold.dimensionless:
-                    logger.error(
-                        'Relative convergence requires dimensionless threshold',
-                        data={
-                            'threshold_type': self.threshold_type,
-                            'threshold': self.threshold,
-                            'threshold_units': str(self.threshold.units),
-                            'class': self.__class__.__name__,
-                        },
-                    )
-                    return False
-        else:
-            # For wavefunction, non-relative types still require units (but dimensionless is ok)
-            if not hasattr(self.threshold, 'units'):
-                logger.error(
-                    f'{self.threshold_type} convergence requires threshold with units',
-                    data={
-                        'threshold_type': self.threshold_type,
-                        'threshold': self.threshold,
-                        'class': self.__class__.__name__,
-                    },
-                )
-                return False
-            # Note: Unlike parent class, we allow dimensionless units for wavefunction
-        return True
 
 
 class SimulationWorkflowModel(ArchiveSection):

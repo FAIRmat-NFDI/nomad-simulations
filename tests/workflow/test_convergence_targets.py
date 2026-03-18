@@ -951,8 +951,10 @@ class TestThresholdTypeValidation:
             is_reached = energy_target.normalize(archive, logger)
 
         assert is_reached is None
-        # Should log error about dimensionless requirement
-        assert 'Relative convergence requires dimensionless threshold' in caplog.text
+        # Should log error with structured data about unit mismatch
+        assert '"threshold_type": "relative"' in caplog.text
+        assert '"requires_physical_units": false' in caplog.text
+        assert '"has_physical_units": true' in caplog.text
         # Should NOT reach the "requires reference" warning (validation fails first)
         assert 'Relative convergence requires reference value' not in caplog.text
 
