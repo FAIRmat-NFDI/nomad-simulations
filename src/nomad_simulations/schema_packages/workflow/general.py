@@ -135,11 +135,11 @@ class SimulationWorkflowResults(WorkflowTime):
     #         self.final_outputs = archive.data.outputs[-1]
 
 
-class SimulationTaskReference(TaskReference, SimulationTask):
+class SimulationTaskReference(TaskReference):
     pass
 
 
-class SimulationWorkflow(Workflow, SimulationTask):
+class SimulationWorkflow(Workflow):
     """
     Base class for simulation workflows.
 
@@ -209,6 +209,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
                 name=f'{self._task_label} {n}',
                 outputs=[Link(name='Outputs', section=output)],
             )
+            self.m_append('tasks', task)
             tasks.append(task)
             tstart = output.wall_start
             tend = outputs[parent_n].wall_end
@@ -227,8 +228,6 @@ class SimulationWorkflow(Workflow, SimulationTask):
                         for t in tasks[root_n:parent_n]
                     ]
                 )
-
-        self.tasks.extend(tasks)
 
     def normalize(self, archive: EntryArchive, logger: BoundLogger):
         """

@@ -1359,12 +1359,3 @@ class MolecularDynamics(SerialWorkflow):
         if not self.results:
             self.results = MolecularDynamicsResults()
         super().map_outputs(archive, logger=logger)
-
-    def normalize(self, archive, logger):
-        super().normalize(archive, logger)
-
-        if not self.method:
-            self.method = MolecularDynamicsMethod()
-
-        if not self.results:
-            self.results = MolecularDynamicsResults()
