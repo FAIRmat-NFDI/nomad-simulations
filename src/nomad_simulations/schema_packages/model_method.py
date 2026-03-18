@@ -17,7 +17,11 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import CoreHole, ElectronicState
-from nomad_simulations.schema_packages.data_types import positive_int, unit_float
+from nomad_simulations.schema_packages.data_types import (
+    positive_float,
+    positive_int,
+    unit_float,
+)
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 from nomad_simulations.schema_packages.utils.libxc.build import (
@@ -268,6 +272,105 @@ class EmpiricalDispersionModel(BaseModelMethod):
         type=str,
         description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
     )
+
+
+class SelfInteractionCorrection(BaseModelMethod):
+    """Self-interaction correction (SIC) add-on used together with DFT.
+
+    This section replaces the legacy flat
+    `DFT.self_interaction_correction_method` string with a structured record
+    that can also store approximation-specific parameters, such as scaling
+    factors and explicitly corrected orbitals.
+    """
+
+    method = Quantity(
+        type=MEnum(
+            'SIC_AD',
+            'SIC_SOSEX',
+            'SIC_EXPLICIT_ORBITALS',
+            'SIC_MAURI_SPZ',
+            'SIC_MAURI_US',
+        ),
+        description="""
+        Identifier of the self-interaction correction approximation.
+
+        | SIC method                | Description |
+        |---------------------------|-------------|
+        | `SIC_AD`                  | Average-density correction |
+        | `SIC_SOSEX`               | Second-order screened exchange |
+        | `SIC_EXPLICIT_ORBITALS`   | Perdew-Zunger-style correction on an explicit set of orbitals |
+        | `SIC_MAURI_SPZ`           | Mauri spin-polarized Perdew-Zunger expression |
+        | `SIC_MAURI_US`            | Mauri unpaired-spin correction |
+        """,
+    )
+
+    correction_target = Quantity(
+        type=MEnum(
+            'average_density',
+            'screened_exchange',
+            'selected_orbitals',
+            'spin_density',
+            'doublet_unpaired_orbital',
+        ),
+        description="""
+        Object to which the SIC approximation is applied.
+
+        This is often implied by `method`, but can be set explicitly by a
+        parser when the code reports it directly.
+        """,
+    )
+
+    scaling_factor = Quantity(
+        type=positive_float(),
+        description="""
+        Optional multiplicative prefactor for scaled SIC variants.
+        A value of `1.0` corresponds to the unscaled form.
+        """,
+    )
+
+    n_corrected_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of explicitly corrected orbitals.
+        Relevant for orbital-resolved SIC variants such as `SIC_EXPLICIT_ORBITALS`.
+        """,
+    )
+
+    corrected_orbitals_ref = SubSection(
+        sub_section=ElectronicState.m_def,
+        repeats=True,
+        description="""
+        References to orbitals explicitly included in the SIC correction.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is None:
+            self.name = 'SIC'
+
+        inferred_targets = {
+            'SIC_AD': 'average_density',
+            'SIC_SOSEX': 'screened_exchange',
+            'SIC_EXPLICIT_ORBITALS': 'selected_orbitals',
+            'SIC_MAURI_SPZ': 'spin_density',
+            'SIC_MAURI_US': 'doublet_unpaired_orbital',
+        }
+        if self.correction_target is None:
+            self.correction_target = inferred_targets.get(self.method)
+
+        if self.n_corrected_orbitals is None and self.corrected_orbitals_ref:
+            self.n_corrected_orbitals = len(self.corrected_orbitals_ref)
+
+        if (
+            self.method == 'SIC_EXPLICIT_ORBITALS'
+            and not self.corrected_orbitals_ref
+            and self.n_corrected_orbitals is None
+        ):
+            logger.warning(
+                'SelfInteractionCorrection.method is SIC_EXPLICIT_ORBITALS but no corrected orbitals were provided.'
+            )
 
 
 class RelativityModel(BaseModelMethod):

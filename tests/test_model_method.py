@@ -15,6 +15,7 @@ from nomad_simulations.schema_packages.model_method import (
     MultireferencePT,
     MultireferenceSCF,
     RelativityModel,
+    SelfInteractionCorrection,
     SlaterKoster,
     SlaterKosterBond,
     Wannier,
@@ -641,17 +642,28 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
         dkh_order=None,
     )
 
+    sic = SelfInteractionCorrection(
+        method='SIC_EXPLICIT_ORBITALS',
+        scaling_factor=0.5,
+        corrected_orbitals_ref=[
+            ElectronicState(name='orbital_1'),
+            ElectronicState(name='orbital_2'),
+        ],
+    )
+
     dft.m_add_sub_section(type(dft).contributions, ism)
     dft.m_add_sub_section(type(dft).contributions, edm)
     dft.m_add_sub_section(type(dft).contributions, rel)
+    dft.m_add_sub_section(type(dft).contributions, sic)
 
     for c in dft.contributions:
         c.normalize(EntryArchive(), logger=logger)
 
-    assert len(dft.contributions) == 3
+    assert len(dft.contributions) == 4
     assert isinstance(dft.contributions[0], ImplicitSolvationModel)
     assert isinstance(dft.contributions[1], EmpiricalDispersionModel)
     assert isinstance(dft.contributions[2], RelativityModel)
+    assert isinstance(dft.contributions[3], SelfInteractionCorrection)
 
     # Solvation
     assert (
@@ -669,6 +681,46 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
     assert dft.contributions[2].level == 'two-component'
     assert dft.contributions[2].approximation == 'X2C'
     assert dft.contributions[2].dkh_order is None
+
+    # Self-interaction correction
+    assert dft.contributions[3].name == 'SIC'
+    assert dft.contributions[3].method == 'SIC_EXPLICIT_ORBITALS'
+    assert dft.contributions[3].correction_target == 'selected_orbitals'
+    assert dft.contributions[3].scaling_factor == pytest.approx(0.5)
+    assert dft.contributions[3].n_corrected_orbitals == 2
+
+
+@pytest.mark.parametrize(
+    'method, expected_target',
+    [
+        ('SIC_AD', 'average_density'),
+        ('SIC_SOSEX', 'screened_exchange'),
+        ('SIC_EXPLICIT_ORBITALS', 'selected_orbitals'),
+        ('SIC_MAURI_SPZ', 'spin_density'),
+        ('SIC_MAURI_US', 'doublet_unpaired_orbital'),
+    ],
+)
+def test_self_interaction_correction_infers_target_from_method(method, expected_target):
+    sic = SelfInteractionCorrection(method=method)
+    sic.normalize(EntryArchive(), logger=logger)
+
+    assert sic.name == 'SIC'
+    assert sic.correction_target == expected_target
+
+
+def test_self_interaction_correction_counts_corrected_orbitals():
+    sic = SelfInteractionCorrection(
+        method='SIC_EXPLICIT_ORBITALS',
+        corrected_orbitals_ref=[
+            ElectronicState(name='orbital_1'),
+            ElectronicState(name='orbital_2'),
+            ElectronicState(name='orbital_3'),
+        ],
+    )
+
+    sic.normalize(EntryArchive(), logger=logger)
+
+    assert sic.n_corrected_orbitals == 3
 
 
 def test_solvation_derives_optical_eps_if_only_n_given():
