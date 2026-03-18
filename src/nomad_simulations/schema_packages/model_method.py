@@ -82,10 +82,10 @@ class BaseModelMethod(ArchiveSection):
 
 class ModelMethod(BaseModelMethod):
     """
-    A base section containing the parameters that define the mathematical model itself. Store here
-    choices that change the target Hamiltonian, equations, ansatz, or physical approximation used
-    by the simulation. Numerical controls for discretization, convergence, basis representations,
-    solver execution, or related implementation details belong in `numerical_settings`.
+    A base section for the method-defining choices of a simulation. Store here choices that change
+    the target Hamiltonian, governing equations, ansatz, or physical approximation used by the
+    simulation. Numerical controls for discretization, convergence, basis representations, solver
+    execution, or related implementation details belong in `numerical_settings`.
 
     Optionally, this section can be decomposed in a series of contributions by storing them under
     the `contributions` quantity.
