@@ -643,7 +643,7 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
     )
 
     sic = SelfInteractionCorrection(
-        method='SIC_EXPLICIT_ORBITALS',
+        method='EXPLICIT_ORBITALS',
         scaling_factor=0.5,
         corrected_orbitals_ref=[
             ElectronicState(name='orbital_1'),
@@ -684,7 +684,7 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
 
     # Self-interaction correction
     assert dft.contributions[3].name == 'SIC'
-    assert dft.contributions[3].method == 'SIC_EXPLICIT_ORBITALS'
+    assert dft.contributions[3].method == 'EXPLICIT_ORBITALS'
     assert dft.contributions[3].correction_target == 'selected_orbitals'
     assert dft.contributions[3].scaling_factor == pytest.approx(0.5)
     assert dft.contributions[3].n_corrected_orbitals == 2
@@ -693,11 +693,11 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
 @pytest.mark.parametrize(
     'method, expected_target',
     [
-        ('SIC_AD', 'average_density'),
-        ('SIC_SOSEX', 'screened_exchange'),
-        ('SIC_EXPLICIT_ORBITALS', 'selected_orbitals'),
-        ('SIC_MAURI_SPZ', 'spin_density'),
-        ('SIC_MAURI_US', 'doublet_unpaired_orbital'),
+        ('AD', 'average_density'),
+        ('SOSEX', 'screened_exchange'),
+        ('EXPLICIT_ORBITALS', 'selected_orbitals'),
+        ('MAURI_SPZ', 'spin_density'),
+        ('MAURI_US', 'doublet_unpaired_orbital'),
     ],
 )
 def test_self_interaction_correction_infers_target_from_method(method, expected_target):
@@ -710,7 +710,7 @@ def test_self_interaction_correction_infers_target_from_method(method, expected_
 
 def test_self_interaction_correction_counts_corrected_orbitals():
     sic = SelfInteractionCorrection(
-        method='SIC_EXPLICIT_ORBITALS',
+        method='EXPLICIT_ORBITALS',
         corrected_orbitals_ref=[
             ElectronicState(name='orbital_1'),
             ElectronicState(name='orbital_2'),

@@ -285,22 +285,22 @@ class SelfInteractionCorrection(BaseModelMethod):
 
     method = Quantity(
         type=MEnum(
-            'SIC_AD',
-            'SIC_SOSEX',
-            'SIC_EXPLICIT_ORBITALS',
-            'SIC_MAURI_SPZ',
-            'SIC_MAURI_US',
+            'AD',
+            'SOSEX',
+            'EXPLICIT_ORBITALS',
+            'MAURI_SPZ',
+            'MAURI_US',
         ),
         description="""
         Identifier of the self-interaction correction approximation.
 
         | SIC method                | Description |
         |---------------------------|-------------|
-        | `SIC_AD`                  | Average-density correction |
-        | `SIC_SOSEX`               | Second-order screened exchange |
-        | `SIC_EXPLICIT_ORBITALS`   | Perdew-Zunger-style correction on an explicit set of orbitals |
-        | `SIC_MAURI_SPZ`           | Mauri spin-polarized Perdew-Zunger expression |
-        | `SIC_MAURI_US`            | Mauri unpaired-spin correction |
+        | `AD`                      | Average-density correction |
+        | `SOSEX`                   | Second-order screened exchange |
+        | `EXPLICIT_ORBITALS`       | Perdew-Zunger-style correction on an explicit set of orbitals |
+        | `MAURI_SPZ`               | Mauri spin-polarized Perdew-Zunger expression |
+        | `MAURI_US`                | Mauri unpaired-spin correction |
         """,
     )
 
@@ -332,7 +332,7 @@ class SelfInteractionCorrection(BaseModelMethod):
         type=positive_int(),
         description="""
         Number of explicitly corrected orbitals.
-        Relevant for orbital-resolved SIC variants such as `SIC_EXPLICIT_ORBITALS`.
+        Relevant for orbital-resolved SIC variants such as `EXPLICIT_ORBITALS`.
         """,
     )
 
@@ -351,11 +351,11 @@ class SelfInteractionCorrection(BaseModelMethod):
             self.name = 'SIC'
 
         inferred_targets = {
-            'SIC_AD': 'average_density',
-            'SIC_SOSEX': 'screened_exchange',
-            'SIC_EXPLICIT_ORBITALS': 'selected_orbitals',
-            'SIC_MAURI_SPZ': 'spin_density',
-            'SIC_MAURI_US': 'doublet_unpaired_orbital',
+            'AD': 'average_density',
+            'SOSEX': 'screened_exchange',
+            'EXPLICIT_ORBITALS': 'selected_orbitals',
+            'MAURI_SPZ': 'spin_density',
+            'MAURI_US': 'doublet_unpaired_orbital',
         }
         if self.correction_target is None:
             self.correction_target = inferred_targets.get(self.method)
@@ -364,12 +364,12 @@ class SelfInteractionCorrection(BaseModelMethod):
             self.n_corrected_orbitals = len(self.corrected_orbitals_ref)
 
         if (
-            self.method == 'SIC_EXPLICIT_ORBITALS'
+            self.method == 'EXPLICIT_ORBITALS'
             and not self.corrected_orbitals_ref
             and self.n_corrected_orbitals is None
         ):
             logger.warning(
-                'SelfInteractionCorrection.method is SIC_EXPLICIT_ORBITALS but no corrected orbitals were provided.'
+                'SelfInteractionCorrection.method is EXPLICIT_ORBITALS but no corrected orbitals were provided.'
             )
 
 
