@@ -14,21 +14,21 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
+    class AbsorptionSpectrum {
+    }
     class ChemicalPotential {
     }
-    class ElectronicBandGap {
+    class ElectronicDensityOfStates {
+    }
+    class ElectronicEigenvalues {
     }
     class ElectronicGreensFunction {
-    }
-    class ElectronicSelfEnergy {
-    }
-    class FermiSurface {
-    }
-    class HoppingMatrix {
     }
     class HybridizationFunction {
     }
     class KineticEnergy {
+    }
+    class Occupancy {
     }
     class Outputs {
     }
@@ -36,26 +36,26 @@ classDiagram
     }
     class PotentialEnergy {
     }
-    class QuasiparticleWeight {
+    class RadiusOfGyration {
     }
     class SCFOutputs {
     }
-    class TotalEnergy {
+    class Temperature {
     }
     class TotalForce {
     }
     Outputs <|-- SCFOutputs
+    Outputs --> AbsorptionSpectrum : absorption_spectra
     Outputs --> ChemicalPotential
-    Outputs --> ElectronicBandGap
+    Outputs --> ElectronicDensityOfStates : electronic_dos
+    Outputs --> ElectronicEigenvalues
     Outputs --> ElectronicGreensFunction
-    Outputs --> ElectronicSelfEnergy : electronic_self_energies
-    Outputs --> FermiSurface
-    Outputs --> HoppingMatrix : hopping_matrices
     Outputs --> HybridizationFunction
     Outputs --> KineticEnergy : kinetic_energies
+    Outputs --> Occupancy : occupancies
     Outputs --> PotentialEnergy : potential_energies
-    Outputs --> QuasiparticleWeight
-    Outputs --> TotalEnergy : total_energies
+    Outputs --> RadiusOfGyration : radii_of_gyration
+    Outputs --> Temperature
     Outputs --> TotalForce
     SCFOutputs --> Outputs : scf_steps
 ```
@@ -67,17 +67,17 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum {
-    }
     class CrystalFieldSplitting {
+    }
+    class ElectronicBandGap {
     }
     class ElectronicBandStructure {
     }
-    class ElectronicDensityOfStates {
+    class ElectronicSelfEnergy {
     }
-    class ElectronicEigenvalues {
+    class FermiSurface {
     }
-    class Occupancy {
+    class HoppingMatrix {
     }
     class Outputs {
     }
@@ -85,24 +85,24 @@ classDiagram
     }
     class PhysicalProperty {
     }
-    class RadiusOfGyration {
+    class QuasiparticleWeight {
     }
     class SCFOutputs {
     }
-    class Temperature {
+    class TotalEnergy {
     }
     class XASSpectrum {
     }
     Outputs <|-- SCFOutputs
-    Outputs --> AbsorptionSpectrum : absorption_spectra
     Outputs --> CrystalFieldSplitting
+    Outputs --> ElectronicBandGap
     Outputs --> ElectronicBandStructure
-    Outputs --> ElectronicDensityOfStates : electronic_dos
-    Outputs --> ElectronicEigenvalues
-    Outputs --> Occupancy : occupancies
+    Outputs --> ElectronicSelfEnergy : electronic_self_energies
+    Outputs --> FermiSurface
+    Outputs --> HoppingMatrix : hopping_matrices
     Outputs --> Permittivity : permittivities
-    Outputs --> RadiusOfGyration : radii_of_gyration
-    Outputs --> Temperature
+    Outputs --> QuasiparticleWeight
+    Outputs --> TotalEnergy : total_energies
     Outputs --> XASSpectrum : xas_spectra
     SCFOutputs --> Outputs : scf_steps
 ```

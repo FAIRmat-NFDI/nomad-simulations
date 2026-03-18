@@ -36,6 +36,7 @@ nav:
           - Usage Guidelines: explanation/model_system/usage_guidelines.md
       - Model Method:
           - Overview: explanation/model_method/overview.md
+          - ModelMethod vs NumericalSettings: explanation/model_method/model_method_vs_numerical_settings.md
           - Basis Sets: explanation/model_method/basis_sets.md
       # - Outputs:
       #     - Outputs: explanation/outputs/outputs.md
