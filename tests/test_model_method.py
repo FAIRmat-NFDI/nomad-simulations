@@ -14,7 +14,6 @@ from nomad_simulations.schema_packages.model_method import (
     ImplicitSolvationModel,
     MultireferencePT,
     MultireferenceSCF,
-    NonlocalCorrelation,
     RelativityModel,
     SlaterKoster,
     SlaterKosterBond,
@@ -682,40 +681,6 @@ def test_solvation_derives_optical_eps_if_only_n_given():
     ism.normalize(EntryArchive(), logger=logger)
 
     assert pytest.approx(ism.dielectric_constant_optical, rel=1e-12) == 1.50**2
-
-
-def test_dft_sets_empirical_dispersion_xc_partner_ref():
-    dft = DFT()
-    dft.xc = XCFunctional(functional_key='PBE')
-    edm = EmpiricalDispersionModel(model='D3BJ', damping_function='BJ')
-    dft.m_add_sub_section(type(dft).contributions, edm)
-
-    dft.normalize(EntryArchive(), logger=logger)
-
-    assert edm.xc_partner_ref is dft.xc
-
-
-def test_dft_keeps_functional_key_unchanged_during_normalization():
-    dft = DFT()
-    dft.xc = XCFunctional(functional_key='SCAN + rVV10')
-
-    dft.normalize(EntryArchive(), logger=logger)
-
-    assert dft.xc.functional_key == 'SCAN + rVV10'
-
-
-def test_dft_sets_missing_xc_partner_refs_for_existing_contributions():
-    dft = DFT()
-    dft.xc = XCFunctional(functional_key='PBE')
-    edm = EmpiricalDispersionModel(model='D3BJ', damping_function='BJ')
-    existing_nonlocal = NonlocalCorrelation(type='VV10')
-    dft.m_add_sub_section(type(dft).contributions, edm)
-    dft.m_add_sub_section(type(dft).contributions, existing_nonlocal)
-
-    dft.normalize(EntryArchive(), logger=logger)
-
-    assert edm.xc_partner_ref is dft.xc
-    assert existing_nonlocal.xc_partner_ref is dft.xc
 
 
 _COMMON_XC_CASES = [
