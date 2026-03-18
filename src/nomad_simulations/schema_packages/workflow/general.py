@@ -33,7 +33,11 @@ class WorkflowConvergenceTarget(ArchiveSection):
     Base section for defining convergence targets.
     It handles all convergence checking logic based on `threshold_type`.
 
-    Use inheritance todefine specific physical properties (e.g., energy, force).
+    Convergence targets can be used in multiple contexts:
+    - SCF iterations: Checking electronic structure convergence
+    - Nested workflows (e.g., geometry optimization): Convergence at the outer loop level or SCF convergence within each step
+
+    Use inheritance to define specific physical properties (e.g., energy, force).
     This is most relevant when defining the appropriate units.
     """
 
@@ -64,6 +68,8 @@ Note: 'relative' requires dimensionless threshold; other types require physical 
 The mode used affects both convergence behavior and computational efficiency. Different codes may default to different comparison modes for the same physical property.
         """,
     )
+
+    relative_zero_epsilon = 1e-15
 
     def _convert_to_pint(self) -> None:
         """Convert threshold to Pint Quantity if it's a raw number or list of numbers."""
@@ -286,9 +292,9 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if self.threshold is None:
             return None
         try:
-            ref_epsilon = 1e-15 * reference.units
+            ref_epsilon = self.relative_zero_epsilon * reference.units
             if abs(reference) < ref_epsilon:
-                val_epsilon = 1e-15 * value.units
+                val_epsilon = self.relative_zero_epsilon * value.units
                 if abs(value) < val_epsilon:
                     return True
                 return None
@@ -362,7 +368,9 @@ The mode used affects both convergence behavior and computational efficiency. Di
             )
             return None
 
-    def _preprocess_convergence_value(self, value):
+    def _preprocess_convergence_value(
+        self, value, logger: BoundLogger
+    ) -> np.ndarray | pint.Quantity | None:
         """
         Preprocess convergence value before comparison.
 
@@ -370,6 +378,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
         Args:
             value: The raw convergence value from _get_convergence_value()
+            logger: Logger for reporting issues
 
         Returns:
             Preprocessed value ready for comparison
@@ -393,7 +402,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
             if value is None:
                 return None
 
-            value = self._preprocess_convergence_value(value)
+            value = self._preprocess_convergence_value(value, logger)
             if value is None:
                 return None
 
@@ -438,10 +447,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
 
 class EnergyConvergenceTarget(WorkflowConvergenceTarget):
-    """
-    Convergence target for energy in SCF or optimization workflows.
-    The threshold_type determines how energy convergence is evaluated.
-    """
+    """Convergence target for total energy differences."""
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
     threshold.m_annotations['expected_unit'] = 'joule'
@@ -452,8 +458,7 @@ class EnergyConvergenceTarget(WorkflowConvergenceTarget):
 
 class ForceConvergenceTarget(WorkflowConvergenceTarget):
     """
-    Convergence target for forces in optimization or SCF workflows.
-    The threshold_type determines how force convergence is evaluated.
+    Convergence target for atomic forces.
 
     Note: Force convergence uses vector norms. If force data has shape [n_atoms, 3],
     the L2 norm is computed per atom before applying the threshold comparison.
@@ -468,7 +473,9 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
         ]
     }
 
-    def _preprocess_convergence_value(self, value):
+    def _preprocess_convergence_value(
+        self, value, logger: BoundLogger
+    ) -> np.ndarray | pint.Quantity | None:
         """
         Compute force norms from force vectors.
 
@@ -477,6 +484,7 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
 
         Args:
             value: Force data, either scalar or array with shape [n_atoms, 3]
+            logger: Logger for reporting issues
 
         Returns:
             Scalar or [n_atoms] array of force magnitudes
@@ -491,10 +499,7 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
 
 
 class PotentialConvergenceTarget(WorkflowConvergenceTarget):
-    """
-    Convergence target for potential in SCF workflows.
-    The threshold_type determines how potential convergence is evaluated.
-    """
+    """Convergence target for potential energy differences."""
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
     threshold.m_annotations['expected_unit'] = 'joule'
@@ -502,10 +507,7 @@ class PotentialConvergenceTarget(WorkflowConvergenceTarget):
 
 
 class ChargeConvergenceTarget(WorkflowConvergenceTarget):
-    """
-    Convergence target for charge/electron density in SCF workflows.
-    The threshold_type determines how density convergence is evaluated.
-    """
+    """Convergence target for electron density/charge differences."""
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
     threshold.m_annotations['expected_unit'] = 'coulomb'
@@ -513,16 +515,7 @@ class ChargeConvergenceTarget(WorkflowConvergenceTarget):
 
 
 class WavefunctionConvergenceTarget(WorkflowConvergenceTarget):
-    """
-    Convergence target for wavefunction coefficients in SCF workflows.
-
-    Measures convergence of wavefunction or orbital coefficients between
-    successive SCF iterations. This is less commonly reported than density
-    convergence but is available in some quantum chemistry codes.
-
-    Note: This is distinct from density convergence. Some codes report both
-    wavefunction and density convergence independently.
-    """
+    """Convergence target for wavefunction coefficient differences."""
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
     threshold.m_annotations['expected_unit'] = 'dimensionless'
