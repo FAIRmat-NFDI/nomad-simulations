@@ -4,7 +4,7 @@
 | Class | Description |
 |---|---|
 | `BaseModelMethod` | A base section used to define the abstract class of a Hamiltonian section. |
-| `ModelMethod` | A base section containing the mathematical model parameters. |
+| `ModelMethod` | A base section for the method-defining choices of a simulation. |
 | `ModelMethodElectronic` | A base section used to define the parameters of a model Hamiltonian used in electronic structure calculations (TB, DFT, GW, BSE, DMFT, etc). |
 
 Source reference:
