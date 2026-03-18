@@ -110,3 +110,4 @@ classDiagram
 | `slater_integrals` | m_float64(float64) (shape: [3]) | <details><summary>Value of the Slater integrals [F0, F2, F4] in spherical harmonics used to derive</summary>Value of the Slater integrals [F0, F2, F4] in spherical harmonics used to derive<br>the local Hubbard interactions:<br>u_interaction = ((2.0 / 7.0) ** 2) * (F0 + 5.0 * F2 + 9.0 * F4) / (4.0*np.pi)<br>u_interorbital_interaction = ((2.0 / 7.0) ** 2) * (F0 - 5.0 * F2 + 3.0 * 0.5 * F4) / (4.0*np.pi)<br>j_hunds_coupling = ((2.0 / 7.0) ** 2) * (5.0 * F2 + 15.0 * 0.25 * F4) / (4.0*np.pi)<br>See e.g., Elbio Dagotto, Nanoscale Phase Separation and Colossal Magnetoresistance,<br>Chapter 4, Springer Berlin (2003).</details> |
 | `double_counting_correction` | m_str(str) | Name of the double counting correction algorithm applied. |
 
+
