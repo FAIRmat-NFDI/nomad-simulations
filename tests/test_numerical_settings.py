@@ -79,7 +79,32 @@ class TestKSpace:
 
 
 class TestPseudopotential:
-    def test_species_scope_references_atoms_state(self):
+    @pytest.mark.parametrize(
+        'species_scope_indices, expected_paths',
+        [
+            pytest.param(
+                None,
+                None,
+                id='none',
+            ),
+            pytest.param(
+                [],
+                [],
+                id='empty',
+            ),
+            pytest.param(
+                [0, 1],
+                [
+                    '/data/model_system/0/particle_states/0',
+                    '/data/model_system/0/particle_states/1',
+                ],
+                id='populated',
+            ),
+        ],
+    )
+    def test_species_scope_references_atoms_state(
+        self, species_scope_indices, expected_paths
+    ):
         entry = EntryArchive(
             data=Simulation(
                 model_system=[
@@ -102,20 +127,28 @@ class TestPseudopotential:
             )
         )
         pseudopotential = entry.data.model_method[0].numerical_settings[0]
-        pseudopotential.species_scope = [
-            entry.data.model_system[0].particle_states[0],
-            entry.data.model_system[0].particle_states[1],
-        ]
+        particle_states = entry.data.model_system[0].particle_states
+
+        if species_scope_indices is None:
+            pseudopotential.species_scope = None
+        else:
+            pseudopotential.species_scope = [
+                particle_states[index] for index in species_scope_indices
+            ]
 
         data = pseudopotential.m_to_dict()
 
-        assert (
-            pseudopotential.species_scope == entry.data.model_system[0].particle_states
-        )
-        assert data['species_scope'] == [
-            '/data/model_system/0/particle_states/0',
-            '/data/model_system/0/particle_states/1',
-        ]
+        if species_scope_indices is None:
+            assert pseudopotential.species_scope is None
+            assert 'species_scope' not in data
+        else:
+            assert pseudopotential.species_scope == [
+                particle_states[index] for index in species_scope_indices
+            ]
+            if expected_paths:
+                assert data['species_scope'] == expected_paths
+            else:
+                assert data.get('species_scope', []) == []
 
 
 class TestKSpaceFunctionalities:
