@@ -70,7 +70,6 @@ classDiagram
 | `charge` | m_int32(int32) | <details><summary>Formal integer charge of the atom, defined as the number of extra</summary>Formal integer charge of the atom, defined as the number of extra<br>electrons (negative) or holes (positive) relative to the neutral atom.<br>For neutral atoms `charge = 0`.<br>Note: for `CoreHole` systems we do not consider the charge of the atom even if<br>we do not store the final `ElectronicState` where the electron was excited to.</details> |
 | `spin` | m_int32(int32) | Total spin quantum number, S. |
 | `label` | m_str(str) | User- or program-package-defined identifier for this atomic site. e.g. 'H1', 'H1a', 'C_eq'. It doesn't replace `chemical_symbol`, but merely gives users a more specialized token for the unique site name. |
-| `pseudopotential` | Reference | <details><summary>Reference to the pseudopotential used for this atomic species in plane-wave DFT</summary>Reference to the pseudopotential used for this atomic species in plane-wave DFT<br>calculations. The referenced `Pseudopotential` section is defined in `numerical_settings`<br>and contains metadata such as pseudopotential type (PAW, ultrasoft, norm-conserving),<br>cutoff energy, and XC functional used to generate the pseudopotential.</details> |
 
 ### `CGBeadState`
 
@@ -110,5 +109,4 @@ classDiagram
 | `u_effective` | m_float64(float64) | Value of the effective U parameter (u_interaction - j_local_exchange_interaction). |
 | `slater_integrals` | m_float64(float64) (shape: [3]) | <details><summary>Value of the Slater integrals [F0, F2, F4] in spherical harmonics used to derive</summary>Value of the Slater integrals [F0, F2, F4] in spherical harmonics used to derive<br>the local Hubbard interactions:<br>u_interaction = ((2.0 / 7.0) ** 2) * (F0 + 5.0 * F2 + 9.0 * F4) / (4.0*np.pi)<br>u_interorbital_interaction = ((2.0 / 7.0) ** 2) * (F0 - 5.0 * F2 + 3.0 * 0.5 * F4) / (4.0*np.pi)<br>j_hunds_coupling = ((2.0 / 7.0) ** 2) * (5.0 * F2 + 15.0 * 0.25 * F4) / (4.0*np.pi)<br>See e.g., Elbio Dagotto, Nanoscale Phase Separation and Colossal Magnetoresistance,<br>Chapter 4, Springer Berlin (2003).</details> |
 | `double_counting_correction` | m_str(str) | Name of the double counting correction algorithm applied. |
-
 

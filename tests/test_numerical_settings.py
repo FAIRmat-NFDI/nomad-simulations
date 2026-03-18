@@ -3,6 +3,10 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
+from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.general import Simulation
+from nomad_simulations.schema_packages.model_method import ModelMethod
+from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import (
     EmpiricalDispersionKnob,
     EmpiricalDispersionSettings,
@@ -72,6 +76,46 @@ class TestKSpace:
             assert np.allclose(value, result)
         else:
             assert k_space.reciprocal_lattice_vectors == result
+
+
+class TestPseudopotential:
+    def test_species_scope_references_atoms_state(self):
+        entry = EntryArchive(
+            data=Simulation(
+                model_system=[
+                    ModelSystem(
+                        particle_states=[
+                            AtomsState(chemical_symbol='Si'),
+                            AtomsState(chemical_symbol='O'),
+                        ]
+                    )
+                ],
+                model_method=[
+                    ModelMethod(
+                        numerical_settings=[
+                            Pseudopotential(
+                                name='Si.pbe-n-kjpaw_psl.1.0.0.UPF',
+                            )
+                        ]
+                    )
+                ],
+            )
+        )
+        pseudopotential = entry.data.model_method[0].numerical_settings[0]
+        pseudopotential.species_scope = [
+            entry.data.model_system[0].particle_states[0],
+            entry.data.model_system[0].particle_states[1],
+        ]
+
+        data = pseudopotential.m_to_dict()
+
+        assert (
+            pseudopotential.species_scope == entry.data.model_system[0].particle_states
+        )
+        assert data['species_scope'] == [
+            '/data/model_system/0/particle_states/0',
+            '/data/model_system/0/particle_states/1',
+        ]
 
 
 class TestKSpaceFunctionalities:

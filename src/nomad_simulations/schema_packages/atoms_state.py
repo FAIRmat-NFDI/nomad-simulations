@@ -6,7 +6,7 @@ import ase
 import numpy as np
 import pint
 from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy, SubSection
+from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
@@ -1157,20 +1157,6 @@ class AtomsState(ParticleState):
     )
 
     electronic_state = SubSection(sub_section=ElectronicState.m_def)
-
-    pseudopotential = Quantity(
-        type=Reference(
-            SectionProxy(
-                'nomad_simulations.schema_packages.numerical_settings.Pseudopotential'
-            )
-        ),
-        description="""
-        Reference to the pseudopotential used for this atomic species in plane-wave DFT
-        calculations. The referenced `Pseudopotential` section is defined in `numerical_settings`
-        and contains metadata such as pseudopotential type (PAW, ultrasoft, norm-conserving),
-        cutoff energy, and XC functional used to generate the pseudopotential.
-        """,
-    )
 
     @log
     def get_label(self) -> str | None:
