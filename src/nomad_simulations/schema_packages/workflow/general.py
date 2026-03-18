@@ -82,7 +82,11 @@ The mode used affects both convergence behavior and computational efficiency. Di
         Returns:
             True if scalar Pint Quantity, False if array Pint Quantity
         """
-        return np.isscalar(value.magnitude) if hasattr(value, 'magnitude') else np.isscalar(value)
+        return (
+            np.isscalar(value.magnitude)
+            if hasattr(value, 'magnitude')
+            else np.isscalar(value)
+        )
 
     def _get_convergence_value(self, archive: EntryArchive, logger: BoundLogger):
         """
@@ -237,8 +241,14 @@ The mode used affects both convergence behavior and computational efficiency. Di
         """
         units_required: bool = self.threshold_type != 'relative'
         threshold_quantity = type(self).m_def.all_quantities.get('threshold')
-        expected_unit = threshold_quantity.m_get_annotation('expected_unit') if threshold_quantity else None
-        has_units: bool = hasattr(self.threshold, 'units') and (not self.threshold.dimensionless or expected_unit == 'dimensionless')
+        expected_unit = (
+            threshold_quantity.m_get_annotation('expected_unit')
+            if threshold_quantity
+            else None
+        )
+        has_units: bool = hasattr(self.threshold, 'units') and (
+            not self.threshold.dimensionless or expected_unit == 'dimensionless'
+        )
 
         if units_required and has_units:
             return True
@@ -260,25 +270,15 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if self.threshold is None:
             return None
         try:
-            # Handle unit mismatches between value and threshold
-            value_has_units = hasattr(value, 'magnitude')
-            threshold_has_units = hasattr(self.threshold, 'magnitude')
-
-            if value_has_units and not threshold_has_units:
-                # Value has units, threshold doesn't - compare magnitudes
-                return bool(abs(value.magnitude) <= self.threshold)
-            elif not value_has_units and threshold_has_units:
-                # Threshold has units, value doesn't - compare with threshold magnitude
-                return bool(abs(value) <= self.threshold.magnitude)
-            elif not value_has_units and not threshold_has_units:
-                # Neither has units - direct comparison
+            if hasattr(value, 'magnitude'):
                 return bool(abs(value) <= self.threshold)
             else:
-                # Both have units - Pint handles unit conversion
-                return bool(abs(value) <= self.threshold)
+                return bool(abs(value) <= self.threshold.magnitude)
         except (pint.DimensionalityError, ValueError) as e:
             logger.error(
-                f'Unit mismatch or comparison error in {self.__class__.__name__}: {e}'
+                'Unit mismatch or comparison error',
+                class_name=self.__class__.__name__,
+                error=str(e),
             )
             return None
 
@@ -287,31 +287,25 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if self.threshold is None:
             return None
         try:
-            # Check if reference is effectively zero (unit-aware)
             ref_epsilon = 1e-15 * reference.units
             if abs(reference) < ref_epsilon:
-                # Special case: both zero means converged
                 val_epsilon = 1e-15 * value.units
                 if abs(value) < val_epsilon:
                     return True
-                # Cannot compute relative if reference is zero
                 return None
 
-            # Compute relative change (dimensionless)
             relative_change = abs(value / reference)
-
-            # For relative convergence, compare with threshold magnitude
-            # (threshold may have units from the Quantity definition but should be treated as dimensionless)
             threshold_value = (
                 self.threshold.magnitude
                 if hasattr(self.threshold, 'magnitude')
                 else self.threshold
             )
-
             return bool(relative_change < threshold_value)
         except (pint.DimensionalityError, ValueError) as e:
             logger.error(
-                f'Unit mismatch or comparison error in {self.__class__.__name__}: {e}'
+                'Unit mismatch or comparison error',
+                class_name=self.__class__.__name__,
+                error=str(e),
             )
             return None
 
@@ -320,10 +314,8 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if self.threshold is None:
             return None
         try:
-            # Convert list to numpy array if needed (preserves Pint quantities)
             if isinstance(values, list):
                 if len(values) > 0 and hasattr(values[0], 'magnitude'):
-                    # Pint quantity list - extract magnitudes and units
                     magnitudes = [v.magnitude for v in values]
                     units = values[0].units
                     values = np.array(magnitudes) * units
@@ -332,20 +324,15 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
             max_value = np.max(np.abs(values))
 
-            # Handle unit mismatches
-            value_has_units = hasattr(max_value, 'magnitude')
-            threshold_has_units = hasattr(self.threshold, 'magnitude')
-
-            if value_has_units and not threshold_has_units:
-                return bool(max_value.magnitude < self.threshold)
-            elif not value_has_units and threshold_has_units:
-                return bool(max_value < self.threshold.magnitude)
-            else:
-                # Both have units or both don't - direct comparison
+            if hasattr(max_value, 'magnitude'):
                 return bool(max_value < self.threshold)
+            else:
+                return bool(max_value < self.threshold.magnitude)
         except (pint.DimensionalityError, ValueError, TypeError) as e:
             logger.error(
-                f'Unit mismatch or comparison error in {self.__class__.__name__}: {e}'
+                'Unit mismatch or comparison error',
+                class_name=self.__class__.__name__,
+                error=str(e),
             )
             return None
 
@@ -354,10 +341,8 @@ The mode used affects both convergence behavior and computational efficiency. Di
         if self.threshold is None:
             return None
         try:
-            # Convert list to numpy array if needed (preserves Pint quantities)
             if isinstance(values, list):
                 if len(values) > 0 and hasattr(values[0], 'magnitude'):
-                    # Pint quantity list - extract magnitudes and units
                     magnitudes = [v.magnitude for v in values]
                     units = values[0].units
                     values = np.array(magnitudes) * units
@@ -366,20 +351,15 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
             rms_value = np.sqrt(np.mean(values**2))
 
-            # Handle unit mismatches
-            value_has_units = hasattr(rms_value, 'magnitude')
-            threshold_has_units = hasattr(self.threshold, 'magnitude')
-
-            if value_has_units and not threshold_has_units:
-                return bool(rms_value.magnitude < self.threshold)
-            elif not value_has_units and threshold_has_units:
-                return bool(rms_value < self.threshold.magnitude)
-            else:
-                # Both have units or both don't - direct comparison
+            if hasattr(rms_value, 'magnitude'):
                 return bool(rms_value < self.threshold)
+            else:
+                return bool(rms_value < self.threshold.magnitude)
         except (pint.DimensionalityError, ValueError, TypeError) as e:
             logger.error(
-                f'Unit mismatch or comparison error in {self.__class__.__name__}: {e}'
+                'Unit mismatch or comparison error',
+                class_name=self.__class__.__name__,
+                error=str(e),
             )
             return None
 
