@@ -50,17 +50,16 @@ class WorkflowConvergenceTarget(ArchiveSection):
 
     threshold_type = Quantity(
         type=MEnum('absolute', 'relative', 'maximum', 'rms'),
-        description=r"""Specifies the mathematical method used to evaluate convergence between successive self-consistent field (SCF) iterations.
-This determines how differences between iterations are calculated and compared against the convergence threshold.
+        description=r"""Specifies the mathematical method used to evaluate convergence between successive iterations. Supported methods include:
 
-The available comparison modes are:
-
-| Mode | Description |
+| Name | Description |
 | --------- | -------------------------------- |
-| `'absolute'` | Measures the absolute difference between two subsequent iterations (e.g., \|E_n - E_{n-1}\|). Most common for energy convergence. |
-| `'relative'` | Calculates the relative difference as a fraction of the total property value (e.g., \|E_n - E_{n-1}\|/\|E_n\|). Useful when the magnitude of the property varies widely across systems. |
-| `'maximum'` | Reports the maximum absolute difference across all components of a multi-component property (e.g., max\|F_i,n - F_i,{n-1}\| for forces). Suitable for vector quantities like forces or stress tensor elements. |
-| `'rms'` | Calculates the root mean square of differences across all components (e.g., √(∑\|F_i,n - F_i,{n-1}\|²/N)). Provides a statistical measure of overall convergence for multi-component properties. |
+| `'absolute'` | Difference in absolute terms between two subsequent iterations (e.g., \|E(n) - E(n-1)\|). Most common for energy convergence. |
+| `'relative'` | Difference as a fraction of the total property value (e.g., \|E(n) - E(n-1)\|/\|E(n)\|). Useful when the magnitude of the property varies widely across systems. |
+| `'maximum'` | Maximum absolute difference across the whole quantity data (e.g., max(\|\|F_i(n) - F_i(n-1)\|\|) for forces). Suitable for vector quantities like forces or stress tensor elements. |
+| `'rms'` | Root mean square of the dataset as a whole (e.g., sqrt(sum(\|\|F_i(n) - F_i(n-1)\|\|²)/N)). Provides a statistical measure of overall convergence for multi-component properties. |
+
+Note: 'relative' requires dimensionless threshold; other types require physical units matching the property.
 
 The mode used affects both convergence behavior and computational efficiency. Different codes may default to different comparison modes for the same physical property.
         """,
@@ -363,6 +362,20 @@ The mode used affects both convergence behavior and computational efficiency. Di
             )
             return None
 
+    def _preprocess_convergence_value(self, value):
+        """
+        Preprocess convergence value before comparison.
+
+        IMPORTANT: Override in child classes to transform multi-dimensional data.
+
+        Args:
+            value: The raw convergence value from _get_convergence_value()
+
+        Returns:
+            Preprocessed value ready for comparison
+        """
+        return value
+
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> bool | None:
         """
         Check if convergence criterion is met.
@@ -377,6 +390,10 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
         try:
             value = self._get_convergence_value(archive, logger)
+            if value is None:
+                return None
+
+            value = self._preprocess_convergence_value(value)
             if value is None:
                 return None
 
@@ -437,6 +454,9 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
     """
     Convergence target for forces in optimization or SCF workflows.
     The threshold_type determines how force convergence is evaluated.
+
+    Note: Force convergence uses vector norms. If force data has shape [n_atoms, 3],
+    the L2 norm is computed per atom before applying the threshold comparison.
     """
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
@@ -447,6 +467,27 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
             '@.scf_steps.delta_force_abs',
         ]
     }
+
+    def _preprocess_convergence_value(self, value):
+        """
+        Compute force norms from force vectors.
+
+        Transforms [n_atoms, 3] force vectors to [n_atoms] force magnitudes
+        using L2 norm: ||F_i|| = sqrt(F_x^2 + F_y^2 + F_z^2).
+
+        Args:
+            value: Force data, either scalar or array with shape [n_atoms, 3]
+
+        Returns:
+            Scalar or [n_atoms] array of force magnitudes
+        """
+        if value is None:
+            return None
+
+        if hasattr(value, 'shape') and len(value.shape) == 2 and value.shape[1] == 3:
+            return np.sqrt((value**2).sum(axis=1))
+
+        return value
 
 
 class PotentialConvergenceTarget(WorkflowConvergenceTarget):
