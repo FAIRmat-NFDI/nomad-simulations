@@ -1061,8 +1061,6 @@ class Pseudopotential(NumericalSettings):
         shape=['*'],
         description="""
         References to the `AtomsState` sections using this pseudopotential.
-        Keeps the method-specific pseudopotential assignment on the
-        `Pseudopotential` side instead of attaching method metadata to `AtomsState`.
         """,
     )
 
