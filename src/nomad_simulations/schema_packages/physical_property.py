@@ -6,7 +6,6 @@ from nomad.datamodel.metainfo.plot import PlotlyFigure, PlotSection
 from nomad.metainfo import URL, Quantity, Reference, SectionProxy, SubSection
 
 from nomad_simulations.schema_packages.errors import ErrorEstimate
-from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 from nomad_simulations.schema_packages.utils import log
 
 logger = utils.get_logger(__name__)
@@ -100,21 +99,14 @@ class PhysicalProperty(PlotSection):
         """,
     )
 
-    is_scf_converged = Quantity(
+    # TODO: should this information be obtained from the normalize method?
+    is_converged = Quantity(
         type=bool,
         description="""
-        Flag indicating whether the physical property is converged or not after a SCF process. This quantity is connected
-        with `SelfConsistency` defined in the `numerical_settings.py` module.
+        Flag indicating whether the calculation that yields this physical property is converged 
+        or not after a SCF or optimization process. This information is obtained from the workflow section.
         """,
-    )  # ? tie to calculation, not individual property
-
-    self_consistency_ref = Quantity(
-        type=SelfConsistency,
-        description="""
-        Reference to the `SelfConsistency` section that defines the numerical settings to converge the
-        physical property (see numerical_settings.py).
-        """,
-    )  # ? remove
+    )
 
     contributions = SubSection(
         section_def=SectionProxy('PhysicalProperty'),

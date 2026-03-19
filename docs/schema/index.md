@@ -88,9 +88,9 @@ Computational parameters: meshes, basis sets, convergence, and discretization
 
 Base output structure and common property definitions
 
-**In scope:** Outputs section that references ModelSystem and ModelMethod, SCFOutputs with scf_steps for iteration history, PhysicalProperty base class for all computed properties, Property contributions and derivations, SCF convergence checking
+**In scope:** Outputs section that references ModelSystem and ModelMethod, SCFSteps with scf_steps quantities for SCF iteration history, PhysicalProperty base class for all computed properties, Property contributions and derivations, SCF convergence data (energy deltas, density changes, etc.)
 
-**Key sections:** Outputs, SCFOutputs, PhysicalProperty
+**Key sections:** Outputs, SCFSteps, PhysicalProperty
 
 ## [Physical Property Backbone](physical_property.md)
 

@@ -236,15 +236,15 @@ VERTICALS = {
         'purpose': 'Base output structure and common property definitions',
         'sections': [
             'Outputs',
-            'SCFOutputs',
+            'SCFSteps',
             'PhysicalProperty',
         ],
         'in_scope': [
             'Outputs section that references ModelSystem and ModelMethod',
-            'SCFOutputs with scf_steps for iteration history',
+            'SCFSteps with scf_steps quantities for SCF iteration history',
             'PhysicalProperty base class for all computed properties',
             'Property contributions and derivations',
-            'SCF convergence checking',
+            'SCF convergence data (energy deltas, density changes, etc.)',
         ],
     },
     'physical_property': {

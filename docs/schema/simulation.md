@@ -53,7 +53,9 @@ classDiagram
 
 ### `BaseSimulation`
 
-*This section has no direct quantities.*
+| Quantity | Type | Description |
+|---|---|---|
+| `finished_without_errors` | m_bool(bool) | Indicates whether this code run terminated without error (true), or if it exited with an error code unequal to zero (false). |
 
 ### `Program`
 
@@ -65,5 +67,8 @@ classDiagram
 | `version_internal` | m_str(str) | Specifies a program version tag used internally for development purposes. Any kind of tagging system is supported, including git commit hashes. |
 | `subroutine_name_internal` | m_str(str) | <details><summary>Specifies the name of the subroutine of the program at large.</summary>Specifies the name of the subroutine of the program at large.<br>This only applies when the routine produced (almost) all of the output,<br>so the naming is representative. This naming is mostly meant for users<br>who are familiar with the program's structure.</details> |
 | `compilation_host` | m_str(str) | Specifies the host on which the program was compiled. |
+| `compiler_name` | m_str(str) | Name of the compiler that was used to compile the program code. |
+| `compiler_version` | m_str(str) | Version of the compiler that was used to compile the program code. |
+| `warnings` | m_str(str) (shape: ['*']) | Warnings emitted by the code. |
 
 

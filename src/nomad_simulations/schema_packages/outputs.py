@@ -1,6 +1,7 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
+from nomad.datamodel.datamodel import JSON, ArchiveSection
 from nomad.metainfo import Quantity, SubSection
 
 if TYPE_CHECKING:
@@ -9,7 +10,6 @@ if TYPE_CHECKING:
 
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
-from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties import (
     AbsorptionSpectrum,
@@ -39,6 +39,86 @@ from nomad_simulations.schema_packages.properties import (
 from .common import SimulationTime
 
 
+# MK: I don't think this should live here.
+# @all: where to move this?
+class SCFSteps(ArchiveSection):
+    """
+    Data recorded at each step of a self-consistent DFT calculation.
+    """
+
+    energies_total = Quantity(
+        shape=['*'],
+        type=float,
+        unit='joule',
+        description="""
+        Total energy at each SCF step.
+        """,
+    )
+
+    delta_energies_total = Quantity(
+        shape=['*'],
+        type=float,
+        unit='joule',
+        description="""
+        Absolute change of total energy at each SCF step.
+        """,
+    )
+
+    delta_potential_rms = Quantity(
+        shape=['*'],
+        type=float,
+        unit='joule',
+        description="""
+        Root mean square of change of potential energy at each SCF step.
+        """,
+    )
+
+    delta_density_rms = Quantity(
+        shape=['*'],
+        type=float,
+        unit='coulomb',
+        description="""
+        Root mean square of change of potential energy at each SCF step.
+        """,
+    )
+
+    delta_wavefunction_rms = Quantity(
+        shape=['*'],
+        type=float,
+        unit='dimensionless',
+        description="""
+        Root mean square of change of wavefunction coefficients at each SCF step.
+        Dimensionless quantity representing convergence of orbital coefficients.
+        """,
+    )
+
+    delta_force_abs = Quantity(
+        shape=['*'],
+        type=float,
+        unit='newton',
+        description="""
+        Absolute change of forces at each SCF step.
+        """,
+    )
+
+    durations = Quantity(
+        shape=['*'],
+        type=float,
+        unit='s',
+        description="""
+        Time spent at each SCF step.
+        """,
+    )
+
+    code_specific_quantities = Quantity(
+        type=JSON,
+        description="""
+        Code specific quantities that are recorded during SCF convergence.
+        """,
+    )
+
+
+# TODO: Outputs should not be of type time, but the workflow should be instead?
 class Outputs(SimulationTime):
     """
     Output properties of a simulation. This base class can be used for inheritance in any of the output properties
@@ -119,11 +199,13 @@ class Outputs(SimulationTime):
 
     temperatures = SubSection(sub_section=Temperature.m_def, repeats=True)
 
-    total_energies = SubSection(sub_section=TotalEnergy.m_def, repeats=True)
-
     total_forces = SubSection(sub_section=TotalForce.m_def, repeats=True)
 
+    total_energies = SubSection(sub_section=TotalEnergy.m_def, repeats=True)
+
     xas_spectra = SubSection(sub_section=XASSpectrum.m_def, repeats=True)
+
+    scf_steps = SubSection(sub_section=SCFSteps.m_def, repeats=False)
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -183,6 +265,58 @@ class Outputs(SimulationTime):
                 return model_methods[-1]
         return None
 
+    def _compute_energy_deltas(self, logger: 'BoundLogger'):
+        """
+        Compute delta_energies_total from consecutive total_energies values.
+
+        Returns array of absolute energy differences between consecutive steps.
+        """
+        try:
+            if self.total_energies is None or len(self.total_energies) < 2:
+                return None
+
+            # Extract energy values from each step
+            energy_values = [e.value for e in self.total_energies]
+
+            # Compute differences manually to preserve Pint units
+            deltas = []
+            for i in range(1, len(energy_values)):
+                delta = np.abs(energy_values[i] - energy_values[i - 1])
+                deltas.append(delta)
+
+            # Convert list to array-like structure
+            if len(deltas) > 0 and hasattr(deltas[0], 'magnitude'):
+                # Pint quantities - stack magnitudes and add units
+                magnitudes = [d.magnitude for d in deltas]
+                return np.array(magnitudes) * deltas[0].units
+            else:
+                return np.array(deltas)
+
+        except (AttributeError, IndexError, TypeError, ValueError) as e:
+            logger.debug(f'Could not compute delta_energies_total: {e}')
+            return None
+
+    def _compute_force_norms(self, logger: 'BoundLogger'):
+        """
+        Compute delta_force_abs from total_forces as force norms.
+
+        Returns array of force norms (L2 norm of 3D force vectors).
+        """
+        try:
+            if self.total_forces is None or len(self.total_forces) == 0:
+                return None
+
+            # Get force values (Pint Quantity with shape [n_atoms, 3])
+            force_values = self.total_forces[-1].value
+
+            # Compute force norms (preserves Pint units)
+            force_norms = ((force_values**2).sum(axis=1)) ** 0.5
+
+            return force_norms
+        except (AttributeError, IndexError, TypeError) as e:
+            logger.debug(f'Could not compute delta_force_abs: {e}')
+            return None
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
@@ -194,141 +328,19 @@ class Outputs(SimulationTime):
         if self.model_method_ref is None:
             self.model_method_ref = self.set_model_method_ref()
 
+        # Populate missing SCF delta quantities from available data
+        if self.scf_steps is not None:
+            # Define delta computations: (delta_field, compute_function)
+            delta_computations = [
+                ('delta_energies_total', self._compute_energy_deltas),
+                ('delta_force_abs', self._compute_force_norms),
+            ]
 
-class SCFOutputs(Outputs):
-    """
-    This section contains the self-consistent (SCF) steps performed to converge an output property.
-
-    For simplicity, we contain the SCF steps of a simulation as part of the minimal workflow defined in NOMAD,
-    the `SinglePoint`, i.e., we do not split each SCF step in its own entry. Thus, each `SinglePoint`
-    `Simulation` entry in NOMAD contains the final output properties and all the SCF steps.
-    """
-
-    scf_steps = SubSection(
-        sub_section=Outputs.m_def,
-        repeats=True,
-        description="""
-        Self-consistent (SCF) steps performed for converging a given output property. Note that the SCF steps belong to
-        the same minimal `Simulation` workflow entry which is known as `SinglePoint`.
-        """,
-    )
-
-    def get_last_scf_steps_value(  # TODO: redo
-        self,
-        scf_last_steps: list[Outputs],
-        property_name: str,
-        i_property: int,
-        scf_parameters: SelfConsistency | None,
-        logger: 'BoundLogger',
-    ) -> list | None:
-        """
-        Get the last two SCF values' magnitudes of a physical property and appends them in a list.
-
-        Args:
-            scf_last_steps (list[Outputs]): The list of SCF steps. This must be of length 2 in order to the method to work.
-            property_name (str): The name of the physical property.
-            i_property (int): The index of the physical property.
-            scf_parameters (Optional[SelfConsistency]): The self-consistency parameters section stored under `ModelMethod`.
-            logger (BoundLogger): The logger to log messages.
-
-        Returns:
-            (Optional[list]): The list of the last two SCF values (in magnitude) of the physical property.
-        """
-        # Initial check
-        if len(scf_last_steps) != 2:
-            logger.warning(
-                '`scf_last_steps` needs to be of length 2, pointing to the last 2 SCF steps performed in the simulation.'
-            )
-            return []
-
-        scf_values = []
-        for step in scf_last_steps:
-            try:
-                scf_phys_property = getattr(step, property_name)[i_property]
-                if scf_phys_property.value.u != scf_parameters.threshold_change_unit:
-                    logger.error(
-                        f'The units of the `scf_step.{property_name}.value` does not coincide with the units of the `self_consistency_ref.threshold_unit`.'
-                    )
-                    return []
-            except Exception:
-                return []
-            scf_values.append(scf_phys_property.value.magnitude)
-        return scf_values
-
-    def resolve_is_scf_converged(
-        self,
-        property_name: str,
-        i_property: int,
-        physical_property: PhysicalProperty,
-        logger: 'BoundLogger',
-    ) -> bool:
-        """
-        Resolves if the physical property is converged or not after a SCF process. This is only ran
-        when there are at least two `scf_steps` elements.
-
-        Returns:
-            (bool): Boolean indicating whether the physical property is converged or not after a SCF process.
-        """
-        # Check that there are at least 2 `scf_steps`
-        if len(self.scf_steps) < 2:
-            logger.warning('The SCF normalization needs at least two SCF steps.')
-            return False
-        scf_last_steps = self.scf_steps[-2:]
-
-        # Check for `self_consistency_ref` section
-        scf_parameters = physical_property.self_consistency_ref
-        if scf_parameters is None:
-            return False
-
-        # Extract the value.magnitude of the `physical_property` to be checked if converged or not
-        scf_values = self.get_last_scf_steps_value(
-            scf_last_steps=scf_last_steps,
-            property_name=property_name,
-            i_property=i_property,
-            scf_parameters=scf_parameters,
-            logger=logger,
-        )
-        if scf_values is None or len(scf_values) != 2:
-            logger.warning(
-                f'The SCF normalization could not resolve the SCF values for the property `{property_name}`.'
-            )
-            return False
-
-        # Compare with the `threshold_change`
-        scf_diff = abs(scf_values[0] - scf_values[1])
-        threshold_change = scf_parameters.threshold_change
-        if scf_diff <= threshold_change:
-            return True
-        else:
-            logger.info(
-                f'The SCF process for the property `{property_name}` did not converge.'
-            )
-            return False
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        # Resolve the `is_scf_converged` flag for all SCF obtained properties
-        for property_name in self.m_def.all_sub_sections.keys():
-            # Skip the `scf_steps` and `custom_physical_property` sub-sections
-            if property_name == 'scf_steps':
-                continue
-
-            # Check if the physical property with that property name is populated
-            phys_properties = getattr(self, property_name)
-            if phys_properties is None:
-                continue
-            if not isinstance(phys_properties, list):
-                phys_properties = [phys_properties]
-
-            # Loop over the physical property of the same m_def type and set `is_scf_converged`
-            for i_property, phys_property in enumerate(phys_properties):
-                phys_property.is_scf_converged = self.resolve_is_scf_converged(
-                    property_name=property_name,
-                    i_property=i_property,
-                    physical_property=phys_property,
-                    logger=logger,
-                )
+            for delta_field, compute_func in delta_computations:
+                if getattr(self.scf_steps, delta_field, None) is None:
+                    computed_value = compute_func(logger)
+                    if computed_value is not None:
+                        setattr(self.scf_steps, delta_field, computed_value)
 
 
 class WorkflowOutputs(Outputs):
