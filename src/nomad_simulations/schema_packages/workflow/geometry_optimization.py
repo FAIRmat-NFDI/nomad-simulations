@@ -87,6 +87,9 @@ class GeometryOptimizationMethod(GeometryOptimizationModel):
 class GeometryOptimizationResults(SimulationWorkflowResults):
     _label = 'Geometry optimiztation results'
 
+    # TODO: This should be an array with shape=['n_steps'] to report convergence
+    # status per optimization step, rather than aggregating across all steps.
+    # Current implementation collapses per-step information into single boolean.
     is_single_point_converged = Quantity(
         type=bool,
         description="""
@@ -268,6 +271,9 @@ class GeometryOptimization(SerialWorkflow):
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
+        # TODO: When is_single_point_converged becomes an array, this should store
+        # per-step convergence: [all(step_results) for step_results in single_point_convergence_results]
+        # Currently aggregates across all steps into single boolean.
         single_point_convergence_results = jmespath.search(
             'workflow2.tasks[*].results.convergence[*].is_reached', archive
         )
