@@ -25,36 +25,6 @@ from nomad_simulations.schema_packages.workflow.general import (
 )
 
 
-@pytest.fixture(scope='function')
-def energy_target():
-    """Fixture providing an EnergyConvergenceTarget instance."""
-    return EnergyConvergenceTarget()
-
-
-@pytest.fixture(scope='function')
-def force_target():
-    """Fixture providing a ForceConvergenceTarget instance."""
-    return ForceConvergenceTarget()
-
-
-@pytest.fixture(scope='function')
-def potential_target():
-    """Fixture providing a PotentialConvergenceTarget instance."""
-    return PotentialConvergenceTarget()
-
-
-@pytest.fixture(scope='function')
-def charge_target():
-    """Fixture providing a ChargeConvergenceTarget instance."""
-    return ChargeConvergenceTarget()
-
-
-@pytest.fixture(scope='function')
-def wavefunction_target():
-    """Fixture providing a WavefunctionConvergenceTarget instance."""
-    return WavefunctionConvergenceTarget()
-
-
 class TestEnergyConvergenceTarget:
     """Test the EnergyConvergenceTarget class."""
 
@@ -77,7 +47,6 @@ class TestEnergyConvergenceTarget:
         expected_reached: bool,
         archive,
         logger,
-        energy_target,
     ):
         """
         Test energy convergence checking with different thresholds and types.
@@ -89,6 +58,7 @@ class TestEnergyConvergenceTarget:
             expected_reached: Expected value of is_reached flag.
         """
         # Set up convergence target
+        energy_target = EnergyConvergenceTarget()
         energy_target.threshold = threshold
         energy_target.threshold_type = threshold_type
 
@@ -111,8 +81,9 @@ class TestEnergyConvergenceTarget:
         if len(energy_values) > 1 and energy_values[-1] != 0:
             assert is_reached == expected_reached
 
-    def test_energy_missing_data(self, archive, logger, energy_target):
+    def test_energy_missing_data(self, archive, logger):
         """Test energy convergence with missing data."""
+        energy_target = EnergyConvergenceTarget()
         energy_target.threshold = 1e-6 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
@@ -125,8 +96,9 @@ class TestEnergyConvergenceTarget:
         is_reached = energy_target.normalize(archive, logger)
         assert is_reached is None
 
-    def test_energy_units(self, archive, logger, energy_target):
+    def test_energy_units(self, archive, logger):
         """Test that energy convergence handles units correctly."""
+        energy_target = EnergyConvergenceTarget()
         energy_target.threshold = 1e-6 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
@@ -189,7 +161,6 @@ class TestForceConvergenceTarget:
         expected_reached: bool,
         archive,
         logger,
-        force_target,
     ):
         """
         Test force convergence with maximum and RMS types.
@@ -200,6 +171,7 @@ class TestForceConvergenceTarget:
             force_values: Array of force values (n_atoms, 3).
             expected_reached: Expected value of is_reached flag.
         """
+        force_target = ForceConvergenceTarget()
         force_target.threshold = threshold
         force_target.threshold_type = threshold_type
 
@@ -216,8 +188,9 @@ class TestForceConvergenceTarget:
         is_reached = force_target.normalize(archive, logger)
         assert is_reached == expected_reached
 
-    def test_force_missing_data(self, archive, logger, force_target):
+    def test_force_missing_data(self, archive, logger):
         """Test force convergence with missing data."""
+        force_target = ForceConvergenceTarget()
         force_target.threshold = 1e-8 * ureg.newton
         force_target.threshold_type = 'maximum'
 
@@ -230,8 +203,9 @@ class TestForceConvergenceTarget:
         is_reached = force_target.normalize(archive, logger)
         assert is_reached is None
 
-    def test_force_absolute_convergence(self, archive, logger, force_target):
+    def test_force_absolute_convergence(self, archive, logger):
         """Test absolute force convergence from SCF delta."""
+        force_target = ForceConvergenceTarget()
         force_target.threshold = 1e-8 * ureg.newton
         force_target.threshold_type = 'absolute'
 
@@ -270,7 +244,6 @@ class TestPotentialConvergenceTarget:
         expected_reached: bool,
         archive,
         logger,
-        potential_target,
     ):
         """
         Test potential convergence with RMS and absolute types.
@@ -281,6 +254,7 @@ class TestPotentialConvergenceTarget:
             potential_values: Array of potential values.
             expected_reached: Expected value of is_reached flag.
         """
+        potential_target = PotentialConvergenceTarget()
         potential_target.threshold = threshold
         potential_target.threshold_type = threshold_type
 
@@ -294,8 +268,9 @@ class TestPotentialConvergenceTarget:
         is_reached = potential_target.normalize(archive, logger)
         assert is_reached == expected_reached
 
-    def test_potential_missing_data(self, archive, logger, potential_target):
+    def test_potential_missing_data(self, archive, logger):
         """Test potential convergence with missing data."""
+        potential_target = PotentialConvergenceTarget()
         potential_target.threshold = 1e-5 * ureg.joule
         potential_target.threshold_type = 'rms'
 
@@ -333,7 +308,6 @@ class TestChargeConvergenceTarget:
         expected_reached: bool,
         archive,
         logger,
-        charge_target,
     ):
         """
         Test charge convergence with absolute and RMS types.
@@ -344,6 +318,7 @@ class TestChargeConvergenceTarget:
             charge_values: Array of charge difference values.
             expected_reached: Expected value of is_reached flag.
         """
+        charge_target = ChargeConvergenceTarget()
         charge_target.threshold = threshold
         charge_target.threshold_type = threshold_type
 
@@ -357,8 +332,9 @@ class TestChargeConvergenceTarget:
         is_reached = charge_target.normalize(archive, logger)
         assert is_reached == expected_reached
 
-    def test_charge_missing_data(self, archive, logger, charge_target):
+    def test_charge_missing_data(self, archive, logger):
         """Test charge convergence with missing data."""
+        charge_target = ChargeConvergenceTarget()
         charge_target.threshold = 1e-7 * ureg.coulomb
         charge_target.threshold_type = 'absolute'
 
@@ -411,7 +387,6 @@ class TestWavefunctionConvergenceTarget:
         expected_reached: bool,
         archive,
         logger,
-        wavefunction_target,
     ):
         """
         Test wavefunction convergence with different thresholds and data types.
@@ -422,6 +397,7 @@ class TestWavefunctionConvergenceTarget:
             wf_values: List of wavefunction values (scalar or array).
             expected_reached: Expected value of is_reached flag.
         """
+        wavefunction_target = WavefunctionConvergenceTarget()
         wavefunction_target.threshold = threshold
         wavefunction_target.threshold_type = threshold_type
 
@@ -447,8 +423,9 @@ class TestWavefunctionConvergenceTarget:
         is_reached = wavefunction_target.normalize(archive, logger)
         assert is_reached == expected_reached
 
-    def test_wavefunction_missing_data(self, archive, logger, wavefunction_target):
+    def test_wavefunction_missing_data(self, archive, logger):
         """Test wavefunction convergence with missing data."""
+        wavefunction_target = WavefunctionConvergenceTarget()
         wavefunction_target.threshold = 1e-8 * ureg.dimensionless
         wavefunction_target.threshold_type = 'absolute'
 
@@ -461,8 +438,9 @@ class TestWavefunctionConvergenceTarget:
         is_reached = wavefunction_target.normalize(archive, logger)
         assert is_reached is None
 
-    def test_wavefunction_single_iteration(self, archive, logger, wavefunction_target):
+    def test_wavefunction_single_iteration(self, archive, logger):
         """Test with only one iteration (cannot compute convergence)."""
+        wavefunction_target = WavefunctionConvergenceTarget()
         wavefunction_target.threshold = 1e-8 * ureg.dimensionless
         wavefunction_target.threshold_type = 'absolute'
 
@@ -474,8 +452,9 @@ class TestWavefunctionConvergenceTarget:
         is_reached = wavefunction_target.normalize(archive, logger)
         assert is_reached is None
 
-    def test_wavefunction_nan_values(self, archive, logger, wavefunction_target):
+    def test_wavefunction_nan_values(self, archive, logger):
         """Test handling of NaN values in wavefunction data."""
+        wavefunction_target = WavefunctionConvergenceTarget()
         wavefunction_target.threshold = 1e-8 * ureg.dimensionless
         wavefunction_target.threshold_type = 'absolute'
 
@@ -487,8 +466,9 @@ class TestWavefunctionConvergenceTarget:
         wavefunction_target.normalize(archive, logger)
         # Test passes if no exception is raised
 
-    def test_wavefunction_negative_values(self, archive, logger, wavefunction_target):
+    def test_wavefunction_negative_values(self, archive, logger):
         """Test that negative residuals are treated as absolute values."""
+        wavefunction_target = WavefunctionConvergenceTarget()
         wavefunction_target.threshold = 1e-8 * ureg.dimensionless
         wavefunction_target.threshold_type = 'absolute'
 
@@ -505,8 +485,9 @@ class TestWavefunctionConvergenceTarget:
 class TestConvergenceHelperMethods:
     """Test the base class helper methods for convergence checking."""
 
-    def test_check_absolute(self, energy_target, logger):
+    def test_check_absolute(self, logger):
         """Test _check_absolute helper method."""
+        energy_target = EnergyConvergenceTarget()
         # Set threshold with units
         energy_target.threshold = 1e-6 * ureg.joule
 
@@ -522,8 +503,9 @@ class TestConvergenceHelperMethods:
         assert energy_target._check_absolute(1e-6 * ureg.joule, logger) is True
         assert energy_target._check_absolute(9e-7 * ureg.joule, logger) is True
 
-    def test_check_relative(self, energy_target, logger):
+    def test_check_relative(self, logger):
         """Test _check_relative helper method."""
+        energy_target = EnergyConvergenceTarget()
         # For relative convergence, threshold must be dimensionless
         # Use raw float since EnergyConvergenceTarget expects joule unit
         energy_target.threshold = 1e-6
@@ -615,17 +597,19 @@ class TestConvergenceTypeEnumeration:
         ],
     )
     def test_valid_convergence_types(
-        self, threshold_type: str, threshold, archive, logger, energy_target
+        self, threshold_type: str, threshold, archive, logger
     ):
         """Test that all valid convergence types are accepted."""
+        energy_target = EnergyConvergenceTarget()
         energy_target.threshold_type = threshold_type
         energy_target.threshold = threshold
 
         # Should not raise an error
         energy_target.normalize(archive, logger)
 
-    def test_default_convergence_type(self, archive, logger, energy_target):
+    def test_default_convergence_type(self, archive, logger):
         """Test that default threshold_type is handled."""
+        energy_target = EnergyConvergenceTarget()
         energy_target.threshold = 1e-6 * ureg.joule
         # Don't set threshold_type explicitly
 
@@ -748,8 +732,9 @@ class TestConvergenceInWorkflow:
 class TestEdgeCases:
     """Test edge cases and error handling."""
 
-    def test_zero_threshold(self, archive, logger, energy_target):
+    def test_zero_threshold(self, archive, logger):
         """Test that zero threshold is accepted (non-negative validation)."""
+        energy_target = EnergyConvergenceTarget()
         energy_target.threshold = 0.0 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
@@ -762,8 +747,9 @@ class TestEdgeCases:
         # With <= comparison, exact zero matches zero threshold
         assert is_reached is True
 
-    def test_very_large_values(self, archive, logger, force_target):
+    def test_very_large_values(self, archive, logger):
         """Test with very large force values."""
+        force_target = ForceConvergenceTarget()
         force_target.threshold = 1e10 * ureg.newton
         force_target.threshold_type = 'maximum'
 
@@ -778,8 +764,9 @@ class TestEdgeCases:
         is_reached = force_target.normalize(archive, logger)
         assert is_reached is True
 
-    def test_nan_values(self, archive, logger, force_target):
+    def test_nan_values(self, archive, logger):
         """Test handling of NaN values in data."""
+        force_target = ForceConvergenceTarget()
         force_target.threshold = 1e-8 * ureg.newton
         force_target.threshold_type = 'maximum'
 
@@ -836,9 +823,10 @@ class TestFallbackPaths:
         # max norm ≈ 3.46e-9 < 1e-8
         assert is_reached is True
 
-    def test_single_path_backwards_compatible(self, archive, logger, energy_target):
+    def test_single_path_backwards_compatible(self, archive, logger):
         """Test that single 'path' annotation still works."""
         # EnergyConvergenceTarget uses single 'path' annotation
+        energy_target = EnergyConvergenceTarget()
         energy_target.threshold = 1e-6 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
