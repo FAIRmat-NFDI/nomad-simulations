@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
 
@@ -1055,6 +1056,14 @@ class Pseudopotential(NumericalSettings):
         shape=[],
         description="""
         Native code name of the pseudopotential.
+        """,
+    )
+
+    species_scope = Quantity(
+        type=AtomsState,
+        shape=['*'],
+        description="""
+        References to the `AtomsState` sections using this pseudopotential.
         """,
     )
 
