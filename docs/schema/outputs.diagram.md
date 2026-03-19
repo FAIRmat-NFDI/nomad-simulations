@@ -14,29 +14,27 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
+    class AbsorptionSpectrum {
+    }
     class ChemicalPotential {
     }
-    class CrystalFieldSplitting {
-    }
-    class ElectronicBandGap {
+    class ElectronicBandStructure {
     }
     class ElectronicDensityOfStates {
     }
-    class ElectronicGreensFunction {
-    }
     class ElectronicSelfEnergy {
-    }
-    class FermiSurface {
     }
     class HybridizationFunction {
     }
     class Outputs {
     }
+    class Permittivity {
+    }
     class PhysicalProperty {
     }
-    class PotentialEnergy {
-    }
     class QuasiparticleWeight {
+    }
+    class RadiusOfGyration {
     }
     class SCFOutputs {
     }
@@ -44,19 +42,21 @@ classDiagram
     }
     class TotalEnergy {
     }
+    class TotalForce {
+    }
     Outputs <|-- SCFOutputs
+    Outputs --> AbsorptionSpectrum : absorption_spectra
     Outputs --> ChemicalPotential
-    Outputs --> CrystalFieldSplitting
-    Outputs --> ElectronicBandGap
+    Outputs --> ElectronicBandStructure
     Outputs --> ElectronicDensityOfStates : electronic_dos
-    Outputs --> ElectronicGreensFunction
     Outputs --> ElectronicSelfEnergy : electronic_self_energies
-    Outputs --> FermiSurface
     Outputs --> HybridizationFunction
-    Outputs --> PotentialEnergy : potential_energies
+    Outputs --> Permittivity : permittivities
     Outputs --> QuasiparticleWeight
+    Outputs --> RadiusOfGyration : radii_of_gyration
     Outputs --> Temperature
     Outputs --> TotalEnergy : total_energies
+    Outputs --> TotalForce
     SCFOutputs --> Outputs : scf_steps
 ```
 
@@ -67,11 +67,15 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum {
+    class CrystalFieldSplitting {
     }
-    class ElectronicBandStructure {
+    class ElectronicBandGap {
     }
     class ElectronicEigenvalues {
+    }
+    class ElectronicGreensFunction {
+    }
+    class FermiSurface {
     }
     class HoppingMatrix {
     }
@@ -81,28 +85,24 @@ classDiagram
     }
     class Outputs {
     }
-    class Permittivity {
-    }
     class PhysicalProperty {
     }
-    class RadiusOfGyration {
+    class PotentialEnergy {
     }
     class SCFOutputs {
-    }
-    class TotalForce {
     }
     class XASSpectrum {
     }
     Outputs <|-- SCFOutputs
-    Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ElectronicBandStructure
+    Outputs --> CrystalFieldSplitting
+    Outputs --> ElectronicBandGap
     Outputs --> ElectronicEigenvalues
+    Outputs --> ElectronicGreensFunction
+    Outputs --> FermiSurface
     Outputs --> HoppingMatrix : hopping_matrices
     Outputs --> KineticEnergy : kinetic_energies
     Outputs --> Occupancy : occupancies
-    Outputs --> Permittivity : permittivities
-    Outputs --> RadiusOfGyration : radii_of_gyration
-    Outputs --> TotalForce
+    Outputs --> PotentialEnergy : potential_energies
     Outputs --> XASSpectrum : xas_spectra
     SCFOutputs --> Outputs : scf_steps
 ```

@@ -64,7 +64,7 @@ Base method hierarchy up to ModelMethodElectronic
 
 Electronic method subclasses branching from ModelMethodElectronic
 
-**In scope:** Electronic-method inheritance rooted at ModelMethodElectronic, Ground-state electronic methods (DFT, HF, coupled-cluster, CI, perturbative approaches), Tight-binding family (TB, xTB, Wannier, SlaterKoster), Excited-state methodology branch (ExcitedStateMethodology, Screening, GW, BSE, TDDFT), Core-hole and many-body electronic methods (CoreHoleSpectra, DMFT)
+**In scope:** Electronic-method inheritance rooted at ModelMethodElectronic, Ground-state electronic methods (DFT, HF, CC, CI, perturbative approaches), Tight-binding family (TB, xTB, Wannier, SlaterKoster), Excited-state methodology branch (ExcitedStateMethodology, Screening, GW, BSE, TDDFT), Core-hole and many-body electronic methods (CoreHoleSpectra, DMFT)
 
 **Key sections:** ModelMethodElectronic, DFT, TB, xTB, Wannier, SlaterKoster, ExcitedStateMethodology, Screening, GW, BSE, TDDFT, HF, CC, CI, PerturbationMethod, CoreHoleSpectra, DMFT
 
