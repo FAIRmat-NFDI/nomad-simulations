@@ -6,6 +6,8 @@
 | DFT | `DFT` | A base section used to define the parameters used in a density functional theory (DFT) calculation. | [Model Method Electronic](../../schema/model_method_electronic.md) |
 | TB | `TB` | A base section containing the parameters pertaining to a tight-binding (TB) model calculation. | [Model Method Electronic](../../schema/model_method_electronic.md) |
 | HF | `HF` | Defines a Hartree-Fock (HF) calculation. | [Model Method Electronic](../../schema/model_method_electronic.md) |
+| CC | `CC` | A base section used to define the parameters of a Coupled Cluster calculation. | [Model Method Electronic](../../schema/model_method_electronic.md) |
+| CI | `CI` | Single-reference Configuration Interaction (CI) methods using atom-centered basis sets. | [Model Method Electronic](../../schema/model_method_electronic.md) |
 | Wannier | `Wannier` | A base section used to define the parameters used in a Wannier tight-binding fitting. | [Model Method Electronic](../../schema/model_method_electronic.md) |
 | Slater-Koster | `SlaterKoster` | A base section used to define the parameters used in a Slater-Koster tight-binding fitting. | [Model Method Electronic](../../schema/model_method_electronic.md) |
 | GW | `GW` | A base section used to define the parameters of a GW calculation. | [Model Method Electronic](../../schema/model_method_electronic.md) |
