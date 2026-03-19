@@ -32,8 +32,9 @@ from nomad_simulations.schema_packages.utils.libxc.expand import (
 class BaseModelMethod(ArchiveSection):
     """
     A base section used to define the abstract class of a Hamiltonian section. This section is an
-    abstraction of the `ModelMethod` section, which contains the settings and parameters used in
-    the mathematical model solved in a simulation. This abstraction is needed in order to allow
+    abstraction of the `ModelMethod` section, which contains the parameters that define the
+    mathematical model solved in a simulation. Numerical choices for how that model is evaluated
+    are stored separately under `numerical_settings`. This abstraction is needed in order to allow
     `ModelMethod` to be divided into specific `terms`, so that the total Hamiltonian is specified in
     `ModelMethod`, while its contributions are defined in `ModelMethod.terms`.
 
@@ -81,9 +82,13 @@ class BaseModelMethod(ArchiveSection):
 
 class ModelMethod(BaseModelMethod):
     """
-    A base section containing the mathematical model parameters. These are both the parameters of
-    the model and the settings used in the simulation. Optionally, this section can be decomposed
-    in a series of contributions by storing them under the `contributions` quantity.
+    A base section for the method-defining choices of a simulation. Store here choices that change
+    the target Hamiltonian, governing equations, ansatz, or physical approximation used by the
+    simulation. Numerical controls for discretization, convergence, basis representations, solver
+    execution, or related implementation details belong in `numerical_settings`.
+
+    Optionally, this section can be decomposed in a series of contributions by storing them under
+    the `contributions` quantity.
     """
 
     contributions = SubSection(

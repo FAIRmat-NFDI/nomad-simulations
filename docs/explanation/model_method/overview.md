@@ -11,6 +11,7 @@ For full section and quantity definitions, use:
 - [Model Method Electronic (Schema Navigation)](../../schema/model_method_electronic.md)
 - [Numerical Settings (Schema Navigation)](../../schema/numerical_settings.md)
 - [Force Field (Schema Navigation)](../../schema/force_field.md)
+- [ModelMethod vs NumericalSettings](model_method_vs_numerical_settings.md)
 
 ## Rules and Invariants
 
@@ -19,6 +20,9 @@ For full section and quantity definitions, use:
 - Keep numerical control parameters under `numerical_settings`.
 - Use `contributions` for additive model terms instead of flattening all terms
   into one section.
+- When a concept has both a physical-model aspect and an implementation aspect,
+  split them: keep the model identity in `ModelMethod` and the realization knobs
+  in `NumericalSettings`.
 
 ## Hierarchy Snapshot
 
@@ -44,6 +48,7 @@ For full section and quantity definitions, use:
 
 ## Related Pages
 
+- [ModelMethod vs NumericalSettings](model_method_vs_numerical_settings.md)
 - [Basis Sets](basis_sets.md)
 - [Model System Usage Guidelines](../model_system/usage_guidelines.md)
 - [Normalization](../normalize.md)

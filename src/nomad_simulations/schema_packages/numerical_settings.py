@@ -21,16 +21,20 @@ from nomad_simulations.schema_packages.utils import log
 
 class NumericalSettings(ArchiveSection):
     """
-    A base section used to define the numerical settings used in a simulation. These are meshes,
-    self-consistency parameters, and basis sets.
+    A base section used to define how a chosen `ModelMethod` is realized numerically in a
+    simulation. These settings capture discretization, convergence, basis or auxiliary
+    representations, solver controls, and related evaluation choices.
+
+    As a rule of thumb, changing only `NumericalSettings` should not change the intended model
+    semantics, even though it can change numerical accuracy, stability, or computational cost.
     """
 
     name = Quantity(
         type=str,
         description="""
-        Name of the numerical settings section. This is typically used to easy identification of the
-        `NumericalSettings` section. Possible values: "KMesh", "FrequencyMesh", "TimeMesh",
-        "SelfConsistency", "BasisSet".
+        Name of the numerical settings section. This is typically used for easy identification of
+        the `NumericalSettings` section within a `ModelMethod`. Possible values: "KMesh",
+        "FrequencyMesh", "TimeMesh", "SelfConsistency", "BasisSet".
         """,
     )
 
