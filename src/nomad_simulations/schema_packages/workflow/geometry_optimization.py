@@ -75,7 +75,32 @@ class GeometryOptimizationModel(SimulationWorkflowMethod):
     )
 
     single_point_convergence_targets = SubSection(
-        sub_section=WorkflowConvergenceTarget.m_def, repeats=True
+        sub_section=WorkflowConvergenceTarget.m_def,
+        repeats=True,
+        description="""
+        SCF convergence targets applied to each subtask (optimization step, MD frame, etc.).
+
+        These targets check SCF convergence within each subtask of a composite workflow.
+        For GeometryOptimization, this applies to each optimization step; for MolecularDynamics,
+        this would apply to each MD frame; for Phonon, to each displacement calculation.
+
+        During normalization, workflows create SinglePoint tasks for subtasks with SCF iterations,
+        and each task evaluates these targets independently. Results are aggregated into
+        `is_single_point_converged` via JMESPath: `workflow2.tasks[*].results.convergence[*].is_reached`.
+
+        Common SCF convergence targets:
+        - EnergyConvergenceTarget: SCF total energy convergence
+        - PotentialConvergenceTarget: Effective potential convergence
+        - ChargeConvergenceTarget: Charge density convergence
+
+        Note: This field should conceptually be available on SimulationWorkflowMethod base class
+        for any workflow with SCF subtasks, but is currently only implemented here. This is
+        a known schema design limitation.
+
+        See also:
+        - `convergence_targets`: Workflow-level convergence (e.g., forces for geometry optimization)
+        - `GeometryOptimizationResults.is_single_point_converged`: Aggregated SCF status
+        """,
     )
 
 
@@ -93,8 +118,34 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
     is_single_point_converged = Quantity(
         type=bool,
         description="""
-        Indicates if all single point SCF runs (if applicable) have converged to the
-        specified target (true), or not (false).
+        Aggregated SCF convergence status across all optimization steps.
+
+        Returns True if all SCF runs in all optimization steps converged to their
+        specified targets (defined in `method.single_point_convergence_targets`).
+        Returns False if any SCF run failed to converge. Returns None if no
+        convergence data is available.
+
+        This value is computed during normalization by aggregating convergence results
+        from all SinglePoint tasks using the JMESPath query:
+        `workflow2.tasks[*].results.convergence[*].is_reached`
+
+        The aggregation logic is: `all(all(step_results) for step_results in all_results)`
+
+        Example:
+            For a geometry optimization with 3 steps:
+            - Step 0: [True, True] (2 SCF targets, both converged)
+            - Step 1: [True, True]
+            - Step 2: [True, False] (second target failed)
+            → is_single_point_converged = False
+
+        Note: This field currently provides only aggregate information. Per-step
+        convergence status should be retrieved from individual task results:
+        `workflow2.tasks[step_index].results.convergence`
+
+        See also:
+        - `method.single_point_convergence_targets`: SCF convergence criteria
+        - `is_converged`: Geometry-level convergence status
+        - `convergence`: Per-target geometry convergence results
         """,
     )
     n_steps = Quantity(
