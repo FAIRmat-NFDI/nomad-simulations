@@ -6,7 +6,7 @@ import ase
 import numpy as np
 import pint
 from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy, SubSection
+from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
 
 if TYPE_CHECKING:
@@ -1063,14 +1063,32 @@ class HubbardInteractions(ElectronicState):
 
 class ParticleState(Entity):
     """
-    Generic base section representing the state of a particle in a simulation.
-    This can be extended to include any common quantities in the future.
+    Generic base section for particle-level entities in a simulation.
+
+    `ParticleState` defines representation-agnostic quantities that can be shared
+    across particle kinds. Domain-specific quantities should be introduced in
+    specialized subclasses (for example `AtomsState` and `CGBeadState`).
     """
 
     label = Quantity(
         type=str,
         description="""
         User- or program-package-defined identifier for this particle.
+        """,
+    )
+
+    mass = Quantity(
+        type=positive_float(),
+        unit='kg',
+        description="""
+        Mass associated with this particle/site, in kilograms.
+
+        This is an immutable per-particle descriptor intended for downstream
+        analyses that require per-particle masses.
+        For `AtomsState`, it is the mass of the modeled atomic site (including
+        isotope/effective choices provided by the source data). For `CGBeadState`,
+        it is the bead mass.
+        Method-related mass assignments belong in method-specific sections.
         """,
     )
 
@@ -1083,7 +1101,15 @@ class ParticleState(Entity):
 
 class AtomsState(ParticleState):
     """
-    A base section to define each atom state information.
+    A base section to define each atom's state information.
+
+    This section stores intrinsic atom/site-level descriptors (element identity,
+    atomic number, mass, formal integer charge, spin, site label) and an optional
+    `electronic_state` container for orbital-state metadata.
+
+    Method-dependent observables that are not intrinsic atom descriptors (for example,
+    atom-in-molecule partial charges from Mulliken/Hirshfeld/RESP analyses) are
+    out of scope for `AtomsState` and should be stored in method-specific sections.
     """
 
     chemical_symbol = Quantity(
@@ -1104,10 +1130,9 @@ class AtomsState(ParticleState):
         type=np.int32,
         default=0,
         description="""
-        Charge of the atom. It is defined as the number of extra electrons or holes in the
-        atom. If the atom is neutral, charge = 0 and the summation of all (if available) the`ElectronicState.occupation`
-        coincides with the `atomic_number`. Otherwise, charge can be any positive integer (+1, +2...)
-        for cations or any negative integer (-1, -2...) for anions.
+        Formal integer charge of the atom, defined as the number of extra
+        electrons (negative) or holes (positive) relative to the neutral atom.
+        For neutral atoms `charge = 0`.
 
         Note: for `CoreHole` systems we do not consider the charge of the atom even if
         we do not store the final `ElectronicState` where the electron was excited to.
@@ -1132,20 +1157,6 @@ class AtomsState(ParticleState):
     )
 
     electronic_state = SubSection(sub_section=ElectronicState.m_def)
-
-    pseudopotential = Quantity(
-        type=Reference(
-            SectionProxy(
-                'nomad_simulations.schema_packages.numerical_settings.Pseudopotential'
-            )
-        ),
-        description="""
-        Reference to the pseudopotential used for this atomic species in plane-wave DFT
-        calculations. The referenced `Pseudopotential` section is defined in `numerical_settings`
-        and contains metadata such as pseudopotential type (PAW, ultrasoft, norm-conserving),
-        cutoff energy, and XC functional used to generate the pseudopotential.
-        """,
-    )
 
     @log
     def get_label(self) -> str | None:
@@ -1241,14 +1252,6 @@ class CGBeadState(ParticleState):
         shape=['*'],
         description="""
         A list of bead labels for multifaceted bead characterization.
-        """,
-    )
-
-    mass = Quantity(
-        type=np.float64,
-        unit='kg',
-        description="""
-        Total mass of the particle.
         """,
     )
 

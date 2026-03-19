@@ -1,4 +1,4 @@
-site_name: "Documentation: Schema for Simulation Data"
+site_name: "Documentation: nomad-simulations"
 site_description: |
   Documentation for the schema of Simulation data.
 site_author: FAIRmat consortium
@@ -27,18 +27,26 @@ nav:
           - Spectroscopic Properties: schema/spectroscopy.md
           - Thermodynamic Properties: schema/thermodynamics.md
   - Schema Explanation:
-      - General Overview: explanation/general.md
+      - Overview: explanation/overview.md
+      - Simulation Entry: explanation/simulation_entry.md
       - Model System:
           - Model System: explanation/model_system/model_system.md
           - Representation Architecture: explanation/model_system/representation.md
-          - Representation Design History: explanation/model_system/representation_history.md
           - Electronic States: explanation/model_system/electronic_states.md
+          - Usage Guidelines: explanation/model_system/usage_guidelines.md
       - Model Method:
+          - Overview: explanation/model_method/overview.md
+          - ModelMethod vs NumericalSettings: explanation/model_method/model_method_vs_numerical_settings.md
           - Basis Sets: explanation/model_method/basis_sets.md
       # - Outputs:
       #     - Outputs: explanation/outputs/outputs.md
       - Bounded Data Types: explanation/data_types.md
       - Normalization: explanation/normalize.md
+  - Contributor Guides:
+      - Overview: contributor_guides/overview.md
+      - Schema Development Guide: contributor_guides/schema_development_guide.md
+      - Documentation Writing Guide: contributor_guides/documentation_writing_guide.md
+      - Documentation Automation Guide: contributor_guides/documentation_automation_guide.md
   - Contact: contact.md
 theme:
   name: material
@@ -83,7 +91,10 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      check_paths: true
+      base_path:
+        - docs
   - pymdownx.superfences     :
       custom_fences:
         - name: mermaid

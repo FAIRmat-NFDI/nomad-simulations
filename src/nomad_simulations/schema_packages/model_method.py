@@ -17,7 +17,11 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import CoreHole, ElectronicState
-from nomad_simulations.schema_packages.data_types import positive_int, unit_float
+from nomad_simulations.schema_packages.data_types import (
+    positive_float,
+    positive_int,
+    unit_float,
+)
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 from nomad_simulations.schema_packages.utils.libxc.build import (
@@ -25,14 +29,16 @@ from nomad_simulations.schema_packages.utils.libxc.build import (
 )
 from nomad_simulations.schema_packages.utils.libxc.expand import (
     expand_to_libxc_labels,
+    infer_rung_hint,
 )
 
 
 class BaseModelMethod(ArchiveSection):
     """
     A base section used to define the abstract class of a Hamiltonian section. This section is an
-    abstraction of the `ModelMethod` section, which contains the settings and parameters used in
-    the mathematical model solved in a simulation. This abstraction is needed in order to allow
+    abstraction of the `ModelMethod` section, which contains the parameters that define the
+    mathematical model solved in a simulation. Numerical choices for how that model is evaluated
+    are stored separately under `numerical_settings`. This abstraction is needed in order to allow
     `ModelMethod` to be divided into specific `terms`, so that the total Hamiltonian is specified in
     `ModelMethod`, while its contributions are defined in `ModelMethod.terms`.
 
@@ -80,9 +86,13 @@ class BaseModelMethod(ArchiveSection):
 
 class ModelMethod(BaseModelMethod):
     """
-    A base section containing the mathematical model parameters. These are both the parameters of
-    the model and the settings used in the simulation. Optionally, this section can be decomposed
-    in a series of contributions by storing them under the `contributions` quantity.
+    A base section for the method-defining choices of a simulation. Store here choices that change
+    the target Hamiltonian, governing equations, ansatz, or physical approximation used by the
+    simulation. Numerical controls for discretization, convergence, basis representations, solver
+    execution, or related implementation details belong in `numerical_settings`.
+
+    Optionally, this section can be decomposed in a series of contributions by storing them under
+    the `contributions` quantity.
     """
 
     contributions = SubSection(
@@ -217,12 +227,13 @@ class ImplicitSolvationModel(BaseModelMethod):
             )
 
 
-class ExplicitDispersionModel(BaseModelMethod):
-    """Explicit dispersion / vdW treatment used together with an ab-initio method.
+class EmpiricalDispersionModel(BaseModelMethod):
+    """Empirical dispersion correction used together with an ab-initio method.
 
     Covers pairwise-additive (D2/D3/D3(BJ)/D4), density-dependent (TS/TS-SCS),
-    many-body dispersion (MBD, e.g. MBD@rsSCS), and non-local correlation
-    functionals (VV10, rVV10, vdW-DF family, XDM).
+    many-body dispersion (MBD, e.g. MBD@rsSCS), and exchange-hole based XDM.
+    In literature, `DFT-D` is often used as an umbrella label; this schema stores
+    the concrete generation explicitly when available (e.g. D2, D3, D3BJ, D4).
 
     References
     ----------
@@ -231,13 +242,12 @@ class ExplicitDispersionModel(BaseModelMethod):
     • S. Grimme et al., J. Chem. Phys. 136, 154105 (2012) - DFT-D3(BJ)
     • A. Tkatchenko, M. Scheffler, Phys. Rev. Lett. 102, 073005 (2009) - TS
     • A. Tkatchenko et al., Phys. Rev. Lett. 108, 236402 (2012) - MBD
-    • O. A. Vydrov, T. Van Voorhis, J. Chem. Phys. 133, 244103 (2010) - VV10
     • C. Steinmann, WIREs Comput. Mol. Sci. 10, e1438 (2020) - overview
     """
 
     model = Quantity(
         type=MEnum(
-            # Pairwise / density-dependent
+            # Pairwise / density-dependent empirical models
             'D2',
             'D3',
             'D3BJ',
@@ -251,24 +261,10 @@ class ExplicitDispersionModel(BaseModelMethod):
             'MBD@rsSCS',
             # Exchange-hole based
             'XDM',
-            # Non-local correlation functionals
-            'VV10',
-            'rVV10',
-            'vdW-DF',
-            'vdW-DF2',
-            'optB88-vdW',
-            'optB86b-vdW',
-            'SCAN+rVV10',
-            'BEEF-vdW',
         ),
         description="""
-        Identifier of the explicit dispersion / vdW model.
+        Identifier of the empirical dispersion correction model.
         """,
-    )
-
-    is_embedded_in_xc = Quantity(
-        type=bool,
-        description='True if dispersion is part of the XC functional (e.g. SCAN+rVV10).',
     )
 
     damping_function = Quantity(
@@ -282,11 +278,104 @@ class ExplicitDispersionModel(BaseModelMethod):
         description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
     )
 
-    # Kernel family choice, when applicable. This is a model identifier, not a numerical knob.
-    nonlocal_kernel = Quantity(
-        type=MEnum('DRSLL', 'LMKLL', 'VV10', 'rVV10'),
-        description='Nonlocal correlation kernel flavor (when applicable).',
+
+class SelfInteractionCorrection(BaseModelMethod):
+    """Self-interaction correction (SIC) add-on used together with DFT.
+
+    This section replaces the legacy flat
+    `DFT.self_interaction_correction_method` string with a structured record
+    that can also store approximation-specific parameters, such as scaling
+    factors and explicitly corrected orbitals.
+    """
+
+    method = Quantity(
+        type=MEnum(
+            'AD',
+            'SOSEX',
+            'EXPLICIT_ORBITALS',
+            'MAURI_SPZ',
+            'MAURI_US',
+        ),
+        description="""
+        Identifier of the self-interaction correction approximation.
+
+        | SIC method                | Description |
+        |---------------------------|-------------|
+        | `AD`                      | Average-density correction |
+        | `SOSEX`                   | Second-order screened exchange |
+        | `EXPLICIT_ORBITALS`       | Perdew-Zunger-style correction on an explicit set of orbitals |
+        | `MAURI_SPZ`               | Mauri spin-polarized Perdew-Zunger expression |
+        | `MAURI_US`                | Mauri unpaired-spin correction |
+        """,
     )
+
+    correction_target = Quantity(
+        type=MEnum(
+            'average_density',
+            'screened_exchange',
+            'selected_orbitals',
+            'spin_density',
+            'doublet_unpaired_orbital',
+        ),
+        description="""
+        Object to which the SIC approximation is applied.
+
+        This is often implied by `method`, but can be set explicitly by a
+        parser when the code reports it directly.
+        """,
+    )
+
+    scaling_factor = Quantity(
+        type=positive_float(),
+        description="""
+        Optional multiplicative prefactor for scaled SIC variants.
+        A value of `1.0` corresponds to the unscaled form.
+        """,
+    )
+
+    n_corrected_orbitals = Quantity(
+        type=positive_int(),
+        description="""
+        Number of explicitly corrected orbitals.
+        Relevant for orbital-resolved SIC variants such as `EXPLICIT_ORBITALS`.
+        """,
+    )
+
+    corrected_orbitals_ref = SubSection(
+        sub_section=ElectronicState.m_def,
+        repeats=True,
+        description="""
+        References to orbitals explicitly included in the SIC correction.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is None:
+            self.name = 'SIC'
+
+        inferred_targets = {
+            'AD': 'average_density',
+            'SOSEX': 'screened_exchange',
+            'EXPLICIT_ORBITALS': 'selected_orbitals',
+            'MAURI_SPZ': 'spin_density',
+            'MAURI_US': 'doublet_unpaired_orbital',
+        }
+        if self.correction_target is None:
+            self.correction_target = inferred_targets.get(self.method)
+
+        if self.n_corrected_orbitals is None and self.corrected_orbitals_ref:
+            self.n_corrected_orbitals = len(self.corrected_orbitals_ref)
+
+        if (
+            self.method == 'EXPLICIT_ORBITALS'
+            and not self.corrected_orbitals_ref
+            and self.n_corrected_orbitals is None
+        ):
+            logger.warning(
+                'SelfInteractionCorrection.method is EXPLICIT_ORBITALS but no corrected orbitals were provided.'
+            )
 
 
 class RelativityModel(BaseModelMethod):
@@ -433,7 +522,14 @@ class XCComponent(ArchiveSection):
     canonical_label = Quantity(
         type=str, description="LibXC label, e.g. 'XC_GGA_X_PBE'."
     )
-    display_name = Quantity(type=str, description='Human-readable name, e.g. B3LYP.')
+    display_name = Quantity(
+        type=str,
+        description="""
+        Human-readable LibXC name.
+        Note: this can be identical for exchange/correlation partner entries
+        (for example TPSS), so use `canonical_label` + `kind` for disambiguation.
+        """,
+    )
 
     # Taxonomy
     family = Quantity(
@@ -600,8 +696,15 @@ class DFT(ModelMethodElectronic):
             'hybrid-meta-GGA': 4,
         }
         families = [c.family for c in (self.xc.components or []) if c.family]
+        hinted = infer_rung_hint(getattr(self.xc, 'functional_key', None) or '')
         if families:
-            self.jacobs_ladder = max(families, key=lambda f: rank.get(f, -1))
+            derived = max(families, key=lambda f: rank.get(f, -1))
+            if hinted and rank.get(hinted, -1) > rank.get(derived, -1):
+                self.jacobs_ladder = hinted
+            else:
+                self.jacobs_ladder = derived
+        elif hinted:
+            self.jacobs_ladder = hinted
         else:
             self.jacobs_ladder = self.jacobs_ladder or 'unavailable'
 

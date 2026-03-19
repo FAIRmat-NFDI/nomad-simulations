@@ -15,21 +15,27 @@ if TYPE_CHECKING:
     from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
 
 
 class NumericalSettings(ArchiveSection):
     """
-    A base section used to define the numerical settings used in a simulation. These are meshes,
-    self-consistency parameters, and basis sets.
+    A base section used to define how a chosen `ModelMethod` is realized numerically in a
+    simulation. These settings capture discretization, convergence, basis or auxiliary
+    representations, solver controls, and related evaluation choices.
+
+    As a rule of thumb, changing only `NumericalSettings` should not change the intended model
+    semantics, even though it can change numerical accuracy, stability, or computational cost.
     """
 
     name = Quantity(
         type=str,
         description="""
-        Name of the numerical settings section. This is typically used to easy identification of the
-        `NumericalSettings` section. Possible values: "KMesh", "FrequencyMesh", "TimeMesh", "BasisSet".
+        Name of the numerical settings section. This is typically used for easy identification of
+        the `NumericalSettings` section within a `ModelMethod`. Possible values: "KMesh",
+        "FrequencyMesh", "TimeMesh", "SelfConsistency", "BasisSet".
         """,
     )
 
@@ -1004,6 +1010,14 @@ class Pseudopotential(NumericalSettings):
         """,
     )
 
+    species_scope = Quantity(
+        type=AtomsState,
+        shape=['*'],
+        description="""
+        References to the `AtomsState` sections using this pseudopotential.
+        """,
+    )
+
     type = Quantity(
         type=MEnum('NC', 'US', 'PAW', 'NC-PAW', 'NC-PAW-GW'),
         shape=[],
@@ -1237,9 +1251,9 @@ class SolvationSettings(NumericalSettings):
     )
 
 
-class DispersionKnob(ArchiveSection):
+class EmpiricalDispersionKnob(ArchiveSection):
     """
-    A single typed numerical knob for an explicit dispersion / vdW correction.
+    A single typed numerical knob for an empirical dispersion correction.
 
     This is a "typed physical constraint" record: it stores one scalar value
     together with semantics that disambiguate what the value controls.
@@ -1255,14 +1269,12 @@ class DispersionKnob(ArchiveSection):
             'a1',
             'a2',
             'sR',
-            # Nonlocal kernel parameter
-            'b',
             # Many-body screening / range separation
             'beta',
         ),
         description="""
         Identifies the dispersion parameter using standard notation.
-        (e.g. s6, a1, beta, b).
+        (e.g. s6, a1, beta).
 
         All dispersion knobs are dimensionless.
         """,
@@ -1273,7 +1285,6 @@ class DispersionKnob(ArchiveSection):
             'pairwise',
             'three_body_atm',
             'many_body',
-            'nonlocal_kernel',
             'density_partitioning',
         ),
         description="""
@@ -1289,13 +1300,13 @@ class DispersionKnob(ArchiveSection):
     )
 
 
-class DispersionSettings(NumericalSettings):
+class EmpiricalDispersionSettings(NumericalSettings):
     """
-    Numerical and evaluation settings for an explicit dispersion / vdW correction.
+    Numerical and evaluation settings for an empirical dispersion correction.
 
     This section contains discrete switches and environment choices (e.g. whether
     to include higher-order dispersion terms, which density partitioning is used),
-    as well as typed scalar parameters stored as `DispersionKnob`.
+    as well as typed scalar parameters stored as `EmpiricalDispersionKnob`.
     """
 
     # switches for term inclusion / order
@@ -1355,14 +1366,14 @@ class DispersionSettings(NumericalSettings):
 
     # typed scalar parameters
     knobs = SubSection(
-        sub_section=DispersionKnob.m_def,
+        sub_section=EmpiricalDispersionKnob.m_def,
         repeats=True,
         description="""
         Typed scalar parameters (knobs) for the dispersion correction.
 
         Examples:
           • D3BJ:  s6/s8 (pairwise), a1/a2 (pairwise), optionally s9 (three_body_atm)
-          • rVV10: b (nonlocal_kernel)
+          • MBD@rsSCS: beta (many_body)
         """,
     )
 

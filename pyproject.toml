@@ -89,6 +89,7 @@ exclude = [
     "dist",
     "node_modules",
     "venv",
+    "docs/snippets/explanation",
 ]
 
 # Same as Black.

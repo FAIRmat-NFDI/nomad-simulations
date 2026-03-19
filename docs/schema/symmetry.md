@@ -10,6 +10,7 @@
 - Bravais lattice classifications
 - Symmetry operations
 
+
 ## Relationship map
 
 
@@ -74,4 +75,5 @@ classDiagram
 | `prototype_aflow_id` | m_str(str) | The identifier of this structure in the AFLOW encyclopedia of crystallographic prototypes: http://www.aflowlib.org/prototype-encyclopedia/index.html |
 | `analysis_origin_shift` | m_float64(float64) (shape: [3]) | <details><summary>Origin shift vector (3-element) applied by spglib during symmetry standardization.</summary>Origin shift vector (3-element) applied by spglib during symmetry standardization.<br>This vector describes the shift from the standardized origin to the input structure's<br>origin in fractional coordinates. During symmetry analysis, spglib may shift the origin<br>to align with conventional crystallographic settings (e.g., placing inversion centers<br>or high-symmetry points at the origin).<br>The shift is applied as: **r_input = r_standardized + origin_shift**<br>where r_input is a position in the input structure and r_standardized is the<br>corresponding position in the standardized cell.<br>**Source**: Extracted from spglib's symmetry dataset via MatID's `SymmetryAnalyzer`.<br>**Note**: This transformation is specific to the symmetry analysis process and is<br>distinct from user-defined representation transformations.<br>See: https://spglib.readthedocs.io/en/stable/definition.html</details> |
 | `analysis_transformation_matrix` | m_float64(float64) (shape: [3, 3]) | <details><summary>Transformation matrix (3×3) from input lattice vectors to standardized lattice vectors.</summary>Transformation matrix (3×3) from input lattice vectors to standardized lattice vectors.<br>This matrix describes how spglib transforms the input unit cell into a standardized<br>conventional cell during symmetry analysis. The transformation is defined such that:<br>**L_input = L_standardized @ transformation_matrix**<br>where L_input is the matrix of input lattice vectors (as columns) and L_standardized<br>is the matrix of standardized lattice vectors.<br>The standardization process orients the cell according to conventional crystallographic<br>settings for the identified space group, which may involve:<br>- Reorienting axes to align with symmetry elements<br>- Converting between primitive and conventional cells<br>- Standardizing the choice of basis vectors<br>**Source**: Extracted from spglib's symmetry dataset via MatID's `SymmetryAnalyzer`.<br>**Note**: This is specifically the transformation applied during symmetry detection<br>and is distinct from user-defined representation transformations.<br>See: https://spglib.readthedocs.io/en/stable/definition.html</details> |
+
 

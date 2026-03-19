@@ -1351,14 +1351,14 @@ class MolecularDynamics(SerialWorkflow):
     results = SubSection(sub_section=MolecularDynamicsResults.m_def)
 
     def map_inputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
-        super().map_inputs(archive, logger)
-        if not isinstance(self.method, MolecularDynamicsMethod):
+        if not self.method:
             self.method = MolecularDynamicsMethod()
+        super().map_inputs(archive, logger=logger)
 
     def map_outputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
-        super().map_outputs(archive, logger)
-        if not isinstance(self.results, MolecularDynamicsResults):
+        if not self.results:
             self.results = MolecularDynamicsResults()
+        super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)

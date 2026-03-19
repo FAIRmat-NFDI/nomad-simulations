@@ -13,34 +13,7 @@ This function is run within the NOMAD infrastructure by the [`MetainfoNormalizer
 Let's see some examples. Imagine having the following `Section` and `SubSection` structure:
 
 ```python
-from nomad.datamodel.data import ArchiveSection
-
-
-class Section1(ArchiveSection):
-    normalizer_level = 1
-
-    def normalize(self, achive, logger):
-        # some operations here
-        pass
-
-
-class Section2(ArchiveSection):
-    normalizer_level = 0
-
-    def normalize(self, archive, logger):
-        super().normalize(archive, logger)
-        # Some operations here or before `super().normalize(archive, logger)`
-
-
-class ParentSection(ArchiveSection):
-
-    sub_section_1 = SubSection(Section1.m_def, repeats=False)
-
-    sub_section_2 = SubSection(Section2.m_def, repeats=True)
-
-    def normalize(self, archive, logger):
-        super().normalize(archive, logger)
-        # Some operations here or before `super().normalize(archive, logger)`
+--8<-- "snippets/explanation/normalize/block_01.py"
 ```
 
 Now, `MetainfoNormalizer` will be run on the `ParentSection`. Applying **rule 1**, the `normalize()` functions of the `ParentSection`'s childs are executed first. The order of these functions is established by **rule 2** with the `normalizer_level` atrribute, i.e., all the `Section2` (note that `sub_section_2` is a list of sections) `normalize()` functions are run first, then `Section1.normalize()`. Then, the order of execution will be:

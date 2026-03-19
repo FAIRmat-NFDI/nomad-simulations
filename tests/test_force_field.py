@@ -5,6 +5,8 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
+from nomad_simulations.schema_packages.atoms_state import AtomsState
+
 # from nomad_simulations.schema_packages.method import ModelMethod
 from nomad_simulations.schema_packages.force_field import (
     BondPotential,
@@ -20,6 +22,8 @@ from nomad_simulations.schema_packages.force_field import (
     LinearBondAngleCoupling,
     MorseBond,
     ParameterEntry,
+    ParticleParameters,
+    ParticleParametersContainer,
     PeriodicDihedral,
     PeriodicImproper,
     PolynomialAngle,
@@ -34,6 +38,7 @@ from nomad_simulations.schema_packages.force_field import (
     UreyBradleyAngle,
 )
 from nomad_simulations.schema_packages.general import Simulation
+from nomad_simulations.schema_packages.model_system import ModelSystem
 
 # from structlog.stdlib import BoundLogger
 from . import logger
@@ -1049,6 +1054,127 @@ def test_potentials(
 
 
 ## Other types of tests
+
+
+class TestParticleParameters:
+    def test_basic_instantiation(self):
+        ps_o = AtomsState(label='OW')
+        ps_h1 = AtomsState(label='HW1')
+        ap = ParticleParameters()
+        ap.particle_type = 'OW'
+        ap.species_scope = [ps_o, ps_h1]
+
+        assert ap.particle_type == 'OW'
+        assert len(ap.species_scope) == 2
+
+    def test_partial_charge_and_mass(self):
+        ap = ParticleParameters()
+        ap.partial_charge = -0.834 * ureg.elementary_charge
+        ap.effective_mass = 15.999 * ureg.amu
+
+        assert ap.partial_charge.magnitude == pytest.approx(-0.834)
+        assert ap.effective_mass.to('amu').magnitude == pytest.approx(15.999)
+
+
+class TestParticleParametersContainer:
+    def test_normalize_passes_for_non_overlapping_scope(self):
+        ps_o = AtomsState(label='OW')
+        ps_h1 = AtomsState(label='HW1')
+        ps_h2 = AtomsState(label='HW2')
+        apc = ParticleParametersContainer()
+        ap_o = ParticleParameters()
+        ap_o.particle_type = 'OW'
+        ap_o.species_scope = [ps_o]
+        ap_h = ParticleParameters()
+        ap_h.particle_type = 'HW'
+        ap_h.species_scope = [ps_h1, ps_h2]
+        apc.particle_parameters = [ap_o, ap_h]
+
+        # Should not raise
+        apc.normalize(EntryArchive(), logger)
+
+    def test_normalize_logs_for_overlapping_scope(self):
+        ps_shared = AtomsState(label='OW')
+        apc = ParticleParametersContainer()
+        ap1 = ParticleParameters()
+        ap1.particle_type = 'OW'
+        ap1.species_scope = [ps_shared]
+        ap2 = ParticleParameters()
+        ap2.particle_type = 'HW'
+        ap2.species_scope = [ps_shared]  # same object → overlap
+        apc.particle_parameters = [ap1, ap2]
+
+        apc.normalize(EntryArchive(), logger)  # must not raise
+        # scopes are left intact after the error is logged
+        assert ap1.species_scope == [ps_shared]
+        assert ap2.species_scope == [ps_shared]
+
+    def test_normalize_resolves_species_scope_from_archive(self):
+        """species_scope is populated by matching particle_type against AtomsState.label.
+
+        A decoy ModelSystem at index 0 holds different labels so the test fails
+        if normalize() uses model_system[0] instead of model_system[-1].
+        """
+        decoy_ps = AtomsState(label='DECOY')
+        ms_decoy = ModelSystem()
+        ms_decoy.particle_states = [decoy_ps]
+
+        ps_o = AtomsState(label='OW')
+        ps_h1 = AtomsState(label='HW')
+        ps_h2 = AtomsState(label='HW')
+        ms = ModelSystem()
+        ms.particle_states = [ps_o, ps_h1, ps_h2]
+
+        simulation = Simulation()
+        simulation.model_system = [
+            ms_decoy,
+            ms,
+        ]  # ms is last, selected by model_system[-1]
+        archive = EntryArchive()
+        archive.data = simulation
+
+        apc = ParticleParametersContainer()
+        ap_o = ParticleParameters()
+        ap_o.particle_type = 'OW'
+        ap_h = ParticleParameters()
+        ap_h.particle_type = 'HW'
+        apc.particle_parameters = [ap_o, ap_h]
+        apc.normalize(archive, logger)
+
+        assert len(ap_o.species_scope) == 1
+        assert ap_o.species_scope[0] is ps_o
+        assert len(ap_h.species_scope) == 2
+        assert set(ap_h.species_scope) == {ps_h1, ps_h2}
+
+    def test_normalize_species_scope_empty_when_no_match(self):
+        """species_scope stays empty when particle_type matches no AtomsState.label."""
+        ps_o = AtomsState(label='OW')
+        ms = ModelSystem()
+        ms.particle_states = [ps_o]
+        simulation = Simulation()
+        simulation.model_system.append(ms)
+        archive = EntryArchive()
+        archive.data = simulation
+
+        apc = ParticleParametersContainer()
+        ap = ParticleParameters()
+        ap.particle_type = 'CT'  # no AtomsState with this label
+        apc.particle_parameters = [ap]
+        apc.normalize(archive, logger)
+
+        assert ap.species_scope is None or len(ap.species_scope) == 0
+
+    def test_fits_into_force_field_numerical_settings(self):
+        ff = ForceField()
+        apc = ParticleParametersContainer()
+        ap = ParticleParameters()
+        ap.particle_type = 'OW'
+        apc.particle_parameters = [ap]
+        ff.numerical_settings.append(apc)
+
+        assert len(ff.numerical_settings) == 1
+        assert isinstance(ff.numerical_settings[0], ParticleParametersContainer)
+        assert ff.numerical_settings[0].particle_parameters[0].particle_type == 'OW'
 
 
 def test_missing_units_skip_derivation():

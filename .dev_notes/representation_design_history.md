@@ -39,41 +39,24 @@ For users familiar with the previous `Cell` and `AtomicCell` classes, here is a 
 
 **Old approach:**
 ```python
-model_system = ModelSystem()
-cell = AtomicCell(
-    type='original',
-    lattice_vectors=lattice,
-    periodic_boundary_conditions=[True, True, True]
-)
-model_system.cell.append(cell)
+--8<-- "snippets/explanation/model_system/representation_history/block_01.py"
 ```
 
 **New approach:**
 ```python
-model_system = ModelSystem()
-model_system.lattice_vectors = lattice
-model_system.periodic_boundary_conditions = [True, True, True]
+--8<-- "snippets/explanation/model_system/representation_history/block_02.py"
 ```
 
 ### Alternative Representations
 
 **Old approach:**
 ```python
-primitive_cell = AtomicCell(
-    type='primitive',
-    lattice_vectors=primitive_lattice
-)
-model_system.cell.append(primitive_cell)
+--8<-- "snippets/explanation/model_system/representation_history/block_03.py"
 ```
 
 **New approach:**
 ```python
-primitive_rep = AlternativeRepresentation(
-    name='primitive',
-    crystal_cell_type='primitive',
-    lattice_vectors=primitive_lattice
-)
-model_system.representations.append(primitive_rep)
+--8<-- "snippets/explanation/model_system/representation_history/block_04.py"
 ```
 
 ### Parser Migration
@@ -82,28 +65,12 @@ For parser developers, the typical pattern changes from creating subsections to 
 
 **Old parser pattern:**
 ```python
-def parse(self):
-    model_system = ModelSystem()
-
-    # Create cell subsection
-    cell = AtomicCell()
-    cell.lattice_vectors = self.get_lattice_vectors()
-    cell.periodic_boundary_conditions = [True, True, True]
-    model_system.cell.append(cell)
-
-    # Positions on ModelSystem
-    model_system.positions = self.get_positions()
+--8<-- "snippets/explanation/model_system/representation_history/block_05.py"
 ```
 
 **New parser pattern:**
 ```python
-def parse(self):
-    model_system = ModelSystem()
-
-    # Direct property assignment
-    model_system.lattice_vectors = self.get_lattice_vectors()
-    model_system.periodic_boundary_conditions = [True, True, True]
-    model_system.positions = self.get_positions()
+--8<-- "snippets/explanation/model_system/representation_history/block_06.py"
 ```
 
 ## Design Philosophy

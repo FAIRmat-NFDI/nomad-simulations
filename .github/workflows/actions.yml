@@ -79,6 +79,34 @@ jobs:
     - name: Install the package
       run: |
         uv pip install dist/*.tar.gz
+  docs-integrity:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: ${{ env.UV_VERSION }}
+    - name: Install dependencies
+      run: |
+        uv sync --all-extras
+    - name: Regenerate docs artifacts
+      run: |
+        uv run python scripts/gen_docs.py
+        uv run python scripts/generate_explanation_fragments.py
+    - name: Verify generated artifacts are committed
+      run: |
+        git diff --exit-code -- docs/schema docs/snippets/generated
+    - name: Validate snippet tests
+      run: |
+        uv run python -m pytest -q tests/test_doc_snippets.py
+    - name: Build docs
+      run: |
+        uv run mkdocs build -q
   ruff-linting:
       runs-on: ubuntu-latest
       steps:
