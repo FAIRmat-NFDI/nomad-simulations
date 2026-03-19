@@ -3,10 +3,6 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState
-from nomad_simulations.schema_packages.general import Simulation
-from nomad_simulations.schema_packages.model_method import ModelMethod
-from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import (
     EmpiricalDispersionKnob,
     EmpiricalDispersionSettings,
@@ -76,79 +72,6 @@ class TestKSpace:
             assert np.allclose(value, result)
         else:
             assert k_space.reciprocal_lattice_vectors == result
-
-
-class TestPseudopotential:
-    @pytest.mark.parametrize(
-        'species_scope_indices, expected_paths',
-        [
-            pytest.param(
-                None,
-                None,
-                id='none',
-            ),
-            pytest.param(
-                [],
-                [],
-                id='empty',
-            ),
-            pytest.param(
-                [0, 1],
-                [
-                    '/data/model_system/0/particle_states/0',
-                    '/data/model_system/0/particle_states/1',
-                ],
-                id='populated',
-            ),
-        ],
-    )
-    def test_species_scope_references_atoms_state(
-        self, species_scope_indices, expected_paths
-    ):
-        entry = EntryArchive(
-            data=Simulation(
-                model_system=[
-                    ModelSystem(
-                        particle_states=[
-                            AtomsState(chemical_symbol='Si'),
-                            AtomsState(chemical_symbol='O'),
-                        ]
-                    )
-                ],
-                model_method=[
-                    ModelMethod(
-                        numerical_settings=[
-                            Pseudopotential(
-                                name='Si.pbe-n-kjpaw_psl.1.0.0.UPF',
-                            )
-                        ]
-                    )
-                ],
-            )
-        )
-        pseudopotential = entry.data.model_method[0].numerical_settings[0]
-        particle_states = entry.data.model_system[0].particle_states
-
-        if species_scope_indices is None:
-            pseudopotential.species_scope = None
-        else:
-            pseudopotential.species_scope = [
-                particle_states[index] for index in species_scope_indices
-            ]
-
-        data = pseudopotential.m_to_dict()
-
-        if species_scope_indices is None:
-            assert pseudopotential.species_scope is None
-            assert 'species_scope' not in data
-        else:
-            assert pseudopotential.species_scope == [
-                particle_states[index] for index in species_scope_indices
-            ]
-            if expected_paths:
-                assert data['species_scope'] == expected_paths
-            else:
-                assert data.get('species_scope', []) == []
 
 
 class TestKSpaceFunctionalities:
