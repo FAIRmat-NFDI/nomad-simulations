@@ -125,20 +125,7 @@ archive.workflow2 (GeometryOptimization)
 
 ### Aggregating SCF Convergence
 
-The `is_single_point_converged` field aggregates SCF convergence across all steps:
-
-```python
-# In GeometryOptimization.normalize()
-single_point_convergence_results = jmespath.search(
-    'workflow2.tasks[*].results.convergence[*].is_reached',
-    archive
-)
-# Returns: [[True, True], [True, True], [True, False], ...]
-#          └─ step 0 ─┘  └─ step 1 ─┘  └─ step 2 ─┘
-
-all_scf_converged = all(all(x) for x in single_point_convergence_results)
-self.results.is_single_point_converged = all_scf_converged
-```
+The `is_single_point_converged` field aggregates SCF convergence across all steps by collecting convergence results from all subtasks via JMESPath query `workflow2.tasks[*].results.convergence[*].is_reached`. This returns a nested list structure where each outer element represents a subtask (e.g., optimization step) and contains boolean convergence status for each target. The aggregation logic applies `all()` across both dimensions to determine if every target in every subtask converged.
 
 **Note**: The `is_single_point_converged` field is currently a scalar boolean that aggregates across all steps. It should be an array with shape `['n_steps']` to preserve per-step information. See TODO comments in `geometry_optimization.py:90-96` and `geometry_optimization.py:274-276`.
 
@@ -151,69 +138,6 @@ Targets use metainfo annotations to specify where to find data in the archive:
 - `@.property_name`: Relative to current output (`archive.data.outputs[-1]`)
 - `workflow2.property_name`: Absolute from archive root
 - `archive.property_name`: Explicit archive root path
-
-### Examples by Target Type
-
-```python
-# EnergyConvergenceTarget
-'@.scf_steps.delta_energies_total'
-→ archive.data.outputs[-1].scf_steps.delta_energies_total
-
-# ForceConvergenceTarget (with fallback)
-['workflow2.results.final_force_maximum',
- '@.scf_steps.delta_force_abs']
-→ Try workflow2.results.final_force_maximum first
-→ Fall back to archive.data.outputs[-1].scf_steps.delta_force_abs
-
-# PotentialConvergenceTarget
-'@.scf_steps.delta_potential_rms'
-
-# ChargeConvergenceTarget
-'@.scf_steps.delta_density_rms'
-
-# WavefunctionConvergenceTarget
-'@.scf_steps.delta_wavefunction_rms'
-```
-
-## Complete Example: Single Point Calculation
-
-```python
-from nomad.datamodel import EntryArchive
-from nomad.units import ureg
-from nomad_simulations.schema_packages.workflow import SinglePoint, SinglePointMethod
-from nomad_simulations.schema_packages.outputs import Outputs, SCFSteps
-from nomad_simulations.schema_packages.workflow import EnergyConvergenceTarget
-
-# Create archive
-archive = EntryArchive()
-
-# Populate raw data (as parser would do)
-scf_steps = SCFSteps()
-scf_steps.delta_energies_total = np.array([1e-6, 5e-7, 1e-8]) * ureg.joule
-archive.data.outputs = [Outputs(scf_steps=scf_steps)]
-
-# Create workflow with convergence target
-workflow = SinglePoint()
-workflow.method = SinglePointMethod()
-workflow.method.convergence_targets = [
-    EnergyConvergenceTarget(
-        threshold=1e-6 * ureg.joule,
-        threshold_type='absolute'
-    )
-]
-
-# Normalize workflow (triggers convergence checking)
-workflow.normalize(archive, logger)
-
-# Access results
-print(f"Overall converged: {workflow.results.is_converged}")  # True
-print(f"Number of targets: {len(workflow.results.convergence)}")  # 1
-
-for result in workflow.results.convergence:
-    target = result.convergence_target_ref
-    print(f"{target.m_def.name}: threshold={target.threshold}, reached={result.is_reached}")
-    # EnergyConvergenceTarget: threshold=1e-06 joule, reached=True
-```
 
 ## Related Files
 
