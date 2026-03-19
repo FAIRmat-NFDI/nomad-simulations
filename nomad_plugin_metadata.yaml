@@ -124,15 +124,15 @@ schema_dependencies:
 metadata_provenance:
 - source: pyproject
   extraction_method: deterministic
-  generated_at: '2026-03-19T14:30:44.631505+00:00'
+  generated_at: '2026-03-19T14:52:11.912295+00:00'
   generator_version: 0.1.0
 - source: plugin_entry_points
   extraction_method: deterministic
-  generated_at: '2026-03-19T14:30:44.631546+00:00'
+  generated_at: '2026-03-19T14:52:11.912347+00:00'
   generator_version: 0.1.0
 - source: citation_cff
   extraction_method: deterministic
-  generated_at: '2026-03-19T14:30:44.631563+00:00'
+  generated_at: '2026-03-19T14:52:11.912369+00:00'
   generator_version: 0.1.0
 stars: 7
 owner: FAIRmat-NFDI
@@ -140,3 +140,33 @@ owner_type: Organization
 created: '2024-01-17T11:45:02Z'
 last_updated: '2026-03-19T13:40:53Z'
 archived: false
+maturity: beta
+repository_default_branch: develop
+deployment:
+  on_central: true
+  on_example_oasis: true
+  on_pypi: true
+  pypi_package: nomad-simulations
+suggested_usages:
+- id: simulation-schema-foundation
+  title: Use FAIR simulation schemas in NOMAD plugins
+  user_intent: Reuse common simulation metainfo sections in plugin schema packages
+  domain_category: simulations
+  technique: simulation-schema
+  audience: plugin-developers
+  maturity: stable
+  tags:
+  - schema
+  - metainfo
+  - reuse
+- id: harmonize-simulation-data-models
+  title: Harmonize simulation data models across parsers
+  user_intent: Standardize simulation outputs to shared semantic sections
+  domain_category: cross-domain
+  technique: ontology-and-schema-harmonization
+  audience: advanced
+  maturity: stable
+  tags:
+  - harmonization
+  - interoperability
+  - simulation
