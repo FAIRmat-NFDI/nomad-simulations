@@ -1,0 +1,142 @@
+id: nomad-simulations
+metadata_schema_version: 1.0.0
+name: nomad-simulations
+description: A NOMAD plugin for FAIR schemas for simulation data.
+license: LICENSE
+upstream_repository: https://github.com/fairmat-nfdi/nomad-simulations
+documentation: https://fairmat-nfdi.github.io/nomad-simulations/
+homepage: https://github.com/fairmat-nfdi/nomad-simulations
+issue_tracker: https://github.com/fairmat-nfdi/nomad-simulations/issues
+maintainers:
+- name: Jose M. Pizarro
+  email: jose.pizarro@physik.hu-berlin.de
+- name: Joseph F. Rudzinski
+  email: joseph.rudzinski@physik.hu-berlin.de
+authors:
+- name: "Jos\xE9 M. Pizarro"
+- name: Esma B. Boydas
+- name: Nathan Daelman
+- name: Alvin Noe Ladines
+- name: Bernadette Mohr
+- name: Joseph F. Rudzinski
+entry_points:
+- id: nomad.plugin:nomad_simulations_plugin
+  entry_point_group: nomad.plugin
+  entry_point_name: nomad_simulations_plugin
+  python_object: nomad_simulations.schema_packages:nomad_simulations_plugin
+  capability_type: schema
+capabilities:
+- id: nomad_simulations_plugin
+  capability_type: schema
+  title: NOMADSimulations
+  summary: A NOMAD plugin for FAIR schemas for simulation data.
+schema_dependencies:
+- dependency_type: python_package
+  package_name: nomad-lab
+  version_range: '[infrastructure]>=1.3.15'
+  optional: false
+  purpose: runtime
+- dependency_type: python_package
+  package_name: matid
+  version_range: '>=2.0.0.dev2'
+  optional: false
+  purpose: runtime
+- dependency_type: python_package
+  package_name: MDAnalysis
+  version_range: '>=2.4.0'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: networkx
+  version_range: ''
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: mypy
+  version_range: '>=1.15'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: pytest
+  version_range: '>= 5.3.0, <8'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: pytest-timeout
+  version_range: '>=1.4.2'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: pytest-cov
+  version_range: '>=2.7.1'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: pytest-asyncio
+  version_range: '>=0.21.0'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: ruff
+  version_range: '>=0.6'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: structlog
+  version_range: '>=1.0'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: typing-extensions
+  version_range: '>=4.12'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: mkdocs
+  version_range: '>=1.6'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: mkdocs-material
+  version_range: '>=9.5'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: pymdown-extensions
+  version_range: '>=10.5'
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: mkdocs-click
+  version_range: ''
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: mkdocs-awesome-pages-plugin
+  version_range: ''
+  optional: true
+  purpose: optional
+- dependency_type: python_package
+  package_name: mkdocs-panzoom-plugin
+  version_range: '>=0.5.2'
+  optional: true
+  purpose: optional
+metadata_provenance:
+- source: pyproject
+  extraction_method: deterministic
+  generated_at: '2026-03-19T14:30:44.631505+00:00'
+  generator_version: 0.1.0
+- source: plugin_entry_points
+  extraction_method: deterministic
+  generated_at: '2026-03-19T14:30:44.631546+00:00'
+  generator_version: 0.1.0
+- source: citation_cff
+  extraction_method: deterministic
+  generated_at: '2026-03-19T14:30:44.631563+00:00'
+  generator_version: 0.1.0
+stars: 7
+owner: FAIRmat-NFDI
+owner_type: Organization
+created: '2024-01-17T11:45:02Z'
+last_updated: '2026-03-19T13:40:53Z'
+archived: false
