@@ -891,7 +891,56 @@ class KSpace(NumericalSettings):
         super().normalize(archive, logger)
 
 
-class ForceCalculations(NumericalSettings):
+class SelfConsistency(NumericalSettings):
+    """
+    A base section used to define the convergence settings of self-consistent field (SCF) calculation.
+    It determines the conditions for `is_scf_converged` in `SCFOutputs` (see outputs.py). The convergence
+    criteria covered are:
+
+        1. The number of iterations is smaller than or equal to `n_max_iterations`.
+        2. The total change between two subsequent self-consistent iterations for an output property is below
+        `threshold_change`.
+    """
+
+    # TODO add examples or MEnum?
+    scf_minimization_algorithm = Quantity(
+        type=str,
+        description="""
+        Specifies the algorithm used for self consistency minimization.
+        """,
+    )
+
+    n_max_iterations = Quantity(
+        type=np.int32,
+        description="""
+        Specifies the maximum number of allowed self-consistent iterations. The simulation `is_scf_converged`
+        if the number of iterations is not larger or equal than this quantity.
+        """,
+    )
+
+    threshold_change = Quantity(
+        type=np.float64,
+        description="""
+        Specifies the threshold for the change between two subsequent self-consistent iterations on
+        a given output property. The simulation `is_scf_converged` if this total change is below
+        this threshold.
+        """,
+    )
+
+    threshold_change_unit = Quantity(
+        type=str,
+        description="""
+        Unit using the pint UnitRegistry() notation for the `threshold_change`.
+        """,
+    )
+
+    def __init__(self, m_def: 'Section' = None, m_context: 'Context' = None, **kwargs):
+        super().__init__(m_def, m_context, **kwargs)
+        # Set the name of the section
+        self.name = self.m_def.name
+
+
+class FrozenCore(NumericalSettings):
     """
     Section defining the frozen-core approximation settings for molecular electronic-structure methods.
 
