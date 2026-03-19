@@ -5,7 +5,7 @@
 **In scope:**
 
 - Electronic-method inheritance rooted at ModelMethodElectronic
-- Ground-state electronic methods (DFT, HartreeFock, coupled-cluster, CI, perturbative approaches)
+- Ground-state electronic methods (DFT, HF, coupled-cluster, CI, perturbative approaches)
 - Tight-binding family (TB, xTB, Wannier, SlaterKoster)
 - Excited-state methodology branch (ExcitedStateMethodology, Screening, GW, BSE, TDDFT)
 - Core-hole and many-body electronic methods (CoreHoleSpectra, DMFT)
@@ -17,14 +17,14 @@
 ```mermaid
 classDiagram
     class BSE
-    class ConfigurationInteraction
+    class CC
+    class CI
     class CoreHoleSpectra
-    class CoupledCluster
     class DFT
     class DMFT
     class ExcitedStateMethodology
     class GW
-    class HartreeFock
+    class HF
     class ModelMethodElectronic
     class PerturbationMethod
     class Screening
@@ -34,14 +34,14 @@ classDiagram
     class Wannier
     class xTB
     ExcitedStateMethodology <|-- BSE
-    ModelMethodElectronic <|-- ConfigurationInteraction
+    ModelMethodElectronic <|-- CC
+    ModelMethodElectronic <|-- CI
     ModelMethodElectronic <|-- CoreHoleSpectra
-    ModelMethodElectronic <|-- CoupledCluster
     ModelMethodElectronic <|-- DFT
     ModelMethodElectronic <|-- DMFT
     ModelMethodElectronic <|-- ExcitedStateMethodology
     ExcitedStateMethodology <|-- GW
-    ModelMethodElectronic <|-- HartreeFock
+    ModelMethodElectronic <|-- HF
     ModelMethodElectronic <|-- PerturbationMethod
     ExcitedStateMethodology <|-- Screening
     TB <|-- SlaterKoster
@@ -71,9 +71,9 @@ classDiagram
 | `GW` | A base section used to define the parameters of a GW calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.GW){:target="_blank"} |
 | `BSE` | A base section used to define the parameters of a BSE calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.BSE){:target="_blank"} |
 | `TDDFT` | Time-dependent density functional theory settings. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.TDDFT){:target="_blank"} |
-| `HartreeFock` | Defines a Hartree-Fock (HF) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.HartreeFock){:target="_blank"} |
-| `CoupledCluster` | A base section used to define the parameters of a Coupled Cluster calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.CoupledCluster){:target="_blank"} |
-| `ConfigurationInteraction` | Single-reference Configuration Interaction (CI) methods using atom-centered basis sets. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.ConfigurationInteraction){:target="_blank"} |
+| `HF` | Defines a Hartree-Fock (HF) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.HF){:target="_blank"} |
+| `CC` | A base section used to define the parameters of a Coupled Cluster calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.CC){:target="_blank"} |
+| `CI` | Single-reference Configuration Interaction (CI) methods using atom-centered basis sets. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.CI){:target="_blank"} |
 | `PerturbationMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.PerturbationMethod){:target="_blank"} |
 | `CoreHoleSpectra` | A base section used to define the parameters used in a core-hole spectra calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.CoreHoleSpectra){:target="_blank"} |
 | `DMFT` | A base section used to define the parameters of a DMFT calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.DMFT){:target="_blank"} |
@@ -163,13 +163,13 @@ classDiagram
 | `field_polarization_ref` | Reference | External field / polarization used to drive the response or propagation. |
 | `target_property` | Enum | Intended spectral/response target of the TDDFT input. |
 
-### `HartreeFock`
+### `HF`
 
 | Quantity | Type | Description |
 |---|---|---|
 | `type` | Enum | The type of HF determinant. |
 
-### `CoupledCluster`
+### `CC`
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -179,7 +179,7 @@ classDiagram
 | `perturbative_correction` | Enum | <details><summary>Label for the perturbative corrections:</summary>Label for the perturbative corrections:<br>- '(T)'   : standard perturbative triples<br>- '[T]'   : Brueckner-based or other variant<br>- '(T0)'  : approximate version of (T)<br>- '[T0]'  : approximate, typically for Brueckner references<br>- '(Q)'   : perturbative quadruples, e.g., CCSDT(Q)</details> |
 | `explicit_correlation` | Enum | <details><summary>Explicit correlation treatment.</summary>Explicit correlation treatment.<br>These methods introduce the interelectronic distance coordinate<br>directly into the wavefunction to treat dynamical electron correlation.<br>It can be added linearly (R12) or exponentially (F12).</details> |
 
-### `ConfigurationInteraction`
+### `CI`
 
 | Quantity | Type | Description |
 |---|---|---|

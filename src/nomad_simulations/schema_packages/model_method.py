@@ -1492,7 +1492,7 @@ class DMFT(ModelMethodElectronic):
     )
 
 
-class HartreeFock(ModelMethodElectronic):
+class HF(ModelMethodElectronic):
     """
     Defines a Hartree-Fock (HF) calculation.
 
@@ -1559,7 +1559,7 @@ class PerturbationMethod(ModelMethodElectronic):
     )
 
 
-class CoupledCluster(ModelMethodElectronic):
+class CC(ModelMethodElectronic):
     """
     A base section used to define the parameters of a Coupled Cluster calculation.
     A standard schema is defined, though the most common cases can be summarized in the `type` quantity.
@@ -1626,7 +1626,7 @@ class CoupledCluster(ModelMethodElectronic):
     )
 
 
-class ConfigurationInteraction(ModelMethodElectronic):
+class CI(ModelMethodElectronic):
     """
     Single-reference Configuration Interaction (CI) methods using atom-centered basis sets.
 

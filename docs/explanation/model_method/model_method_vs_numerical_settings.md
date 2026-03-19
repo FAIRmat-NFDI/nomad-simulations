@@ -52,7 +52,7 @@ A practical test is:
 
 Use `ModelMethod` for:
 
-- `DFT`, `TB`, `GW`, `BSE`, `DMFT`, `HartreeFock`,
+- `DFT`, `TB`, `GW`, `BSE`, `DMFT`, `HF`,
 - XC functional identity,
 - relativistic treatment as a physical approximation,
 - active-space or multireference method definition,
