@@ -81,21 +81,6 @@ class TestEnergyConvergenceTarget:
         if len(energy_values) > 1 and energy_values[-1] != 0:
             assert is_reached == expected_reached
 
-    def test_energy_missing_data(self, archive, logger):
-        """Test energy convergence with missing data."""
-        energy_target = EnergyConvergenceTarget()
-        energy_target.threshold = 1e-6 * ureg.joule
-        energy_target.threshold_type = 'absolute'
-
-        # Empty archive
-        is_reached = energy_target.normalize(archive, logger)
-        assert is_reached is None
-
-        # Archive with outputs but no SCF steps
-        archive.data.outputs = [Outputs()]
-        is_reached = energy_target.normalize(archive, logger)
-        assert is_reached is None
-
     def test_energy_units(self, archive, logger):
         """Test that energy convergence handles units correctly."""
         energy_target = EnergyConvergenceTarget()
@@ -188,21 +173,6 @@ class TestForceConvergenceTarget:
         is_reached = force_target.normalize(archive, logger)
         assert is_reached == expected_reached
 
-    def test_force_missing_data(self, archive, logger):
-        """Test force convergence with missing data."""
-        force_target = ForceConvergenceTarget()
-        force_target.threshold = 1e-8 * ureg.newton
-        force_target.threshold_type = 'maximum'
-
-        # Empty archive
-        is_reached = force_target.normalize(archive, logger)
-        assert is_reached is None
-
-        # Archive with outputs but no force data
-        archive.data.outputs = [Outputs()]
-        is_reached = force_target.normalize(archive, logger)
-        assert is_reached is None
-
     def test_force_absolute_convergence(self, archive, logger):
         """Test absolute force convergence from SCF delta."""
         force_target = ForceConvergenceTarget()
@@ -268,21 +238,6 @@ class TestPotentialConvergenceTarget:
         is_reached = potential_target.normalize(archive, logger)
         assert is_reached == expected_reached
 
-    def test_potential_missing_data(self, archive, logger):
-        """Test potential convergence with missing data."""
-        potential_target = PotentialConvergenceTarget()
-        potential_target.threshold = 1e-5 * ureg.joule
-        potential_target.threshold_type = 'rms'
-
-        # Empty archive
-        is_reached = potential_target.normalize(archive, logger)
-        assert is_reached is None
-
-        # Archive with SCF but no potential values
-        archive.data.outputs = [Outputs(scf_steps=SCFSteps())]
-        is_reached = potential_target.normalize(archive, logger)
-        assert is_reached is None
-
 
 class TestChargeConvergenceTarget:
     """Test the ChargeConvergenceTarget class."""
@@ -331,21 +286,6 @@ class TestChargeConvergenceTarget:
         # Normalize and check
         is_reached = charge_target.normalize(archive, logger)
         assert is_reached == expected_reached
-
-    def test_charge_missing_data(self, archive, logger):
-        """Test charge convergence with missing data."""
-        charge_target = ChargeConvergenceTarget()
-        charge_target.threshold = 1e-7 * ureg.coulomb
-        charge_target.threshold_type = 'absolute'
-
-        # Empty archive
-        is_reached = charge_target.normalize(archive, logger)
-        assert is_reached is None
-
-        # Archive with SCF but no charge values
-        archive.data.outputs = [Outputs(scf_steps=SCFSteps())]
-        is_reached = charge_target.normalize(archive, logger)
-        assert is_reached is None
 
 
 class TestWavefunctionConvergenceTarget:
@@ -423,21 +363,6 @@ class TestWavefunctionConvergenceTarget:
         is_reached = wavefunction_target.normalize(archive, logger)
         assert is_reached == expected_reached
 
-    def test_wavefunction_missing_data(self, archive, logger):
-        """Test wavefunction convergence with missing data."""
-        wavefunction_target = WavefunctionConvergenceTarget()
-        wavefunction_target.threshold = 1e-8 * ureg.dimensionless
-        wavefunction_target.threshold_type = 'absolute'
-
-        # No outputs at all
-        is_reached = wavefunction_target.normalize(archive, logger)
-        assert is_reached is None
-
-        # Empty scf_steps
-        archive.data.outputs = [Outputs(scf_steps=SCFSteps())]
-        is_reached = wavefunction_target.normalize(archive, logger)
-        assert is_reached is None
-
     def test_wavefunction_single_iteration(self, archive, logger):
         """Test with only one iteration (cannot compute convergence)."""
         wavefunction_target = WavefunctionConvergenceTarget()
@@ -480,6 +405,38 @@ class TestWavefunctionConvergenceTarget:
         is_reached = wavefunction_target.normalize(archive, logger)
         # Should converge since abs values are below threshold
         assert is_reached is True
+
+
+class TestMissingDataHandling:
+    """Test that all convergence targets handle missing data correctly."""
+
+    @pytest.mark.parametrize(
+        'target_class, threshold, threshold_unit',
+        [
+            (EnergyConvergenceTarget, 1e-6, ureg.joule),
+            (ForceConvergenceTarget, 1e-8, ureg.newton),
+            (PotentialConvergenceTarget, 1e-5, ureg.joule),
+            (ChargeConvergenceTarget, 1e-7, ureg.coulomb),
+            (WavefunctionConvergenceTarget, 1e-8, ureg.dimensionless),
+        ],
+        ids=['Energy', 'Force', 'Potential', 'Charge', 'Wavefunction'],
+    )
+    def test_missing_data_returns_none(
+        self, target_class, threshold, threshold_unit, archive, logger
+    ):
+        """Test convergence targets return None when data is missing."""
+        target = target_class()
+        target.threshold = threshold * threshold_unit
+        target.threshold_type = 'absolute'
+
+        # Empty archive
+        is_reached = target.normalize(archive, logger)
+        assert is_reached is None
+
+        # Archive with outputs but no SCF data
+        archive.data.outputs = [Outputs()]
+        is_reached = target.normalize(archive, logger)
+        assert is_reached is None
 
 
 class TestConvergenceHelperMethods:
