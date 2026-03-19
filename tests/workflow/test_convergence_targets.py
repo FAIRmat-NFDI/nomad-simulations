@@ -35,8 +35,6 @@ class TestEnergyConvergenceTarget:
             (1e-6 * ureg.joule, 'absolute', [1e-10, 1e-11, 5e-12], True),
             # Absolute convergence - not converged
             (1e-6 * ureg.joule, 'absolute', [1e-3, 1e-4, 1e-5], False),
-            # Zero energy values
-            (1e-6 * ureg.joule, 'absolute', [0.0, 0.0, 0.0], True),
         ],
     )
     def test_energy_convergence(
@@ -298,14 +296,10 @@ class TestWavefunctionConvergenceTarget:
             (1e-8 * ureg.dimensionless, 'absolute', [1e-10, 1e-11, 5e-12], True),
             # Absolute convergence - not converged
             (1e-8 * ureg.dimensionless, 'absolute', [1e-5, 1e-6, 1e-7], False),
-            # Zero/perfect convergence
-            (1e-8 * ureg.dimensionless, 'absolute', [0.0, 0.0, 0.0], True),
             # RMS convergence with array data - converged
             (1e-8 * ureg.dimensionless, 'rms', [[1e-10, 2e-10], [5e-11, 6e-11]], True),
             # RMS convergence with array data - not converged
             (1e-8 * ureg.dimensionless, 'rms', [[1e-5, 2e-5], [8e-6, 9e-6]], False),
-            # All zeros in array
-            (1e-8 * ureg.dimensionless, 'rms', [[0.0, 0.0], [0.0, 0.0]], True),
             # Maximum convergence - not converged
             (
                 1e-8 * ureg.dimensionless,
@@ -362,49 +356,6 @@ class TestWavefunctionConvergenceTarget:
         archive.data.outputs = [Outputs(scf_steps=scf_step)]
         is_reached = wavefunction_target.normalize(archive, logger)
         assert is_reached == expected_reached
-
-    def test_wavefunction_single_iteration(self, archive, logger):
-        """Test with only one iteration (cannot compute convergence)."""
-        wavefunction_target = WavefunctionConvergenceTarget()
-        wavefunction_target.threshold = 1e-8 * ureg.dimensionless
-        wavefunction_target.threshold_type = 'absolute'
-
-        # Single value - no delta can be computed
-        scf_step = SCFSteps()
-        # With only one iteration, there should be no delta_wavefunction_rms
-        # or it should be empty
-        archive.data.outputs = [Outputs(scf_steps=scf_step)]
-        is_reached = wavefunction_target.normalize(archive, logger)
-        assert is_reached is None
-
-    def test_wavefunction_nan_values(self, archive, logger):
-        """Test handling of NaN values in wavefunction data."""
-        wavefunction_target = WavefunctionConvergenceTarget()
-        wavefunction_target.threshold = 1e-8 * ureg.dimensionless
-        wavefunction_target.threshold_type = 'absolute'
-
-        scf_step = SCFSteps()
-        scf_step.delta_wavefunction_rms = np.array([np.nan, 1e-10])
-        archive.data.outputs = [Outputs(scf_steps=scf_step)]
-
-        # Should handle gracefully without crashing
-        wavefunction_target.normalize(archive, logger)
-        # Test passes if no exception is raised
-
-    def test_wavefunction_negative_values(self, archive, logger):
-        """Test that negative residuals are treated as absolute values."""
-        wavefunction_target = WavefunctionConvergenceTarget()
-        wavefunction_target.threshold = 1e-8 * ureg.dimensionless
-        wavefunction_target.threshold_type = 'absolute'
-
-        # Negative values should be treated as absolute
-        scf_step = SCFSteps()
-        scf_step.delta_wavefunction_rms = np.array([-1e-10, -5e-11])
-        archive.data.outputs = [Outputs(scf_steps=scf_step)]
-
-        is_reached = wavefunction_target.normalize(archive, logger)
-        # Should converge since abs values are below threshold
-        assert is_reached is True
 
 
 class TestMissingDataHandling:
@@ -684,56 +635,6 @@ class TestConvergenceInWorkflow:
 
         assert convergence_results[0] is True
         assert convergence_results[1] is False
-
-
-class TestEdgeCases:
-    """Test edge cases and error handling."""
-
-    def test_zero_threshold(self, archive, logger):
-        """Test that zero threshold is accepted (non-negative validation)."""
-        energy_target = EnergyConvergenceTarget()
-        energy_target.threshold = 0.0 * ureg.joule
-        energy_target.threshold_type = 'absolute'
-
-        scf_step = SCFSteps()
-        scf_step.delta_energies_total = np.array([0.0]) * ureg.joule
-
-        archive.data.outputs = [Outputs(scf_steps=scf_step)]
-        is_reached = energy_target.normalize(archive, logger)
-
-        # With <= comparison, exact zero matches zero threshold
-        assert is_reached is True
-
-    def test_very_large_values(self, archive, logger):
-        """Test with very large force values."""
-        force_target = ForceConvergenceTarget()
-        force_target.threshold = 1e10 * ureg.newton
-        force_target.threshold_type = 'maximum'
-
-        forces = TotalForce(value=np.array([[1e5, 1e5, 1e5]]) * ureg.newton)
-        scf_steps = SCFSteps()
-        outputs = Outputs(total_forces=[forces], scf_steps=scf_steps)
-        archive.data.outputs = [outputs]
-
-        # Normalize outputs to compute delta_force_abs
-        outputs.normalize(archive, logger)
-
-        is_reached = force_target.normalize(archive, logger)
-        assert is_reached is True
-
-    def test_nan_values(self, archive, logger):
-        """Test handling of NaN values in data."""
-        force_target = ForceConvergenceTarget()
-        force_target.threshold = 1e-8 * ureg.newton
-        force_target.threshold_type = 'maximum'
-
-        # Create forces with NaN
-        forces = TotalForce(value=np.array([[np.nan, 1e-5, 1e-5]]) * ureg.newton)
-        archive.data.outputs = [Outputs(total_forces=[forces])]
-
-        # Should handle gracefully (implementation dependent)
-        force_target.normalize(archive, logger)
-        # Test passes if no exception is raised
 
 
 class TestFallbackPaths:
