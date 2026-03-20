@@ -7,7 +7,9 @@ from nomad.metainfo import (
     URL,
     MEnum,
     Quantity,
+    Reference,
     Section,
+    SectionProxy,
     SubSection,
 )
 
@@ -273,8 +275,8 @@ class EmpiricalDispersionModel(BaseModelMethod):
     )
 
     # TODO later: link to XCComponent(s)
-    xc_partner = Quantity(
-        type=str,
+    xc_partner_ref = Quantity(
+        type=Reference(SectionProxy('XCFunctional')),
         description="Base XC functional used/tuned for (e.g. 'PBE', 'SCAN', 'B3LYP').",
     )
 
@@ -434,6 +436,49 @@ class RelativityModel(BaseModelMethod):
     dkh_order = Quantity(
         type=np.int32,
         description='Order used for DKH (e.g., 2, 4, ...).',
+    )
+
+
+class NonlocalCorrelation(BaseModelMethod):
+    """Nonlocal correlation term used in DFT to capture dispersion-like interactions.
+
+    This section represents kernel-based nonlocal correlation models that are
+    added to (or embedded in) a baseline XC functional, e.g. vdW-DF family
+    and VV10/rVV10.
+
+    Typical energy decomposition viewpoint:
+        E_total = E_KS-DFT + E_nlc
+    where E_nlc is evaluated from a nonlocal correlation kernel.
+
+    References
+    ----------
+    • Dion et al., Phys. Rev. Lett. 92, 246401 (2004)  - vdW-DF (DRSLL)
+    • Lee et al., Phys. Rev. B 82, 081101 (2010)       - vdW-DF2 (LMKLL)
+    • Vydrov & Van Voorhis, J. Chem. Phys. 133, 244103 (2010) - VV10
+    """
+
+    type = Quantity(
+        type=MEnum(
+            # VV10 family
+            'VV10',
+            'rVV10',
+            # vdW-DF family (named variants)
+            'vdW-DF',
+            'vdW-DF2',
+            'vdW-DF-cx',
+            'optB88-vdW',
+            'optB86b-vdW',
+        ),
+        description="""
+        Identifier of the nonlocal correlation functional / variant.
+        """,
+    )
+
+    xc_partner_ref = Quantity(
+        type=Reference(SectionProxy('XCFunctional')),
+        description="""
+        Reference to the baseline `XCFunctional` section this nonlocal term is paired with.
+        """,
     )
 
 
@@ -683,6 +728,15 @@ class DFT(ModelMethodElectronic):
 
         if self.xc is None:
             self.xc = XCFunctional()
+
+        for contribution in self.contributions:
+            if (
+                isinstance(
+                    contribution, (EmpiricalDispersionModel, NonlocalCorrelation)
+                )
+                and contribution.xc_partner_ref is None
+            ):
+                contribution.xc_partner_ref = self.xc
 
         # XC-specific normalization now handled by XCFunctional
         self.xc.normalize(archive, logger)
