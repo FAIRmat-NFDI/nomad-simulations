@@ -621,7 +621,7 @@ class DFT(ModelMethodElectronic):
         if self.xc is None:
             self.xc = XCFunctional()
 
-        for contribution in self.contributions or []:
+        for contribution in self.contributions:
             if (
                 isinstance(
                     contribution, (EmpiricalDispersionModel, NonlocalCorrelation)
