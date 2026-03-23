@@ -8,6 +8,7 @@ from nomad_simulations.schema_packages.atoms_state import (
 )
 from nomad_simulations.schema_packages.model_method import (
     DFT,
+    ONIOM,
     TB,
     ActiveSpace,
     EmpiricalDispersionModel,
@@ -15,6 +16,7 @@ from nomad_simulations.schema_packages.model_method import (
     MultireferencePT,
     MultireferenceSCF,
     NonlocalCorrelation,
+    ONIOMLayer,
     RelativityModel,
     SelfInteractionCorrection,
     SlaterKoster,
@@ -469,6 +471,83 @@ class TestMultireferenceMethods:
         assert mref.active_space is active
         assert list(mref.state_multiplicities) == [3, 1]
         assert list(mref.n_roots_per_multiplicity) == [2, 3]
+
+
+class TestONIOM:
+    @pytest.mark.parametrize(
+        'layers, expected_n_layers, expected_type',
+        [
+            pytest.param(
+                [
+                    ONIOMLayer(rank=1, label='high'),
+                    ONIOMLayer(rank=2, label='low'),
+                ],
+                2,
+                'ONIOM2',
+                id='two-layer',
+            ),
+            pytest.param(
+                [
+                    ONIOMLayer(rank=1, label='high'),
+                    ONIOMLayer(rank=2, label='medium'),
+                    ONIOMLayer(rank=3, label='low'),
+                ],
+                3,
+                'ONIOM3',
+                id='three-layer',
+            ),
+            pytest.param(
+                [
+                    ONIOMLayer(rank=1, label='l1'),
+                    ONIOMLayer(rank=2, label='l2'),
+                    ONIOMLayer(rank=3, label='l3'),
+                    ONIOMLayer(rank=4, label='l4'),
+                ],
+                4,
+                None,
+                id='four-layer-no-derived-type',
+            ),
+        ],
+    )
+    def test_normalize_derives_layer_count_and_type(
+        self,
+        layers: list[ONIOMLayer],
+        expected_n_layers: int,
+        expected_type: str | None,
+    ):
+        oniom = ONIOM(layers=layers)
+
+        oniom.normalize(EntryArchive(), logger=logger)
+
+        assert oniom.n_layers == expected_n_layers
+        assert oniom.type == expected_type
+
+    def test_normalize_preserves_explicit_type_and_layer_references(self):
+        high_method = DFT()
+        low_method = TB()
+
+        oniom = ONIOM(
+            type='ONIOM2',
+            layers=[
+                ONIOMLayer(
+                    rank=1,
+                    label='high',
+                    method_ref=high_method,
+                ),
+                ONIOMLayer(
+                    rank=2,
+                    label='low',
+                    method_ref=low_method,
+                ),
+            ],
+        )
+
+        oniom.normalize(EntryArchive(), logger=logger)
+
+        assert oniom.n_layers == 2
+        assert oniom.type == 'ONIOM2'
+        assert oniom.layers[0].method_ref is high_method
+        assert oniom.layers[1].method_ref is low_method
 
 
 class TestDFT:
