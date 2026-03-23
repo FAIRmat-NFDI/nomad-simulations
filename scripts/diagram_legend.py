@@ -54,8 +54,8 @@ def wrap_diagram_card(
         lines.extend(
             [
                 '',
-                '<div class="uml-legend" role="list" aria-label="Diagram relationship legend">',
                 '<p class="uml-legend__title">Legend</p>',
+                '<div class="uml-legend" role="list" aria-label="Diagram relationship legend">',
             ]
         )
         lines.extend(legend_items)
