@@ -13,10 +13,14 @@
 ## Relationship map
 
 
+<div class="uml-diagram-card" markdown="1">
+
 ```mermaid
 classDiagram
     class AlternativeRepresentation
 ```
+
+</div>
 
 
 ## Key sections

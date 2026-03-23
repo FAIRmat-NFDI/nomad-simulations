@@ -36,6 +36,8 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).parent.resolve()
 sys.path.insert(0, str(SCRIPT_DIR))
 
+from diagram_legend import build_relation_legend, wrap_diagram_card
+
 try:
     from verticals import VERTICALS
 except Exception as e:
@@ -365,37 +367,11 @@ def mermaid_for_vertical(
         for a, b, _ in filtered_edges.get('refs', [])
     )
 
-    legend_items = []
-    if has_inherit:
-        legend_items.append(
-            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
-            '<svg width="56" height="16" aria-hidden="true">'
-            '<line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/>'
-            '<polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/>'
-            '</svg>'
-            '<code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)'
-            '</div>'
-        )
-    if has_contain:
-        legend_items.append(
-            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
-            '<svg width="56" height="16" aria-hidden="true">'
-            '<line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/>'
-            '<polygon points="46,8 38,4 38,12" fill="currentColor"/>'
-            '</svg>'
-            '<code>Owner --&gt; SubSection</code> containment/subsection'
-            '</div>'
-        )
-    if has_refs:
-        legend_items.append(
-            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
-            '<svg width="56" height="16" aria-hidden="true">'
-            '<line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8" stroke-dasharray="4 3"/>'
-            '<polygon points="46,8 38,4 38,12" fill="currentColor"/>'
-            '</svg>'
-            '<code>A ..&gt; B</code> dependency/reference'
-            '</div>'
-        )
+    legend_items = build_relation_legend(
+        has_inherit=has_inherit,
+        has_contain=has_contain,
+        has_refs=has_refs,
+    )
 
     lines = []
     if add_header:
@@ -414,8 +390,6 @@ def mermaid_for_vertical(
                 '',
             ]
         )
-        lines.extend(legend_items)
-        lines.append('')
 
     # Generate diagram(s)
     for diagram_idx, diagram_nodes in enumerate(diagram_node_sets):
@@ -431,12 +405,12 @@ def mermaid_for_vertical(
                     ]
                 )
 
-        lines.extend(['```mermaid', 'classDiagram'])
+        diagram_lines = ['```mermaid', 'classDiagram']
 
         # Define classes
         for n in sorted(diagram_nodes):
-            lines.append(f'    class {n} {{')
-            lines.append('    }')
+            diagram_lines.append(f'    class {n} {{')
+            diagram_lines.append('    }')
 
         # Helper function to normalize labels
         def normalize_label(label: str, target: str) -> str:
@@ -454,7 +428,7 @@ def mermaid_for_vertical(
         # Add inheritance edges first (most important for understanding)
         for a, b, _ in filtered_edges.get('inherit', []):
             if a in diagram_nodes and b in diagram_nodes:
-                lines.append(f'    {b} <|-- {a}')
+                diagram_lines.append(f'    {b} <|-- {a}')
 
         # Add containment edges
         for a, b, label in filtered_edges.get('contain', []):
@@ -463,9 +437,9 @@ def mermaid_for_vertical(
             if a in diagram_nodes and b in diagram_nodes:
                 clean_label = normalize_label(label, b)
                 if clean_label:
-                    lines.append(f'    {a} --> {b} : {clean_label}')
+                    diagram_lines.append(f'    {a} *-- {b} : {clean_label}')
                 else:
-                    lines.append(f'    {a} --> {b}')
+                    diagram_lines.append(f'    {a} *-- {b}')
 
         # Add reference edges
         for a, b, label in filtered_edges.get('refs', []):
@@ -474,23 +448,19 @@ def mermaid_for_vertical(
             if a in diagram_nodes and b in diagram_nodes:
                 clean_label = normalize_label(label, b)
                 if clean_label:
-                    lines.append(f'    {a} ..> {b} : {clean_label}')
+                    diagram_lines.append(f'    {a} ..> {b} : {clean_label}')
                 else:
-                    lines.append(f'    {a} ..> {b}')
+                    diagram_lines.append(f'    {a} ..> {b}')
 
-        lines.append('```')
-
-        # Add notation legend (only after last diagram, and only when header is absent).
-        if diagram_idx == len(diagram_node_sets) - 1 and not add_header:
-            lines.extend(
-                [
-                    '',
-                    '**Legend**',
-                    '',
-                ]
+        diagram_lines.append('```')
+        include_legend = diagram_idx == len(diagram_node_sets) - 1
+        lines.extend(
+            wrap_diagram_card(
+                diagram_lines,
+                legend_items if include_legend else None,
             )
-            lines.extend(legend_items)
-            lines.append('')
+        )
+        lines.append('')
 
     return '\n'.join(lines)
 

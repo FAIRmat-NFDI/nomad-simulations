@@ -9,18 +9,11 @@
 
 This diagram shows the relationships between schema classes:
 
-<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/></svg><code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)</div>
-<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="46,8 38,4 38,12" fill="currentColor"/></svg><code>Owner --&gt; SubSection</code> containment/subsection</div>
+<div class="uml-diagram-card" markdown="1">
 
 ```mermaid
 classDiagram
     class AbsorptionSpectrum {
-    }
-    class ChemicalPotential {
-    }
-    class CrystalFieldSplitting {
-    }
-    class ElectronicBandGap {
     }
     class ElectronicBandStructure {
     }
@@ -28,11 +21,15 @@ classDiagram
     }
     class ElectronicEigenvalues {
     }
-    class ElectronicGreensFunction {
+    class ElectronicSelfEnergy {
+    }
+    class FermiSurface {
+    }
+    class HoppingMatrix {
+    }
+    class KineticEnergy {
     }
     class Outputs {
-    }
-    class Permittivity {
     }
     class PhysicalProperty {
     }
@@ -40,69 +37,78 @@ classDiagram
     }
     class QuasiparticleWeight {
     }
-    class SCFOutputs {
+    class SCFSteps {
     }
-    class Temperature {
+    class TotalForce {
     }
-    Outputs <|-- SCFOutputs
-    Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ChemicalPotential
-    Outputs --> CrystalFieldSplitting
-    Outputs --> ElectronicBandGap
-    Outputs --> ElectronicBandStructure
-    Outputs --> ElectronicDensityOfStates : electronic_dos
-    Outputs --> ElectronicEigenvalues
-    Outputs --> ElectronicGreensFunction
-    Outputs --> Permittivity : permittivities
-    Outputs --> PotentialEnergy : potential_energies
-    Outputs --> QuasiparticleWeight
-    Outputs --> Temperature
-    SCFOutputs --> Outputs : scf_steps
+    Outputs *-- AbsorptionSpectrum : absorption_spectra
+    Outputs *-- ElectronicBandStructure
+    Outputs *-- ElectronicDensityOfStates : electronic_dos
+    Outputs *-- ElectronicEigenvalues
+    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
+    Outputs *-- FermiSurface
+    Outputs *-- HoppingMatrix : hopping_matrices
+    Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- PotentialEnergy : potential_energies
+    Outputs *-- QuasiparticleWeight
+    Outputs *-- SCFSteps
+    Outputs *-- TotalForce
 ```
+
+</div>
+
 
 ---
 
 
 _Diagram 2 of 2 (split due to large number of children)_
 
+<div class="uml-diagram-card" markdown="1">
+
 ```mermaid
 classDiagram
-    class ElectronicSelfEnergy {
+    class ChemicalPotential {
     }
-    class FermiSurface {
+    class CrystalFieldSplitting {
     }
-    class HoppingMatrix {
+    class ElectronicBandGap {
+    }
+    class ElectronicGreensFunction {
     }
     class HybridizationFunction {
-    }
-    class KineticEnergy {
     }
     class Occupancy {
     }
     class Outputs {
     }
+    class Permittivity {
+    }
     class PhysicalProperty {
     }
     class RadiusOfGyration {
     }
-    class SCFOutputs {
+    class Temperature {
     }
     class TotalEnergy {
     }
-    class TotalForce {
-    }
     class XASSpectrum {
     }
-    Outputs <|-- SCFOutputs
-    Outputs --> ElectronicSelfEnergy : electronic_self_energies
-    Outputs --> FermiSurface
-    Outputs --> HoppingMatrix : hopping_matrices
-    Outputs --> HybridizationFunction
-    Outputs --> KineticEnergy : kinetic_energies
-    Outputs --> Occupancy : occupancies
-    Outputs --> RadiusOfGyration : radii_of_gyration
-    Outputs --> TotalEnergy : total_energies
-    Outputs --> TotalForce
-    Outputs --> XASSpectrum : xas_spectra
-    SCFOutputs --> Outputs : scf_steps
+    Outputs *-- ChemicalPotential
+    Outputs *-- CrystalFieldSplitting
+    Outputs *-- ElectronicBandGap
+    Outputs *-- ElectronicGreensFunction
+    Outputs *-- HybridizationFunction
+    Outputs *-- Occupancy : occupancies
+    Outputs *-- Permittivity : permittivities
+    Outputs *-- RadiusOfGyration : radii_of_gyration
+    Outputs *-- Temperature
+    Outputs *-- TotalEnergy : total_energies
+    Outputs *-- XASSpectrum : xas_spectra
 ```
+
+<p class="uml-legend__title">Legend</p>
+<div class="uml-legend" role="list" aria-label="Diagram relationship legend">
+<div class="uml-legend__item" role="listitem"><svg class="uml-legend__swatch" viewBox="0 0 64 16" aria-hidden="true"><path class="uml-legend__head uml-legend__head--filled" d="M10 8 L16 2 L22 8 L16 14 Z"/><line class="uml-legend__line" x1="22" y1="8" x2="52" y2="8"/></svg><span>composition (has-a)</span></div>
+</div>
+
+</div>

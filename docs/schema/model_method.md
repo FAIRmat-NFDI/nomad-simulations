@@ -11,6 +11,8 @@
 ## Relationship map
 
 
+<div class="uml-diagram-card" markdown="1">
+
 ```mermaid
 classDiagram
     class BaseModelMethod
@@ -20,9 +22,12 @@ classDiagram
     ModelMethod <|-- ModelMethodElectronic
 ```
 
-**Legend**
+<p class="uml-legend__title">Legend</p>
+<div class="uml-legend" role="list" aria-label="Diagram relationship legend">
+<div class="uml-legend__item" role="listitem"><svg class="uml-legend__swatch" viewBox="0 0 64 16" aria-hidden="true"><line class="uml-legend__line" x1="54" y1="8" x2="22" y2="8"/><path class="uml-legend__head uml-legend__head--open" d="M10 8 L22 2 L22 14 Z"/></svg><span>inheritance (is-a)</span></div>
+</div>
 
-<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/></svg><code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)</div>
+</div>
 
 
 ## Key sections

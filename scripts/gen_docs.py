@@ -13,6 +13,7 @@ import yaml
 SCRIPT_DIR = Path(__file__).parent.resolve()
 sys.path.insert(0, str(SCRIPT_DIR))
 
+from diagram_legend import build_relation_legend, wrap_diagram_card
 from gen_diagrams import filter_edges_for_vertical
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from meta_introspect import collect_edges, iter_section_classes
@@ -339,7 +340,7 @@ def mermaid_for_vertical(
         if a == b:
             continue
         if a in nodes and b in nodes:
-            lines.append(f'    {a} --> {b} : {label}')
+            lines.append(f'    {a} *-- {b} : {label}')
             has_contain = True
 
     # Add reference edges
@@ -351,44 +352,14 @@ def mermaid_for_vertical(
             has_refs = True
 
     lines.append('```')
-    # Wrap with blank lines (very important for Markdown parsing)
-    diagram = '\n' + '\n'.join(lines) + '\n'
-    # Use relation-aware legend to match arrow types actually present.
-    legend_items = []
-    if has_inherit:
-        legend_items.append(
-            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
-            '<svg width="56" height="16" aria-hidden="true">'
-            '<line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/>'
-            '<polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/>'
-            '</svg>'
-            '<code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)'
-            '</div>'
-        )
-    if has_contain:
-        legend_items.append(
-            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
-            '<svg width="56" height="16" aria-hidden="true">'
-            '<line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/>'
-            '<polygon points="46,8 38,4 38,12" fill="currentColor"/>'
-            '</svg>'
-            '<code>Owner --&gt; SubSection</code> containment/subsection'
-            '</div>'
-        )
-    if has_refs:
-        legend_items.append(
-            '<div style="display:flex; align-items:center; gap:8px; margin:3px 0;">'
-            '<svg width="56" height="16" aria-hidden="true">'
-            '<line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8" stroke-dasharray="4 3"/>'
-            '<polygon points="46,8 38,4 38,12" fill="currentColor"/>'
-            '</svg>'
-            '<code>A ..&gt; B</code> dependency/reference'
-            '</div>'
-        )
 
-    if legend_items:
-        diagram += '\n**Legend**\n\n' + '\n'.join(legend_items) + '\n'
-    return diagram
+    legend_items = build_relation_legend(
+        has_inherit=has_inherit,
+        has_contain=has_contain,
+        has_refs=has_refs,
+    )
+    diagram_lines = wrap_diagram_card(lines, legend_items)
+    return '\n' + '\n'.join(diagram_lines) + '\n'
 
 
 # ---- main generation --------------------------------------------------------

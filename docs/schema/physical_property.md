@@ -13,6 +13,8 @@
 ## Relationship map
 
 
+<div class="uml-diagram-card" markdown="1">
+
 ```mermaid
 classDiagram
     class BaseElectronicEigenvalues
@@ -33,20 +35,23 @@ classDiagram
     PhysicalProperty <|-- BaseForce
     PhysicalProperty <|-- BaseGreensFunction
     PhysicalProperty <|-- SpectralProfile
-    BaseGreensFunction --> Frequency : real_frequency
-    BaseGreensFunction --> ImaginaryTime : imaginary_time
-    BaseGreensFunction --> MatsubaraFrequency : matsubara_frequency
-    BaseGreensFunction --> Time : time
-    BaseGreensFunction --> WignerSeitz : wigner_seitz
-    PhysicalProperty --> ErrorEstimate : errors
-    SpectralProfile --> Energy2 : energies
-    SpectralProfile --> Energy2 : frequencies
+    BaseGreensFunction *-- Frequency : real_frequency
+    BaseGreensFunction *-- ImaginaryTime : imaginary_time
+    BaseGreensFunction *-- MatsubaraFrequency : matsubara_frequency
+    BaseGreensFunction *-- Time : time
+    BaseGreensFunction *-- WignerSeitz : wigner_seitz
+    PhysicalProperty *-- ErrorEstimate : errors
+    SpectralProfile *-- Energy2 : energies
+    SpectralProfile *-- Energy2 : frequencies
 ```
 
-**Legend**
+<p class="uml-legend__title">Legend</p>
+<div class="uml-legend" role="list" aria-label="Diagram relationship legend">
+<div class="uml-legend__item" role="listitem"><svg class="uml-legend__swatch" viewBox="0 0 64 16" aria-hidden="true"><line class="uml-legend__line" x1="54" y1="8" x2="22" y2="8"/><path class="uml-legend__head uml-legend__head--open" d="M10 8 L22 2 L22 14 Z"/></svg><span>inheritance (is-a)</span></div>
+<div class="uml-legend__item" role="listitem"><svg class="uml-legend__swatch" viewBox="0 0 64 16" aria-hidden="true"><path class="uml-legend__head uml-legend__head--filled" d="M10 8 L16 2 L22 8 L16 14 Z"/><line class="uml-legend__line" x1="22" y1="8" x2="52" y2="8"/></svg><span>composition (has-a)</span></div>
+</div>
 
-<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/></svg><code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)</div>
-<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="46,8 38,4 38,12" fill="currentColor"/></svg><code>Owner --&gt; SubSection</code> containment/subsection</div>
+</div>
 
 
 ## Key sections
