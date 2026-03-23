@@ -27,7 +27,7 @@ classDiagram
 
 <p class="uml-legend__title">Legend</p>
 <div class="uml-legend" role="list" aria-label="Diagram relationship legend">
-<div class="uml-legend__item" role="listitem"><svg class="uml-legend__swatch" viewBox="0 0 64 16" aria-hidden="true"><line class="uml-legend__line" x1="54" y1="8" x2="28" y2="8"/><path class="uml-legend__head uml-legend__head--open" d="M18 8 L30 2 L30 14 Z"/></svg><span>inheritance (is-a)</span></div>
+<div class="uml-legend__item" role="listitem"><svg class="uml-legend__swatch" viewBox="0 0 64 16" aria-hidden="true"><line class="uml-legend__line" x1="54" y1="8" x2="22" y2="8"/><path class="uml-legend__head uml-legend__head--open" d="M10 8 L22 2 L22 14 Z"/></svg><span>inheritance (is-a)</span></div>
 </div>
 
 </div>
