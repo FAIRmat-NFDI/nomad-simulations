@@ -43,34 +43,34 @@ classDiagram
     class TotalEnergy
     class TotalForce
     class XASSpectrum
-    Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ChemicalPotential : chemical_potentials
-    Outputs --> CrystalFieldSplitting : crystal_field_splittings
-    Outputs --> ElectronicBandGap : electronic_band_gaps
-    Outputs --> ElectronicBandStructure : electronic_band_structures
-    Outputs --> ElectronicDensityOfStates : electronic_dos
-    Outputs --> ElectronicEigenvalues : electronic_eigenvalues
-    Outputs --> ElectronicGreensFunction : electronic_greens_functions
-    Outputs --> ElectronicSelfEnergy : electronic_self_energies
-    Outputs --> FermiSurface : fermi_surfaces
-    Outputs --> HoppingMatrix : hopping_matrices
-    Outputs --> HybridizationFunction : hybridization_functions
-    Outputs --> KineticEnergy : kinetic_energies
-    Outputs --> Occupancy : occupancies
-    Outputs --> Permittivity : permittivities
-    Outputs --> PotentialEnergy : potential_energies
-    Outputs --> QuasiparticleWeight : quasiparticle_weights
-    Outputs --> RadiusOfGyration : radii_of_gyration
-    Outputs --> SCFSteps : scf_steps
-    Outputs --> Temperature : temperatures
-    Outputs --> TotalEnergy : total_energies
-    Outputs --> TotalForce : total_forces
-    Outputs --> XASSpectrum : xas_spectra
+    Outputs *-- AbsorptionSpectrum : absorption_spectra
+    Outputs *-- ChemicalPotential : chemical_potentials
+    Outputs *-- CrystalFieldSplitting : crystal_field_splittings
+    Outputs *-- ElectronicBandGap : electronic_band_gaps
+    Outputs *-- ElectronicBandStructure : electronic_band_structures
+    Outputs *-- ElectronicDensityOfStates : electronic_dos
+    Outputs *-- ElectronicEigenvalues : electronic_eigenvalues
+    Outputs *-- ElectronicGreensFunction : electronic_greens_functions
+    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
+    Outputs *-- FermiSurface : fermi_surfaces
+    Outputs *-- HoppingMatrix : hopping_matrices
+    Outputs *-- HybridizationFunction : hybridization_functions
+    Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- Occupancy : occupancies
+    Outputs *-- Permittivity : permittivities
+    Outputs *-- PotentialEnergy : potential_energies
+    Outputs *-- QuasiparticleWeight : quasiparticle_weights
+    Outputs *-- RadiusOfGyration : radii_of_gyration
+    Outputs *-- SCFSteps : scf_steps
+    Outputs *-- Temperature : temperatures
+    Outputs *-- TotalEnergy : total_energies
+    Outputs *-- TotalForce : total_forces
+    Outputs *-- XASSpectrum : xas_spectra
 ```
 
 <p class="uml-legend__title">Legend</p>
 <div class="uml-legend" role="list" aria-label="Diagram relationship legend">
-<div class="uml-legend__item" role="listitem"><svg class="uml-legend__swatch" viewBox="0 0 64 16" aria-hidden="true"><line class="uml-legend__line" x1="8" y1="8" x2="40" y2="8"/><path class="uml-legend__head uml-legend__head--open" d="M40 8 L48 4 M40 8 L48 12"/></svg><span><code>Owner --&gt; SubSection</code> has-a relationship, Owner-SubSection composition</span></div>
+<div class="uml-legend__item" role="listitem"><svg class="uml-legend__swatch" viewBox="0 0 64 16" aria-hidden="true"><path class="uml-legend__head uml-legend__head--filled" d="M10 8 L16 2 L22 8 L16 14 Z"/><line class="uml-legend__line" x1="22" y1="8" x2="52" y2="8"/></svg><span>composition (has-a)</span></div>
 </div>
 
 </div>

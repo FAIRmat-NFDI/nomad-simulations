@@ -437,9 +437,9 @@ def mermaid_for_vertical(
             if a in diagram_nodes and b in diagram_nodes:
                 clean_label = normalize_label(label, b)
                 if clean_label:
-                    diagram_lines.append(f'    {a} --> {b} : {clean_label}')
+                    diagram_lines.append(f'    {a} *-- {b} : {clean_label}')
                 else:
-                    diagram_lines.append(f'    {a} --> {b}')
+                    diagram_lines.append(f'    {a} *-- {b}')
 
         # Add reference edges
         for a, b, label in filtered_edges.get('refs', []):

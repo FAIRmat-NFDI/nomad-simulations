@@ -404,10 +404,10 @@ Checks:
 
 Three types of relationships are tracked:
 
-1. **Containment** (`-->` solid arrow)
+1. **Containment** (`*--` filled diamond)
    - SubSection relationships
-   - Example: `ModelSystem --> Cell`
-   - Represents "has-a" relationships
+   - Example: `ModelSystem *-- Cell`
+   - Represents composition / "contains-a" relationships
 
 2. **Reference** (`..>` dashed arrow)
    - Quantity type references
@@ -435,7 +435,7 @@ Each diagram includes an inline SVG legend:
 ```html
 <svg width="60" height="30">
   <line/><polygon fill="none"/> <!-- Inheritance: open triangle -->
-  <line/><polygon fill="currentColor"/> <!-- Containment: filled triangle -->
+  <polygon fill="currentColor"/><line/> <!-- Containment: filled diamond -->
   <line stroke-dasharray="4,4"/><polygon/> <!-- Reference: dashed + filled -->
 </svg>
 ```

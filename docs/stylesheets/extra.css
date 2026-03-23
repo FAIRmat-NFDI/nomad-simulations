@@ -238,6 +238,19 @@
     fill: currentColor;
 }
 
+/* Mermaid namespaces class-diagram inheritance markers like
+   classDiagram-extensionStart/End. Force a hollow triangle to match UML. */
+.md-typeset .mermaid svg marker.extension,
+.md-typeset .mermaid svg marker[id$="extensionStart"],
+.md-typeset .mermaid svg marker[id$="extensionEnd"],
+.md-typeset .mermaid svg marker.extension path,
+.md-typeset .mermaid svg marker[id$="extensionStart"] path,
+.md-typeset .mermaid svg marker[id$="extensionEnd"] path {
+    fill: var(--md-default-bg-color) !important;
+    stroke: currentColor !important;
+    stroke-width: 1.8px !important;
+}
+
 /* Preserve usable viewport on smaller screens */
 @media screen and (max-width: 76.1875em) {
     .md-typeset .uml-diagram-card {

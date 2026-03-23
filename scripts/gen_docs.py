@@ -340,7 +340,7 @@ def mermaid_for_vertical(
         if a == b:
             continue
         if a in nodes and b in nodes:
-            lines.append(f'    {a} --> {b} : {label}')
+            lines.append(f'    {a} *-- {b} : {label}')
             has_contain = True
 
     # Add reference edges

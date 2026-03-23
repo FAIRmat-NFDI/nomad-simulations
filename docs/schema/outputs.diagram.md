@@ -13,46 +13,46 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum {
-    }
     class ChemicalPotential {
     }
     class ElectronicBandStructure {
-    }
-    class ElectronicDensityOfStates {
     }
     class ElectronicEigenvalues {
     }
     class ElectronicGreensFunction {
     }
-    class KineticEnergy {
+    class ElectronicSelfEnergy {
     }
-    class Occupancy {
+    class HoppingMatrix {
+    }
+    class HybridizationFunction {
     }
     class Outputs {
-    }
-    class Permittivity {
     }
     class PhysicalProperty {
     }
     class QuasiparticleWeight {
     }
-    class Temperature {
+    class RadiusOfGyration {
+    }
+    class SCFSteps {
+    }
+    class TotalForce {
     }
     class XASSpectrum {
     }
-    Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ChemicalPotential
-    Outputs --> ElectronicBandStructure
-    Outputs --> ElectronicDensityOfStates : electronic_dos
-    Outputs --> ElectronicEigenvalues
-    Outputs --> ElectronicGreensFunction
-    Outputs --> KineticEnergy : kinetic_energies
-    Outputs --> Occupancy : occupancies
-    Outputs --> Permittivity : permittivities
-    Outputs --> QuasiparticleWeight
-    Outputs --> Temperature
-    Outputs --> XASSpectrum : xas_spectra
+    Outputs *-- ChemicalPotential
+    Outputs *-- ElectronicBandStructure
+    Outputs *-- ElectronicEigenvalues
+    Outputs *-- ElectronicGreensFunction
+    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
+    Outputs *-- HoppingMatrix : hopping_matrices
+    Outputs *-- HybridizationFunction
+    Outputs *-- QuasiparticleWeight
+    Outputs *-- RadiusOfGyration : radii_of_gyration
+    Outputs *-- SCFSteps
+    Outputs *-- TotalForce
+    Outputs *-- XASSpectrum : xas_spectra
 ```
 
 </div>
@@ -67,48 +67,48 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
+    class AbsorptionSpectrum {
+    }
     class CrystalFieldSplitting {
     }
     class ElectronicBandGap {
     }
-    class ElectronicSelfEnergy {
+    class ElectronicDensityOfStates {
     }
     class FermiSurface {
     }
-    class HoppingMatrix {
+    class KineticEnergy {
     }
-    class HybridizationFunction {
+    class Occupancy {
     }
     class Outputs {
+    }
+    class Permittivity {
     }
     class PhysicalProperty {
     }
     class PotentialEnergy {
     }
-    class RadiusOfGyration {
-    }
-    class SCFSteps {
+    class Temperature {
     }
     class TotalEnergy {
     }
-    class TotalForce {
-    }
-    Outputs --> CrystalFieldSplitting
-    Outputs --> ElectronicBandGap
-    Outputs --> ElectronicSelfEnergy : electronic_self_energies
-    Outputs --> FermiSurface
-    Outputs --> HoppingMatrix : hopping_matrices
-    Outputs --> HybridizationFunction
-    Outputs --> PotentialEnergy : potential_energies
-    Outputs --> RadiusOfGyration : radii_of_gyration
-    Outputs --> SCFSteps
-    Outputs --> TotalEnergy : total_energies
-    Outputs --> TotalForce
+    Outputs *-- AbsorptionSpectrum : absorption_spectra
+    Outputs *-- CrystalFieldSplitting
+    Outputs *-- ElectronicBandGap
+    Outputs *-- ElectronicDensityOfStates : electronic_dos
+    Outputs *-- FermiSurface
+    Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- Occupancy : occupancies
+    Outputs *-- Permittivity : permittivities
+    Outputs *-- PotentialEnergy : potential_energies
+    Outputs *-- Temperature
+    Outputs *-- TotalEnergy : total_energies
 ```
 
 <p class="uml-legend__title">Legend</p>
 <div class="uml-legend" role="list" aria-label="Diagram relationship legend">
-<div class="uml-legend__item" role="listitem"><svg class="uml-legend__swatch" viewBox="0 0 64 16" aria-hidden="true"><line class="uml-legend__line" x1="8" y1="8" x2="40" y2="8"/><path class="uml-legend__head uml-legend__head--open" d="M40 8 L48 4 M40 8 L48 12"/></svg><span><code>Owner --&gt; SubSection</code> has-a relationship, Owner-SubSection composition</span></div>
+<div class="uml-legend__item" role="listitem"><svg class="uml-legend__swatch" viewBox="0 0 64 16" aria-hidden="true"><path class="uml-legend__head uml-legend__head--filled" d="M10 8 L16 2 L22 8 L16 14 Z"/><line class="uml-legend__line" x1="22" y1="8" x2="52" y2="8"/></svg><span>composition (has-a)</span></div>
 </div>
 
 </div>
