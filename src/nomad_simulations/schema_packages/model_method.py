@@ -1167,6 +1167,35 @@ class xTB(TB):
     # ? Deprecate this
 
 
+class SemiEmpirical(ModelMethodElectronic):
+    """
+    A base section used to define semi-empirical quantum chemistry methods such as MINDO, MNDO,
+    AM1, PM3, PM6, PM7, and SAM1.
+    """
+
+    type = Quantity(
+        type=MEnum('MINDO', 'MNDO', 'AM1', 'PM3', 'PM6', 'PM7', 'SAM1'),
+        description="""
+        Semi-empirical quantum chemistry method. These can be:
+
+        | Value | Description |
+        | --------- | ----------------------- |
+        | `'MINDO'` | Modified Intermediate Neglect of Differential Overlap |
+        | `'MNDO'` | Modified Neglect of Diatomic Overlap |
+        | `'AM1'` | Austin Model 1 |
+        | `'PM3'` | Parametric Method 3 |
+        | `'PM6'` | Parametric Method 6 |
+        | `'PM7'` | Parametric Method 7 |
+        | `'SAM1'` | Semi-Ab Initio Method 1 |
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'SemiEmpirical'
+
+
 class Photon(ArchiveSection):
     """
     A base section used to define parameters of a photon, typically used for optical responses.
