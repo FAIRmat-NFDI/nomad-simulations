@@ -9,18 +9,13 @@
 
 This diagram shows the relationships between schema classes:
 
-<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="48" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="18,8 26,4 26,12" fill="white" stroke="currentColor" stroke-width="1.8"/></svg><code>Parent &lt;|-- Child</code> inheritance (Child extends Parent)</div>
-<div style="display:flex; align-items:center; gap:8px; margin:3px 0;"><svg width="56" height="16" aria-hidden="true"><line x1="8" y1="8" x2="38" y2="8" stroke="currentColor" stroke-width="1.8"/><polygon points="46,8 38,4 38,12" fill="currentColor"/></svg><code>Owner --&gt; SubSection</code> containment/subsection</div>
+<div class="uml-diagram-card" markdown="1">
 
 ```mermaid
 classDiagram
     class AbsorptionSpectrum {
     }
     class ChemicalPotential {
-    }
-    class CrystalFieldSplitting {
-    }
-    class ElectronicBandGap {
     }
     class ElectronicBandStructure {
     }
@@ -30,43 +25,52 @@ classDiagram
     }
     class ElectronicGreensFunction {
     }
+    class KineticEnergy {
+    }
+    class Occupancy {
+    }
     class Outputs {
     }
     class Permittivity {
     }
     class PhysicalProperty {
     }
-    class PotentialEnergy {
-    }
     class QuasiparticleWeight {
-    }
-    class SCFOutputs {
     }
     class Temperature {
     }
-    Outputs <|-- SCFOutputs
+    class XASSpectrum {
+    }
     Outputs --> AbsorptionSpectrum : absorption_spectra
     Outputs --> ChemicalPotential
-    Outputs --> CrystalFieldSplitting
-    Outputs --> ElectronicBandGap
     Outputs --> ElectronicBandStructure
     Outputs --> ElectronicDensityOfStates : electronic_dos
     Outputs --> ElectronicEigenvalues
     Outputs --> ElectronicGreensFunction
+    Outputs --> KineticEnergy : kinetic_energies
+    Outputs --> Occupancy : occupancies
     Outputs --> Permittivity : permittivities
-    Outputs --> PotentialEnergy : potential_energies
     Outputs --> QuasiparticleWeight
     Outputs --> Temperature
-    SCFOutputs --> Outputs : scf_steps
+    Outputs --> XASSpectrum : xas_spectra
 ```
+
+</div>
+
 
 ---
 
 
 _Diagram 2 of 2 (split due to large number of children)_
 
+<div class="uml-diagram-card" markdown="1">
+
 ```mermaid
 classDiagram
+    class CrystalFieldSplitting {
+    }
+    class ElectronicBandGap {
+    }
     class ElectronicSelfEnergy {
     }
     class FermiSurface {
@@ -75,34 +79,36 @@ classDiagram
     }
     class HybridizationFunction {
     }
-    class KineticEnergy {
-    }
-    class Occupancy {
-    }
     class Outputs {
     }
     class PhysicalProperty {
     }
+    class PotentialEnergy {
+    }
     class RadiusOfGyration {
     }
-    class SCFOutputs {
+    class SCFSteps {
     }
     class TotalEnergy {
     }
     class TotalForce {
     }
-    class XASSpectrum {
-    }
-    Outputs <|-- SCFOutputs
+    Outputs --> CrystalFieldSplitting
+    Outputs --> ElectronicBandGap
     Outputs --> ElectronicSelfEnergy : electronic_self_energies
     Outputs --> FermiSurface
     Outputs --> HoppingMatrix : hopping_matrices
     Outputs --> HybridizationFunction
-    Outputs --> KineticEnergy : kinetic_energies
-    Outputs --> Occupancy : occupancies
+    Outputs --> PotentialEnergy : potential_energies
     Outputs --> RadiusOfGyration : radii_of_gyration
+    Outputs --> SCFSteps
     Outputs --> TotalEnergy : total_energies
     Outputs --> TotalForce
-    Outputs --> XASSpectrum : xas_spectra
-    SCFOutputs --> Outputs : scf_steps
 ```
+
+<div class="uml-legend" role="list" aria-label="Diagram relationship legend">
+<p class="uml-legend__title">Legend</p>
+<div class="uml-legend__item" role="listitem"><svg class="uml-legend__swatch" viewBox="0 0 64 16" aria-hidden="true"><line class="uml-legend__line" x1="8" y1="8" x2="40" y2="8"/><path class="uml-legend__head uml-legend__head--open" d="M40 8 L48 4 M40 8 L48 12"/></svg><span><code>Owner --&gt; SubSection</code> has-a relationship, Owner-SubSection composition</span></div>
+</div>
+
+</div>

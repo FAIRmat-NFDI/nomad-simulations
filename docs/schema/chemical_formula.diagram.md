@@ -9,9 +9,12 @@
 
 This diagram shows the relationships between schema classes:
 
+<div class="uml-diagram-card" markdown="1">
 
 ```mermaid
 classDiagram
     class ChemicalFormula {
     }
 ```
+
+</div>
