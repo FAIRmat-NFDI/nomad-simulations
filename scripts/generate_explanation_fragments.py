@@ -26,6 +26,9 @@ HIERARCHY_CLASSES = [
 METHOD_FAMILIES = [
     ('DFT', 'DFT'),
     ('TB', 'TB'),
+    ('HF', 'HF'),
+    ('CC', 'CC'),
+    ('CI', 'CI'),
     ('Wannier', 'Wannier'),
     ('Slater-Koster', 'SlaterKoster'),
     ('GW', 'GW'),

@@ -15,11 +15,11 @@ This diagram shows the relationships between schema classes:
 classDiagram
     class BSE {
     }
-    class ConfigurationInteraction {
+    class CC {
+    }
+    class CI {
     }
     class CoreHoleSpectra {
-    }
-    class CoupledCluster {
     }
     class DFT {
     }
@@ -29,7 +29,7 @@ classDiagram
     }
     class GW {
     }
-    class HartreeFock {
+    class HF {
     }
     class ModelMethodElectronic {
     }
@@ -48,14 +48,14 @@ classDiagram
     class xTB {
     }
     ExcitedStateMethodology <|-- BSE
-    ModelMethodElectronic <|-- ConfigurationInteraction
+    ModelMethodElectronic <|-- CC
+    ModelMethodElectronic <|-- CI
     ModelMethodElectronic <|-- CoreHoleSpectra
-    ModelMethodElectronic <|-- CoupledCluster
     ModelMethodElectronic <|-- DFT
     ModelMethodElectronic <|-- DMFT
     ModelMethodElectronic <|-- ExcitedStateMethodology
     ExcitedStateMethodology <|-- GW
-    ModelMethodElectronic <|-- HartreeFock
+    ModelMethodElectronic <|-- HF
     ModelMethodElectronic <|-- PerturbationMethod
     ExcitedStateMethodology <|-- Screening
     TB <|-- SlaterKoster

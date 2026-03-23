@@ -18,11 +18,60 @@ classDiagram
     }
     class ChemicalPotential {
     }
+    class CrystalFieldSplitting {
+    }
+    class ElectronicBandGap {
+    }
+    class ElectronicBandStructure {
+    }
     class ElectronicDensityOfStates {
     }
     class ElectronicEigenvalues {
     }
     class ElectronicGreensFunction {
+    }
+    class Outputs {
+    }
+    class Permittivity {
+    }
+    class PhysicalProperty {
+    }
+    class PotentialEnergy {
+    }
+    class QuasiparticleWeight {
+    }
+    class SCFOutputs {
+    }
+    class Temperature {
+    }
+    Outputs <|-- SCFOutputs
+    Outputs --> AbsorptionSpectrum : absorption_spectra
+    Outputs --> ChemicalPotential
+    Outputs --> CrystalFieldSplitting
+    Outputs --> ElectronicBandGap
+    Outputs --> ElectronicBandStructure
+    Outputs --> ElectronicDensityOfStates : electronic_dos
+    Outputs --> ElectronicEigenvalues
+    Outputs --> ElectronicGreensFunction
+    Outputs --> Permittivity : permittivities
+    Outputs --> PotentialEnergy : potential_energies
+    Outputs --> QuasiparticleWeight
+    Outputs --> Temperature
+    SCFOutputs --> Outputs : scf_steps
+```
+
+---
+
+
+_Diagram 2 of 2 (split due to large number of children)_
+
+```mermaid
+classDiagram
+    class ElectronicSelfEnergy {
+    }
+    class FermiSurface {
+    }
+    class HoppingMatrix {
     }
     class HybridizationFunction {
     }
@@ -34,75 +83,26 @@ classDiagram
     }
     class PhysicalProperty {
     }
-    class PotentialEnergy {
-    }
     class RadiusOfGyration {
-    }
-    class SCFOutputs {
-    }
-    class Temperature {
-    }
-    class TotalForce {
-    }
-    Outputs <|-- SCFOutputs
-    Outputs --> AbsorptionSpectrum : absorption_spectra
-    Outputs --> ChemicalPotential
-    Outputs --> ElectronicDensityOfStates : electronic_dos
-    Outputs --> ElectronicEigenvalues
-    Outputs --> ElectronicGreensFunction
-    Outputs --> HybridizationFunction
-    Outputs --> KineticEnergy : kinetic_energies
-    Outputs --> Occupancy : occupancies
-    Outputs --> PotentialEnergy : potential_energies
-    Outputs --> RadiusOfGyration : radii_of_gyration
-    Outputs --> Temperature
-    Outputs --> TotalForce
-    SCFOutputs --> Outputs : scf_steps
-```
-
----
-
-
-_Diagram 2 of 2 (split due to large number of children)_
-
-```mermaid
-classDiagram
-    class CrystalFieldSplitting {
-    }
-    class ElectronicBandGap {
-    }
-    class ElectronicBandStructure {
-    }
-    class ElectronicSelfEnergy {
-    }
-    class FermiSurface {
-    }
-    class HoppingMatrix {
-    }
-    class Outputs {
-    }
-    class Permittivity {
-    }
-    class PhysicalProperty {
-    }
-    class QuasiparticleWeight {
     }
     class SCFOutputs {
     }
     class TotalEnergy {
     }
+    class TotalForce {
+    }
     class XASSpectrum {
     }
     Outputs <|-- SCFOutputs
-    Outputs --> CrystalFieldSplitting
-    Outputs --> ElectronicBandGap
-    Outputs --> ElectronicBandStructure
     Outputs --> ElectronicSelfEnergy : electronic_self_energies
     Outputs --> FermiSurface
     Outputs --> HoppingMatrix : hopping_matrices
-    Outputs --> Permittivity : permittivities
-    Outputs --> QuasiparticleWeight
+    Outputs --> HybridizationFunction
+    Outputs --> KineticEnergy : kinetic_energies
+    Outputs --> Occupancy : occupancies
+    Outputs --> RadiusOfGyration : radii_of_gyration
     Outputs --> TotalEnergy : total_energies
+    Outputs --> TotalForce
     Outputs --> XASSpectrum : xas_spectra
     SCFOutputs --> Outputs : scf_steps
 ```
