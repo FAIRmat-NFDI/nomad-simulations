@@ -10,8 +10,18 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.force_field import ForceField
+from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.force_field import (
+    ForceField,
+    ParticleParameters,
+    ParticleParametersContainer,
+)
+from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import ModelMethod
+from nomad_simulations.schema_packages.model_system import ModelSystem
+from nomad_simulations.schema_packages.utils.molecular_dynamics import (
+    archive_to_universe,
+)
 
 from . import logger
 
@@ -81,10 +91,6 @@ def _build_minimal_archive(n_atoms=3, with_ff_masses=False, with_ff_charges=Fals
 
     Atom types: O H H  (water)
     """
-    from nomad_simulations.schema_packages.atoms_state import AtomsState
-    from nomad_simulations.schema_packages.general import Simulation
-    from nomad_simulations.schema_packages.model_system import ModelSystem
-
     # Particle states
     labels = ['O', 'H', 'H']
     particle_states = []
@@ -113,12 +119,20 @@ def _build_minimal_archive(n_atoms=3, with_ff_masses=False, with_ff_charges=Fals
     # Method
     if with_ff_masses or with_ff_charges:
         method = ForceField()
-        if with_ff_masses:
-            masses_amu = np.array([15.999, 1.008, 1.008])
-            method.effective_masses = (masses_amu * ureg.amu).to('kg')
-        if with_ff_charges:
-            charges = np.array([-0.82, 0.41, 0.41])
-            method.partial_charges = charges * ureg.elementary_charge
+        ppc = ParticleParametersContainer()
+        type_data = {
+            'O': {'mass_amu': 15.999, 'charge_e': -0.82},
+            'H': {'mass_amu': 1.008, 'charge_e': 0.41},
+        }
+        for label, vals in type_data.items():
+            pp = ParticleParameters()
+            pp.particle_type = label
+            if with_ff_masses:
+                pp.effective_mass = (vals['mass_amu'] * ureg.amu).to('kg')
+            if with_ff_charges:
+                pp.partial_charge = vals['charge_e'] * ureg.elementary_charge
+            ppc.particle_parameters.append(pp)
+        method.numerical_settings.append(ppc)
     else:
         method = ModelMethod()
 
@@ -133,9 +147,6 @@ def _build_minimal_archive(n_atoms=3, with_ff_masses=False, with_ff_charges=Fals
 
 def test_archive_to_universe_masses_from_forcefield():
     """When ForceField.effective_masses is set, masses come from FF (not per-particle)."""
-    from nomad_simulations.schema_packages.utils.molecular_dynamics import (
-        archive_to_universe,
-    )
 
     archive = _build_minimal_archive(
         n_atoms=3, with_ff_masses=True, with_ff_charges=False
@@ -151,9 +162,6 @@ def test_archive_to_universe_masses_from_forcefield():
 
 def test_archive_to_universe_charges_from_forcefield():
     """When ForceField.partial_charges is set, charges come from FF."""
-    from nomad_simulations.schema_packages.utils.molecular_dynamics import (
-        archive_to_universe,
-    )
 
     archive = _build_minimal_archive(
         n_atoms=3, with_ff_masses=False, with_ff_charges=True
@@ -169,9 +177,6 @@ def test_archive_to_universe_charges_from_forcefield():
 
 def test_archive_to_universe_charges_zero_fallback():
     """When no ForceField is present, charges default to zero."""
-    from nomad_simulations.schema_packages.utils.molecular_dynamics import (
-        archive_to_universe,
-    )
 
     archive = _build_minimal_archive(
         n_atoms=3, with_ff_masses=False, with_ff_charges=False
@@ -188,9 +193,6 @@ def test_archive_to_universe_base_model_method_no_attribute_error():
     """
     Base ModelMethod as sec_method must not raise AttributeError in archive_to_universe.
     """
-    from nomad_simulations.schema_packages.utils.molecular_dynamics import (
-        archive_to_universe,
-    )
 
     # This is the exact regression scenario: sec_method is ModelMethod, not ForceField
     archive = _build_minimal_archive(
