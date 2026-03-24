@@ -822,6 +822,13 @@ class BSDFT(DFT):
     This class specializes a DFT calculation to represent a symmetry-broken,
     collinear, unrestricted determinant without linking to the high-spin
     reference. Workflow-level orchestration is handled separately.
+
+    References
+    ----------
+    • L. Noodleman, J. Chem. Phys. 74, 5737 (1981) - broken-symmetry description
+      of antiferromagnetic coupling in transition-metal dimers
+    • S. Yamanaka and K. Yamaguchi, Bull. Chem. Soc. Jpn. 77, 1269 (2004) -
+      extended DFT review of the broken-symmetry approach for strongly correlated systems
     """
 
     spin_centers = SubSection(
