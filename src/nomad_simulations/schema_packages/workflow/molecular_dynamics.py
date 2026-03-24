@@ -1353,6 +1353,15 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         # calculate radius of gyration for polymers
         self.radii_of_gyration = self.get_molecular_rgs(archive)
 
+        for sec in (
+            list(self.radial_distribution_functions or [])
+            + list(self.mean_squared_displacements or [])
+            + list(self.diffusion_constants or [])
+            + list(self.radii_of_gyration or [])
+        ):
+            if hasattr(sec, 'normalize'):
+                sec.normalize(archive, logger)
+
 
 class MolecularDynamics(SerialWorkflow):
     _task_label = 'Step'
@@ -1365,13 +1374,15 @@ class MolecularDynamics(SerialWorkflow):
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.method:
             self.method = MolecularDynamicsMethod()
-        super().map_inputs(archive)
+        logger = self.map_inputs.__annotations__['logger']
+        super().map_inputs(archive, logger=logger)
 
     @log
     def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             self.results = MolecularDynamicsResults()
-        super().map_outputs(archive)
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)

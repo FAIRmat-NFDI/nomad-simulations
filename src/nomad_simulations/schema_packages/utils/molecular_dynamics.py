@@ -10,6 +10,9 @@ import ase
 import numpy as np
 from scipy import sparse
 from scipy.stats import linregress
+from structlog.stdlib import BoundLogger
+
+from nomad_simulations.schema_packages.force_field import ParticleParametersContainer
 
 try:
     import MDAnalysis
@@ -427,25 +430,65 @@ def archive_to_universe(
     particle_states = sec_system_top.particle_states if sec_system is not None else None
     atom_names = [ps.label for ps in particle_states] if particle_states else None
     atom_types = [ps.chemical_symbol for ps in particle_states]
-    _ff_masses = getattr(sec_method, 'effective_masses', None)
-    masses = (
-        ureg.convert(_ff_masses.magnitude, _ff_masses.units, ureg.amu)
-        if _ff_masses is not None
-        else [
-            ureg.convert(ps.mass.magnitude, ps.mass.units, ureg.amu)
-            if ps.mass is not None
-            else ase.data.atomic_masses[
-                ase.data.atomic_numbers.get(ps.chemical_symbol, 0)
-            ]
-            for ps in particle_states
-        ]
+    _ppc = (
+        next(
+            (
+                ns
+                for ns in (sec_method.numerical_settings or [])
+                if isinstance(ns, ParticleParametersContainer)
+            ),
+            None,
+        )
+        if sec_method is not None
+        else None
     )
-    _ff_charges = getattr(sec_method, 'partial_charges', None)
-    charges = (
-        ureg.convert(_ff_charges.magnitude, _ff_charges.units, ureg.e)
-        if _ff_charges is not None
-        else np.zeros(n_atoms)
-    )
+
+    _pp_by_label: dict[str, Any] = {}
+
+    if _ppc is not None:
+        for pp in _ppc.particle_parameters or []:
+            if pp.particle_type is not None:
+                _pp_by_label[pp.particle_type] = pp
+
+    masses = []
+    charges = []
+    for ps in particle_states:
+        pp = _pp_by_label.get(ps.label)
+        if ps.mass is not None:
+            masses.append(ureg.convert(ps.mass.magnitude, ps.mass.units, ureg.amu))
+        elif pp is not None and pp.effective_mass is not None:
+            masses.append(
+                ureg.convert(
+                    pp.effective_mass.magnitude, pp.effective_mass.units, ureg.amu
+                )
+            )
+        else:
+            LOGGER.warning(
+                'Missing mass for atom %s. Using default value from ASE.',
+                ps.chemical_symbol,
+            )
+            masses.append(
+                ase.data.atomic_masses[
+                    ase.data.atomic_numbers.get(ps.chemical_symbol, 0)
+                ]
+            )
+        if pp is not None and pp.partial_charge is not None:
+            charges.append(
+                ureg.convert(
+                    pp.partial_charge.magnitude, pp.partial_charge.units, ureg.e
+                )
+            )
+        else:
+            # TODO: is this the best way to handle missing charges?
+            LOGGER.warning(
+                'Missing charge for atom %s. Using default value 0.0.',
+                ps.chemical_symbol,
+            )
+            charges.append(0.0)
+
+    masses = np.array(masses)
+    charges = np.array(charges)
+
     system_times = [
         t
         for out in archive.data.outputs
@@ -460,8 +503,6 @@ def archive_to_universe(
     n_segments = len(molecule_groups)
 
     # Attribute accessors for archive.run / archive.data backward compatibility.
-    # TODO: legacy archive.run - remove else branch and _using_new_schema flag
-    # when migration to archive.data is complete.
     def _atom_idx(obj):
         return obj.particle_indices
 
