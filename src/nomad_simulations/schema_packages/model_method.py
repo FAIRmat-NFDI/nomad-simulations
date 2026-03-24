@@ -23,6 +23,7 @@ from nomad_simulations.schema_packages.atoms_state import (
     BaseSpinOrbitalState,
     CoreHole,
     ElectronicState,
+    SphericalSymmetryState,
 )
 from nomad_simulations.schema_packages.data_types import (
     positive_float,
@@ -801,8 +802,10 @@ class BrokenSymmetryCenter(ArchiveSection):
         """
         if self.spin_state is None:
             return None
+        if not isinstance(self.spin_state, SphericalSymmetryState):
+            return None
 
-        ms_quantum_number = getattr(self.spin_state, 'ms_quantum_number', None)
+        ms_quantum_number = self.spin_state.ms_quantum_number
         if ms_quantum_number is None:
             return None
         if ms_quantum_number > 0:
