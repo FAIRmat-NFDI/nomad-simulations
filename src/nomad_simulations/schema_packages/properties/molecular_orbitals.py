@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
+from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Wrapper
 from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy
 
@@ -106,24 +107,26 @@ class MolecularOrbitals(ElectronicEigenvalues):
 
     # AO → MO coefficient matrices
     mo_coefficients = Quantity(
-        type=np.float64,
-        shape=['n_mo', 'n_ao'],
+        type=HDF5Dataset,
+        shape=[],
         description="""
         The AO→MO coefficient matrix **C**, such that 
         ψ_i(r) = ∑_μ C[i,μ] φ_μ(r). 
         Row index i runs over MOs, column index μ runs over AOs in `basis_set_ref`.
+        The expected dataset shape is [`n_mo`, `n_ao`].
         """,
     )
 
     mo_coefficients_im = Quantity(
-        type=np.float64,
-        shape=['n_mo', 'n_ao'],
+        type=HDF5Dataset,
+        shape=[],
         description="""
         Imaginary component of the AO→MO coefficient matrix **C**. 
         Combine it with `mo_coefficients` to obtain the full complex matrix:
             C_complex = mo_coefficients + 1j * mo_coefficients_im  
         Leave this quantity unset (or an empty array) when the wave-function
         is strictly real, as is typical in non-relativistic calculations without complex basis functions.
+        The expected dataset shape is [`n_mo`, `n_ao`].
         """,
     )
 
@@ -146,15 +149,28 @@ class MolecularOrbitals(ElectronicEigenvalues):
         """
         super().normalize(archive, logger)
 
+        coefficient_shape = self._resolve_dataset_shape(self.mo_coefficients)
+
         # ---------- infer n_mo ----------
         if self.n_mo is None:
-            if self.mo_coefficients is not None:
-                self.n_mo = int(self.mo_coefficients.shape[0])
+            if coefficient_shape is not None:
+                self.n_mo = int(coefficient_shape[0])
             elif self.mo_spin is not None:
                 self.n_mo = len(self.mo_spin)
             elif self.mo_energies is not None:
                 self.n_mo = len(self.mo_energies)
 
         # ---------- infer n_ao ----------
-        if self.n_ao is None and self.mo_coefficients is not None:
-            self.n_ao = int(self.mo_coefficients.shape[1])
+        if self.n_ao is None and coefficient_shape is not None:
+            self.n_ao = int(coefficient_shape[1])
+
+    @staticmethod
+    def _resolve_dataset_shape(value: Any) -> tuple[int, ...] | None:
+        """Return the shape of an in-memory array or HDF5-backed dataset."""
+        if value is None:
+            return None
+        if isinstance(value, HDF5Wrapper):
+            with value as dataset:
+                return tuple(dataset.shape)
+        shape = getattr(value, 'shape', None)
+        return tuple(shape) if shape is not None else None
