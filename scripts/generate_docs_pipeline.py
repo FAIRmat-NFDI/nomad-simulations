@@ -111,7 +111,13 @@ def update_navigation_files(repo_root: Path) -> bool:
             ],
         }
 
-        parent_order = ['simulation', 'model_system', 'model_method', 'outputs', 'workflow']
+        parent_order = [
+            'simulation',
+            'model_system',
+            'model_method',
+            'outputs',
+            'workflow',
+        ]
 
         def spec_for(vert_key: str) -> dict:
             spec = VERTICALS.get(vert_key, {})
@@ -139,7 +145,9 @@ def update_navigation_files(repo_root: Path) -> bool:
                 ordered.append(parent_key)
                 seen.add(parent_key)
 
-                child_keys = [k for k in hierarchy.get(parent_key, []) if k in VERTICALS]
+                child_keys = [
+                    k for k in hierarchy.get(parent_key, []) if k in VERTICALS
+                ]
                 for child_key in sort_keys_by_nav(child_keys):
                     if child_key in seen:
                         continue

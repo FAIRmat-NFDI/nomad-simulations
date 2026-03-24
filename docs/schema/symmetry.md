@@ -82,3 +82,6 @@ classDiagram
 | `analysis_transformation_matrix` | m_float64(float64) (shape: [3, 3]) | <details><summary>Transformation matrix (3×3) from input lattice vectors to standardized lattice vectors.</summary>Transformation matrix (3×3) from input lattice vectors to standardized lattice vectors.<br>This matrix describes how spglib transforms the input unit cell into a standardized<br>conventional cell during symmetry analysis. The transformation is defined such that:<br>**L_input = L_standardized @ transformation_matrix**<br>where L_input is the matrix of input lattice vectors (as columns) and L_standardized<br>is the matrix of standardized lattice vectors.<br>The standardization process orients the cell according to conventional crystallographic<br>settings for the identified space group, which may involve:<br>- Reorienting axes to align with symmetry elements<br>- Converting between primitive and conventional cells<br>- Standardizing the choice of basis vectors<br>**Source**: Extracted from spglib's symmetry dataset via MatID's `SymmetryAnalyzer`.<br>**Note**: This is specifically the transformation applied during symmetry detection<br>and is distinct from user-defined representation transformations.<br>See: https://spglib.readthedocs.io/en/stable/definition.html</details> |
 
 
+## Related Pages
+
+- [ModelSystem](../explanation/model_system/model_system.md)

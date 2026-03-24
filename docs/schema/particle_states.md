@@ -116,3 +116,6 @@ classDiagram
 | `double_counting_correction` | m_str(str) | Name of the double counting correction algorithm applied. |
 
 
+## Related Pages
+
+- [ModelSystem](../explanation/model_system/model_system.md)
