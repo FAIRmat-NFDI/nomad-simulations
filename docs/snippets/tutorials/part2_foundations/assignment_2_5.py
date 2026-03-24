@@ -1,4 +1,3 @@
-# docs-snippet: runnable
 from nomad import utils
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState

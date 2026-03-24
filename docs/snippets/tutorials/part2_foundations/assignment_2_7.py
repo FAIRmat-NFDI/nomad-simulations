@@ -1,4 +1,3 @@
-# docs-snippet: runnable
 import numpy as np
 from nomad import utils
 from nomad.datamodel import EntryArchive
@@ -24,7 +23,13 @@ model_system.particle_states.append(AtomsState(chemical_symbol='Si'))
 model_system.particle_states.append(AtomsState(chemical_symbol='Si'))
 simulation.model_system.append(model_system)
 
-method = DFT(name='DFT', type='KS', numerical_settings=[SelfConsistency(threshold_change=1e-6, threshold_change_unit='joule')])
+method = DFT(
+    name='DFT',
+    type='KS',
+    numerical_settings=[
+        SelfConsistency(threshold_change=1e-6, threshold_change_unit='joule')
+    ],
+)
 simulation.model_method.append(method)
 
 outputs = Outputs(scf_steps=SCFSteps())

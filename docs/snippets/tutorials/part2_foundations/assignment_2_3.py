@@ -1,4 +1,3 @@
-# docs-snippet: runnable
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import DFT, XCFunctional
 

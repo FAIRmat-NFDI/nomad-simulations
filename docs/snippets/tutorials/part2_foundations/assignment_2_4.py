@@ -1,4 +1,3 @@
-# docs-snippet: runnable
 from nomad_simulations.schema_packages.model_method import DFT
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 

@@ -1,4 +1,3 @@
-# docs-snippet: runnable
 import numpy as np
 from nomad import utils
 from nomad.datamodel import EntryArchive
@@ -13,7 +12,9 @@ logger = utils.get_logger(__name__)
 model_system = ModelSystem(is_representative=True)
 model_system.lattice_vectors = np.eye(3) * 5.43 * ureg.angstrom
 model_system.periodic_boundary_conditions = [True, True, True]
-model_system.positions = np.array([[0.0, 0.0, 0.0], [1.3575, 1.3575, 1.3575]]) * ureg.angstrom
+model_system.positions = (
+    np.array([[0.0, 0.0, 0.0], [1.3575, 1.3575, 1.3575]]) * ureg.angstrom
+)
 model_system.particle_states.append(AtomsState(chemical_symbol='Si'))
 model_system.particle_states.append(AtomsState(chemical_symbol='Si'))
 

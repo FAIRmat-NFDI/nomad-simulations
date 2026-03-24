@@ -1,4 +1,3 @@
-# docs-snippet: runnable
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.general import Simulation

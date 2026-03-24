@@ -1,4 +1,3 @@
-# docs-snippet: runnable
 import numpy as np
 from nomad import utils
 from nomad.datamodel import EntryArchive
@@ -21,4 +20,6 @@ assert outputs.scf_steps is not None
 assert outputs.scf_steps.delta_energies_total is not None
 assert len(outputs.scf_steps.delta_energies_total) == 2
 expected_first = (0.5 * ureg.eV).to('joule').magnitude
-assert np.isclose(outputs.scf_steps.delta_energies_total[0].to('joule').magnitude, expected_first)
+assert np.isclose(
+    outputs.scf_steps.delta_energies_total[0].to('joule').magnitude, expected_first
+)

@@ -1,4 +1,3 @@
-# docs-snippet: runnable
 import numpy as np
 from nomad import utils
 from nomad.datamodel import EntryArchive
