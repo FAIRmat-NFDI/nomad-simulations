@@ -5,6 +5,9 @@ site_author: FAIRmat consortium
 repo_url: https://github.com/fairmat-nfdi/nomad-simulations
 nav:
   - Home: index.md
+  - Tutorial:
+      - Overview: tutorials/overview.md
+      - Stand-alone Usage: tutorials/standalone_schema_tutorial.md
   - Schema Navigation:
       - Overview: schema/index.md
       - Simulation Entry: schema/simulation.md
