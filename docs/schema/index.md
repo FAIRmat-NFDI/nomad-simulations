@@ -28,6 +28,14 @@ AlternativeRepresentation subsection details: transforms and mapping to a refere
 
 **Key sections:** AlternativeRepresentation
 
+## [Chemical Formula](chemical_formula.md)
+
+Chemical formulas in different formats: descriptive, reduced, IUPAC, Hill, anonymous
+
+**In scope:** Descriptive formula, Reduced formula, IUPAC formula, Hill formula, Anonymous formula, Automatic formula generation
+
+**Key sections:** ChemicalFormula
+
 ## [Particle States](particle_states.md)
 
 Complete particle state hierarchy: ParticleState base class, AtomsState with detailed atomic properties, and CGBeadState
@@ -44,14 +52,6 @@ Crystallographic symmetry: local/global symmetry, space groups, point groups, Br
 
 **Key sections:** LocalSymmetry, LocalCrystalSymmetry, GlobalSymmetry, GlobalCrystalSymmetry
 
-## [Chemical Formula](chemical_formula.md)
-
-Chemical formulas in different formats: descriptive, reduced, IUPAC, Hill, anonymous
-
-**In scope:** Descriptive formula, Reduced formula, IUPAC formula, Hill formula, Anonymous formula, Automatic formula generation
-
-**Key sections:** ChemicalFormula
-
 ## [Model Method](model_method.md)
 
 Base method hierarchy up to ModelMethodElectronic
@@ -60,14 +60,6 @@ Base method hierarchy up to ModelMethodElectronic
 
 **Key sections:** BaseModelMethod, ModelMethod, ModelMethodElectronic
 
-## [Model Method Electronic](model_method_electronic.md)
-
-Electronic method subclasses branching from ModelMethodElectronic
-
-**In scope:** Electronic-method inheritance rooted at ModelMethodElectronic, Ground-state electronic methods (DFT, HF, CC, CI, perturbative approaches), Tight-binding family (TB, xTB, Wannier, SlaterKoster), Excited-state methodology branch (ExcitedStateMethodology, Screening, GW, BSE, TDDFT), Core-hole and many-body electronic methods (CoreHoleSpectra, DMFT)
-
-**Key sections:** ModelMethodElectronic, DFT, TB, xTB, Wannier, SlaterKoster, ExcitedStateMethodology, Screening, GW, BSE, TDDFT, HF, CC, CI, PerturbationMethod, CoreHoleSpectra, DMFT
-
 ## [Force Field](force_field.md)
 
 Classical force-field model method branch rooted at ForceField
@@ -75,6 +67,14 @@ Classical force-field model method branch rooted at ForceField
 **In scope:** ForceField as a ModelMethod subclass, Potential family entry-point used by ForceField contributions, Bridge between model methods and classical interaction potentials
 
 **Key sections:** ModelMethod, ForceField, Potential
+
+## [Model Method Electronic](model_method_electronic.md)
+
+Electronic method subclasses branching from ModelMethodElectronic
+
+**In scope:** Electronic-method inheritance rooted at ModelMethodElectronic, Ground-state electronic methods (DFT, HF, CC, CI, perturbative approaches), Tight-binding family (TB, xTB, Wannier, SlaterKoster), Excited-state methodology branch (ExcitedStateMethodology, Screening, GW, BSE, TDDFT), Core-hole and many-body electronic methods (CoreHoleSpectra, DMFT)
+
+**Key sections:** ModelMethodElectronic, DFT, TB, xTB, Wannier, SlaterKoster, ExcitedStateMethodology, Screening, GW, BSE, TDDFT, HF, CC, CI, PerturbationMethod, CoreHoleSpectra, DMFT
 
 ## [Numerical Settings](numerical_settings.md)
 
@@ -92,14 +92,6 @@ Base output structure and common property definitions
 
 **Key sections:** Outputs, SCFSteps, PhysicalProperty
 
-## [Physical Property Backbone](physical_property.md)
-
-Shared base classes for physical-property types and their common metadata structure
-
-**In scope:** PhysicalProperty as the common base for computed properties, ErrorEstimate subsection used for uncertainty/error metadata, Abstract/base property families for electronic, Green-function, energy, force, and spectral data, Cross-domain backbone used by specialized output verticals
-
-**Key sections:** PhysicalProperty, ErrorEstimate, BaseElectronicEigenvalues, BaseGreensFunction, BaseEnergy, BaseForce, SpectralProfile
-
 ## [Electronic Structure Properties](electronic_properties.md)
 
 Electronic eigenvalues, band structures, DOS, band gaps, occupancies, and Fermi surfaces
@@ -116,6 +108,14 @@ Green's functions, self-energies, hybridization, quasiparticle weights, hopping 
 
 **Key sections:** BaseGreensFunction, ElectronicGreensFunction, ElectronicSelfEnergy, HybridizationFunction, QuasiparticleWeight, HoppingMatrix, CrystalFieldSplitting
 
+## [Physical Property Backbone](physical_property.md)
+
+Shared base classes for physical-property types and their common metadata structure
+
+**In scope:** PhysicalProperty as the common base for computed properties, ErrorEstimate subsection used for uncertainty/error metadata, Abstract/base property families for electronic, Green-function, energy, force, and spectral data, Cross-domain backbone used by specialized output verticals
+
+**Key sections:** PhysicalProperty, ErrorEstimate, BaseElectronicEigenvalues, BaseGreensFunction, BaseEnergy, BaseForce, SpectralProfile
+
 ## [Spectroscopic Properties](spectroscopy.md)
 
 Absorption spectra, XAS, and dielectric response
@@ -131,4 +131,108 @@ Energies, forces, pressure, temperature, and thermodynamic state functions
 **In scope:** Energy hierarchy: BaseEnergy → specific energy types, Free energies: Gibbs, Helmholtz, Force hierarchy: BaseForce → TotalForce, Thermodynamic state variables: pressure, volume, temperature, Entropy and heat capacities, Virial tensor for stress calculations, Hessian matrices for phonon calculations
 
 **Key sections:** BaseEnergy, TotalEnergy, KineticEnergy, PotentialEnergy, Heat, Work, InternalEnergy, Enthalpy, GibbsFreeEnergy, HelmholtzFreeEnergy, ChemicalPotential, VirialTensor, BaseForce, TotalForce, Pressure, Volume, Temperature, Entropy, HeatCapacity, MassDensity, Hessian
+
+## [Workflow Core](workflow.md)
+
+Core workflow hierarchy and shared method/results structures
+
+**In scope:** Workflow task abstraction and task-reference linkage, Core inheritance spine: SimulationWorkflow with serial/parallel specializations, Shared workflow model and method metadata containers, Shared workflow result timing and convergence result containers
+
+**Key sections:** SimulationTask, SimulationTaskReference, SimulationWorkflow, SerialWorkflow, ParallelWorkflow, SimulationWorkflowModel, SimulationWorkflowMethod, WorkflowTime, SimulationWorkflowResults, SerialWorkflowResults, WorkflowConvergenceTarget, WorkflowConvergenceResults
+
+## [Beyond-DFT Workflow Family](workflow_beyond_dft.md)
+
+Beyond-DFT workflow base classes and derived GW/TB/DMFT/XS specializations
+
+**In scope:** BeyondDFT inheritance backbone for workflow/method/results, Derived families: GW, DFT+TB, DFT+TB+DMFT, DMFT+MaxEnt, and XS, ElectronicStructureResults subsections used by beyond-DFT result classes
+
+**Key sections:** SerialWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults, ElectronicStructureResults, BeyondDFTWorkflow, BeyondDFTMethod, BeyondDFTResults, DFTGWWorkflow, DFTGWMethod, DFTGWResults, DFTTBWorkflow, DFTTBMethod, DFTTBResults, DFTTBDMFTWorkflow, DFTTBDMFTMethod, DFTTBDMFTResults, DMFTMaxEntWorkflow, DMTMaxEntMethod, DMTMaxEntResults, XSWorkflow, XSMethod, XSResults
+
+## [Beyond-HF Workflow Family](workflow_beyond_hf.md)
+
+Beyond-HF workflow base classes with CC and CI derived branches
+
+**In scope:** BeyondHF inheritance backbone for workflow/method/results, Derived post-HF families: coupled-cluster (CC) and configuration interaction (CI), ElectronicStructureResults subsections used by beyond-HF result classes
+
+**Key sections:** SerialWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults, ElectronicStructureResults, BeyondHFWorkflow, BeyondHFMethod, BeyondHFResults, HFCCWorkflow, HFCCMethod, HFCCResults, HFCIWorkflow, HFCIMethod, HFCIResults
+
+## [Elastic Workflow](workflow_elastic.md)
+
+Elastic-constant workflow with thermodynamics-derived result structures
+
+**In scope:** Elastic inheritance from SimulationWorkflow, Elastic method specialization and strain-diagram result containers, ElasticResults inheritance through ThermodynamicsResults
+
+**Key sections:** SimulationWorkflow, SimulationWorkflowMethod, ThermodynamicsResults, Elastic, ElasticMethod, ElasticResults, StrainDiagrams
+
+## [Equation of State Workflow](workflow_equation_of_state.md)
+
+Parallel equation-of-state workflow with EOS fitting results
+
+**In scope:** EquationOfState inheritance from ParallelWorkflow, EOS method specialization and EOSFit result subsections, Parallel workflow pattern for volume/energy scan calculations
+
+**Key sections:** ParallelWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults, EquationOfState, EquationOfStateMethod, EquationOfStateResults, EOSFit
+
+## [Geometry Optimization Workflow](workflow_geometry_optimization.md)
+
+Geometry-optimization workflow with convergence-aware method/results modeling
+
+**In scope:** GeometryOptimization inheritance from SerialWorkflow, GeometryOptimization model and method specialization layers, Workflow and nested single-point convergence configuration/results integration
+
+**Key sections:** SerialWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults, WorkflowConvergenceTarget, GeometryOptimization, GeometryOptimizationModel, GeometryOptimizationMethod, GeometryOptimizationResults
+
+## [Molecular Dynamics Workflow](workflow_molecular_dynamics.md)
+
+Molecular-dynamics workflow with thermostat/barostat/shear settings and ensemble outputs
+
+**In scope:** MolecularDynamics inheritance from SerialWorkflow, Method-side MD control settings (thermostat, barostat, shear, free-energy), Results-side ensemble/correlation properties and trajectory observables, Cross-domain anchors to NumericalSettings and PhysicalProperty for hierarchy context
+
+**Key sections:** SerialWorkflow, SerialWorkflowResults, SimulationWorkflowMethod, NumericalSettings, PhysicalProperty, MDSettings, ThermostatParameters, BarostatParameters, ShearParameters, FreeEnergyCalculationParameters, Lambdas, EnsembleProperty, CorrelationFunction, RadialDistributionFunction, DiffusionConstant, MeanSquaredDisplacement, MolecularDynamics, MolecularDynamicsMethod, MolecularDynamicsResults
+
+## [Phonon Workflow](workflow_phonon.md)
+
+Phonon workflow specialization with method/results classes
+
+**In scope:** Phonon inheritance from SimulationWorkflow, Phonon method/result specialization hierarchy, Workflow structure for finite-displacement/phonon-property computations
+
+**Key sections:** SimulationWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults, Phonon, PhononMethod, PhononResults
+
+## [Photon Polarization Workflow](workflow_photon_polarization.md)
+
+Parallel photon-polarization workflow and polarization-resolved results
+
+**In scope:** PhotonPolarizationWorkflow inheritance from ParallelWorkflow, Method and result classes for polarization-dependent spectra, Parallel execution structure for multiple polarization channels
+
+**Key sections:** ParallelWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults, PhotonPolarizationWorkflow, PhotonPolarizationMethod, PhotonPolarizationResults
+
+## [Single-Point Workflow](workflow_single_point.md)
+
+Single-point workflow and its method/results classes
+
+**In scope:** SinglePoint inheritance from SimulationWorkflow, SinglePoint method and results class specializations, Minimal workflow pattern for one-step calculations
+
+**Key sections:** SimulationWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults, SinglePoint, SinglePointMethod, SinglePointResults
+
+## [Thermodynamics Workflow](workflow_thermodynamics.md)
+
+Thermodynamics workflow specialization and serial-result integration
+
+**In scope:** Thermodynamics inheritance from SimulationWorkflow, Thermodynamics method specialization structure, ThermodynamicsResults inheritance from SerialWorkflowResults
+
+**Key sections:** SerialWorkflow, SerialWorkflowResults, SimulationWorkflowMethod, Thermodynamics, ThermodynamicsMethod, ThermodynamicsResults
+
+## [Workflow Convergence](workflow_convergence.md)
+
+Convergence target classes and workflow-level convergence result structures
+
+**In scope:** Convergence target inheritance family and target-type specializations, Convergence result container with target references and status fields, Workflow model/results integration points for convergence configuration and outcomes, GeometryOptimization-specific convergence extensions for nested SCF contexts
+
+**Key sections:** WorkflowConvergenceTarget, EnergyConvergenceTarget, ForceConvergenceTarget, PotentialConvergenceTarget, ChargeConvergenceTarget, WavefunctionConvergenceTarget, WorkflowConvergenceResults, SimulationWorkflowModel, SimulationWorkflowResults, GeometryOptimizationModel, GeometryOptimizationResults
+
+## [Workflow Trajectory Properties](workflow_trajectory.md)
+
+Serial-workflow trajectory/configurational property subsections
+
+**In scope:** Configurational property base class for trajectory-like workflow results, Temperature, pressure, and gyration metrics over frames, Free-energy calculation trajectories linked into serial workflow results, SerialWorkflowResults containment of trajectory/configurational properties
+
+**Key sections:** SerialWorkflowResults, ConfigurationalProperty, Temperatures, Pressures, RadiiOfGyration, FreeEnergyCalculations
 

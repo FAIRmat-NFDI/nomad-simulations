@@ -7,6 +7,11 @@ The docs automation has two responsibilities:
 
 These are script-driven outputs (not AI-generated text).
 
+Important boundary:
+- `docs/schema/*` is reserved for generated schema reference pages.
+- manually authored workflow rationale/traversal guides belong in
+  `docs/explanation/workflow/*`.
+
 ## 1) Generated Schema Navigation
 
 Run:
@@ -33,6 +38,26 @@ Primary script inputs:
 - `scripts/gen_docs.py`, `scripts/gen_diagrams.py` (page + diagram generation),
 - `scripts/meta_introspect.py` (schema introspection).
 
+For implementation details of pipeline steps, filtering, and vertical design
+rules, see:
+
+- [`scripts/README.md`](../../scripts/README.md)
+
+### Deterministic Navigation Ordering
+
+Schema navigation ordering is generated automatically and deterministically:
+
+- top-level domain order is fixed to:
+  `simulation`, `model_system`, `model_method`, `outputs`, `workflow`;
+- for each domain, the domain root page is always first;
+- remaining child pages are sorted alphabetically by display title;
+- optional override: set `nav_order` in a vertical spec in `scripts/verticals.py`
+  to force explicit ordering for exceptional cases (lower value sorts first).
+
+This ordering is applied to both:
+- `mkdocs.yml` (`Schema Navigation` block),
+- `docs/schema/.pages`.
+
 ### Auto-discovered Backlinks to Explanation Pages
 
 Generated schema pages include a `Related Pages` section populated
@@ -47,6 +72,8 @@ Convention:
 
 For reliable results (including agent-authored docs), always include canonical
 links to relevant `schema/*.md` pages from explanation pages.
+This is especially important for workflow explanation pages because the
+workflow vertical family is fully generated in `docs/schema/`.
 
 ## 2) Generated Explanation Fragments
 

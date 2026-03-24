@@ -2,6 +2,12 @@
 
 This guide explains how convergence checking works in NOMAD simulations, focusing on how to navigate the archive structure to access convergence configuration and results.
 
+Schema reference pages:
+
+- [Workflow Core (Schema Navigation)](../../schema/workflow.md)
+- [Workflow Convergence (Schema Navigation)](../../schema/workflow_convergence.md)
+- [Geometry Optimization Workflow (Schema Navigation)](../../schema/workflow_geometry_optimization.md)
+
 ## Overview
 
 Convergence targets define criteria for determining when iterative calculations (SCF cycles, geometry optimization steps) have reached acceptable solutions. The convergence system consists of:
@@ -22,47 +28,7 @@ Convergence targets define criteria for determining when iterative calculations 
 
 **\* Current limitation**: `single_point_convergence_targets` and `is_single_point_converged` should be available to any workflow composed of SCF calculations (MolecularDynamics, Phonon, etc.), but are currently only implemented in GeometryOptimization. This is a schema design limitation, not a conceptual one.
 
-## Schema Structure
-
-### Convergence Target Classes
-
-Convergence targets are specialized classes that inherit from `WorkflowConvergenceTarget` base class. Each target type (Energy, Force, Potential, Charge, Wavefunction) is configured with a `threshold` value and `threshold_type` specifying how to compare computed values against that threshold. The `threshold` field uses `flexible_unit=True` to accept values with appropriate physical units for each target type. During normalization, targets use metainfo annotations to locate the relevant convergence data in the archive (e.g., SCF energy deltas, force magnitudes) and apply the appropriate comparison logic (`absolute`, `relative`, `maximum`, or `rms`) to determine if convergence has been reached.
-
-### Workflow Method Classes
-
-Convergence targets are configured in workflow method sections:
-
-```python
-# Base class (all workflows)
-SimulationWorkflowMethod
-    └── convergence_targets: List[WorkflowConvergenceTarget]
-
-# Extended for workflows with SCF subtasks (currently only GeometryOptimization)
-# Note: Should be available to MolecularDynamics, Phonon, etc. - design limitation
-GeometryOptimizationModel (extends SimulationWorkflowMethod)
-    ├── convergence_targets: List[WorkflowConvergenceTarget]  # Workflow-level
-    └── single_point_convergence_targets: List[WorkflowConvergenceTarget]  # SCF-level
-```
-
-### Results Classes
-
-Convergence results are stored in workflow results sections:
-
-```python
-# Base class (all workflows)
-SimulationWorkflowResults
-    ├── is_converged: bool
-    └── convergence: List[WorkflowConvergenceResults]
-        └── WorkflowConvergenceResults
-            ├── convergence_target_ref: WorkflowConvergenceTarget
-            └── is_reached: bool
-
-# GeometryOptimization-specific
-GeometryOptimizationResults (extends SimulationWorkflowResults)
-    ├── is_converged: bool
-    ├── is_single_point_converged: bool  # TODO: should be array
-    └── convergence: List[WorkflowConvergenceResults]
-```
+Class hierarchies, quantity tables, and section-level metadata are maintained in the generated schema navigation pages linked above. This page focuses on traversal and interpretation patterns.
 
 ## Common Traversal Patterns
 
@@ -127,8 +93,6 @@ archive.workflow2 (GeometryOptimization)
 
 The `is_single_point_converged` field aggregates SCF convergence across all steps by collecting convergence results from all subtasks via JMESPath query `workflow2.tasks[*].results.convergence[*].is_reached`. This returns a nested list structure where each outer element represents a subtask (e.g., optimization step) and contains boolean convergence status for each target. The aggregation logic applies `all()` across both dimensions to determine if every target in every subtask converged.
 
-**Note**: The `is_single_point_converged` field is currently a scalar boolean that aggregates across all steps. It should be an array with shape `['n_steps']` to preserve per-step information. See TODO comments in `geometry_optimization.py:90-96` and `geometry_optimization.py:274-276`.
-
 ## Convergence Annotation Paths
 
 Targets use metainfo annotations to specify where to find data in the archive:
@@ -139,19 +103,8 @@ Targets use metainfo annotations to specify where to find data in the archive:
 - `workflow2.property_name`: Absolute from archive root
 - `archive.property_name`: Explicit archive root path
 
-## Related Files
+## Internal Notes
 
-- Schema definition: `src/nomad_simulations/schema_packages/workflow/general.py`
-- Geometry optimization: `src/nomad_simulations/schema_packages/workflow/geometry_optimization.py`
-- Comprehensive tests: `tests/workflow/test_convergence_targets.py`
-- Parser example: `nomad-parser-plugins-simulation/src/nomad_simulation_parsers/parsers/exciting/parser.py`
+Contributor-only implementation notes and open schema TODOs were moved to:
 
-## Known Limitations and TODOs
-
-1. **`single_point_convergence_targets` should be in base class**: Currently only defined in `GeometryOptimizationModel`, but the concept applies to any workflow composed of SCF subtasks (MolecularDynamics, Phonon, ElasticConstants, etc.). Should be moved to `SimulationWorkflowMethod` base class.
-
-2. **`is_single_point_converged` should be an array**: Currently aggregates across all subtasks into a single boolean, losing per-subtask granularity. Should be `shape=['n_steps']` or similar.
-
-3. **Relative convergence incomplete**: The `'relative'` threshold type requires a reference value that is not consistently available. See `WorkflowConvergenceTarget._check_relative()` for implementation notes.
-
-4. **Fallback path complexity**: `ForceConvergenceTarget` uses multiple fallback paths which can be difficult to debug when data is missing.
+- `.dev_notes/workflow_convergence_design_notes.md`

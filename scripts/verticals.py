@@ -11,6 +11,7 @@ Schema Structure:
   2. ModelSystem - Physical system definition (recursive tree with sub_systems)
   3. ModelMethod - Computational methodology (inheritance hierarchy)
   4. Outputs - Computed properties (references back to system/method)
+- Workflow classes are documented as a dedicated top-level schema branch.
 
 Vertical Organization:
 Each vertical represents a "cut-out" from the schema tree, showing:
@@ -19,20 +20,11 @@ Each vertical represents a "cut-out" from the schema tree, showing:
 - Reference relationships (Quantity types pointing to other sections)
 
 Verticals:
-(1) simulation - Root entry point with Program
-(2) model_system - Complete ModelSystem tree (representations, symmetry, particle states)
-(3) representations - Representation hierarchy and cell geometry
-(4) particle_states - Detailed particle and orbital properties (atoms, core holes, Hubbard)
-(5) model_method - Base method hierarchy up to ModelMethodElectronic
-(6) model_method_electronic - Electronic method subclasses (DFT, TB, GW, BSE, DMFT, etc.)
-(7) force_field - Classical force-field method family
-(8) numerical_settings - Meshes, basis sets, convergence parameters
-(9) outputs - Output properties base classes
-(10) physical_property - Base physical-property backbone and shared abstractions
-(11) electronic_properties - Electronic structure outputs
-(12) manybody_properties - Many-body theory outputs
-(13) spectroscopy - Spectroscopic properties
-(14) thermodynamics - Energies, forces, thermodynamic properties
+- simulation and workflow roots
+- model_system hierarchy pages
+- model_method hierarchy pages
+- outputs/property hierarchy pages
+- workflow specialization families (single-point, geometry optimization, molecular dynamics, EOS, elastic, phonon, beyond-DFT, beyond-HF, etc.)
 """
 
 VERTICALS = {
@@ -52,6 +44,286 @@ VERTICALS = {
             'Timing information (cpu1_start, cpu1_end, wall_start, wall_end)',
             'Program details (name, version, link)',
             'Entry point that references the four main subsections',
+        ],
+    },
+    # =========================================================================
+    # WORKFLOW TREE
+    # =========================================================================
+    'workflow': {
+        'title': 'Workflow Core',
+        'nav_title': 'Workflow',
+        'purpose': 'Core workflow hierarchy and shared method/results structures',
+        'sections': [
+            'SimulationTask',
+            'SimulationTaskReference',
+            'SimulationWorkflow',
+            'SerialWorkflow',
+            'ParallelWorkflow',
+            'SimulationWorkflowModel',
+            'SimulationWorkflowMethod',
+            'WorkflowTime',
+            'SimulationWorkflowResults',
+            'SerialWorkflowResults',
+            'WorkflowConvergenceTarget',
+            'WorkflowConvergenceResults',
+        ],
+        'in_scope': [
+            'Workflow task abstraction and task-reference linkage',
+            'Core inheritance spine: SimulationWorkflow with serial/parallel specializations',
+            'Shared workflow model and method metadata containers',
+            'Shared workflow result timing and convergence result containers',
+        ],
+    },
+    'workflow_convergence': {
+        'title': 'Workflow Convergence',
+        'purpose': 'Convergence target classes and workflow-level convergence result structures',
+        'sections': [
+            'WorkflowConvergenceTarget',
+            'EnergyConvergenceTarget',
+            'ForceConvergenceTarget',
+            'PotentialConvergenceTarget',
+            'ChargeConvergenceTarget',
+            'WavefunctionConvergenceTarget',
+            'WorkflowConvergenceResults',
+            'SimulationWorkflowModel',
+            'SimulationWorkflowResults',
+            'GeometryOptimizationModel',
+            'GeometryOptimizationResults',
+        ],
+        'in_scope': [
+            'Convergence target inheritance family and target-type specializations',
+            'Convergence result container with target references and status fields',
+            'Workflow model/results integration points for convergence configuration and outcomes',
+            'GeometryOptimization-specific convergence extensions for nested SCF contexts',
+        ],
+    },
+    'workflow_trajectory': {
+        'title': 'Workflow Trajectory Properties',
+        'purpose': 'Serial-workflow trajectory/configurational property subsections',
+        'sections': [
+            'SerialWorkflowResults',
+            'ConfigurationalProperty',
+            'Temperatures',
+            'Pressures',
+            'RadiiOfGyration',
+            'FreeEnergyCalculations',
+        ],
+        'in_scope': [
+            'Configurational property base class for trajectory-like workflow results',
+            'Temperature, pressure, and gyration metrics over frames',
+            'Free-energy calculation trajectories linked into serial workflow results',
+            'SerialWorkflowResults containment of trajectory/configurational properties',
+        ],
+    },
+    'workflow_single_point': {
+        'title': 'Single-Point Workflow',
+        'purpose': 'Single-point workflow and its method/results classes',
+        'sections': [
+            'SimulationWorkflow',
+            'SimulationWorkflowMethod',
+            'SimulationWorkflowResults',
+            'SinglePoint',
+            'SinglePointMethod',
+            'SinglePointResults',
+        ],
+        'in_scope': [
+            'SinglePoint inheritance from SimulationWorkflow',
+            'SinglePoint method and results class specializations',
+            'Minimal workflow pattern for one-step calculations',
+        ],
+    },
+    'workflow_geometry_optimization': {
+        'title': 'Geometry Optimization Workflow',
+        'purpose': 'Geometry-optimization workflow with convergence-aware method/results modeling',
+        'sections': [
+            'SerialWorkflow',
+            'SimulationWorkflowMethod',
+            'SimulationWorkflowResults',
+            'WorkflowConvergenceTarget',
+            'GeometryOptimization',
+            'GeometryOptimizationModel',
+            'GeometryOptimizationMethod',
+            'GeometryOptimizationResults',
+        ],
+        'in_scope': [
+            'GeometryOptimization inheritance from SerialWorkflow',
+            'GeometryOptimization model and method specialization layers',
+            'Workflow and nested single-point convergence configuration/results integration',
+        ],
+    },
+    'workflow_molecular_dynamics': {
+        'title': 'Molecular Dynamics Workflow',
+        'purpose': 'Molecular-dynamics workflow with thermostat/barostat/shear settings and ensemble outputs',
+        'sections': [
+            'SerialWorkflow',
+            'SerialWorkflowResults',
+            'SimulationWorkflowMethod',
+            'NumericalSettings',
+            'PhysicalProperty',
+            'MDSettings',
+            'ThermostatParameters',
+            'BarostatParameters',
+            'ShearParameters',
+            'FreeEnergyCalculationParameters',
+            'Lambdas',
+            'EnsembleProperty',
+            'CorrelationFunction',
+            'RadialDistributionFunction',
+            'DiffusionConstant',
+            'MeanSquaredDisplacement',
+            'MolecularDynamics',
+            'MolecularDynamicsMethod',
+            'MolecularDynamicsResults',
+        ],
+        'in_scope': [
+            'MolecularDynamics inheritance from SerialWorkflow',
+            'Method-side MD control settings (thermostat, barostat, shear, free-energy)',
+            'Results-side ensemble/correlation properties and trajectory observables',
+            'Cross-domain anchors to NumericalSettings and PhysicalProperty for hierarchy context',
+        ],
+    },
+    'workflow_thermodynamics': {
+        'title': 'Thermodynamics Workflow',
+        'purpose': 'Thermodynamics workflow specialization and serial-result integration',
+        'sections': [
+            'SerialWorkflow',
+            'SerialWorkflowResults',
+            'SimulationWorkflowMethod',
+            'Thermodynamics',
+            'ThermodynamicsMethod',
+            'ThermodynamicsResults',
+        ],
+        'in_scope': [
+            'Thermodynamics inheritance from SimulationWorkflow',
+            'Thermodynamics method specialization structure',
+            'ThermodynamicsResults inheritance from SerialWorkflowResults',
+        ],
+    },
+    'workflow_equation_of_state': {
+        'title': 'Equation of State Workflow',
+        'purpose': 'Parallel equation-of-state workflow with EOS fitting results',
+        'sections': [
+            'ParallelWorkflow',
+            'SimulationWorkflowMethod',
+            'SimulationWorkflowResults',
+            'EquationOfState',
+            'EquationOfStateMethod',
+            'EquationOfStateResults',
+            'EOSFit',
+        ],
+        'in_scope': [
+            'EquationOfState inheritance from ParallelWorkflow',
+            'EOS method specialization and EOSFit result subsections',
+            'Parallel workflow pattern for volume/energy scan calculations',
+        ],
+    },
+    'workflow_elastic': {
+        'title': 'Elastic Workflow',
+        'purpose': 'Elastic-constant workflow with thermodynamics-derived result structures',
+        'sections': [
+            'SimulationWorkflow',
+            'SimulationWorkflowMethod',
+            'ThermodynamicsResults',
+            'Elastic',
+            'ElasticMethod',
+            'ElasticResults',
+            'StrainDiagrams',
+        ],
+        'in_scope': [
+            'Elastic inheritance from SimulationWorkflow',
+            'Elastic method specialization and strain-diagram result containers',
+            'ElasticResults inheritance through ThermodynamicsResults',
+        ],
+    },
+    'workflow_phonon': {
+        'title': 'Phonon Workflow',
+        'purpose': 'Phonon workflow specialization with method/results classes',
+        'sections': [
+            'SimulationWorkflow',
+            'SimulationWorkflowMethod',
+            'SimulationWorkflowResults',
+            'Phonon',
+            'PhononMethod',
+            'PhononResults',
+        ],
+        'in_scope': [
+            'Phonon inheritance from SimulationWorkflow',
+            'Phonon method/result specialization hierarchy',
+            'Workflow structure for finite-displacement/phonon-property computations',
+        ],
+    },
+    'workflow_photon_polarization': {
+        'title': 'Photon Polarization Workflow',
+        'purpose': 'Parallel photon-polarization workflow and polarization-resolved results',
+        'sections': [
+            'ParallelWorkflow',
+            'SimulationWorkflowMethod',
+            'SimulationWorkflowResults',
+            'PhotonPolarizationWorkflow',
+            'PhotonPolarizationMethod',
+            'PhotonPolarizationResults',
+        ],
+        'in_scope': [
+            'PhotonPolarizationWorkflow inheritance from ParallelWorkflow',
+            'Method and result classes for polarization-dependent spectra',
+            'Parallel execution structure for multiple polarization channels',
+        ],
+    },
+    'workflow_beyond_dft': {
+        'title': 'Beyond-DFT Workflow Family',
+        'purpose': 'Beyond-DFT workflow base classes and derived GW/TB/DMFT/XS specializations',
+        'sections': [
+            'SerialWorkflow',
+            'SimulationWorkflowMethod',
+            'SimulationWorkflowResults',
+            'ElectronicStructureResults',
+            'BeyondDFTWorkflow',
+            'BeyondDFTMethod',
+            'BeyondDFTResults',
+            'DFTGWWorkflow',
+            'DFTGWMethod',
+            'DFTGWResults',
+            'DFTTBWorkflow',
+            'DFTTBMethod',
+            'DFTTBResults',
+            'DFTTBDMFTWorkflow',
+            'DFTTBDMFTMethod',
+            'DFTTBDMFTResults',
+            'DMFTMaxEntWorkflow',
+            'DMTMaxEntMethod',
+            'DMTMaxEntResults',
+            'XSWorkflow',
+            'XSMethod',
+            'XSResults',
+        ],
+        'in_scope': [
+            'BeyondDFT inheritance backbone for workflow/method/results',
+            'Derived families: GW, DFT+TB, DFT+TB+DMFT, DMFT+MaxEnt, and XS',
+            'ElectronicStructureResults subsections used by beyond-DFT result classes',
+        ],
+    },
+    'workflow_beyond_hf': {
+        'title': 'Beyond-HF Workflow Family',
+        'purpose': 'Beyond-HF workflow base classes with CC and CI derived branches',
+        'sections': [
+            'SerialWorkflow',
+            'SimulationWorkflowMethod',
+            'SimulationWorkflowResults',
+            'ElectronicStructureResults',
+            'BeyondHFWorkflow',
+            'BeyondHFMethod',
+            'BeyondHFResults',
+            'HFCCWorkflow',
+            'HFCCMethod',
+            'HFCCResults',
+            'HFCIWorkflow',
+            'HFCIMethod',
+            'HFCIResults',
+        ],
+        'in_scope': [
+            'BeyondHF inheritance backbone for workflow/method/results',
+            'Derived post-HF families: coupled-cluster (CC) and configuration interaction (CI)',
+            'ElectronicStructureResults subsections used by beyond-HF result classes',
         ],
     },
     # =========================================================================

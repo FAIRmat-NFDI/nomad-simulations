@@ -191,6 +191,11 @@ def filter_edges_for_vertical(
         'ModelSystem',
         'ModelMethod',
         'Outputs',
+        'SimulationWorkflow',
+        'SerialWorkflow',
+        'ParallelWorkflow',
+        'SimulationWorkflowModel',
+        'SimulationWorkflowResults',
     }
 
     allowlist_set = set(allowlist)
@@ -258,6 +263,11 @@ def categorize_nodes(nodes: set[str], all_edges: dict, allowlist: list[str]) -> 
         'Outputs',
         'ModelSystem',
         'ModelMethod',
+        'SimulationWorkflow',
+        'SerialWorkflow',
+        'ParallelWorkflow',
+        'SimulationWorkflowModel',
+        'SimulationWorkflowResults',
     }
     root_connectors = set()
 

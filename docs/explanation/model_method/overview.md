@@ -1,17 +1,24 @@
 # Model Method Overview
 
+## Pages in This Section
+
+- [ModelMethod vs NumericalSettings](model_method_vs_numerical_settings.md)
+- [Basis Sets](basis_sets.md)
+
+## Schema Navigation References
+
+- [Model Method](../../schema/model_method.md)
+- [Model Method Electronic](../../schema/model_method_electronic.md)
+- [Numerical Settings](../../schema/numerical_settings.md)
+- [Force Field](../../schema/force_field.md)
+
 ## Purpose
 
 This page explains how to use the `ModelMethod` hierarchy in hand-written
 schema data, without duplicating generated structure tables.
 
-For full section and quantity definitions, use:
-
-- [Model Method (Schema Navigation)](../../schema/model_method.md)
-- [Model Method Electronic (Schema Navigation)](../../schema/model_method_electronic.md)
-- [Numerical Settings (Schema Navigation)](../../schema/numerical_settings.md)
-- [Force Field (Schema Navigation)](../../schema/force_field.md)
-- [ModelMethod vs NumericalSettings](model_method_vs_numerical_settings.md)
+For full section and quantity definitions, use the schema navigation references
+above.
 
 ## Rules and Invariants
 

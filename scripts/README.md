@@ -110,6 +110,18 @@ The pipeline will automatically handle all configuration and file generation for
 | `templates/vertical.md.j2` | Jinja2 template for documentation pages |
 | `DIAGRAM_ZOOM.md` | Guide for configuring diagram zoom/pan methods |
 
+### Workflow Coverage in Generated Docs
+
+The generated schema navigation includes a dedicated `workflow` branch with
+specialized verticals:
+
+- core workflow structure (`workflow`, `workflow_convergence`, `workflow_trajectory`)
+- standard workflow types (`workflow_single_point`, `workflow_geometry_optimization`, `workflow_molecular_dynamics`, `workflow_thermodynamics`, `workflow_equation_of_state`, `workflow_elastic`, `workflow_phonon`, `workflow_photon_polarization`)
+- electronic many-body families (`workflow_beyond_dft`, `workflow_beyond_hf`)
+
+Manual workflow explanations live under `docs/explanation/workflow/` and should
+link to generated `schema/workflow*.md` pages to enable backlink discovery.
+
 ## The Verticals System
 
 ### What is a Vertical?
@@ -391,7 +403,19 @@ Automatically updates:
 - `docs/schema/.pages`: Awesome-pages plugin config (list of all vertical .md files)
 - `mkdocs.yml`: Main navigation structure (Schema Navigation section with titles)
 
-The pipeline uses regex to find and replace the "Schema Navigation:" section in `mkdocs.yml`, automatically syncing it with all verticals defined in `verticals.py`. Each vertical's title is used in the navigation menu.
+The pipeline uses regex to find and replace the "Schema Navigation:" section in
+`mkdocs.yml`, automatically syncing it with all verticals defined in
+`verticals.py`.
+
+Navigation ordering protocol (deterministic):
+
+1. top-level domain order is fixed:
+   `simulation`, `model_system`, `model_method`, `outputs`, `workflow`
+2. domain root page is always first under its domain
+3. remaining domain children are sorted alphabetically by display title
+4. optional override via `nav_order` in `verticals.py` (`lower` sorts earlier)
+
+This same ordering is written to both `mkdocs.yml` and `docs/schema/.pages`.
 
 ### 6. Validation
 

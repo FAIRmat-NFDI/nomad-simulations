@@ -1,11 +1,24 @@
 # `ModelSystem`
 
+## Pages in This Section
+
+- [Representation Architecture](representation.md)
+- [Electronic States](electronic_states.md)
+- [Usage Guidelines](usage_guidelines.md)
+
+## Schema Navigation References
+
+- [Model System](../../schema/model_system.md)
+- [Alternative Representations](../../schema/representations.md)
+- [Particle States](../../schema/particle_states.md)
+- [Symmetry](../../schema/symmetry.md)
+- [Chemical Formula](../../schema/chemical_formula.md)
+
 ## Overview
 
 The `ModelSystem` class represents the physical system that serves as input for simulation calculations in NOMAD. It provides a comprehensive description of the atomic or coarse-grained structure, including particle positions, cell geometry, symmetry information, and chemical composition.
 
-For complete field-level structure, see the generated reference:
-[Model System (Schema Navigation)](../../schema/model_system.md).
+For complete field-level structure, see the schema navigation references above.
 
 `ModelSystem` combines two fundamental capabilities: geometric representation (from the `Representation` class) and hierarchical navigation (from the `System` class). This means each model system has direct access to its geometric data (lattice vectors, atomic positions, periodic boundary conditions) while also supporting navigation through subsystem hierarchies and alternative geometric views.
 
@@ -151,7 +164,7 @@ See [Normalization](../normalize.md) for more details on the normalization syste
 
 **`branch_depth` (integer)**: Depth of this system in the hierarchical tree (0 for root, 1 for direct children, etc.).
 
-## See Also
+## Related Pages
 
 - [Representation Architecture](representation.md): Detailed documentation of the geometric representation design
 - [Electronic States](electronic_states.md): How to describe electronic configurations of atoms

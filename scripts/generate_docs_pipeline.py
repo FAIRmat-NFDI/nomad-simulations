@@ -74,7 +74,7 @@ def update_navigation_files(repo_root: Path) -> bool:
         from verticals import VERTICALS
 
         # Define hierarchical structure: parent -> [children]
-        # Based on the schema tree: Simulation contains ModelSystem, ModelMethod, Outputs
+        # Based on the schema tree: top-level domains and their specialized pages.
         hierarchy = {
             'simulation': [],  # Top level
             'model_system': [
@@ -95,7 +95,60 @@ def update_navigation_files(repo_root: Path) -> bool:
                 'spectroscopy',
                 'thermodynamics',
             ],
+            'workflow': [
+                'workflow_convergence',
+                'workflow_trajectory',
+                'workflow_single_point',
+                'workflow_geometry_optimization',
+                'workflow_molecular_dynamics',
+                'workflow_thermodynamics',
+                'workflow_equation_of_state',
+                'workflow_elastic',
+                'workflow_phonon',
+                'workflow_photon_polarization',
+                'workflow_beyond_dft',
+                'workflow_beyond_hf',
+            ],
         }
+
+        parent_order = ['simulation', 'model_system', 'model_method', 'outputs', 'workflow']
+
+        def spec_for(vert_key: str) -> dict:
+            spec = VERTICALS.get(vert_key, {})
+            return spec if isinstance(spec, dict) else {}
+
+        def sort_keys_by_nav(keys: list[str]) -> list[str]:
+            return sorted(
+                keys,
+                key=lambda vert_key: (
+                    spec_for(vert_key).get('nav_order', 10_000),
+                    spec_for(vert_key)
+                    .get('title', vert_key.replace('_', ' ').title())
+                    .casefold(),
+                    vert_key,
+                ),
+            )
+
+        def ordered_vertical_keys() -> list[str]:
+            ordered: list[str] = []
+            seen: set[str] = set()
+
+            for parent_key in parent_order:
+                if parent_key not in VERTICALS or parent_key in seen:
+                    continue
+                ordered.append(parent_key)
+                seen.add(parent_key)
+
+                child_keys = [k for k in hierarchy.get(parent_key, []) if k in VERTICALS]
+                for child_key in sort_keys_by_nav(child_keys):
+                    if child_key in seen:
+                        continue
+                    ordered.append(child_key)
+                    seen.add(child_key)
+
+            remaining = [k for k in VERTICALS.keys() if k not in seen]
+            ordered.extend(remaining)
+            return ordered
 
         # Update .pages file in docs/schema/
         pages_file = repo_root / 'docs' / 'schema' / '.pages'
@@ -104,7 +157,7 @@ title: Schema Documentation
 index: index.md
 nav:
 """
-        for vert_key in VERTICALS.keys():
+        for vert_key in ordered_vertical_keys():
             pages_content += f'  - {vert_key}.md\n'
 
         pages_file.write_text(pages_content, encoding='utf-8')
@@ -123,7 +176,7 @@ nav:
             added = set()
 
             # Add top-level parent verticals with their children
-            for parent_key in ['simulation', 'model_system', 'model_method', 'outputs']:
+            for parent_key in parent_order:
                 if parent_key not in VERTICALS:
                     continue
 
@@ -131,18 +184,21 @@ nav:
                 parent_title = parent_spec.get(
                     'title', parent_key.replace('_', ' ').title()
                 )
+                nav_group_title = parent_spec.get('nav_title', parent_title)
                 children = hierarchy.get(parent_key, [])
 
                 # Add parent with children
                 if children:
                     # Parent with nested children
-                    nav_items.append(f'      - {parent_title}:')
+                    nav_items.append(f'      - {nav_group_title}:')
                     nav_items.append(
                         f'          - {parent_title}: schema/{parent_key}.md'
                     )
 
                     # Add children under parent
-                    for child_key in children:
+                    for child_key in sort_keys_by_nav(
+                        [k for k in children if k in VERTICALS]
+                    ):
                         if child_key in VERTICALS:
                             child_spec = VERTICALS[child_key]
                             child_title = child_spec.get(
