@@ -18,7 +18,11 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import CoreHole, ElectronicState
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomsState,
+    CoreHole,
+    ElectronicState,
+)
 from nomad_simulations.schema_packages.data_types import (
     positive_float,
     positive_int,
@@ -761,6 +765,88 @@ class DFT(ModelMethodElectronic):
             self.jacobs_ladder = hinted
         else:
             self.jacobs_ladder = self.jacobs_ladder or 'unavailable'
+
+
+class BrokenSymmetryCenter(ArchiveSection):
+    """
+    Atom-centered local spin assignment used to describe a broken-symmetry DFT determinant.
+    """
+
+    atom_ref = Quantity(
+        type=Reference(AtomsState),
+        description="""
+        Reference to the atom/site participating in the broken-symmetry assignment.
+        """,
+    )
+
+    spin_sign = Quantity(
+        type=MEnum('up', 'down'),
+        description="""
+        Intended local spin sign assigned to the spin center in the broken-symmetry determinant.
+        """,
+    )
+
+    label = Quantity(
+        type=str,
+        description="""
+        Optional code- or parser-specific identifier for the spin center.
+        """,
+    )
+
+
+class BSDFT(DFT):
+    """
+    Broken-symmetry density functional theory calculation.
+
+    This class specializes a DFT calculation to represent a symmetry-broken,
+    collinear, unrestricted determinant without linking to the high-spin
+    reference. Workflow-level orchestration is handled separately.
+    """
+
+    spin_centers = SubSection(
+        sub_section=BrokenSymmetryCenter.m_def,
+        repeats=True,
+        description="""
+        Atom-centered local spin assignments defining the broken-symmetry pattern.
+        """,
+    )
+
+    total_spin_projection = Quantity(
+        type=np.int32,
+        description="""
+        Total spin projection M_S of the broken-symmetry determinant, stored in doubled
+        form to preserve half-integer values (e.g. M_S = 1/2 is stored as 1).
+        This is not the total spin quantum number S of a spin eigenstate.
+        """,
+    )
+
+    def _validate_spin_centers(self, logger: 'BoundLogger') -> bool:
+        spin_centers = self.spin_centers or []
+
+        if len(spin_centers) < 2:
+            logger.warning(
+                'BSDFT requires at least two spin_centers to define a broken-symmetry assignment.'
+            )
+            return False
+
+        signs = {center.spin_sign for center in spin_centers if center.spin_sign}
+        if 'up' not in signs or 'down' not in signs:
+            logger.warning('BSDFT requires at least one up and one down spin center.')
+            return False
+        return True
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'BSDFT'
+
+        if self.determinant != 'unrestricted':
+            logger.warning('BSDFT requires determinant to be unrestricted.')
+
+        if self.is_spin_polarized is not True:
+            logger.warning('BSDFT requires is_spin_polarized to be True.')
+
+        self._validate_spin_centers(logger)
 
 
 class TB(ModelMethodElectronic):

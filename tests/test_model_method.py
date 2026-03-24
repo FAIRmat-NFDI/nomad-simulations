@@ -7,9 +7,11 @@ from nomad_simulations.schema_packages.atoms_state import (
     SphericalSymmetryState,
 )
 from nomad_simulations.schema_packages.model_method import (
+    BSDFT,
     DFT,
     TB,
     ActiveSpace,
+    BrokenSymmetryCenter,
     EmpiricalDispersionModel,
     ImplicitSolvationModel,
     MultireferencePT,
@@ -620,6 +622,133 @@ class TestDFT:
             assert dft.xc.global_exact_exchange is None
         else:
             assert dft.xc.global_exact_exchange == pytest.approx(expected_alpha)
+
+
+class TestBSDFT:
+    def test_inherits_dft_normalization_behavior(self):
+        bsdft = BSDFT(
+            determinant='unrestricted',
+            is_spin_polarized=True,
+            xc=XCFunctional(functional_key='PBE'),
+            spin_centers=[
+                BrokenSymmetryCenter(
+                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                ),
+                BrokenSymmetryCenter(
+                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='down'
+                ),
+            ],
+        )
+
+        bsdft.normalize(EntryArchive(), logger=logger)
+
+        assert bsdft.name == 'BSDFT'
+        assert bsdft.jacobs_ladder == 'GGA'
+        assert {c.canonical_label for c in (bsdft.xc.components or [])} == {
+            'XC_GGA_X_PBE',
+            'XC_GGA_C_PBE',
+        }
+
+    def test_valid_bsdft_mixed_spin_centers(self, log_output):
+        site_a = AtomsState(chemical_symbol='Fe', label='Fe1')
+        site_b = AtomsState(chemical_symbol='Fe', label='Fe2')
+        bsdft = BSDFT(
+            determinant='unrestricted',
+            is_spin_polarized=True,
+            total_spin_projection=1,
+            spin_centers=[
+                BrokenSymmetryCenter(atom_ref=site_a, spin_sign='up', label='site_a'),
+                BrokenSymmetryCenter(atom_ref=site_b, spin_sign='down', label='site_b'),
+            ],
+        )
+
+        bsdft.normalize(EntryArchive(), logger=logger)
+
+        assert bsdft.name == 'BSDFT'
+        assert bsdft.total_spin_projection == 1
+        assert len(log_output.entries) == 0
+
+    def test_warns_when_restricted(self, log_output):
+        bsdft = BSDFT(
+            determinant='restricted',
+            is_spin_polarized=True,
+            spin_centers=[
+                BrokenSymmetryCenter(
+                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                ),
+                BrokenSymmetryCenter(
+                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='down'
+                ),
+            ],
+        )
+
+        bsdft.normalize(EntryArchive(), logger=logger)
+
+        assert any(
+            entry['event'] == 'BSDFT requires determinant to be unrestricted.'
+            for entry in log_output.entries
+        )
+
+    def test_warns_when_not_spin_polarized(self, log_output):
+        bsdft = BSDFT(
+            determinant='unrestricted',
+            is_spin_polarized=False,
+            spin_centers=[
+                BrokenSymmetryCenter(
+                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                ),
+                BrokenSymmetryCenter(
+                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='down'
+                ),
+            ],
+        )
+
+        bsdft.normalize(EntryArchive(), logger=logger)
+
+        assert any(
+            entry['event'] == 'BSDFT requires is_spin_polarized to be True.'
+            for entry in log_output.entries
+        )
+
+    def test_warns_with_too_few_spin_centers(self, log_output):
+        bsdft = BSDFT(
+            determinant='unrestricted',
+            is_spin_polarized=True,
+            spin_centers=[
+                BrokenSymmetryCenter(
+                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                )
+            ],
+        )
+
+        bsdft.normalize(EntryArchive(), logger=logger)
+
+        assert any(
+            entry['event']
+            == 'BSDFT requires at least two spin_centers to define a broken-symmetry assignment.'
+            for entry in log_output.entries
+        )
+
+    def test_warns_when_spin_centers_do_not_mix_signs(self, log_output):
+        bsdft = BSDFT(
+            determinant='unrestricted',
+            is_spin_polarized=True,
+            spin_centers=[
+                BrokenSymmetryCenter(
+                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                ),
+                BrokenSymmetryCenter(
+                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                ),
+            ],
+        )
+
+        bsdft.normalize(EntryArchive(), logger=logger)
+
+        assert any(
+            entry['event'] == 'BSDFT requires at least one up and one down spin center.'
+            for entry in log_output.entries
+        )
 
 
 def test_dft_contributions_solvation_dispersion_relativity_normalize():
