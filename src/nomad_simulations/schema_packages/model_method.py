@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
+    BaseSpinOrbitalState,
     CoreHole,
     ElectronicState,
 )
@@ -779,10 +780,11 @@ class BrokenSymmetryCenter(ArchiveSection):
         """,
     )
 
-    spin_sign = Quantity(
-        type=MEnum('up', 'down'),
+    spin_state = SubSection(
+        section_def=BaseSpinOrbitalState.m_def,
         description="""
-        Intended local spin sign assigned to the spin center in the broken-symmetry determinant.
+        Local spin-state descriptor for this spin center. For collinear BSDFT this is
+        typically a `SphericalSymmetryState` carrying `ms_quantum_number = +/- 0.5`.
         """,
     )
 
@@ -792,6 +794,22 @@ class BrokenSymmetryCenter(ArchiveSection):
         Optional code- or parser-specific identifier for the spin center.
         """,
     )
+
+    def resolve_spin_sign(self) -> str | None:
+        """
+        Resolve the local spin sign from the nested spin state.
+        """
+        if self.spin_state is None:
+            return None
+
+        ms_quantum_number = getattr(self.spin_state, 'ms_quantum_number', None)
+        if ms_quantum_number is None:
+            return None
+        if ms_quantum_number > 0:
+            return 'up'
+        if ms_quantum_number < 0:
+            return 'down'
+        return None
 
 
 class BSDFT(DFT):
@@ -829,7 +847,12 @@ class BSDFT(DFT):
             )
             return False
 
-        signs = {center.spin_sign for center in spin_centers if center.spin_sign}
+        signs = {center.resolve_spin_sign() for center in spin_centers}
+        if None in signs:
+            logger.warning(
+                'BSDFT spin_centers require spin_state with a non-zero ms_quantum_number.'
+            )
+            return False
         if 'up' not in signs or 'down' not in signs:
             logger.warning('BSDFT requires at least one up and one down spin center.')
             return False

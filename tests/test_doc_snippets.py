@@ -197,7 +197,10 @@ def test_bs_dft_example():
     assert method.is_spin_polarized is True
     assert method.total_spin_projection == 0
     assert len(method.spin_centers) == 2
-    assert {center.spin_sign for center in method.spin_centers} == {'up', 'down'}
+    assert {center.resolve_spin_sign() for center in method.spin_centers} == {
+        'up',
+        'down',
+    }
 
 
 def test_supercode_parser_parse_example(tmp_path):

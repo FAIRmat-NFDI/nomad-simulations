@@ -632,10 +632,12 @@ class TestBSDFT:
             xc=XCFunctional(functional_key='PBE'),
             spin_centers=[
                 BrokenSymmetryCenter(
-                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                    atom_ref=AtomsState(chemical_symbol='Fe'),
+                    spin_state=SphericalSymmetryState(ms_quantum_number=0.5),
                 ),
                 BrokenSymmetryCenter(
-                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='down'
+                    atom_ref=AtomsState(chemical_symbol='Fe'),
+                    spin_state=SphericalSymmetryState(ms_quantum_number=-0.5),
                 ),
             ],
         )
@@ -657,8 +659,16 @@ class TestBSDFT:
             is_spin_polarized=True,
             total_spin_projection=1,
             spin_centers=[
-                BrokenSymmetryCenter(atom_ref=site_a, spin_sign='up', label='site_a'),
-                BrokenSymmetryCenter(atom_ref=site_b, spin_sign='down', label='site_b'),
+                BrokenSymmetryCenter(
+                    atom_ref=site_a,
+                    spin_state=SphericalSymmetryState(ms_quantum_number=0.5),
+                    label='site_a',
+                ),
+                BrokenSymmetryCenter(
+                    atom_ref=site_b,
+                    spin_state=SphericalSymmetryState(ms_quantum_number=-0.5),
+                    label='site_b',
+                ),
             ],
         )
 
@@ -674,10 +684,12 @@ class TestBSDFT:
             is_spin_polarized=True,
             spin_centers=[
                 BrokenSymmetryCenter(
-                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                    atom_ref=AtomsState(chemical_symbol='Fe'),
+                    spin_state=SphericalSymmetryState(ms_quantum_number=0.5),
                 ),
                 BrokenSymmetryCenter(
-                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='down'
+                    atom_ref=AtomsState(chemical_symbol='Fe'),
+                    spin_state=SphericalSymmetryState(ms_quantum_number=-0.5),
                 ),
             ],
         )
@@ -695,10 +707,12 @@ class TestBSDFT:
             is_spin_polarized=False,
             spin_centers=[
                 BrokenSymmetryCenter(
-                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                    atom_ref=AtomsState(chemical_symbol='Fe'),
+                    spin_state=SphericalSymmetryState(ms_quantum_number=0.5),
                 ),
                 BrokenSymmetryCenter(
-                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='down'
+                    atom_ref=AtomsState(chemical_symbol='Fe'),
+                    spin_state=SphericalSymmetryState(ms_quantum_number=-0.5),
                 ),
             ],
         )
@@ -716,7 +730,8 @@ class TestBSDFT:
             is_spin_polarized=True,
             spin_centers=[
                 BrokenSymmetryCenter(
-                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                    atom_ref=AtomsState(chemical_symbol='Fe'),
+                    spin_state=SphericalSymmetryState(ms_quantum_number=0.5),
                 )
             ],
         )
@@ -735,10 +750,12 @@ class TestBSDFT:
             is_spin_polarized=True,
             spin_centers=[
                 BrokenSymmetryCenter(
-                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                    atom_ref=AtomsState(chemical_symbol='Fe'),
+                    spin_state=SphericalSymmetryState(ms_quantum_number=0.5),
                 ),
                 BrokenSymmetryCenter(
-                    atom_ref=AtomsState(chemical_symbol='Fe'), spin_sign='up'
+                    atom_ref=AtomsState(chemical_symbol='Fe'),
+                    spin_state=SphericalSymmetryState(ms_quantum_number=0.5),
                 ),
             ],
         )
@@ -747,6 +764,30 @@ class TestBSDFT:
 
         assert any(
             entry['event'] == 'BSDFT requires at least one up and one down spin center.'
+            for entry in log_output.entries
+        )
+
+    def test_warns_when_spin_state_is_missing_or_zero(self, log_output):
+        bsdft = BSDFT(
+            determinant='unrestricted',
+            is_spin_polarized=True,
+            spin_centers=[
+                BrokenSymmetryCenter(
+                    atom_ref=AtomsState(chemical_symbol='Fe'),
+                    spin_state=SphericalSymmetryState(ms_quantum_number=0.0),
+                ),
+                BrokenSymmetryCenter(
+                    atom_ref=AtomsState(chemical_symbol='Fe'),
+                    spin_state=SphericalSymmetryState(ms_quantum_number=-0.5),
+                ),
+            ],
+        )
+
+        bsdft.normalize(EntryArchive(), logger=logger)
+
+        assert any(
+            entry['event']
+            == 'BSDFT spin_centers require spin_state with a non-zero ms_quantum_number.'
             for entry in log_output.entries
         )
 
