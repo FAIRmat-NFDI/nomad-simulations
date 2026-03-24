@@ -1745,6 +1745,89 @@ class PerturbationMethod(ModelMethodElectronic):
     )
 
 
+class LocalCorrelationSpace(ArchiveSection):
+    """One local-correlation space used within a local coupled-cluster treatment."""
+
+    kind = Quantity(
+        type=MEnum('domain', 'orbital_space'),
+        description="""
+        Category of the local object:
+          - `domain`: a local orbital/pair/triples domain
+          - `orbital_space`: a truncated local virtual-orbital space such as PNO or LNO
+        """,
+    )
+
+    type = Quantity(
+        type=MEnum(
+            'pair',
+            'triples',
+            'crude',
+            'fine',
+            'PNO',
+            'LNO',
+            'PAO',
+            'OSV',
+            'other',
+        ),
+        description="""
+        Identifier of the local space. This covers both domain-like objects
+        (`pair`, `triples`, `crude`, `fine`) and orbital-space objects
+        (`PNO`, `LNO`, `PAO`, `OSV`).
+        """,
+    )
+
+    scope = Quantity(
+        type=MEnum('singles', 'doubles', 'triples', 'global', 'other'),
+        description="""
+        Excitation or algorithmic scope to which the local space applies.
+        """,
+    )
+
+    construction_method = Quantity(
+        type=str,
+        description="""
+        Free-form description of how the local space is constructed, for example
+        occupation-number, distance-based, or overlap-based selection.
+        """,
+    )
+
+    truncation_metric = Quantity(
+        type=str,
+        description="""
+        Quantity used to truncate or rank the local space, if reported by the code.
+        """,
+    )
+
+
+class LocalCorrelation(ArchiveSection):
+    """Local-correlation approximation layered on top of a coupled-cluster method."""
+
+    type = Quantity(
+        type=MEnum('LNO', 'PNO', 'LPNO', 'DLPNO', 'other'),
+        description="""
+        Identifier of the local-correlation approximation used together with coupled
+        cluster, for example `LNO`, `PNO`, `LPNO`, or `DLPNO`.
+        """,
+    )
+
+    orbital_localization_ref = Quantity(
+        type=Reference(SectionProxy('OrbitalLocalization')),
+        description="""
+        Reference to the orbital-localization procedure used to construct the local
+        occupied orbitals.
+        """,
+    )
+
+    spaces = SubSection(
+        sub_section=LocalCorrelationSpace.m_def,
+        repeats=True,
+        description="""
+        Local spaces entering the local-correlation treatment, such as domains,
+        pair spaces, triples spaces, or local virtual-orbital spaces.
+        """,
+    )
+
+
 class CC(ModelMethodElectronic):
     """
     A base section used to define the parameters of a Coupled Cluster calculation.
@@ -1808,6 +1891,15 @@ class CC(ModelMethodElectronic):
         These methods introduce the interelectronic distance coordinate
         directly into the wavefunction to treat dynamical electron correlation.
         It can be added linearly (R12) or exponentially (F12).
+        """,
+    )
+
+    local_correlation = SubSection(
+        sub_section=LocalCorrelation.m_def,
+        repeats=False,
+        description="""
+        Local-correlation approximation applied within the coupled-cluster
+        treatment, including local spaces and their screening thresholds.
         """,
     )
 

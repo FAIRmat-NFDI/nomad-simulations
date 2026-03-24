@@ -7,14 +7,18 @@ from nomad_simulations.schema_packages.atoms_state import (
     SphericalSymmetryState,
 )
 from nomad_simulations.schema_packages.model_method import (
+    CC,
     DFT,
     TB,
     ActiveSpace,
     EmpiricalDispersionModel,
     ImplicitSolvationModel,
+    LocalCorrelation,
+    LocalCorrelationSpace,
     MultireferencePT,
     MultireferenceSCF,
     NonlocalCorrelation,
+    OrbitalLocalization,
     RelativityModel,
     SelfInteractionCorrection,
     SlaterKoster,
@@ -24,6 +28,10 @@ from nomad_simulations.schema_packages.model_method import (
     XCFunctional,
 )
 from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
+from nomad_simulations.schema_packages.numerical_settings import (
+    LocalCorrelationSettings,
+    LocalCorrelationThreshold,
+)
 
 from . import logger
 from .conftest import generate_simulation
@@ -469,6 +477,108 @@ class TestMultireferenceMethods:
         assert mref.active_space is active
         assert list(mref.state_multiplicities) == [3, 1]
         assert list(mref.n_roots_per_multiplicity) == [2, 3]
+
+
+class TestCC:
+    def test_cc_stores_local_correlation_subsection(self):
+        localization = OrbitalLocalization(
+            method='Pipek-Mezey',
+            n_localized_orbitals=12,
+        )
+        local_corr = LocalCorrelation(
+            type='DLPNO',
+            orbital_localization_ref=localization,
+            spaces=[
+                LocalCorrelationSpace(
+                    kind='domain',
+                    type='pair',
+                    scope='doubles',
+                    construction_method='distance-based',
+                    truncation_metric='pair screening',
+                ),
+                LocalCorrelationSpace(
+                    kind='orbital_space',
+                    type='PNO',
+                    scope='doubles',
+                    construction_method='occupation-number selection',
+                    truncation_metric='occupation number',
+                ),
+                LocalCorrelationSpace(
+                    kind='orbital_space',
+                    type='PNO',
+                    scope='triples',
+                ),
+            ],
+        )
+        local_corr_settings = LocalCorrelationSettings(
+            screening_thresholds=[
+                LocalCorrelationThreshold(
+                    name='TCutPairs',
+                    value=1.0e-4,
+                    applies_to='pair_screening',
+                ),
+                LocalCorrelationThreshold(
+                    name='TCutPNO',
+                    value=1.0e-8,
+                    applies_to='orbital_space',
+                ),
+            ]
+        )
+        cc = CC(
+            type='CCSD',
+            excitation_order=[1, 2],
+            perturbative_correction='(T)',
+            perturbative_correction_order=[3],
+            local_correlation=local_corr,
+            numerical_settings=[local_corr_settings],
+        )
+
+        assert cc.local_correlation is local_corr
+        assert cc.local_correlation.type == 'DLPNO'
+        assert cc.local_correlation.orbital_localization_ref is localization
+        assert len(cc.local_correlation.spaces) == 3
+        assert cc.local_correlation.spaces[0].kind == 'domain'
+        assert cc.local_correlation.spaces[0].type == 'pair'
+        assert cc.local_correlation.spaces[1].type == 'PNO'
+        assert cc.local_correlation.spaces[2].scope == 'triples'
+        assert len(cc.numerical_settings) == 1
+        assert isinstance(cc.numerical_settings[0], LocalCorrelationSettings)
+        assert len(cc.numerical_settings[0].screening_thresholds) == 2
+        assert cc.numerical_settings[0].screening_thresholds[0].name == 'TCutPairs'
+        assert cc.numerical_settings[0].screening_thresholds[1].value == pytest.approx(
+            1.0e-8
+        )
+
+    @pytest.mark.parametrize(
+        'local_type, space_type',
+        [
+            ('LNO', 'LNO'),
+            ('PNO', 'PNO'),
+            ('LPNO', 'PNO'),
+            ('DLPNO', 'PNO'),
+        ],
+    )
+    def test_cc_local_correlation_supports_generic_local_cc_families(
+        self, local_type: str, space_type: str
+    ):
+        cc = CC(
+            type='CCSD',
+            local_correlation=LocalCorrelation(
+                type=local_type,
+                spaces=[
+                    LocalCorrelationSpace(
+                        kind='orbital_space',
+                        type=space_type,
+                        scope='global',
+                    )
+                ],
+            ),
+        )
+
+        assert cc.local_correlation is not None
+        assert cc.local_correlation.type == local_type
+        assert len(cc.local_correlation.spaces) == 1
+        assert cc.local_correlation.spaces[0].type == space_type
 
 
 class TestDFT:

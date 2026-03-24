@@ -1593,6 +1593,47 @@ class MultireferencePTSettings(NumericalSettings):
     )
 
 
+class LocalCorrelationThreshold(ArchiveSection):
+    """Numerical cutoff controlling screening in a local-correlation workflow."""
+
+    name = Quantity(
+        type=str,
+        description="""
+        Code- or method-specific threshold label, e.g. `TCutPNO` or `TCutPairs`.
+        """,
+    )
+
+    value = Quantity(
+        type=np.float64,
+        description="""
+        Numerical value of the screening threshold.
+        """,
+    )
+
+    applies_to = Quantity(
+        type=MEnum('domain', 'orbital_space', 'pair_screening', 'other'),
+        description="""
+        Local-correlation object or stage controlled by this threshold.
+        """,
+    )
+
+
+class LocalCorrelationSettings(NumericalSettings):
+    """
+    Numerical controls for local-correlation approximations used in coupled-cluster
+    calculations.
+    """
+
+    screening_thresholds = SubSection(
+        sub_section=LocalCorrelationThreshold.m_def,
+        repeats=True,
+        description="""
+        Thresholds used to screen local spaces or pair contributions in the
+        local-correlation workflow.
+        """,
+    )
+
+
 class DMRGSettings(NumericalSettings):
     """
     Matrix-product-state solver controls for DMRG-SCF/DMRG-CI/DMRG-PT workflows.
