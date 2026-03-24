@@ -342,7 +342,6 @@ def create_empty_universe(
     return universe
 
 
-# TODO: update run to data
 def archive_to_universe(
     archive,
     system_index: int = 0,
@@ -450,14 +449,16 @@ def archive_to_universe(
             if pp.particle_type is not None:
                 _pp_by_label[pp.particle_type] = pp
 
-    masses = []
-    charges = []
+    _masses_list: list[Any] = []
+    _charges_list: list[Any] = []
     for ps in particle_states:
         pp = _pp_by_label.get(ps.label)
         if ps.mass is not None:
-            masses.append(ureg.convert(ps.mass.magnitude, ps.mass.units, ureg.amu))
+            _masses_list.append(
+                ureg.convert(ps.mass.magnitude, ps.mass.units, ureg.amu)
+            )
         elif pp is not None and pp.effective_mass is not None:
-            masses.append(
+            _masses_list.append(
                 ureg.convert(
                     pp.effective_mass.magnitude, pp.effective_mass.units, ureg.amu
                 )
@@ -467,13 +468,13 @@ def archive_to_universe(
                 'Missing mass for atom %s. Using default value from ASE.',
                 ps.chemical_symbol,
             )
-            masses.append(
+            _masses_list.append(
                 ase.data.atomic_masses[
                     ase.data.atomic_numbers.get(ps.chemical_symbol, 0)
                 ]
             )
         if pp is not None and pp.partial_charge is not None:
-            charges.append(
+            _charges_list.append(
                 ureg.convert(
                     pp.partial_charge.magnitude, pp.partial_charge.units, ureg.e
                 )
@@ -484,10 +485,10 @@ def archive_to_universe(
                 'Missing charge for atom %s. Using default value 0.0.',
                 ps.chemical_symbol,
             )
-            charges.append(0.0)
+            _charges_list.append(0.0)
 
-    masses = np.array(masses)
-    charges = np.array(charges)
+    masses = np.array(_masses_list)
+    charges = np.array(_charges_list)
 
     system_times = [
         t
