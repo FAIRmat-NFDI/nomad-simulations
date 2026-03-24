@@ -787,7 +787,8 @@ class TestBSDFT:
 
         assert any(
             entry['event']
-            == 'BSDFT spin_centers require spin_state with a non-zero ms_quantum_number.'
+            == 'BSDFT spin_centers must provide a resolvable spin sign (e.g. via a '
+            'SphericalSymmetryState spin_state with non-zero ms_quantum_number).'
             for entry in log_output.entries
         )
 

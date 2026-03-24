@@ -860,7 +860,8 @@ class BSDFT(DFT):
         signs = {center.resolve_spin_sign() for center in spin_centers}
         if None in signs:
             logger.warning(
-                'BSDFT spin_centers require spin_state with a non-zero ms_quantum_number.'
+                'BSDFT spin_centers must provide a resolvable spin sign (e.g. via a '
+                'SphericalSymmetryState spin_state with non-zero ms_quantum_number).'
             )
             return False
         if 'up' not in signs or 'down' not in signs:
