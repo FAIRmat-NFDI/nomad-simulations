@@ -484,7 +484,7 @@ def archive_to_universe(
 
     system_times = [
         t
-        for out in archive.data.outputs
+        for out in (archive.data.outputs or [])
         if (t := getattr(out, 'time', None)) is not None
     ]
     n_frames = len(sec_system)
@@ -604,7 +604,7 @@ def archive_to_universe(
 
     # get the bonds  # TODO extend to multiple storage options for interactions
     bonds = (
-        [tuple(bond) for bond in getattr(sec_system_top, 'bond_list', [])]
+        [tuple(bond) for bond in getattr(sec_system_top, 'bond_list', None) or []]
         if sec_system_top is not None
         else None
     )
