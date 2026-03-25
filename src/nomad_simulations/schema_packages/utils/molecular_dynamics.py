@@ -347,7 +347,7 @@ def archive_to_universe(
     method_index: int = -1,
     model_index: int = -1,
 ) -> MDAUniverse | None:
-    """Extract the topology from a provided run section of an archive entry
+    """Extract the topology from a provided data section of an archive entry
 
     Input:
 
@@ -358,9 +358,9 @@ def archive_to_universe(
 
         n_atoms (int):
 
-        atom_names (str, shape=(n_atoms)):
+        particle_names (str, shape=(n_atoms)):
 
-        atom_types (str, shape=(n_atoms)):
+        particle_types (str, shape=(n_atoms)):
 
         atom_resindex (str, shape=(n_atoms)):
 
@@ -419,8 +419,12 @@ def archive_to_universe(
         LOGGER.warning('No atoms found in the archive. Cannot build the MDA universe.')
         return None
     particle_states = sec_system_top.particle_states if sec_system is not None else None
-    atom_names = [ps.label for ps in particle_states] if particle_states else None
-    atom_types = [ps.chemical_symbol for ps in particle_states]
+    particle_names = [ps.label for ps in particle_states] if particle_states else None
+    particle_types = [
+        getattr(ps, 'chemical_symbol', None) or getattr(ps, 'bead_symbol', 'CGX')
+        for ps in particle_states
+    ]
+
     _ppc = (
         next(
             (
@@ -495,6 +499,7 @@ def archive_to_universe(
     molecule_groups = sec_atoms_group
     n_segments = len(molecule_groups)
 
+    # TODO: Keep, or drop?
     # Attribute accessors for archive.run / archive.data backward compatibility.
     def _atom_idx(obj):
         return obj.particle_indices
@@ -603,11 +608,9 @@ def archive_to_universe(
             ]  # TODO: extend to non-cubic boxes
 
     # get the bonds  # TODO extend to multiple storage options for interactions
-    bonds = (
-        [tuple(bond) for bond in getattr(sec_system_top, 'bond_list', None) or []]
-        if sec_system_top is not None
-        else None
-    )
+    _bond_list = getattr(sec_system_top, 'bond_list', None)
+    bonds = [tuple(bond) for bond in _bond_list] if _bond_list is not None else []
+
     if bonds is None:
         bonds = get_bond_list_from_model_contributions(sec_method)
 
@@ -674,8 +677,8 @@ def archive_to_universe(
             metainfo_universe.atoms.velocities = velocities[frame_ind]
 
     # add the atom attributes
-    metainfo_universe.add_TopologyAttr('name', atom_names)
-    metainfo_universe.add_TopologyAttr('type', atom_types)
+    metainfo_universe.add_TopologyAttr('name', particle_names)
+    metainfo_universe.add_TopologyAttr('type', particle_types)
     metainfo_universe.add_TopologyAttr('mass', masses)
     metainfo_universe.add_TopologyAttr('charge', charges)
     if n_segments != 0:
@@ -1453,10 +1456,10 @@ def model_system_to_universe(system: ModelSystem, logger=None) -> MDAUniverse | 
     universe.atoms.positions = system.positions.to(ureg.angstrom).magnitude
 
     # Add atom attributes
-    atom_names = system.labels
-    universe.add_TopologyAttr('name', atom_names)
-    universe.add_TopologyAttr('type', atom_names)
-    universe.add_TopologyAttr('element', atom_names)
+    particle_names = system.labels
+    universe.add_TopologyAttr('name', particle_names)
+    universe.add_TopologyAttr('type', particle_names)
+    universe.add_TopologyAttr('element', particle_names)
 
     # Add the box dimensions
     if system.lattice_vectors is not None:
