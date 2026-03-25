@@ -6,6 +6,7 @@ from types import SimpleNamespace
 
 import numpy as np
 import pytest
+from nomad.datamodel import EntryArchive
 
 from docs.snippets.data_types import error_handling as error_handling_module
 from docs.snippets.data_types.basic_usage import build_valid_section
@@ -17,6 +18,7 @@ from docs.snippets.data_types.standalone_type_roundtrip import (
 )
 from docs.snippets.data_types.validation_behavior import demo_validation_behavior
 from docs.snippets.explanation.general.block_01 import SUPERCODEParser
+from docs.snippets.model_method.bs_dft_example import build_bs_dft_example
 from docs.snippets.model_method.model_method_overview_example import (
     build_model_method_overview_example,
 )
@@ -29,6 +31,8 @@ from docs.snippets.model_system.minimal_parser_pattern import (
 from docs.snippets.simulation_entry.program_setup import (
     build_simulation_with_program,
 )
+
+from . import logger as test_logger
 
 SNIPPETS_ROOT = Path('docs/snippets')
 DOCS_ROOT = Path('docs')
@@ -45,6 +49,7 @@ EXECUTED_SNIPPETS = {
     'snippets/data_types/validation_behavior.py',
     'snippets/model_system/alternative_representation_pattern.py',
     'snippets/model_method/model_method_overview_example.py',
+    'snippets/model_method/bs_dft_example.py',
     'snippets/model_system/minimal_parser_pattern.py',
     'snippets/simulation_entry/program_setup.py',
     'snippets/explanation/general/block_01.py',
@@ -182,6 +187,20 @@ def test_model_method_overview_example():
     assert method.numerical_settings is not None
     assert len(method.numerical_settings) == 1
     assert method.numerical_settings[0].n_max_iterations == 80
+
+
+def test_bs_dft_example():
+    _, method = build_bs_dft_example()
+    method.normalize(EntryArchive(), logger=test_logger)
+    assert method.name == 'BSDFT'
+    assert method.determinant == 'unrestricted'
+    assert method.is_spin_polarized is True
+    assert method.total_spin_projection == 0
+    assert len(method.spin_centers) == 2
+    assert {center.resolve_spin_sign() for center in method.spin_centers} == {
+        'up',
+        'down',
+    }
 
 
 def test_supercode_parser_parse_example(tmp_path):

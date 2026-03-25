@@ -18,7 +18,13 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import CoreHole, ElectronicState
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomsState,
+    BaseSpinOrbitalState,
+    CoreHole,
+    ElectronicState,
+    SphericalSymmetryState,
+)
 from nomad_simulations.schema_packages.data_types import (
     positive_float,
     positive_int,
@@ -761,6 +767,125 @@ class DFT(ModelMethodElectronic):
             self.jacobs_ladder = hinted
         else:
             self.jacobs_ladder = self.jacobs_ladder or 'unavailable'
+
+
+class BrokenSymmetryCenter(ArchiveSection):
+    """
+    Atom-centered local spin assignment used to describe a broken-symmetry DFT determinant.
+    """
+
+    atom_ref = Quantity(
+        type=Reference(AtomsState),
+        description="""
+        Reference to the atom/site participating in the broken-symmetry assignment.
+        """,
+    )
+
+    spin_state = SubSection(
+        section_def=BaseSpinOrbitalState.m_def,
+        description="""
+        Local spin-state descriptor for this spin center. For collinear BSDFT this is
+        typically a `SphericalSymmetryState` carrying `ms_quantum_number = +/- 0.5`.
+        """,
+    )
+
+    label = Quantity(
+        type=str,
+        description="""
+        Optional code- or parser-specific identifier for the spin center.
+        """,
+    )
+
+    def resolve_spin_sign(self) -> str | None:
+        """
+        Resolve the local spin sign from the nested spin state.
+        """
+        if self.spin_state is None:
+            return None
+        if not isinstance(self.spin_state, SphericalSymmetryState):
+            return None
+
+        ms_quantum_number = self.spin_state.ms_quantum_number
+        if ms_quantum_number is None:
+            return None
+        if ms_quantum_number > 0:
+            return 'up'
+        if ms_quantum_number < 0:
+            return 'down'
+        return None
+
+
+class BSDFT(DFT):
+    """
+    Broken-symmetry density functional theory calculation.
+
+    This class specializes a DFT calculation to represent a symmetry-broken,
+    collinear, unrestricted determinant without linking to the high-spin
+    reference. Workflow-level orchestration is handled separately. Consistency
+    checks require `determinant='unrestricted'`, `is_spin_polarized=True`, and
+    `spin_centers` containing at least one up and one down local spin assignment.
+
+    References
+    ----------
+    • L. Noodleman, J. Chem. Phys. 74, 5737 (1981) - broken-symmetry description
+      of antiferromagnetic coupling in transition-metal dimers
+    • S. Yamanaka and K. Yamaguchi, Bull. Chem. Soc. Jpn. 77, 1269 (2004) -
+      extended DFT review of the broken-symmetry approach for strongly correlated systems
+    """
+
+    spin_centers = SubSection(
+        sub_section=BrokenSymmetryCenter.m_def,
+        repeats=True,
+        description="""
+        Atom-centered local spin assignments defining the broken-symmetry pattern.
+        """,
+    )
+
+    total_spin_projection = Quantity(
+        type=np.int32,
+        description="""
+        Total spin projection M_S of the broken-symmetry determinant, stored in doubled
+        form to preserve half-integer values (e.g. M_S = 1/2 is stored as 1).
+        This is not the total spin quantum number S of a spin eigenstate.
+        """,
+    )
+
+    def _validate_spin_centers(self, logger: 'BoundLogger') -> bool:
+        """
+        Validate that `spin_centers` define a mixed-sign broken-symmetry assignment.
+        """
+        spin_centers = self.spin_centers or []
+
+        if len(spin_centers) < 2:
+            logger.warning(
+                'BSDFT requires at least two `spin_centers` to define a broken-symmetry assignment.'
+            )
+            return False
+
+        signs = {center.resolve_spin_sign() for center in spin_centers}
+        if None in signs:
+            logger.warning(
+                'BSDFT `spin_centers` must provide a resolvable spin sign (e.g. via a '
+                '`SphericalSymmetryState` `spin_state` with non-zero `ms_quantum_number`).'
+            )
+            return False
+        if 'up' not in signs or 'down' not in signs:
+            logger.warning('BSDFT requires at least one up and one down spin center.')
+            return False
+        return True
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'BSDFT'
+
+        if self.determinant != 'unrestricted':
+            logger.warning('BSDFT requires `determinant` to be `unrestricted`.')
+
+        if self.is_spin_polarized is not True:
+            logger.warning('BSDFT requires `is_spin_polarized` to be `True`.')
+
+        self._validate_spin_centers(logger)
 
 
 class TB(ModelMethodElectronic):

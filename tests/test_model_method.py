@@ -7,9 +7,11 @@ from nomad_simulations.schema_packages.atoms_state import (
     SphericalSymmetryState,
 )
 from nomad_simulations.schema_packages.model_method import (
+    BSDFT,
     DFT,
     TB,
     ActiveSpace,
+    BrokenSymmetryCenter,
     EmpiricalDispersionModel,
     ImplicitSolvationModel,
     MultireferencePT,
@@ -620,6 +622,122 @@ class TestDFT:
             assert dft.xc.global_exact_exchange is None
         else:
             assert dft.xc.global_exact_exchange == pytest.approx(expected_alpha)
+
+
+class TestBSDFT:
+    @staticmethod
+    def _spin_centers(*ms_quantum_numbers: float | None) -> list[BrokenSymmetryCenter]:
+        return [
+            BrokenSymmetryCenter(
+                atom_ref=AtomsState(chemical_symbol='Fe'),
+                spin_state=(
+                    SphericalSymmetryState(ms_quantum_number=ms_quantum_number)
+                    if ms_quantum_number is not None
+                    else None
+                ),
+            )
+            for ms_quantum_number in ms_quantum_numbers
+        ]
+
+    def test_valid_bsdft_mixed_spin_centers(self, log_output):
+        site_a = AtomsState(chemical_symbol='Fe', label='Fe1')
+        site_b = AtomsState(chemical_symbol='Fe', label='Fe2')
+        bsdft = BSDFT(
+            determinant='unrestricted',
+            is_spin_polarized=True,
+            total_spin_projection=1,
+            spin_centers=[
+                BrokenSymmetryCenter(
+                    atom_ref=site_a,
+                    spin_state=SphericalSymmetryState(ms_quantum_number=0.5),
+                    label='site_a',
+                ),
+                BrokenSymmetryCenter(
+                    atom_ref=site_b,
+                    spin_state=SphericalSymmetryState(ms_quantum_number=-0.5),
+                    label='site_b',
+                ),
+            ],
+        )
+
+        bsdft.normalize(EntryArchive(), logger=logger)
+
+        assert bsdft.name == 'BSDFT'
+        assert bsdft.total_spin_projection == 1
+        assert len(log_output.entries) == 0
+
+    @pytest.mark.parametrize(
+        'determinant, is_spin_polarized, ms_quantum_numbers, expected_event',
+        [
+            pytest.param(
+                'restricted',
+                True,
+                (0.5, -0.5),
+                'BSDFT requires `determinant` to be `unrestricted`.',
+                id='restricted-determinant',
+            ),
+            pytest.param(
+                None,
+                True,
+                (0.5, -0.5),
+                'BSDFT requires `determinant` to be `unrestricted`.',
+                id='missing-determinant',
+            ),
+            pytest.param(
+                'unrestricted',
+                False,
+                (0.5, -0.5),
+                'BSDFT requires `is_spin_polarized` to be `True`.',
+                id='non-spin-polarized',
+            ),
+            pytest.param(
+                'unrestricted',
+                None,
+                (0.5, -0.5),
+                'BSDFT requires `is_spin_polarized` to be `True`.',
+                id='missing-spin-polarization',
+            ),
+            pytest.param(
+                'unrestricted',
+                True,
+                (0.5,),
+                'BSDFT requires at least two `spin_centers` to define a broken-symmetry assignment.',
+                id='too-few-spin-centers',
+            ),
+            pytest.param(
+                'unrestricted',
+                True,
+                (0.5, 0.5),
+                'BSDFT requires at least one up and one down spin center.',
+                id='same-spin-sign',
+            ),
+            pytest.param(
+                'unrestricted',
+                True,
+                (0.0, -0.5),
+                'BSDFT `spin_centers` must provide a resolvable spin sign (e.g. via a '
+                '`SphericalSymmetryState` `spin_state` with non-zero `ms_quantum_number`).',
+                id='unresolvable-spin-sign',
+            ),
+        ],
+    )
+    def test_warns_on_invalid_bsdft_metadata(
+        self,
+        log_output,
+        determinant,
+        is_spin_polarized,
+        ms_quantum_numbers,
+        expected_event,
+    ):
+        bsdft = BSDFT(
+            determinant=determinant,
+            is_spin_polarized=is_spin_polarized,
+            spin_centers=self._spin_centers(*ms_quantum_numbers),
+        )
+
+        bsdft.normalize(EntryArchive(), logger=logger)
+
+        assert any(entry['event'] == expected_event for entry in log_output.entries)
 
 
 def test_dft_contributions_solvation_dispersion_relativity_normalize():
