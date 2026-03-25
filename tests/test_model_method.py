@@ -7,8 +7,8 @@ from nomad_simulations.schema_packages.atoms_state import (
     SphericalSymmetryState,
 )
 from nomad_simulations.schema_packages.model_method import (
-    CC,
     BSDFT,
+    CC,
     DFT,
     TB,
     ActiveSpace,
@@ -481,34 +481,61 @@ class TestMultireferenceMethods:
         assert list(mref.n_roots_per_multiplicity) == [2, 3]
 
 
+def build_local_correlation_space(**overrides) -> LocalCorrelationSpace:
+    space_kwargs = {
+        'kind': 'domain',
+        'domain_kind': 'pair',
+        'excitation_order': 2,
+    }
+    space_kwargs.update(overrides)
+    return LocalCorrelationSpace(**space_kwargs)
+
+
+def build_local_correlation(
+    local_type: str = 'DLPNO',
+    spaces: list[LocalCorrelationSpace] | None = None,
+    localization: OrbitalLocalization | None = None,
+) -> LocalCorrelation:
+    return LocalCorrelation(
+        type=local_type,
+        orbital_localization_ref=localization,
+        spaces=spaces
+        or [
+            build_local_correlation_space(
+                kind='orbital',
+                domain_kind=None,
+                virtual_space_type='PNO',
+                excitation_order=2,
+            )
+        ],
+    )
+
+
 class TestCC:
     def test_cc_stores_local_correlation_subsection(self):
         localization = OrbitalLocalization(
             method='Pipek-Mezey',
             n_localized_orbitals=12,
         )
-        local_corr = LocalCorrelation(
-            type='DLPNO',
-            orbital_localization_ref=localization,
+        local_corr = build_local_correlation(
+            localization=localization,
             spaces=[
-                LocalCorrelationSpace(
+                build_local_correlation_space(
                     kind='domain',
-                    type='pair',
-                    scope='doubles',
-                    construction_method='distance-based',
-                    truncation_metric='pair screening',
+                    domain_kind='pair',
+                    excitation_order=2,
                 ),
-                LocalCorrelationSpace(
-                    kind='orbital_space',
-                    type='PNO',
-                    scope='doubles',
-                    construction_method='occupation-number selection',
-                    truncation_metric='occupation number',
+                build_local_correlation_space(
+                    kind='orbital',
+                    domain_kind=None,
+                    virtual_space_type='PNO',
+                    excitation_order=2,
                 ),
-                LocalCorrelationSpace(
-                    kind='orbital_space',
-                    type='PNO',
-                    scope='triples',
+                build_local_correlation_space(
+                    kind='orbital',
+                    domain_kind=None,
+                    virtual_space_type='PNO',
+                    excitation_order=3,
                 ),
             ],
         )
@@ -522,7 +549,7 @@ class TestCC:
                 LocalCorrelationThreshold(
                     name='TCutPNO',
                     value=1.0e-8,
-                    applies_to='orbital_space',
+                    applies_to='orbital',
                 ),
             ]
         )
@@ -540,9 +567,9 @@ class TestCC:
         assert cc.local_correlation.orbital_localization_ref is localization
         assert len(cc.local_correlation.spaces) == 3
         assert cc.local_correlation.spaces[0].kind == 'domain'
-        assert cc.local_correlation.spaces[0].type == 'pair'
-        assert cc.local_correlation.spaces[1].type == 'PNO'
-        assert cc.local_correlation.spaces[2].scope == 'triples'
+        assert cc.local_correlation.spaces[0].domain_kind == 'pair'
+        assert cc.local_correlation.spaces[1].virtual_space_type == 'PNO'
+        assert cc.local_correlation.spaces[2].excitation_order == 3
         assert len(cc.numerical_settings) == 1
         assert isinstance(cc.numerical_settings[0], LocalCorrelationSettings)
         assert len(cc.numerical_settings[0].screening_thresholds) == 2
@@ -565,13 +592,14 @@ class TestCC:
     ):
         cc = CC(
             type='CCSD',
-            local_correlation=LocalCorrelation(
-                type=local_type,
+            local_correlation=build_local_correlation(
+                local_type=local_type,
                 spaces=[
-                    LocalCorrelationSpace(
-                        kind='orbital_space',
-                        type=space_type,
-                        scope='global',
+                    build_local_correlation_space(
+                        kind='orbital',
+                        domain_kind=None,
+                        virtual_space_type=space_type,
+                        excitation_order=2,
                     )
                 ],
             ),
@@ -580,7 +608,82 @@ class TestCC:
         assert cc.local_correlation is not None
         assert cc.local_correlation.type == local_type
         assert len(cc.local_correlation.spaces) == 1
-        assert cc.local_correlation.spaces[0].type == space_type
+        assert cc.local_correlation.spaces[0].virtual_space_type == space_type
+
+    def test_local_correlation_space_supports_orbital_domain(self):
+        space = build_local_correlation_space(
+            kind='domain',
+            domain_kind='orbital',
+            excitation_order=1,
+        )
+
+        assert space.domain_kind == 'orbital'
+
+    def test_local_correlation_space_supports_quadruples_order(self):
+        space = build_local_correlation_space(
+            kind='orbital',
+            domain_kind=None,
+            virtual_space_type='PNO',
+            excitation_order=4,
+        )
+
+        assert space.excitation_order == 4
+
+    @pytest.mark.parametrize(
+        'kwargs, expected_warning',
+        [
+            (
+                {
+                    'kind': 'domain',
+                    'domain_kind': None,
+                    'virtual_space_type': 'PNO',
+                },
+                'LocalCorrelationSpace.kind `domain` requires `domain_kind`.',
+            ),
+            (
+                {
+                    'kind': 'domain',
+                    'virtual_space_type': 'PNO',
+                },
+                'LocalCorrelationSpace.kind `domain` must not define `virtual_space_type` (`PNO`).',
+            ),
+            (
+                {
+                    'kind': 'orbital',
+                    'domain_kind': 'pair',
+                    'virtual_space_type': None,
+                },
+                'LocalCorrelationSpace.kind `orbital` requires `virtual_space_type`.',
+            ),
+            (
+                {
+                    'kind': 'orbital',
+                    'domain_kind': 'pair',
+                    'virtual_space_type': 'PNO',
+                },
+                'LocalCorrelationSpace.kind `orbital` must not define `domain_kind` (`pair`).',
+            ),
+            (
+                {
+                    'kind': 'orbital',
+                    'domain_kind': 'pair',
+                    'virtual_space_type': 'PNO',
+                },
+                'LocalCorrelationSpace must not define both `domain_kind` and `virtual_space_type`.',
+            ),
+        ],
+    )
+    def test_local_correlation_space_normalize_validates_domain_orbital_fields(
+        self, caplog, kwargs: dict[str, str | None], expected_warning: str
+    ):
+        import logging
+
+        space = build_local_correlation_space(**kwargs)
+
+        with caplog.at_level(logging.WARNING):
+            space.normalize(EntryArchive(), logger=logger)
+
+        assert expected_warning in caplog.text
 
 
 class TestDFT:

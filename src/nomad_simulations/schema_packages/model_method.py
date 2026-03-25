@@ -1871,67 +1871,118 @@ class PerturbationMethod(ModelMethodElectronic):
 
 
 class LocalCorrelationSpace(ArchiveSection):
-    """One local-correlation space used within a local coupled-cluster treatment."""
+    """One local-correlation space used within a local coupled-cluster treatment.
+
+    For `kind='domain'`, the space is defined by the occupied orbitals used to
+    build a local correlation treatment:
+    - `orbital`: domain attached to one localized occupied orbital
+    - `pair`: domain attached to a pair of localized occupied orbitals
+    - `triples`: domain attached to three localized occupied orbitals
+
+    For `kind='orbital'`, the space is a local virtual-orbital subspace such as
+    `PNO`, `LNO`, `PAO`, or `OSV`.
+    """
 
     kind = Quantity(
-        type=MEnum('domain', 'orbital_space'),
+        type=MEnum('domain', 'orbital'),
         description="""
         Category of the local object:
-          - `domain`: a local orbital/pair/triples domain
-          - `orbital_space`: a truncated local virtual-orbital space such as PNO or LNO
+          - `domain`: a domain defined by one or more localized occupied orbitals
+            (orbital, pair, or triples domain)
+          - `orbital`: a local virtual-orbital subspace used in the correlation
+            treatment, such as `PNO`, `LNO`, `PAO`, or `OSV`
         """,
     )
 
-    type = Quantity(
-        type=MEnum(
-            'pair',
-            'triples',
-            'crude',
-            'fine',
-            'PNO',
-            'LNO',
-            'PAO',
-            'OSV',
-            'other',
-        ),
+    domain_kind = Quantity(
+        type=MEnum('orbital', 'pair', 'triples'),
         description="""
-        Identifier of the local space. This covers both domain-like objects
-        (`pair`, `triples`, `crude`, `fine`) and orbital-space objects
-        (`PNO`, `LNO`, `PAO`, `OSV`).
+        Identifier of the occupied-orbital domain. Use this only when
+        `kind='domain'`.
+        - `orbital`: domain associated with one localized occupied orbital
+        - `pair`: domain associated with a pair of localized occupied orbitals
+        - `triples`: domain associated with three localized occupied orbitals
         """,
     )
 
-    scope = Quantity(
-        type=MEnum('singles', 'doubles', 'triples', 'global', 'other'),
+    virtual_space_type = Quantity(
+        type=MEnum('PNO', 'LNO', 'PAO', 'OSV'),
         description="""
-        Excitation or algorithmic scope to which the local space applies.
+        Identifier of the local virtual-orbital space:
+        - `PNO`: pair natural orbitals
+        - `LNO`: local natural orbitals
+        - `PAO`: projected atomic orbitals
+        - `OSV`: orbital-specific virtuals
+        Method family labels such as `LPNO` or `DLPNO` belong in
+        `LocalCorrelation.type`, not here. Use this only when `kind='orbital'`.
         """,
     )
 
-    construction_method = Quantity(
-        type=str,
+    excitation_order = Quantity(
+        type=positive_int(),
         description="""
-        Free-form description of how the local space is constructed, for example
-        occupation-number, distance-based, or overlap-based selection.
+        Excitation order to which the local space applies.
+        - 1 = singles
+        - 2 = doubles
+        - 3 = triples
+        - 4 = quadruples
         """,
     )
 
-    truncation_metric = Quantity(
-        type=str,
-        description="""
-        Quantity used to truncate or rank the local space, if reported by the code.
-        """,
-    )
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.kind is None:
+            return
+
+        if self.kind == 'domain':
+            if self.domain_kind is None:
+                logger.warning(
+                    'LocalCorrelationSpace.kind `domain` requires `domain_kind`.'
+                )
+            if self.virtual_space_type is not None:
+                logger.warning(
+                    f'LocalCorrelationSpace.kind `domain` must not define `virtual_space_type` '
+                    f'(`{self.virtual_space_type}`).'
+                )
+        if self.kind == 'orbital':
+            if self.virtual_space_type is None:
+                logger.warning(
+                    'LocalCorrelationSpace.kind `orbital` requires `virtual_space_type`.'
+                )
+            if self.domain_kind is not None:
+                logger.warning(
+                    f'LocalCorrelationSpace.kind `orbital` must not define `domain_kind` '
+                    f'(`{self.domain_kind}`).'
+                )
+
+        if self.domain_kind is not None and self.virtual_space_type is not None:
+            logger.warning(
+                'LocalCorrelationSpace must not define both `domain_kind` and `virtual_space_type`.'
+            )
 
 
 class LocalCorrelation(ArchiveSection):
-    """Local-correlation approximation layered on top of a coupled-cluster method."""
+    """Local-correlation approximation layered on top of a coupled-cluster method.
+
+    Covers domain-based and local-virtual-space approximations used to reduce the
+    cost of coupled-cluster calculations, including LNO and PNO-based method
+    families such as LPNO and DLPNO. Store here the overall approximation
+    family, the occupied-orbital localization procedure, and the local spaces
+    entering pair or triples treatments.
+
+    Representative references
+    -------------------------
+    - M. Schütz, J. Chem. Phys. 113, 9986 (2000).
+    - E. Riplinger and F. Neese, J. Chem. Phys. 138, 034106 (2013).
+    """
 
     type = Quantity(
         type=MEnum('LNO', 'PNO', 'LPNO', 'DLPNO', 'other'),
         description="""
         Identifier of the local-correlation approximation used together with coupled
-        cluster, for example `LNO`, `PNO`, `LPNO`, or `DLPNO`.
+        cluster. `LPNO` and `DLPNO` denote method families that typically employ
+        `PNO` spaces stored separately under `spaces`.
         """,
     )
 

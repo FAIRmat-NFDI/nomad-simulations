@@ -1611,7 +1611,7 @@ class LocalCorrelationThreshold(ArchiveSection):
     )
 
     applies_to = Quantity(
-        type=MEnum('domain', 'orbital_space', 'pair_screening', 'other'),
+        type=MEnum('domain', 'orbital', 'pair_screening'),
         description="""
         Local-correlation object or stage controlled by this threshold.
         """,
