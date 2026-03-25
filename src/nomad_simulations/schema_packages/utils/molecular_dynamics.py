@@ -12,7 +12,10 @@ from scipy import sparse
 from scipy.stats import linregress
 from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.force_field import ParticleParametersContainer
+from nomad_simulations.schema_packages.force_field import (
+    ForceField,
+    ParticleParametersContainer,
+)
 
 try:
     import MDAnalysis
@@ -195,36 +198,31 @@ class BeadGroup:
         return self._cache['universe']
 
 
-# TODO update from runschema to nomad-simulations
-# def get_bond_list_from_model_contributions(
-#     sec_run: MSection, method_index: int = -1, model_index: int = -1
-# ) -> list[tuple]:
-#     """
-#     Generates bond list of tuples using the list of bonded force field interactions stored under run[].method[].force_field.model[].
+def get_bond_list_from_model_contributions(
+    sec_method,
+    model_index: int = -1,  # unused in new schema, kept for compatibility
+) -> list[tuple]:
+    """
 
-#     bond_list: List[tuple]
-#     """
-#     contributions = []
-#     if sec_run.m_xpath(
-#         f'method[{method_index}].force_field.model[{model_index}].contributions'
-#     ):
-#         contributions = (
-#             sec_run.method[method_index].force_field.model[model_index].contributions
-#         )
-#     bond_list = []
-#     for contribution in contributions:
-#         if contribution.type != 'bond':
-#             continue
-
-#         atom_indices = contribution.atom_indices
-#         if (
-#             contribution.n_interactions
-#         ):  # all bonds have been grouped into one contribution
-#             bond_list = [tuple(indices) for indices in atom_indices]
-#         else:
-#             bond_list.append(tuple(contribution.atom_indices))
-
-#     return bond_list
+    bond_list: List[tuple]
+    """
+    bond_list = []
+    if sec_method is None:
+        return bond_list
+    contributions = getattr(sec_method, 'contributions', None)
+    if contributions is None or len(contributions) == 0:
+        return bond_list
+    for contribution in contributions:
+        pi = getattr(contribution, 'particle_indices', None)
+        if (
+            pi is None
+            or not isinstance(pi, np.ndarray)
+            or pi.ndim != 2
+            or pi.shape[1] != 2
+        ):
+            continue
+        bond_list.extend([tuple(indices) for indices in pi])
+    return bond_list
 
 
 def create_empty_universe(
@@ -344,7 +342,7 @@ def create_empty_universe(
 
 def archive_to_universe(
     archive,
-    system_index: int = 0,
+    system_index: int = 0,  # TODO: Shouldn't this be -1 (representative_system)
     method_index: int = -1,
     model_index: int = -1,
 ) -> MDAUniverse | None:
@@ -352,14 +350,7 @@ def archive_to_universe(
 
     Input:
 
-        archive_sec_run: section run of an EntryArchive
-
-        system_index: list index of archive.run[].system to be used for topology extraction
-
-        method_index: list index of archive.run[].method to be used for atom parameter (charges and masses) extraction
-
-        model_index: list index of archive.run[].method[].force_field.model for bond list extraction
-
+        archive: EntryArchive
     Variables:
 
         n_frames (int):
@@ -611,13 +602,13 @@ def archive_to_universe(
             ]  # TODO: extend to non-cubic boxes
 
     # get the bonds  # TODO extend to multiple storage options for interactions
-    # TODO: legacy archive.run - remove else branch when migration is complete
-    bonds = sec_system_top.bond_list
-    # TODO add back in once get_bond_list_from_model_contributions is updated
-    # if bonds is None:
-    #     bonds = get_bond_list_from_model_contributions(
-    #         sec_run, method_index=-1, model_index=-1
-    #     )
+    bonds = (
+        [tuple(bond) for bond in getattr(sec_system_top, 'bond_list', [])]
+        if sec_system_top is not None
+        else None
+    )
+    if bonds is None:
+        bonds = get_bond_list_from_model_contributions(sec_method)
 
     # get the system times
     system_timestep = 1.0 * ureg.picosecond
