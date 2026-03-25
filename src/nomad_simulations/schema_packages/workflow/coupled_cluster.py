@@ -4,6 +4,7 @@ from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
 
+from .beyond_dft import BeyondDFTMethod, BeyondDFTResults, BeyondDFTWorkflow
 from .beyond_hf import BeyondHFMethod, BeyondHFResults, BeyondHFWorkflow
 
 m_package = SchemaPackage()
@@ -15,6 +16,14 @@ class HFCCMethod(BeyondHFMethod):
 
 class HFCCResults(BeyondHFResults):
     _label = 'HF+CC workflow results'
+
+
+class DFTLocalCCMethod(BeyondDFTMethod):
+    _label = 'DFT+local-CC workflow parameters'
+
+
+class DFTLocalCCResults(BeyondDFTResults):
+    _label = 'DFT+local-CC workflow results'
 
 
 class HFCCWorkflow(BeyondHFWorkflow):
@@ -45,6 +54,35 @@ class HFCCWorkflow(BeyondHFWorkflow):
         # Name the last task CC if it is unnamed
         if self.tasks and not self.tasks[-1].name:
             self.tasks[-1].name = 'CC'
+
+
+class DFTLocalCCWorkflow(BeyondDFTWorkflow):
+    """
+    Definitions for local coupled-cluster calculations based on DFT
+    (DFT -> orbital localization -> local CC).
+    """
+
+    @log
+    def map_inputs(self, archive: EntryArchive) -> None:
+        if not self.method:
+            self.method = DFTLocalCCMethod()
+        logger = self.map_inputs.__annotations__['logger']
+        super().map_inputs(archive, logger=logger)
+
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
+        if not self.results:
+            self.results = DFTLocalCCResults()
+        logger = self.map_outputs.__annotations__['logger']
+        super().map_outputs(archive, logger=logger)
+
+    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger)
+
+        if self.tasks and len(self.tasks) > 1 and not self.tasks[1].name:
+            self.tasks[1].name = 'Orbital localization'
+        if self.tasks and not self.tasks[-1].name:
+            self.tasks[-1].name = 'Local CC'
 
 
 m_package.__init_metainfo__()

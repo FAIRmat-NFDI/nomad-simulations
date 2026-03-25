@@ -1,4 +1,7 @@
 from nomad_simulations.schema_packages.workflow.coupled_cluster import (
+    DFTLocalCCMethod,
+    DFTLocalCCResults,
+    DFTLocalCCWorkflow,
     HFCCMethod,
     HFCCResults,
     HFCCWorkflow,
@@ -25,3 +28,27 @@ class TestHFCCWorkflow:
         assert workflow.tasks[1].name == 'CC'
         assert workflow.method in [inp.section for inp in workflow.tasks[0].inputs]
         assert workflow.tasks[0] in [inp.section for inp in workflow.tasks[1].inputs]
+
+
+class TestDFTLocalCCWorkflow:
+    def test_inputs_outputs(self, logger, archive, log_output):
+        workflow = DFTLocalCCWorkflow()
+        workflow.normalize(archive, logger)
+        assert isinstance(workflow.method, DFTLocalCCMethod)
+        assert isinstance(workflow.results, DFTLocalCCResults)
+        assert len(workflow.inputs) == 1
+        assert len(workflow.outputs) == 1
+        assert workflow.inputs[0].name == 'DFT+local-CC workflow parameters'
+        assert workflow.outputs[0].name == 'DFT+local-CC workflow results'
+        assert 'Incorrect number of tasks found.' in log_output.entries[0]['event']
+
+    def test_tasks(self, logger, archive):
+        workflow = DFTLocalCCWorkflow(
+            tasks=[SinglePoint(), SinglePoint(), SinglePoint()]
+        )
+        workflow.normalize(archive, logger)
+        assert workflow.tasks[0].name == 'DFT'
+        assert workflow.tasks[1].name == 'Orbital localization'
+        assert workflow.tasks[2].name == 'Local CC'
+        assert workflow.tasks[0] in [inp.section for inp in workflow.tasks[1].inputs]
+        assert workflow.tasks[1] in [inp.section for inp in workflow.tasks[2].inputs]

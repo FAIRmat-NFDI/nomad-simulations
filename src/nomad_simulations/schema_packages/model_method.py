@@ -1929,11 +1929,72 @@ class LocalCorrelationSpace(ArchiveSection):
         """,
     )
 
+    n_defining_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of occupied orbitals that define this local space. For a domain,
+        this typically matches `domain_kind`; for a local virtual space, these
+        are the occupied orbitals whose amplitudes or pair/triples treatment
+        define the space.
+        """,
+    )
+
+    defining_orbitals_ref = Quantity(
+        type=ElectronicState,
+        shape=['n_defining_orbitals'],
+        description="""
+        References to the occupied `ElectronicState` sections that define this
+        local space. For example, a pair domain or pair-natural-orbital space is
+        defined by two localized occupied orbitals.
+        """,
+    )
+
+    n_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of orbitals spanning the local space. For `kind='orbital'`, this
+        is typically the size of the truncated local virtual space. For
+        `kind='domain'`, it may be used when the code reports the number of
+        orbitals contained in the domain.
+        """,
+    )
+
+    orbitals_ref = Quantity(
+        type=ElectronicState,
+        shape=['n_orbitals'],
+        description="""
+        References to the `ElectronicState` sections spanning the local space,
+        when the individual orbitals are explicitly available in the archive.
+        """,
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
         if self.kind is None:
             return
+
+        if self.n_defining_orbitals is None and self.defining_orbitals_ref is not None:
+            self.n_defining_orbitals = len(self.defining_orbitals_ref)
+        if self.n_orbitals is None and self.orbitals_ref is not None:
+            self.n_orbitals = len(self.orbitals_ref)
+
+        if (
+            self.n_defining_orbitals is not None
+            and self.defining_orbitals_ref is not None
+            and self.n_defining_orbitals != len(self.defining_orbitals_ref)
+        ):
+            logger.warning(
+                'LocalCorrelationSpace.n_defining_orbitals does not match the length of `defining_orbitals_ref`.'
+            )
+        if (
+            self.n_orbitals is not None
+            and self.orbitals_ref is not None
+            and self.n_orbitals != len(self.orbitals_ref)
+        ):
+            logger.warning(
+                'LocalCorrelationSpace.n_orbitals does not match the length of `orbitals_ref`.'
+            )
 
         if self.kind == 'domain':
             if self.domain_kind is None:
@@ -1959,6 +2020,23 @@ class LocalCorrelationSpace(ArchiveSection):
         if self.domain_kind is not None and self.virtual_space_type is not None:
             logger.warning(
                 'LocalCorrelationSpace must not define both `domain_kind` and `virtual_space_type`.'
+            )
+
+        expected_defining_orbitals = {
+            'orbital': 1,
+            'pair': 2,
+            'triples': 3,
+        }
+        if (
+            self.kind == 'domain'
+            and self.domain_kind in expected_defining_orbitals
+            and self.n_defining_orbitals is not None
+            and self.n_defining_orbitals != expected_defining_orbitals[self.domain_kind]
+        ):
+            logger.warning(
+                f'LocalCorrelationSpace.domain_kind `{self.domain_kind}` expects '
+                f'{expected_defining_orbitals[self.domain_kind]} defining orbitals, '
+                f'but `n_defining_orbitals` is {self.n_defining_orbitals}.'
             )
 
 

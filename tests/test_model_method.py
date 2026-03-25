@@ -517,6 +517,11 @@ class TestCC:
             method='Pipek-Mezey',
             n_localized_orbitals=12,
         )
+        occ_i = ElectronicState(name='i')
+        occ_j = ElectronicState(name='j')
+        occ_k = ElectronicState(name='k')
+        pno_1 = ElectronicState(name='pno_1')
+        pno_2 = ElectronicState(name='pno_2')
         local_corr = build_local_correlation(
             localization=localization,
             spaces=[
@@ -524,18 +529,22 @@ class TestCC:
                     kind='domain',
                     domain_kind='pair',
                     excitation_order=2,
+                    defining_orbitals_ref=[occ_i, occ_j],
                 ),
                 build_local_correlation_space(
                     kind='orbital',
                     domain_kind=None,
                     virtual_space_type='PNO',
                     excitation_order=2,
+                    defining_orbitals_ref=[occ_i, occ_j],
+                    orbitals_ref=[pno_1, pno_2],
                 ),
                 build_local_correlation_space(
                     kind='orbital',
                     domain_kind=None,
                     virtual_space_type='PNO',
                     excitation_order=3,
+                    defining_orbitals_ref=[occ_i, occ_j, occ_k],
                 ),
             ],
         )
@@ -569,6 +578,11 @@ class TestCC:
         assert cc.local_correlation.spaces[0].kind == 'domain'
         assert cc.local_correlation.spaces[0].domain_kind == 'pair'
         assert cc.local_correlation.spaces[1].virtual_space_type == 'PNO'
+        assert list(cc.local_correlation.spaces[0].defining_orbitals_ref) == [
+            occ_i,
+            occ_j,
+        ]
+        assert list(cc.local_correlation.spaces[1].orbitals_ref) == [pno_1, pno_2]
         assert cc.local_correlation.spaces[2].excitation_order == 3
         assert len(cc.numerical_settings) == 1
         assert isinstance(cc.numerical_settings[0], LocalCorrelationSettings)
@@ -628,6 +642,44 @@ class TestCC:
         )
 
         assert space.excitation_order == 4
+
+    def test_local_correlation_space_normalize_sets_counts_from_references(self):
+        occ_i = ElectronicState(name='i')
+        occ_j = ElectronicState(name='j')
+        pno_1 = ElectronicState(name='pno_1')
+        pno_2 = ElectronicState(name='pno_2')
+
+        space = build_local_correlation_space(
+            kind='orbital',
+            domain_kind=None,
+            virtual_space_type='PNO',
+            defining_orbitals_ref=[occ_i, occ_j],
+            orbitals_ref=[pno_1, pno_2],
+        )
+
+        space.normalize(EntryArchive(), logger=logger)
+
+        assert space.n_defining_orbitals == 2
+        assert space.n_orbitals == 2
+
+    def test_local_correlation_space_normalize_validates_domain_kind_cardinality(
+        self, caplog
+    ):
+        import logging
+
+        space = build_local_correlation_space(
+            kind='domain',
+            domain_kind='pair',
+            defining_orbitals_ref=[ElectronicState(name='i')],
+        )
+
+        with caplog.at_level(logging.WARNING):
+            space.normalize(EntryArchive(), logger=logger)
+
+        assert (
+            'LocalCorrelationSpace.domain_kind `pair` expects 2 defining orbitals'
+            in caplog.text
+        )
 
     @pytest.mark.parametrize(
         'kwargs, expected_warning',
