@@ -200,13 +200,14 @@ class BeadGroup:
 
 def get_bond_list_from_model_contributions(
     sec_method,
-    model_index: int = -1,  # unused in new schema, kept for compatibility
 ) -> list[tuple]:
     """
-
-    bond_list: List[tuple]
+    Extracts a list of bonds from the ForceField.contributions in the provided method
+    section.
+    Returns:
+        bond_list: List[tuple]
     """
-    bond_list = []
+    bond_list: list[tuple[int, ...]] = []
     if sec_method is None:
         return bond_list
     contributions = getattr(sec_method, 'contributions', None)
@@ -630,8 +631,8 @@ def archive_to_universe(
             )
         else:
             LOGGER.warning(
-                'System times are not equally spaced. Cannot set system times in MDA universe.'
-                ' MDA universe will contain non-physical times and timestep.'
+                'System times are not equally spaced. Cannot set system times in MDA '
+                'universe. MDA universe will contain non-physical times and timestep.'
             )
     else:
         try:
@@ -644,7 +645,8 @@ def archive_to_universe(
                 raise ValueError('integration_timestep is None')
         except Exception:
             LOGGER.warning(
-                'Cannot find the system times. MDA universe will contain non-physical times and timestep.'
+                'Cannot find the system times. MDA universe will contain non-physical '
+                'times and timestep.'
             )
 
     if not hasattr(system_timestep, 'to'):
@@ -706,7 +708,8 @@ def _get_molecular_bead_groups(
     universe: MDAUniverse | None, moltypes: list[str] = []
 ) -> dict[str, BeadGroup]:
     """
-    Creates bead groups based on the molecular types as defined by the MDAnalysis universe.
+    Creates bead groups based on the molecular types as defined by the MDAnalysis
+    universe.
     """
     if not _check_package_dependency('MDAnalysis', '_get_molecular_bead_groups', 'md'):
         return {}
