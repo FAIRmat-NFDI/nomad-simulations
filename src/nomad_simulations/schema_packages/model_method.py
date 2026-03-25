@@ -821,7 +821,9 @@ class BSDFT(DFT):
 
     This class specializes a DFT calculation to represent a symmetry-broken,
     collinear, unrestricted determinant without linking to the high-spin
-    reference. Workflow-level orchestration is handled separately.
+    reference. Workflow-level orchestration is handled separately. Consistency
+    checks require `determinant='unrestricted'`, `is_spin_polarized=True`, and
+    `spin_centers` containing at least one up and one down local spin assignment.
 
     References
     ----------
@@ -849,19 +851,22 @@ class BSDFT(DFT):
     )
 
     def _validate_spin_centers(self, logger: 'BoundLogger') -> bool:
+        """
+        Validate that `spin_centers` define a mixed-sign broken-symmetry assignment.
+        """
         spin_centers = self.spin_centers or []
 
         if len(spin_centers) < 2:
             logger.warning(
-                'BSDFT requires at least two spin_centers to define a broken-symmetry assignment.'
+                'BSDFT requires at least two `spin_centers` to define a broken-symmetry assignment.'
             )
             return False
 
         signs = {center.resolve_spin_sign() for center in spin_centers}
         if None in signs:
             logger.warning(
-                'BSDFT spin_centers must provide a resolvable spin sign (e.g. via a '
-                'SphericalSymmetryState spin_state with non-zero ms_quantum_number).'
+                'BSDFT `spin_centers` must provide a resolvable spin sign (e.g. via a '
+                '`SphericalSymmetryState` `spin_state` with non-zero `ms_quantum_number`).'
             )
             return False
         if 'up' not in signs or 'down' not in signs:
@@ -875,10 +880,10 @@ class BSDFT(DFT):
         self.name = 'BSDFT'
 
         if self.determinant != 'unrestricted':
-            logger.warning('BSDFT requires determinant to be unrestricted.')
+            logger.warning('BSDFT requires `determinant` to be `unrestricted`.')
 
         if self.is_spin_polarized is not True:
-            logger.warning('BSDFT requires is_spin_polarized to be True.')
+            logger.warning('BSDFT requires `is_spin_polarized` to be `True`.')
 
         self._validate_spin_centers(logger)
 

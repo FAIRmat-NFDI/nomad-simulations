@@ -12,8 +12,8 @@ def build_bs_dft_example() -> tuple[object, BSDFT]:
     fe2 = AtomsState(chemical_symbol='Fe', label='Fe2')
 
     method = BSDFT(
-        determinant='unrestricted',
-        is_spin_polarized=True,
+        determinant='unrestricted',  # required for consistency check
+        is_spin_polarized=True,  # required for consistency check
         total_spin_projection=0,
     )
     method.spin_centers = [
