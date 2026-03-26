@@ -1,4 +1,4 @@
-from .coupled_cluster import DFTLocalCCWorkflow
+from .coupled_cluster import DFTLocalCCWorkflow, HFLocalCCWorkflow
 from .dmft import DFTTBDMFTWorkflow
 from .elastic import Elastic
 from .equation_of_state import EquationOfState
