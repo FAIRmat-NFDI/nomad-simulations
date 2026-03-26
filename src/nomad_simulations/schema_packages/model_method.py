@@ -488,7 +488,7 @@ class NonlocalCorrelation(BaseModelMethod):
     )
 
 
-class OrbitalLocalization(BaseModelMethod):
+class OrbitalLocalization(ModelMethod):
     """Transforming canonical MOs into a localized representation.
 
     Localized orbitals are used by local correlation methods such as
