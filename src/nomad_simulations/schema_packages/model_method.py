@@ -1828,6 +1828,12 @@ class HF(ModelMethodElectronic):
     )
 
 
+def _format_local_method_prefix(local_correlation: 'LocalCorrelation | None') -> str:
+    if local_correlation is None or local_correlation.type in (None, 'other'):
+        return ''
+    return f'{local_correlation.type}-'
+
+
 class PerturbationMethod(ModelMethodElectronic):
     type = Quantity(
         type=MEnum('MP', 'RS', 'BW'),
@@ -1878,6 +1884,23 @@ class PerturbationMethod(ModelMethodElectronic):
         local MP2, PNO-MP2, or LNO-MP2.
         """,
     )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is not None:
+            return
+
+        if self.type is None:
+            return
+
+        method_label = self.type
+        if self.order is not None:
+            method_label = f'{method_label}{self.order}'
+
+        self.name = (
+            f'{_format_local_method_prefix(self.local_correlation)}{method_label}'
+        )
 
 
 class LocalCorrelationSpace(ArchiveSection):
@@ -2165,6 +2188,22 @@ class CC(ModelMethodElectronic):
         treatment, including local spaces and their screening thresholds.
         """,
     )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is not None or self.type is None:
+            return
+
+        method_label = self.type
+        if self.perturbative_correction is not None:
+            method_label = f'{method_label}{self.perturbative_correction}'
+        if self.explicit_correlation is not None:
+            method_label = f'{method_label}-{self.explicit_correlation}'
+
+        self.name = (
+            f'{_format_local_method_prefix(self.local_correlation)}{method_label}'
+        )
 
 
 class CI(ModelMethodElectronic):
