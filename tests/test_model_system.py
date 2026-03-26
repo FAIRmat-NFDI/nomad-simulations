@@ -831,19 +831,40 @@ class TestModelSystemBondFunctions:
             ([AtomsState(chemical_symbol='H')], True),
             ([AtomsState(chemical_symbol='H'), AtomsState(chemical_symbol='O')], True),
             ([CGBeadState(bead_symbol='B')], False),
-            ([AtomsState(chemical_symbol='H'), CGBeadState(bead_symbol='B')], True),
+            ([AtomsState(chemical_symbol='H'), CGBeadState(bead_symbol='B')], False),
             ([CGBeadState(bead_symbol='H'), CGBeadState(bead_symbol='B')], False),
         ],
     )
     def test_is_atomic_flag(self, states, expected):
         """
-        is_atomic() reflects whether all particle_states are AtomsState (True)
-        versus any CG/generic presence (False), with [] → False.
+        is_atomic() is True only when all relevant particle_states are AtomsState,
+        with [] and any CG/generic presence yielding False.
         """
         ms = ModelSystem()
         for s in states:
             ms.particle_states.append(s)
         assert ms.is_atomic() is expected
+
+    def test_is_atomic_subsystem_uses_referenced_particle_state_types(self):
+        root = ModelSystem()
+        root.particle_states.extend(
+            [
+                AtomsState(chemical_symbol='H'),
+                CGBeadState(bead_symbol='B'),
+                AtomsState(chemical_symbol='O'),
+            ]
+        )
+
+        atomic_child = ModelSystem()
+        atomic_child.particle_indices = [0, 2]
+        root.sub_systems.append(atomic_child)
+
+        mixed_child = ModelSystem()
+        mixed_child.particle_indices = [0, 1]
+        root.sub_systems.append(mixed_child)
+
+        assert atomic_child.is_atomic() is True
+        assert mixed_child.is_atomic() is False
 
 
 class TestModelSystemSymbols:

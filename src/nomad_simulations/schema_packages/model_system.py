@@ -1597,9 +1597,9 @@ class ModelSystem(System, Representation):
         Determine if the system can be classified as "atomic".
 
         Criterion:
-          - ASE must be able to map all labels/symbols in the particle_states subsection
-        to atomic numbers.
-          - The particle_states cannot contain only CGBeadState objects.
+          - All relevant particle states must be `AtomsState`.
+          - For subsystems, "relevant" means the root-system particle states
+            referenced by `particle_indices`.
 
         Example Usages:
           - Decide whether to use AtomState. `is_atomic` must return True for all downstream functionalities to work properly.
@@ -1607,19 +1607,27 @@ class ModelSystem(System, Representation):
         Args:
             logger (BoundLogger): The logger to log messages.
         Returns:
-            bool: True if all chemical symbols are valid, False otherwise.
+            bool: True if all relevant particle states are `AtomsState`, False otherwise.
         """
 
         if self._cache.get('is_atomic') is not None:
             return self._cache['is_atomic']
 
-        symbols = self.get_symbols()
-        is_atomic = self._all_labels_are_elements(symbols)
+        particle_states: list[ParticleState] = []
+        if self.is_root_system():
+            particle_states = list(self.particle_states)
+        else:
+            root = self.get_root_system()
+            if self.particle_indices is not None:
+                try:
+                    particle_states = [
+                        root.particle_states[i] for i in self.particle_indices
+                    ]
+                except Exception:
+                    particle_states = []
 
-        is_atomic = (
-            not all(isinstance(p, CGBeadState) for p in self.particle_states)
-            if is_atomic
-            else False
+        is_atomic = bool(particle_states) and all(
+            isinstance(particle_state, AtomsState) for particle_state in particle_states
         )
 
         self._cache['is_atomic'] = is_atomic
@@ -1627,7 +1635,10 @@ class ModelSystem(System, Representation):
 
     def get_symbols(self) -> list[str]:
         """
-        Access to particle labels, irrespective of specific child class.
+        Access to particle label tokens, irrespective of specific child class.
+
+        For atomic systems these are typically chemical symbols. For coarse-grained
+        or generic particle states they may instead be bead symbols or generic labels.
 
         Returns [] if any particle lacks a usable label/symbol.
         """
@@ -1687,7 +1698,8 @@ class ModelSystem(System, Representation):
                                    geometric views to ASE format while keeping the same atomic positions.
 
         Uses:
-          - atom_states to obtain chemical symbols
+          - particle_states to obtain label tokens that must all be valid element symbols
+            for ASE conversion
           - positions from the top-level positions quantity (always from ModelSystem, not from representations)
           - periodic boundary conditions and lattice vectors from either ModelSystem directly (if representation_index=None)
             or from the specified alternative representation (if representation_index is an integer)
@@ -1695,11 +1707,11 @@ class ModelSystem(System, Representation):
         logger = self.to_ase_atoms.__annotations__['logger']
         symbols = self.get_symbols()
         if not symbols:
-            logger.error('Cannot generate ASE Atoms without chemical symbols.')
+            logger.error('Cannot generate ASE Atoms without particle label tokens.')
             return None
         if not self._all_labels_are_elements(symbols):
             logger.error(
-                'Cannot generate ASE Atoms: symbols are not all element symbols.'
+                'Cannot generate ASE Atoms: particle label tokens are not all element symbols.'
             )
             return None
 
