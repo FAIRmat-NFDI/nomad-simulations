@@ -1059,7 +1059,7 @@ class BasisSetContainer(NumericalSettings):
         plane_waves: list[APWPlaneWaveBasisSet] = []
         has_muffin_tin_region = False
         for component in self.basis_set_components:
-            if isinstance(component, PlaneWaveBasisSet):
+            if isinstance(component, APWPlaneWaveBasisSet):
                 plane_waves.append(component)
             elif isinstance(component, MuffinTinRegion):
                 has_muffin_tin_region = True
@@ -1073,7 +1073,7 @@ class BasisSetContainer(NumericalSettings):
         if has_muffin_tin_region and len(plane_waves) == 0:
             logger.error('Expected a `APWPlaneWaveBasisSet` instance, but found none.')
         elif len(plane_waves) > 1:
-            logger.warning('Multiple plane-wave basis sets found were found.')
+            logger.warning('Multiple plane-wave basis sets were found.')
         self.name = self._determine_apw()
 
 
