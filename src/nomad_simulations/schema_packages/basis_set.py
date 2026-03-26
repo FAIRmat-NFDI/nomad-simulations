@@ -1073,7 +1073,9 @@ class BasisSetContainer(NumericalSettings):
         if has_muffin_tin_region and len(apw_plane_waves) == 0:
             logger.error('Expected a `APWPlaneWaveBasisSet` instance, but found none.')
         elif len(apw_plane_waves) > 1:
-            logger.warning('Multiple `APWPlaneWaveBasisSet` components were found.')
+            logger.warning(
+                'Multiple components of `APWPlaneWaveBasisSet` type were found.'
+            )
         self.name = self._determine_apw()
 
 
