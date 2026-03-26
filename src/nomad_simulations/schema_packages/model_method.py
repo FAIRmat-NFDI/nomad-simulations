@@ -1869,6 +1869,16 @@ class PerturbationMethod(ModelMethodElectronic):
         """,
     )
 
+    local_correlation = SubSection(
+        sub_section=SectionProxy('LocalCorrelation'),
+        repeats=False,
+        description="""
+        Local-correlation approximation applied within the perturbation treatment,
+        including local spaces and orbital localization used in methods such as
+        local MP2, PNO-MP2, or LNO-MP2.
+        """,
+    )
+
 
 class LocalCorrelationSpace(ArchiveSection):
     """One local-correlation space used within a local coupled-cluster treatment.
@@ -2041,13 +2051,12 @@ class LocalCorrelationSpace(ArchiveSection):
 
 
 class LocalCorrelation(ArchiveSection):
-    """Local-correlation approximation layered on top of a coupled-cluster method.
+    """Local-correlation approximation layered on top of a correlated wavefunction method.
 
     Covers domain-based and local-virtual-space approximations used to reduce the
-    cost of coupled-cluster calculations, including LNO and PNO-based method
-    families such as LPNO and DLPNO. Store here the overall approximation
-    family, the occupied-orbital localization procedure, and the local spaces
-    entering pair or triples treatments.
+    cost of correlated calculations, including local MP2 and local coupled-cluster
+    methods. Store here the overall approximation family, the occupied-orbital
+    localization procedure, and the local spaces entering pair or triples treatments.
 
     Representative references
     -------------------------
@@ -2058,9 +2067,9 @@ class LocalCorrelation(ArchiveSection):
     type = Quantity(
         type=MEnum('LNO', 'PNO', 'LPNO', 'DLPNO', 'other'),
         description="""
-        Identifier of the local-correlation approximation used together with coupled
-        cluster. `LPNO` and `DLPNO` denote method families that typically employ
-        `PNO` spaces stored separately under `spaces`.
+        Identifier of the local-correlation approximation used together with a
+        correlated wavefunction method. `LPNO` and `DLPNO` denote method families
+        that typically employ `PNO` spaces stored separately under `spaces`.
         """,
     )
 

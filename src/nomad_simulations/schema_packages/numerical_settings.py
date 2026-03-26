@@ -1620,8 +1620,8 @@ class LocalCorrelationThreshold(ArchiveSection):
 
 class LocalCorrelationSettings(NumericalSettings):
     """
-    Numerical controls for local-correlation approximations used in coupled-cluster
-    calculations.
+    Numerical controls for local-correlation approximations used in correlated
+    wavefunction calculations such as local MP2 or local coupled cluster.
     """
 
     screening_thresholds = SubSection(
