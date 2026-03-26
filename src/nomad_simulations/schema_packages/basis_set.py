@@ -1056,11 +1056,11 @@ class BasisSetContainer(NumericalSettings):
         super().normalize(archive, logger)
 
         mt_r_min = self._find_mt_r_min()
-        plane_waves: list[APWPlaneWaveBasisSet] = []
+        apw_plane_waves: list[APWPlaneWaveBasisSet] = []
         has_muffin_tin_region = False
         for component in self.basis_set_components:
             if isinstance(component, APWPlaneWaveBasisSet):
-                plane_waves.append(component)
+                apw_plane_waves.append(component)
             elif isinstance(component, MuffinTinRegion):
                 has_muffin_tin_region = True
                 component.mt_r_min = mt_r_min
@@ -1070,9 +1070,9 @@ class BasisSetContainer(NumericalSettings):
             elif isinstance(component, EffectiveCorePotential):
                 component.normalize(archive, logger)
 
-        if has_muffin_tin_region and len(plane_waves) == 0:
+        if has_muffin_tin_region and len(apw_plane_waves) == 0:
             logger.error('Expected a `APWPlaneWaveBasisSet` instance, but found none.')
-        elif len(plane_waves) > 1:
+        elif len(apw_plane_waves) > 1:
             logger.warning('Multiple plane-wave basis sets were found.')
         self.name = self._determine_apw()
 
