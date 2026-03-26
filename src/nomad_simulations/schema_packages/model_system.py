@@ -1237,9 +1237,9 @@ class ModelSystem(System, Representation):
 
     Particle positions are held at the top level in the quantity "positions"
     and more detailed per‐particle information, e.g., electronic state information,
-    are stored in the subsection "particle_states". The particle state can be of type
-    AtomState or CGBeadState, but the list of particle states must be homogeneous in type.
-    Mixed systems should be treated with multiple ModelSystem sections.
+    are stored in the subsection "particle_states". Parsers may populate generic
+    `ParticleState` entries or specialized subclasses such as `AtomsState` and
+    `CGBeadState`. ModelSystem normalization does not reassign between these types.
 
     Downstream subsystems refer to atoms via particle_indices.
 
@@ -1267,7 +1267,7 @@ class ModelSystem(System, Representation):
 
     The normalization within ModelSystem.normalize() proceeds in the following order:
         1. Parent System normalization
-        2. Particle state reassignment and validation
+        2. Subsystem validation
         3. System type and dimensionality resolution (if representative and atomic)
         4. Symmetry section creation and normalization (for bulk systems)
         5. ChemicalFormula section creation and normalization
@@ -1813,84 +1813,6 @@ class ModelSystem(System, Representation):
 
         return system_type, dimensionality
 
-    # TODO thorough check
-    def _copy_common_quantities(
-        self, src, dst, *, exclude: set[str] | None = None
-    ) -> None:
-        exclude = exclude or set()
-
-        def _qnames(section) -> set[str]:
-            aq = getattr(section.m_def, 'all_quantities', None)
-            if aq is None:
-                return set()
-            if isinstance(aq, dict):
-                return set(aq.keys())
-            # iterable of Quantity objects
-            return {q.name for q in aq}
-
-        src_q = _qnames(src)
-        dst_q = _qnames(dst)
-        for name in (src_q & dst_q) - exclude:
-            val = getattr(src, name, None)
-            if val is not None:
-                setattr(dst, name, val)
-
-    def _clear_particle_states_inplace(self) -> None:
-        while len(self.particle_states):
-            self.particle_states.pop()
-
-    def _reassign_generic_particle_states(self, archive, logger) -> None:
-        """
-        Cases for particle state reassignment:
-          1. The parser populated any generic ParticleState entries
-          2. The parser populated mixed AtomState/CGBeadState particle state lists
-          3. The parser incorrected populated AtomState instances when *any* of the
-          particle labels are not valid element symbols.
-
-        The reassignment will convert *all* particle states to either:
-          - AtomsState if all labels are valid element symbols, else
-          - CGBeadState.
-
-        Notes:
-          - Mixed systems are not allowed.
-          - If the parser populates all CGBeadState instances, no reassignment is done regardless of the particle labels.
-        """
-        if not self.particle_states:
-            return
-
-        ps_list = list(self.particle_states)
-
-        labels = self.get_symbols()
-        is_atomic = self._all_labels_are_elements(labels)
-        is_cg = all(isinstance(p, CGBeadState) for p in ps_list)
-        if is_cg:
-            return
-
-        if is_atomic and not all(
-            isinstance(p, AtomsState | CGBeadState) for p in ps_list
-        ):
-            # Map one-to-one using validated element labels
-            self._clear_particle_states_inplace()
-            for old, lab in zip(ps_list, labels):
-                new = AtomsState()
-                new.chemical_symbol = lab  # validated by symbols2numbers + MEnum on set
-                # Copy all overlapping fields EXCEPT chemical_symbol (we just set it)
-                self._copy_common_quantities(old, new, exclude={'chemical_symbol'})
-                new.normalize(archive, logger)
-                self.particle_states.append(new)
-        elif not is_atomic and not is_cg:
-            # Fall back to CG; use each original ParticleState.label (may be None)
-            self._clear_particle_states_inplace()
-            for old in ps_list:
-                lab = old.label
-                new = CGBeadState()
-                if lab:
-                    new.bead_symbol = lab
-                # Copy all overlapping fields EXCEPT bead_symbol (we just set it)
-                self._copy_common_quantities(old, new, exclude={'bead_symbol'})
-                new.normalize(archive, logger)
-                self.particle_states.append(new)
-
     def _validate_subsystem(self, logger: 'BoundLogger') -> None:
         """ """
 
@@ -1960,8 +1882,6 @@ class ModelSystem(System, Representation):
             )
             self.periodic_boundary_conditions = []
 
-        # reassign particle states according to label validity
-        self._reassign_generic_particle_states(archive, logger)
         # Validate the ModelSystem subsystem
         self._validate_subsystem(logger)
 
