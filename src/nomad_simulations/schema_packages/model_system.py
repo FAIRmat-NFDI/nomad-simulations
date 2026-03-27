@@ -1698,24 +1698,24 @@ class ModelSystem(System, Representation):
                                    geometric views to ASE format while keeping the same atomic positions.
 
         Uses:
-          - particle_states to obtain label tokens that must all be valid element symbols
-            for ASE conversion
+          - particle_states to obtain chemical symbols for ASE conversion; all resolved
+            labels must be valid element symbols
           - positions from the top-level positions quantity (always from ModelSystem, not from representations)
           - periodic boundary conditions and lattice vectors from either ModelSystem directly (if representation_index=None)
             or from the specified alternative representation (if representation_index is an integer)
         """
         logger = self.to_ase_atoms.__annotations__['logger']
-        symbols = self.get_symbols()
-        if not symbols:
-            logger.error('Cannot generate ASE Atoms without particle label tokens.')
+        chemical_symbols = self.get_symbols()
+        if not chemical_symbols:
+            logger.error('Cannot generate ASE Atoms without chemical symbols.')
             return None
-        if not self._all_labels_are_elements(symbols):
+        if not self._all_labels_are_elements(chemical_symbols):
             logger.error(
-                'Cannot generate ASE Atoms: particle label tokens are not all element symbols.'
+                'Cannot generate ASE Atoms: resolved labels are not all valid chemical symbols.'
             )
             return None
 
-        ase_atoms = ase.Atoms(symbols=symbols)
+        ase_atoms = ase.Atoms(symbols=chemical_symbols)
 
         # Determine cell information source based on representation_index
         if representation_index is None:
