@@ -1637,7 +1637,7 @@ class ModelSystem(System, Representation):
         """
         Access to particle label tokens, irrespective of specific child class.
 
-        For atomic systems these are typically chemical symbols. For coarse-grained
+        For atomic systems these must be chemical symbols. For coarse-grained
         or generic particle states they may instead be bead symbols or generic labels.
 
         Returns [] if any particle lacks a usable label/symbol.
