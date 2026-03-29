@@ -10,8 +10,6 @@ from nomad.metainfo import (
     URL,
     MEnum,
     Quantity,
-    Reference,
-    SectionProxy,
     SubSection,
 )
 from nomad.units import ureg

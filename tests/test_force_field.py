@@ -1195,42 +1195,30 @@ def test_missing_units_skip_derivation():
     dummy.normalize(None, logger)
 
 
-# --- ForceField flat-array quantities (partial_charges / effective_masses) ---
+# --- ParticleParameters: partial_charge / effective_mass ---
 
 
-def test_forcefield_partial_charges_stores_and_units():
-    """partial_charges is stored as a flat array and retains elementary_charge units."""
-    ff = ForceField()
-    values = np.array([0.41, -0.82, 0.41])
-    ff.partial_charges = values * ureg.elementary_charge
-
-    assert ff.partial_charges is not None
-    assert len(ff.partial_charges) == 3
-    assert np.isclose(
-        ff.partial_charges.to('elementary_charge').magnitude, values
-    ).all()
+def test_particle_parameters_partial_charge_stores_and_units():
+    """partial_charge on ParticleParameters retains elementary_charge units."""
+    pp = ParticleParameters(particle_type='OW')
+    pp.partial_charge = -0.82 * ureg.elementary_charge
+    assert pp.partial_charge is not None
+    assert np.isclose(pp.partial_charge.to('elementary_charge').magnitude, -0.82)
 
 
-def test_forcefield_partial_charges_none_by_default():
-    """partial_charges is None when not set."""
-    ff = ForceField()
-    assert getattr(ff, 'partial_charges', None) is None
+def test_particle_parameters_partial_charge_none_by_default():
+    pp = ParticleParameters()
+    assert pp.partial_charge is None
 
 
-def test_forcefield_effective_masses_stores_and_units():
-    """effective_masses is stored as a flat array with correct kg units."""
-    ff = ForceField()
-    values_amu = np.array([1.008, 15.999, 1.008])
-    ff.effective_masses = (values_amu * ureg.amu).to('kg')
-
-    assert ff.effective_masses is not None
-    assert len(ff.effective_masses) == 3
-    assert np.isclose(
-        ff.effective_masses.to('amu').magnitude, values_amu, rtol=1e-5
-    ).all()
+def test_particle_parameters_effective_mass_stores_and_units():
+    """effective_mass on ParticleParameters retains kg units."""
+    pp = ParticleParameters(particle_type='OW')
+    pp.effective_mass = (15.999 * ureg.amu).to('kg')
+    assert pp.effective_mass is not None
+    assert np.isclose(pp.effective_mass.to('amu').magnitude, 15.999, rtol=1e-5)
 
 
-def test_forcefield_effective_masses_none_by_default():
-    """effective_masses is None when not set."""
-    ff = ForceField()
-    assert getattr(ff, 'effective_masses', None) is None
+def test_particle_parameters_effective_mass_none_by_default():
+    pp = ParticleParameters()
+    assert pp.effective_mass is None

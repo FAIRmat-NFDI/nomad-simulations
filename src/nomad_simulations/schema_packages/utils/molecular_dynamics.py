@@ -10,12 +10,8 @@ import ase
 import numpy as np
 from scipy import sparse
 from scipy.stats import linregress
-from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.force_field import (
-    ForceField,
-    ParticleParametersContainer,
-)
+from nomad_simulations.schema_packages.force_field import ParticleParametersContainer
 
 try:
     import MDAnalysis
@@ -214,6 +210,8 @@ def get_bond_list_from_model_contributions(
     if contributions is None or len(contributions) == 0:
         return bond_list
     for contribution in contributions:
+        if getattr(contribution, 'type', None) != 'bond':
+            continue
         pi = getattr(contribution, 'particle_indices', None)
         if (
             pi is None
@@ -419,7 +417,12 @@ def archive_to_universe(
         LOGGER.warning('No atoms found in the archive. Cannot build the MDA universe.')
         return None
     particle_states = sec_system_top.particle_states if sec_system is not None else None
-    particle_names = [ps.label for ps in particle_states] if particle_states else None
+    if not particle_states:
+        LOGGER.warning(
+            'No particle_states found in topology system. Cannot build MDA universe.'
+        )
+        return None
+    particle_names = [ps.label for ps in particle_states]
     particle_types = [
         getattr(ps, 'chemical_symbol', None) or getattr(ps, 'bead_symbol', 'CGX')
         for ps in particle_states
@@ -447,6 +450,8 @@ def archive_to_universe(
 
     _masses_list: list[Any] = []
     _charges_list: list[Any] = []
+    _missing_masses = 0
+    _missing_charges = 0
     for ps in particle_states:
         pp = _pp_by_label.get(ps.label)
         if ps.mass is not None:
@@ -460,15 +465,14 @@ def archive_to_universe(
                 )
             )
         else:
-            LOGGER.warning(
-                'Missing mass for atom %s. Using default value from ASE.',
-                ps.chemical_symbol,
+            _missing_masses += 1
+            symbol = getattr(ps, 'chemical_symbol', None)
+            ase_mass = (
+                ase.data.atomic_masses[ase.data.atomic_numbers.get(symbol, 0)]
+                if symbol is not None
+                else 0.0
             )
-            _masses_list.append(
-                ase.data.atomic_masses[
-                    ase.data.atomic_numbers.get(ps.chemical_symbol, 0)
-                ]
-            )
+            _masses_list.append(ase_mass)
         if pp is not None and pp.partial_charge is not None:
             _charges_list.append(
                 ureg.convert(
@@ -476,12 +480,18 @@ def archive_to_universe(
                 )
             )
         else:
-            # TODO: is this the best way to handle missing charges?
-            LOGGER.warning(
-                'Missing charge for atom %s. Using default value 0.0.',
-                ps.chemical_symbol,
-            )
+            _missing_charges += 1
             _charges_list.append(0.0)
+    if _missing_masses:
+        LOGGER.warning(
+            '%d particle(s) missing mass; atomic particles fall back to ASE defaults, '
+            'CG particles default to 0.0.',
+            _missing_masses,
+        )
+    if _missing_charges:
+        LOGGER.warning(
+            '%d particle(s) missing charge; defaulting to 0.0.', _missing_charges
+        )
 
     masses = np.array(_masses_list)
     charges = np.array(_charges_list)
@@ -496,7 +506,7 @@ def archive_to_universe(
     atom_resindex = np.arange(n_atoms)
     atoms_segindices = np.empty(n_atoms)
     atom_segids = np.array(range(n_atoms), dtype='object')
-    molecule_groups = sec_atoms_group
+    molecule_groups = sec_atoms_group or []
     n_segments = len(molecule_groups)
 
     # TODO: Keep, or drop?
@@ -578,10 +588,11 @@ def archive_to_universe(
         mol_index_counter += n_res
 
     # get the atom positions, velocities, and box dimensions
-    positions = np.empty(shape=(n_frames, n_atoms, 3))
-    dimensions = np.empty(shape=(n_frames, 6))
+    positions = np.zeros(shape=(n_frames, n_atoms, 3))
+    dimensions = np.zeros(shape=(n_frames, 6))
     has_velocities = any(frame.velocities is not None for frame in sec_system)
     velocities = np.zeros(shape=(n_frames, n_atoms, 3)) if has_velocities else None
+    n_frames_with_positions = 0
     for frame_ind, frame in enumerate(sec_system):
         positions_frame = frame.positions
         velocities_frame = frame.velocities
@@ -590,6 +601,7 @@ def archive_to_universe(
             positions[frame_ind] = ureg.convert(
                 positions_frame.magnitude, positions_frame.units, ureg.angstrom
             )
+            n_frames_with_positions += 1
         if has_velocities and velocities_frame is not None:
             velocities[frame_ind] = ureg.convert(
                 velocities_frame.magnitude,
@@ -606,12 +618,15 @@ def archive_to_universe(
                 90,
                 90,
             ]  # TODO: extend to non-cubic boxes
+    if n_frames_with_positions == 0:
+        LOGGER.warning('No frames with positions found. Cannot build MDA universe.')
+        return None
 
     # get the bonds  # TODO extend to multiple storage options for interactions
     _bond_list = getattr(sec_system_top, 'bond_list', None)
-    bonds = [tuple(bond) for bond in _bond_list] if _bond_list is not None else []
-
-    if bonds is None:
+    if _bond_list is not None and len(_bond_list) > 0:
+        bonds = [tuple(bond) for bond in _bond_list]
+    else:
         bonds = get_bond_list_from_model_contributions(sec_method)
 
     # get the system times

@@ -1101,7 +1101,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
             universe = None
             logger.warning(
                 'Could not convert archive to MDAnalysis Universe, skipping MD results normalization.',
-                exc_info=str(exc),
+                exc_info=exc,
             )
         return universe
 
@@ -1218,7 +1218,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                             notes='Pearson correlation coefficient of the linear MSD fit',
                         )
                         diffusion_constant.errors = [error_estimate]
-                    diffusion_constant.is_derived = True
+                    diffusion_constant.physical_property_ref = msd
                     sec_diffusion_constants.append(diffusion_constant)
                 sec_msds.append(msd)
 

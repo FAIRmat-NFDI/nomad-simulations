@@ -146,7 +146,7 @@ def _build_minimal_archive(n_atoms=3, with_ff_masses=False, with_ff_charges=Fals
 
 
 def test_archive_to_universe_masses_from_forcefield():
-    """When ForceField.effective_masses is set, masses come from FF (not per-particle)."""
+    """Masses come from ParticleParameters.effective_mass in ParticleParametersContainer."""
 
     archive = _build_minimal_archive(
         n_atoms=3, with_ff_masses=True, with_ff_charges=False
@@ -161,7 +161,7 @@ def test_archive_to_universe_masses_from_forcefield():
 
 
 def test_archive_to_universe_charges_from_forcefield():
-    """When ForceField.partial_charges is set, charges come from FF."""
+    """Charges come from ParticleParameters.partial_charge in ParticleParametersContainer."""
 
     archive = _build_minimal_archive(
         n_atoms=3, with_ff_masses=False, with_ff_charges=True
@@ -206,5 +206,5 @@ def test_archive_to_universe_base_model_method_no_attribute_error():
         archive_to_universe(archive)
     except AttributeError as exc:
         pytest.fail(
-            'archive_to_universe raised AttributeError with base ModelMethod: %s', exc
+            f'archive_to_universe raised AttributeError with base ModelMethod: {exc}'
         )
