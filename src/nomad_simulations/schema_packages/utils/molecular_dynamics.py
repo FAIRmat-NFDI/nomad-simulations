@@ -343,7 +343,7 @@ def create_empty_universe(
 
 def archive_to_universe(
     archive,
-    system_index: int = 0,  # TODO: Shouldn't this be -1 (representative_system)
+    system_index: int = 0,  # TODO: Shouldn't this be -1 (representative_system)?
     method_index: int = -1,
     model_index: int = -1,
 ) -> MDAUniverse | None:
@@ -823,7 +823,6 @@ def calc_molecular_rdf(
     rdf_results: dict[str, Any] = {}
     rdf_results['n_smooth'] = n_smooth
     rdf_results['n_prune'] = n_prune
-    rdf_results['type'] = 'molecular'
     rdf_results['types'] = []
     rdf_results['variables_name'] = []
     rdf_results['bins'] = []
@@ -1225,7 +1224,6 @@ def calc_molecular_msd(
         )
 
     msd_results: dict[str, Any] = {
-        'type': 'molecular',
         'direction': 'xyz',
         'value': [],
         'times': [],

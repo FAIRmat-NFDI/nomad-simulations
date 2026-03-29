@@ -573,17 +573,20 @@ class Lambdas(ArchiveSection):
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
 
-        # Basic λ-grid validation
-        vals = self.values or []
-        if len(vals) == 0:
+        vals = (
+            list(self.values)
+            if self.values is not None and len(self.values) > 0
+            else []
+        )
+        if not vals:
             logger.warning(
                 'No Lambda grid is defined; downstream behavior may be undefined.'
             )
         else:
-            # monotonic non-decreasing check
             if any(vals[i] > vals[i + 1] for i in range(len(vals) - 1)):
                 logger.warning(
-                    'Lambda grid is not monotonic non-decreasing; results may be inconsistent.'
+                    'Lambda grid is not monotonic non-decreasing; '
+                    'results may be inconsistent.'
                 )
 
         # Scheme applicability (only meaningful for nonbonded)
@@ -1141,9 +1144,6 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         if rdf_results:
             for i_pair, pair_type in enumerate(rdf_results.get('types', [])):
                 rdf = RadialDistributionFunction()
-                rdf.type = rdf_results.get(
-                    'type'
-                )  # TODO this no longer exists (atomic, molecular)
                 rdf.n_smooth = rdf_results.get('n_smooth')
                 rdf.n_prune = n_prune
                 rdf.n_variables = 1
@@ -1260,13 +1260,6 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                 else:
                     sec_rgs_out = out.radii_of_gyration[0]
 
-                # TODO Fix this assignment fails with TypeError
-                # TODO atomsgroup_ref is now only in RadiiOfGyration, assess
-                # relevance in both classes
-                # try:
-                #     sec_rgs_out.atomsgroup_ref = [rg.get('atomsgroup_ref')]
-                # except Exception:
-                #     pass
                 sec_rgs_out.label = rg.get('label')
                 sec_rgs_out.value = rg.get('value')[sys_ind]
 
