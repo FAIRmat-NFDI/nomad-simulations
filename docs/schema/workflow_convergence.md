@@ -48,26 +48,13 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `WorkflowConvergenceTarget`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `WorkflowConvergenceTarget` | Base section for defining convergence targets. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WorkflowConvergenceTarget){:target="_blank"} |
-| `EnergyConvergenceTarget` | Convergence target for total energy differences. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.EnergyConvergenceTarget){:target="_blank"} |
-| `ForceConvergenceTarget` | Convergence target for atomic forces. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ForceConvergenceTarget){:target="_blank"} |
-| `PotentialConvergenceTarget` | Convergence target for potential energy differences. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.PotentialConvergenceTarget){:target="_blank"} |
-| `ChargeConvergenceTarget` | Convergence target for electron density/charge differences. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ChargeConvergenceTarget){:target="_blank"} |
-| `WavefunctionConvergenceTarget` | Convergence target for wavefunction coefficient differences. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WavefunctionConvergenceTarget){:target="_blank"} |
-| `WorkflowConvergenceResults` | Results of workflow convergence checks. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WorkflowConvergenceResults){:target="_blank"} |
-| `SimulationWorkflowModel` | Base class for simulation workflow model sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowModel){:target="_blank"} |
-| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
-| `GeometryOptimizationModel` | Workflow model describing a geometry optimization. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.geometry_optimization.GeometryOptimizationModel){:target="_blank"} |
-| `GeometryOptimizationResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.geometry_optimization.GeometryOptimizationResults){:target="_blank"} |
-
-
-## Quantities by section
-
-### `WorkflowConvergenceTarget`
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -76,11 +63,19 @@ classDiagram
 
 ### `EnergyConvergenceTarget`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `EnergyConvergenceTarget` | Convergence target for total energy differences. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.EnergyConvergenceTarget){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `threshold` | m_float_bounded(float) | <details><summary>Convergence threshold.</summary>Convergence threshold. Must be non-negative.<br>When threshold_type is 'relative', must be dimensionless.<br>When threshold_type is 'absolute', 'maximum', or 'rms', must have physical units.<br>Child classes override this to add convergence path annotations.</details> |
 
 ### `ForceConvergenceTarget`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ForceConvergenceTarget` | Convergence target for atomic forces. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ForceConvergenceTarget){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -88,11 +83,19 @@ classDiagram
 
 ### `PotentialConvergenceTarget`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `PotentialConvergenceTarget` | Convergence target for potential energy differences. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.PotentialConvergenceTarget){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `threshold` | m_float_bounded(float) | <details><summary>Convergence threshold.</summary>Convergence threshold. Must be non-negative.<br>When threshold_type is 'relative', must be dimensionless.<br>When threshold_type is 'absolute', 'maximum', or 'rms', must have physical units.<br>Child classes override this to add convergence path annotations.</details> |
 
 ### `ChargeConvergenceTarget`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ChargeConvergenceTarget` | Convergence target for electron density/charge differences. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ChargeConvergenceTarget){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -100,11 +103,19 @@ classDiagram
 
 ### `WavefunctionConvergenceTarget`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `WavefunctionConvergenceTarget` | Convergence target for wavefunction coefficient differences. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WavefunctionConvergenceTarget){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `threshold` | m_float_bounded(float) | <details><summary>Convergence threshold.</summary>Convergence threshold. Must be non-negative.<br>When threshold_type is 'relative', must be dimensionless.<br>When threshold_type is 'absolute', 'maximum', or 'rms', must have physical units.<br>Child classes override this to add convergence path annotations.</details> |
 
 ### `WorkflowConvergenceResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `WorkflowConvergenceResults` | Results of workflow convergence checks. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WorkflowConvergenceResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -113,6 +124,10 @@ classDiagram
 
 ### `SimulationWorkflowModel`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowModel` | Base class for simulation workflow model sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowModel){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `initial_system` | Reference | Reference to the input model_system. |
@@ -120,12 +135,20 @@ classDiagram
 
 ### `SimulationWorkflowResults`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `finished_normally` | m_bool(bool) | Indicates if calculation terminated normally. |
 | `is_converged` | m_bool(bool) | Represents if the convergence targets have been reached (True) or not (False). |
 
 ### `GeometryOptimizationModel`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `GeometryOptimizationModel` | Workflow model describing a geometry optimization. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.geometry_optimization.GeometryOptimizationModel){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -135,6 +158,10 @@ classDiagram
 | `sampling_frequency` | m_int32(int) | The number of optimization steps between saved outputs. |
 
 ### `GeometryOptimizationResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `GeometryOptimizationResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.geometry_optimization.GeometryOptimizationResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

@@ -41,38 +41,45 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `SimulationWorkflow`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `SimulationWorkflow` | Base class for simulation workflows. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflow){:target="_blank"} |
-| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
-| `ThermodynamicsResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.thermodynamics.ThermodynamicsResults){:target="_blank"} |
-| `Elastic` | Definitions for an elastic workflow. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.elastic.Elastic){:target="_blank"} |
-| `ElasticMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.elastic.ElasticMethod){:target="_blank"} |
-| `ElasticResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.elastic.ElasticResults){:target="_blank"} |
-| `StrainDiagrams` | Section containing the information regarding the elastic strains. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.elastic.StrainDiagrams){:target="_blank"} |
-
-
-## Quantities by section
-
-### `SimulationWorkflow`
 
 *This section has no direct quantities.*
 
 ### `SimulationWorkflowMethod`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `ThermodynamicsResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ThermodynamicsResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.thermodynamics.ThermodynamicsResults){:target="_blank"} |
 
 *This section has no direct quantities.*
 
 ### `Elastic`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Elastic` | Definitions for an elastic workflow. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.elastic.Elastic){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `ElasticMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ElasticMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.elastic.ElasticMethod){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -83,6 +90,10 @@ classDiagram
 | `strain_maximum` | m_float64(float64) | Maximum strain applied to crystal. |
 
 ### `ElasticResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ElasticResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.elastic.ElasticResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -116,6 +127,10 @@ classDiagram
 | `eigenvalues_elastic` | m_float64(float64) (shape: [6]) | Eigenvalues of the stiffness matrix |
 
 ### `StrainDiagrams`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `StrainDiagrams` | Section containing the information regarding the elastic strains. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.elastic.StrainDiagrams){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

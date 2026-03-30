@@ -40,30 +40,29 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `ParallelWorkflow`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `ParallelWorkflow` | Base class for workflows where tasks are executed concurrently. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ParallelWorkflow){:target="_blank"} |
-| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
-| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
-| `EquationOfState` | Definitions for equation of state workflow. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.equation_of_state.EquationOfState){:target="_blank"} |
-| `EquationOfStateMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.equation_of_state.EquationOfStateMethod){:target="_blank"} |
-| `EquationOfStateResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.equation_of_state.EquationOfStateResults){:target="_blank"} |
-| `EOSFit` | Section containing results of an equation of state fit. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.equation_of_state.EOSFit){:target="_blank"} |
-
-
-## Quantities by section
-
-### `ParallelWorkflow`
 
 *This section has no direct quantities.*
 
 ### `SimulationWorkflowMethod`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `SimulationWorkflowResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -72,15 +71,27 @@ classDiagram
 
 ### `EquationOfState`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `EquationOfState` | Definitions for equation of state workflow. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.equation_of_state.EquationOfState){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `EquationOfStateMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `EquationOfStateMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.equation_of_state.EquationOfStateMethod){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
 | `program` | Reference | Program used to calculate the energies. |
 
 ### `EquationOfStateResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `EquationOfStateResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.equation_of_state.EquationOfStateResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -89,6 +100,10 @@ classDiagram
 | `energies` | m_float64(float64) (shape: ['n_points']) | Array of energies corresponding to each volume. |
 
 ### `EOSFit`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `EOSFit` | Section containing results of an equation of state fit. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.equation_of_state.EOSFit){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

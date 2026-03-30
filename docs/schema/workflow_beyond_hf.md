@@ -54,36 +54,29 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `SerialWorkflow`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `SerialWorkflow` | Base class for workflows where tasks are executed sequentially. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SerialWorkflow){:target="_blank"} |
-| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
-| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
-| `ElectronicStructureResults` | Contains definitions for results of an electronic structure simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ElectronicStructureResults){:target="_blank"} |
-| `BeyondHFWorkflow` | Base workflow for post-HF methods (e.g., HF → CC, HF → CI). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.beyond_hf.BeyondHFWorkflow){:target="_blank"} |
-| `BeyondHFMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.beyond_hf.BeyondHFMethod){:target="_blank"} |
-| `BeyondHFResults` | Contains references to HF outputs (baseline) and extended post-HF results. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.beyond_hf.BeyondHFResults){:target="_blank"} |
-| `HFCCWorkflow` | Definitions for Coupled-Cluster calculations based on HF (HF → CC). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.HFCCWorkflow){:target="_blank"} |
-| `HFCCMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.HFCCMethod){:target="_blank"} |
-| `HFCCResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.HFCCResults){:target="_blank"} |
-| `HFCIWorkflow` | Definitions for Configuration-Interaction calculations based on HF (HF → CI). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.configuration_interaction.HFCIWorkflow){:target="_blank"} |
-| `HFCIMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.configuration_interaction.HFCIMethod){:target="_blank"} |
-| `HFCIResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.configuration_interaction.HFCIResults){:target="_blank"} |
-
-
-## Quantities by section
-
-### `SerialWorkflow`
 
 *This section has no direct quantities.*
 
 ### `SimulationWorkflowMethod`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `SimulationWorkflowResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -92,43 +85,83 @@ classDiagram
 
 ### `ElectronicStructureResults`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ElectronicStructureResults` | Contains definitions for results of an electronic structure simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ElectronicStructureResults){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `dos` | Reference | Reference to the electronic density of states output. |
 
 ### `BeyondHFWorkflow`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `BeyondHFWorkflow` | Base workflow for post-HF methods (e.g., HF → CC, HF → CI). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.beyond_hf.BeyondHFWorkflow){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `BeyondHFMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `BeyondHFMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.beyond_hf.BeyondHFMethod){:target="_blank"} |
 
 *This section has no direct quantities.*
 
 ### `BeyondHFResults`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `BeyondHFResults` | Contains references to HF outputs (baseline) and extended post-HF results. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.beyond_hf.BeyondHFResults){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `HFCCWorkflow`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `HFCCWorkflow` | Definitions for Coupled-Cluster calculations based on HF (HF → CC). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.HFCCWorkflow){:target="_blank"} |
 
 *This section has no direct quantities.*
 
 ### `HFCCMethod`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `HFCCMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.HFCCMethod){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `HFCCResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `HFCCResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.HFCCResults){:target="_blank"} |
 
 *This section has no direct quantities.*
 
 ### `HFCIWorkflow`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `HFCIWorkflow` | Definitions for Configuration-Interaction calculations based on HF (HF → CI). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.configuration_interaction.HFCIWorkflow){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `HFCIMethod`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `HFCIMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.configuration_interaction.HFCIMethod){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `HFCIResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `HFCIResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.configuration_interaction.HFCIResults){:target="_blank"} |
 
 *This section has no direct quantities.*
 

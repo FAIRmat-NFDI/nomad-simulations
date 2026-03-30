@@ -25,16 +25,13 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `ChemicalFormula`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `ChemicalFormula` | A base section used to store the chemical formulas of a `ModelSystem` in different formats. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.ChemicalFormula){:target="_blank"} |
-
-
-## Quantities by section
-
-### `ChemicalFormula`
 
 | Quantity | Type | Description |
 |---|---|---|

@@ -23,16 +23,13 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `AlternativeRepresentation`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `AlternativeRepresentation` | A representation relative to another, reference representation, typically the original computed system. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.AlternativeRepresentation){:target="_blank"} |
-
-
-## Quantities by section
-
-### `AlternativeRepresentation`
 
 | Quantity | Type | Description |
 |---|---|---|

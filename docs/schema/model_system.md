@@ -43,18 +43,13 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `ModelSystem`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `ModelSystem` | Model system used as an input for simulating the material. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.ModelSystem){:target="_blank"} |
-| `Representation` | A comprehensive section containing all representation information of a system, including lattice vectors, periodic boundary conditions, positions, and symmetry-related data. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.Representation){:target="_blank"} |
-| `AlternativeRepresentation` | A representation relative to another, reference representation, typically the original computed system. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.AlternativeRepresentation){:target="_blank"} |
-
-
-## Quantities by section
-
-### `ModelSystem`
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -76,6 +71,10 @@ classDiagram
 
 ### `Representation`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Representation` | A comprehensive section containing all representation information of a system, including lattice vectors, periodic boundary conditions, positions, and symmetry-related data. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.Representation){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `name` | m_str(str) | Name of the specific representation. This can be used for easy identification. |
@@ -90,6 +89,10 @@ classDiagram
 | `fractional_coordinates` | m_float64(float64) (shape: ['*', 3]) | Fractional coordinates of all atoms in the system with respect to the lattice vectors. Values typically range from 0 to 1 within the unit cell, though atoms may lie outside this range in non-periodic directions or due to wrapping conventions. |
 
 ### `AlternativeRepresentation`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `AlternativeRepresentation` | A representation relative to another, reference representation, typically the original computed system. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.AlternativeRepresentation){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

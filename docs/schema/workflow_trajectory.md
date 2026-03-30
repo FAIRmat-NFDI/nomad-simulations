@@ -42,25 +42,21 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `SerialWorkflowResults`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `SerialWorkflowResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SerialWorkflowResults){:target="_blank"} |
-| `ConfigurationalProperty` | Abstract base section for observables calculated and stored at each individual frame of a trajectory. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.trajectory.ConfigurationalProperty){:target="_blank"} |
-| `Temperatures` | Temperature as a function of time. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.trajectory.Temperatures){:target="_blank"} |
-| `Pressures` | Pressure as a function of time. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.trajectory.Pressures){:target="_blank"} |
-| `RadiiOfGyration` | Section containing information about the calculation of radius of gyration (Rg). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.trajectory.RadiiOfGyration){:target="_blank"} |
-| `FreeEnergyCalculations` | Section containing information regarding the instantaneous (i.e., for a single configuration) values of free energies calculated via thermodynamic perturbation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.trajectory.FreeEnergyCalculations){:target="_blank"} |
-
-
-## Quantities by section
-
-### `SerialWorkflowResults`
 
 *This section has no direct quantities.*
 
 ### `ConfigurationalProperty`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ConfigurationalProperty` | Abstract base section for observables calculated and stored at each individual frame of a trajectory. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.trajectory.ConfigurationalProperty){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -70,11 +66,19 @@ classDiagram
 
 ### `Temperatures`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Temperatures` | Temperature as a function of time. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.trajectory.Temperatures){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `value` | m_float64(float64) (shape: ['*']) | Specifies the temperature over a series of frames/steps. |
 
 ### `Pressures`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Pressures` | Pressure as a function of time. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.trajectory.Pressures){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -82,11 +86,19 @@ classDiagram
 
 ### `RadiiOfGyration`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `RadiiOfGyration` | Section containing information about the calculation of radius of gyration (Rg). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.trajectory.RadiiOfGyration){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `value` | m_float64(float64) (shape: ['n_frames']) | Values of the property. |
 
 ### `FreeEnergyCalculations`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `FreeEnergyCalculations` | Section containing information regarding the instantaneous (i.e., for a single configuration) values of free energies calculated via thermodynamic perturbation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.trajectory.FreeEnergyCalculations){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

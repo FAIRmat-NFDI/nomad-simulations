@@ -39,18 +39,13 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `Simulation`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `Simulation` | A `Simulation` is a computational calculation that produces output data from a given input model system and input (model) methodological parameters. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.general.Simulation){:target="_blank"} |
-| `BaseSimulation` | A computational simulation that produces output data from a given input model system and input methodological parameters. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.general.BaseSimulation){:target="_blank"} |
-| `Program` | A base section used to specify a well-defined program used for computation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.general.Program){:target="_blank"} |
-
-
-## Quantities by section
-
-### `Simulation`
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -58,11 +53,19 @@ classDiagram
 
 ### `BaseSimulation`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `BaseSimulation` | A computational simulation that produces output data from a given input model system and input methodological parameters. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.general.BaseSimulation){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `finished_without_errors` | m_bool(bool) | Indicates whether this code run terminated without error (true), or if it exited with an error code unequal to zero (false). |
 
 ### `Program`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Program` | A base section used to specify a well-defined program used for computation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.general.Program){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

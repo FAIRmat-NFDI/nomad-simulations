@@ -11,7 +11,7 @@ Reference: [Model System](overview.md), [Normalization](../normalize.md)
 Do: use `sub_systems` for physical decomposition (`ModelSystem -> ModelSystem`).
 Do: use `representations` for alternative geometric views (`ModelSystem -> AlternativeRepresentation`).
 Do not: encode hierarchy inside `representations` or alternatives inside `sub_systems`.
-Reference: [Model System](model_system.md), [Representation Architecture](representation.md)
+Reference: [Model System](overview.md), [Representation Architecture](representation.md)
 
 3. Keep parser-native geometry on the root system.
 Do: store original parser geometry directly on the root `ModelSystem`.

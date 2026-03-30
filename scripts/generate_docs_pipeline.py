@@ -515,7 +515,7 @@ def clean_old_docs(repo_root: Path) -> bool:
 
                 content = md_file.read_text(encoding='utf-8')
                 looks_generated = (
-                    ('## Relationship map' in content and '## Key sections' in content)
+                    ('## Relationship map' in content and '## Quantities by Key Sections' in content)
                     if not is_diagram
                     else (
                         content.lstrip().startswith('```mermaid')

@@ -51,47 +51,53 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `SimulationTask`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `SimulationTask` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationTask){:target="_blank"} |
-| `SimulationTaskReference` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationTaskReference){:target="_blank"} |
-| `SimulationWorkflow` | Base class for simulation workflows. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflow){:target="_blank"} |
-| `SerialWorkflow` | Base class for workflows where tasks are executed sequentially. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SerialWorkflow){:target="_blank"} |
-| `ParallelWorkflow` | Base class for workflows where tasks are executed concurrently. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ParallelWorkflow){:target="_blank"} |
-| `SimulationWorkflowModel` | Base class for simulation workflow model sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowModel){:target="_blank"} |
-| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
-| `WorkflowTime` | Contains time-related quantities. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WorkflowTime){:target="_blank"} |
-| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
-| `SerialWorkflowResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SerialWorkflowResults){:target="_blank"} |
-| `WorkflowConvergenceTarget` | Base section for defining convergence targets. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WorkflowConvergenceTarget){:target="_blank"} |
-| `WorkflowConvergenceResults` | Results of workflow convergence checks. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WorkflowConvergenceResults){:target="_blank"} |
-
-
-## Quantities by section
-
-### `SimulationTask`
 
 *This section has no direct quantities.*
 
 ### `SimulationTaskReference`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationTaskReference` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationTaskReference){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `SimulationWorkflow`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflow` | Base class for simulation workflows. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflow){:target="_blank"} |
 
 *This section has no direct quantities.*
 
 ### `SerialWorkflow`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SerialWorkflow` | Base class for workflows where tasks are executed sequentially. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SerialWorkflow){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `ParallelWorkflow`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ParallelWorkflow` | Base class for workflows where tasks are executed concurrently. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ParallelWorkflow){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `SimulationWorkflowModel`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowModel` | Base class for simulation workflow model sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowModel){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -100,9 +106,17 @@ classDiagram
 
 ### `SimulationWorkflowMethod`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `WorkflowTime`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `WorkflowTime` | Contains time-related quantities. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WorkflowTime){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -114,6 +128,10 @@ classDiagram
 
 ### `SimulationWorkflowResults`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `finished_normally` | m_bool(bool) | Indicates if calculation terminated normally. |
@@ -121,9 +139,17 @@ classDiagram
 
 ### `SerialWorkflowResults`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SerialWorkflowResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SerialWorkflowResults){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `WorkflowConvergenceTarget`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `WorkflowConvergenceTarget` | Base section for defining convergence targets. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WorkflowConvergenceTarget){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -131,6 +157,10 @@ classDiagram
 | `threshold_type` | Enum | <details><summary>Specifies the mathematical method used to evaluate convergence between successive iterations.</summary>Specifies the mathematical method used to evaluate convergence between successive iterations. Supported methods include:<br>\| Name \| Description \|<br>\| --------- \| -------------------------------- \|<br>\| `'absolute'` \| Difference in absolute terms between two subsequent iterations (e.g., \\|E(n) - E(n-1)\\|). Most common for energy convergence. \|<br>\| `'relative'` \| Difference as a fraction of the total property value (e.g., \\|E(n) - E(n-1)\\|/\\|E(n)\\|). Useful when the magnitude of the property varies widely across systems. \|<br>\| `'maximum'` \| Maximum absolute difference across the whole quantity data (e.g., max(\\|\\|F_i(n) - F_i(n-1)\\|\\|) for forces). Suitable for vector quantities like forces or stress tensor elements. \|<br>\| `'rms'` \| Root mean square of the dataset as a whole (e.g., sqrt(sum(\\|\\|F_i(n) - F_i(n-1)\\|\\|²)/N)). Provides a statistical measure of overall convergence for multi-component properties. \|<br>Note: 'relative' requires dimensionless threshold; other types require physical units matching the property.<br>The mode used affects both convergence behavior and computational efficiency. Different codes may default to different comparison modes for the same physical property.</details> |
 
 ### `WorkflowConvergenceResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `WorkflowConvergenceResults` | Results of workflow convergence checks. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WorkflowConvergenceResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

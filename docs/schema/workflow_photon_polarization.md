@@ -38,29 +38,29 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `ParallelWorkflow`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `ParallelWorkflow` | Base class for workflows where tasks are executed concurrently. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ParallelWorkflow){:target="_blank"} |
-| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
-| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
-| `PhotonPolarizationWorkflow` | Definitions for photon polarization workflow. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.photon_polarization.PhotonPolarizationWorkflow){:target="_blank"} |
-| `PhotonPolarizationMethod` | Defines the full macroscopic dielectric tensor methodology: BSE method reference. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.photon_polarization.PhotonPolarizationMethod){:target="_blank"} |
-| `PhotonPolarizationResults` | Groups all polarization outputs: spectrum. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.photon_polarization.PhotonPolarizationResults){:target="_blank"} |
-
-
-## Quantities by section
-
-### `ParallelWorkflow`
 
 *This section has no direct quantities.*
 
 ### `SimulationWorkflowMethod`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `SimulationWorkflowResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -69,15 +69,27 @@ classDiagram
 
 ### `PhotonPolarizationWorkflow`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `PhotonPolarizationWorkflow` | Definitions for photon polarization workflow. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.photon_polarization.PhotonPolarizationWorkflow){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `PhotonPolarizationMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `PhotonPolarizationMethod` | Defines the full macroscopic dielectric tensor methodology: BSE method reference. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.photon_polarization.PhotonPolarizationMethod){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
 | `bse_method_ref` | Reference | BSE methodology reference. |
 
 ### `PhotonPolarizationResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `PhotonPolarizationResults` | Groups all polarization outputs: spectrum. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.photon_polarization.PhotonPolarizationResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

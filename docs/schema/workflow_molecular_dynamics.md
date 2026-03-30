@@ -70,52 +70,47 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `SerialWorkflow`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `SerialWorkflow` | Base class for workflows where tasks are executed sequentially. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SerialWorkflow){:target="_blank"} |
-| `SerialWorkflowResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SerialWorkflowResults){:target="_blank"} |
-| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
-| `NumericalSettings` | A base section used to define how a chosen `ModelMethod` is realized numerically in a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.NumericalSettings){:target="_blank"} |
-| `PhysicalProperty` | A base section for computational output properties, containing all relevant (meta)data. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.physical_property.PhysicalProperty){:target="_blank"} |
-| `MDSettings` | Abstract class for classifying numerical settings relevant for molecular dynamics runs. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.MDSettings){:target="_blank"} |
-| `ThermostatParameters` | Section containing the parameters pertaining to the thermostat for a molecular dynamics run. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.ThermostatParameters){:target="_blank"} |
-| `BarostatParameters` | Section containing the parameters pertaining to the barostat for a molecular dynamics run. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.BarostatParameters){:target="_blank"} |
-| `ShearParameters` | Section containing the parameters pertaining to the shear flow for a molecular dynamics run. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.ShearParameters){:target="_blank"} |
-| `FreeEnergyCalculationParameters` | Parameters for a free energy workflow run. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.FreeEnergyCalculationParameters){:target="_blank"} |
-| `Lambdas` | Parameters for one lambda dimension / interaction type. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.Lambdas){:target="_blank"} |
-| `EnsembleProperty` | Abstract base section for static observables calculated from a trajectory (i.e., from an ensemble average). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.EnsembleProperty){:target="_blank"} |
-| `CorrelationFunction` | Abstract base section for time correlation functions calculated from a trajectory. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.CorrelationFunction){:target="_blank"} |
-| `RadialDistributionFunction` | Section containing information about the calculation of radial distribution functions (rdfs). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.RadialDistributionFunction){:target="_blank"} |
-| `DiffusionConstant` | Section containing information regarding the diffusion constants. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.DiffusionConstant){:target="_blank"} |
-| `MeanSquaredDisplacement` | Section containing information about a calculation of any mean squared displacements (msds). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.MeanSquaredDisplacement){:target="_blank"} |
-| `MolecularDynamics` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.MolecularDynamics){:target="_blank"} |
-| `MolecularDynamicsMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.MolecularDynamicsMethod){:target="_blank"} |
-| `MolecularDynamicsResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.MolecularDynamicsResults){:target="_blank"} |
-
-
-## Quantities by section
-
-### `SerialWorkflow`
 
 *This section has no direct quantities.*
 
 ### `SerialWorkflowResults`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SerialWorkflowResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SerialWorkflowResults){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `SimulationWorkflowMethod`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `NumericalSettings`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `NumericalSettings` | A base section used to define how a chosen `ModelMethod` is realized numerically in a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.NumericalSettings){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
 | `name` | m_str(str) | Name of the numerical settings section. This is typically used for easy identification of the `NumericalSettings` section within a `ModelMethod`. Possible values: "KMesh", "FrequencyMesh", "TimeMesh", "SelfConsistency", "BasisSet". |
 
 ### `PhysicalProperty`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `PhysicalProperty` | A base section for computational output properties, containing all relevant (meta)data. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.physical_property.PhysicalProperty){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -131,12 +126,20 @@ classDiagram
 
 ### `MDSettings`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `MDSettings` | Abstract class for classifying numerical settings relevant for molecular dynamics runs. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.MDSettings){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `frame_start` | m_int32(int) | Trajectory frame number where the application of these settings start. |
 | `frame_end` | m_int32(int) | Trajectory frame number where the application of these settings end. |
 
 ### `ThermostatParameters`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ThermostatParameters` | Section containing the parameters pertaining to the thermostat for a molecular dynamics run. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.ThermostatParameters){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -154,6 +157,10 @@ classDiagram
 | `step_end` | m_int32(int) | Trajectory step number where this thermostating ends. |
 
 ### `BarostatParameters`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `BarostatParameters` | Section containing the parameters pertaining to the barostat for a molecular dynamics run. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.BarostatParameters){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -173,6 +180,10 @@ classDiagram
 
 ### `ShearParameters`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ShearParameters` | Section containing the parameters pertaining to the shear flow for a molecular dynamics run. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.ShearParameters){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `shear_type` | Enum | <details><summary>The name of the method used to implement the effect of shear flow within the simulation.</summary>The name of the method used to implement the effect of shear flow within the simulation.<br>Allowed values are:<br>\| Shear Method          \| Description                               \|<br>\| ---------------------- \| ----------------------------------------- \|<br>\| `""`                   \| No thermostat               \|<br>\| `"lees_edwards"`          \| A.W. Lees and S.F. Edwards,<br>[J. Phys. C **5** (1972) 1921](https://doi.org/10.1088/0022-3719/5/15/006)\|<br>\| `"trozzi_ciccotti"`          \| A.W. Lees and S.F. Edwards,<br>[Phys. Rev. A **29** (1984) 916](https://doi.org/10.1103/PhysRevA.29.916)\|<br>\| `"ashurst_hoover"`          \| W. T. Ashurst and W. G. Hoover,<br>[Phys. Rev. A **11** (1975) 658](https://doi.org/10.1103/PhysRevA.11.658)\|</details> |
@@ -182,6 +193,10 @@ classDiagram
 
 ### `FreeEnergyCalculationParameters`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `FreeEnergyCalculationParameters` | Parameters for a free energy workflow run. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.FreeEnergyCalculationParameters){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `calc_type` | Enum | <details><summary>Specifies the type of workflow.</summary>Specifies the type of workflow. Allowed values are:<br>\| kind          \| Description                               \|<br>\| ---------------------- \| ----------------------------------------- \|<br>\| `"alchemical"`           \| A non-physical transformation between 2 well-defined systems,<br>typically achieved by smoothly interpolating between Hamiltonians or force fields.  \|<br>\| `"umbrella_sampling"`    \| A sampling of the path between 2 well-defined (sub)states of a system,<br>typically achieved by applying a biasing force to the force field along a<br>specified reaction coordinate.</details> |
@@ -189,6 +204,10 @@ classDiagram
 | `current_lambdas` | m_float64(float64) (shape: ['*']) | Scalar λ per Lambdas entry order. |
 
 ### `Lambdas`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Lambdas` | Parameters for one lambda dimension / interaction type. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.Lambdas){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -203,6 +222,10 @@ classDiagram
 
 ### `EnsembleProperty`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `EnsembleProperty` | Abstract base section for static observables calculated from a trajectory (i.e., from an ensemble average). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.EnsembleProperty){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `n_smooth` | m_int32(int) | Number of bins over which the running average was computed for the observable `values'. |
@@ -215,6 +238,10 @@ classDiagram
 
 ### `CorrelationFunction`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `CorrelationFunction` | Abstract base section for time correlation functions calculated from a trajectory. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.CorrelationFunction){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `direction` | Enum | Describes the direction in which the correlation function was calculated. |
@@ -223,6 +250,10 @@ classDiagram
 
 ### `RadialDistributionFunction`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `RadialDistributionFunction` | Section containing information about the calculation of radial distribution functions (rdfs). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.RadialDistributionFunction){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `bins` | m_float64(float64) (shape: ['n_bins']) | Distances along which the rdf was calculated. |
@@ -230,11 +261,19 @@ classDiagram
 
 ### `DiffusionConstant`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `DiffusionConstant` | Section containing information regarding the diffusion constants. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.DiffusionConstant){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `value` | m_float64(float64) | Values of the diffusion constants. |
 
 ### `MeanSquaredDisplacement`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `MeanSquaredDisplacement` | Section containing information about a calculation of any mean squared displacements (msds). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.MeanSquaredDisplacement){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -242,9 +281,17 @@ classDiagram
 
 ### `MolecularDynamics`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `MolecularDynamics` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.MolecularDynamics){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `MolecularDynamicsMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `MolecularDynamicsMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.MolecularDynamicsMethod){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -258,6 +305,10 @@ classDiagram
 | `thermodynamics_save_frequency` | m_int32(int) | The number of timesteps between saving the thermodynamic quantities. |
 
 ### `MolecularDynamicsResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `MolecularDynamicsResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.molecular_dynamics.MolecularDynamicsResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

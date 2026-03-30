@@ -11,6 +11,13 @@ outside published docs.
 - `tests/workflow/test_convergence_targets.py`
 - `nomad-parser-plugins-simulation/src/nomad_simulation_parsers/parsers/exciting/parser.py`
 
+## Rationale for Public/Private Split
+
+The public guide in `docs/explanation/workflow/convergence.md` focuses on
+archive traversal and interpretation. Class inventories, quantity tables, and
+schema hierarchy are already generated in `docs/schema/workflow*.md`, so they
+should not be duplicated in the explanation layer.
+
 ## Known Limitations and TODOs
 
 1. `single_point_convergence_targets` should be in base class:
@@ -30,10 +37,3 @@ outside published docs.
 4. Fallback path complexity:
    `ForceConvergenceTarget` uses multiple fallback paths; failure debugging is
    currently non-trivial when expected data is absent.
-
-## Rationale for Public/Private Split
-
-The public guide in `docs/explanation/workflow/convergence.md` focuses on
-archive traversal and interpretation. Class inventories, quantity tables, and
-schema hierarchy are already generated in `docs/schema/workflow*.md`, so they
-should not be duplicated in the explanation layer.

@@ -40,29 +40,29 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `SimulationWorkflow`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `SimulationWorkflow` | Base class for simulation workflows. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflow){:target="_blank"} |
-| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
-| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
-| `Phonon` | Definitions for a phonon workflow. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.phonon.Phonon){:target="_blank"} |
-| `PhononMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.phonon.PhononMethod){:target="_blank"} |
-| `PhononResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.phonon.PhononResults){:target="_blank"} |
-
-
-## Quantities by section
-
-### `SimulationWorkflow`
 
 *This section has no direct quantities.*
 
 ### `SimulationWorkflowMethod`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `SimulationWorkflowResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SimulationWorkflowResults` | Base class for simulation workflow results sub-section definition. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -71,9 +71,17 @@ classDiagram
 
 ### `Phonon`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Phonon` | Definitions for a phonon workflow. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.phonon.Phonon){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `PhononMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `PhononMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.phonon.PhononMethod){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -85,6 +93,10 @@ classDiagram
 | `with_grueneisen_parameters` | m_bool(bool) | Identifies if Grueneisen parameters are calculated. |
 
 ### `PhononResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `PhononResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.phonon.PhononResults){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

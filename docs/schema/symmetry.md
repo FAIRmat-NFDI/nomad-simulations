@@ -34,25 +34,23 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `LocalSymmetry`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `LocalSymmetry` | Base class for per-particle local symmetry information. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.LocalSymmetry){:target="_blank"} |
-| `LocalCrystalSymmetry` | Crystallographic local symmetry for particles in a crystal structure. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.LocalCrystalSymmetry){:target="_blank"} |
-| `GlobalSymmetry` | A base section specifying the global symmetry of the corresponding `ModelSystem` at large, which can be used for categorization and lookup. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.GlobalSymmetry){:target="_blank"} |
-| `GlobalCrystalSymmetry` | A symmetry section specialized for identifying bulk crystal space groups. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.GlobalCrystalSymmetry){:target="_blank"} |
-
-
-## Quantities by section
-
-### `LocalSymmetry`
 
 | Quantity | Type | Description |
 |---|---|---|
 | `equivalent_atoms` | m_int32(int32) (shape: ['*']) | <details><summary>Equivalence grouping of atoms by symmetry operations.</summary>Equivalence grouping of atoms by symmetry operations.<br>Atoms with the same index value are symmetrically equivalent.<br>Examples:<br>- [0, 1, 2, 3]: all four atoms are non-equivalent<br>- [0, 0, 0, 3]: first three atoms are equivalent, fourth is unique</details> |
 
 ### `LocalCrystalSymmetry`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `LocalCrystalSymmetry` | Crystallographic local symmetry for particles in a crystal structure. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.LocalCrystalSymmetry){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -62,9 +60,17 @@ classDiagram
 
 ### `GlobalSymmetry`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `GlobalSymmetry` | A base section specifying the global symmetry of the corresponding `ModelSystem` at large, which can be used for categorization and lookup. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.GlobalSymmetry){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `GlobalCrystalSymmetry`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `GlobalCrystalSymmetry` | A symmetry section specialized for identifying bulk crystal space groups. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.GlobalCrystalSymmetry){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
