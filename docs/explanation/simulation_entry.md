@@ -35,7 +35,7 @@ The `Simulation` section inherits from a _base section_ `BaseSimulation`. In NOM
 
     E.g., there is a sub-section under `Simulation` named `'model_method'` whose section defintion can be found in the `ModelMethod` section. We will represent this sub-section containment in more complex UML diagrams in the future using the containment arrow (see below for [an example using `Program`](#program)).
 
-`Simulation` inherits from `BaseSimulation` and `Schema` and is used as the simulation entry section in the archive. All of the base sections discussed here are subject to the [public normalize function](normalize.md) in NOMAD. The private function `_set_system_branch_depth()` is related with the [ModelSystem base section](model_system/model_system.md).
+`Simulation` inherits from `BaseSimulation` and `Schema` and is used as the simulation entry section in the archive. All of the base sections discussed here are subject to the [public normalize function](normalize.md) in NOMAD. The private function `_set_system_branch_depth()` is related with the [ModelSystem base section](model_system/overview.md).
 
 ## Main sub-sections in `Simulation` {#sub-sections-in-simulation}
 

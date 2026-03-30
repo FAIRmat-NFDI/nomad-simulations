@@ -175,5 +175,5 @@ For full normalization execution-order rules, see [Normalization](../explanation
 - [Simulation Entry](../explanation/simulation_entry.md)
 - [Model Method Overview](../explanation/model_method/overview.md)
 - [ModelMethod vs NumericalSettings](../explanation/model_method/model_method_vs_numerical_settings.md)
-- [Model System](../explanation/model_system/model_system.md)
+- [Model System](../explanation/model_system/overview.md)
 - [Model System Usage Guidelines](../explanation/model_system/usage_guidelines.md)

@@ -7,7 +7,7 @@ It complements the generated `Schema Navigation` reference.
 
 Guidance for how `Simulation`, `BaseSimulation`, and `Program` are used in parsers and normalization.
 
-## [Model System](model_system/model_system.md)
+## [Model System](model_system/overview.md)
 
 Conceptual guidance for modeling system structure and ownership.
 

@@ -200,7 +200,7 @@ nav:
                     # Parent with nested children
                     nav_items.append(f'      - {nav_group_title}:')
                     nav_items.append(
-                        f'          - {parent_title}: schema/{parent_key}.md'
+                        f'          - Overview: schema/{parent_key}.md'
                     )
 
                     # Add children under parent
