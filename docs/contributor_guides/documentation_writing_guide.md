@@ -35,7 +35,7 @@ When an implementation introduces a new documentation set:
    if that internal folder is adopted in the repository).
 2. Keep explanation pages focused on rationale, traversal, and usage patterns.
    Remove duplicated structure/quantity/class inventory content once auto-doc
-   pages exist.
+   pages exist (auto-generated content lives in `docs/schema/*`, not `docs/explanation/*`).
 3. For auto-doc navigation decisions, see
    [Automation Guide](documentation_automation_guide.md#guidelines-for-adding-auto-doc-navigation).
 
