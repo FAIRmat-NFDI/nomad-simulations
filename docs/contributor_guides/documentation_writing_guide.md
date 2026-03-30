@@ -13,10 +13,8 @@ Guide hierarchy:
 - `Schema Navigation` (generated): structure, quantities, relationships.
 - `Schema Explanation` (hand-written): rationale, invariants, usage guidance.
 - Do not duplicate generated reference content in explanation pages.
-- Add canonical links to relevant `schema/*.md` pages so generated schema docs
-  can auto-link back to explanations.
-- Keep manually written workflow guides under `docs/explanation/workflow/`
-  (not under `docs/schema/`).
+- Add canonical links to relevant `schema/*.md` pages for backlink discovery
+  (see [Automation Guide](documentation_automation_guide.md#auto-discovered-backlinks-to-explanation-pages)).
 
 ## 2) Keep Pages Focused
 
@@ -31,30 +29,15 @@ Guide hierarchy:
 
 When an implementation introduces a new documentation set:
 
-1. Place docs under `Schema Explanation` by default.
-2. Do not manually edit navigation as a first step.
-3. If generated/auto-doc scope grows, consider adding an auto-doc navigation
-   section (see guidelines below).
-4. Remove duplicated structure/quantity/class inventory content from
-   explanation pages once auto-doc pages exist; keep explanation pages focused
-   on rationale, traversal, and usage patterns.
-5. Decide whether content belongs in published docs or internal notes:
-   use `docs/explanation/*` for user/contributor-facing guidance, and move
+1. Decide whether content belongs in published docs or internal notes:
+   use `docs/explanation/*` (Schema Explanation section) for user/contributor-facing guidance, and move
    implementation/TODO/history-heavy notes to `.dev_notes/` (or `.dev_docs/`
    if that internal folder is adopted in the repository).
-
-Guidelines for adding an auto-doc navigation section:
-
-- Add a dedicated auto-doc section when the scope is medium/large (roughly
-  3+ generated pages or a full schema subdomain with inheritance/relations).
-- Add it when the content is schema-structural and expected to evolve through
-  introspection/generation (not hand-maintained prose).
-- Keep top-level section ordering consistent with schema structure.
-- Keep child pages root-first, then deterministic ordering (currently
-  alphabetical by title unless a documented override applies).
-- Implement navigation through generation scripts/source-of-truth
-  (`scripts/verticals.py` and docs pipeline), not by hand-editing generated
-  navigation blocks.
+2. Keep explanation pages focused on rationale, traversal, and usage patterns.
+   Remove duplicated structure/quantity/class inventory content once auto-doc
+   pages exist.
+3. For auto-doc navigation decisions, see
+   [Automation Guide](documentation_automation_guide.md#guidelines-for-adding-auto-doc-navigation).
 
 ## 4) Use a Simple Page Pattern
 
@@ -82,7 +65,7 @@ overview/landing pages):
 
 ## 7) Before Opening a PR
 
-- Run the docs generation pipeline if schema structure changed.
+- For schema changes, see regeneration requirements in
+  [Automation Guide](documentation_automation_guide.md#4-ownership-and-update-rules).
 - Update only affected explanation pages.
-- Check `mkdocs.yml` navigation paths/titles.
-- Verify links and docs build.
+- Verify links and docs build (`mkdocs build`).

@@ -7,10 +7,9 @@ The docs automation has two responsibilities:
 
 These are script-driven outputs (not AI-generated text).
 
-Important boundary:
-- `docs/schema/*` is reserved for generated schema reference pages.
-- manually authored workflow rationale/traversal guides belong in
-  `docs/explanation/workflow/*`.
+Important: `docs/schema/*` is reserved for generated schema reference pages.
+For content organization decisions, see
+[Documentation Writing Guide](documentation_writing_guide.md).
 
 ## 1) Generated Schema Navigation
 
@@ -39,9 +38,7 @@ Primary script inputs:
 - `scripts/meta_introspect.py` (schema introspection).
 
 For implementation details of pipeline steps, filtering, and vertical design
-rules, see:
-
-- [`scripts/README.md`](../../scripts/README.md)
+rules, see `scripts/README.md` in the repository.
 
 ### Deterministic Navigation Ordering
 
@@ -75,6 +72,24 @@ links to relevant `schema/*.md` pages from explanation pages.
 This is especially important for workflow explanation pages because the
 workflow vertical family is fully generated in `docs/schema/`.
 
+### Guidelines for Adding Auto-doc Navigation
+
+Add a dedicated auto-doc section when:
+
+- The scope is medium/large (roughly 3+ generated pages or a full schema
+  subdomain with inheritance/relations).
+- The content is schema-structural and expected to evolve through
+  introspection/generation (not hand-maintained prose).
+
+Implementation guidelines:
+
+- Do not manually edit navigation in `mkdocs.yml`.
+- Navigation is generated automatically through `scripts/verticals.py` and the
+  docs pipeline.
+- Top-level section ordering is consistent with schema structure.
+- Child pages follow root-first ordering, then deterministic sorting
+  (alphabetical by title unless overridden via `nav_order` in vertical spec).
+
 ## 2) Generated Explanation Fragments
 
 Run:
@@ -93,9 +108,8 @@ reduce manual duplication.
 
 ## 3) Snippet Protocol (Executable Docs)
 
-Canonical snippet authoring rules live in
-[Documentation Writing Guide](documentation_writing_guide.md).
-Marker and folder conventions are documented in `docs/snippets/README.md`.
+Canonical snippet authoring conventions are documented in
+[Documentation Writing Guide](documentation_writing_guide.md#5-keep-examples-executable).
 
 Run snippet validation and execution via:
 
@@ -108,11 +122,21 @@ for runnable examples discovered via `# docs-snippet: runnable`.
 
 ## 4) Ownership and Update Rules
 
-- If schema structure changes, regenerate schema docs.
-- If explanation inventory text changes, regenerate explanation fragments.
-- If examples change, update snippets and snippet tests in the same PR.
+Regenerate documentation when:
+
+- **Schema structure changes** → run `generate_docs_pipeline.py`
+  - Affects `docs/schema/*` pages and navigation
+  - Required before opening PR with schema changes
+- **Explanation inventory changes** → run `generate_explanation_fragments.py`
+  - Affects `docs/snippets/generated/*.md`
+- **Code examples change** → update snippet files and tests together
+  - Affects `docs/snippets/*` and `tests/test_doc_snippets.py`
+
+Commit policy:
+
 - Keep generated outputs deterministic and committed with the corresponding
   source-script changes.
+- Generated files should only change when their source schema/script changes.
 
 ## 5) CI Docs Integrity Gate
 

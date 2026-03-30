@@ -5,7 +5,7 @@
 1. Exactly one representative system per simulation context.
 Do: set `is_representative=True` only on the primary system.
 Do not: mark derived/contextual systems representative by default.
-Reference: [Model System](model_system.md), [Normalization](../normalize.md)
+Reference: [Model System](overview.md), [Normalization](../normalize.md)
 
 2. Keep vertical and lateral structure separate.
 Do: use `sub_systems` for physical decomposition (`ModelSystem -> ModelSystem`).
@@ -23,7 +23,7 @@ Reference: [Representation Architecture](representation.md), [Normalization](../
 Do: define structural descriptors once in `ModelSystem`.
 Do: reference those sections from methods/outputs where possible.
 Do not: duplicate equivalent structural data across branches.
-Reference: [Model System](model_system.md)
+Reference: [Model System](overview.md)
 
 5. Use normalization for completion and validation.
 Do: derive missing descriptors and run consistency checks.
@@ -33,7 +33,7 @@ Reference: [Normalization](../normalize.md)
 6. Keep documentation invariants synchronized.
 Do: update affected explanation pages in the same PR when usage rules change.
 Do: keep this page as policy-only and move long examples elsewhere.
-Reference: [Model System](model_system.md), [Representation Architecture](representation.md), [Documentation Writing Guide](../../contributor_guides/documentation_writing_guide.md)
+Reference: [Model System](overview.md), [Representation Architecture](representation.md), [Documentation Writing Guide](../../contributor_guides/documentation_writing_guide.md)
 
 !!! info "Contributor Note"
     This page defines required usage rules for `ModelSystem` and should stay

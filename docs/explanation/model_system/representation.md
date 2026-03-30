@@ -84,7 +84,7 @@ This pattern is used throughout the NOMAD simulations schema, particularly in nu
 
 ## Representation Does Not Interfere with Navigation
 
-The `Representation` class focuses solely on geometric details and does not affect how you navigate through system hierarchies. Navigation through the subsystem hierarchy (via `ModelSystem.sub_systems`) is handled separately and is documented in the [ModelSystem Overview](model_system.md).
+The `Representation` class focuses solely on geometric details and does not affect how you navigate through system hierarchies. Navigation through the subsystem hierarchy (via `ModelSystem.sub_systems`) is handled separately and is documented in the [ModelSystem Overview](overview.md).
 
 What `Representation` does provide is the ability to access alternative geometric views at any point in the hierarchy. Each `ModelSystem`, at any level, can have its own `representations` subsection containing different geometric perspectives of that specific system:
 
@@ -96,6 +96,6 @@ This means you can explore different geometric descriptions (primitive cells, co
 
 ## See Also
 
-- [ModelSystem Overview](model_system.md): General introduction to the ModelSystem class
+- [ModelSystem Overview](overview.md): General introduction to the ModelSystem class
 - [Electronic States](electronic_states.md): Similar hierarchical design pattern for electronic structure
 - [Normalization](../normalize.md): How normalization populates alternative representations
