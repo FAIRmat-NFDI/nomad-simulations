@@ -213,12 +213,13 @@ def get_bond_list_from_model_contributions(
         if getattr(contribution, 'type', None) != 'bond':
             continue
         pi = getattr(contribution, 'particle_indices', None)
-        if (
-            pi is None
-            or not isinstance(pi, np.ndarray)
-            or pi.ndim != 2
-            or pi.shape[1] != 2
-        ):
+        if pi is None:
+            continue
+        try:
+            pi = np.asarray(pi)
+        except Exception:
+            continue
+        if pi.ndim != 2 or pi.shape[1] != 2:
             continue
         bond_list.extend([tuple(indices) for indices in pi])
     return bond_list
@@ -557,6 +558,19 @@ def archive_to_universe(
                 mol_res_counter += 1
             molecule_n_res.append(mol_res_counter)
             n_molecules += 1
+
+    # When no sub_systems hierarchy is present, treat all atoms as one residue/segment.
+    if not residue_min_atom_index:
+        residue_min_atom_index = [0]
+        residue_n_atoms = [n_atoms]
+        residue_segindex = [0]
+        residue_moltypes = ['System']
+        resnames = ['System']
+        atoms_segindices[:] = 0
+        atom_segids[:] = 'SYSTEM'
+        n_residues = 1
+        n_molecules = 1
+        molecule_n_res = [1]
 
     # reorder the residues by atom_indices
     residue_data = np.array(

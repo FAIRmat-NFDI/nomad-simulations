@@ -31,16 +31,16 @@ from . import logger
 
 
 def test_getattr_guard_base_model_method_effective_masses():
-    """Base ModelMethod must return None (not AttributeError) for effective_masses."""
+    """Direct attribute access on base ModelMethod must not raise AttributeError."""
     mm = ModelMethod()
-    result = getattr(mm, 'effective_masses', None)
+    result = mm.effective_masses
     assert result is None
 
 
 def test_getattr_guard_base_model_method_partial_charges():
-    """Base ModelMethod must return None (not AttributeError) for partial_charges."""
+    """Direct attribute access on base ModelMethod must not raise AttributeError."""
     mm = ModelMethod()
-    result = getattr(mm, 'partial_charges', None)
+    result = mm.partial_charges
     assert result is None
 
 
@@ -111,6 +111,11 @@ def _build_minimal_archive(n_atoms=3, with_ff_masses=False, with_ff_charges=Fals
     mol_group.particle_indices = np.arange(n_atoms)
     mol_group.sub_systems = [molecule]
 
+    # Trajectory frame with positions — required so archive_to_universe does not
+    # return None due to "no frames with positions".
+    frame = ModelSystem()
+    frame.positions = np.zeros((n_atoms, 3)) * ureg.angstrom
+
     root_system = ModelSystem()
     root_system.n_particles = n_atoms
     root_system.particle_states = particle_states
@@ -137,7 +142,7 @@ def _build_minimal_archive(n_atoms=3, with_ff_masses=False, with_ff_charges=Fals
         method = ModelMethod()
 
     sim = Simulation()
-    sim.model_system = [root_system]
+    sim.model_system = [root_system, frame]
     sim.model_method = [method]
 
     archive = EntryArchive()
