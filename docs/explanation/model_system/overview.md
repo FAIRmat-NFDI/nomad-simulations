@@ -10,9 +10,9 @@
 
 - [Model System](../../schema/model_system.md)
 - [Alternative Representations](../../schema/representations.md)
+- [Chemical Formula](../../schema/chemical_formula.md)
 - [Particle States](../../schema/particle_states.md)
 - [Symmetry](../../schema/symmetry.md)
-- [Chemical Formula](../../schema/chemical_formula.md)
 
 ## Overview
 

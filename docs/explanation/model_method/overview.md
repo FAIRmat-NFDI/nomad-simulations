@@ -8,9 +8,9 @@
 ## Schema Navigation References
 
 - [Model Method](../../schema/model_method.md)
+- [Force Field](../../schema/force_field.md)
 - [Model Method Electronic](../../schema/model_method_electronic.md)
 - [Numerical Settings](../../schema/numerical_settings.md)
-- [Force Field](../../schema/force_field.md)
 
 ## Purpose
 
