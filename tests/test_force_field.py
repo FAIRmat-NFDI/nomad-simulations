@@ -1212,5 +1212,3 @@ def test_particle_parameters_effective_mass_stores_and_units():
     pp.effective_mass = (15.999 * ureg.amu).to('kg')
     assert pp.effective_mass is not None
     assert np.isclose(pp.effective_mass.to('amu').magnitude, 15.999, rtol=1e-5)
-
-

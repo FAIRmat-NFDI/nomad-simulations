@@ -42,7 +42,6 @@ def test_getattr_guard_base_model_method_partial_charges():
     assert getattr(mm, 'partial_charges', None) is None
 
 
-
 # ---------------------------------------------------------------------------
 # archive_to_universe — mass / charge path selection (requires MDAnalysis)
 # ---------------------------------------------------------------------------
