@@ -442,19 +442,25 @@ def archive_to_universe(
         else None
     )
 
-    _pp_by_label: dict[str, Any] = {}
+    # Build two lookup tables:
+    # - _pp_by_ps_id: species_scope-based (authoritative after normalization)
+    # - _pp_by_type: particle_type string match (fallback when species_scope not yet resolved)
+    _pp_by_ps_id: dict[int, Any] = {}
+    _pp_by_type: dict[str, Any] = {}
 
     if _ppc is not None:
         for pp in _ppc.particle_parameters or []:
+            for ps_ref in pp.species_scope or []:
+                _pp_by_ps_id[id(ps_ref)] = pp
             if pp.particle_type is not None:
-                _pp_by_label[pp.particle_type] = pp
+                _pp_by_type[pp.particle_type] = pp
 
     _masses_list: list[Any] = []
     _charges_list: list[Any] = []
     _missing_masses = 0
     _missing_charges = 0
     for ps in particle_states:
-        pp = _pp_by_label.get(ps.label)
+        pp = _pp_by_ps_id.get(id(ps)) or _pp_by_type.get(ps.label)
         if ps.mass is not None:
             _masses_list.append(
                 ureg.convert(ps.mass.magnitude, ps.mass.units, ureg.amu)

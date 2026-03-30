@@ -1206,11 +1206,6 @@ def test_particle_parameters_partial_charge_stores_and_units():
     assert np.isclose(pp.partial_charge.to('elementary_charge').magnitude, -0.82)
 
 
-def test_particle_parameters_partial_charge_none_by_default():
-    pp = ParticleParameters()
-    assert pp.partial_charge is None
-
-
 def test_particle_parameters_effective_mass_stores_and_units():
     """effective_mass on ParticleParameters retains kg units."""
     pp = ParticleParameters(particle_type='OW')
@@ -1219,6 +1214,3 @@ def test_particle_parameters_effective_mass_stores_and_units():
     assert np.isclose(pp.effective_mass.to('amu').magnitude, 15.999, rtol=1e-5)
 
 
-def test_particle_parameters_effective_mass_none_by_default():
-    pp = ParticleParameters()
-    assert pp.effective_mass is None

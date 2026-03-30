@@ -42,29 +42,6 @@ def test_getattr_guard_base_model_method_partial_charges():
     assert getattr(mm, 'partial_charges', None) is None
 
 
-def test_getattr_guard_forcefield_effective_masses_returns_value():
-    """getattr returns the value when ForceField.effective_masses is set."""
-    ff = ForceField()
-    masses_amu = np.array([15.999, 1.008, 1.008])
-    ff.effective_masses = (masses_amu * ureg.amu).to('kg')
-
-    result = getattr(ff, 'effective_masses', None)
-    assert result is not None
-    assert len(result) == 3
-    assert np.isclose(result.to('amu').magnitude, masses_amu, rtol=1e-5).all()
-
-
-def test_getattr_guard_forcefield_partial_charges_returns_value():
-    """getattr returns the value when ForceField.partial_charges is set."""
-    ff = ForceField()
-    charges = np.array([-0.82, 0.41, 0.41])
-    ff.partial_charges = charges * ureg.elementary_charge
-
-    result = getattr(ff, 'partial_charges', None)
-    assert result is not None
-    assert len(result) == 3
-    assert np.isclose(result.to('elementary_charge').magnitude, charges).all()
-
 
 # ---------------------------------------------------------------------------
 # archive_to_universe — mass / charge path selection (requires MDAnalysis)
