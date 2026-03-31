@@ -38,6 +38,27 @@ This command writes deterministic Markdown fragments to
 
 These fragments are included by explanation pages to reduce manual duplication.
 
+## Benchmark Utility
+
+For HDF5-backed bulky numerics work, there is also a focused benchmark for
+molecular-orbital coefficient matrices:
+
+```bash
+uv run python scripts/benchmark_molecular_orbitals_hdf5.py --n-mo 1024 --n-ao 1024 --repeats 3
+```
+
+This compares a benchmark-only plain nested-array control section against the
+current HDF5-backed `MolecularOrbitals` implementation and reports:
+
+- assignment time
+- `m_to_dict()` time
+- JSON payload size
+- HDF5 file size
+- read-back time
+
+Add `--complex` to include the imaginary MO coefficient matrix and
+`--output-json <path>` to save the full result payload.
+
 ## Diagram Zoom Configuration
 
 The pipeline supports two methods for diagram interaction:
