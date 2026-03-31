@@ -423,6 +423,8 @@ def mermaid_for_vertical(
             diagram_lines.append('    }')
 
         # Helper function to normalize labels
+
+        # Helper function to normalize labels
         def normalize_label(label: str, target: str) -> str:
             label_normalized = label.replace('_', '').lower()
             target_normalized = target.lower()

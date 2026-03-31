@@ -29,6 +29,10 @@ class ThermodynamicsResults(SerialWorkflowResults):
 
 
 class Thermodynamics(SimulationWorkflow):
+    method = SubSection(sub_section=ThermodynamicsMethod.m_def)
+
+    results = SubSection(sub_section=ThermodynamicsResults.m_def)
+
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.method:

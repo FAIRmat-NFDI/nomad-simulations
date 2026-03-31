@@ -19,17 +19,15 @@ classDiagram
     }
     class CrystalFieldSplitting {
     }
-    class ElectronicBandStructure {
-    }
-    class ElectronicDensityOfStates {
+    class ElectronicEigenvalues {
     }
     class ElectronicSelfEnergy {
     }
-    class HybridizationFunction {
-    }
-    class Occupancy {
+    class KineticEnergy {
     }
     class Outputs {
+    }
+    class Permittivity {
     }
     class PhysicalProperty {
     }
@@ -37,22 +35,24 @@ classDiagram
     }
     class SCFSteps {
     }
-    class TotalEnergy {
+    class Temperature {
     }
     class TotalForce {
+    }
+    class XASSpectrum {
     }
     Outputs *-- AbsorptionSpectrum : absorption_spectra
     Outputs *-- ChemicalPotential
     Outputs *-- CrystalFieldSplitting
-    Outputs *-- ElectronicBandStructure
-    Outputs *-- ElectronicDensityOfStates : electronic_dos
+    Outputs *-- ElectronicEigenvalues
     Outputs *-- ElectronicSelfEnergy : electronic_self_energies
-    Outputs *-- HybridizationFunction
-    Outputs *-- Occupancy : occupancies
+    Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- Permittivity : permittivities
     Outputs *-- PotentialEnergy : potential_energies
     Outputs *-- SCFSteps
-    Outputs *-- TotalEnergy : total_energies
+    Outputs *-- Temperature
     Outputs *-- TotalForce
+    Outputs *-- XASSpectrum : xas_spectra
 ```
 
 </div>
@@ -69,7 +69,9 @@ _Diagram 2 of 2 (split due to large number of children)_
 classDiagram
     class ElectronicBandGap {
     }
-    class ElectronicEigenvalues {
+    class ElectronicBandStructure {
+    }
+    class ElectronicDensityOfStates {
     }
     class ElectronicGreensFunction {
     }
@@ -77,11 +79,11 @@ classDiagram
     }
     class HoppingMatrix {
     }
-    class KineticEnergy {
+    class HybridizationFunction {
+    }
+    class Occupancy {
     }
     class Outputs {
-    }
-    class Permittivity {
     }
     class PhysicalProperty {
     }
@@ -89,21 +91,19 @@ classDiagram
     }
     class RadiusOfGyration {
     }
-    class Temperature {
-    }
-    class XASSpectrum {
+    class TotalEnergy {
     }
     Outputs *-- ElectronicBandGap
-    Outputs *-- ElectronicEigenvalues
+    Outputs *-- ElectronicBandStructure
+    Outputs *-- ElectronicDensityOfStates : electronic_dos
     Outputs *-- ElectronicGreensFunction
     Outputs *-- FermiSurface
     Outputs *-- HoppingMatrix : hopping_matrices
-    Outputs *-- KineticEnergy : kinetic_energies
-    Outputs *-- Permittivity : permittivities
+    Outputs *-- HybridizationFunction
+    Outputs *-- Occupancy : occupancies
     Outputs *-- QuasiparticleWeight
     Outputs *-- RadiusOfGyration : radii_of_gyration
-    Outputs *-- Temperature
-    Outputs *-- XASSpectrum : xas_spectra
+    Outputs *-- TotalEnergy : total_energies
 ```
 
 <p class="uml-legend__title">Legend</p>

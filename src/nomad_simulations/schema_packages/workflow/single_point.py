@@ -1,5 +1,5 @@
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import SchemaPackage
+from nomad.metainfo import SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
@@ -36,6 +36,10 @@ class SinglePoint(SimulationWorkflow):
     """
 
     _task_label = 'Calculation'
+
+    method = SubSection(sub_section=SinglePointMethod.m_def)
+
+    results = SubSection(sub_section=SinglePointResults.m_def)
 
     @log
     def map_inputs(self, archive: EntryArchive):

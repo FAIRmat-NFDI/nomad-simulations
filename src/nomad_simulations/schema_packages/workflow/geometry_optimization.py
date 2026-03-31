@@ -240,6 +240,10 @@ class GeometryOptimization(SerialWorkflow):
 
     _task_label = 'Step'
 
+    method = SubSection(sub_section=GeometryOptimizationMethod.m_def)
+
+    results = SubSection(sub_section=GeometryOptimizationResults.m_def)
+
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.method:
