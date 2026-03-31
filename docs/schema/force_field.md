@@ -2,12 +2,6 @@
 
 **Purpose:** Classical force-field model method branch rooted at ForceField
 
-**In scope:**
-
-- ForceField as a ModelMethod subclass
-- Potential family entry-point used by ForceField contributions
-- Bridge between model methods and classical interaction potentials
-
 
 ## Relationship map
 

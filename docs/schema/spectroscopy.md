@@ -1,13 +1,6 @@
 # Spectroscopic Properties
 
-**Purpose:** Absorption spectra, XAS, and dielectric response
-
-**In scope:**
-
-- Spectral profile base class
-- Absorption spectra from BSE calculations
-- X-ray absorption spectra (XAS) from core hole calculations
-- Frequency-dependent dielectric functions (permittivity)
+**Purpose:** Spectroscopic properties: absorption, XAS, and dielectric functions
 
 
 ## Relationship map

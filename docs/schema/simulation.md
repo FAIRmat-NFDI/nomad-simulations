@@ -2,13 +2,6 @@
 
 **Purpose:** Root entry point for simulations: Simulation, BaseSimulation, and Program
 
-**In scope:**
-
-- Root Simulation section that contains all simulation metadata
-- Timing information (cpu1_start, cpu1_end, wall_start, wall_end)
-- Program details (name, version, link)
-- Entry point that references the four main subsections
-
 
 ## Relationship map
 

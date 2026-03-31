@@ -2,12 +2,6 @@
 
 **Purpose:** Parallel equation-of-state workflow with EOS fitting results
 
-**In scope:**
-
-- EquationOfState inheritance from ParallelWorkflow
-- EOS method specialization and EOSFit result subsections
-- Parallel workflow pattern for volume/energy scan calculations
-
 
 ## Relationship map
 

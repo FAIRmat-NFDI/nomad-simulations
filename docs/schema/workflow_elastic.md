@@ -2,12 +2,6 @@
 
 **Purpose:** Elastic-constant workflow with thermodynamics-derived result structures
 
-**In scope:**
-
-- Elastic inheritance from SimulationWorkflow
-- Elastic method specialization and strain-diagram result containers
-- ElasticResults inheritance through ThermodynamicsResults
-
 
 ## Relationship map
 

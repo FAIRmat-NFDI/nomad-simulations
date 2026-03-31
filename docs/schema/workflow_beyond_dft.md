@@ -2,12 +2,6 @@
 
 **Purpose:** Beyond-DFT workflow base classes and derived GW/TB/DMFT/XS specializations
 
-**In scope:**
-
-- BeyondDFT inheritance backbone for workflow/method/results
-- Derived families: GW, DFT+TB, DFT+TB+DMFT, DMFT+MaxEnt, and XS
-- ElectronicStructureResults subsections used by beyond-DFT result classes
-
 
 ## Relationship map
 

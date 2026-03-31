@@ -2,13 +2,6 @@
 
 **Purpose:** AlternativeRepresentation subsection details: transforms and mapping to a reference representation
 
-**In scope:**
-
-- AlternativeRepresentation subsection of ModelSystem
-- Reference representation linkage
-- Transformation matrix and origin shift between representations
-- How alternative cells are mapped from the original representation
-
 
 ## Relationship map
 

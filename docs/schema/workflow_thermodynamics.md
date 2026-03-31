@@ -1,12 +1,6 @@
 # Thermodynamics Workflow
 
-**Purpose:** Thermodynamics workflow specialization and serial-result integration
-
-**In scope:**
-
-- Thermodynamics inheritance from SimulationWorkflow
-- Thermodynamics method specialization structure
-- ThermodynamicsResults inheritance from SerialWorkflowResults
+**Purpose:** Thermodynamics workflow for free-energy and thermodynamic property calculations
 
 
 ## Relationship map

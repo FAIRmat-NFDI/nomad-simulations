@@ -2,13 +2,6 @@
 
 **Purpose:** Core workflow hierarchy and shared method/results structures
 
-**In scope:**
-
-- Workflow task abstraction and task-reference linkage
-- Core inheritance spine: SimulationWorkflow with serial/parallel specializations
-- Shared workflow model and method metadata containers
-- Shared workflow result timing and convergence result containers
-
 
 ## Relationship map
 

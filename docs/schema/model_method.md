@@ -1,11 +1,6 @@
 # Model Method
 
-**Purpose:** Base method hierarchy up to ModelMethodElectronic
-
-**In scope:**
-
-- Top-level inheritance chain: BaseModelMethod → ModelMethod → ModelMethodElectronic
-- Entry point for all electronic-method subclasses
+**Purpose:** Base method hierarchy: BaseModelMethod, ModelMethod, and ModelMethodElectronic
 
 
 ## Relationship map

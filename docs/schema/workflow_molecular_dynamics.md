@@ -2,13 +2,6 @@
 
 **Purpose:** Molecular-dynamics workflow with thermostat/barostat/shear settings and ensemble outputs
 
-**In scope:**
-
-- MolecularDynamics inheritance from SerialWorkflow
-- Method-side MD control settings (thermostat, barostat, shear, free-energy)
-- Results-side ensemble/correlation properties and trajectory observables
-- Cross-domain anchors to NumericalSettings and PhysicalProperty for hierarchy context
-
 
 ## Relationship map
 

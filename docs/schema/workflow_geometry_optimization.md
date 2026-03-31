@@ -2,12 +2,6 @@
 
 **Purpose:** Geometry-optimization workflow with convergence-aware method/results modeling
 
-**In scope:**
-
-- GeometryOptimization inheritance from SerialWorkflow
-- GeometryOptimization model and method specialization layers
-- Workflow and nested single-point convergence configuration/results integration
-
 
 ## Relationship map
 

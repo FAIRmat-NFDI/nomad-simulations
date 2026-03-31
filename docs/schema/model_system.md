@@ -2,14 +2,6 @@
 
 **Purpose:** Root ModelSystem section with direct representation relationships and complete system tree
 
-**In scope:**
-
-- ModelSystem as the root of the system tree
-- Recursive sub_systems containment (ModelSystem contains ModelSystem)
-- System type and dimensionality
-- Direct relationships to Representation and AlternativeRepresentation
-- References to ParticleState, Local/Global symmetry, and ChemicalFormula subsections
-
 
 ## Relationship map
 

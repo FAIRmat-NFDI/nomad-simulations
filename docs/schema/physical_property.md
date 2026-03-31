@@ -2,13 +2,6 @@
 
 **Purpose:** Shared base classes for physical-property types and their common metadata structure
 
-**In scope:**
-
-- PhysicalProperty as the common base for computed properties
-- ErrorEstimate subsection used for uncertainty/error metadata
-- Abstract/base property families for electronic, Green-function, energy, force, and spectral data
-- Cross-domain backbone used by specialized output verticals
-
 
 ## Relationship map
 

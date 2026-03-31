@@ -2,12 +2,6 @@
 
 **Purpose:** Beyond-HF workflow base classes with CC and CI derived branches
 
-**In scope:**
-
-- BeyondHF inheritance backbone for workflow/method/results
-- Derived post-HF families: coupled-cluster (CC) and configuration interaction (CI)
-- ElectronicStructureResults subsections used by beyond-HF result classes
-
 
 ## Relationship map
 

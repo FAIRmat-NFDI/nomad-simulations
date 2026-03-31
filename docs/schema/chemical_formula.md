@@ -2,15 +2,6 @@
 
 **Purpose:** Chemical formulas in different formats: descriptive, reduced, IUPAC, Hill, anonymous
 
-**In scope:**
-
-- Descriptive formula
-- Reduced formula
-- IUPAC formula
-- Hill formula
-- Anonymous formula
-- Automatic formula generation
-
 
 ## Relationship map
 

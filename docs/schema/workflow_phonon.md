@@ -2,12 +2,6 @@
 
 **Purpose:** Phonon workflow specialization with method/results classes
 
-**In scope:**
-
-- Phonon inheritance from SimulationWorkflow
-- Phonon method/result specialization hierarchy
-- Workflow structure for finite-displacement/phonon-property computations
-
 
 ## Relationship map
 

@@ -2,19 +2,6 @@
 
 **Purpose:** Complete particle state hierarchy: ParticleState base class, AtomsState with detailed atomic properties, and CGBeadState
 
-**In scope:**
-
-- ParticleState: base class for all particle information
-- AtomsState: atomic particle states with chemical symbols
-- CGBeadState: coarse-grained bead states
-- AtomicOrbitals: quantum numbers (n, l, ml, j, mj, ms) within AtomsState
-- Orbital degeneracy and occupation
-- CoreHole: excited electron states for spectroscopy
-- HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems
-- Slater integrals for many-body interactions
-- Particle indices, velocities, forces
-- Chemical symbols and particle organization
-
 
 ## Relationship map
 

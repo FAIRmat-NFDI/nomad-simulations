@@ -2,13 +2,6 @@
 
 **Purpose:** Serial-workflow trajectory/configurational property subsections
 
-**In scope:**
-
-- Configurational property base class for trajectory-like workflow results
-- Temperature, pressure, and gyration metrics over frames
-- Free-energy calculation trajectories linked into serial workflow results
-- SerialWorkflowResults containment of trajectory/configurational properties
-
 
 ## Relationship map
 

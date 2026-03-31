@@ -2,15 +2,6 @@
 
 **Purpose:** Computational parameters: meshes, basis sets, convergence, and discretization
 
-**In scope:**
-
-- K-point meshes and line paths for band structures
-- Real-space meshes and grids
-- Basis set specifications: plane-wave, APW, atom-centered
-- Convergence thresholds and maximum iterations
-- Smearing functions: Fermi-Dirac, Gaussian, Methfessel-Paxton
-- Force calculation settings
-
 
 ## Relationship map
 

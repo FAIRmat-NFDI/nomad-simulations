@@ -2,13 +2,6 @@
 
 **Purpose:** Convergence target classes and workflow-level convergence result structures
 
-**In scope:**
-
-- Convergence target inheritance family and target-type specializations
-- Convergence result container with target references and status fields
-- Workflow model/results integration points for convergence configuration and outcomes
-- GeometryOptimization-specific convergence extensions for nested SCF contexts
-
 
 ## Relationship map
 

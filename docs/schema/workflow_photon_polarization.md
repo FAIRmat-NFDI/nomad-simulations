@@ -2,12 +2,6 @@
 
 **Purpose:** Parallel photon-polarization workflow and polarization-resolved results
 
-**In scope:**
-
-- PhotonPolarizationWorkflow inheritance from ParallelWorkflow
-- Method and result classes for polarization-dependent spectra
-- Parallel execution structure for multiple polarization channels
-
 
 ## Relationship map
 

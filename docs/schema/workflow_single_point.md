@@ -2,12 +2,6 @@
 
 **Purpose:** Single-point workflow and its method/results classes
 
-**In scope:**
-
-- SinglePoint inheritance from SimulationWorkflow
-- SinglePoint method and results class specializations
-- Minimal workflow pattern for one-step calculations
-
 
 ## Relationship map
 

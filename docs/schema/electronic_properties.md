@@ -2,15 +2,6 @@
 
 **Purpose:** Electronic eigenvalues, band structures, DOS, band gaps, occupancies, and Fermi surfaces
 
-**In scope:**
-
-- Eigenvalue hierarchy: BaseElectronicEigenvalues → ElectronicEigenvalues → ElectronicBandStructure
-- Band structures along high-symmetry paths
-- Density of states (DOS) profiles
-- Electronic band gaps (direct, indirect)
-- Orbital occupancies
-- Fermi surface topology
-
 
 ## Relationship map
 

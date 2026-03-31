@@ -2,15 +2,6 @@
 
 **Purpose:** Green's functions, self-energies, hybridization, quasiparticle weights, hopping matrices
 
-**In scope:**
-
-- Green's function base class and electronic specialization
-- Self-energies from GW and DMFT
-- Hybridization functions for impurity problems
-- Quasiparticle renormalization weights
-- Hopping matrices from tight-binding
-- Crystal field splittings in correlated systems
-
 
 ## Relationship map
 

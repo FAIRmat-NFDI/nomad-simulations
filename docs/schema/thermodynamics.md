@@ -1,16 +1,6 @@
 # Thermodynamic Properties
 
-**Purpose:** Energies, forces, pressure, temperature, and thermodynamic state functions
-
-**In scope:**
-
-- Energy hierarchy: BaseEnergy → specific energy types
-- Free energies: Gibbs, Helmholtz
-- Force hierarchy: BaseForce → TotalForce
-- Thermodynamic state variables: pressure, volume, temperature
-- Entropy and heat capacities
-- Virial tensor for stress calculations
-- Hessian matrices for phonon calculations
+**Purpose:** Thermodynamic properties: energies, forces, pressure, temperature, and state functions
 
 
 ## Relationship map

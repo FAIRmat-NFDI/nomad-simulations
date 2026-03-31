@@ -2,14 +2,6 @@
 
 **Purpose:** Base output structure and common property definitions
 
-**In scope:**
-
-- Outputs section that references ModelSystem and ModelMethod
-- SCFSteps with scf_steps quantities for SCF iteration history
-- PhysicalProperty base class for all computed properties
-- Property contributions and derivations
-- SCF convergence data (energy deltas, density changes, etc.)
-
 
 ## Relationship map
 

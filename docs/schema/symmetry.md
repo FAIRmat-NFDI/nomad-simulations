@@ -2,14 +2,6 @@
 
 **Purpose:** Crystallographic symmetry: local/global symmetry, space groups, point groups, Bravais lattices
 
-**In scope:**
-
-- Local and global symmetry section hierarchy
-- Space group symbols and numbers
-- Point group symbols
-- Bravais lattice classifications
-- Symmetry operations
-
 
 ## Relationship map
 
