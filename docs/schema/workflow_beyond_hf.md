@@ -42,6 +42,12 @@ classDiagram
     BeyondHFWorkflow <|-- HFCIWorkflow
     BeyondHFResults *-- ElectronicStructureResults : ext
     BeyondHFResults *-- ElectronicStructureResults : hf
+    BeyondHFWorkflow *-- BeyondHFMethod : method
+    BeyondHFWorkflow *-- BeyondHFResults : results
+    HFCCWorkflow *-- HFCCMethod : method
+    HFCCWorkflow *-- HFCCResults : results
+    HFCIWorkflow *-- HFCIMethod : method
+    HFCIWorkflow *-- HFCIResults : results
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence
 ```
 

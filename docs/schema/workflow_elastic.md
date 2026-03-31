@@ -27,6 +27,8 @@ classDiagram
     SimulationWorkflow <|-- Elastic
     SimulationWorkflowMethod <|-- ElasticMethod
     ThermodynamicsResults <|-- ElasticResults
+    Elastic *-- ElasticMethod : method
+    Elastic *-- ElasticResults : results
     ElasticResults *-- StrainDiagrams : strain_diagrams
     SimulationWorkflow *-- SimulationWorkflowMethod : method
     SimulationWorkflow *-- SimulationWorkflowResults : results

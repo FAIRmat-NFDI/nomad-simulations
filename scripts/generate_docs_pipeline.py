@@ -199,9 +199,7 @@ nav:
                 if children:
                     # Parent with nested children
                     nav_items.append(f'      - {nav_group_title}:')
-                    nav_items.append(
-                        f'          - Overview: schema/{parent_key}.md'
-                    )
+                    nav_items.append(f'          - Overview: schema/{parent_key}.md')
 
                     # Add children under parent
                     for child_key in sort_keys_by_nav(
@@ -515,7 +513,10 @@ def clean_old_docs(repo_root: Path) -> bool:
 
                 content = md_file.read_text(encoding='utf-8')
                 looks_generated = (
-                    ('## Relationship map' in content and '## Quantities by Key Sections' in content)
+                    (
+                        '## Relationship map' in content
+                        and '## Quantities by Key Sections' in content
+                    )
                     if not is_diagram
                     else (
                         content.lstrip().startswith('```mermaid')

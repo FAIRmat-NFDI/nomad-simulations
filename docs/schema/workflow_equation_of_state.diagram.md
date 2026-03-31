@@ -32,6 +32,8 @@ classDiagram
     ParallelWorkflow <|-- EquationOfState
     SimulationWorkflowMethod <|-- EquationOfStateMethod
     SimulationWorkflowResults <|-- EquationOfStateResults
+    EquationOfState *-- EquationOfStateMethod : method
+    EquationOfState *-- EquationOfStateResults : results
     EquationOfStateResults *-- EOSFit
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence
 ```

@@ -30,6 +30,8 @@ classDiagram
     SimulationWorkflowMethod <|-- PhotonPolarizationMethod
     SimulationWorkflowResults <|-- PhotonPolarizationResults
     ParallelWorkflow <|-- PhotonPolarizationWorkflow
+    PhotonPolarizationWorkflow *-- PhotonPolarizationMethod : method
+    PhotonPolarizationWorkflow *-- PhotonPolarizationResults : results
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence
 ```
 

@@ -30,12 +30,12 @@
         const observer = new MutationObserver(() => {
             const scheme = getCurrentScheme();
             const theme = getMermaidTheme(scheme);
-            
+
             // Update mermaid configuration if available
             if (window.mermaid && window.mermaid.initialize) {
-                window.mermaid.initialize({ 
+                window.mermaid.initialize({
                     theme: theme,
-                    startOnLoad: false 
+                    startOnLoad: false
                 });
             }
         });

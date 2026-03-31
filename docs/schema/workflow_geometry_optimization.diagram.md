@@ -35,6 +35,8 @@ classDiagram
     GeometryOptimizationModel <|-- GeometryOptimizationMethod
     SimulationWorkflowMethod <|-- GeometryOptimizationModel
     SimulationWorkflowResults <|-- GeometryOptimizationResults
+    GeometryOptimization *-- GeometryOptimizationMethod : method
+    GeometryOptimization *-- GeometryOptimizationResults : results
     GeometryOptimizationModel *-- WorkflowConvergenceTarget : single_point_convergence_targets
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence
 ```

@@ -13,17 +13,19 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum {
+    class ElectronicBandStructure {
     }
-    class ChemicalPotential {
-    }
-    class CrystalFieldSplitting {
+    class ElectronicDensityOfStates {
     }
     class ElectronicEigenvalues {
     }
-    class ElectronicSelfEnergy {
+    class ElectronicGreensFunction {
+    }
+    class HoppingMatrix {
     }
     class KineticEnergy {
+    }
+    class Occupancy {
     }
     class Outputs {
     }
@@ -31,27 +33,25 @@ classDiagram
     }
     class PhysicalProperty {
     }
-    class PotentialEnergy {
-    }
     class SCFSteps {
     }
     class Temperature {
     }
-    class TotalForce {
+    class TotalEnergy {
     }
     class XASSpectrum {
     }
-    Outputs *-- AbsorptionSpectrum : absorption_spectra
-    Outputs *-- ChemicalPotential
-    Outputs *-- CrystalFieldSplitting
+    Outputs *-- ElectronicBandStructure
+    Outputs *-- ElectronicDensityOfStates : electronic_dos
     Outputs *-- ElectronicEigenvalues
-    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
+    Outputs *-- ElectronicGreensFunction
+    Outputs *-- HoppingMatrix : hopping_matrices
     Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- Occupancy : occupancies
     Outputs *-- Permittivity : permittivities
-    Outputs *-- PotentialEnergy : potential_energies
     Outputs *-- SCFSteps
     Outputs *-- Temperature
-    Outputs *-- TotalForce
+    Outputs *-- TotalEnergy : total_energies
     Outputs *-- XASSpectrum : xas_spectra
 ```
 
@@ -67,43 +67,43 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
+    class AbsorptionSpectrum {
+    }
+    class ChemicalPotential {
+    }
+    class CrystalFieldSplitting {
+    }
     class ElectronicBandGap {
     }
-    class ElectronicBandStructure {
-    }
-    class ElectronicDensityOfStates {
-    }
-    class ElectronicGreensFunction {
+    class ElectronicSelfEnergy {
     }
     class FermiSurface {
     }
-    class HoppingMatrix {
-    }
     class HybridizationFunction {
-    }
-    class Occupancy {
     }
     class Outputs {
     }
     class PhysicalProperty {
     }
+    class PotentialEnergy {
+    }
     class QuasiparticleWeight {
     }
     class RadiusOfGyration {
     }
-    class TotalEnergy {
+    class TotalForce {
     }
+    Outputs *-- AbsorptionSpectrum : absorption_spectra
+    Outputs *-- ChemicalPotential
+    Outputs *-- CrystalFieldSplitting
     Outputs *-- ElectronicBandGap
-    Outputs *-- ElectronicBandStructure
-    Outputs *-- ElectronicDensityOfStates : electronic_dos
-    Outputs *-- ElectronicGreensFunction
+    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
     Outputs *-- FermiSurface
-    Outputs *-- HoppingMatrix : hopping_matrices
     Outputs *-- HybridizationFunction
-    Outputs *-- Occupancy : occupancies
+    Outputs *-- PotentialEnergy : potential_energies
     Outputs *-- QuasiparticleWeight
     Outputs *-- RadiusOfGyration : radii_of_gyration
-    Outputs *-- TotalEnergy : total_energies
+    Outputs *-- TotalForce
 ```
 
 <p class="uml-legend__title">Legend</p>

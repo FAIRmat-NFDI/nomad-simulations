@@ -30,6 +30,8 @@ classDiagram
     SimulationWorkflow <|-- Phonon
     SimulationWorkflowMethod <|-- PhononMethod
     SimulationWorkflowResults <|-- PhononResults
+    Phonon *-- PhononMethod : method
+    Phonon *-- PhononResults : results
     SimulationWorkflow *-- SimulationWorkflowMethod : method
     SimulationWorkflow *-- SimulationWorkflowResults : results
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence

@@ -80,7 +80,19 @@ classDiagram
     BeyondDFTWorkflow <|-- XSWorkflow
     BeyondDFTResults *-- ElectronicStructureResults : dft
     BeyondDFTResults *-- ElectronicStructureResults : ext
+    BeyondDFTWorkflow *-- BeyondDFTMethod : method
+    BeyondDFTWorkflow *-- BeyondDFTResults : results
+    DFTGWWorkflow *-- DFTGWMethod : method
+    DFTGWWorkflow *-- DFTGWResults : results
+    DFTTBDMFTWorkflow *-- DFTTBDMFTMethod : method
+    DFTTBDMFTWorkflow *-- DFTTBDMFTResults : results
+    DFTTBWorkflow *-- DFTTBMethod : method
+    DFTTBWorkflow *-- DFTTBResults : results
+    DMFTMaxEntWorkflow *-- DMTMaxEntMethod : method
+    DMFTMaxEntWorkflow *-- DMTMaxEntResults : results
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence
+    XSWorkflow *-- XSMethod : method
+    XSWorkflow *-- XSResults : results
 ```
 
 <p class="uml-legend__title">Legend</p>

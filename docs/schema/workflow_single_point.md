@@ -29,6 +29,8 @@ classDiagram
     SimulationWorkflow *-- SimulationWorkflowMethod : method
     SimulationWorkflow *-- SimulationWorkflowResults : results
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence
+    SinglePoint *-- SinglePointMethod : method
+    SinglePoint *-- SinglePointResults : results
 ```
 
 <p class="uml-legend__title">Legend</p>

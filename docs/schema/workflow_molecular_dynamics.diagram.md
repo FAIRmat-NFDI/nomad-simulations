@@ -13,43 +13,43 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class SerialWorkflow {
-    }
-    class MolecularDynamics {
-    }
-    class SimulationWorkflowMethod {
-    }
-    class MolecularDynamicsMethod {
-    }
-    class SerialWorkflowResults {
-    }
-    class MolecularDynamicsResults {
-    }
-    class NumericalSettings {
-    }
-    class MDSettings {
-    }
-    class ThermostatParameters {
-    }
     class BarostatParameters {
     }
-    class ShearParameters {
+    class CorrelationFunction {
+    }
+    class DiffusionConstant {
+    }
+    class EnsembleProperty {
     }
     class FreeEnergyCalculationParameters {
     }
     class Lambdas {
     }
+    class MDSettings {
+    }
+    class MeanSquaredDisplacement {
+    }
+    class MolecularDynamics {
+    }
+    class MolecularDynamicsMethod {
+    }
+    class MolecularDynamicsResults {
+    }
+    class NumericalSettings {
+    }
     class PhysicalProperty {
-    }
-    class EnsembleProperty {
-    }
-    class DiffusionConstant {
     }
     class RadialDistributionFunction {
     }
-    class CorrelationFunction {
+    class SerialWorkflow {
     }
-    class MeanSquaredDisplacement {
+    class SerialWorkflowResults {
+    }
+    class ShearParameters {
+    }
+    class SimulationWorkflowMethod {
+    }
+    class ThermostatParameters {
     }
     MDSettings <|-- BarostatParameters
     PhysicalProperty <|-- CorrelationFunction
