@@ -171,7 +171,9 @@ def test_archive_to_universe_charges_zero_fallback():
 
 def test_archive_to_universe_topology_not_at_index_0():
     """Topology is found by particle_states search even when not at model_system[0]."""
-    archive = _build_minimal_archive(n_atoms=3, with_ff_masses=False, with_ff_charges=False)
+    archive = _build_minimal_archive(
+        n_atoms=3, with_ff_masses=False, with_ff_charges=False
+    )
     # Prepend a bare positional frame (no particle_states) so topology is at index 1.
     # Metainfo lists only support append, so rebuild the list.
     bare_frame = ModelSystem()
