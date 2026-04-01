@@ -4,7 +4,7 @@ This section explains how workflow structures organize multi-step simulation dat
 
 ## Pages in This Section
 
-- [Convergence Targets: Schema Traversal Guide](convergence.md)
+- [Convergence Targets](convergence.md)
 
 ## Schema Navigation References
 

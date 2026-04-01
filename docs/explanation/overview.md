@@ -6,7 +6,7 @@ concepts, rationale, traversal, and usage of current schema components.
 
 ## [Simulation Entry](simulation_entry.md)
 
-Guidance for how `Simulation`, `BaseSimulation`, and `Program` are structured and used in archive data.
+Guidance for how `Simulation`, `BaseSimulation`, and `Program` are structured and used in the NOMAD archive.
 
 ## [Model System](model_system/overview.md)
 
@@ -17,5 +17,5 @@ Conceptual guidance for modeling system structure and ownership.
 
 ## Model Method
 
-- [Model Method Overview](model_method/overview.md): hierarchy-level conventions, invariants, and usage guidance for existing method sections.
+- [Model Method Overview](model_method/overview.md): explanation of how method information is organized in the existing hierarchy.
 - [Basis Sets](model_method/basis_sets.md): domain-specific explanation of basis set families and modeling conventions.

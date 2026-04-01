@@ -89,7 +89,7 @@ Different DFT codes use varying terminology and file organization schemes for ps
 
 - The Morrison-Bylander-Kleinman (MBK) separable form is a computational reformulation used across all types in modern codes, not a distinct pseudopotential classification.
 
-- Standard pseudopotential libraries (SSSP, PseudoDojo) provide validation data including recommended cutoffs and accuracy metrics (Δ-gauge). These should be used when available rather than arbitrary cutoff choices.
+- Standard pseudopotential libraries (SSSP, PseudoDojo) provide validation data including recommended cutoffs and accuracy metrics (Δ-gauge). When available, they offer more consistent reference points than arbitrary cutoff choices.
 
 ## LAPW
 

@@ -4,7 +4,6 @@
 
 - [Representation Architecture](representation.md)
 - [Electronic States](electronic_states.md)
-- [Model System Usage Guidelines](../../schema_development/model_system_usage_guidelines.md)
 
 ## Schema Navigation References
 
@@ -125,7 +124,7 @@ This includes:
 3. **Symmetry information and standard cells**: bulk systems can gain symmetry metadata together with primitive and conventional cell representations.
 4. **Chemical formulas**: composition summaries are derived from the populated particle states.
 
-These derived results depend on the structural data already present in the archive. For example, symmetry analysis depends on valid geometry, and chemical formulas depend on the populated particle states.
+These derived results depend on the structural data already present in the archive. For example, symmetry analysis depends on valid geometry, and chemical formulas depend on the available particle-state information.
 
 See [Normalization](../../schema_development/normalize.md) for more details on the normalization system across NOMAD simulations schema.
 
@@ -149,9 +148,9 @@ See [Normalization](../../schema_development/normalize.md) for more details on t
 --8<-- "snippets/explanation/model_system/model_system/block_07.py"
 ```
 
-## Important Flags and Settings
+## Key Quantities for Reading ModelSystem Data
 
-**`is_representative` (boolean)**: Controls whether this `ModelSystem` should undergo full normalization including symmetry analysis and formula generation. Typically set to `True` for the primary system description and `False` for sub-systems or intermediate calculations.
+**`is_representative` (boolean)**: Indicates whether this `ModelSystem` undergoes full normalization, including symmetry analysis and formula generation. It is typically `True` for the primary system description and `False` for sub-systems or intermediate calculations.
 
 **`type` (string)**: Describes the role of this system in the context of hierarchical compositions. Common values include:
 

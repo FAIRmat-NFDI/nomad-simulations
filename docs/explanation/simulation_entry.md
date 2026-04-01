@@ -43,8 +43,8 @@ The `Simulation` base section is composed of 4 main sub-sections:
 
 1. `Program`: contains all the program information, e.g., `name` of the program, `version`, etc.
 2. `ModelSystem`: contains all the system information about geometrical positions of atoms, their states, simulation cells, symmetry information, etc.
-3. `ModelMethod`: contains the methodological information for the simulation. In practice this combines the model identity itself (e.g., `DFT`, `GW`, `ForceFields`) with attached numerical realizations stored under `numerical_settings` (e.g., meshes, self-consistency parameters, basis-set settings). For contributor-facing guidance on where that distinction is modeled, see [ModelMethod vs NumericalSettings](../schema_development/model_method_vs_numerical_settings.md).
-4. `Outputs`: contains all the output properties, as well as references to the `ModelSystem` used to obtain such properties. It might also contain information which will populate `ModelSystem` (e.g., atomic occupations, atomic moments, crystal field energies, etc.).
+3. `ModelMethod`: contains the methodological information for the simulation. In practice this combines the model identity itself (e.g., `DFT`, `GW`, `ForceFields`) with attached numerical realizations stored under `numerical_settings` (e.g., meshes, self-consistency parameters, basis-set settings). See [Model Method Overview](model_method/overview.md) for how this structure is organized in NOMAD-Simulations archives.
+4. `Outputs`: contains all the output properties, as well as references to the `ModelSystem` used to obtain such properties. It can also contain information that is reflected back into `ModelSystem` descriptions, such as atomic occupations, atomic moments, or crystal field energies.
 
 !!! note "Self-consistent steps, SinglePoint entries, and more complex workflows."
     The minimal unit for storing data in the NOMAD archive is an [*entry*](https://nomad-lab.eu/prod/v1/staging/docs/reference/glossary.html#entry). In the context of simulation data, an entry may contain data from a calculation on an individual system configuration (e.g., a single-point DFT calculation) using **only** the above-mentioned sections of the `Simulation` section. Information from self-consistent iterations to converge properties for this configuration are also contained within these sections.
@@ -74,12 +74,11 @@ The `Program` base section contains all the information about the program / soft
 
 In normalized archive data, the `Program` subsection records the software used
 to produce the simulation data, including identifiers such as the program name,
-version, and related metadata. In practice, this is one of the first populated
-parts of a `Simulation` record and serves as the software anchor for the rest of
+version, and related metadata. It serves as the software anchor for the rest of
 the entry.
 
-Implementation-oriented examples for populating `Simulation` and `Program` in
-parser code belong under [Populating `Simulation` and `Program`](../schema_development/simulation_entry_population.md).
+Implementation-oriented examples for `Simulation` and `Program` population are
+documented under [Populating `Simulation` and `Program`](../schema_development/simulation_entry_population.md).
 
 ## Homogenization and the role of Workflows
 
@@ -91,7 +90,7 @@ This mapping may be a mixture of (workflow) entries and sections.
 
 Below are a few examples of actual mappings.
 Important to note is that these examples already presuppose a certain structure on the side of the referenced `archive.data` sections.
-In reality, workflow should be capable of hosting multiple underlying structures.
+In practice, workflows can host multiple underlying structures.
 
 ### Serial Updates to `ModelSystem`
 

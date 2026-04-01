@@ -1,6 +1,6 @@
-# Convergence Targets: Schema Traversal Guide
+# Convergence Targets
 
-This guide explains how convergence checking works in NOMAD simulations, focusing on how to navigate the archive structure to access convergence configuration and results.
+This page explains how convergence checking appears in NOMAD simulations data, focusing on how to navigate the archive structure to access convergence configuration and results.
 
 Schema reference pages:
 
@@ -26,7 +26,7 @@ Convergence targets define criteria for determining when iterative calculations 
 | `workflow2.results.is_single_point_converged` | `bool` | GeometryOptimization only* | Aggregated SCF convergence (all subtasks) |
 | `workflow2.results.convergence` | `List[WorkflowConvergenceResults]` | All workflows | Per-target convergence results |
 
-**\* Current limitation**: `single_point_convergence_targets` and `is_single_point_converged` should be available to any workflow composed of SCF calculations (MolecularDynamics, Phonon, etc.), but are currently only implemented in GeometryOptimization. This is a schema design limitation, not a conceptual one.
+**\* Current schema state**: `single_point_convergence_targets` and `is_single_point_converged` are currently available only in GeometryOptimization and not yet extended to other workflows composed of SCF calculations such as MolecularDynamics or Phonon.
 
 Class hierarchies, quantity tables, and section-level metadata are maintained in the generated schema navigation pages linked above. This page focuses on traversal and interpretation patterns.
 
@@ -40,9 +40,9 @@ Convergence information can be accessed through several common patterns dependin
 
 **Per-Target Results**: To see which specific targets converged, iterate through `archive.workflow2.results.convergence`. Each element is a `WorkflowConvergenceResults` object with `convergence_target_ref` pointing back to the original target and `is_reached` showing the boolean status for that target.
 
-**Nested Workflow Traversal**: For workflows with subtasks (like GeometryOptimization), each task in `archive.workflow2.tasks` can have its own `results.convergence` section. To aggregate across all subtasks, use JMESPath queries like `workflow2.tasks[*].results.convergence[*].is_reached` which returns a nested list of boolean values organized by subtask and target.
+**Nested Workflow Traversal**: For workflows with subtasks (like GeometryOptimization), each task in `archive.workflow2.tasks` can have its own `results.convergence` section. Looking across all subtasks involves paths such as `workflow2.tasks[*].results.convergence[*].is_reached`, which return nested boolean values organized by subtask and target.
 
-**Direct Data Access**: Convergence targets use annotation paths to locate data in the archive. For example, energy convergence reads from `archive.data.outputs[-1].scf_steps.delta_energies_total`. Understanding these paths (documented in each target class's `threshold` annotations) helps when debugging or manually inspecting convergence data.
+**Direct Data Access**: Convergence targets are tied to specific archive paths. For example, energy convergence can read from `archive.data.outputs[-1].scf_steps.delta_energies_total`. Understanding these paths helps when interpreting where a reported convergence result comes from.
 
 ## Nested Workflows with SCF Subtasks
 
@@ -53,7 +53,7 @@ Many workflows involve nested structures where each subtask contains SCF calcula
 - **Phonon**: Each atomic displacement requires SCF
 - **ElasticConstants**: Each strained structure needs SCF
 
-Currently only GeometryOptimization implements this pattern in the schema.
+In the current schema, this pattern is only represented for GeometryOptimization.
 
 ### Two-Level Convergence (GeometryOptimization Example)
 
@@ -91,7 +91,7 @@ archive.workflow2 (GeometryOptimization)
 
 ### Aggregating SCF Convergence
 
-The `is_single_point_converged` field aggregates SCF convergence across all steps by collecting convergence results from all subtasks via JMESPath query `workflow2.tasks[*].results.convergence[*].is_reached`. This returns a nested list structure where each outer element represents a subtask (e.g., optimization step) and contains boolean convergence status for each target. The aggregation logic applies `all()` across both dimensions to determine if every target in every subtask converged.
+The `is_single_point_converged` field aggregates SCF convergence across all steps by collecting convergence results from all subtasks through the path `workflow2.tasks[*].results.convergence[*].is_reached`. This returns a nested list structure where each outer element represents a subtask (e.g., an optimization step) and contains boolean convergence status for each target. The aggregated field is `True` only when every target in every subtask is reached.
 
 ## Convergence Annotation Paths
 

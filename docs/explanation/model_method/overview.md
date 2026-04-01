@@ -14,7 +14,7 @@
 ## Purpose
 
 This page explains how method information is organized in the
-`ModelMethod` hierarchy and how to read that structure within a NOMAD Archive.
+`ModelMethod` hierarchy and how to read that structure within a NOMAD archive.
 
 For full section and quantity definitions, use the schema navigation references
 above.
@@ -44,7 +44,7 @@ above.
   method-family quantities.
 - Numerical realization remains attached through `numerical_settings`, so
   archive readers can distinguish model semantics from solver/setup choices.
-- References to related `ModelSystem` or `Outputs` sections should be
+- References to related `ModelSystem` or `Outputs` sections are best
   understood as links between archive components rather than duplicated method
   descriptions.
 
