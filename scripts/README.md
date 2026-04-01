@@ -87,6 +87,22 @@ You can control whether the pipeline generates PNG/SVG images or just uses fast 
 
 The pipeline will automatically handle all configuration and file generation for the selected mode. The summary output will indicate which files were generated and which zoom method is active.
 
+## Mermaid Class Diagram Limitation
+
+Mermaid `classDiagram` currently keeps empty attribute/method compartments in some rendered class boxes even when the generated source does not populate class attributes or methods.
+
+What was tried:
+- generating bare `class Name` declarations instead of `class Name { }`
+- removing divider and empty-group nodes after Mermaid rendered the SVG in the browser
+- removing divider and empty-group nodes in the SVG post-processing path
+
+Observed limitation:
+- under the current MkDocs + Mermaid rendering setup, these approaches were not reliable enough to remove the extra empty sub-boxes consistently
+
+Current decision:
+- keep Mermaid class diagrams in their default compartmented form for stability
+- if visual simplification becomes important later, prefer evaluating an alternative diagram representation rather than further patching Mermaid's rendered SVG structure
+
 ## Architecture
 
 ### Core Concepts

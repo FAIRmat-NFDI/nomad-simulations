@@ -13,46 +13,32 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum {
-    }
-    class ChemicalPotential {
-    }
-    class ElectronicBandGap {
-    }
-    class ElectronicDensityOfStates {
-    }
-    class ElectronicGreensFunction {
-    }
-    class ElectronicSelfEnergy {
-    }
-    class Outputs {
-    }
-    class Permittivity {
-    }
-    class PhysicalProperty {
-    }
-    class PotentialEnergy {
-    }
-    class RadiusOfGyration {
-    }
-    class Temperature {
-    }
-    class TotalEnergy {
-    }
-    class TotalForce {
-    }
+    class AbsorptionSpectrum
+    class ElectronicBandStructure
+    class ElectronicDensityOfStates
+    class ElectronicGreensFunction
+    class FermiSurface
+    class HybridizationFunction
+    class KineticEnergy
+    class Occupancy
+    class Outputs
+    class PhysicalProperty
+    class RadiusOfGyration
+    class SCFSteps
+    class Temperature
+    class TotalEnergy
     Outputs *-- AbsorptionSpectrum : absorption_spectra
-    Outputs *-- ChemicalPotential
-    Outputs *-- ElectronicBandGap
+    Outputs *-- ElectronicBandStructure
     Outputs *-- ElectronicDensityOfStates : electronic_dos
     Outputs *-- ElectronicGreensFunction
-    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
-    Outputs *-- Permittivity : permittivities
-    Outputs *-- PotentialEnergy : potential_energies
+    Outputs *-- FermiSurface
+    Outputs *-- HybridizationFunction
+    Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- Occupancy : occupancies
     Outputs *-- RadiusOfGyration : radii_of_gyration
+    Outputs *-- SCFSteps
     Outputs *-- Temperature
     Outputs *-- TotalEnergy : total_energies
-    Outputs *-- TotalForce
 ```
 
 </div>
@@ -67,42 +53,29 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
-    class CrystalFieldSplitting {
-    }
-    class ElectronicBandStructure {
-    }
-    class ElectronicEigenvalues {
-    }
-    class FermiSurface {
-    }
-    class HoppingMatrix {
-    }
-    class HybridizationFunction {
-    }
-    class KineticEnergy {
-    }
-    class Occupancy {
-    }
-    class Outputs {
-    }
-    class PhysicalProperty {
-    }
-    class QuasiparticleWeight {
-    }
-    class SCFSteps {
-    }
-    class XASSpectrum {
-    }
+    class ChemicalPotential
+    class CrystalFieldSplitting
+    class ElectronicBandGap
+    class ElectronicEigenvalues
+    class ElectronicSelfEnergy
+    class HoppingMatrix
+    class Outputs
+    class Permittivity
+    class PhysicalProperty
+    class PotentialEnergy
+    class QuasiparticleWeight
+    class TotalForce
+    class XASSpectrum
+    Outputs *-- ChemicalPotential
     Outputs *-- CrystalFieldSplitting
-    Outputs *-- ElectronicBandStructure
+    Outputs *-- ElectronicBandGap
     Outputs *-- ElectronicEigenvalues
-    Outputs *-- FermiSurface
+    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
     Outputs *-- HoppingMatrix : hopping_matrices
-    Outputs *-- HybridizationFunction
-    Outputs *-- KineticEnergy : kinetic_energies
-    Outputs *-- Occupancy : occupancies
+    Outputs *-- Permittivity : permittivities
+    Outputs *-- PotentialEnergy : potential_energies
     Outputs *-- QuasiparticleWeight
-    Outputs *-- SCFSteps
+    Outputs *-- TotalForce
     Outputs *-- XASSpectrum : xas_spectra
 ```
 

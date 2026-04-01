@@ -13,28 +13,17 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class ChargeConvergenceTarget {
-    }
-    class EnergyConvergenceTarget {
-    }
-    class ForceConvergenceTarget {
-    }
-    class GeometryOptimizationModel {
-    }
-    class GeometryOptimizationResults {
-    }
-    class PotentialConvergenceTarget {
-    }
-    class SimulationWorkflowModel {
-    }
-    class SimulationWorkflowResults {
-    }
-    class WavefunctionConvergenceTarget {
-    }
-    class WorkflowConvergenceResults {
-    }
-    class WorkflowConvergenceTarget {
-    }
+    class ChargeConvergenceTarget
+    class EnergyConvergenceTarget
+    class ForceConvergenceTarget
+    class GeometryOptimizationModel
+    class GeometryOptimizationResults
+    class PotentialConvergenceTarget
+    class SimulationWorkflowModel
+    class SimulationWorkflowResults
+    class WavefunctionConvergenceTarget
+    class WorkflowConvergenceResults
+    class WorkflowConvergenceTarget
     WorkflowConvergenceTarget <|-- ChargeConvergenceTarget
     WorkflowConvergenceTarget <|-- EnergyConvergenceTarget
     WorkflowConvergenceTarget <|-- ForceConvergenceTarget

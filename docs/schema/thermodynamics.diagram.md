@@ -13,48 +13,27 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BaseEnergy {
-    }
-    class BaseForce {
-    }
-    class ChemicalPotential {
-    }
-    class Enthalpy {
-    }
-    class Entropy {
-    }
-    class GibbsFreeEnergy {
-    }
-    class Heat {
-    }
-    class HeatCapacity {
-    }
-    class HelmholtzFreeEnergy {
-    }
-    class Hessian {
-    }
-    class InternalEnergy {
-    }
-    class KineticEnergy {
-    }
-    class MassDensity {
-    }
-    class PotentialEnergy {
-    }
-    class Pressure {
-    }
-    class Temperature {
-    }
-    class TotalEnergy {
-    }
-    class TotalForce {
-    }
-    class VirialTensor {
-    }
-    class Volume {
-    }
-    class Work {
-    }
+    class BaseEnergy
+    class BaseForce
+    class ChemicalPotential
+    class Enthalpy
+    class Entropy
+    class GibbsFreeEnergy
+    class Heat
+    class HeatCapacity
+    class HelmholtzFreeEnergy
+    class Hessian
+    class InternalEnergy
+    class KineticEnergy
+    class MassDensity
+    class PotentialEnergy
+    class Pressure
+    class Temperature
+    class TotalEnergy
+    class TotalForce
+    class VirialTensor
+    class Volume
+    class Work
     BaseEnergy <|-- ChemicalPotential
     BaseEnergy <|-- Enthalpy
     BaseEnergy <|-- GibbsFreeEnergy

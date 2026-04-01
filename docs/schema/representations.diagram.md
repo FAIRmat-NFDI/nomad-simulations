@@ -13,8 +13,7 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AlternativeRepresentation {
-    }
+    class AlternativeRepresentation
 ```
 
 </div>

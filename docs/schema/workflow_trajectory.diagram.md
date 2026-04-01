@@ -13,18 +13,12 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class ConfigurationalProperty {
-    }
-    class FreeEnergyCalculations {
-    }
-    class Pressures {
-    }
-    class RadiiOfGyration {
-    }
-    class SerialWorkflowResults {
-    }
-    class Temperatures {
-    }
+    class ConfigurationalProperty
+    class FreeEnergyCalculations
+    class Pressures
+    class RadiiOfGyration
+    class SerialWorkflowResults
+    class Temperatures
     ConfigurationalProperty <|-- FreeEnergyCalculations
     ConfigurationalProperty <|-- Pressures
     ConfigurationalProperty <|-- RadiiOfGyration
