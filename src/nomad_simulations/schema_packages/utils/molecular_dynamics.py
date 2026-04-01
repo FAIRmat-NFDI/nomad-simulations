@@ -343,7 +343,6 @@ def create_empty_universe(
 def archive_to_universe(
     archive,
     method_index: int = -1,
-    model_index: int = -1,
 ) -> MDAUniverse | None:
     """Extract the topology from a provided data section of an archive entry
 
