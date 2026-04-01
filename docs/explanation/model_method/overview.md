@@ -39,11 +39,11 @@ above.
 
 --8<-- "snippets/generated/model_method_family_map.md"
 
-## Parser and Normalization Guidance
+## Archive Population and Cross-Linking Guidance
 
-- Prefer explicit parser population of method-defining fields.
+- Prefer explicit population of method-defining fields.
 - Use normalization to complete derived or cross-linked information, not to
-  overwrite explicit parser intent.
+  overwrite explicitly provided method identity.
 - Keep references to `ModelSystem`/`Outputs` sections by identity rather than
   data duplication.
 
@@ -57,5 +57,5 @@ above.
 
 - [ModelMethod vs NumericalSettings](model_method_vs_numerical_settings.md)
 - [Basis Sets](basis_sets.md)
-- [Model System Usage Guidelines](../model_system/usage_guidelines.md)
-- [Normalization](../normalize.md)
+- [Model System Usage Guidelines](../../schema_development/model_system_usage_guidelines.md)
+- [Normalization](../../schema_development/normalize.md)

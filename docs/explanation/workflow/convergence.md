@@ -103,8 +103,3 @@ Targets use metainfo annotations to specify where to find data in the archive:
 - `workflow2.property_name`: Absolute from archive root
 - `archive.property_name`: Explicit archive root path
 
-## Internal Notes
-
-Contributor-only implementation notes and open schema TODOs were moved to:
-
-- `.dev_notes/workflow_convergence_design_notes.md`

@@ -168,7 +168,7 @@ The following exercises focus on practical normalization behavior from current t
     --8<-- "snippets/tutorials/part2_foundations/normalization_exercise_2.py"
     ```
 
-For full normalization execution-order rules, see [Normalization](../explanation/normalize.md).
+For full normalization execution-order rules, see [Normalization](../schema_development/normalize.md).
 
 ## Related Pages
 
@@ -176,4 +176,4 @@ For full normalization execution-order rules, see [Normalization](../explanation
 - [Model Method Overview](../explanation/model_method/overview.md)
 - [ModelMethod vs NumericalSettings](../explanation/model_method/model_method_vs_numerical_settings.md)
 - [Model System](../explanation/model_system/overview.md)
-- [Model System Usage Guidelines](../explanation/model_system/usage_guidelines.md)
+- [Model System Usage Guidelines](../schema_development/model_system_usage_guidelines.md)

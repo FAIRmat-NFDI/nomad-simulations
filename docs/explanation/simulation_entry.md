@@ -35,7 +35,7 @@ The `Simulation` section inherits from a _base section_ `BaseSimulation`. In NOM
 
     E.g., there is a sub-section under `Simulation` named `'model_method'` whose section defintion can be found in the `ModelMethod` section. We will represent this sub-section containment in more complex UML diagrams in the future using the containment arrow (see below for [an example using `Program`](#program)).
 
-`Simulation` inherits from `BaseSimulation` and `Schema` and is used as the simulation entry section in the archive. All of the base sections discussed here are subject to the [public normalize function](normalize.md) in NOMAD. The private function `_set_system_branch_depth()` is related with the [ModelSystem base section](model_system/overview.md).
+`Simulation` inherits from `BaseSimulation` and `Schema` and is used as the simulation entry section in the archive. All of the base sections discussed here are subject to the [public normalize function](../schema_development/normalize.md) in NOMAD. The private function `_set_system_branch_depth()` is related with the [ModelSystem base section](model_system/overview.md).
 
 ## Main sub-sections in `Simulation` {#sub-sections-in-simulation}
 
@@ -72,44 +72,14 @@ The `Program` base section contains all the information about the program / soft
 </div>
 
 
-When [writing a parser](https://nomad-lab.eu/prod/v1/staging/docs/howto/customization/parsers.html), we recommend to start by instantiating the `Program` section and populating its quantities, in order to get acquainted with the NOMAD parsing infrastructure.
+In normalized archive data, the `Program` subsection records the software used
+to produce the simulation data, including identifiers such as the program name,
+version, and related metadata. In practice, this is one of the first populated
+parts of a `Simulation` record and serves as the software anchor for the rest of
+the entry.
 
-For example, imagine we have a file which we want to parse with the following information:
-```txt
-! * * * * * * *
-! Welcome to SUPERCODE, version 7.0
-...
-```
-
-We can parse the program `name` and `version` by matching the texts (see, e.g., [Wikipedia page for Regular expressions, also called _regex_](https://en.wikipedia.org/wiki/Regular_expression)):
-
-```python
-from nomad.parsing.file_parser import TextParser, Quantity
-from nomad_simulations.schema_packages.general import Simulation, Program
-
-
-class SUPERCODEParser:
-    """
-    Class responsible to populate the NOMAD `archive` from the files given by a
-    SUPERCODE simulation.
-    """
-
-    def parse(self, filepath, archive, logger):
-        output_parser = TextParser(
-            quantities=[
-                Quantity('program_version', r'version *([\d\.]+) *', repeats=False)
-            ]
-        )
-        output_parser.mainfile = filepath
-
-        simulation = Simulation()
-        simulation.program = Program(
-            name='SUPERCODE',
-            version=output_parser.get('program_version'),
-        )
-        # append `Simulation` as an `archive.data` section
-        archive.data.append(simulation)
-```
+Implementation-oriented examples for populating `Simulation` and `Program` in
+parser code belong under [Populating `Simulation` and `Program`](../schema_development/simulation_entry_population.md).
 
 ## Homogenization and the role of Workflows
 

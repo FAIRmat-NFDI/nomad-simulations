@@ -11,10 +11,31 @@ Guide hierarchy:
 ## 1) Keep Responsibilities Clear
 
 - `Schema Navigation` (generated): structure, quantities, relationships.
-- `Schema Explanation` (hand-written): rationale, invariants, usage guidance.
+- `Schema Explanation` (hand-written): schema understanding, rationale, invariants, traversal, and usage of existing schema components.
+- `Schema Development` (hand-written): implementation guidance for schema extenders, parser authors, and contributors writing schema-related code.
+- `Contribution Guides` (within Schema Development): overarching process, writing, and automation instructions.
+- `.dev_notes/` (internal): history, design rationale, implementation limits, migration traps, and agent-facing technical context.
 - Do not duplicate generated reference content in explanation pages.
 - Add canonical links to relevant `schema/*.md` pages for backlink discovery
   (see [Automation Guide](documentation_automation_guide.md#auto-discovered-backlinks-to-explanation-pages)).
+
+### Placement Rules
+
+- Put a page in `Schema Explanation` when its primary question is: "What does this part of the schema mean, how is it organized, and how should it be understood, instantiated, populated, or traversed?"
+- Put a page in `Schema Development` when its primary question is: "How do I implement, extend, populate, migrate, debug, or contribute this in code or parsers?"
+- Put a note in `.dev_notes/` when the content is too detailed, provisional, historical, or design-internal for the published docs.
+- Mixed pages are allowed, but one audience must be clearly primary. Link to the secondary material instead of duplicating it.
+
+### Snippet Test
+
+- If the key code snippets define new schema classes, quantities, subsections, or `normalize()` implementations, the page likely belongs in `Schema Development`.
+- If the key code snippets instantiate, populate, inspect, or traverse existing schema components, the page likely belongs in `Schema Explanation`.
+
+### Normalization Rule
+
+- The mere presence of normalization-related content does **not** automatically make a page a `Schema Development` page.
+- Put normalization content in `Schema Explanation` when it explains what existing normalization does, how derived quantities or sections are produced, and how normalized archive content should be interpreted.
+- Put normalization content in `Schema Development` when it explains how `normalize()` works as an implementation mechanism, how to write or extend normalization logic, ordering rules, debugging, or other implementation guidance.
 
 ## 2) Keep Pages Focused
 
@@ -30,12 +51,13 @@ Guide hierarchy:
 When an implementation introduces a new documentation set:
 
 1. Decide whether content belongs in published docs or internal notes:
-   use `docs/explanation/*` (Schema Explanation section) for user/contributor-facing guidance, and move
-   implementation/TODO/history-heavy notes to `.dev_notes/` (or `.dev_docs/`
-   if that internal folder is adopted in the repository).
-2. Keep explanation pages focused on rationale, traversal, and usage patterns.
-   Remove duplicated structure/quantity/class inventory content once auto-doc
-   pages exist (auto-generated content lives in `docs/schema/*`, not `docs/explanation/*`).
+  use `docs/explanation/*` for published schema-understanding pages,
+  `docs/schema_development/*` for published implementation/development pages,
+  and move implementation/TODO/history-heavy notes to `.dev_notes/`.
+2. Keep explanation pages focused on rationale, traversal, and usage patterns of existing schema components.
+  Keep development pages focused on implementation patterns, extension points, migrations, and code-level guidance.
+  Remove duplicated structure/quantity/class inventory content once auto-doc
+  pages exist (auto-generated content lives in `docs/schema/*`, not in hand-written pages).
 3. For auto-doc navigation decisions, see
    [Automation Guide](documentation_automation_guide.md#guidelines-for-adding-auto-doc-navigation).
 
@@ -47,8 +69,16 @@ overview/landing pages):
 1. Purpose
 2. Link to generated page(s)
 3. Rules/invariants
-4. Usage guidance (parser/normalization)
+4. Usage guidance (instantiating, populating, inspecting, or traversing existing schema)
 5. Pitfalls and related links
+
+For technical development pages, use a parallel pattern:
+
+1. Purpose
+2. Audience / when to use this guide
+3. Implementation pattern or extension point
+4. Executable examples
+5. Pitfalls, migrations, and related links
 
 ## 5) Keep Examples Executable
 

@@ -4,7 +4,7 @@
 
 - [Representation Architecture](representation.md)
 - [Electronic States](electronic_states.md)
-- [Usage Guidelines](usage_guidelines.md)
+- [Model System Usage Guidelines](../../schema_development/model_system_usage_guidelines.md)
 
 ## Schema Navigation References
 
@@ -114,7 +114,7 @@ branch depth and composition labels consistently along the tree. In practice:
 Keep subsystem-hierarchy semantics (`sub_systems`) distinct from alternative geometric
 views (`representations`).
 
-## Normalization Process
+## Derived Behavior During Normalization
 
 The `ModelSystem.normalize()` method performs several important tasks when `is_representative=True`:
 
@@ -126,7 +126,7 @@ The `ModelSystem.normalize()` method performs several important tasks when `is_r
 
 The normalization order ensures that dependencies between different components are respected. For example, symmetry analysis requires valid particle positions, and chemical formula generation requires properly initialized particle states.
 
-See [Normalization](../normalize.md) for more details on the normalization system across NOMAD simulations schema.
+See [Normalization](../../schema_development/normalize.md) for more details on the normalization system across NOMAD simulations schema.
 
 ## Quick Start Examples
 
@@ -168,5 +168,5 @@ See [Normalization](../normalize.md) for more details on the normalization syste
 
 - [Representation Architecture](representation.md): Detailed documentation of the geometric representation design
 - [Electronic States](electronic_states.md): How to describe electronic configurations of atoms
-- [Normalization](../normalize.md): Overview of the normalization system
+- [Normalization](../../schema_development/normalize.md): Overview of the normalization system
 - [General Schema Overview](../overview.md): Introduction to the NOMAD simulations schema package

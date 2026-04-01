@@ -98,4 +98,4 @@ This means you can explore different geometric descriptions (primitive cells, co
 
 - [ModelSystem Overview](overview.md): General introduction to the ModelSystem class
 - [Electronic States](electronic_states.md): Similar hierarchical design pattern for electronic structure
-- [Normalization](../normalize.md): How normalization populates alternative representations
+- [Normalization](../../schema_development/normalize.md): How normalization populates alternative representations

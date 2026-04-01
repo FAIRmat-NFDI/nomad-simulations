@@ -56,7 +56,7 @@ For a system in an octahedral crystal field, the decomposition follows symmetry 
 
 When parsing Wannier function output, create `ElectronicState` instances with the `basis_orbitals` field populated by the atomic orbitals used in the Wannierization. Each basis orbital is a `SphericalSymmetryState` with specific n, l, ml values. The expansion coefficients connecting Bloch states to Wannier functions reside in the band structure eigenvector arrays rather than in the state definition, maintaining clean separation between basis set definition and wavefunction coefficients.
 
-## Developer Notes
+## Implementation Notes
 
-Additional contributor guidance is available under
-[Contributor Guides > Overview](../../contributor_guides/overview.md).
+Published implementation guidance for contributors belongs under
+[Schema Development](../../schema_development/overview.md).
