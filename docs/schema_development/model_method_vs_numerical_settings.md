@@ -7,8 +7,8 @@ This page explains how to decide whether information belongs in
 
 For generated structure and quantity tables, use:
 
-- [Model Method (Schema Navigation)](../../schema/model_method.md)
-- [Numerical Settings (Schema Navigation)](../../schema/numerical_settings.md)
+- [Model Method (Schema Navigation)](../schema/model_method.md)
+- [Numerical Settings (Schema Navigation)](../schema/numerical_settings.md)
 
 ## Core Distinction
 
@@ -87,12 +87,12 @@ chosen method, not as the method identity itself.
 
 ## Why Keep the Split
 
-Keeping the split as separate sections is still useful because it:
+Keeping the split as separate sections is useful because it:
 
 - preserves a stable method identity across convergence studies and code-level
   setup changes,
 - keeps method taxonomy distinct from code-specific numerical controls,
-- makes parser output easier to normalize and compare across codes,
+- makes method descriptions easier to compare across codes,
 - avoids overloading one section with both physical meaning and execution
   details.
 
@@ -104,13 +104,13 @@ their numerical realization in `NumericalSettings`".
 
 - Do not duplicate the same concept in both sections just because a code places
   the keywords close together in its input file.
-- Do not put every parser keyword into `ModelMethod`; many are only numerical
-  controls.
+- Do not treat every code-specific input keyword as `ModelMethod`; many belong
+  only to numerical controls.
 - When a concept has both a model identity and a realization layer, model them
   separately rather than forcing one mixed section.
 
 ## Related Pages
 
-- [Model Method Overview](overview.md)
-- [Basis Sets](basis_sets.md)
-- [Simulation Entry](../simulation_entry.md)
+- [Model Method Overview](../explanation/model_method/overview.md)
+- [Basis Sets](../explanation/model_method/basis_sets.md)
+- [Simulation Entry](../explanation/simulation_entry.md)

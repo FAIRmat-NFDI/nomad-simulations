@@ -2,7 +2,6 @@
 
 ## Pages in This Section
 
-- [ModelMethod vs NumericalSettings](model_method_vs_numerical_settings.md)
 - [Basis Sets](basis_sets.md)
 
 ## Schema Navigation References
@@ -14,22 +13,22 @@
 
 ## Purpose
 
-This page explains how to use the `ModelMethod` hierarchy in hand-written
-schema data, without duplicating generated structure tables.
+This page explains how method information is organized in the
+`ModelMethod` hierarchy and how to read that structure within a NOMAD Archive.
 
 For full section and quantity definitions, use the schema navigation references
 above.
 
-## Rules and Invariants
+## Reading the Hierarchy
 
-- Use `name`/`type` to identify the method family and subtype.
-- Keep Hamiltonian/model semantics in `ModelMethod` and subclasses.
-- Keep numerical control parameters under `numerical_settings`.
-- Use `contributions` for additive model terms instead of flattening all terms
-  into one section.
-- When a concept has both a physical-model aspect and an implementation aspect,
-  split them: keep the model identity in `ModelMethod` and the realization knobs
-  in `NumericalSettings`.
+- Method identity is expressed by fields such as `name`, `type`, and the
+  relevant method-family quantities.
+- Numerical realization remains attached through `numerical_settings`, so the
+  method description and its practical setup remain connected without being
+  merged into the same conceptual layer.
+- Additive terms are commonly represented through `contributions`, which keeps
+  composite methods readable as structured combinations rather than flattened
+  lists of unrelated quantities.
 
 ## Hierarchy Snapshot
 
@@ -49,7 +48,7 @@ above.
   understood as links between archive components rather than duplicated method
   descriptions.
 
-## Executable Example
+## Example
 
 ```python
 --8<-- "snippets/model_method/model_method_overview_example.py"
@@ -57,5 +56,5 @@ above.
 
 ## Related Pages
 
-- [ModelMethod vs NumericalSettings](model_method_vs_numerical_settings.md)
 - [Basis Sets](basis_sets.md)
+- [ModelMethod vs NumericalSettings](../../schema_development/model_method_vs_numerical_settings.md)

@@ -43,7 +43,7 @@ The `Simulation` base section is composed of 4 main sub-sections:
 
 1. `Program`: contains all the program information, e.g., `name` of the program, `version`, etc.
 2. `ModelSystem`: contains all the system information about geometrical positions of atoms, their states, simulation cells, symmetry information, etc.
-3. `ModelMethod`: contains the methodological information for the simulation. In practice this combines the model identity itself (e.g., `DFT`, `GW`, `ForceFields`) with attached numerical realizations stored under `numerical_settings` (e.g., meshes, self-consistency parameters, basis-set settings). See [ModelMethod vs NumericalSettings](model_method/model_method_vs_numerical_settings.md) for the distinction.
+3. `ModelMethod`: contains the methodological information for the simulation. In practice this combines the model identity itself (e.g., `DFT`, `GW`, `ForceFields`) with attached numerical realizations stored under `numerical_settings` (e.g., meshes, self-consistency parameters, basis-set settings). For contributor-facing guidance on where that distinction is modeled, see [ModelMethod vs NumericalSettings](../schema_development/model_method_vs_numerical_settings.md).
 4. `Outputs`: contains all the output properties, as well as references to the `ModelSystem` used to obtain such properties. It might also contain information which will populate `ModelSystem` (e.g., atomic occupations, atomic moments, crystal field energies, etc.).
 
 !!! note "Self-consistent steps, SinglePoint entries, and more complex workflows."

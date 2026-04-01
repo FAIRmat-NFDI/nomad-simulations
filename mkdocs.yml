@@ -52,7 +52,6 @@ nav:
           - Electronic States: explanation/model_system/electronic_states.md
       - Model Method:
           - Overview: explanation/model_method/overview.md
-          - ModelMethod vs NumericalSettings: explanation/model_method/model_method_vs_numerical_settings.md
           - Basis Sets: explanation/model_method/basis_sets.md
       - Workflow:
           - Overview: explanation/workflow/overview.md
@@ -62,6 +61,7 @@ nav:
   - Schema Development:
       - Overview: schema_development/overview.md
       - Populating Simulation and Program: schema_development/simulation_entry_population.md
+      - ModelMethod vs NumericalSettings: schema_development/model_method_vs_numerical_settings.md
       - Bounded Data Types: schema_development/data_types.md
       - Normalization: schema_development/normalize.md
       - Model System Usage Guidelines: schema_development/model_system_usage_guidelines.md

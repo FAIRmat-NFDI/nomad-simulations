@@ -18,7 +18,7 @@ The geometric quantities use a consistent implicit Cartesian frame:
 
 - **`fractional_coordinates`** (in `Representation`): Dimensionless coordinates relative to the lattice vectors, typically in the range [0, 1] within the unit cell.
 
-- **`positions`** (in `ModelSystem`): Cartesian coordinates (x, y, z) of each atom in the top-level system. The orientation of the frame comes from the simulation code or parser that generated the data. Subsystems reference these positions via `particle_indices`.
+- **`positions`** (in `ModelSystem`): Cartesian coordinates (x, y, z) of each atom in the top-level system. The orientation of the frame comes from the source data represented in the archive. Subsystems reference these positions via `particle_indices`.
 
 ### Setting Geometric Properties
 
@@ -40,11 +40,11 @@ Alternative representations are stored in the `representations` subsection of `M
 --8<-- "snippets/explanation/model_system/representation/block_02.py"
 ```
 
-This pattern allows the same physical system to be described from multiple geometric perspectives while maintaining the original parser output as the primary data on the `ModelSystem` itself.
+This pattern allows the same physical system to be described from multiple geometric perspectives while maintaining the original archived system description as the primary data on the `ModelSystem` itself.
 
 ## Integration with Symmetry Analysis
 
-The `Representation` architecture integrates naturally with symmetry analysis. When `ModelSystem.normalize()` is called with `is_representative=True`, the symmetry analysis workflow automatically generates primitive and conventional cell representations:
+The `Representation` architecture integrates naturally with symmetry analysis. For representative systems, normalization can add primitive and conventional cell representations alongside the original one:
 
 ```python
 --8<-- "snippets/explanation/model_system/representation/block_03.py"
@@ -58,7 +58,7 @@ Alternative representations should be used when you need to describe the same ph
 
 ### Direct vs. Subsection Storage
 
-The design principle is straightforward: the original system description (as provided by the parser or user) lives directly on `ModelSystem` properties, while derived or alternative views are stored in the `representations` subsection. This maintains a clear provenance for the data.
+The design principle is straightforward: the original system description lives directly on `ModelSystem` properties, while derived or alternative views are stored in the `representations` subsection. This maintains a clear provenance for the data.
 
 ### Working with ASE Atoms Objects
 
@@ -74,7 +74,7 @@ The separation between atomic positions (from `ModelSystem`) and cell geometry (
 
 ### Programmatic Access to Named Representations
 
-When searching for a specific representation by name, use a simple loop:
+Named representations can be located by iterating over the available entries:
 
 ```python
 --8<-- "snippets/explanation/model_system/representation/block_05.py"
