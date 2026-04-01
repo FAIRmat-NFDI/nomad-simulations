@@ -1,11 +1,6 @@
 # Model Method
 
-**Purpose:** Base method hierarchy up to ModelMethodElectronic
-
-**In scope:**
-
-- Top-level inheritance chain: BaseModelMethod → ModelMethod → ModelMethodElectronic
-- Entry point for all electronic-method subclasses
+**Purpose:** Base method hierarchy: BaseModelMethod, ModelMethod, and ModelMethodElectronic
 
 
 ## Relationship map
@@ -30,18 +25,13 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `BaseModelMethod`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `BaseModelMethod` | A base section used to define the abstract class of a Hamiltonian section. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.BaseModelMethod){:target="_blank"} |
-| `ModelMethod` | A base section for the method-defining choices of a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.ModelMethod){:target="_blank"} |
-| `ModelMethodElectronic` | A base section used to define the parameters of a model Hamiltonian used in electronic structure calculations (TB, DFT, GW, BSE, DMFT, etc). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.ModelMethodElectronic){:target="_blank"} |
-
-
-## Quantities by section
-
-### `BaseModelMethod`
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -51,9 +41,17 @@ classDiagram
 
 ### `ModelMethod`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ModelMethod` | A base section for the method-defining choices of a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.ModelMethod){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `ModelMethodElectronic`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ModelMethodElectronic` | A base section used to define the parameters of a model Hamiltonian used in electronic structure calculations (TB, DFT, GW, BSE, DMFT, etc). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.ModelMethodElectronic){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -64,4 +62,3 @@ classDiagram
 ## Related Pages
 
 - [Model Method Overview](../explanation/model_method/overview.md)
-- [ModelMethod vs NumericalSettings](../explanation/model_method/model_method_vs_numerical_settings.md)

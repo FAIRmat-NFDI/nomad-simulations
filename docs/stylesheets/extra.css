@@ -9,7 +9,7 @@
 } */
 
 .md-header, .md-header__inner {
-    background-color: #fff;
+    background-color: var(--md-default-bg-color);
     color: #2A4CDF;
 }
 
@@ -35,8 +35,23 @@
 }
 
 .md-typeset h1 {
-    color: black;
+    color: var(--md-typeset-color);
     font-weight: 700;
+}
+
+[data-md-color-scheme="slate"] .md-header,
+[data-md-color-scheme="slate"] .md-header__inner {
+    background-color: #1c2128;
+    color: var(--md-default-fg-color);
+}
+
+[data-md-color-scheme="slate"] .md-header__button,
+[data-md-color-scheme="slate"] .md-header__topic,
+[data-md-color-scheme="slate"] .md-header__title,
+[data-md-color-scheme="slate"] .md-header__ellipsis,
+[data-md-color-scheme="slate"] .md-search__icon,
+[data-md-color-scheme="slate"] .md-source {
+    color: var(--md-default-fg-color);
 }
 
 .youtube {
@@ -262,10 +277,16 @@
     }
 }
 
-/* Panzoom plugin uses md-code-bg-color (gray) by default; force white canvas. */
+/* Panzoom plugin uses md-code-bg-color (gray) by default; force white canvas in light mode. */
 .panzoom-box,
 .panzoom-fullscreen {
     background-color: #fff !important;
+}
+
+/* Dark mode: use dark background for panzoom diagrams */
+[data-md-color-scheme="slate"] .panzoom-box,
+[data-md-color-scheme="slate"] .panzoom-fullscreen {
+    background-color: #1e1e1e !important;
 }
 
 /* Clear visual frame around pan/zoom viewport. */
@@ -298,4 +319,49 @@
 .panzoom-box[data-key="alt"] .panzoom-info-box::before {
     content: "Hold Option (macOS) or Alt (Windows/Linux), then scroll to zoom and drag to pan.";
     color: var(--md-default-fg-color--light);
+}
+
+/* ====================
+   Dark Mode: Mermaid Diagram Support
+   ==================== */
+
+/* Dark mode: Force white/light text in Mermaid diagrams */
+[data-md-color-scheme="slate"] .mermaid text,
+[data-md-color-scheme="slate"] .mermaid .nodeLabel,
+[data-md-color-scheme="slate"] .mermaid .edgeLabel,
+[data-md-color-scheme="slate"] .mermaid .label,
+[data-md-color-scheme="slate"] .mermaid .labelText,
+[data-md-color-scheme="slate"] .mermaid tspan {
+    fill: #e8e8e8 !important;
+    color: #e8e8e8 !important;
+}
+
+/* Dark mode: Make lines visible */
+[data-md-color-scheme="slate"] .mermaid line,
+[data-md-color-scheme="slate"] .mermaid path,
+[data-md-color-scheme="slate"] .mermaid polyline,
+[data-md-color-scheme="slate"] .mermaid polygon {
+    stroke: #b0b0b0 !important;
+}
+
+/* Dark mode: Adjust rectangle fills for class boxes */
+[data-md-color-scheme="slate"] .mermaid rect.node,
+[data-md-color-scheme="slate"] .mermaid rect.nodeLabel {
+    fill: #2d2d2d !important;
+    stroke: #606060 !important;
+}
+
+/* Dark mode: Markers (arrowheads) visibility */
+[data-md-color-scheme="slate"] .mermaid marker path {
+    fill: #b0b0b0 !important;
+    stroke: #b0b0b0 !important;
+}
+
+/* Dark mode: Adjust borders and backgrounds for panzoom box */
+[data-md-color-scheme="slate"] .panzoom-box {
+    border-color: #444;
+}
+
+[data-md-color-scheme="slate"] .panzoom-box::after {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 }

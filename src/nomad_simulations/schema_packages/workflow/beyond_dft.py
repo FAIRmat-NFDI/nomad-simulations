@@ -36,6 +36,10 @@ class BeyondDFTWorkflow(SerialWorkflow):
     Definitions for workflows based on DFT.
     """
 
+    method = SubSection(sub_section=BeyondDFTMethod.m_def)
+
+    results = SubSection(sub_section=BeyondDFTResults.m_def)
+
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.method:

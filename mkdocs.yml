@@ -12,44 +12,64 @@ nav:
       - Overview: schema/index.md
       - Simulation Entry: schema/simulation.md
       - Model System:
-          - Model System: schema/model_system.md
+          - Overview: schema/model_system.md
           - Alternative Representations: schema/representations.md
+          - Chemical Formula: schema/chemical_formula.md
           - Particle States: schema/particle_states.md
           - Symmetry: schema/symmetry.md
-          - Chemical Formula: schema/chemical_formula.md
       - Model Method:
-          - Model Method: schema/model_method.md
-          - Model Method Electronic: schema/model_method_electronic.md
+          - Overview: schema/model_method.md
           - Force Field: schema/force_field.md
+          - Model Method Electronic: schema/model_method_electronic.md
           - Numerical Settings: schema/numerical_settings.md
       - Outputs:
-          - Outputs: schema/outputs.md
-          - Physical Property Backbone: schema/physical_property.md
+          - Overview: schema/outputs.md
           - Electronic Structure Properties: schema/electronic_properties.md
           - Many-Body Properties: schema/manybody_properties.md
+          - Physical Property Backbone: schema/physical_property.md
           - Spectroscopic Properties: schema/spectroscopy.md
           - Thermodynamic Properties: schema/thermodynamics.md
+      - Workflow:
+          - Overview: schema/workflow.md
+          - Beyond-DFT Workflow Family: schema/workflow_beyond_dft.md
+          - Beyond-HF Workflow Family: schema/workflow_beyond_hf.md
+          - Elastic Workflow: schema/workflow_elastic.md
+          - Equation of State Workflow: schema/workflow_equation_of_state.md
+          - Geometry Optimization Workflow: schema/workflow_geometry_optimization.md
+          - Molecular Dynamics Workflow: schema/workflow_molecular_dynamics.md
+          - Phonon Workflow: schema/workflow_phonon.md
+          - Photon Polarization Workflow: schema/workflow_photon_polarization.md
+          - Single-Point Workflow: schema/workflow_single_point.md
+          - Thermodynamics Workflow: schema/workflow_thermodynamics.md
+          - Workflow Convergence: schema/workflow_convergence.md
+          - Workflow Trajectory Properties: schema/workflow_trajectory.md
   - Schema Explanation:
       - Overview: explanation/overview.md
       - Simulation Entry: explanation/simulation_entry.md
       - Model System:
-          - Model System: explanation/model_system/model_system.md
+          - Overview: explanation/model_system/overview.md
           - Representation Architecture: explanation/model_system/representation.md
           - Electronic States: explanation/model_system/electronic_states.md
-          - Usage Guidelines: explanation/model_system/usage_guidelines.md
       - Model Method:
           - Overview: explanation/model_method/overview.md
-          - ModelMethod vs NumericalSettings: explanation/model_method/model_method_vs_numerical_settings.md
           - Basis Sets: explanation/model_method/basis_sets.md
+      - Workflow:
+          - Overview: explanation/workflow/overview.md
+          - Convergence: explanation/workflow/convergence.md
       # - Outputs:
-      #     - Outputs: explanation/outputs/outputs.md
-      - Bounded Data Types: explanation/data_types.md
-      - Normalization: explanation/normalize.md
-  - Contributor Guides:
-      - Overview: contributor_guides/overview.md
-      - Schema Development Guide: contributor_guides/schema_development_guide.md
-      - Documentation Writing Guide: contributor_guides/documentation_writing_guide.md
-      - Documentation Automation Guide: contributor_guides/documentation_automation_guide.md
+      #     - Overview: explanation/outputs/overview.md
+  - Schema Development:
+      - Overview: schema_development/overview.md
+      - Contribution Guides:
+        - Overview: contributor_guides/overview.md
+        - Schema Development Guide: contributor_guides/schema_development_guide.md
+        - Documentation Writing Guide: contributor_guides/documentation_writing_guide.md
+        - Documentation Automation Guide: contributor_guides/documentation_automation_guide.md
+      - Populating Simulation and Program: schema_development/simulation_entry_population.md
+      - ModelMethod vs NumericalSettings: schema_development/model_method_vs_numerical_settings.md
+      - Bounded Data Types: schema_development/data_types.md
+      - Normalization: schema_development/normalize.md
+      - Model System Usage Guidelines: schema_development/model_system_usage_guidelines.md
   - Contact: contact.md
 theme:
   name: material
@@ -118,6 +138,7 @@ extra_javascript:
   - 'https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js'
   - 'https://unpkg.com/cytoscape@3.19.1/dist/cytoscape.min.js'
   - 'https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js'
+  - assets/mermaid-dark-mode.js
   - assets/mermaid-uml-markers.js
   #   - assets/click-zoom.js  # Disabled: using panzoom plugin
   #   - assets/svg-pan-zoom-diagram.js  # Disabled: using panzoom plugin

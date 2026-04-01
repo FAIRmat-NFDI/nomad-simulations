@@ -1,5 +1,5 @@
 import numpy as np
-from nomad.datamodel import EntryArchive
+from nomad.datamodel import EntryArchive, SubSection
 from nomad.metainfo import Quantity, Reference, SchemaPackage
 
 from nomad_simulations.schema_packages.model_method import BSE as BSEMethodology
@@ -55,6 +55,10 @@ class PhotonPolarizationWorkflow(ParallelWorkflow):
     """
     Definitions for photon polarization workflow.
     """
+
+    method = SubSection(sub_section=PhotonPolarizationMethod.m_def)
+
+    results = SubSection(sub_section=PhotonPolarizationResults.m_def)
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

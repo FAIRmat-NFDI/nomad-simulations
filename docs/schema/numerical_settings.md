@@ -2,15 +2,6 @@
 
 **Purpose:** Computational parameters: meshes, basis sets, convergence, and discretization
 
-**In scope:**
-
-- K-point meshes and line paths for band structures
-- Real-space meshes and grids
-- Basis set specifications: plane-wave, APW, atom-centered
-- Convergence thresholds and maximum iterations
-- Smearing functions: Fermi-Dirac, Gaussian, Methfessel-Paxton
-- Force calculation settings
-
 
 ## Relationship map
 
@@ -52,33 +43,23 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `NumericalSettings`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `NumericalSettings` | A base section used to define how a chosen `ModelMethod` is realized numerically in a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.NumericalSettings){:target="_blank"} |
-| `Mesh` | A base section used to specify the settings of a sampling mesh. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.Mesh){:target="_blank"} |
-| `KMesh` | A base section used to specify the settings of a sampling mesh in reciprocal space. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.KMesh){:target="_blank"} |
-| `KLinePath` | A base section used to define the settings of a k-line path within a multidimensional mesh. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.KLinePath){:target="_blank"} |
-| `KSpace` | A base section used to specify the settings of the k-space. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.KSpace){:target="_blank"} |
-| `Smearing` | Section specifying the smearing of the occupation numbers to either simulate temperature effects or improve SCF convergence. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.Smearing){:target="_blank"} |
-| `SelfConsistency` | A base section used to define the convergence settings of self-consistent field (SCF) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.SelfConsistency){:target="_blank"} |
-| `ForceCalculations` | Section containing the parameters describing how a ForceField model is evaluated during a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.force_field.ForceCalculations){:target="_blank"} |
-| `BasisSetComponent` | A type section denoting a basis set component of a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.BasisSetComponent){:target="_blank"} |
-| `PlaneWaveBasisSet` | Basis set over a reciprocal mesh, where each point $k_n$ represents a planar-wave basis function $rac{1}{\sqrt{\omega}} e^{i k_n r}$. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.PlaneWaveBasisSet){:target="_blank"} |
-| `APWPlaneWaveBasisSet` | A `PlaneWaveBasisSet` specialized to the APW use case. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.APWPlaneWaveBasisSet){:target="_blank"} |
-| `AtomCenteredFunction` | Specifies a single contracted basis function in an atom-centered basis set. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.AtomCenteredFunction){:target="_blank"} |
-
-
-## Quantities by section
-
-### `NumericalSettings`
 
 | Quantity | Type | Description |
 |---|---|---|
 | `name` | m_str(str) | Name of the numerical settings section. This is typically used for easy identification of the `NumericalSettings` section within a `ModelMethod`. Possible values: "KMesh", "FrequencyMesh", "TimeMesh", "SelfConsistency", "BasisSet". |
 
 ### `Mesh`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Mesh` | A base section used to specify the settings of a sampling mesh. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.Mesh){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -93,6 +74,10 @@ classDiagram
 
 ### `KMesh`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `KMesh` | A base section used to specify the settings of a sampling mesh in reciprocal space. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.KMesh){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `label` | Enum | <details><summary>Label used to identify the meaning of the reciprocal grid.</summary>Label used to identify the meaning of the reciprocal grid.<br>The actual meaning of `k` vs `g` vs `q` is context-dependent, though typically:<br>- `g` is used for the primitive vectors (typically within the Brillouin zone).<br>- `k` for a generic reciprocal vector.<br>- `q` for any momentum change imparted by a scattering event.</details> |
@@ -104,6 +89,10 @@ classDiagram
 
 ### `KLinePath`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `KLinePath` | A base section used to define the settings of a k-line path within a multidimensional mesh. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.KLinePath){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `high_symmetry_path_names` | m_str(str) (shape: ['*']) | List of the high-symmetry path names followed in the k-line path. This quantity is directly coupled with `high_symmetry_path_value`. E.g., in a cubic lattice: `high_symmetry_path_names = ['Gamma', 'X', 'Y', 'Gamma']`. |
@@ -113,17 +102,29 @@ classDiagram
 
 ### `KSpace`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `KSpace` | A base section used to specify the settings of the k-space. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.KSpace){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `reciprocal_lattice_vectors` | m_float64(float64) (shape: [3, 3]) | Reciprocal lattice vectors of the simulated cell, in Cartesian coordinates and including the $2 pi$ pre-factor. The first index runs over each lattice vector. The second index runs over the $x, y, z$ Cartesian coordinates. |
 
 ### `Smearing`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Smearing` | Section specifying the smearing of the occupation numbers to either simulate temperature effects or improve SCF convergence. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.Smearing){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `name` | Enum | Smearing routine employed. |
 
 ### `SelfConsistency`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SelfConsistency` | A base section used to define the convergence settings of self-consistent field (SCF) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.SelfConsistency){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -133,6 +134,10 @@ classDiagram
 | `threshold_change_unit` | m_str(str) | Unit using the pint UnitRegistry() notation for the `threshold_change`. |
 
 ### `ForceCalculations`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ForceCalculations` | Section containing the parameters describing how a ForceField model is evaluated during a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.force_field.ForceCalculations){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -144,6 +149,10 @@ classDiagram
 
 ### `BasisSetComponent`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `BasisSetComponent` | A type section denoting a basis set component of a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.BasisSetComponent){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `name` | m_str(str) | Name of the basis set component. |
@@ -152,6 +161,10 @@ classDiagram
 
 ### `PlaneWaveBasisSet`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `PlaneWaveBasisSet` | Basis set over a reciprocal mesh, where each point $k_n$ represents a planar-wave basis function $rac{1}{\sqrt{\omega}} e^{i k_n r}$. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.PlaneWaveBasisSet){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `cutoff_energy` | m_float64(float64) | Cutoff energy for the plane-wave basis set. The simulation uses plane waves with energies below this cutoff. |
@@ -159,11 +172,19 @@ classDiagram
 
 ### `APWPlaneWaveBasisSet`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `APWPlaneWaveBasisSet` | A `PlaneWaveBasisSet` specialized to the APW use case. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.APWPlaneWaveBasisSet){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `cutoff_fractional` | m_float64(float64) | The spherical cutoff parameter for the interstitial plane waves in the APW family. This cutoff has no units, referring to the product of the smallest muffin-tin radius and the length of the cutoff reciprocal vector ($r_{MT} * \|K_{cut}\|$). |
 
 ### `AtomCenteredFunction`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `AtomCenteredFunction` | Specifies a single contracted basis function in an atom-centered basis set. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.AtomCenteredFunction){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -182,4 +203,3 @@ classDiagram
 ## Related Pages
 
 - [Model Method Overview](../explanation/model_method/overview.md)
-- [ModelMethod vs NumericalSettings](../explanation/model_method/model_method_vs_numerical_settings.md)

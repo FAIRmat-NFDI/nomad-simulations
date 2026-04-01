@@ -2,19 +2,6 @@
 
 **Purpose:** Complete particle state hierarchy: ParticleState base class, AtomsState with detailed atomic properties, and CGBeadState
 
-**In scope:**
-
-- ParticleState: base class for all particle information
-- AtomsState: atomic particle states with chemical symbols
-- CGBeadState: coarse-grained bead states
-- AtomicOrbitals: quantum numbers (n, l, ml, j, mj, ms) within AtomsState
-- Orbital degeneracy and occupation
-- CoreHole: excited electron states for spectroscopy
-- HubbardInteractions: U matrix, U_effective, J_Hunds for correlated systems
-- Slater integrals for many-body interactions
-- Particle indices, velocities, forces
-- Chemical symbols and particle organization
-
 
 ## Relationship map
 
@@ -45,21 +32,13 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `ParticleState`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `ParticleState` | Generic base section for particle-level entities in a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.ParticleState){:target="_blank"} |
-| `AtomsState` | A base section to define each atom's state information. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.AtomsState){:target="_blank"} |
-| `CGBeadState` | A section to define coarse-grained bead state information. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.CGBeadState){:target="_blank"} |
-| `AtomicOrbitals` | Expanded **atomic orbital (AO) layer** associated with a specific `AtomCenteredBasisSet`. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.AtomicOrbitals){:target="_blank"} |
-| `CoreHole` | A section used to define the core-hole state of an atom by extending the `ElectronicState` section with core-hole specific properties like excited electron count and DSCF state. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.CoreHole){:target="_blank"} |
-| `HubbardInteractions` | A base section to define the Hubbard interactions of the system. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.HubbardInteractions){:target="_blank"} |
-
-
-## Quantities by section
-
-### `ParticleState`
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -67,6 +46,10 @@ classDiagram
 | `mass` | m_float_bounded(float) | <details><summary>Mass associated with this particle/site, in kilograms.</summary>Mass associated with this particle/site, in kilograms.<br>This is an immutable per-particle descriptor intended for downstream<br>analyses that require per-particle masses.<br>For `AtomsState`, it is the mass of the modeled atomic site (including<br>isotope/effective choices provided by the source data). For `CGBeadState`,<br>it is the bead mass.<br>Method-related mass assignments belong in method-specific sections.</details> |
 
 ### `AtomsState`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `AtomsState` | A base section to define each atom's state information. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.AtomsState){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -78,6 +61,10 @@ classDiagram
 
 ### `CGBeadState`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `CGBeadState` | A section to define coarse-grained bead state information. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.CGBeadState){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `bead_symbol` | m_str(str) | Symbol(s) describing the (base) CG particle type. Equivalent to chemical_symbol for atomic elements. |
@@ -86,6 +73,10 @@ classDiagram
 | `charge` | m_float64(float64) | Total charge of the particle. |
 
 ### `AtomicOrbitals`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `AtomicOrbitals` | Expanded **atomic orbital (AO) layer** associated with a specific `AtomCenteredBasisSet`. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.AtomicOrbitals){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -96,12 +87,20 @@ classDiagram
 
 ### `CoreHole`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `CoreHole` | A section used to define the core-hole state of an atom by extending the `ElectronicState` section with core-hole specific properties like excited electron count and DSCF state. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.CoreHole){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `n_excited_electrons` | m_float_bounded(float) | The electron charge excited for modelling purposes. This is a number between 0 and 1 (Janak state). If `dscf_state` is set to 'initial', then this quantity is set to None (but assumed as excited state). |
 | `dscf_state` | Enum | Tag used to identify the role in the workflow of the same name. Allowed values are 'initial' (not to be confused with the _initial-state approximation_) and 'final'. If 'initial' is used, then `n_excited_electrons` is set to 0 and the degeneracy is set to 1. |
 
 ### `HubbardInteractions`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `HubbardInteractions` | A base section to define the Hubbard interactions of the system. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.HubbardInteractions){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -116,3 +115,6 @@ classDiagram
 | `double_counting_correction` | m_str(str) | Name of the double counting correction algorithm applied. |
 
 
+## Related Pages
+
+- [ModelSystem](../explanation/model_system/overview.md)

@@ -2,14 +2,6 @@
 
 **Purpose:** Base output structure and common property definitions
 
-**In scope:**
-
-- Outputs section that references ModelSystem and ModelMethod
-- SCFSteps with scf_steps quantities for SCF iteration history
-- PhysicalProperty base class for all computed properties
-- Property contributions and derivations
-- SCF convergence data (energy deltas, density changes, etc.)
-
 
 ## Relationship map
 
@@ -76,18 +68,13 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `Outputs`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `Outputs` | Output properties of a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.outputs.Outputs){:target="_blank"} |
-| `SCFSteps` | Data recorded at each step of a self-consistent DFT calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.outputs.SCFSteps){:target="_blank"} |
-| `PhysicalProperty` | A base section for computational output properties, containing all relevant (meta)data. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.physical_property.PhysicalProperty){:target="_blank"} |
-
-
-## Quantities by section
-
-### `Outputs`
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -95,6 +82,10 @@ classDiagram
 | `model_method_ref` | Reference | Reference to the `ModelMethod` section containing the details of the mathematical model with which the output physical properties were calculated. |
 
 ### `SCFSteps`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SCFSteps` | Data recorded at each step of a self-consistent DFT calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.outputs.SCFSteps){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -108,6 +99,10 @@ classDiagram
 | `code_specific_quantities` | JSON | Code specific quantities that are recorded during SCF convergence. |
 
 ### `PhysicalProperty`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `PhysicalProperty` | A base section for computational output properties, containing all relevant (meta)data. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.physical_property.PhysicalProperty){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

@@ -4,33 +4,19 @@
 **Purpose:** {{ purpose }}
 
 {% endif %}
-{% if in_scope %}
-**In scope:**
-
-{% for item in in_scope %}
-- {{ item }}
-{% endfor %}
-
-{% endif %}
 
 ## Relationship map
 
 {{ mermaid_block }}
 
-## Key sections
-
-{# Use a real Markdown table to avoid whitespace collapsing #}
-| Section | Description | MetaInfo |
-|---|---|---|
-{% for s in section_info %}
-| `{{ s.name }}` | {{ s.description }} | [Open in MetaInfo browser]({{ s.metainfo_url }}){:target="_blank"} |
-{% endfor %}
-
-
-## Quantities by section
+## Quantities by Key Sections
 
 {% for s in section_info %}
 ### `{{ s.name }}`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `{{ s.name }}` | {{ s.description }} | [Open in MetaInfo browser]({{ s.metainfo_url }}){:target="_blank"} |
 
 {% if s.quantities %}
 | Quantity | Type | Description |

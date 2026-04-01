@@ -225,6 +225,10 @@ class EquationOfState(ParallelWorkflow):
 
     _task_label = 'Volume'
 
+    method = SubSection(sub_section=EquationOfStateMethod.m_def)
+
+    results = SubSection(sub_section=EquationOfStateResults.m_def)
+
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.method:

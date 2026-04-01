@@ -2,14 +2,6 @@
 
 **Purpose:** Crystallographic symmetry: local/global symmetry, space groups, point groups, Bravais lattices
 
-**In scope:**
-
-- Local and global symmetry section hierarchy
-- Space group symbols and numbers
-- Point group symbols
-- Bravais lattice classifications
-- Symmetry operations
-
 
 ## Relationship map
 
@@ -34,25 +26,23 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `LocalSymmetry`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `LocalSymmetry` | Base class for per-particle local symmetry information. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.LocalSymmetry){:target="_blank"} |
-| `LocalCrystalSymmetry` | Crystallographic local symmetry for particles in a crystal structure. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.LocalCrystalSymmetry){:target="_blank"} |
-| `GlobalSymmetry` | A base section specifying the global symmetry of the corresponding `ModelSystem` at large, which can be used for categorization and lookup. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.GlobalSymmetry){:target="_blank"} |
-| `GlobalCrystalSymmetry` | A symmetry section specialized for identifying bulk crystal space groups. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.GlobalCrystalSymmetry){:target="_blank"} |
-
-
-## Quantities by section
-
-### `LocalSymmetry`
 
 | Quantity | Type | Description |
 |---|---|---|
 | `equivalent_atoms` | m_int32(int32) (shape: ['*']) | <details><summary>Equivalence grouping of atoms by symmetry operations.</summary>Equivalence grouping of atoms by symmetry operations.<br>Atoms with the same index value are symmetrically equivalent.<br>Examples:<br>- [0, 1, 2, 3]: all four atoms are non-equivalent<br>- [0, 0, 0, 3]: first three atoms are equivalent, fourth is unique</details> |
 
 ### `LocalCrystalSymmetry`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `LocalCrystalSymmetry` | Crystallographic local symmetry for particles in a crystal structure. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.LocalCrystalSymmetry){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -62,9 +52,17 @@ classDiagram
 
 ### `GlobalSymmetry`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `GlobalSymmetry` | A base section specifying the global symmetry of the corresponding `ModelSystem` at large, which can be used for categorization and lookup. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.GlobalSymmetry){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `GlobalCrystalSymmetry`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `GlobalCrystalSymmetry` | A symmetry section specialized for identifying bulk crystal space groups. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.GlobalCrystalSymmetry){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -82,3 +80,6 @@ classDiagram
 | `analysis_transformation_matrix` | m_float64(float64) (shape: [3, 3]) | <details><summary>Transformation matrix (3×3) from input lattice vectors to standardized lattice vectors.</summary>Transformation matrix (3×3) from input lattice vectors to standardized lattice vectors.<br>This matrix describes how spglib transforms the input unit cell into a standardized<br>conventional cell during symmetry analysis. The transformation is defined such that:<br>**L_input = L_standardized @ transformation_matrix**<br>where L_input is the matrix of input lattice vectors (as columns) and L_standardized<br>is the matrix of standardized lattice vectors.<br>The standardization process orients the cell according to conventional crystallographic<br>settings for the identified space group, which may involve:<br>- Reorienting axes to align with symmetry elements<br>- Converting between primitive and conventional cells<br>- Standardizing the choice of basis vectors<br>**Source**: Extracted from spglib's symmetry dataset via MatID's `SymmetryAnalyzer`.<br>**Note**: This is specifically the transformation applied during symmetry detection<br>and is distinct from user-defined representation transformations.<br>See: https://spglib.readthedocs.io/en/stable/definition.html</details> |
 
 
+## Related Pages
+
+- [ModelSystem](../explanation/model_system/overview.md)
