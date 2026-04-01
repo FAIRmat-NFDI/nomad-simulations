@@ -13,7 +13,7 @@ Schema reference pages:
 Convergence targets define criteria for determining when iterative calculations (SCF cycles, geometry optimization steps) have reached acceptable solutions. The convergence system consists of:
 
 - **Configuration** (in `workflow2.method.*`): Defines what to check and thresholds
-- **Checking logic** (in target classes): Extracts values and compares to thresholds
+- **Evaluation behavior**: extracts the relevant values and compares them to thresholds
 - **Results** (in `workflow2.results.*`): Stores convergence status
 
 ## Quick Reference: Where to Find Convergence Data
@@ -34,7 +34,7 @@ Class hierarchies, quantity tables, and section-level metadata are maintained in
 
 Convergence information can be accessed through several common patterns depending on what you need:
 
-**Accessing Configuration**: To view what convergence criteria were defined for a workflow, access `archive.workflow2.method.convergence_targets` which returns a list of target objects. Each target has `threshold`, `threshold_type`, and other configuration fields. For workflows with SCF subtasks, `archive.workflow2.method.single_point_convergence_targets` (currently only in GeometryOptimization) defines SCF convergence criteria.
+**Accessing Configuration**: To view what convergence criteria were defined for a workflow, access `archive.workflow2.method.convergence_targets`, which returns a list of target objects. Each target has `threshold`, `threshold_type`, and other configuration fields. For workflows with SCF subtasks, `archive.workflow2.method.single_point_convergence_targets` (currently only in GeometryOptimization) provides the corresponding SCF convergence criteria.
 
 **Checking Overall Status**: The simplest check is `archive.workflow2.results.is_converged`, a boolean indicating whether all workflow-level convergence targets were reached. For workflows with SCF subtasks, `archive.workflow2.results.is_single_point_converged` (when available) indicates whether all SCF calculations converged.
 
@@ -91,9 +91,9 @@ archive.workflow2 (GeometryOptimization)
 
 ### Aggregating SCF Convergence
 
-The `is_single_point_converged` field aggregates SCF convergence across all steps by collecting convergence results from all subtasks through the path `workflow2.tasks[*].results.convergence[*].is_reached`. This returns a nested list structure where each outer element represents a subtask (e.g., an optimization step) and contains boolean convergence status for each target. The aggregated field is `True` only when every target in every subtask is reached.
+The `is_single_point_converged` field aggregates SCF convergence across all steps by collecting convergence results from all subtasks through the path `workflow2.tasks[*].results.convergence[*].is_reached`. This returns a nested list structure where each outer element represents a subtask (e.g., an optimization step) and contains boolean convergence status for each target. The field is `True` only when every target in every subtask is reached.
 
-## Convergence Annotation Paths
+## Convergence Data Paths
 
 Targets use metainfo annotations to specify where to find data in the archive:
 
