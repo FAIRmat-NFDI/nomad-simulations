@@ -15,7 +15,7 @@ The documentation is split into three complementary sections:
 
 ## Context
 
-NOMAD is a free, open-source data management platform for materials science aligned with FAIR principles (Findable, Accessible, Interoperable, Reusable). For broader platform documentation, see the [NOMAD docs](https://nomad-lab.eu/prod/v1/staging/docs/) and [NOMAD base sections guide](https://nomad-lab.eu/prod/v1/staging/docs/howto/customization/base_sections.html).
+[NOMAD](https://nomad-lab.eu/nomad-lab/){ target="_blank" rel="noopener noreferrer" } is an open-source research data management platform developed by the NFDI consortium [FAIRmat](https://www.fairmat-nfdi.eu/fairmat){ target="_blank" rel="noopener noreferrer" }. For broader platform documentation, see the [NOMAD docs](https://nomad-lab.eu/prod/v1/staging/docs/) and [NOMAD base sections guide](https://nomad-lab.eu/prod/v1/staging/docs/howto/customization/base_sections.html).
 
 The `nomad-simulations` schema provides reusable core sections that can be extended for code-specific and domain-specific schemas while preserving consistent structure, interoperability, and discoverability.
 

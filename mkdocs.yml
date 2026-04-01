@@ -60,16 +60,16 @@ nav:
       #     - Overview: explanation/outputs/overview.md
   - Schema Development:
       - Overview: schema_development/overview.md
+      - Contribution Guides:
+        - Overview: contributor_guides/overview.md
+        - Schema Development Guide: contributor_guides/schema_development_guide.md
+        - Documentation Writing Guide: contributor_guides/documentation_writing_guide.md
+        - Documentation Automation Guide: contributor_guides/documentation_automation_guide.md
       - Populating Simulation and Program: schema_development/simulation_entry_population.md
       - ModelMethod vs NumericalSettings: schema_development/model_method_vs_numerical_settings.md
       - Bounded Data Types: schema_development/data_types.md
       - Normalization: schema_development/normalize.md
       - Model System Usage Guidelines: schema_development/model_system_usage_guidelines.md
-      - Contribution Guides:
-          - Overview: contributor_guides/overview.md
-          - Schema Development Guide: contributor_guides/schema_development_guide.md
-          - Documentation Writing Guide: contributor_guides/documentation_writing_guide.md
-          - Documentation Automation Guide: contributor_guides/documentation_automation_guide.md
   - Contact: contact.md
 theme:
   name: material
