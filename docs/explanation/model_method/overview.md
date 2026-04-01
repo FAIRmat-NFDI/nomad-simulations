@@ -39,13 +39,15 @@ above.
 
 --8<-- "snippets/generated/model_method_family_map.md"
 
-## Archive Population and Cross-Linking Guidance
+## Interpreting Method Data in Archives
 
-- Prefer explicit population of method-defining fields.
-- Use normalization to complete derived or cross-linked information, not to
-  overwrite explicitly provided method identity.
-- Keep references to `ModelSystem`/`Outputs` sections by identity rather than
-  data duplication.
+- Method identity is carried by fields such as `name`, `type`, and the relevant
+  method-family quantities.
+- Numerical realization remains attached through `numerical_settings`, so
+  archive readers can distinguish model semantics from solver/setup choices.
+- References to related `ModelSystem` or `Outputs` sections should be
+  understood as links between archive components rather than duplicated method
+  descriptions.
 
 ## Executable Example
 
@@ -57,5 +59,3 @@ above.
 
 - [ModelMethod vs NumericalSettings](model_method_vs_numerical_settings.md)
 - [Basis Sets](basis_sets.md)
-- [Model System Usage Guidelines](../../schema_development/model_system_usage_guidelines.md)
-- [Normalization](../../schema_development/normalize.md)

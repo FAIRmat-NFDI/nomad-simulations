@@ -24,11 +24,11 @@ For systems with significant spin-orbit coupling, the total angular momentum qua
 
 In relativistic calculations, the `kappa_quantum_number` provides an alternative labeling scheme. The relationship j = |κ| - 0.5 connects κ to the total angular momentum, while the sign of κ encodes information about the orbital angular momentum. Specifically, l = |κ| - 1 for negative κ and l = κ for positive κ. However, the schema deliberately avoids automatic conversion between κ and (j, l) during normalization to prevent baking relativistic assumptions into the data representation.
 
-## Derived Properties and Recent Changes
+## Derived Properties
 
-Recent refactoring converted the quantum number symbols from stored quantities to computed properties. The symbols `l_quantum_symbol`, `ml_quantum_symbol`, and `ms_quantum_symbol` now derive automatically from their corresponding quantum numbers. Setting `l_quantum_number = 1` causes `l_quantum_symbol` to return 'p', while `l_quantum_number = 2` yields 'd'. The ml symbols map to directional labels like 'x', 'y', 'z' for p-orbitals or 'xy', 'xz', 'z^2', 'yz', 'x^2-y^2' for d-orbitals.
+The quantum number symbols `l_quantum_symbol`, `ml_quantum_symbol`, and `ms_quantum_symbol` are derived automatically from their corresponding quantum numbers. Setting `l_quantum_number = 1` causes `l_quantum_symbol` to return 'p', while `l_quantum_number = 2` yields 'd'. The ml symbols map to directional labels like 'x', 'y', 'z' for p-orbitals or 'xy', 'xz', 'z^2', 'yz', 'x^2-y^2' for d-orbitals.
 
-This change means that code attempting to set these symbol properties will fail silently. The constructor will accept them as keyword arguments but they have no effect. Users must instead set the quantum number values directly. The refactoring also converted `j_quantum_number` and `mj_quantum_number` from arrays to scalar values, eliminating the need for array indexing when accessing these quantities.
+These symbol properties should therefore be understood as derived views of the underlying quantum numbers rather than as independently stored inputs. Archive readers should treat the quantum number values as the canonical representation. Likewise, `j_quantum_number` and `mj_quantum_number` appear as scalar quantities in normalized data.
 
 The `_name` property generates human-readable orbital labels by combining available quantum number information. A state with n=2 and l=1 produces "2p", while specifying ml=-1 yields "2px". When j is provided without ml, the format uses parentheses as in "2p(j=0.5)". This automatic naming proves useful for visualization and debugging but can be overridden by explicitly setting the `name` field on the parent `ElectronicState`.
 
@@ -44,7 +44,7 @@ When dealing with correlated systems, the hierarchy may be minimal or absent ent
 
 The schema validates quantum number relationships during normalization. Setting ml outside the range [-l, l] triggers an error and prevents normalization from completing. Similarly, mj must satisfy -j ≤ mj ≤ j. The validation for κ and j consistency checks that j = |κ| - 0.5 within numerical tolerance, logging errors when this relationship fails.
 
-However, normalization deliberately avoids automatic derivation of quantum numbers from relationships. A state with κ defined but j undefined will not populate j automatically. This design choice prevents the schema from imposing physical assumptions about relativistic effects or coupling schemes. Users requiring such conversions must call `normalize_kappa_j_consistency()` explicitly, typically in parser logic or analysis code rather than during standard normalization.
+However, normalization deliberately avoids automatic derivation of quantum numbers from relationships. A state with κ defined but j undefined will not populate j automatically. This design choice prevents the schema from imposing physical assumptions about relativistic effects or coupling schemes, and it means archive readers should not assume that missing quantum numbers will be inferred automatically.
 
 When `name` or `degeneracy` remain unset, normalization computes them from available quantum information. The degeneracy calculation considers whether projection quantum numbers are specified. For j without mj, the degeneracy equals 2j+1. For l without ml and no j information, the orbital degeneracy is 2l+1, optionally multiplied by spin degeneracy if ms is unspecified. When both ml and ms are defined, the degeneracy becomes 1 since the state is fully specified.
 
@@ -56,7 +56,3 @@ For a system in an octahedral crystal field, the decomposition follows symmetry 
 
 When parsing Wannier function output, create `ElectronicState` instances with the `basis_orbitals` field populated by the atomic orbitals used in the Wannierization. Each basis orbital is a `SphericalSymmetryState` with specific n, l, ml values. The expansion coefficients connecting Bloch states to Wannier functions reside in the band structure eigenvector arrays rather than in the state definition, maintaining clean separation between basis set definition and wavefunction coefficients.
 
-## Implementation Notes
-
-Published implementation guidance for contributors belongs under
-[Schema Development](../../schema_development/overview.md).

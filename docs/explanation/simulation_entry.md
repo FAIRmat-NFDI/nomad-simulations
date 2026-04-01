@@ -129,7 +129,7 @@ entry_x#workflow2.task[0].output -> entry_y#data.outputs[0]
 There are two main design choices here:
 
 1. the methodology and computed outputs are split along major subroutines.
-2. they are kept in a single entry. This is especially useful for legacy cases, where some subroutines were originally not distinguished.
+2. they are kept in a single entry. This is especially useful when some subroutines are not represented as distinct archive-level stages.
 
 In option 2, for any workflows at are not simply _serial_, there is no canonical way of ordering `outputs`.
 This burden remains with `workflow2.tasks`.

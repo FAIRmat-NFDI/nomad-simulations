@@ -116,15 +116,16 @@ views (`representations`).
 
 ## Derived Behavior During Normalization
 
-The `ModelSystem.normalize()` method performs several important tasks when `is_representative=True`:
+When `is_representative=True`, normalization enriches a `ModelSystem` with derived information that is expected from a complete structural description.
 
-1. **Parent System normalization**: Executes base class normalization logic
-2. **Particle state reassignment**: Validates and organizes particle states
-3. **System type and dimensionality**: Resolves whether the system is bulk, surface, molecule, etc., and determines dimensionality (0D, 1D, 2D, 3D)
-4. **Symmetry analysis**: For bulk systems, analyzes crystal symmetry and generates primitive and conventional cell representations
-5. **Chemical formula generation**: Creates chemical formula descriptions from particle states
+This includes:
 
-The normalization order ensures that dependencies between different components are respected. For example, symmetry analysis requires valid particle positions, and chemical formula generation requires properly initialized particle states.
+1. **Validated particle-state organization**: particle-state information is checked and arranged consistently.
+2. **System type and dimensionality**: the system is classified as bulk, surface, molecule, and so on, together with its effective dimensionality.
+3. **Symmetry information and standard cells**: bulk systems can gain symmetry metadata together with primitive and conventional cell representations.
+4. **Chemical formulas**: composition summaries are derived from the populated particle states.
+
+These derived results depend on the structural data already present in the archive. For example, symmetry analysis depends on valid geometry, and chemical formulas depend on the populated particle states.
 
 See [Normalization](../../schema_development/normalize.md) for more details on the normalization system across NOMAD simulations schema.
 

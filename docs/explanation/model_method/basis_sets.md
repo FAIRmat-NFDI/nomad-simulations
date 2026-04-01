@@ -1,8 +1,8 @@
 # Basis Sets
 
-The following lays down the schema annotation for several families of basis sets.
-We start off genercially before running over specific examples.
-The aim is not to introduce the full theory behind every basis set, but just enough to understand its main concepts and how they relate.
+The following outlines how several families of basis sets are represented in the schema.
+We start from the general structure before moving through specific examples.
+The aim is not to introduce the full theory behind every basis set, but just enough to understand the main concepts and how they relate.
 
 For model-method hierarchy conventions and generated structure references, see
 [Model Method Overview](overview.md).
@@ -21,10 +21,10 @@ Note that typically, different kinds of regions also have different mathematical
 Each formulation has its own dedicated section, to facilitate their reuse.
 These are all derived from the abstract section `BasisSetComponent`, so that `basis_set_components: list[BasisSetComponent]`.
 
-Generically, `BasisSetComponent` will allude to the the formula at large and just focus on capturing the _subtype_, as well as relevant _parameters_.
+Generically, `BasisSetComponent` alludes to the formula at large and focuses on capturing the _subtype_ together with the relevant _parameters_.
 The most relevant ones are those that most commonly listed in the Method section of an article.
 These typically also influence the _precision_ most.
-Extra, code-specific subtypes and parameters can be added by their respective parsers.
+Code-specific subtypes and parameters may also appear when they are needed to describe a particular archived method faithfully.
 
 This then coalesces into the following diagram:
 
@@ -178,7 +178,7 @@ BasisSetContainer(name: GPW)
 └── AtomCenteredBasisSet(name: GTO, hamiltonian_scope: [`/path/to/hartree_term/hamiltonian`])
 ```
 
-For further details on the schema, see the CP2K parser documentation.
+The same partitioning idea carries over to schema entries originating from CP2K-based calculations.
 
 [1]: J. VandeVondele, M. Krack, et al., Quickstep: Fast and accurate density functional calculations using a mixed Gaussian and plane waves approach,
 _Comp. Phys. Commun._ **167**(2), 103-128, 2005. DOI: 10.1016/j.cpc.2004.12.014.

@@ -2,7 +2,7 @@
 
 This section contains published technical guidance for contributors who extend, populate, or implement the `nomad-simulations` schema in code.
 
-Use this section for pages whose primary purpose is implementation: defining new schema classes, adding quantities or subsections, implementing normalization logic, writing parser-side population patterns, and documenting migration guidance for schema extenders.
+Use this section for pages whose primary purpose is implementation: defining new schema classes, adding quantities or subsections, implementing normalization logic, and writing parser-side population patterns.
 
 ## Technical Development Pages
 

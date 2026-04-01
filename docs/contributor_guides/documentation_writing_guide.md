@@ -37,6 +37,14 @@ Guide hierarchy:
 - Put normalization content in `Schema Explanation` when it explains what existing normalization does, how derived quantities or sections are produced, and how normalized archive content should be interpreted.
 - Put normalization content in `Schema Development` when it explains how `normalize()` works as an implementation mechanism, how to write or extend normalization logic, ordering rules, debugging, or other implementation guidance.
 
+### Versioning and History Rule
+
+- Published docs should describe the current schema state rather than narrate repository history.
+- Avoid phrases such as "recent refactoring", "previously", "used to", "old schema", or similar comparisons unless a page is explicitly about a supported version transition.
+- Prefer describing the current semantics directly: explain what a field means, what is derived, and how archive data should be interpreted now.
+- Only document migration or version-to-version differences when there is an explicit supported transition between named schema versions (for example, major versions with active user impact).
+- Keep detailed design history, repository evolution, and unversioned migration context out of forward-facing docs.
+
 ## 2) Keep Pages Focused
 
 - Define a single primary question each page answers (for example:
@@ -58,6 +66,7 @@ When an implementation introduces a new documentation set:
   Keep development pages focused on implementation patterns, extension points, migrations, and code-level guidance.
   Remove duplicated structure/quantity/class inventory content once auto-doc
   pages exist (auto-generated content lives in `docs/schema/*`, not in hand-written pages).
+  Avoid explaining the schema through unversioned historical comparisons; prefer current-state descriptions.
 3. For auto-doc navigation decisions, see
    [Automation Guide](documentation_automation_guide.md#guidelines-for-adding-auto-doc-navigation).
 
@@ -79,6 +88,9 @@ For technical development pages, use a parallel pattern:
 3. Implementation pattern or extension point
 4. Executable examples
 5. Pitfalls, migrations, and related links
+
+For both explanation and development pages, describe the current schema first.
+Only add migration/version sections when there is an explicit supported version transition that readers need to handle.
 
 ## 5) Keep Examples Executable
 
