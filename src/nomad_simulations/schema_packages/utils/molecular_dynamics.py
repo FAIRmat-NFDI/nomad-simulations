@@ -342,7 +342,6 @@ def create_empty_universe(
 
 def archive_to_universe(
     archive,
-    system_index: int = 0,  # TODO: Shouldn't this be -1 (representative_system)?
     method_index: int = -1,
     model_index: int = -1,
 ) -> MDAUniverse | None:
@@ -398,10 +397,16 @@ def archive_to_universe(
         try:
             data = archive.data
             sec_system = data.model_system
-            sec_system_top = sec_system[system_index]
-            sec_atoms_group = (
-                sec_system_top.sub_systems if sec_system_top is not None else None
+            sec_system_top = next(
+                (s for s in sec_system if s.particle_states),
+                None,
             )
+            if sec_system_top is None:
+                LOGGER.warning(
+                    'No ModelSystem with particle_states found. Cannot build MDA universe.'
+                )
+                return None
+            sec_particles_group = sec_system_top.sub_systems
             sec_method = data.model_method[method_index] if data.model_method else None
 
         except Exception:
@@ -513,7 +518,7 @@ def archive_to_universe(
     atom_resindex = np.arange(n_atoms)
     atoms_segindices = np.empty(n_atoms)
     atom_segids = np.array(range(n_atoms), dtype='object')
-    molecule_groups = sec_atoms_group or []
+    molecule_groups = sec_particles_group or []
     n_segments = len(molecule_groups)
 
     # TODO: Keep, or drop?

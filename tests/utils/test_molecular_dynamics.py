@@ -117,6 +117,7 @@ def _build_minimal_archive(n_atoms=3, with_ff_masses=False, with_ff_charges=Fals
 
     sim = Simulation()
     sim.model_system = [root_system, frame]
+    sim.representative_system_index = 0
     sim.model_method = [method]
 
     archive = EntryArchive()
@@ -166,6 +167,25 @@ def test_archive_to_universe_charges_zero_fallback():
         pytest.skip('archive_to_universe returned None — topology too minimal for MDA')
 
     assert np.allclose(universe.atoms.charges, 0.0)
+
+
+def test_archive_to_universe_topology_not_at_index_0():
+    """Topology is found by particle_states search even when not at model_system[0]."""
+    archive = _build_minimal_archive(n_atoms=3, with_ff_masses=False, with_ff_charges=False)
+    # Prepend a bare positional frame (no particle_states) so topology is at index 1.
+    # Metainfo lists only support append, so rebuild the list.
+    bare_frame = ModelSystem()
+    bare_frame.positions = np.zeros((3, 3)) * ureg.angstrom
+    original = list(archive.data.model_system)
+    archive.data.model_system = []
+    for ms in [bare_frame] + original:
+        archive.data.model_system.append(ms)
+
+    universe = archive_to_universe(archive)
+    if universe is None:
+        pytest.skip('archive_to_universe returned None — topology too minimal for MDA')
+
+    assert universe.atoms.n_atoms == 3
 
 
 def test_archive_to_universe_base_model_method_no_attribute_error():
