@@ -13,7 +13,7 @@
 
 # `nomad-simulations`
 
-The `nomad-simulations` is an open-source Python package for managing Materials Science simulation data. It is following the plugin architechture of [NOMAD](https://nomad-lab.eu). This package contains a set of section definitions (Python classes) with quantities (attributes) and methods defined to automate data extraction from different simulation codes. These section definitions can be used at any prefered level by the user, they can be modified and extended, and we welcome external collaborators.
+`nomad-simulations` is an open-source Python package for managing materials-science simulation data. It follows the plugin architecture of [NOMAD](https://nomad-lab.eu). The package provides section definitions (Python classes) with quantities and methods that support extracting and organizing data from different simulation codes. These definitions can be used, modified, and extended at the level needed by the user, and external contributions are welcome.
 
 Read more in the [official documentation](https://fairmat-nfdi.github.io/nomad-simulations/) page.
 
@@ -29,7 +29,7 @@ pip install nomad-simulations
 
 ## Development
 
-If you want to develop locally this package, clone the project and in the workspace folder, create a virtual environment (you can use Python 3.10, 3.11, or 3.12):
+If you want to develop locally, clone the project and create a virtual environment with Python 3.10 or newer:
 ```sh
 git clone https://github.com/fairmat-nfdi/nomad-simulations.git
 cd nomad-simulations
@@ -47,7 +47,7 @@ We recommend installing `uv` for fast pip installation of the packages:
 pip install uv
 ```
 
-Install the `nomad-lab` package:
+Install the package with development dependencies:
 ```sh
 uv pip install '.[dev]'
 ```
@@ -59,17 +59,16 @@ uv pip install -e '.[dev]'
 
 ### Run the tests
 
-You can run locally the tests:
+You can run the tests locally:
 ```sh
-python -m pytest -sv tests
+uv run pytest -sv tests
 ```
 
 where the `-s` and `-v` options toggle the output verbosity.
 
 Our CI/CD pipeline produces a more comprehensive test report using the `pytest-cov` package. You can generate a local coverage report:
 ```sh
-uv pip install pytest-cov
-python -m pytest --cov=src tests
+uv run pytest --cov=src tests
 ```
 
 You can also run the script to generate a local file `coverage.txt` with the same information:
@@ -82,8 +81,8 @@ You can also run the script to generate a local file `coverage.txt` with the sam
 
 We use [Ruff](https://docs.astral.sh/ruff/) for linting and formatting the code. Ruff auto-formatting is also a part of the GitHub workflow actions. You can run locally:
 ```sh
-ruff check .
-ruff format . --check
+uv run ruff check .
+uv run ruff format . --check
 ```
 
 
@@ -118,70 +117,24 @@ where `<path-to-plugin-tests>` must be changed to the local path to the test mod
 The settings configuration file `.vscode/settings.json` automatically applies the linting and formatting upon saving the modified file.
 
 
-### Documentation on Github pages
+### Launching the documentation locally
 
-To view the documentation locally, install the documentation dependencies:
-```sh
-uv pip install -e '.[docs]'
-```
+To view the documentation locally, run MkDocs with the extra docs dependencies:
 
-Documentation conventions for maintainers are tracked in [docs/contributor_guides/documentation_writing_guide.md](docs/contributor_guides/documentation_writing_guide.md).
-This guide is for repository development and is intentionally not linked in the deployed MkDocs navigation.
-
-**Note**: The documentation pipeline uses `npx` (Node Package Runner) to convert Mermaid diagrams to PNG images for better zoom functionality. Make sure you have Node.js/npm installed:
-```sh
-which npx  # Check if npx is available
-```
-
-If not installed, download Node.js from https://nodejs.org/
-
-Run the documentation server:
-```sh
-mkdocs serve
-```
-
-Alternatively, you can run mkdocs directly with `uv run` without installing the dependencies:
 ```sh
 uv run --extra docs mkdocs serve
 ```
 
+Documentation conventions for maintainers are tracked in [docs/contributor_guides/documentation_writing_guide.md](docs/contributor_guides/documentation_writing_guide.md).
+
+Note that part of the documentation is generated via repository scripts. For that workflow, see [docs/contributor_guides/documentation_automation_guide.md](docs/contributor_guides/documentation_automation_guide.md).
+
 
 ## Adding this plugin to NOMAD
 
-Currently, NOMAD has two distinct flavors that are relevant depending on your role as an user:
-1. [A NOMAD Oasis](#adding-this-plugin-in-your-nomad-oasis): any user with a NOMAD Oasis instance.
-2. [Local NOMAD installation and the source code of NOMAD](#adding-this-plugin-in-your-local-nomad-installation-and-the-source-code-of-nomad): internal developers.
+If you are developing locally using the `nomad-distro-dev` environment, see [NOMAD distro-dev README: day-to-day development](https://github.com/FAIRmat-NFDI/nomad-distro-dev/tree/main?tab=readme-ov-file#day-to-day-development).
 
-### Adding this plugin in your NOMAD Oasis
-
-Read the [NOMAD plugin documentation](https://nomad-lab.eu/prod/v1/staging/docs/howto/oasis/plugins_install.html) for all details on how to deploy the plugin on your NOMAD instance.
-
-### Adding this plugin in your local NOMAD installation and the source code of NOMAD
-
-Modify the script under `/nomad/scripts/install_default_plugins.sh` and add the path to this repository pointing to the `@develop` branch:
-```sh
-<other-content-in-install_default_plugins.sh...>
-git+https://github.com/fairmat-nfdi/nomad-simulations.git@develop
-```
-
-Then, go to your NOMAD folder, activate your NOMAD virtual environment and run:
-```sh
-deactivate
-cd <route-to-NOMAD-folder>/nomad
-source .pyenv/bin/activate
-./scripts/setup_dev_env.sh
-```
-
-Alternatively and only valid for your local NOMAD installation, you can modify `nomad.yaml` to include this plugin:
-```yaml
-plugins:
-  entry_points:
-    include:
-      - ["nomad_simulations.schema_packages:nomad_simulations_plugin"]
-```
-
-**Note!**
-Once you modify your `nomad.yaml` file adding `include`, all the default plugins will be disconnected, so you will need to include them as well.
+If you are adding this plugin to a NOMAD Oasis, see [NOMAD plugin installation docs](https://nomad-lab.eu/prod/v1/staging/docs/howto/oasis/plugins_install.html).
 
 ## How to cite this work
 Pizarro, J.M., Boydas, E.B., Daelman, N., Ladines, A.N., Mohr, B. & Rudzinski, J.F., NOMAD Simulations [Computer software]. https://zenodo.org/doi/10.5281/zenodo.13838811
@@ -194,80 +147,3 @@ Pizarro, J.M., Boydas, E.B., Daelman, N., Ladines, A.N., Mohr, B. & Rudzinski, J
 | Dr. José M. Pizarro | [jose.pizarro@physik.hu-berlin.de](mailto:jose.pizarro@physik.hu-berlin.de) | GW, DMFT, BSE | [@JosePizarro3](https://github.com/JosePizarro3) |
 | Dr. Esma B. Boydas | [esma.boydas@physik.hu-berlin.de](mailto:esma.boydas@physik.hu-berlin.de) | Quantum Chemistry | [@EBB2675](https://github.com/EBB2675) |
 | Dr. Joseph F. Rudzinski (**Coordinator**) | [joseph.rudzinski@physik.hu-berlin.de](mailto:joseph.rudzinski@physik.hu-berlin.de) | General | [@JFRudzinski](https://github.com/JFRudzinski) |
-
-
-
-## 🧩 Updating the Auto-Generated Schema Docs
-
-The schema documentation is generated directly from the NOMAD-Simulations
-plugin source. Until CI automation is configured, you can update the pages
-manually using the helper scripts in `scripts/`.
-
-### Prerequisites
-
-**Node.js/npm Required**: The documentation pipeline uses `npx` to convert Mermaid diagrams to clickable, zoomable PNG images. Install Node.js from https://nodejs.org/ if you don't have it already.
-
-### Quick Start: Generate Complete Documentation
-
-Run the complete documentation pipeline with a single command:
-```bash
-python scripts/generate_docs_pipeline.py
-```
-
-This automated pipeline will:
-1. Generate standalone diagram pages with Mermaid code
-2. Generate vertical schema documentation pages
-3. Generate the overview index page with all sections
-4. Convert all Mermaid diagrams to high-resolution PNG images
-5. Replace Mermaid code blocks with clickable zoom images
-
-The result is a fully interactive documentation site with diagrams that can be clicked to zoom 2x.
-
-### Manual Steps (Advanced)
-
-If you prefer to run individual steps:
-
-#### 1. Regenerate diagrams
-From the repository root:
-```bash
-python scripts/gen_diagrams.py
-```
-
-This generates standalone diagram pages (e.g., `methods.diagram.md`) with:
-- Full-page Mermaid diagrams for better viewing/zooming
-- Legend explaining relationship types
-- Navigation back to the main vertical page
-
-#### 2. Regenerate the schema docs
-
-```bash
-python scripts/gen_docs.py \
-  --pkg nomad_simulations \
-  --module-prefix nomad_simulations \
-  --templates-dir templates \
-  --out-dir docs/schema
-```
-
-This will generate:
-- An overview page (`docs/schema/index.md`) with links to all vertical domains
-- Individual vertical pages (e.g., `methods.md`, `basis.md`) with:
-  - Purpose and scope descriptions
-  - Mermaid relationship diagrams
-  - Detailed section tables with class descriptions extracted from docstrings
-  - Example YAML snippets for each section
-
-#### 3. Convert diagrams to PNG (for click-zoom functionality)
-
-```bash
-python scripts/mermaid_to_png.py
-```
-
-This converts all Mermaid diagrams to high-resolution PNG images with click-to-zoom wrappers.
-
-### Interactive Diagram Features
-
-All generated diagrams support:
-- **Click to zoom** - Click any diagram to enlarge it 2x
-- **Click again to reset** - Click the zoomed diagram to return to normal size
-- **High resolution** - PNG images are generated at 2000px width with 2x scaling
-- **Transparent backgrounds** - Diagrams blend seamlessly with your theme

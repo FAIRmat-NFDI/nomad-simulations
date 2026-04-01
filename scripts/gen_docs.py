@@ -529,9 +529,78 @@ def build_index_page(
         lstrip_blocks=True,
     )
 
+    hierarchy = {
+        'simulation': [],
+        'model_system': [
+            'representations',
+            'particle_states',
+            'symmetry',
+            'chemical_formula',
+        ],
+        'model_method': [
+            'model_method_electronic',
+            'force_field',
+            'numerical_settings',
+        ],
+        'outputs': [
+            'physical_property',
+            'electronic_properties',
+            'manybody_properties',
+            'spectroscopy',
+            'thermodynamics',
+        ],
+        'workflow': [
+            'workflow_convergence',
+            'workflow_trajectory',
+            'workflow_single_point',
+            'workflow_geometry_optimization',
+            'workflow_molecular_dynamics',
+            'workflow_thermodynamics',
+            'workflow_equation_of_state',
+            'workflow_elastic',
+            'workflow_phonon',
+            'workflow_photon_polarization',
+            'workflow_beyond_dft',
+            'workflow_beyond_hf',
+        ],
+    }
+    parent_order = ['simulation', 'model_system', 'model_method', 'outputs', 'workflow']
+
+    def spec_for(vert_key: str) -> dict:
+        spec = verticals.get(vert_key, {})
+        return spec if isinstance(spec, dict) else {}
+
+    def sort_keys_by_nav(keys: list[str]) -> list[str]:
+        return sorted(
+            keys,
+            key=lambda vert_key: (
+                spec_for(vert_key).get('nav_order', 10_000),
+                spec_for(vert_key)
+                .get('title', vert_key.replace('_', ' ').title())
+                .casefold(),
+                vert_key,
+            ),
+        )
+
+    ordered_keys: list[str] = []
+    seen: set[str] = set()
+    for parent_key in parent_order:
+        if parent_key not in verticals or parent_key in seen:
+            continue
+        ordered_keys.append(parent_key)
+        seen.add(parent_key)
+        child_keys = [k for k in hierarchy.get(parent_key, []) if k in verticals]
+        for child_key in sort_keys_by_nav(child_keys):
+            if child_key in seen:
+                continue
+            ordered_keys.append(child_key)
+            seen.add(child_key)
+    ordered_keys.extend(sort_keys_by_nav([k for k in verticals if k not in seen]))
+
     # Prepare vertical data for template
     vert_list = []
-    for key, spec in verticals.items():
+    for key in ordered_keys:
+        spec = verticals[key]
         if isinstance(spec, dict):
             vert_list.append(
                 {

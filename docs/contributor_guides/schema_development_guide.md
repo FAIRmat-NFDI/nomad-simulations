@@ -2,6 +2,12 @@
 
 ---
 
+Internal development notes for schema design history and in-progress technical
+notes are maintained in `.dev_notes/` (for example `.dev_notes/README.md` and
+workflow-specific notes).
+
+---
+
 ## I. Guiding Principles
 
 ### PRs are communication artifacts

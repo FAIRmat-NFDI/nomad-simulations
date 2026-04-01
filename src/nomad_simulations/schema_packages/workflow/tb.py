@@ -1,5 +1,5 @@
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import SchemaPackage
+from nomad.metainfo import SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
@@ -22,6 +22,10 @@ class DFTTBWorkflow(BeyondDFTWorkflow):
     """
     Definitions for TB calculations based on DFT.
     """
+
+    method = SubSection(sub_section=DFTTBMethod.m_def)
+
+    results = SubSection(sub_section=DFTTBResults.m_def)
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
