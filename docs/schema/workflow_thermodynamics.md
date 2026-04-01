@@ -16,6 +16,7 @@ classDiagram
     class Thermodynamics
     class ThermodynamicsMethod
     class ThermodynamicsResults
+    SerialWorkflow <|-- Thermodynamics
     SimulationWorkflowMethod <|-- ThermodynamicsMethod
     SerialWorkflowResults <|-- ThermodynamicsResults
     Thermodynamics *-- ThermodynamicsMethod : method

@@ -9,8 +9,8 @@ from nomad_simulations.schema_packages.workflow.trajectory import (
 )
 
 from .general import (
+    SerialWorkflow,
     SerialWorkflowResults,
-    SimulationWorkflow,
     SimulationWorkflowMethod,
     SimulationWorkflowResults,
 )
@@ -28,7 +28,7 @@ class ThermodynamicsResults(SerialWorkflowResults):
     pass
 
 
-class Thermodynamics(SimulationWorkflow):
+class Thermodynamics(SerialWorkflow):
     method = SubSection(sub_section=ThermodynamicsMethod.m_def)
 
     results = SubSection(sub_section=ThermodynamicsResults.m_def)

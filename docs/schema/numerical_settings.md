@@ -203,4 +203,3 @@ classDiagram
 ## Related Pages
 
 - [Model Method Overview](../explanation/model_method/overview.md)
-- [ModelMethod vs NumericalSettings](../schema_development/model_method_vs_numerical_settings.md)

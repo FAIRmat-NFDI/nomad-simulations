@@ -9,7 +9,7 @@
 } */
 
 .md-header, .md-header__inner {
-    background-color: #fff;
+    background-color: var(--md-default-bg-color);
     color: #2A4CDF;
 }
 
@@ -35,8 +35,23 @@
 }
 
 .md-typeset h1 {
-    color: black;
+    color: var(--md-typeset-color);
     font-weight: 700;
+}
+
+[data-md-color-scheme="slate"] .md-header,
+[data-md-color-scheme="slate"] .md-header__inner {
+    background-color: #1c2128;
+    color: var(--md-default-fg-color);
+}
+
+[data-md-color-scheme="slate"] .md-header__button,
+[data-md-color-scheme="slate"] .md-header__topic,
+[data-md-color-scheme="slate"] .md-header__title,
+[data-md-color-scheme="slate"] .md-header__ellipsis,
+[data-md-color-scheme="slate"] .md-search__icon,
+[data-md-color-scheme="slate"] .md-source {
+    color: var(--md-default-fg-color);
 }
 
 .youtube {

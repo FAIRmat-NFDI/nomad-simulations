@@ -163,5 +163,5 @@ classDiagram
 
 ## Related Pages
 
-- [Convergence Targets: Schema Traversal Guide](../explanation/workflow/convergence.md)
+- [Convergence Targets](../explanation/workflow/convergence.md)
 - [Workflow Overview](../explanation/workflow/overview.md)

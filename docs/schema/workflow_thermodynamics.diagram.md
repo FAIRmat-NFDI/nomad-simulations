@@ -25,6 +25,7 @@ classDiagram
     }
     class ThermodynamicsResults {
     }
+    SerialWorkflow <|-- Thermodynamics
     SimulationWorkflowMethod <|-- ThermodynamicsMethod
     SerialWorkflowResults <|-- ThermodynamicsResults
     Thermodynamics *-- ThermodynamicsMethod : method
