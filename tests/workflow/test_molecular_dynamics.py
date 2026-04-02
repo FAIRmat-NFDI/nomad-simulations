@@ -142,17 +142,15 @@ class TestLambdas:
         lambdas.interaction_type = interaction_type
         assert lambdas.interaction_type == interaction_type
 
-    def test_lambda_grid(self, lambdas):
+    def test_lambda_grid(self, lambdas, archive, logger):
         lambda_values = np.linspace(0.0, 1.0, 11)
         lambdas.values = lambda_values
-        # Note: normalize has a bug with numpy array truth checking
-        # Just test that values are set correctly
+        lambdas.normalize(archive, logger)
         assert np.array_equal(lambdas.values, lambda_values)
 
-    def test_non_monotonic_warning(self, lambdas):
-        lambdas.values = [0.0, 0.5, 0.3, 1.0]  # Non-monotonic
-        # Note: normalize has a bug with numpy array truth checking
-        # Just verify the values are set
+    def test_non_monotonic_warning(self, lambdas, archive, logger):
+        lambdas.values = np.array([0.0, 0.5, 0.3, 1.0])
+        lambdas.normalize(archive, logger)
         assert len(lambdas.values) == 4
 
     def test_softcore_parameters(self, lambdas):
@@ -187,31 +185,38 @@ class TestFreeEnergyCalculationParameters:
         free_energy_parameters.normalize(archive, logger)
         assert len(free_energy_parameters.lambdas) == 2
 
-    def test_duplicate_output_removal(self, free_energy_parameters):
-        # Multiple "output" lambdas should be collapsed
-        lambda_out1 = Lambdas(interaction_type='output', values=[0.0, 0.5, 1.0])
-        lambda_out2 = Lambdas(
-            interaction_type='output', values=[0.0, 0.25, 0.5, 0.75, 1.0]
+    def test_range_check_outside_bounds(self, free_energy_parameters, archive, logger):
+        free_energy_parameters.calc_type = 'alchemical'
+        lam = Lambdas(
+            interaction_type='vdw', values=np.array([0.0, 0.5, 1.5])
         )
-        free_energy_parameters.lambdas = [lambda_out1, lambda_out2]
-        # Note: normalize has bugs with numpy arrays, test setup instead
-        assert len(free_energy_parameters.lambdas) == 2
-        output_lambdas = [
-            lam
-            for lam in free_energy_parameters.lambdas
-            if lam.interaction_type == 'output'
-        ]
-        assert len(output_lambdas) == 2
+        free_energy_parameters.lambdas.append(lam)
+        free_energy_parameters.normalize(archive, logger)
+        # Values outside [0,1] — normalize should warn but not raise
 
-    def test_current_lambda_index(self, free_energy_parameters):
-        lambda_out = Lambdas(
-            interaction_type='output', values=[0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    def test_current_lambda_index_in_bounds(
+        self, free_energy_parameters, archive, logger
+    ):
+        lam = Lambdas(
+            interaction_type='output',
+            values=np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0]),
         )
-        free_energy_parameters.lambdas = [lambda_out]
+        free_energy_parameters.lambdas.append(lam)
         free_energy_parameters.current_lambda_index = 3
-        # Note: normalize has bugs with numpy arrays, test setup instead
+        free_energy_parameters.normalize(archive, logger)
         assert free_energy_parameters.current_lambda_index == 3
-        assert len(free_energy_parameters.lambdas[0].values) == 6
+
+    def test_current_lambda_index_out_of_bounds(
+        self, free_energy_parameters, archive, logger
+    ):
+        lam = Lambdas(
+            interaction_type='output', values=np.array([0.0, 0.5, 1.0])
+        )
+        free_energy_parameters.lambdas.append(lam)
+        free_energy_parameters.current_lambda_index = 10
+        free_energy_parameters.normalize(archive, logger)
+        # Out-of-bounds index is clamped to grid_len - 1, not cleared
+        assert free_energy_parameters.current_lambda_index == 2
 
 
 class TestMolecularDynamicsMethod:

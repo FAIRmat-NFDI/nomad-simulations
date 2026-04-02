@@ -700,7 +700,9 @@ class FreeEnergyCalculationParameters(MDSettings):
                 [
                     val
                     for lam in self.lambdas
-                    if lam.interaction_type in strict_targets and lam.values
+                    if lam.interaction_type in strict_targets
+                    and lam.values is not None
+                    and len(lam.values) > 0
                     for val in lam.values
                 ]
             )
@@ -711,7 +713,12 @@ class FreeEnergyCalculationParameters(MDSettings):
 
         # Alignment check for single current_lambda_index
         if self.current_lambda_index is not None:
-            grids = [tuple(getattr(lam, 'values', []) or []) for lam in self.lambdas]
+            grids = [
+                tuple(v)
+                for lam in self.lambdas
+                for v in [getattr(lam, 'values', None)]
+                if v is not None
+            ]
             non_empty = [g for g in grids if len(g) > 0]
             if len(non_empty) > 1 and any(g != non_empty[0] for g in non_empty[1:]):
                 logger.warning(
@@ -751,7 +758,7 @@ class FreeEnergyCalculationParameters(MDSettings):
         # Use single "output" grid as default for missing per-target grids
         output_grid = None
         for lam in self.lambdas:
-            if lam.interaction_type == 'output' and lam.values:
+            if lam.interaction_type == 'output' and lam.values is not None and len(lam.values) > 0:
                 output_grid = list(lam.values)
                 break
         if output_grid is not None:
