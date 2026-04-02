@@ -758,7 +758,11 @@ class FreeEnergyCalculationParameters(MDSettings):
         # Use single "output" grid as default for missing per-target grids
         output_grid = None
         for lam in self.lambdas:
-            if lam.interaction_type == 'output' and lam.values is not None and len(lam.values) > 0:
+            if (
+                lam.interaction_type == 'output'
+                and lam.values is not None
+                and len(lam.values) > 0
+            ):
                 output_grid = list(lam.values)
                 break
         if output_grid is not None:
