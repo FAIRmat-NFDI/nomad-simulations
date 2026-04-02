@@ -321,12 +321,24 @@ class Outputs(SimulationTime):
         super().normalize(archive, logger)
 
         # Set ref to the last `ModelSystem` if this is not set in the output
-        if self.model_system_ref is None:
-            self.model_system_ref = self.set_model_system_ref()
+        # Only set references when in ServerContext with upload (full NOMAD backend)
+        # to avoid AttributeError: qualified_name during CLI parsing with --show-archive
+        context = self.m_root().m_context if self.m_root() else None
+        has_upload = False
+        if context is not None:
+            try:
+                # ServerContext has upload_id property; CLI context does not or it's None
+                has_upload = getattr(context, 'upload_id', None) is not None
+            except Exception:
+                pass
 
-        # Set ref to the last `ModelMethod` if this is not set in the output
-        if self.model_method_ref is None:
-            self.model_method_ref = self.set_model_method_ref()
+        if has_upload:
+            if self.model_system_ref is None:
+                self.model_system_ref = self.set_model_system_ref()
+
+            # Set ref to the last `ModelMethod` if this is not set in the output
+            if self.model_method_ref is None:
+                self.model_method_ref = self.set_model_method_ref()
 
         # Populate missing SCF delta quantities from available data
         if self.scf_steps is not None:

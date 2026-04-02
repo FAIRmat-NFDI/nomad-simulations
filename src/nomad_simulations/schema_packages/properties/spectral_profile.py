@@ -229,22 +229,26 @@ class ElectronicDensityOfStates(DOSProfile):
         # Check that the closest `energies` to the energy reference is not too far away.
         # If it is very far away, normalization may be very inaccurate and we do not report it.
         dos_values = self.value.magnitude
+        energies_magnitude = energies_points.magnitude
         eref = highest_occupied_energy if fermi_level is None else fermi_level
-        fermi_idx = (np.abs(energies_points - eref)).argmin()
+        if eref is None:
+            return None
+        eref_magnitude = eref.magnitude
+        fermi_idx = (np.abs(energies_magnitude - eref_magnitude)).argmin()
         fermi_energy_closest = energies_points[fermi_idx]
-        distance = np.abs(fermi_energy_closest - eref)
+        distance = np.abs(energies_magnitude[fermi_idx] - eref_magnitude)
         single_peak_fermi = False
-        if distance.magnitude <= configuration.dos_energy_tolerance:
+        if distance <= configuration.dos_energy_tolerance:
             # See if there are zero values close below the energy reference.
             idx = fermi_idx
             idx_descend = fermi_idx
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies_points[idx])
+                    energy_distance = np.abs(eref_magnitude - energies_magnitude[idx])
                 except IndexError:
                     break
-                if energy_distance.magnitude > configuration.dos_energy_tolerance:
+                if energy_distance > configuration.dos_energy_tolerance:
                     break
                 if value <= configuration.dos_intensities_threshold:
                     idx_descend = idx
@@ -257,10 +261,10 @@ class ElectronicDensityOfStates(DOSProfile):
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies_points[idx])
+                    energy_distance = np.abs(eref_magnitude - energies_magnitude[idx])
                 except IndexError:
                     break
-                if energy_distance.magnitude > configuration.dos_energy_tolerance:
+                if energy_distance > configuration.dos_energy_tolerance:
                     break
                 if value <= configuration.dos_intensities_threshold:
                     idx_ascend = idx

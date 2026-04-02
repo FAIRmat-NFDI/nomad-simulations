@@ -263,66 +263,78 @@ class GeometryOptimization(SerialWorkflow):
         """
         Generate tasks from archive data outputs. Tasks are ordered and linked based
         on the execution time of the calculation corresponding to the output.
+        Falls back to model_system if outputs are not populated.
         """
         # do not overwrite assigned tasks
         if self.tasks:
             return
 
-        if not archive.data or not archive.data.outputs:
+        if not archive.data:
             return
 
-        # do not overwrite if tasks are set but give out a warning that it maybe
-        # inconsistent with the outputs
         logger = self.map_tasks.__annotations__['logger']
-        if self.tasks:
-            logger.warning('Tasks are predefined and will not generate from outputs.')
-            return
 
-        outputs = list(archive.data.outputs)
-        outputs.sort(key=lambda x: x.wall_start or 0)
-        tasks = []
-        parent_n = 0
-        root_n = 0
-        for n, output in enumerate(outputs):
-            if output.get('scf_steps') is not None:
-                task = SinglePoint(
-                    name=f'{self._task_label} {n}',
-                    outputs=[Link(name='Outputs', section=output)],
-                    results=SimulationWorkflowResults(),
-                )
-                single_point_convergence = jmespath.search(
-                    'workflow2.method.single_point_convergence_targets', archive
-                )
-                if single_point_convergence is not None:
-                    single_point_convergence_result = task._resolve_convergence(
-                        archive, single_point_convergence, logger
+        # Primary path: create tasks from outputs
+        if archive.data.outputs and len(archive.data.outputs) > 0:
+            outputs = list(archive.data.outputs)
+            outputs.sort(key=lambda x: x.wall_start or 0)
+            tasks = []
+            parent_n = 0
+            root_n = 0
+            for n, output in enumerate(outputs):
+                if output.get('scf_steps') is not None:
+                    task = SinglePoint(
+                        name=f'{self._task_label} {n}',
+                        outputs=[Link(name='Outputs', section=output)],
+                        results=SimulationWorkflowResults(),
                     )
-                    task.results.convergence = single_point_convergence_result
-            else:
+                    single_point_convergence = jmespath.search(
+                        'workflow2.method.single_point_convergence_targets', archive
+                    )
+                    if single_point_convergence is not None:
+                        single_point_convergence_result = task._resolve_convergence(
+                            archive, single_point_convergence, logger
+                        )
+                        task.results.convergence = single_point_convergence_result
+                else:
+                    task = Task(
+                        name=f'{self._task_label} {n}',
+                        outputs=[Link(name='Outputs', section=output)],
+                    )
+                tasks.append(task)
+                tstart = output.wall_start
+                tend = outputs[parent_n].wall_end
+                if tstart is None and tend is None:
+                    continue
+                if tstart >= tend:
+                    task.inputs.extend(
+                        [Link(name='Linked task', section=t) for t in tasks[parent_n:n]]
+                    )
+                    root_n = parent_n
+                    parent_n = n
+                elif n != parent_n:
+                    task.inputs.extend(
+                        [
+                            Link(name='Linked task', section=t)
+                            for t in tasks[root_n:parent_n]
+                        ]
+                    )
+
+            self.tasks.extend(tasks)
+
+        # Fallback path: create tasks from model_system (e.g., when outputs not populated)
+        elif archive.data.model_system and len(archive.data.model_system) > 0:
+            logger.info(
+                'Creating tasks from model_system (outputs not available). '
+                'Task convergence analysis will not be available.'
+            )
+            model_systems = list(archive.data.model_system)
+            for n, model_system in enumerate(model_systems):
                 task = Task(
                     name=f'{self._task_label} {n}',
-                    outputs=[Link(name='Outputs', section=output)],
+                    outputs=[Link(name='Model System', section=model_system)],
                 )
-            tasks.append(task)
-            tstart = output.wall_start
-            tend = outputs[parent_n].wall_end
-            if tstart is None and tend is None:
-                continue
-            if tstart >= tend:
-                task.inputs.extend(
-                    [Link(name='Linked task', section=t) for t in tasks[parent_n:n]]
-                )
-                root_n = parent_n
-                parent_n = n
-            elif n != parent_n:
-                task.inputs.extend(
-                    [
-                        Link(name='Linked task', section=t)
-                        for t in tasks[root_n:parent_n]
-                    ]
-                )
-
-        self.tasks.extend(tasks)
+                self.tasks.append(task)
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
