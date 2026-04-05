@@ -81,7 +81,11 @@ class DOSProfile(SpectralProfile):
         """
         logger = self.resolve_pdos_name.__annotations__['logger']
         if self.entity_ref is None:
-            if not self.m_parent.name == 'ElectronicDensityOfStates':
+            parent_section_name = getattr(getattr(self, 'm_parent', None), 'm_def', None)
+            parent_section_name = (
+                parent_section_name.name if parent_section_name is not None else None
+            )
+            if parent_section_name != 'ElectronicDensityOfStates':
                 logger.warning(
                     'The `entity_ref` is not set for the DOS profile. Could not resolve the `name`.'
                 )
@@ -189,6 +193,41 @@ class ElectronicDensityOfStates(DOSProfile):
             These can be extracted from `entity_ref`.
         """,
     )
+
+    def _ensure_model_system_ref_from_projected_dos(self) -> None:
+        """
+        Best-effort fallback to set `Outputs.model_system_ref` from PDOS entity references.
+
+        In CLI/non-server contexts, `Outputs.normalize` may skip assigning `model_system_ref`.
+        When projected DOS entries contain valid entity references, we can safely infer and
+        populate the parent `Outputs.model_system_ref` to keep downstream DOS logic consistent.
+        """
+        parent_outputs = self.m_parent
+        if (
+            parent_outputs is None
+            or getattr(parent_outputs, 'model_system_ref', None) is not None
+            or self.projected_dos is None
+        ):
+            return
+
+        for pdos in self.projected_dos:
+            entity_ref = getattr(pdos, 'entity_ref', None)
+            if entity_ref is None:
+                continue
+
+            atom_state = None
+            if isinstance(entity_ref, AtomsState):
+                atom_state = entity_ref
+            elif isinstance(entity_ref, ElectronicState):
+                parent_entity = entity_ref.get_parent_entity()
+                if isinstance(parent_entity, AtomsState):
+                    atom_state = parent_entity
+
+            model_system = getattr(atom_state, 'm_parent', None)
+            model_system_name = getattr(getattr(model_system, 'm_def', None), 'name', None)
+            if model_system_name == 'ModelSystem':
+                parent_outputs.model_system_ref = model_system
+                return
 
     def resolve_energies_origin(
         self,
@@ -385,6 +424,9 @@ class ElectronicDensityOfStates(DOSProfile):
         Returns:
             (DOSProfile): The extracted projected DOS.
         """
+        # In CLI/non-server runs, Outputs.normalize may skip model_system_ref.
+        self._ensure_model_system_ref_from_projected_dos()
+
         extracted_pdos = []
         for pdos in self.projected_dos:
             # We make sure each PDOS is normalized
@@ -414,6 +456,8 @@ class ElectronicDensityOfStates(DOSProfile):
         Returns:
             (Optional[pint.Quantity]): The total `value` of the electronic DOS.
         """
+        self._ensure_model_system_ref_from_projected_dos()
+
         if self.projected_dos is None or len(self.projected_dos) == 0:
             return None
 

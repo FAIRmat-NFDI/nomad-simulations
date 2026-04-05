@@ -8,6 +8,7 @@ from nomad_simulations.schema_packages.model_system import ModelSystem, Represen
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import (
     AbsorptionSpectrum,
+    DOSProfile,
     ElectronicDensityOfStates,
     XASSpectrum,
 )
@@ -109,6 +110,14 @@ class TestElectronicDensityOfStates:
         for i, pdos in enumerate(projected_dos):
             name = pdos.resolve_pdos_name(logger=logger)
             assert name == pdos_names[i]
+
+    def test_resolve_pdos_name_missing_entity_ref_no_exception(self):
+        """Missing entity_ref should return None without decorator exception warnings."""
+        parent = ElectronicDensityOfStates()
+        pdos = DOSProfile()
+        parent.projected_dos.append(pdos)
+
+        assert pdos.resolve_pdos_name(logger=logger) is None
 
     def test_extract_projected_dos(self, simulation_electronic_dos: Simulation):
         """
