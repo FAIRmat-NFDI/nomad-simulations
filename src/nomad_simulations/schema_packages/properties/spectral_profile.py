@@ -81,9 +81,8 @@ class DOSProfile(SpectralProfile):
         """
         logger = self.resolve_pdos_name.__annotations__['logger']
         if self.entity_ref is None:
-            parent_section_name = getattr(getattr(self, 'm_parent', None), 'm_def', None)
             parent_section_name = (
-                parent_section_name.name if parent_section_name is not None else None
+                self.m_parent.m_def.name if self.m_parent is not None else None
             )
             if parent_section_name != 'ElectronicDensityOfStates':
                 logger.warning(
@@ -205,13 +204,13 @@ class ElectronicDensityOfStates(DOSProfile):
         parent_outputs = self.m_parent
         if (
             parent_outputs is None
-            or getattr(parent_outputs, 'model_system_ref', None) is not None
+            or parent_outputs.model_system_ref is not None
             or self.projected_dos is None
         ):
             return
 
         for pdos in self.projected_dos:
-            entity_ref = getattr(pdos, 'entity_ref', None)
+            entity_ref = pdos.entity_ref
             if entity_ref is None:
                 continue
 
@@ -223,9 +222,11 @@ class ElectronicDensityOfStates(DOSProfile):
                 if isinstance(parent_entity, AtomsState):
                     atom_state = parent_entity
 
-            model_system = getattr(atom_state, 'm_parent', None)
-            model_system_name = getattr(getattr(model_system, 'm_def', None), 'name', None)
-            if model_system_name == 'ModelSystem':
+            if atom_state is None:
+                continue
+
+            model_system = atom_state.m_parent
+            if model_system is not None and model_system.m_def.name == 'ModelSystem':
                 parent_outputs.model_system_ref = model_system
                 return
 

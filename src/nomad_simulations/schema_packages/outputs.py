@@ -320,25 +320,21 @@ class Outputs(SimulationTime):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Set ref to the last `ModelSystem` if this is not set in the output
-        # Only set references when in ServerContext with upload (full NOMAD backend)
-        # to avoid AttributeError: qualified_name during CLI parsing with --show-archive
-        context = self.m_root().m_context if self.m_root() else None
-        has_upload = False
-        if context is not None:
-            try:
-                # ServerContext has upload_id property; CLI context does not or it's None
-                has_upload = getattr(context, 'upload_id', None) is not None
-            except Exception:
-                pass
-
-        if has_upload:
+        # Set refs opportunistically in all contexts.
+        # Some lightweight/CLI contexts can fail reference assignment depending on
+        # serialization backend state, so keep this best-effort and non-fatal.
+        try:
             if self.model_system_ref is None:
                 self.model_system_ref = self.set_model_system_ref()
+        except Exception as e:
+            logger.debug(f'Could not set model_system_ref: {e}')
 
+        try:
             # Set ref to the last `ModelMethod` if this is not set in the output
             if self.model_method_ref is None:
                 self.model_method_ref = self.set_model_method_ref()
+        except Exception as e:
+            logger.debug(f'Could not set model_method_ref: {e}')
 
         # Populate missing SCF delta quantities from available data
         if self.scf_steps is not None:
