@@ -429,8 +429,7 @@ def archive_to_universe(
         return None
     particle_names = [ps.label for ps in particle_states]
     particle_types = [
-        getattr(ps, 'chemical_symbol', None) or getattr(ps, 'bead_symbol', 'CGX')
-        for ps in particle_states
+        ps.chemical_symbol or ps.bead_symbol or 'CGX' for ps in particle_states
     ]
 
     _ppc = (
@@ -477,7 +476,7 @@ def archive_to_universe(
             )
         else:
             _missing_masses += 1
-            symbol = getattr(ps, 'chemical_symbol', None)
+            symbol = ps.chemical_symbol or ps.bead_symbol or 'CGX'
             ase_mass = (
                 ase.data.atomic_masses[ase.data.atomic_numbers.get(symbol, 0)]
                 if symbol is not None
@@ -647,7 +646,7 @@ def archive_to_universe(
         return None
 
     # get the bonds  # TODO extend to multiple storage options for interactions
-    _bond_list = getattr(sec_system_top, 'bond_list', None)
+    _bond_list = sec_system_top.bond_list
     if _bond_list is not None and len(_bond_list) > 0:
         bonds = [tuple(bond) for bond in _bond_list]
     else:
