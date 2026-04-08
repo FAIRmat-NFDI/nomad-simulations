@@ -189,9 +189,7 @@ class TestFreeEnergyCalculationParameters:
 
     def test_range_check_outside_bounds(self, free_energy_parameters, archive, logger):
         free_energy_parameters.calc_type = 'alchemical'
-        lam = Lambdas(
-            interaction_type='vdw', lambda_values=np.array([0.0, 0.5, 1.5])
-        )
+        lam = Lambdas(interaction_type='vdw', lambda_values=np.array([0.0, 0.5, 1.5]))
         free_energy_parameters.lambdas.append(lam)
         free_energy_parameters.normalize(archive, logger)
         # Values outside [0,1] — normalize should warn but not raise

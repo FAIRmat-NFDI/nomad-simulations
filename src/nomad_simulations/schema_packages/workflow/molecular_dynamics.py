@@ -575,8 +575,7 @@ class Lambdas(ArchiveSection):
 
         vals = (
             list(self.lambda_values)
-            if self.lambda_values is not None
-            and len(self.lambda_values) > 0
+            if self.lambda_values is not None and len(self.lambda_values) > 0
             else []
         )
         if not vals:
