@@ -43,6 +43,7 @@ from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSec
 from nomad.units import ureg
 from nomad.utils import get_logger
 
+from nomad_simulations.schema_packages.atoms_state import CGBeadState
 from nomad_simulations.schema_packages.model_system import ModelSystem
 
 LOGGER = get_logger(__name__)
@@ -206,18 +207,14 @@ def get_bond_list_from_model_contributions(
     bond_list: list[tuple[int, ...]] = []
     if sec_method is None:
         return bond_list
-    contributions = getattr(sec_method, 'contributions', None)
+    contributions = sec_method.contributions
     if contributions is None or len(contributions) == 0:
         return bond_list
     for contribution in contributions:
-        if getattr(contribution, 'type', None) != 'bond':
+        if contribution.type != 'bond':
             continue
-        pi = getattr(contribution, 'particle_indices', None)
+        pi = contribution.particle_indices
         if pi is None:
-            continue
-        try:
-            pi = np.asarray(pi)
-        except Exception:
             continue
         if pi.ndim != 2 or pi.shape[1] != 2:
             continue
@@ -429,7 +426,8 @@ def archive_to_universe(
         return None
     particle_names = [ps.label for ps in particle_states]
     particle_types = [
-        ps.chemical_symbol or ps.bead_symbol or 'CGX' for ps in particle_states
+        ps.chemical_symbol or (ps.bead_symbol if isinstance(ps, CGBeadState) else 'CGX')
+        for ps in particle_states
     ]
 
     _ppc = (
@@ -476,7 +474,9 @@ def archive_to_universe(
             )
         else:
             _missing_masses += 1
-            symbol = ps.chemical_symbol or ps.bead_symbol or 'CGX'
+            symbol = ps.chemical_symbol or (
+                ps.bead_symbol if isinstance(ps, CGBeadState) else 'CGX'
+            )
             ase_mass = (
                 ase.data.atomic_masses[ase.data.atomic_numbers.get(symbol, 0)]
                 if symbol is not None
@@ -507,9 +507,7 @@ def archive_to_universe(
     charges = np.array(_charges_list)
 
     system_times = [
-        t
-        for out in (archive.data.outputs or [])
-        if (t := getattr(out, 'time', None)) is not None
+        t for out in (archive.data.outputs or []) if (t := out.time) is not None
     ]
     n_frames = len(sec_system)
 

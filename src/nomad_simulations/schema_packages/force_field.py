@@ -1350,7 +1350,7 @@ class ParticleParametersContainer(NumericalSettings):
             for ps in ap.species_scope or []:
                 ps_id = id(ps)
                 if ps_id in seen:
-                    duplicates.add(str(getattr(ap, 'particle_type', None)))
+                    duplicates.add(str(ap.particle_type) or None)
                 seen.add(ps_id)
         if duplicates:
             logger.error(
