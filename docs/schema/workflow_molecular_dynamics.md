@@ -193,7 +193,7 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `calc_type` | Enum | <details><summary>Specifies the type of workflow.</summary>Specifies the type of workflow. Allowed values are:<br>\| kind          \| Description                               \|<br>\| ---------------------- \| ----------------------------------------- \|<br>\| `"alchemical"`           \| A non-physical transformation between 2 well-defined systems,<br>typically achieved by smoothly interpolating between Hamiltonians or force fields.  \|<br>\| `"umbrella_sampling"`    \| A sampling of the path between 2 well-defined (sub)states of a system,<br>typically achieved by applying a biasing force to the force field along a<br>specified reaction coordinate.</details> |
-| `current_lambda_index` | m_int32(int) | Index into each Lambdas.coupling_parameters for the current simulation step/state (only valid if all targets share an aligned λ grid). |
+| `current_lambda_index` | m_int32(int) | Index into each Lambdas.lambda_values for the current simulation step/state (only valid if all targets share an aligned λ grid). |
 | `current_lambdas` | m_float64(float64) (shape: ['*']) | Scalar λ per Lambdas entry order. |
 
 ### `Lambdas`
@@ -205,7 +205,7 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `interaction_type` | Enum | <details><summary>The type of lambda interpolation</summary>The type of lambda interpolation<br>Allowed values are:<br>\| type          \| Description                               \|<br>\| ---------------------- \| ----------------------------------------- \|<br>\| `"output"`           \| Lambdas for the free energy outputs saved.<br>These will also act as a default in case some<br>relevant lambdas are not specified. \|<br>\| `"coulomb"`          \| Lambdas for interpolating electrostatic interactions. \|<br>\| `"vdw"`              \| Lambdas for interpolating van der Waals interactions. \|<br>\| `"bonded"`           \| Lambdas for interpolating all intramolecular interactions. \|<br>\| `"restraint"`        \| Lambdas for interpolating restraints. \|<br>\| `"mass"`             \| Lambdas for interpolating masses. \|<br>\| `"temperature"`      \| Lambdas for interpolating temperature. \|</details> |
-| `coupling_parameters` | m_float64(float64) (shape: ['*']) | Grid of λ values for this interaction (e.g., [0.0, 0.1, …, 1.0]). |
+| `lambda_values` | m_float64(float64) (shape: ['*']) | Grid of λ values for this interaction (e.g., [0.0, 0.1, …, 1.0]). |
 | `endpoints_on` | m_bool(bool) (shape: [2]) | Specifies whether the interaction is ‘on’ at the endpoints: [initial@λ=0, final@λ=1]. |
 | `scheme` | Enum | Alchemical scheme for this interaction, if applicable. |
 | `softcore_enabled` | m_bool(bool) | Soft-core on/off for nonbonded. |

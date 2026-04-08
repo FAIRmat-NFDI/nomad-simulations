@@ -131,7 +131,7 @@ class TestShearParameters:
 class TestLambdas:
     def test_default_initialization(self, lambdas):
         assert lambdas.interaction_type is None
-        assert lambdas.coupling_parameters is None
+        assert lambdas.lambda_values is None
         assert lambdas.endpoints_on is None
 
     @pytest.mark.parametrize(
@@ -144,14 +144,14 @@ class TestLambdas:
 
     def test_lambda_grid(self, lambdas, archive, logger):
         lambda_values = np.linspace(0.0, 1.0, 11)
-        lambdas.coupling_parameters = lambda_values
+        lambdas.lambda_values = lambda_values
         lambdas.normalize(archive, logger)
-        assert np.array_equal(lambdas.coupling_parameters, lambda_values)
+        assert np.array_equal(lambdas.lambda_values, lambda_values)
 
     def test_non_monotonic_warning(self, lambdas, archive, logger):
-        lambdas.coupling_parameters = np.array([0.0, 0.5, 0.3, 1.0])
+        lambdas.lambda_values = np.array([0.0, 0.5, 0.3, 1.0])
         lambdas.normalize(archive, logger)
-        assert len(lambdas.coupling_parameters) == 4
+        assert len(lambdas.lambda_values) == 4
 
     def test_softcore_parameters(self, lambdas):
         lambdas.interaction_type = 'vdw'
@@ -178,10 +178,10 @@ class TestFreeEnergyCalculationParameters:
     def test_multiple_lambda_dimensions(self, free_energy_parameters, logger, archive):
         # Create lambda schedules for vdw and coulomb
         lambda_vdw = Lambdas(
-            interaction_type='vdw', coupling_parameters=np.linspace(0.0, 1.0, 11)
+            interaction_type='vdw', lambda_values=np.linspace(0.0, 1.0, 11)
         )
         lambda_coul = Lambdas(
-            interaction_type='coulomb', coupling_parameters=np.linspace(0.0, 1.0, 11)
+            interaction_type='coulomb', lambda_values=np.linspace(0.0, 1.0, 11)
         )
         free_energy_parameters.lambdas = [lambda_vdw, lambda_coul]
         free_energy_parameters.normalize(archive, logger)
@@ -190,7 +190,7 @@ class TestFreeEnergyCalculationParameters:
     def test_range_check_outside_bounds(self, free_energy_parameters, archive, logger):
         free_energy_parameters.calc_type = 'alchemical'
         lam = Lambdas(
-            interaction_type='vdw', coupling_parameters=np.array([0.0, 0.5, 1.5])
+            interaction_type='vdw', lambda_values=np.array([0.0, 0.5, 1.5])
         )
         free_energy_parameters.lambdas.append(lam)
         free_energy_parameters.normalize(archive, logger)
@@ -201,7 +201,7 @@ class TestFreeEnergyCalculationParameters:
     ):
         lam = Lambdas(
             interaction_type='output',
-            coupling_parameters=np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0]),
+            lambda_values=np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0]),
         )
         free_energy_parameters.lambdas.append(lam)
         free_energy_parameters.current_lambda_index = 3
@@ -212,7 +212,7 @@ class TestFreeEnergyCalculationParameters:
         self, free_energy_parameters, archive, logger
     ):
         lam = Lambdas(
-            interaction_type='output', coupling_parameters=np.array([0.0, 0.5, 1.0])
+            interaction_type='output', lambda_values=np.array([0.0, 0.5, 1.0])
         )
         free_energy_parameters.lambdas.append(lam)
         free_energy_parameters.current_lambda_index = 10

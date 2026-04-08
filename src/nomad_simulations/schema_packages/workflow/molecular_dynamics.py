@@ -527,7 +527,7 @@ class Lambdas(ArchiveSection):
         """,
     )
 
-    coupling_parameters = Quantity(
+    lambda_values = Quantity(
         type=np.float64,
         shape=['*'],
         description='Grid of λ values for this interaction (e.g., [0.0, 0.1, …, 1.0]).',
@@ -574,9 +574,9 @@ class Lambdas(ArchiveSection):
         super().normalize(archive, logger)
 
         vals = (
-            list(self.coupling_parameters)
-            if self.coupling_parameters is not None
-            and len(self.coupling_parameters) > 0
+            list(self.lambda_values)
+            if self.lambda_values is not None
+            and len(self.lambda_values) > 0
             else []
         )
         if not vals:
@@ -653,7 +653,7 @@ class FreeEnergyCalculationParameters(MDSettings):
     current_lambda_index = Quantity(
         type=int,
         shape=[],
-        description='Index into each Lambdas.coupling_parameters for the current simulation step/state '
+        description='Index into each Lambdas.lambda_values for the current simulation step/state '
         '(only valid if all targets share an aligned λ grid).',
     )
     # Otherwise, prefer per-target scalar λ values for the current state (one scalar per Lambdas entry):
@@ -702,9 +702,9 @@ class FreeEnergyCalculationParameters(MDSettings):
                     val
                     for lam in self.lambdas
                     if lam.interaction_type in strict_targets
-                    and lam.coupling_parameters is not None
-                    and len(lam.coupling_parameters) > 0
-                    for val in lam.coupling_parameters
+                    and lam.lambda_values is not None
+                    and len(lam.lambda_values) > 0
+                    for val in lam.lambda_values
                 ]
             )
             if values.size > 0 and (np.any(values < 0.0) or np.any(values > 1.0)):
@@ -717,7 +717,7 @@ class FreeEnergyCalculationParameters(MDSettings):
             grids = [
                 tuple(v)
                 for lam in self.lambdas
-                for v in [getattr(lam, 'coupling_parameters', None)]
+                for v in [getattr(lam, 'lambda_values', None)]
                 if v is not None
             ]
             non_empty = [g for g in grids if len(g) > 0]
@@ -761,17 +761,17 @@ class FreeEnergyCalculationParameters(MDSettings):
         for lam in self.lambdas:
             if (
                 lam.interaction_type == 'output'
-                and lam.coupling_parameters is not None
-                and len(lam.coupling_parameters) > 0
+                and lam.lambda_values is not None
+                and len(lam.lambda_values) > 0
             ):
-                output_grid = list(lam.coupling_parameters)
+                output_grid = list(lam.lambda_values)
                 break
         if output_grid is not None:
             for lam in self.lambdas:
                 if lam.interaction_type != 'output':
-                    vals = lam.coupling_parameters
+                    vals = lam.lambda_values
                     if vals is None or len(vals) == 0:
-                        lam.coupling_parameters = list(output_grid)
+                        lam.lambda_values = list(output_grid)
                         logger.info(
                             'Missing Lambda grids have been filled from the "output" grid.'
                         )
