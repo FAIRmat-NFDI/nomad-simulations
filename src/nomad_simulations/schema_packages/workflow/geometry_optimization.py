@@ -206,7 +206,7 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
         if not self.n_steps:
             self.n_steps = len(archive.data.outputs)
 
-        if not self.energies:
+        if self.energies is None:
             energies_l = []
             for outputs in archive.data.outputs:
                 try:
