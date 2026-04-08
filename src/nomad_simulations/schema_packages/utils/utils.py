@@ -103,6 +103,11 @@ def get_sibling_section(
     # If the sibling_section is a list, return the element `index_sibling` of that list
     if isinstance(sibling_section, list):
         if index_sibling >= len(sibling_section):
+            # TODO(normalization-robustness): this warning is noisy for valid
+            # workflows where optional sibling sections are absent (e.g. DOS
+            # normalization when `electronic_eigenvalues` is not stored for the
+            # corresponding output index). Revisit call sites to avoid warning
+            # on expected-missing siblings or downgrade to debug-level logging.
             logger.warning('The index of the sibling_section is out of range.')
             return None
         return sibling_section[index_sibling]
