@@ -45,6 +45,7 @@ from nomad.utils import get_logger
 
 from nomad_simulations.schema_packages.atoms_state import CGBeadState
 from nomad_simulations.schema_packages.model_system import ModelSystem
+from nomad_simulations.schema_packages.outputs import TrajectoryOutputs
 
 LOGGER = get_logger(__name__)
 
@@ -507,7 +508,9 @@ def archive_to_universe(
     charges = np.array(_charges_list)
 
     system_times = [
-        t for out in (archive.data.outputs or []) if (t := out.time) is not None
+        out.time
+        for out in (archive.data.outputs or [])
+        if isinstance(out, TrajectoryOutputs) and out.time is not None
     ]
     n_frames = len(sec_system)
 
