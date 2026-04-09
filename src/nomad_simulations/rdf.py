@@ -236,15 +236,18 @@ def discover_schema_section_classes(
         ) from exc
 
     root = importlib.import_module(package)
-    section_classes: list[type] = []
+    root_section_classes: list[type] = []
     for module in _iter_modules_recursively(root):
         for _, obj in inspect.getmembers(module, inspect.isclass):
             if obj is MSection:
                 continue
-            if _issubclass_safe(obj, MSection):
-                section_classes.append(obj)
+            if not _issubclass_safe(obj, MSection):
+                continue
+            if not _is_schema_root_section_class(obj, package=package):
+                continue
+            root_section_classes.append(obj)
 
-    return sorted(set(section_classes), key=_qualified_class_name)
+    return _reachable_section_classes(root_section_classes, package=package)
 
 
 def _iter_defs(container: Any) -> Iterator[Any]:
@@ -308,6 +311,12 @@ def _qualified_class_name(section_cls: type) -> str:
     return f'{section_cls.__module__}.{section_cls.__name__}'
 
 
+def _is_schema_root_section_class(
+    section_cls: type, package: str = DEFAULT_SCHEMA_PACKAGE
+) -> bool:
+    return section_cls.__module__.startswith(f'{package}.')
+
+
 def _qualified_source_name(section: SourceSection) -> str:
     return f'{section.module}.{section.name}'
 
@@ -362,6 +371,15 @@ def _description_for(item: Any) -> str | None:
         if docstring:
             return docstring
 
+    return None
+
+
+def _explicit_description_for(item: Any) -> str | None:
+    description = getattr(item, 'description', None)
+    if isinstance(description, str):
+        description = description.strip()
+        if description:
+            return description
     return None
 
 
@@ -636,6 +654,12 @@ def _source_range_resource(
 def source_package_to_rdf_triples(
     package: str = DEFAULT_SCHEMA_PACKAGE, base_uri: str = DEFAULT_BASE_URI
 ) -> list[RDFTriple]:
+    """
+    Export a package-local schema graph from source when live metainfo imports are unavailable.
+
+    This fallback intentionally stays within the source package and does not attempt to
+    reconstruct the external class closure that the import-based exporter can discover.
+    """
     sections = list(_iter_source_sections(package))
     section_by_name = {
         section.name: section
@@ -796,17 +820,8 @@ def source_package_to_rdf_triples(
             )
             if target_section is not None:
                 target_uri = _source_section_uri(target_section, base_uri)
-                triples.extend(
-                    [
-                        RDFTriple(
-                            property_uri, f'{RDFS_NS}range', _resource(target_uri)
-                        ),
-                        RDFTriple(
-                            section_uri,
-                            f'{VOCAB_URI}hasSubSection',
-                            _resource(target_uri),
-                        ),
-                    ]
+                triples.append(
+                    RDFTriple(property_uri, f'{RDFS_NS}range', _resource(target_uri))
                 )
 
     return sorted(set(triples))
@@ -851,6 +866,62 @@ def _iter_subsections(section_cls: type) -> Iterator[Any]:
     if sub_sections is None:
         sub_sections = getattr(section_def, 'sub_sections', None)
     yield from _iter_defs(sub_sections)
+
+
+def _iter_quantity_section_classes(section_cls: type) -> Iterator[type]:
+    seen: set[str] = set()
+    for quantity in _iter_quantities(section_cls):
+        for candidate in _flatten_types(getattr(quantity, 'type', Any)):
+            target_cls = _as_section_cls(candidate)
+            if target_cls is None:
+                continue
+            qualified_name = _qualified_class_name(target_cls)
+            if qualified_name in seen:
+                continue
+            seen.add(qualified_name)
+            yield target_cls
+
+
+def _iter_subsection_section_classes(section_cls: type) -> Iterator[type]:
+    seen: set[str] = set()
+    for sub_section in _iter_subsections(section_cls):
+        child_cls = _as_section_cls(getattr(sub_section, 'sub_section', None))
+        if child_cls is None:
+            child_cls = _as_section_cls(getattr(sub_section, 'section_def', None))
+        if child_cls is None:
+            continue
+        qualified_name = _qualified_class_name(child_cls)
+        if qualified_name in seen:
+            continue
+        seen.add(qualified_name)
+        yield child_cls
+
+
+def _reachable_section_classes(
+    section_classes: Iterable[type], package: str = DEFAULT_SCHEMA_PACKAGE
+) -> list[type]:
+    pending = sorted(set(section_classes), key=_qualified_class_name)
+    discovered: dict[str, type] = {}
+
+    while pending:
+        section_cls = pending.pop()
+        qualified_name = _qualified_class_name(section_cls)
+        if qualified_name in discovered:
+            continue
+
+        discovered[qualified_name] = section_cls
+
+        related_classes = list(_iter_base_section_classes(section_cls))
+        if _is_schema_root_section_class(section_cls, package=package):
+            related_classes.extend(_iter_quantity_section_classes(section_cls))
+            related_classes.extend(_iter_subsection_section_classes(section_cls))
+
+        for related_cls in related_classes:
+            related_name = _qualified_class_name(related_cls)
+            if related_name not in discovered:
+                pending.append(related_cls)
+
+    return sorted(discovered.values(), key=_qualified_class_name)
 
 
 def _range_resource(
@@ -912,7 +983,6 @@ def _stringify_shape(shape: Any) -> str | None:
 def _vocab_triples() -> list[RDFTriple]:
     properties = {
         'definesProperty': 'Connects a section class to one of its schema properties.',
-        'hasSubSection': 'Connects a section class to the class used as a subsection.',
         'propertyKind': 'Marks whether a schema property came from a quantity or subsection.',
         'shape': 'Stores the NOMAD quantity shape declaration.',
         'unit': 'Stores the NOMAD unit declaration as text.',
@@ -942,7 +1012,7 @@ def section_classes_to_rdf_triples(
     """
     triples: list[RDFTriple] = _vocab_triples()
 
-    for section_cls in sorted(set(section_classes), key=_qualified_class_name):
+    for section_cls in _reachable_section_classes(section_classes):
         section_def = getattr(section_cls, 'm_def', None)
         if section_def is None:
             continue
@@ -1110,20 +1180,11 @@ def section_classes_to_rdf_triples(
 
             if child_cls is not None:
                 child_uri = _section_uri(child_cls, base_uri)
-                triples.extend(
-                    [
-                        RDFTriple(
-                            property_uri, f'{RDFS_NS}range', _resource(child_uri)
-                        ),
-                        RDFTriple(
-                            section_uri,
-                            f'{VOCAB_URI}hasSubSection',
-                            _resource(child_uri),
-                        ),
-                    ]
+                triples.append(
+                    RDFTriple(property_uri, f'{RDFS_NS}range', _resource(child_uri))
                 )
 
-            description = _description_for(sub_section)
+            description = _explicit_description_for(sub_section)
             if description:
                 triples.append(
                     RDFTriple(property_uri, f'{RDFS_NS}comment', _literal(description))
@@ -1144,6 +1205,9 @@ def section_classes_to_rdf_turtle(
 def schema_package_to_rdf_triples(
     package: str = DEFAULT_SCHEMA_PACKAGE, base_uri: str = DEFAULT_BASE_URI
 ) -> list[RDFTriple]:
+    """
+    Export the schema graph, preferring live metainfo introspection as the normative path.
+    """
     try:
         return section_classes_to_rdf_triples(
             discover_schema_section_classes(package=package), base_uri=base_uri
