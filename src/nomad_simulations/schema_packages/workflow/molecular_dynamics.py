@@ -652,14 +652,62 @@ class FreeEnergyCalculationParameters(MDSettings):
     current_lambda_index = Quantity(
         type=int,
         shape=[],
-        description='Index into each Lambdas.lambda_values for the current simulation step/state '
+        description='Index into each Lambdas.lambda_values for the current simulation '
+        'step/state '
         '(only valid if all targets share an aligned λ grid).',
     )
-    # Otherwise, prefer per-target scalar λ values for the current state (one scalar per Lambdas entry):
+    # Otherwise, prefer per-target scalar λ values for the current state (one scalar per
+    # Lambdas entry):
     current_lambdas = Quantity(
         type=np.float64, shape=['*'], description='Scalar λ per Lambdas entry order.'
     )
     # TODO not really sure how to deal with this, cause it corresponds to a hierarchical workflow that may not be contained in the same upload
+
+    n_frames = Quantity(
+        type=np.int32,
+        shape=[],
+        description='Number of time frames in the XVG free-energy output.',
+    )
+
+    n_states = Quantity(
+        type=np.int32,
+        shape=[],
+        description='Number of lambda states in the XVG free-energy differences.',
+    )
+
+    times = Quantity(
+        type=np.float64,
+        shape=['n_frames'],
+        unit='picosecond',
+        description='Simulation time for each frame in the XVG output.',
+    )
+
+    energy_derivative = Quantity(
+        type=np.float64,
+        shape=['n_frames'],
+        unit='kilojoule / avogadro_number',
+        description=(
+            'dH/dλ at the current lambda state for each time frame, '
+            'as written by GROMACS to the XVG file.'
+        ),
+    )
+
+    energy_differences = Quantity(
+        type=np.float64,
+        shape=['n_frames', 'n_states'],
+        unit='kilojoule / avogadro_number',
+        description=(
+            'ΔH between the current lambda state and each other state '
+            'for each time frame (n_states columns in the XVG file).'
+        ),
+    )
+
+    pv_energy = Quantity(
+        type=np.float64,
+        shape=['n_frames'],
+        unit='kilojoule / avogadro_number',
+        description='PV contribution to the free energy for each time frame.',
+    )
 
     # TODO make sure this is covered in the outputs
     # atom_indices = Quantity(
@@ -714,10 +762,9 @@ class FreeEnergyCalculationParameters(MDSettings):
         # Alignment check for single current_lambda_index
         if self.current_lambda_index is not None:
             grids = [
-                tuple(v)
+                tuple(lam.lambda_values)
                 for lam in self.lambdas
-                for v in [getattr(lam, 'lambda_values', None)]
-                if v is not None
+                if lam.lambda_values is not None
             ]
             non_empty = [g for g in grids if len(g) > 0]
             if len(non_empty) > 1 and any(g != non_empty[0] for g in non_empty[1:]):
@@ -1339,6 +1386,12 @@ class MolecularDynamicsResults(SerialWorkflowResults):
 
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
+
+        # Populate n_steps and trajectory references from parsed model_system list
+        model_systems = archive.data.model_system if archive.data else []
+        if model_systems and self.n_steps is None:
+            self.n_steps = len(model_systems)
+            self.trajectory = model_systems
 
         self._universe = self.get_universe(archive)
         if self._universe is None:

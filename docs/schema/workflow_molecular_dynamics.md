@@ -195,6 +195,12 @@ classDiagram
 | `calc_type` | Enum | <details><summary>Specifies the type of workflow.</summary>Specifies the type of workflow. Allowed values are:<br>\| kind          \| Description                               \|<br>\| ---------------------- \| ----------------------------------------- \|<br>\| `"alchemical"`           \| A non-physical transformation between 2 well-defined systems,<br>typically achieved by smoothly interpolating between Hamiltonians or force fields.  \|<br>\| `"umbrella_sampling"`    \| A sampling of the path between 2 well-defined (sub)states of a system,<br>typically achieved by applying a biasing force to the force field along a<br>specified reaction coordinate.</details> |
 | `current_lambda_index` | m_int32(int) | Index into each Lambdas.lambda_values for the current simulation step/state (only valid if all targets share an aligned λ grid). |
 | `current_lambdas` | m_float64(float64) (shape: ['*']) | Scalar λ per Lambdas entry order. |
+| `n_frames` | m_int32(int32) | Number of time frames in the XVG free-energy output. |
+| `n_states` | m_int32(int32) | Number of lambda states in the XVG free-energy differences. |
+| `times` | m_float64(float64) (shape: ['n_frames']) | Simulation time for each frame in the XVG output. |
+| `energy_derivative` | m_float64(float64) (shape: ['n_frames']) | dH/dλ at the current lambda state for each time frame, as written by GROMACS to the XVG file. |
+| `energy_differences` | m_float64(float64) (shape: ['n_frames', 'n_states']) | ΔH between the current lambda state and each other state for each time frame (n_states columns in the XVG file). |
+| `pv_energy` | m_float64(float64) (shape: ['n_frames']) | PV contribution to the free energy for each time frame. |
 
 ### `Lambdas`
 
