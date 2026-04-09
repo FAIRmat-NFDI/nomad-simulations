@@ -245,20 +245,16 @@ class Outputs(SimulationTime):
             if not isinstance(model_systems, list) or len(model_systems) == 0:
                 return None
 
-            if (
-                isinstance(outputs, list)
-                and len(model_systems) == len(outputs)
-            ):
+            if isinstance(outputs, list) and len(model_systems) == len(outputs):
                 return model_systems[self.m_parent_index]
 
             # Prefer representative system when explicit 1-1 mapping is unavailable.
             representative_system_index = getattr(
                 self.m_parent, 'representative_system_index', None
             )
-            if (
-                isinstance(representative_system_index, (int, np.integer))
-                and 0 <= representative_system_index < len(model_systems)
-            ):
+            if isinstance(
+                representative_system_index, (int, np.integer)
+            ) and 0 <= representative_system_index < len(model_systems):
                 return model_systems[representative_system_index]
 
             # Fallback for trajectory-like archives: use the first system carrying
