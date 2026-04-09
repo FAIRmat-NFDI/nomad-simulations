@@ -764,8 +764,14 @@ def _get_molecular_bead_groups(
         atoms_moltypes = getattr(universe.atoms, 'moltypes', [])
         moltypes = np.unique(atoms_moltypes).tolist()
     bead_groups = {}
+    atoms_moltypes = np.asarray(getattr(universe.atoms, 'moltypes', []))
     for moltype in moltypes:
-        ags_by_moltype = universe.select_atoms('moltype ' + moltype)
+        try:
+            # Avoid text-based selection parsing (e.g., `moltype water`) which can
+            # fail for valid moltype values depending on tokenizer semantics.
+            ags_by_moltype = universe.atoms[atoms_moltypes == moltype]
+        except Exception:
+            ags_by_moltype = universe.atoms[:0]
         if ags_by_moltype.n_atoms == 0:
             continue
 

@@ -242,13 +242,34 @@ class Outputs(SimulationTime):
         if self.m_parent is not None:
             model_systems = self.m_parent.model_system
             outputs = self.m_parent.outputs
+            if not isinstance(model_systems, list) or len(model_systems) == 0:
+                return None
+
             if (
-                isinstance(model_systems, list)
-                and isinstance(outputs, list)
+                isinstance(outputs, list)
                 and len(model_systems) == len(outputs)
-                and len(model_systems) > 0
             ):
                 return model_systems[self.m_parent_index]
+
+            # Prefer representative system when explicit 1-1 mapping is unavailable.
+            representative_system_index = getattr(
+                self.m_parent, 'representative_system_index', None
+            )
+            if (
+                isinstance(representative_system_index, (int, np.integer))
+                and 0 <= representative_system_index < len(model_systems)
+            ):
+                return model_systems[representative_system_index]
+
+            # Fallback for trajectory-like archives: use the first system carrying
+            # particle-state topology metadata.
+            for model_system in model_systems:
+                if getattr(model_system, 'particle_states', None):
+                    return model_system
+
+            # Last-resort fallback to keep downstream reference-dependent
+            # normalization paths functional in mismatched-length payloads.
+            return model_systems[-1]
         return None
 
     def set_model_method_ref(self) -> ModelMethod | None:

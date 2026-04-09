@@ -20,6 +20,7 @@ from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils.molecular_dynamics import (
+    _get_molecular_bead_groups,
     archive_to_universe,
 )
 
@@ -209,3 +210,18 @@ def test_archive_to_universe_base_model_method_no_attribute_error():
         pytest.fail(
             f'archive_to_universe raised AttributeError with base ModelMethod: {exc}'
         )
+
+
+def test_get_molecular_bead_groups_handles_plain_moltype_tokens():
+    """
+    Moltype labels like "water" must not trigger MDAnalysis selection parsing errors.
+    """
+    universe = MDAnalysis.Universe.empty(3, n_residues=3, atom_resindex=[0, 1, 2])
+    universe.add_TopologyAttr('moltypes', np.array(['water', 'water', 'water']))
+    universe.add_TopologyAttr('masses', np.array([15.999, 1.008, 1.008]))
+    universe.add_TopologyAttr('bonds', [(0, 1), (1, 2)])
+
+    bead_groups = _get_molecular_bead_groups(universe)
+
+    assert 'water' in bead_groups
+    assert len(bead_groups['water']) == 1

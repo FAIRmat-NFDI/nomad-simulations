@@ -118,8 +118,28 @@ class TestOutputs:
             if len(model_systems) == len(outputs_list) and len(model_systems) > 0:
                 assert model_system_ref == model_systems[i]
                 assert model_system_ref.name == f'system_{i}'
+            elif len(model_systems) > 0:
+                assert model_system_ref == model_systems[-1]
             else:
                 assert model_system_ref is None
+
+    def test_set_model_system_ref_prefers_representative_system_on_mismatch(self):
+        simulation = generate_simulation()
+        simulation.model_system = [
+            ModelSystem(name='system_0'),
+            ModelSystem(name='system_1'),
+            ModelSystem(name='system_2'),
+        ]
+        simulation.representative_system_index = 0
+        simulation.outputs = [Outputs(), Outputs()]
+
+        output = simulation.outputs[0]
+        output.m_parent = simulation
+        output.m_parent_index = 0
+
+        model_system_ref = output.set_model_system_ref()
+        assert model_system_ref == simulation.model_system[0]
+        assert model_system_ref.name == 'system_0'
 
     @pytest.mark.parametrize(
         'model_method',
