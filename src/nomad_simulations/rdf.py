@@ -104,13 +104,31 @@ def _format_iri(value: str, extra_prefixes: Iterable[tuple[str, str]] = ()) -> s
 
 
 def _escape_literal(value: str) -> str:
-    return (
-        value.replace('\\', '\\\\')
-        .replace('"', '\\"')
-        .replace('\n', '\\n')
-        .replace('\r', '\\r')
-        .replace('\t', '\\t')
-    )
+    escaped_chars: list[str] = []
+    short_escapes = {
+        '\\': '\\\\',
+        '"': '\\"',
+        '\b': '\\b',
+        '\t': '\\t',
+        '\n': '\\n',
+        '\f': '\\f',
+        '\r': '\\r',
+    }
+
+    for char in value:
+        escaped = short_escapes.get(char)
+        if escaped is not None:
+            escaped_chars.append(escaped)
+            continue
+
+        codepoint = ord(char)
+        if codepoint < 0x20 or 0x7F <= codepoint <= 0x9F:
+            escaped_chars.append(f'\\u{codepoint:04X}')
+            continue
+
+        escaped_chars.append(char)
+
+    return ''.join(escaped_chars)
 
 
 def _format_node(node: RDFNode, extra_prefixes: Iterable[tuple[str, str]] = ()) -> str:
@@ -186,7 +204,9 @@ def _iter_modules_recursively(root_module) -> Iterator[Any]:
     yield root_module
     if not hasattr(root_module, '__path__'):
         return
-    for modinfo in pkgutil.walk_packages(root_module.__path__, root_module.__name__ + '.'):
+    for modinfo in pkgutil.walk_packages(
+        root_module.__path__, root_module.__name__ + '.'
+    ):
         try:
             yield importlib.import_module(modinfo.name)
         except Exception:
@@ -224,9 +244,7 @@ def discover_schema_section_classes(
             if _issubclass_safe(obj, MSection):
                 section_classes.append(obj)
 
-    return sorted(
-        set(section_classes), key=lambda section_cls: _qualified_class_name(section_cls)
-    )
+    return sorted(set(section_classes), key=_qualified_class_name)
 
 
 def _iter_defs(container: Any) -> Iterator[Any]:
@@ -475,7 +493,9 @@ def _parse_source_section(
             if isinstance(target, ast.Name):
                 target_name = target.id
                 value = statement.value
-        elif isinstance(statement, ast.AnnAssign) and isinstance(statement.target, ast.Name):
+        elif isinstance(statement, ast.AnnAssign) and isinstance(
+            statement.target, ast.Name
+        ):
             target_name = statement.target.id
             value = statement.value
 
@@ -503,7 +523,9 @@ def _parse_source_section(
             sub_sections.append(
                 SourceSubSection(
                     name=target_name,
-                    target_name=_extract_target_name(_call_keyword(value, 'sub_section')),
+                    target_name=_extract_target_name(
+                        _call_keyword(value, 'sub_section')
+                    ),
                     description=_extract_string(_call_keyword(value, 'description')),
                     repeats=_extract_bool(_call_keyword(value, 'repeats')),
                 )
@@ -540,7 +562,9 @@ def _source_property_uri(
     section: SourceSection, property_name: str, base_uri: str, kind: str
 ) -> str:
     qualified_name = quote(_qualified_source_name(section), safe='')
-    return _join_iri(base_uri, f'{kind}/{qualified_name}/{quote(property_name, safe="")}')
+    return _join_iri(
+        base_uri, f'{kind}/{qualified_name}/{quote(property_name, safe="")}'
+    )
 
 
 def _normalize_type_name(type_expr: str | None) -> str | None:
@@ -554,13 +578,13 @@ def _normalize_type_name(type_expr: str | None) -> str | None:
         inner = compact[len('Optional[') : -1]
         return _normalize_type_name(inner)
     if compact.startswith('SectionProxy(') and compact.endswith(')'):
-        inner = compact[len('SectionProxy(') : -1].strip("'\"")
+        inner = compact[len('SectionProxy(') : -1].strip('\'"')
         return inner
     if compact.endswith('.m_def'):
         compact = compact[:-6]
     if '.' in compact:
         compact = compact.split('.')[-1]
-    return compact.strip("'\"")
+    return compact.strip('\'"')
 
 
 def _source_range_resource(
@@ -627,13 +651,19 @@ def source_package_to_rdf_triples(
             [
                 RDFTriple(section_uri, f'{RDF_NS}type', _resource(f'{OWL_NS}Class')),
                 RDFTriple(section_uri, f'{RDFS_NS}label', _literal(section.name)),
-                RDFTriple(section_uri, f'{VOCAB_URI}pythonModule', _literal(section.module)),
-                RDFTriple(section_uri, f'{VOCAB_URI}pythonClass', _literal(qualified_name)),
+                RDFTriple(
+                    section_uri, f'{VOCAB_URI}pythonModule', _literal(section.module)
+                ),
+                RDFTriple(
+                    section_uri, f'{VOCAB_URI}pythonClass', _literal(qualified_name)
+                ),
             ]
         )
         if section.description:
             triples.append(
-                RDFTriple(section_uri, f'{RDFS_NS}comment', _literal(section.description))
+                RDFTriple(
+                    section_uri, f'{RDFS_NS}comment', _literal(section.description)
+                )
             )
         for link in section.links:
             triples.append(RDFTriple(section_uri, f'{RDFS_NS}seeAlso', _resource(link)))
@@ -655,7 +685,9 @@ def source_package_to_rdf_triples(
                 section, quantity.name, base_uri, kind='quantity'
             )
             triples.append(
-                RDFTriple(section_uri, f'{VOCAB_URI}definesProperty', _resource(property_uri))
+                RDFTriple(
+                    section_uri, f'{VOCAB_URI}definesProperty', _resource(property_uri)
+                )
             )
             range_uri, range_triples = _source_range_resource(
                 quantity.type_expr,
@@ -674,7 +706,9 @@ def source_package_to_rdf_triples(
                     RDFTriple(property_uri, f'{RDF_NS}type', _resource(property_type)),
                     RDFTriple(property_uri, f'{RDFS_NS}label', _literal(quantity.name)),
                     RDFTriple(property_uri, f'{RDFS_NS}domain', _resource(section_uri)),
-                    RDFTriple(property_uri, f'{VOCAB_URI}propertyKind', _literal('quantity')),
+                    RDFTriple(
+                        property_uri, f'{VOCAB_URI}propertyKind', _literal('quantity')
+                    ),
                 ]
             )
             if range_uri:
@@ -683,7 +717,11 @@ def source_package_to_rdf_triples(
                 )
             if quantity.description:
                 triples.append(
-                    RDFTriple(property_uri, f'{RDFS_NS}comment', _literal(quantity.description))
+                    RDFTriple(
+                        property_uri,
+                        f'{RDFS_NS}comment',
+                        _literal(quantity.description),
+                    )
                 )
             if quantity.shape:
                 triples.append(
@@ -715,26 +753,41 @@ def source_package_to_rdf_triples(
                 section, sub_section.name, base_uri, kind='subsection'
             )
             triples.append(
-                RDFTriple(section_uri, f'{VOCAB_URI}definesProperty', _resource(property_uri))
+                RDFTriple(
+                    section_uri, f'{VOCAB_URI}definesProperty', _resource(property_uri)
+                )
             )
             triples.extend(
                 [
-                    RDFTriple(property_uri, f'{RDF_NS}type', _resource(f'{OWL_NS}ObjectProperty')),
-                    RDFTriple(property_uri, f'{RDFS_NS}label', _literal(sub_section.name)),
+                    RDFTriple(
+                        property_uri,
+                        f'{RDF_NS}type',
+                        _resource(f'{OWL_NS}ObjectProperty'),
+                    ),
+                    RDFTriple(
+                        property_uri, f'{RDFS_NS}label', _literal(sub_section.name)
+                    ),
                     RDFTriple(property_uri, f'{RDFS_NS}domain', _resource(section_uri)),
-                    RDFTriple(property_uri, f'{VOCAB_URI}propertyKind', _literal('subsection')),
+                    RDFTriple(
+                        property_uri, f'{VOCAB_URI}propertyKind', _literal('subsection')
+                    ),
                     RDFTriple(
                         property_uri,
                         f'{VOCAB_URI}repeats',
                         _literal(
-                            str(sub_section.repeats).lower(), datatype=f'{XSD_NS}boolean'
+                            str(sub_section.repeats).lower(),
+                            datatype=f'{XSD_NS}boolean',
                         ),
                     ),
                 ]
             )
             if sub_section.description:
                 triples.append(
-                    RDFTriple(property_uri, f'{RDFS_NS}comment', _literal(sub_section.description))
+                    RDFTriple(
+                        property_uri,
+                        f'{RDFS_NS}comment',
+                        _literal(sub_section.description),
+                    )
                 )
             target_section = (
                 section_by_name.get(sub_section.target_name)
@@ -745,8 +798,14 @@ def source_package_to_rdf_triples(
                 target_uri = _source_section_uri(target_section, base_uri)
                 triples.extend(
                     [
-                        RDFTriple(property_uri, f'{RDFS_NS}range', _resource(target_uri)),
-                        RDFTriple(section_uri, f'{VOCAB_URI}hasSubSection', _resource(target_uri)),
+                        RDFTriple(
+                            property_uri, f'{RDFS_NS}range', _resource(target_uri)
+                        ),
+                        RDFTriple(
+                            section_uri,
+                            f'{VOCAB_URI}hasSubSection',
+                            _resource(target_uri),
+                        ),
                     ]
                 )
 
@@ -794,7 +853,9 @@ def _iter_subsections(section_cls: type) -> Iterator[Any]:
     yield from _iter_defs(sub_sections)
 
 
-def _range_resource(type_hint: Any, base_uri: str) -> tuple[str | None, list[RDFTriple]]:
+def _range_resource(
+    type_hint: Any, base_uri: str
+) -> tuple[str | None, list[RDFTriple]]:
     flattened_types = [
         candidate
         for candidate in _flatten_types(type_hint)
@@ -813,7 +874,17 @@ def _range_resource(type_hint: Any, base_uri: str) -> tuple[str | None, list[RDF
         return f'{XSD_NS}string', []
     if type_name in {'bool'}:
         return f'{XSD_NS}boolean', []
-    if type_name in {'int', 'int8', 'int16', 'int32', 'int64', 'uint8', 'uint16', 'uint32', 'uint64'}:
+    if type_name in {
+        'int',
+        'int8',
+        'int16',
+        'int32',
+        'int64',
+        'uint8',
+        'uint16',
+        'uint32',
+        'uint64',
+    }:
         return f'{XSD_NS}integer', []
     if type_name in {'float', 'float16', 'float32', 'float64'}:
         return f'{XSD_NS}double', []
@@ -871,9 +942,7 @@ def section_classes_to_rdf_triples(
     """
     triples: list[RDFTriple] = _vocab_triples()
 
-    for section_cls in sorted(
-        set(section_classes), key=lambda cls: _qualified_class_name(cls)
-    ):
+    for section_cls in sorted(set(section_classes), key=_qualified_class_name):
         section_def = getattr(section_cls, 'm_def', None)
         if section_def is None:
             continue
@@ -884,7 +953,9 @@ def section_classes_to_rdf_triples(
         triples.extend(
             [
                 RDFTriple(section_uri, f'{RDF_NS}type', _resource(f'{OWL_NS}Class')),
-                RDFTriple(section_uri, f'{RDFS_NS}label', _literal(section_cls.__name__)),
+                RDFTriple(
+                    section_uri, f'{RDFS_NS}label', _literal(section_cls.__name__)
+                ),
                 RDFTriple(
                     section_uri,
                     f'{VOCAB_URI}pythonModule',
@@ -900,7 +971,9 @@ def section_classes_to_rdf_triples(
 
         description = _description_for(section_def) or _description_for(section_cls)
         if description:
-            triples.append(RDFTriple(section_uri, f'{RDFS_NS}comment', _literal(description)))
+            triples.append(
+                RDFTriple(section_uri, f'{RDFS_NS}comment', _literal(description))
+            )
 
         for link in _iter_links(section_def):
             triples.append(RDFTriple(section_uri, f'{RDFS_NS}seeAlso', _resource(link)))
@@ -919,12 +992,18 @@ def section_classes_to_rdf_triples(
             if not quantity_name:
                 continue
 
-            property_uri = _property_uri(section_cls, quantity_name, base_uri, kind='quantity')
+            property_uri = _property_uri(
+                section_cls, quantity_name, base_uri, kind='quantity'
+            )
             triples.append(
-                RDFTriple(section_uri, f'{VOCAB_URI}definesProperty', _resource(property_uri))
+                RDFTriple(
+                    section_uri, f'{VOCAB_URI}definesProperty', _resource(property_uri)
+                )
             )
 
-            range_uri, range_triples = _range_resource(getattr(quantity, 'type', Any), base_uri)
+            range_uri, range_triples = _range_resource(
+                getattr(quantity, 'type', Any), base_uri
+            )
             triples.extend(range_triples)
 
             property_type = (
@@ -937,7 +1016,9 @@ def section_classes_to_rdf_triples(
                     RDFTriple(property_uri, f'{RDF_NS}type', _resource(property_type)),
                     RDFTriple(property_uri, f'{RDFS_NS}label', _literal(quantity_name)),
                     RDFTriple(property_uri, f'{RDFS_NS}domain', _resource(section_uri)),
-                    RDFTriple(property_uri, f'{VOCAB_URI}propertyKind', _literal('quantity')),
+                    RDFTriple(
+                        property_uri, f'{VOCAB_URI}propertyKind', _literal('quantity')
+                    ),
                 ]
             )
             if range_uri:
@@ -998,14 +1079,20 @@ def section_classes_to_rdf_triples(
                 section_cls, sub_section_name, base_uri, kind='subsection'
             )
             triples.append(
-                RDFTriple(section_uri, f'{VOCAB_URI}definesProperty', _resource(property_uri))
+                RDFTriple(
+                    section_uri, f'{VOCAB_URI}definesProperty', _resource(property_uri)
+                )
             )
             triples.extend(
                 [
                     RDFTriple(
-                        property_uri, f'{RDF_NS}type', _resource(f'{OWL_NS}ObjectProperty')
+                        property_uri,
+                        f'{RDF_NS}type',
+                        _resource(f'{OWL_NS}ObjectProperty'),
                     ),
-                    RDFTriple(property_uri, f'{RDFS_NS}label', _literal(sub_section_name)),
+                    RDFTriple(
+                        property_uri, f'{RDFS_NS}label', _literal(sub_section_name)
+                    ),
                     RDFTriple(property_uri, f'{RDFS_NS}domain', _resource(section_uri)),
                     RDFTriple(
                         property_uri, f'{VOCAB_URI}propertyKind', _literal('subsection')
@@ -1025,8 +1112,14 @@ def section_classes_to_rdf_triples(
                 child_uri = _section_uri(child_cls, base_uri)
                 triples.extend(
                     [
-                        RDFTriple(property_uri, f'{RDFS_NS}range', _resource(child_uri)),
-                        RDFTriple(section_uri, f'{VOCAB_URI}hasSubSection', _resource(child_uri)),
+                        RDFTriple(
+                            property_uri, f'{RDFS_NS}range', _resource(child_uri)
+                        ),
+                        RDFTriple(
+                            section_uri,
+                            f'{VOCAB_URI}hasSubSection',
+                            _resource(child_uri),
+                        ),
                     ]
                 )
 

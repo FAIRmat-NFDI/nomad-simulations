@@ -118,7 +118,9 @@ def test_section_classes_to_rdf_triples_captures_schema_structure():
     triples = section_classes_to_rdf_triples(
         [base_simulation, model_system, simulation]
     )
-    triple_set = {(triple.subject, triple.predicate, triple.object.value) for triple in triples}
+    triple_set = {
+        (triple.subject, triple.predicate, triple.object.value) for triple in triples
+    }
 
     simulation_uri = (
         f'{DEFAULT_BASE_URI}section/'
@@ -205,15 +207,18 @@ def test_section_classes_to_rdf_triples_captures_schema_structure():
 
 def test_section_classes_to_rdf_turtle_is_deterministic_and_serializes_literals():
     _, _, simulation = _make_fake_sections()
-    simulation.m_def.description = 'A "quoted"\nsection description.'
+    simulation.m_def.description = 'A "quoted"\nsection description.\f\x01'
 
     turtle = section_classes_to_rdf_turtle([simulation])
 
-    assert '@prefix ns: <https://fairmat-nfdi.github.io/nomad-simulations/rdf/> .' in turtle
+    assert (
+        '@prefix ns: <https://fairmat-nfdi.github.io/nomad-simulations/rdf/> .'
+        in turtle
+    )
     assert 'owl:Class' in turtle
     assert 'owl:DatatypeProperty' in turtle
     assert 'owl:ObjectProperty' in turtle
-    assert '\\"quoted\\"\\nsection description.' in turtle
+    assert '\\"quoted\\"\\nsection description.\\f\\u0001' in turtle
     assert 'nomad:repeats "true"^^xsd:boolean' in turtle
     assert 'nomad:shape "[\\"0..*\\"]"^^xsd:string' in turtle
     assert 'rdfs:seeAlso <https://example.org/schema/Simulation>' in turtle
@@ -237,3 +242,19 @@ def test_write_schema_package_rdf_writes_output(monkeypatch, tmp_path):
     assert written_path == output_path
     assert output_path.exists()
     assert 'Simulation' in output_path.read_text(encoding='utf-8')
+
+
+def test_generated_schema_turtle_parses_with_rdflib(tmp_path):
+    from rdflib import Graph
+
+    output_path = tmp_path / 'schema.ttl'
+    write_schema_package_rdf(output_path)
+
+    turtle = output_path.read_text(encoding='utf-8')
+    assert 'nomad_simulations.schema_packages.basis_set.APWOrbital' in turtle
+    assert all(ord(char) >= 32 or char in '\n\r\t' for char in turtle)
+
+    graph = Graph()
+    graph.parse(str(output_path), format='turtle')
+
+    assert len(graph) > 0
