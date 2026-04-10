@@ -746,7 +746,7 @@ def archive_to_universe(
 
 
 def _get_molecular_bead_groups(
-    universe: MDAUniverse | None, moltypes: list[str] = []
+    universe: MDAUniverse | None, moltypes: list[str] | None = None
 ) -> dict[str, BeadGroup]:
     """
     Creates bead groups based on the molecular types as defined by the MDAnalysis
@@ -760,18 +760,17 @@ def _get_molecular_bead_groups(
         LOGGER.warning(_log_missing_dependency('universe', 'beads'))
         return {}
 
-    if not moltypes:
-        atoms_moltypes = getattr(universe.atoms, 'moltypes', [])
-        moltypes = np.unique(atoms_moltypes).tolist()
     bead_groups = {}
     atoms_moltypes = np.asarray(getattr(universe.atoms, 'moltypes', []))
+    if not moltypes:
+        moltypes = np.unique(atoms_moltypes).tolist()
     for moltype in moltypes:
-        try:
+        if atoms_moltypes.shape[0] != universe.atoms.n_atoms:
+            ags_by_moltype = universe.atoms[:0]
+        else:
             # Avoid text-based selection parsing (e.g., `moltype water`) which can
             # fail for valid moltype values depending on tokenizer semantics.
             ags_by_moltype = universe.atoms[atoms_moltypes == moltype]
-        except Exception:
-            ags_by_moltype = universe.atoms[:0]
         if ags_by_moltype.n_atoms == 0:
             continue
 
