@@ -1346,13 +1346,15 @@ class MolecularDynamicsResults(SerialWorkflowResults):
 
         self._bead_groups = _get_molecular_bead_groups(self._universe)
 
-        # calculate molecular radial distribution functions
-        self.radial_distribution_functions.extend(self._get_molecular_rdfs(archive))
+        # Calculate derived observables only when parser/mapping did not provide them.
+        # This avoids duplicating data when normalization is executed multiple times.
+        if not self.radial_distribution_functions:
+            self.radial_distribution_functions.extend(self._get_molecular_rdfs(archive))
 
-        # calculate the molecular mean squared displacements
-        msds, diffusion_constants = self._get_molecular_msds()
-        self.mean_squared_displacements.extend(msds)
-        self.diffusion_constants.extend(diffusion_constants)
+        if not self.mean_squared_displacements and not self.diffusion_constants:
+            msds, diffusion_constants = self._get_molecular_msds()
+            self.mean_squared_displacements.extend(msds)
+            self.diffusion_constants.extend(diffusion_constants)
 
         # calculate radius of gyration for polymers
         self.radii_of_gyration = self.get_molecular_rgs(archive)
