@@ -242,7 +242,7 @@ class Outputs(SimulationTime):
         if self.m_parent is not None:
             model_systems = self.m_parent.model_system
             outputs = self.m_parent.outputs
-            if not isinstance(model_systems, list) or len(model_systems) == 0:
+            if model_systems is None or len(model_systems) == 0:
                 return None
 
             if isinstance(outputs, list) and len(model_systems) == len(outputs):
