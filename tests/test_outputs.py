@@ -124,6 +124,13 @@ class TestOutputs:
                 assert model_system_ref is None
 
     def test_set_model_system_ref_prefers_representative_system_on_mismatch(self):
+        """
+        When model_system and outputs lengths mismatch, use representative_system_index.
+
+        This validates the fallback chain: with 3 model_systems and 2 outputs, the
+        1:1 mapping does not apply, so `set_model_system_ref()` should use
+        `representative_system_index` instead of later fallbacks.
+        """
         simulation = generate_simulation()
         simulation.model_system = [
             ModelSystem(name='system_0'),
