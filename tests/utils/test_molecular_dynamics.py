@@ -214,14 +214,40 @@ def test_archive_to_universe_base_model_method_no_attribute_error():
 
 def test_get_molecular_bead_groups_handles_plain_moltype_tokens():
     """
-    Moltype labels like "water" must not trigger MDAnalysis selection parsing errors.
+    Plain moltype labels must resolve via boolean indexing.
     """
+    universe = MDAnalysis.Universe.empty(1)
+    universe.add_TopologyAttr('moltypes', np.array(['mol']))
+    universe.add_TopologyAttr('masses', np.array([15.999]))
+    universe.add_TopologyAttr('bonds', [])
+
+    bead_groups = _get_molecular_bead_groups(universe)
+
+    assert 'mol' in bead_groups
+
+
+def test_get_molecular_bead_groups_handles_reserved_keyword_moltypes():
+    """
+    Regression: moltype labels like "water" must not trigger selection parser issues.
+    """
+    universe = MDAnalysis.Universe.empty(1)
+    universe.add_TopologyAttr('moltypes', np.array(['water']))
+    universe.add_TopologyAttr('masses', np.array([15.999]))
+    universe.add_TopologyAttr('bonds', [])
+
+    bead_groups = _get_molecular_bead_groups(universe)
+
+    assert 'water' in bead_groups
+
+
+def test_get_molecular_bead_groups_counts_fragments():
+    """BeadGroup counts bonded atoms as a single fragment."""
     universe = MDAnalysis.Universe.empty(3, n_residues=3, atom_resindex=[0, 1, 2])
-    universe.add_TopologyAttr('moltypes', np.array(['water', 'water', 'water']))
+    universe.add_TopologyAttr('moltypes', np.array(['mol', 'mol', 'mol']))
     universe.add_TopologyAttr('masses', np.array([15.999, 1.008, 1.008]))
     universe.add_TopologyAttr('bonds', [(0, 1), (1, 2)])
 
     bead_groups = _get_molecular_bead_groups(universe)
 
-    assert 'water' in bead_groups
-    assert len(bead_groups['water']) == 1
+    assert 'mol' in bead_groups
+    assert len(bead_groups['mol']) == 1
