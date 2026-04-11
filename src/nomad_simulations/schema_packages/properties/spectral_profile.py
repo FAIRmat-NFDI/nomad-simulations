@@ -198,43 +198,6 @@ class ElectronicDensityOfStates(DOSProfile):
         """,
     )
 
-    def _ensure_model_system_ref_from_projected_dos(self) -> None:
-        """
-        Best-effort fallback to set `Outputs.model_system_ref` from PDOS entity references.
-
-        In CLI/non-server contexts, `Outputs.normalize` may skip assigning `model_system_ref`.
-        When projected DOS entries contain valid entity references, we can safely infer and
-        populate the parent `Outputs.model_system_ref` to keep downstream DOS logic consistent.
-        """
-        parent_outputs = self.m_parent
-        if (
-            parent_outputs is None
-            or parent_outputs.model_system_ref is not None
-            or self.projected_dos is None
-        ):
-            return
-
-        for pdos in self.projected_dos:
-            entity_ref = pdos.entity_ref
-            if entity_ref is None:
-                continue
-
-            atom_state = None
-            if isinstance(entity_ref, AtomsState):
-                atom_state = entity_ref
-            elif isinstance(entity_ref, ElectronicState):
-                parent_entity = entity_ref.get_parent_entity()
-                if isinstance(parent_entity, AtomsState):
-                    atom_state = parent_entity
-
-            if atom_state is None:
-                continue
-
-            model_system = atom_state.m_parent
-            if model_system is not None and model_system.m_def.name == 'ModelSystem':
-                parent_outputs.model_system_ref = model_system
-                return
-
     def resolve_energies_origin(
         self,
         energies_points: pint.Quantity,
@@ -430,9 +393,6 @@ class ElectronicDensityOfStates(DOSProfile):
         Returns:
             (DOSProfile): The extracted projected DOS.
         """
-        # In CLI/non-server runs, Outputs.normalize may skip model_system_ref.
-        self._ensure_model_system_ref_from_projected_dos()
-
         extracted_pdos = []
         for pdos in self.projected_dos:
             # We make sure each PDOS is normalized
@@ -462,8 +422,6 @@ class ElectronicDensityOfStates(DOSProfile):
         Returns:
             (Optional[pint.Quantity]): The total `value` of the electronic DOS.
         """
-        self._ensure_model_system_ref_from_projected_dos()
-
         if self.projected_dos is None or len(self.projected_dos) == 0:
             return None
 
