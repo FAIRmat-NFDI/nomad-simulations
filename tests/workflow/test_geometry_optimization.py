@@ -60,9 +60,9 @@ class TestGeometryOptimization:
 
         # Verify tasks were created from model_system
         assert len(workflow.tasks) == 3, 'Should create 3 tasks from 3 model systems'
-        assert all(
-            t.name.startswith('Geometry Optimization') for t in workflow.tasks
-        ), 'Task names should follow pattern'
+        assert all(t.name.startswith('Step') for t in workflow.tasks), (
+            'Task names should follow pattern'
+        )
         assert all(len(t.outputs) == 1 for t in workflow.tasks), (
             'Each task should have one output link'
         )

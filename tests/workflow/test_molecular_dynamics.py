@@ -314,7 +314,7 @@ class TestMolecularDynamics:
         # Create a workflow and add some mock observables to simulate first normalization
         workflow = MolecularDynamics()
         # Pre-populate observables as if they were calculated
-        from nomad_simulations.schema_packages.properties import (
+        from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
             RadialDistributionFunction,
         )
 
