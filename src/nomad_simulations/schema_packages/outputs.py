@@ -245,17 +245,13 @@ class Outputs(SimulationTime):
             if model_systems is None or len(model_systems) == 0:
                 return None
 
-            if isinstance(outputs, list) and len(model_systems) == len(outputs):
+            if outputs and len(model_systems) == len(outputs):
                 return model_systems[self.m_parent_index]
 
             # Prefer representative system when explicit 1-1 mapping is unavailable.
-            representative_system_index = getattr(
-                self.m_parent, 'representative_system_index', None
-            )
-            if isinstance(
-                representative_system_index, (int, np.integer)
-            ) and 0 <= representative_system_index < len(model_systems):
-                return model_systems[representative_system_index]
+            idx = getattr(self.m_parent, 'representative_system_index', None)
+            if isinstance(idx, (int, np.integer)) and 0 <= idx < len(model_systems):
+                return model_systems[idx]
 
             # Fallback for trajectory-like archives: use the first system carrying
             # particle-state topology metadata.

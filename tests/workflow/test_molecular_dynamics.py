@@ -308,3 +308,27 @@ class TestMolecularDynamics:
         workflow.normalize(archive, logger)
         assert workflow.results is not None
         assert isinstance(workflow.results, MolecularDynamicsResults)
+
+    def test_prevents_duplicate_observables_on_renormalization(self, logger, archive):
+        """Test that re-running normalize() doesn't duplicate RDF/MSD calculations."""
+        # Create a workflow and add some mock observables to simulate first normalization
+        workflow = MolecularDynamics()
+        # Pre-populate observables as if they were calculated
+        from nomad_simulations.schema_packages.properties import (
+            RadialDistributionFunction,
+        )
+
+        mock_rdf = RadialDistributionFunction()
+        workflow.radial_distribution_functions = [mock_rdf]
+
+        # Store initial counts
+        initial_rdf_count = len(workflow.radial_distribution_functions)
+
+        # Re-run normalization
+        workflow.normalize(archive, logger)
+        final_rdf_count = len(workflow.radial_distribution_functions)
+
+        # Assert that observables were not duplicated
+        assert initial_rdf_count == final_rdf_count, (
+            f'RDFs were duplicated: initial={initial_rdf_count}, final={final_rdf_count}'
+        )

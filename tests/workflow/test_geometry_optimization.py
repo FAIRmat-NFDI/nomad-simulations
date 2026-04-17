@@ -1,6 +1,7 @@
 import pytest
 from nomad.units import ureg
 
+from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties.energies import TotalEnergy
 from nomad_simulations.schema_packages.workflow.geometry_optimization import (
@@ -45,3 +46,26 @@ class TestGeometryOptimization:
         assert workflow.results.energies is not None
         assert len(workflow.results.energies) == 1
         assert workflow.results.final_energy_difference is None
+
+    def test_map_tasks_fallback_to_model_system_when_outputs_missing(
+        self, logger, archive
+    ):
+        """Test task creation from model_system when outputs not available (CLI context)."""
+        # Set up archive with model_systems but no outputs (simulates CLI/parser context)
+        archive.data.model_system = [ModelSystem(), ModelSystem(), ModelSystem()]
+        archive.data.outputs = []  # Empty outputs - CLI context scenario
+
+        workflow = GeometryOptimization()
+        workflow.normalize(archive, logger)
+
+        # Verify tasks were created from model_system
+        assert len(workflow.tasks) == 3, 'Should create 3 tasks from 3 model systems'
+        assert all(
+            t.name.startswith('Geometry Optimization') for t in workflow.tasks
+        ), 'Task names should follow pattern'
+        assert all(len(t.outputs) == 1 for t in workflow.tasks), (
+            'Each task should have one output link'
+        )
+        assert workflow.tasks[0].outputs[0].name == 'Model System', (
+            'Output should be linked to Model System'
+        )
