@@ -71,6 +71,7 @@ def get_sibling_section(
     sibling_section_name: str,
     logger: BoundLogger,
     index_sibling: int = 0,
+    warn_if_missing: bool = False,
 ) -> ArchiveSection | None:
     """
     Gets the sibling section of a section by performing a seesaw move by going to the parent
@@ -92,6 +93,8 @@ def get_sibling_section(
         sibling_section (str): The name of the sibling_section to retrieve from the parent.
         index_sibling (int): The index of the sibling_section to retrieve if it is a list.
         logger (BoundLogger): The logger to log messages.
+        warn_if_missing (bool): If True, log missing siblings as warnings. If False (default),
+            log as debug messages. Use False for optional siblings that may legitimately be absent.
 
     Returns:
         sibling_section (ArchiveSection): The sibling_section to be returned.
@@ -103,13 +106,12 @@ def get_sibling_section(
     # If the sibling_section is a list, return the element `index_sibling` of that list
     if isinstance(sibling_section, list):
         if index_sibling >= len(sibling_section):
-            # TODO(normalization-robustness): this warning is noisy for valid
-            # workflows where optional sibling sections are absent (e.g. DOS
-            # normalization when `electronic_eigenvalues` is not stored for the
-            # corresponding output index). Revisit call sites to avoid warning
-            # on expected-missing siblings or downgrade to debug-level logging.
-            # See issue #377 for proposed solution.
-            logger.warning('The index of the sibling_section is out of range.')
+            # Use debug level for optional siblings (default), warning for required ones
+            log_msg = f'The index {index_sibling} of sibling_section "{sibling_section_name}" is out of range (length: {len(sibling_section)}).'
+            if warn_if_missing:
+                logger.warning(log_msg)
+            else:
+                logger.debug(log_msg)
             return None
         return sibling_section[index_sibling]
     return sibling_section
