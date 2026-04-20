@@ -81,7 +81,10 @@ class DOSProfile(SpectralProfile):
         """
         logger = self.resolve_pdos_name.__annotations__['logger']
         if self.entity_ref is None:
-            if self.m_parent is not None and self.m_parent.m_def.name != 'ElectronicDensityOfStates':
+            if (
+                self.m_parent is not None
+                and self.m_parent.m_def.name != 'ElectronicDensityOfStates'
+            ):
                 # TODO(normalization-robustness): this warning currently appears
                 # in GUI sweeps for parser payloads where DOS profiles are
                 # present without explicit PDOS entity references. Revisit
