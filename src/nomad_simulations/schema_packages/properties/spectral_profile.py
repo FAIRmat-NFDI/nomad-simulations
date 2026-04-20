@@ -81,7 +81,10 @@ class DOSProfile(SpectralProfile):
         """
         logger = self.resolve_pdos_name.__annotations__['logger']
         if self.entity_ref is None:
-            if self.m_parent is not None and self.m_parent.m_def.name != 'ElectronicDensityOfStates':
+            if (
+                self.m_parent is not None
+                and self.m_parent.m_def.name != 'ElectronicDensityOfStates'
+            ):
                 # TODO(normalization-robustness): this warning currently appears
                 # in GUI sweeps for parser payloads where DOS profiles are
                 # present without explicit PDOS entity references. Revisit
@@ -237,11 +240,9 @@ class ElectronicDensityOfStates(DOSProfile):
         if eref is None:
             return None
         dos_values = self.value.magnitude
-        energies_magnitude = energies_points.magnitude
-        eref_magnitude = eref.magnitude
-        fermi_idx = (np.abs(energies_magnitude - eref_magnitude)).argmin()
+        fermi_idx = (np.abs(energies_points - eref)).argmin()
         fermi_energy_closest = energies_points[fermi_idx]
-        distance = np.abs(energies_magnitude[fermi_idx] - eref_magnitude)
+        distance = np.abs(fermi_energy_closest - eref)
         single_peak_fermi = False
         if distance <= configuration.dos_energy_tolerance:
             # See if there are zero values close below the energy reference.
@@ -250,7 +251,7 @@ class ElectronicDensityOfStates(DOSProfile):
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref_magnitude - energies_magnitude[idx])
+                    energy_distance = np.abs(eref - energies_points[idx])
                 except IndexError:
                     break
                 if energy_distance > configuration.dos_energy_tolerance:
@@ -266,7 +267,7 @@ class ElectronicDensityOfStates(DOSProfile):
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref_magnitude - energies_magnitude[idx])
+                    energy_distance = np.abs(eref - energies_points[idx])
                 except IndexError:
                     break
                 if energy_distance > configuration.dos_energy_tolerance:
