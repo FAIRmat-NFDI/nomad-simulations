@@ -81,10 +81,7 @@ class DOSProfile(SpectralProfile):
         """
         logger = self.resolve_pdos_name.__annotations__['logger']
         if self.entity_ref is None:
-            parent_section_name = (
-                self.m_parent.m_def.name if self.m_parent is not None else None
-            )
-            if parent_section_name != 'ElectronicDensityOfStates':
+            if self.m_parent is not None and self.m_parent.m_def.name != 'ElectronicDensityOfStates':
                 # TODO(normalization-robustness): this warning currently appears
                 # in GUI sweeps for parser payloads where DOS profiles are
                 # present without explicit PDOS entity references. Revisit
@@ -236,11 +233,11 @@ class ElectronicDensityOfStates(DOSProfile):
 
         # Check that the closest `energies` to the energy reference is not too far away.
         # If it is very far away, normalization may be very inaccurate and we do not report it.
-        dos_values = self.value.magnitude
-        energies_magnitude = energies_points.magnitude
         eref = highest_occupied_energy if fermi_level is None else fermi_level
         if eref is None:
             return None
+        dos_values = self.value.magnitude
+        energies_magnitude = energies_points.magnitude
         eref_magnitude = eref.magnitude
         fermi_idx = (np.abs(energies_magnitude - eref_magnitude)).argmin()
         fermi_energy_closest = energies_points[fermi_idx]

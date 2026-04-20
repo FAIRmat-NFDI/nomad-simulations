@@ -108,6 +108,7 @@ def get_sibling_section(
             # normalization when `electronic_eigenvalues` is not stored for the
             # corresponding output index). Revisit call sites to avoid warning
             # on expected-missing siblings or downgrade to debug-level logging.
+            # See issue #377 for proposed solution.
             logger.warning('The index of the sibling_section is out of range.')
             return None
         return sibling_section[index_sibling]
