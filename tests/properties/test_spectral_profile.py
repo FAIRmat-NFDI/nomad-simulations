@@ -40,15 +40,16 @@ class TestElectronicDensityOfStates:
         # ! add test when `ElectronicEigenvalues` is implemented
         pass
 
-    def test_resolve_normalization_factor(self, simulation_electronic_dos: Simulation):
+    def test_resolve_normalization_factor(self):
         """
         Test the `resolve_normalization_factor` method.
         """
         simulation = Simulation()
         outputs = Outputs()
-        # Get the ElectronicDensityOfStates from the fixture and clear its cache
-        electronic_dos = simulation_electronic_dos.outputs[0].electronic_dos[0]
-        electronic_dos.m_cache.clear()  # Clear any stale cached state
+        # Create a fresh ElectronicDensityOfStates directly without reusing fixture
+        variables_energy = Energy(points=[-3, -2, -1, 0, 1, 2, 3] * ureg.joule)
+        electronic_dos = ElectronicDensityOfStates(energies=variables_energy)
+        electronic_dos.value = [0.2, 0.5, 0, 0, 0, 0.0, 0.0] * ureg('1/joule')
         electronic_dos.energies_origin = 0.5 * ureg.joule
         outputs.electronic_dos.append(electronic_dos)
         simulation.outputs.append(outputs)
