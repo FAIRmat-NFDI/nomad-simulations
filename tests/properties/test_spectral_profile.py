@@ -46,8 +46,12 @@ class TestElectronicDensityOfStates:
         """
         simulation = Simulation()
         outputs = Outputs()
-        # We only used the `simulation_electronic_dos` fixture to get the `ElectronicDensityOfStates` to test missing refs
-        electronic_dos = simulation_electronic_dos.outputs[0].electronic_dos[0]
+        # Create a fresh ElectronicDensityOfStates instance for testing
+        # Use the fixture only to get the energy grid structure
+        fixture_dos = simulation_electronic_dos.outputs[0].electronic_dos[0]
+        variables_energy = Energy(points=fixture_dos.energies.points)
+        electronic_dos = ElectronicDensityOfStates(energies=variables_energy)
+        electronic_dos.value = fixture_dos.value
         electronic_dos.energies_origin = 0.5 * ureg.joule
         outputs.electronic_dos.append(electronic_dos)
         simulation.outputs.append(outputs)
