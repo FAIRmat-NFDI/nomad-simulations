@@ -85,11 +85,8 @@ class DOSProfile(SpectralProfile):
                 self.m_parent is not None
                 and self.m_parent.m_def.name != 'ElectronicDensityOfStates'
             ):
-                # TODO(normalization-robustness): this warning currently appears
-                # in GUI sweeps for parser payloads where DOS profiles are
-                # present without explicit PDOS entity references. Revisit
-                # whether missing `entity_ref` should warn only for true PDOS
-                # contexts and stay silent for top-level DOS-like profiles.
+                # Only warn for true PDOS contexts (parent != ElectronicDensityOfStates).
+                # Top-level DOS profiles legitimately lack entity_ref and stay silent.
                 logger.warning(
                     'The `entity_ref` is not set for the DOS profile. Could not resolve the `name`.'
                 )
@@ -470,11 +467,7 @@ class ElectronicDensityOfStates(DOSProfile):
             return
 
         # Resolve `fermi_level` from a sibling section with respect to `ElectronicDensityOfStates`
-        # TODO(normalization-robustness): sibling lookups in this block can
-        # trigger out-of-range warnings when optional sibling sections are not
-        # aligned with DOS entries for some parser outputs (observed in QE GUI
-        # test-data sweeps). Keep behavior for now; revisit once parser/normalizer
-        # alignment strategy is finalized.
+        # Optional sibling lookups use cached results and log at debug level (warn_if_missing=False default).
         fermi_level = get_sibling_section(
             section=self, sibling_section_name='fermi_level', logger=logger
         )  # * we consider `index_sibling` to be 0
