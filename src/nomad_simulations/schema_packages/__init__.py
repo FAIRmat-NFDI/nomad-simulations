@@ -1,15 +1,12 @@
-from typing import TYPE_CHECKING
+from typing import Any
 
 from nomad.config.models.plugins import SchemaPackageEntryPoint
 from nomad.units import ureg
 from pydantic import Field
 
-if TYPE_CHECKING:
-    import pint
-
 
 class NOMADSimulationsEntryPoint(SchemaPackageEntryPoint):
-    dos_energy_tolerance: 'pint.Quantity' = Field(
+    dos_energy_tolerance: Any = Field(
         8.01088e-21 * ureg.joule,
         description='Tolerance of the DOS energies to match the reference of energies in the DOS normalize function.',
     )
