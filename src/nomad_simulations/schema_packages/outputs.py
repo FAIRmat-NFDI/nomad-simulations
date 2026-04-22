@@ -25,6 +25,7 @@ from nomad_simulations.schema_packages.properties import (
     HoppingMatrix,
     HybridizationFunction,
     KineticEnergy,
+    MolecularOrbitals,
     Occupancy,
     Permittivity,
     PotentialEnergy,
@@ -166,6 +167,8 @@ class Outputs(SimulationTime):
     electronic_eigenvalues = SubSection(
         sub_section=ElectronicEigenvalues.m_def, repeats=True
     )
+
+    molecular_orbitals = SubSection(sub_section=MolecularOrbitals.m_def, repeats=True)
 
     electronic_greens_functions = SubSection(
         sub_section=ElectronicGreensFunction.m_def, repeats=True
