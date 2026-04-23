@@ -71,6 +71,7 @@ def get_sibling_section(
     sibling_section_name: str,
     logger: BoundLogger,
     index_sibling: int = 0,
+    warn_if_missing: bool = False,
 ) -> ArchiveSection | None:
     """
     Gets the sibling section of a section by performing a seesaw move by going to the parent
@@ -87,11 +88,15 @@ def get_sibling_section(
     If the sibling_section is a list, it returns the element `index_sibling` of that list. If
     the sibling_section is a single section, it returns the sibling_section itself.
 
+    Results are cached in section.m_cache to avoid repeated XPath traversals.
+
     Args:
         section (ArchiveSection): The section to check for its parent and retrieve the sibling_section.
         sibling_section (str): The name of the sibling_section to retrieve from the parent.
         index_sibling (int): The index of the sibling_section to retrieve if it is a list.
         logger (BoundLogger): The logger to log messages.
+        warn_if_missing (bool): If True, log missing siblings as warnings. If False (default),
+            log as debug messages. Use False for optional siblings that may legitimately be absent.
 
     Returns:
         sibling_section (ArchiveSection): The sibling_section to be returned.
@@ -99,14 +104,34 @@ def get_sibling_section(
     if not sibling_section_name:
         logger.warning('The sibling_section_name is empty.')
         return None
+
+    # Check cache first
+    cache_key = f'_sibling_{sibling_section_name}_{index_sibling}'
+    if cache_key in section.m_cache:
+        return section.m_cache[cache_key]
+
+    # Perform lookup if not cached
     sibling_section = section.m_xpath(f'm_parent.{sibling_section_name}', dict=False)
+
     # If the sibling_section is a list, return the element `index_sibling` of that list
+    result = None
     if isinstance(sibling_section, list):
         if index_sibling >= len(sibling_section):
-            logger.warning('The index of the sibling_section is out of range.')
-            return None
-        return sibling_section[index_sibling]
-    return sibling_section
+            # Use debug level for optional siblings (default), warning for required ones
+            log_msg = f'The index {index_sibling} of sibling_section "{sibling_section_name}" is out of range (length: {len(sibling_section)}).'
+            if warn_if_missing:
+                logger.warning(log_msg)
+            else:
+                logger.debug(log_msg)
+            result = None
+        else:
+            result = sibling_section[index_sibling]
+    else:
+        result = sibling_section
+
+    # Cache the result (including None to avoid repeated failed lookups)
+    section.m_cache[cache_key] = result
+    return result
 
 
 # ? Check if this utils deserves its own file after extending it
