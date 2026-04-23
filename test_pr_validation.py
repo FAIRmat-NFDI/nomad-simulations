@@ -9,6 +9,7 @@ Standalone validation test for PR #373 changes:
 This script tests all the new features without requiring a running NOMAD server.
 """
 
+import sys
 import time
 from io import StringIO
 
@@ -18,26 +19,26 @@ from nomad import utils
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.general import Simulation
-from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
-from nomad_simulations.schema_packages.outputs import Outputs, SCFSteps
-from nomad_simulations.schema_packages.properties.energies import TotalEnergy
-from nomad_simulations.schema_packages.workflow.geometry_optimization import (
-    GeometryOptimization,
-    GeometryOptimizationMethod,
-)
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
     ElectronicState,
     SphericalSymmetryState,
 )
+from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import ModelSystem
+from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
+from nomad_simulations.schema_packages.outputs import Outputs, SCFSteps
 from nomad_simulations.schema_packages.properties import (
     DOSProfile,
     ElectronicDensityOfStates,
 )
-from nomad_simulations.schema_packages.variables import Energy2 as Energy
+from nomad_simulations.schema_packages.properties.energies import TotalEnergy
 from nomad_simulations.schema_packages.utils import get_sibling_section
+from nomad_simulations.schema_packages.variables import Energy2 as Energy
+from nomad_simulations.schema_packages.workflow.geometry_optimization import (
+    GeometryOptimization,
+    GeometryOptimizationMethod,
+)
 from nomad_simulations.schema_packages.workflow.single_point import SinglePoint
 
 logger = utils.get_logger(__name__)
@@ -221,7 +222,7 @@ def test_dos_normalization_with_pint(archive):
     assert np.isclose(norm_factor, expected_factor), (
         f'Expected {expected_factor}, got {norm_factor}'
     )
-    print(f'✓ Normalization factor: {norm_factor:.6f} (1/sum(Z) = 1/{31+33})')
+    print(f'✓ Normalization factor: {norm_factor:.6f} (1/sum(Z) = 1/{31 + 33})')
 
     # Test projected DOS generation (which uses the tolerance internally)
     dos.generate_from_projected_dos(logger)
@@ -235,7 +236,9 @@ def test_dos_normalization_with_pint(archive):
     print(f'✓ Generated {len(orbital_pdos)} orbital PDOS + {len(atom_pdos)} atom PDOS')
 
     # Verify PDOS structure (names require full parent hierarchy which is complex to set up)
-    print('  Orbital PDOS entity refs:', [bool(pdos.entity_ref) for pdos in orbital_pdos])
+    print(
+        '  Orbital PDOS entity refs:', [bool(pdos.entity_ref) for pdos in orbital_pdos]
+    )
     print('  Atom PDOS entity refs:', [bool(pdos.entity_ref) for pdos in atom_pdos])
 
     # Check that entity refs are properly set
@@ -388,4 +391,4 @@ def main():
 
 
 if __name__ == '__main__':
-    exit(main())
+    sys.exit(main())
