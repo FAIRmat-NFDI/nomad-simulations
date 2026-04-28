@@ -91,6 +91,66 @@ Different DFT codes use varying terminology and file organization schemes for ps
 
 - Standard pseudopotential libraries (SSSP, PseudoDojo) provide validation data including recommended cutoffs and accuracy metrics (Δ-gauge). When available, they offer more consistent reference points than arbitrary cutoff choices.
 
+## Numerical Atomic Orbitals
+
+Numerical atomic orbitals (NAOs) are atom-centered basis functions with numerical
+radial dependence. A typical member of the family can be written as
+`phi_nlm(r) = R_nl(r) Y_lm(r_hat)`, where the angular dependence is described by
+spherical or Cartesian angular functions and the radial factor `R_nl(r)` is
+represented numerically.
+
+In the schema, the basis-family level and the radial representation are kept
+separate:
+
+- `AtomCenteredBasisSet(type: NAO)` identifies the basis-function family.
+- `AtomCenteredFunction` identifies an angular-momentum shell or radial-angular
+  channel.
+- `RadialFunction` stores code-independent radial metadata and optional numerical
+  radial data.
+- `SplineRadialRepresentation` describes a way to store, interpolate, or
+  reconstruct that radial function. This does not mean that spline functions are
+  themselves the basis.
+
+A tabulated NAO radial function can be represented as:
+
+```
+BasisSetContainer
+└── AtomCenteredBasisSet(type: NAO, role: orbital)
+    └── AtomCenteredFunction(function_type: s)
+        └── RadialFunction(
+              stored_radial_function: R_of_r,
+              representation_type: tabulated_values,
+              radial_coordinate_type: radius,
+              normalization_convention: R_radial_integral
+            )
+```
+
+The stored radial convention is explicit. If the available data are for
+`u_nl(r) = r R_nl(r)` instead of `R_nl(r)`, use
+`stored_radial_function: u_of_r_equals_r_R_of_r` and the matching normalization
+convention.
+
+A spline-interpolated NAO radial function can be represented as:
+
+```
+AtomCenteredFunction(function_type: p)
+└── RadialFunction(
+      stored_radial_function: R_of_r,
+      representation_type: spline_interpolated
+    )
+    └── SplineRadialRepresentation(
+          spline_family: cubic_spline,
+          degree: 3,
+          boundary_condition: natural,
+          extrapolation: zero
+        )
+```
+
+This is distinct from a spline basis. In a spline basis, spline functions
+themselves are the basis functions or the radial expansion functions. Such a
+basis-family description should be modeled separately from NAO radial-function
+interpolation.
+
 ## LAPW
 
 The family of linearized augmented plane-waves is one of the best examples of region partitioning:
