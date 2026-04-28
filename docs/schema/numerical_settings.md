@@ -20,6 +20,7 @@ classDiagram
     class Mesh
     class NumericalSettings
     class PlaneWaveBasisSet
+    class RadialFunction
     class SelfConsistency
     class Smearing
     PlaneWaveBasisSet <|-- APWPlaneWaveBasisSet
@@ -30,6 +31,7 @@ classDiagram
     KMesh <|-- PlaneWaveBasisSet
     NumericalSettings <|-- SelfConsistency
     NumericalSettings <|-- Smearing
+    AtomCenteredFunction *-- RadialFunction : radial_function
     KSpace *-- KLinePath : k_line_path
     KSpace *-- KMesh : k_mesh
 ```
@@ -184,19 +186,19 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `AtomCenteredFunction` | Specifies a single contracted basis function in an atom-centered basis set. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.AtomCenteredFunction){:target="_blank"} |
+| `AtomCenteredFunction` | Specifies a single atom-centered radial-angular function or shell in an atom-centered basis set. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.basis_set.AtomCenteredFunction){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
 | `angular_type` | Enum | Angular basis used when expanding this shell into AOs. |
 | `function_type` | Enum | Angular-momentum label (s, p, d, f, etc.). |
-| `angular_momentum` | m_int32(int32) | Angular momentum quantum number ℓ. |
-| `r_power` | m_int32(int32) | Radial power n_s for this shell's analytic form (typically 0 for GTOs). |
+| `angular_momentum` | m_int32(int32) | Angular momentum quantum number l. |
+| `r_power` | m_int32(int32) | Radial power n_s for this shell's analytic form. This is typically used for GTO/STO-style analytic primitives and is not generally required for numerical radial functions. |
 | `shell_normalization` | m_float64(float64) | Unitless normalization factor applied to each contracted atomic orbital (or shell) to satisfy the chosen normalization convention. It defines how normalized primitives are scaled when forming the final AO. |
-| `n_primitive` | m_int32(int32) | Number of primitives in this shell. A primitive is a single uncontracted radial basis function such as one Gaussian or Slater-type orbital before contraction into a full atomic orbital. |
-| `exponents` | m_float32(float32) (shape: ['n_primitive']) | Primitive exponents. |
-| `contraction_coefficients` | m_float32(float32) (shape: ['n_primitive']) | Contraction coefficients for the primitives in this single-ℓ shell. |
-| `primitive_factor` | m_float64(float64) (shape: ['n_primitive']) | Extra per-primitive multiplier (dimensionless). |
+| `n_primitive` | m_int32(int32) | <details><summary>Number of primitives in this shell.</summary>Number of primitives in this shell.<br>A primitive is a single uncontracted radial basis function such as one<br>Gaussian or Slater-type orbital before contraction into a full atomic<br>orbital. This quantity is mainly intended for analytic primitive<br>expansions and is not required for numerical radial functions.</details> |
+| `exponents` | m_float32(float32) (shape: ['n_primitive']) | Primitive exponents for analytic primitive expansions. |
+| `contraction_coefficients` | m_float32(float32) (shape: ['n_primitive']) | Contraction coefficients for analytic primitives in this single-l shell. |
+| `primitive_factor` | m_float64(float64) (shape: ['n_primitive']) | Extra per-primitive multiplier for analytic primitive expansions (dimensionless). |
 | `point_charge` | m_float32(float32) | Optional embedded point charge. |
 
 
