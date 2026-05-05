@@ -1,0 +1,38 @@
+{
+  "6-31g(d,p)": {
+    "external_id": "6-31g(d,p)",
+    "canonical_name": "6-31G(d,p)",
+    "version": "1",
+    "aliases": ["6-31G**"]
+  },
+  "6-31g_st_": {
+    "external_id": "6-31g_st_",
+    "canonical_name": "6-31G*",
+    "version": "1",
+    "aliases": ["6-31G(d)"]
+  },
+  "6-31g_st__st_": {
+    "external_id": "6-31g_st__st_",
+    "canonical_name": "6-31G**",
+    "version": "1",
+    "aliases": ["6-31G(d,p)"]
+  },
+  "cc-pvdz": {
+    "external_id": "cc-pvdz",
+    "canonical_name": "cc-pVDZ",
+    "version": "1",
+    "aliases": []
+  },
+  "def2-svp": {
+    "external_id": "def2-svp",
+    "canonical_name": "def2-SVP",
+    "version": "1",
+    "aliases": []
+  },
+  "sto-3g": {
+    "external_id": "sto-3g",
+    "canonical_name": "STO-3G",
+    "version": "1",
+    "aliases": []
+  }
+}
