@@ -294,12 +294,12 @@ class KSpaceFunctionalities:
                 details=str(exc),
                 bravais_lattice=bravais_lattice,
                 lattice_parameters={
-                    'a': getattr(lattice, 'a', None),
-                    'b': getattr(lattice, 'b', None),
-                    'c': getattr(lattice, 'c', None),
-                    'alpha': getattr(lattice, 'alpha', None),
-                    'beta': getattr(lattice, 'beta', None),
-                    'gamma': getattr(lattice, 'gamma', None),
+                    'a': lattice.a,
+                    'b': lattice.b,
+                    'c': lattice.c,
+                    'alpha': lattice.alpha,
+                    'beta': lattice.beta,
+                    'gamma': lattice.gamma,
                 },
             )
             return None
