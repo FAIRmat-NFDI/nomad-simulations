@@ -171,7 +171,7 @@ class TestKSpaceFunctionalities:
             alpha = 80.0
 
             def get_special_points(self):
-                raise AssertionError('should not be called for invalid convention')
+                return {'G': [0, 0, 0]}
 
         class FakeCell:
             def get_bravais_lattice(self, eps=3e-3):

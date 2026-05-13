@@ -290,8 +290,17 @@ class KSpaceFunctionalities:
             special_points = lattice.get_special_points()
         except (AssertionError, ValueError, RuntimeError) as exc:
             logger.warning(
-                'Could not resolve `lattice.get_special_points()` from the ASE package.',
+                'Could not resolve high-symmetry points (ASE special points).',
                 details=str(exc),
+                bravais_lattice=bravais_lattice,
+                lattice_parameters={
+                    'a': getattr(lattice, 'a', None),
+                    'b': getattr(lattice, 'b', None),
+                    'c': getattr(lattice, 'c', None),
+                    'alpha': getattr(lattice, 'alpha', None),
+                    'beta': getattr(lattice, 'beta', None),
+                    'gamma': getattr(lattice, 'gamma', None),
+                },
             )
             return None
 
