@@ -169,6 +169,8 @@ class TestKSpaceFunctionalities:
             b = 3.0
             c = 1.0
             alpha = 80.0
+            beta = 90.0
+            gamma = 90.0
 
             def get_special_points(self):
                 return {'G': [0, 0, 0]}
