@@ -263,26 +263,45 @@ class KSpaceFunctionalities:
             return None
 
         # Non-conventional ordering testing for certain lattices:
-        if bravais_lattice in ['oP', 'oF', 'oI', 'oS']:
-            a, b, c = lattice.a, lattice.b, lattice.c
-            assert a < b
-            if bravais_lattice != 'oS':
-                assert b < c
-        elif bravais_lattice in ['mP', 'mS']:
-            a, b, c = lattice.a, lattice.b, lattice.c
-            alpha = lattice.alpha * np.pi / 180
-            assert a <= c and b <= c  # ordering of the conventional lattice
-            assert alpha < np.pi / 2
+        try:
+            if bravais_lattice in ['oP', 'oF', 'oI', 'oS']:
+                a, b, c = lattice.a, lattice.b, lattice.c
+                if not a < b:
+                    raise ValueError(
+                        'ASE lattice does not satisfy the expected orthorhombic convention.'
+                    )
+                if bravais_lattice != 'oS' and not b < c:
+                    raise ValueError(
+                        'ASE lattice does not satisfy the expected orthorhombic convention.'
+                    )
+            elif bravais_lattice in ['mP', 'mS']:
+                a, b, c = lattice.a, lattice.b, lattice.c
+                alpha = lattice.alpha * np.pi / 180
+                if not (a <= c and b <= c):
+                    raise ValueError(
+                        'ASE lattice does not satisfy the expected monoclinic convention.'
+                    )
+                if not alpha < np.pi / 2:
+                    raise ValueError(
+                        'ASE lattice does not satisfy the expected monoclinic convention.'
+                    )
 
-        # Extracting the `high_symmetry_points` from the `lattice` object
-        special_points = lattice.get_special_points()
+            # Extracting the `high_symmetry_points` from the `lattice` object
+            special_points = lattice.get_special_points()
+        except (AssertionError, ValueError, RuntimeError) as exc:
+            logger.warning(
+                'Could not resolve `lattice.get_special_points()` from the ASE package.',
+                details=str(exc),
+            )
+            return None
+
         if special_points is None:
             logger.warning(
                 'Could not find `lattice.get_special_points()` from the ASE package.'
             )
             return None
         high_symmetry_points = {}
-        for key, value in lattice.get_special_points().items():
+        for key, value in special_points.items():
             if key == 'G':
                 key = 'Gamma'
             if bravais_lattice == 'tI':

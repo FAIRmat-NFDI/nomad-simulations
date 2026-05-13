@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
@@ -156,6 +158,41 @@ class TestKSpaceFunctionalities:
         else:
             assert len(high_symmetry_points) == 4
             assert high_symmetry_points == expected_result
+
+    def test_resolve_high_symmetry_points_monoclinic_convention_fallback(self):
+        """
+        Invalid monoclinic ordering should fall back to None instead of raising.
+        """
+
+        class FakeLattice:
+            a = 2.0
+            b = 3.0
+            c = 1.0
+            alpha = 80.0
+
+            def get_special_points(self):
+                raise AssertionError('should not be called for invalid convention')
+
+        class FakeCell:
+            def get_bravais_lattice(self, eps=3e-3):
+                return FakeLattice()
+
+        class FakeAtoms:
+            def get_cell(self):
+                return FakeCell()
+
+        model_system = SimpleNamespace(
+            is_representative=True,
+            symmetry=SimpleNamespace(bravais_lattice='mP'),
+            representations=[SimpleNamespace(name='primitive')],
+            to_ase_atoms=lambda representation_index, logger: FakeAtoms(),
+        )
+
+        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
+            model_systems=[model_system], logger=logger
+        )
+
+        assert high_symmetry_points is None
 
 
 @pytest.mark.parametrize(
