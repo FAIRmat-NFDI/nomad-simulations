@@ -2198,11 +2198,20 @@ class BaseMultireferenceMethod(BaseModelMethod):
             elif self.n_roots_per_multiplicity is not None:
                 self.n_state_groups = len(self.n_roots_per_multiplicity)
 
+        # Prefer the selected multireference flavor over the generic section
+        # name when no parser-specific name was provided.
+        if self.type is not None and (
+            self.name is None or self.name == self.m_def.name
+        ):
+            self.name = self.type
+
 
 class MultireferenceSCF(BaseMultireferenceMethod):
     """
     Multiconfigurational SCF calculations (e.g., CASSCF, RASSCF, DMRG-SCF).
     """
+
+    m_def = Section(label_quantity='type')
 
     type = Quantity(
         type=MEnum('CASSCF', 'RASSCF', 'DMRGSCF'),
@@ -2219,6 +2228,8 @@ class MultireferenceCI(BaseMultireferenceMethod):
     Multireference configuration interaction methods (e.g., MRCI).
     """
 
+    m_def = Section(label_quantity='type')
+
     type = Quantity(
         type=MEnum('MRCI', 'MR-ACPF', 'MR-AQCC', 'CASCI', 'RASCI', 'DMRGCI'),
         description="""
@@ -2233,6 +2244,8 @@ class MultireferencePT(BaseMultireferenceMethod):
 
     Defaults are PT2-style, but `order` can capture higher-order variants.
     """
+
+    m_def = Section(label_quantity='type')
 
     type = Quantity(
         type=MEnum('CASPT', 'NEVPT', 'RASPT', 'MRMP', 'XMCQDPT'),
