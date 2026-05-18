@@ -16,6 +16,9 @@ classDiagram
     class DFTGWMethod
     class DFTGWResults
     class DFTGWWorkflow
+    class DFTLocalCCMethod
+    class DFTLocalCCResults
+    class DFTLocalCCWorkflow
     class DFTTBDMFTMethod
     class DFTTBDMFTResults
     class DFTTBDMFTWorkflow
@@ -39,6 +42,9 @@ classDiagram
     BeyondDFTMethod <|-- DFTGWMethod
     BeyondDFTResults <|-- DFTGWResults
     BeyondDFTWorkflow <|-- DFTGWWorkflow
+    BeyondDFTMethod <|-- DFTLocalCCMethod
+    BeyondDFTResults <|-- DFTLocalCCResults
+    BeyondDFTWorkflow <|-- DFTLocalCCWorkflow
     BeyondDFTMethod <|-- DFTTBDMFTMethod
     BeyondDFTResults <|-- DFTTBDMFTResults
     BeyondDFTWorkflow <|-- DFTTBDMFTWorkflow
@@ -138,6 +144,30 @@ classDiagram
 | Section | Description | MetaInfo |
 |---|---|---|
 | `BeyondDFTResults` | Contains reference to DFT outputs. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.beyond_dft.BeyondDFTResults){:target="_blank"} |
+
+*This section has no direct quantities.*
+
+### `DFTLocalCCWorkflow`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `DFTLocalCCWorkflow` | Definitions for local coupled-cluster calculations based on DFT (DFT -> orbital localization -> local CC). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.DFTLocalCCWorkflow){:target="_blank"} |
+
+*This section has no direct quantities.*
+
+### `DFTLocalCCMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `DFTLocalCCMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.DFTLocalCCMethod){:target="_blank"} |
+
+*This section has no direct quantities.*
+
+### `DFTLocalCCResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `DFTLocalCCResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.DFTLocalCCResults){:target="_blank"} |
 
 *This section has no direct quantities.*
 
