@@ -5,16 +5,29 @@ nav:
   - simulation.md
   - model_system.md
   - representations.md
+  - chemical_formula.md
   - particle_states.md
   - symmetry.md
-  - chemical_formula.md
   - model_method.md
-  - model_method_electronic.md
   - force_field.md
+  - model_method_electronic.md
   - numerical_settings.md
   - outputs.md
-  - physical_property.md
   - electronic_properties.md
   - manybody_properties.md
+  - physical_property.md
   - spectroscopy.md
   - thermodynamics.md
+  - workflow.md
+  - workflow_beyond_dft.md
+  - workflow_beyond_hf.md
+  - workflow_elastic.md
+  - workflow_equation_of_state.md
+  - workflow_geometry_optimization.md
+  - workflow_molecular_dynamics.md
+  - workflow_phonon.md
+  - workflow_photon_polarization.md
+  - workflow_single_point.md
+  - workflow_thermodynamics.md
+  - workflow_convergence.md
+  - workflow_trajectory.md

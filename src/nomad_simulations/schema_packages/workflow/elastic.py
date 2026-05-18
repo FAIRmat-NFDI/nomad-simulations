@@ -389,6 +389,10 @@ class Elastic(SimulationWorkflow):
 
     _task_label = 'Deformation'
 
+    method = SubSection(sub_section=ElasticMethod.m_def)
+
+    results = SubSection(sub_section=ElasticResults.m_def)
+
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.method:

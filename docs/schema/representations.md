@@ -2,13 +2,6 @@
 
 **Purpose:** AlternativeRepresentation subsection details: transforms and mapping to a reference representation
 
-**In scope:**
-
-- AlternativeRepresentation subsection of ModelSystem
-- Reference representation linkage
-- Transformation matrix and origin shift between representations
-- How alternative cells are mapped from the original representation
-
 
 ## Relationship map
 
@@ -23,16 +16,13 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `AlternativeRepresentation`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `AlternativeRepresentation` | A representation relative to another, reference representation, typically the original computed system. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.AlternativeRepresentation){:target="_blank"} |
-
-
-## Quantities by section
-
-### `AlternativeRepresentation`
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -42,3 +32,6 @@ classDiagram
 | `supercell_matrix` | m_int32(int32) (shape: [3, 3]) | <details><summary>Specifies the matrix that transforms the primitive unit cell into the supercell ...</summary>Specifies the matrix that transforms the primitive unit cell into the supercell in<br>which the actual calculation is performed. In the easiest example, it is a diagonal<br>matrix whose elements multiply the lattice_vectors, e.g., [[3, 0, 0], [0, 3, 0], [0, 0, 3]]<br>is a $3 x 3 x 3$ superlattice.</details> |
 
 
+## Related Pages
+
+- [ModelSystem](../explanation/model_system/overview.md)

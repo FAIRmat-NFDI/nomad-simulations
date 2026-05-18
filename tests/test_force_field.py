@@ -1193,3 +1193,22 @@ def test_missing_units_skip_derivation():
 
     # Ensure that normalization does not produce an error
     dummy.normalize(None, logger)
+
+
+# --- ParticleParameters: partial_charge / effective_mass ---
+
+
+def test_particle_parameters_partial_charge_stores_and_units():
+    """partial_charge on ParticleParameters retains elementary_charge units."""
+    pp = ParticleParameters(particle_type='OW')
+    pp.partial_charge = -0.82 * ureg.elementary_charge
+    assert pp.partial_charge is not None
+    assert np.isclose(pp.partial_charge.to('elementary_charge').magnitude, -0.82)
+
+
+def test_particle_parameters_effective_mass_stores_and_units():
+    """effective_mass on ParticleParameters retains kg units."""
+    pp = ParticleParameters(particle_type='OW')
+    pp.effective_mass = (15.999 * ureg.amu).to('kg')
+    assert pp.effective_mass is not None
+    assert np.isclose(pp.effective_mass.to('amu').magnitude, 15.999, rtol=1e-5)

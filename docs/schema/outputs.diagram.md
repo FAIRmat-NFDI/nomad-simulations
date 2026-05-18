@@ -13,46 +13,32 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum {
-    }
-    class ElectronicBandStructure {
-    }
-    class ElectronicDensityOfStates {
-    }
-    class ElectronicEigenvalues {
-    }
-    class ElectronicSelfEnergy {
-    }
-    class FermiSurface {
-    }
-    class HoppingMatrix {
-    }
-    class KineticEnergy {
-    }
-    class Outputs {
-    }
-    class PhysicalProperty {
-    }
-    class PotentialEnergy {
-    }
-    class QuasiparticleWeight {
-    }
-    class SCFSteps {
-    }
-    class TotalForce {
-    }
+    class AbsorptionSpectrum
+    class ElectronicBandStructure
+    class ElectronicDensityOfStates
+    class ElectronicGreensFunction
+    class FermiSurface
+    class HybridizationFunction
+    class KineticEnergy
+    class Occupancy
+    class Outputs
+    class PhysicalProperty
+    class RadiusOfGyration
+    class SCFSteps
+    class Temperature
+    class TotalEnergy
     Outputs *-- AbsorptionSpectrum : absorption_spectra
     Outputs *-- ElectronicBandStructure
     Outputs *-- ElectronicDensityOfStates : electronic_dos
-    Outputs *-- ElectronicEigenvalues
-    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
+    Outputs *-- ElectronicGreensFunction
     Outputs *-- FermiSurface
-    Outputs *-- HoppingMatrix : hopping_matrices
+    Outputs *-- HybridizationFunction
     Outputs *-- KineticEnergy : kinetic_energies
-    Outputs *-- PotentialEnergy : potential_energies
-    Outputs *-- QuasiparticleWeight
+    Outputs *-- Occupancy : occupancies
+    Outputs *-- RadiusOfGyration : radii_of_gyration
     Outputs *-- SCFSteps
-    Outputs *-- TotalForce
+    Outputs *-- Temperature
+    Outputs *-- TotalEnergy : total_energies
 ```
 
 </div>
@@ -67,42 +53,29 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
-    class ChemicalPotential {
-    }
-    class CrystalFieldSplitting {
-    }
-    class ElectronicBandGap {
-    }
-    class ElectronicGreensFunction {
-    }
-    class HybridizationFunction {
-    }
-    class Occupancy {
-    }
-    class Outputs {
-    }
-    class Permittivity {
-    }
-    class PhysicalProperty {
-    }
-    class RadiusOfGyration {
-    }
-    class Temperature {
-    }
-    class TotalEnergy {
-    }
-    class XASSpectrum {
-    }
+    class ChemicalPotential
+    class CrystalFieldSplitting
+    class ElectronicBandGap
+    class ElectronicEigenvalues
+    class ElectronicSelfEnergy
+    class HoppingMatrix
+    class Outputs
+    class Permittivity
+    class PhysicalProperty
+    class PotentialEnergy
+    class QuasiparticleWeight
+    class TotalForce
+    class XASSpectrum
     Outputs *-- ChemicalPotential
     Outputs *-- CrystalFieldSplitting
     Outputs *-- ElectronicBandGap
-    Outputs *-- ElectronicGreensFunction
-    Outputs *-- HybridizationFunction
-    Outputs *-- Occupancy : occupancies
+    Outputs *-- ElectronicEigenvalues
+    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
+    Outputs *-- HoppingMatrix : hopping_matrices
     Outputs *-- Permittivity : permittivities
-    Outputs *-- RadiusOfGyration : radii_of_gyration
-    Outputs *-- Temperature
-    Outputs *-- TotalEnergy : total_energies
+    Outputs *-- PotentialEnergy : potential_energies
+    Outputs *-- QuasiparticleWeight
+    Outputs *-- TotalForce
     Outputs *-- XASSpectrum : xas_spectra
 ```
 

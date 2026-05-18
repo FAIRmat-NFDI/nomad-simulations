@@ -45,6 +45,10 @@ class HFCCWorkflow(BeyondHFWorkflow):
     Definitions for Coupled-Cluster calculations based on HF (HF → CC).
     """
 
+    method = SubSection(sub_section=HFCCMethod.m_def)
+
+    results = SubSection(sub_section=HFCCResults.m_def)
+
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.method:

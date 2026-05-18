@@ -1,11 +1,23 @@
 # `ModelSystem`
 
+## Pages in This Section
+
+- [Representation Architecture](representation.md)
+- [Electronic States](electronic_states.md)
+
+## Schema Navigation References
+
+- [Model System](../../schema/model_system.md)
+- [Alternative Representations](../../schema/representations.md)
+- [Chemical Formula](../../schema/chemical_formula.md)
+- [Particle States](../../schema/particle_states.md)
+- [Symmetry](../../schema/symmetry.md)
+
 ## Overview
 
 The `ModelSystem` class represents the physical system that serves as input for simulation calculations in NOMAD. It provides a comprehensive description of the atomic or coarse-grained structure, including particle positions, cell geometry, symmetry information, and chemical composition.
 
-For complete field-level structure, see the generated reference:
-[Model System (Schema Navigation)](../../schema/model_system.md).
+For complete field-level structure, see the schema navigation references above.
 
 `ModelSystem` combines two fundamental capabilities: geometric representation (from the `Representation` class) and hierarchical navigation (from the `System` class). This means each model system has direct access to its geometric data (lattice vectors, atomic positions, periodic boundary conditions) while also supporting navigation through subsystem hierarchies and alternative geometric views.
 
@@ -101,19 +113,20 @@ branch depth and composition labels consistently along the tree. In practice:
 Keep subsystem-hierarchy semantics (`sub_systems`) distinct from alternative geometric
 views (`representations`).
 
-## Normalization Process
+## Derived Behavior During Normalization
 
-The `ModelSystem.normalize()` method performs several important tasks when `is_representative=True`:
+When `is_representative=True`, normalization enriches a `ModelSystem` with derived information that is expected from a complete structural description.
 
-1. **Parent System normalization**: Executes base class normalization logic
-2. **Particle state reassignment**: Validates and organizes particle states
-3. **System type and dimensionality**: Resolves whether the system is bulk, surface, molecule, etc., and determines dimensionality (0D, 1D, 2D, 3D)
-4. **Symmetry analysis**: For bulk systems, analyzes crystal symmetry and generates primitive and conventional cell representations
-5. **Chemical formula generation**: Creates chemical formula descriptions from particle states
+This includes:
 
-The normalization order ensures that dependencies between different components are respected. For example, symmetry analysis requires valid particle positions, and chemical formula generation requires properly initialized particle states.
+1. **Validated particle-state organization**: particle-state information is checked and arranged consistently.
+2. **System type and dimensionality**: the system is classified as bulk, surface, molecule, and so on, together with its effective dimensionality.
+3. **Symmetry information and standard cells**: bulk systems can gain symmetry metadata together with primitive and conventional cell representations.
+4. **Chemical formulas**: composition summaries are derived from the populated particle states.
 
-See [Normalization](../normalize.md) for more details on the normalization system across NOMAD simulations schema.
+These derived results depend on the structural data already present in the archive. For example, symmetry analysis depends on valid geometry, and chemical formulas depend on the available particle-state information.
+
+See [Normalization](../../schema_development/normalize.md) for more details on the normalization system across NOMAD simulations schema.
 
 ## Quick Start Examples
 
@@ -135,9 +148,9 @@ See [Normalization](../normalize.md) for more details on the normalization syste
 --8<-- "snippets/explanation/model_system/model_system/block_07.py"
 ```
 
-## Important Flags and Settings
+## Key Quantities for Reading ModelSystem Data
 
-**`is_representative` (boolean)**: Controls whether this `ModelSystem` should undergo full normalization including symmetry analysis and formula generation. Typically set to `True` for the primary system description and `False` for sub-systems or intermediate calculations.
+**`is_representative` (boolean)**: Indicates whether this `ModelSystem` undergoes full normalization, including symmetry analysis and formula generation. It is typically `True` for the primary system description and `False` for sub-systems or intermediate calculations.
 
 **`type` (string)**: Describes the role of this system in the context of hierarchical compositions. Common values include:
 
@@ -151,9 +164,9 @@ See [Normalization](../normalize.md) for more details on the normalization syste
 
 **`branch_depth` (integer)**: Depth of this system in the hierarchical tree (0 for root, 1 for direct children, etc.).
 
-## See Also
+## Related Pages
 
 - [Representation Architecture](representation.md): Detailed documentation of the geometric representation design
 - [Electronic States](electronic_states.md): How to describe electronic configurations of atoms
-- [Normalization](../normalize.md): Overview of the normalization system
+- [Normalization](../../schema_development/normalize.md): Overview of the normalization system
 - [General Schema Overview](../overview.md): Introduction to the NOMAD simulations schema package

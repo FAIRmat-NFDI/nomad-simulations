@@ -10,12 +10,12 @@ Welcome to the NOMAD documentation for `nomad-simulations`, a schema for computa
 The documentation is split into three complementary sections:
 
 - [Schema Navigation > Overview](schema/index.md): auto-generated reference for section trees, quantities, inheritance, and relationship diagrams.
-- [Schema Explanation > Overview](explanation/overview.md): hand-written guidance for design rationale, modeling conventions, and usage patterns.
-- [Contributor Guides > Overview](contributor_guides/overview.md): contributor-focused references, development process guidance, and documentation automation guidance.
+- [Schema Explanation > Overview](explanation/overview.md): hand-written guidance for understanding the existing schema, its concepts, and its usage patterns.
+- [Schema Development > Overview](schema_development/overview.md): published technical guidance for schema extenders, parser authors, and contributors implementing schema behavior.
 
 ## Context
 
-NOMAD is a free, open-source data management platform for materials science aligned with FAIR principles (Findable, Accessible, Interoperable, Reusable). For broader platform documentation, see the [NOMAD docs](https://nomad-lab.eu/prod/v1/staging/docs/) and [NOMAD base sections guide](https://nomad-lab.eu/prod/v1/staging/docs/howto/customization/base_sections.html).
+[NOMAD](https://nomad-lab.eu/nomad-lab/){ target="_blank" rel="noopener noreferrer" } is an open-source research data management platform developed by the NFDI consortium [FAIRmat](https://www.fairmat-nfdi.eu/fairmat){ target="_blank" rel="noopener noreferrer" }. For broader platform documentation, see the [NOMAD docs](https://nomad-lab.eu/prod/v1/staging/docs/) and [NOMAD base sections guide](https://nomad-lab.eu/prod/v1/staging/docs/howto/customization/base_sections.html).
 
 The `nomad-simulations` schema provides reusable core sections that can be extended for code-specific and domain-specific schemas while preserving consistent structure, interoperability, and discoverability.
 
@@ -32,7 +32,7 @@ relationships. UML is specified by the
 If you want to contribute schema or documentation updates:
 
 1. Fork the repository and create a focused branch.
-2. Check [Contributor Guides > Overview](contributor_guides/overview.md) before changing established patterns.
+2. Check [Schema Development > Overview](schema_development/overview.md) before changing established patterns.
 3. Implement your extension following the [Schema Development Guide](contributor_guides/schema_development_guide.md).
 4. Update docs according to the [Documentation Writing Guide](contributor_guides/documentation_writing_guide.md).
 5. Open a pull request against upstream with a clear scope and test evidence.

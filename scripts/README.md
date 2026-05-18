@@ -87,6 +87,22 @@ You can control whether the pipeline generates PNG/SVG images or just uses fast 
 
 The pipeline will automatically handle all configuration and file generation for the selected mode. The summary output will indicate which files were generated and which zoom method is active.
 
+## Mermaid Class Diagram Limitation
+
+Mermaid `classDiagram` currently keeps empty attribute/method compartments in some rendered class boxes even when the generated source does not populate class attributes or methods.
+
+What was tried:
+- generating bare `class Name` declarations instead of `class Name { }`
+- removing divider and empty-group nodes after Mermaid rendered the SVG in the browser
+- removing divider and empty-group nodes in the SVG post-processing path
+
+Observed limitation:
+- under the current MkDocs + Mermaid rendering setup, these approaches were not reliable enough to remove the extra empty sub-boxes consistently
+
+Current decision:
+- keep Mermaid class diagrams in their default compartmented form for stability
+- if visual simplification becomes important later, prefer evaluating an alternative diagram representation rather than further patching Mermaid's rendered SVG structure
+
 ## Architecture
 
 ### Core Concepts
@@ -109,6 +125,18 @@ The pipeline will automatically handle all configuration and file generation for
 | `mermaid_to_svg.py` | Converts Mermaid to SVG for better rendering |
 | `templates/vertical.md.j2` | Jinja2 template for documentation pages |
 | `DIAGRAM_ZOOM.md` | Guide for configuring diagram zoom/pan methods |
+
+### Workflow Coverage in Generated Docs
+
+The generated schema navigation includes a dedicated `workflow` branch with
+specialized verticals:
+
+- core workflow structure (`workflow`, `workflow_convergence`, `workflow_trajectory`)
+- standard workflow types (`workflow_single_point`, `workflow_geometry_optimization`, `workflow_molecular_dynamics`, `workflow_thermodynamics`, `workflow_equation_of_state`, `workflow_elastic`, `workflow_phonon`, `workflow_photon_polarization`)
+- electronic many-body families (`workflow_beyond_dft`, `workflow_beyond_hf`)
+
+Manual workflow explanations live under `docs/explanation/workflow/` and should
+link to generated `schema/workflow*.md` pages to enable backlink discovery.
 
 ## The Verticals System
 
@@ -391,7 +419,19 @@ Automatically updates:
 - `docs/schema/.pages`: Awesome-pages plugin config (list of all vertical .md files)
 - `mkdocs.yml`: Main navigation structure (Schema Navigation section with titles)
 
-The pipeline uses regex to find and replace the "Schema Navigation:" section in `mkdocs.yml`, automatically syncing it with all verticals defined in `verticals.py`. Each vertical's title is used in the navigation menu.
+The pipeline uses regex to find and replace the "Schema Navigation:" section in
+`mkdocs.yml`, automatically syncing it with all verticals defined in
+`verticals.py`.
+
+Navigation ordering protocol (deterministic):
+
+1. top-level domain order is fixed:
+   `simulation`, `model_system`, `model_method`, `outputs`, `workflow`
+2. domain root page is always first under its domain
+3. remaining domain children are sorted alphabetically by display title
+4. optional override via `nav_order` in `verticals.py` (`lower` sorts earlier)
+
+This same ordering is written to both `mkdocs.yml` and `docs/schema/.pages`.
 
 ### 6. Validation
 

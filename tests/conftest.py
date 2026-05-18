@@ -425,7 +425,7 @@ def model_system() -> ModelSystem:
     )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture
 def simulation_electronic_dos() -> Simulation:
     return generate_simulation_electronic_dos()
 

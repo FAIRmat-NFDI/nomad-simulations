@@ -13,16 +13,11 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BaseModelMethod {
-    }
-    class ForceField {
-    }
-    class ModelMethod {
-    }
-    class ParameterEntry {
-    }
-    class Potential {
-    }
+    class BaseModelMethod
+    class ForceField
+    class ModelMethod
+    class ParameterEntry
+    class Potential
     ModelMethod <|-- ForceField
     ForceField *-- Potential : contributions
     ModelMethod *-- BaseModelMethod : contributions
