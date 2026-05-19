@@ -529,27 +529,11 @@ class ModelMethodElectronic(ModelMethod):
     calculations (TB, DFT, GW, BSE, DMFT, etc).
     """
 
-    # ? Is this necessary or will it be defined in another way?
-    # TODO @ndaelman-hu & EBB2675, we need to assess how to reconcile is_spin_polarized and determinant
     is_spin_polarized = Quantity(
         type=bool,
         description="""
         If the simulation is done considering the spin degrees of freedom (then there are two spin
         channels, 'down' and 'up') or not.
-        """,
-    )
-    # TODO : this part should be revisited once Spin is handled.
-    # TODO : this part should be revisited in general.
-    determinant = Quantity(
-        type=MEnum('unrestricted', 'restricted', 'restricted-open-shell'),
-        description="""
-        The spin-coupling form of the determinant used for the
-        self-consistent field (SCF) calculation.
-
-        - **restricted**  (RHF/RKS): α and β electrons share the same spatial orbitals  
-        - **unrestricted** (UHF/UKS): α and β orbitals are optimized independently  
-        - **restricted-open-shell** (ROHF/ROKS): closed-shell core with spin-unpaired electrons
-        sharing spatial orbitals in the open-shell manifold
         """,
     )
 
@@ -727,6 +711,17 @@ class DFT(ModelMethodElectronic):
         """,
     )
 
+    reference_form = Quantity(
+        type=MEnum('RKS', 'UKS', 'ROKS'),
+        description="""
+        Kohn-Sham reference form used for the DFT calculation.
+
+        - **RKS**: restricted Kohn-Sham reference
+        - **UKS**: unrestricted Kohn-Sham reference
+        - **ROKS**: restricted open-shell Kohn-Sham reference
+        """,
+    )
+
     xc = SubSection(sub_section=XCFunctional.m_def, repeats=False)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
@@ -771,7 +766,7 @@ class DFT(ModelMethodElectronic):
 
 class BrokenSymmetryCenter(ArchiveSection):
     """
-    Atom-centered local spin assignment used to describe a broken-symmetry DFT determinant.
+    Atom-centered local spin assignment used to describe a broken-symmetry DFT reference.
     """
 
     atom_ref = Quantity(
@@ -820,9 +815,9 @@ class BSDFT(DFT):
     Broken-symmetry density functional theory calculation.
 
     This class specializes a DFT calculation to represent a symmetry-broken,
-    collinear, unrestricted determinant without linking to the high-spin
+    collinear, unrestricted Kohn-Sham reference without linking to the high-spin
     reference. Workflow-level orchestration is handled separately. Consistency
-    checks require `determinant='unrestricted'`, `is_spin_polarized=True`, and
+    checks require `reference_form='UKS'`, `is_spin_polarized=True`, and
     `spin_centers` containing at least one up and one down local spin assignment.
 
     References
@@ -844,7 +839,7 @@ class BSDFT(DFT):
     total_spin_projection = Quantity(
         type=np.int32,
         description="""
-        Total spin projection M_S of the broken-symmetry determinant, stored in doubled
+        Total spin projection M_S of the broken-symmetry reference, stored in doubled
         form to preserve half-integer values (e.g. M_S = 1/2 is stored as 1).
         This is not the total spin quantum number S of a spin eigenstate.
         """,
@@ -879,8 +874,8 @@ class BSDFT(DFT):
 
         self.name = 'BSDFT'
 
-        if self.determinant != 'unrestricted':
-            logger.warning('BSDFT requires `determinant` to be `unrestricted`.')
+        if self.reference_form != 'UKS':
+            logger.warning('BSDFT requires `reference_form` to be `UKS`.')
 
         if self.is_spin_polarized is not True:
             logger.warning('BSDFT requires `is_spin_polarized` to be `True`.')
@@ -1820,10 +1815,10 @@ class HF(ModelMethodElectronic):
       - Jensen, F. (2007). *Introduction to Computational Chemistry*. 2nd ed., Wiley.
     """
 
-    type = Quantity(
+    reference_form = Quantity(
         type=MEnum('RHF', 'UHF', 'ROHF'),
         description="""
-        The type of HF determinant.
+        Hartree-Fock reference form used for the HF calculation.
         """,
     )
 
@@ -2133,7 +2128,7 @@ class BaseMultireferenceMethod(BaseModelMethod):
 
     active_space = SubSection(sub_section=ActiveSpace.m_def, repeats=False)
 
-    reference_type = Quantity(
+    state_treatment = Quantity(
         type=MEnum('state_specific', 'state_averaged'),
         description="""
         Whether the reference wavefunction is optimized for a single state or averaged

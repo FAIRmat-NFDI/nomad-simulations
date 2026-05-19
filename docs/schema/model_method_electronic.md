@@ -64,7 +64,6 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `is_spin_polarized` | m_bool(bool) | If the simulation is done considering the spin degrees of freedom (then there are two spin channels, 'down' and 'up') or not. |
-| `determinant` | Enum | <details><summary>The spin-coupling form of the determinant used for the</summary>The spin-coupling form of the determinant used for the<br>self-consistent field (SCF) calculation.<br>- **restricted**  (RHF/RKS): α and β electrons share the same spatial orbitals<br>- **unrestricted** (UHF/UKS): α and β orbitals are optimized independently<br>- **restricted-open-shell** (ROHF/ROKS): closed-shell core with spin-unpaired electrons<br>sharing spatial orbitals in the open-shell manifold</details> |
 
 ### `DFT`
 
@@ -75,6 +74,7 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `jacobs_ladder` | Enum | <details><summary>Highest Jacob's ladder rung present among XC components.</summary>Highest Jacob's ladder rung present among XC components.<br>See:<br>- https://doi.org/10.1063/1.1390175 (original paper)<br>- https://doi.org/10.1103/PhysRevLett.91.146401 (meta-GGA)<br>- https://doi.org/10.1063/1.1904565 (hyper-GGA)</details> |
+| `reference_form` | Enum | <details><summary>Kohn-Sham reference form used for the DFT calculation.</summary>Kohn-Sham reference form used for the DFT calculation.<br>- **RKS**: restricted Kohn-Sham reference<br>- **UKS**: unrestricted Kohn-Sham reference<br>- **ROKS**: restricted open-shell Kohn-Sham reference</details> |
 
 ### `TB`
 
@@ -189,7 +189,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `type` | Enum | The type of HF determinant. |
+| `reference_form` | Enum | Hartree-Fock reference form used for the HF calculation. |
 
 ### `CC`
 
