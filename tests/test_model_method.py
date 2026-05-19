@@ -663,6 +663,50 @@ class TestCC:
         assert space.n_defining_orbitals == 2
         assert space.n_orbitals == 2
 
+    def test_local_correlation_space_normalize_sets_counts_without_kind(self):
+        occ_i = ElectronicState(name='i')
+        occ_j = ElectronicState(name='j')
+        pno_1 = ElectronicState(name='pno_1')
+        pno_2 = ElectronicState(name='pno_2')
+
+        space = build_local_correlation_space(
+            kind=None,
+            domain_kind=None,
+            defining_orbitals_ref=[occ_i, occ_j],
+            orbitals_ref=[pno_1, pno_2],
+        )
+
+        space.normalize(EntryArchive(), logger=logger)
+
+        assert space.n_defining_orbitals == 2
+        assert space.n_orbitals == 2
+
+    def test_local_correlation_space_normalize_warns_on_count_mismatch_without_kind(
+        self, caplog
+    ):
+        import logging
+
+        space = build_local_correlation_space(
+            kind=None,
+            domain_kind=None,
+            n_defining_orbitals=3,
+            defining_orbitals_ref=[ElectronicState(name='i')],
+            n_orbitals=3,
+            orbitals_ref=[ElectronicState(name='pno_1')],
+        )
+
+        with caplog.at_level(logging.WARNING):
+            space.normalize(EntryArchive(), logger=logger)
+
+        assert (
+            'LocalCorrelationSpace.n_defining_orbitals does not match the length of `defining_orbitals_ref`.'
+            in caplog.text
+        )
+        assert (
+            'LocalCorrelationSpace.n_orbitals does not match the length of `orbitals_ref`.'
+            in caplog.text
+        )
+
     def test_local_correlation_space_normalize_validates_domain_kind_cardinality(
         self, caplog
     ):

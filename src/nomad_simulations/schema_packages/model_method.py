@@ -1999,9 +1999,6 @@ class LocalCorrelationSpace(ArchiveSection):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        if self.kind is None:
-            return
-
         if self.n_defining_orbitals is None and self.defining_orbitals_ref is not None:
             self.n_defining_orbitals = len(self.defining_orbitals_ref)
         if self.n_orbitals is None and self.orbitals_ref is not None:
@@ -2023,6 +2020,9 @@ class LocalCorrelationSpace(ArchiveSection):
             logger.warning(
                 'LocalCorrelationSpace.n_orbitals does not match the length of `orbitals_ref`.'
             )
+
+        if self.kind is None:
+            return
 
         if self.kind == 'domain':
             if self.domain_kind is None:

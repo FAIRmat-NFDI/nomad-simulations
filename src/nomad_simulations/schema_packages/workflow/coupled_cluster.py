@@ -7,6 +7,7 @@ from nomad_simulations.schema_packages.utils import log
 
 from .beyond_dft import BeyondDFTMethod, BeyondDFTResults, BeyondDFTWorkflow
 from .beyond_hf import BeyondHFMethod, BeyondHFResults, BeyondHFWorkflow
+from .general import INCORRECT_N_TASKS
 
 m_package = SchemaPackage()
 
@@ -97,10 +98,14 @@ class HFLocalCCWorkflow(BeyondHFWorkflow):
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
 
-        if self.tasks and len(self.tasks) > 1 and not self.tasks[1].name:
+        if len(self.tasks) != 3:
+            logger.error(INCORRECT_N_TASKS)
+            return
+
+        if not self.tasks[1].name:
             self.tasks[1].name = 'Orbital localization'
-        if self.tasks and not self.tasks[-1].name:
-            self.tasks[-1].name = 'Local CC'
+        if not self.tasks[2].name:
+            self.tasks[2].name = 'Local CC'
 
 
 class DFTLocalCCWorkflow(BeyondDFTWorkflow):
@@ -126,10 +131,14 @@ class DFTLocalCCWorkflow(BeyondDFTWorkflow):
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
 
-        if self.tasks and len(self.tasks) > 1 and not self.tasks[1].name:
+        if len(self.tasks) != 3:
+            logger.error(INCORRECT_N_TASKS)
+            return
+
+        if not self.tasks[1].name:
             self.tasks[1].name = 'Orbital localization'
-        if self.tasks and not self.tasks[-1].name:
-            self.tasks[-1].name = 'Local CC'
+        if not self.tasks[2].name:
+            self.tasks[2].name = 'Local CC'
 
 
 m_package.__init_metainfo__()
