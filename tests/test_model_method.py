@@ -467,7 +467,7 @@ class TestMultireferenceMethods:
         active = ActiveSpace(n_active_orbitals=4, n_active_electrons=6)
         mref = MultireferenceSCF(
             type='CASSCF',
-            reference_type='state_averaged',
+            state_treatment='state_averaged',
             state_multiplicities=[3, 1],
             n_roots_per_multiplicity=[2, 3],
             active_space=active,
@@ -476,6 +476,7 @@ class TestMultireferenceMethods:
         mref.normalize(EntryArchive(), logger=logger)
 
         assert mref.n_state_groups == 2
+        assert mref.state_treatment == 'state_averaged'
         assert mref.active_space is active
         assert list(mref.state_multiplicities) == [3, 1]
         assert list(mref.n_roots_per_multiplicity) == [2, 3]
@@ -908,7 +909,7 @@ class TestBSDFT:
         site_a = AtomsState(chemical_symbol='Fe', label='Fe1')
         site_b = AtomsState(chemical_symbol='Fe', label='Fe2')
         bsdft = BSDFT(
-            determinant='unrestricted',
+            reference_form='UKS',
             is_spin_polarized=True,
             total_spin_projection=1,
             spin_centers=[
@@ -932,52 +933,52 @@ class TestBSDFT:
         assert len(log_output.entries) == 0
 
     @pytest.mark.parametrize(
-        'determinant, is_spin_polarized, ms_quantum_numbers, expected_event',
+        'reference_form, is_spin_polarized, ms_quantum_numbers, expected_event',
         [
             pytest.param(
-                'restricted',
+                'RKS',
                 True,
                 (0.5, -0.5),
-                'BSDFT requires `determinant` to be `unrestricted`.',
-                id='restricted-determinant',
+                'BSDFT requires `reference_form` to be `UKS`.',
+                id='restricted-reference',
             ),
             pytest.param(
                 None,
                 True,
                 (0.5, -0.5),
-                'BSDFT requires `determinant` to be `unrestricted`.',
-                id='missing-determinant',
+                'BSDFT requires `reference_form` to be `UKS`.',
+                id='missing-reference',
             ),
             pytest.param(
-                'unrestricted',
+                'UKS',
                 False,
                 (0.5, -0.5),
                 'BSDFT requires `is_spin_polarized` to be `True`.',
                 id='non-spin-polarized',
             ),
             pytest.param(
-                'unrestricted',
+                'UKS',
                 None,
                 (0.5, -0.5),
                 'BSDFT requires `is_spin_polarized` to be `True`.',
                 id='missing-spin-polarization',
             ),
             pytest.param(
-                'unrestricted',
+                'UKS',
                 True,
                 (0.5,),
                 'BSDFT requires at least two `spin_centers` to define a broken-symmetry assignment.',
                 id='too-few-spin-centers',
             ),
             pytest.param(
-                'unrestricted',
+                'UKS',
                 True,
                 (0.5, 0.5),
                 'BSDFT requires at least one up and one down spin center.',
                 id='same-spin-sign',
             ),
             pytest.param(
-                'unrestricted',
+                'UKS',
                 True,
                 (0.0, -0.5),
                 'BSDFT `spin_centers` must provide a resolvable spin sign (e.g. via a '
@@ -989,13 +990,13 @@ class TestBSDFT:
     def test_warns_on_invalid_bsdft_metadata(
         self,
         log_output,
-        determinant,
+        reference_form,
         is_spin_polarized,
         ms_quantum_numbers,
         expected_event,
     ):
         bsdft = BSDFT(
-            determinant=determinant,
+            reference_form=reference_form,
             is_spin_polarized=is_spin_polarized,
             spin_centers=self._spin_centers(*ms_quantum_numbers),
         )
