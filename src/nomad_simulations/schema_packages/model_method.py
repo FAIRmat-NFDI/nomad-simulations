@@ -711,10 +711,10 @@ class DFT(ModelMethodElectronic):
         """,
     )
 
-    reference_type = Quantity(
+    reference_form = Quantity(
         type=MEnum('RKS', 'UKS', 'ROKS'),
         description="""
-        Kohn-Sham reference type used for the DFT calculation.
+        Kohn-Sham reference form used for the DFT calculation.
 
         - **RKS**: restricted Kohn-Sham reference
         - **UKS**: unrestricted Kohn-Sham reference
@@ -817,7 +817,7 @@ class BSDFT(DFT):
     This class specializes a DFT calculation to represent a symmetry-broken,
     collinear, unrestricted Kohn-Sham reference without linking to the high-spin
     reference. Workflow-level orchestration is handled separately. Consistency
-    checks require `reference_type='UKS'`, `is_spin_polarized=True`, and
+    checks require `reference_form='UKS'`, `is_spin_polarized=True`, and
     `spin_centers` containing at least one up and one down local spin assignment.
 
     References
@@ -874,8 +874,8 @@ class BSDFT(DFT):
 
         self.name = 'BSDFT'
 
-        if self.reference_type != 'UKS':
-            logger.warning('BSDFT requires `reference_type` to be `UKS`.')
+        if self.reference_form != 'UKS':
+            logger.warning('BSDFT requires `reference_form` to be `UKS`.')
 
         if self.is_spin_polarized is not True:
             logger.warning('BSDFT requires `is_spin_polarized` to be `True`.')
@@ -1815,10 +1815,10 @@ class HF(ModelMethodElectronic):
       - Jensen, F. (2007). *Introduction to Computational Chemistry*. 2nd ed., Wiley.
     """
 
-    reference_type = Quantity(
+    reference_form = Quantity(
         type=MEnum('RHF', 'UHF', 'ROHF'),
         description="""
-        Hartree-Fock reference type used for the HF calculation.
+        Hartree-Fock reference form used for the HF calculation.
         """,
     )
 
@@ -2128,7 +2128,7 @@ class BaseMultireferenceMethod(BaseModelMethod):
 
     active_space = SubSection(sub_section=ActiveSpace.m_def, repeats=False)
 
-    reference_type = Quantity(
+    state_treatment = Quantity(
         type=MEnum('state_specific', 'state_averaged'),
         description="""
         Whether the reference wavefunction is optimized for a single state or averaged

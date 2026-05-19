@@ -193,7 +193,7 @@ def test_bs_dft_example():
     _, method = build_bs_dft_example()
     method.normalize(EntryArchive(), logger=test_logger)
     assert method.name == 'BSDFT'
-    assert method.reference_type == 'UKS'
+    assert method.reference_form == 'UKS'
     assert method.is_spin_polarized is True
     assert method.total_spin_projection == 0
     assert len(method.spin_centers) == 2

@@ -74,7 +74,7 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `jacobs_ladder` | Enum | <details><summary>Highest Jacob's ladder rung present among XC components.</summary>Highest Jacob's ladder rung present among XC components.<br>See:<br>- https://doi.org/10.1063/1.1390175 (original paper)<br>- https://doi.org/10.1103/PhysRevLett.91.146401 (meta-GGA)<br>- https://doi.org/10.1063/1.1904565 (hyper-GGA)</details> |
-| `reference_type` | Enum | <details><summary>Kohn-Sham reference type used for the DFT calculation.</summary>Kohn-Sham reference type used for the DFT calculation.<br>- **RKS**: restricted Kohn-Sham reference<br>- **UKS**: unrestricted Kohn-Sham reference<br>- **ROKS**: restricted open-shell Kohn-Sham reference</details> |
+| `reference_form` | Enum | <details><summary>Kohn-Sham reference form used for the DFT calculation.</summary>Kohn-Sham reference form used for the DFT calculation.<br>- **RKS**: restricted Kohn-Sham reference<br>- **UKS**: unrestricted Kohn-Sham reference<br>- **ROKS**: restricted open-shell Kohn-Sham reference</details> |
 
 ### `TB`
 
@@ -189,7 +189,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `reference_type` | Enum | Hartree-Fock reference type used for the HF calculation. |
+| `reference_form` | Enum | Hartree-Fock reference form used for the HF calculation. |
 
 ### `CC`
 
