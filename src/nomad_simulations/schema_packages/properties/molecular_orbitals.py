@@ -8,10 +8,14 @@ if TYPE_CHECKING:
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
+from nomad.datamodel.datamodel import JSON
+from nomad.datamodel.hdf5 import HDF5Dataset, match_hdf5_reference
 from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy
+from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy, SubSection
+from nomad.units import ureg
 
 from nomad_simulations.schema_packages.properties import ElectronicEigenvalues
+from nomad_simulations.schema_packages.properties.orbital_volume import OrbitalVolume
 
 
 class MolecularOrbitals(ElectronicEigenvalues):
@@ -106,8 +110,8 @@ class MolecularOrbitals(ElectronicEigenvalues):
 
     # AO → MO coefficient matrices
     mo_coefficients = Quantity(
-        type=np.float64,
-        shape=['n_mo', 'n_ao'],
+        type=HDF5Dataset,
+        shape=[],
         description="""
         The AO→MO coefficient matrix **C**, such that 
         ψ_i(r) = ∑_μ C[i,μ] φ_μ(r). 
@@ -116,8 +120,8 @@ class MolecularOrbitals(ElectronicEigenvalues):
     )
 
     mo_coefficients_im = Quantity(
-        type=np.float64,
-        shape=['n_mo', 'n_ao'],
+        type=HDF5Dataset,
+        shape=[],
         description="""
         Imaginary component of the AO→MO coefficient matrix **C**. 
         Combine it with `mo_coefficients` to obtain the full complex matrix:
@@ -140,6 +144,165 @@ class MolecularOrbitals(ElectronicEigenvalues):
         """,
     )
 
+    orbital_volumes = SubSection(sub_section=OrbitalVolume.m_def, repeats=True)
+
+    orbital_shape_viewer = Quantity(
+        type=JSON,
+        description="""
+        Derived GUI payload for rendering real-space orbital volumes together with
+        the corresponding structure.
+        """,
+    )
+
+    def _infer_n_mo_from_hdf5(self) -> int | None:
+        if isinstance(self.mo_coefficients, str):
+            match = match_hdf5_reference(self.mo_coefficients)
+            if match and 'shape' in match['path']:
+                return None
+        if (
+            isinstance(self.mo_coefficients, np.ndarray)
+            and self.mo_coefficients.ndim > 0
+        ):
+            return int(self.mo_coefficients.shape[0])
+        return None
+
+    @staticmethod
+    def _to_float(value, unit=None):
+        if value is None:
+            return None
+        if hasattr(value, 'to'):
+            if unit is not None:
+                value = value.to(unit)
+            return float(value.magnitude)
+        return float(value)
+
+    @staticmethod
+    def _to_vector_list(value, unit=None):
+        if value is None:
+            return None
+        if hasattr(value, 'to'):
+            if unit is not None:
+                value = value.to(unit)
+            value = value.magnitude
+        return np.asarray(value, dtype=float).tolist()
+
+    @staticmethod
+    def _resolve_species(model_system):
+        species = []
+        for particle_state in model_system.particle_states or []:
+            atomic_number = getattr(particle_state, 'atomic_number', None)
+            if atomic_number is not None:
+                species.append(int(atomic_number))
+                continue
+            chemical_symbol = getattr(particle_state, 'chemical_symbol', None)
+            if chemical_symbol:
+                try:
+                    species.append(int(ureg.Quantity(chemical_symbol).magnitude))
+                except Exception:
+                    return None
+                continue
+            return None
+        return species or None
+
+    def _build_structure_payload(self, model_system):
+        if model_system is None or model_system.positions is None:
+            return None
+
+        lattice_vectors = self._to_vector_list(
+            getattr(model_system, 'lattice_vectors', None), unit=ureg.angstrom
+        )
+        periodic = getattr(model_system, 'periodic_boundary_conditions', None)
+        if periodic is not None:
+            periodic = [bool(value) for value in periodic]
+
+        return {
+            'systemId': model_system.m_path(),
+            'positions': self._to_vector_list(
+                model_system.positions, unit=ureg.angstrom
+            ),
+            'species': self._resolve_species(model_system),
+            'latticeVectors': lattice_vectors,
+            'periodic': periodic,
+        }
+
+    def _build_viewer_payload(self, archive: 'EntryArchive'):
+        volumes = list(self.orbital_volumes or [])
+        if not volumes:
+            return None
+
+        model_system = None
+        if volumes[0].model_system_ref is not None:
+            model_system = volumes[0].model_system_ref
+        elif getattr(self.m_parent, 'model_system_ref', None) is not None:
+            model_system = self.m_parent.model_system_ref
+
+        structure = self._build_structure_payload(model_system)
+        orbitals = []
+        upload_id = getattr(getattr(archive, 'metadata', None), 'upload_id', None)
+        entry_id = getattr(getattr(archive, 'metadata', None), 'entry_id', None)
+
+        for index, volume in enumerate(volumes):
+            if not isinstance(volume.field, str):
+                continue
+            match = match_hdf5_reference(volume.field)
+            if not match:
+                continue
+
+            label = volume.label or volume.source_file or f'Orbital {index + 1}'
+            orbitals.append(
+                {
+                    'id': volume.source_file or f'orbital-{index + 1}',
+                    'orbitalIndex': int(volume.orbital_index)
+                    if volume.orbital_index is not None
+                    else None,
+                    'label': label,
+                    'energy': self._to_float(volume.energy, unit=ureg.electron_volt),
+                    'occupation': self._to_float(volume.occupation),
+                    'spin': volume.spin,
+                    'symmetry': volume.symmetry,
+                    'sourceFile': volume.source_file,
+                    'gridOrigin': self._to_vector_list(
+                        volume.grid_origin, unit=ureg.angstrom
+                    ),
+                    'gridVectors': self._to_vector_list(
+                        volume.grid_vectors, unit=ureg.angstrom
+                    ),
+                    'gridShape': self._to_vector_list(volume.grid_shape),
+                    'defaultIsovalue': self._to_float(volume.default_isovalue),
+                    'volume': {
+                        'uploadId': match.get('upload_id') or upload_id,
+                        'file': match['file_id'] or entry_id,
+                        'path': match['path'],
+                    },
+                }
+            )
+
+        orbitals.sort(
+            key=lambda item: (
+                item['orbitalIndex'] is None,
+                item['orbitalIndex']
+                if item['orbitalIndex'] is not None
+                else item['id'],
+                item['id'],
+            )
+        )
+
+        if not orbitals:
+            return None
+
+        return {
+            'orbitals': orbitals,
+            'structure': structure,
+            'structureContext': {
+                'entryId': entry_id,
+                'modelSystemPath': model_system.m_path() if model_system else None,
+            },
+            'displayOptions': {
+                'showStructure': structure is not None,
+                'showIsovalueSlider': True,
+            },
+        }
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         """
         Infer `n_mo` / `n_ao` from supplied arrays when absent.
@@ -148,13 +311,21 @@ class MolecularOrbitals(ElectronicEigenvalues):
 
         # ---------- infer n_mo ----------
         if self.n_mo is None:
-            if self.mo_coefficients is not None:
+            if isinstance(self.mo_coefficients, np.ndarray):
                 self.n_mo = int(self.mo_coefficients.shape[0])
+            elif self.orbital_volumes:
+                self.n_mo = len(self.orbital_volumes)
             elif self.mo_spin is not None:
                 self.n_mo = len(self.mo_spin)
             elif self.mo_energies is not None:
                 self.n_mo = len(self.mo_energies)
 
         # ---------- infer n_ao ----------
-        if self.n_ao is None and self.mo_coefficients is not None:
+        if self.n_ao is None and isinstance(self.mo_coefficients, np.ndarray):
             self.n_ao = int(self.mo_coefficients.shape[1])
+
+        for orbital_volume in self.orbital_volumes or []:
+            if orbital_volume.molecular_orbitals_ref is None:
+                orbital_volume.molecular_orbitals_ref = self
+
+        self.orbital_shape_viewer = self._build_viewer_payload(archive)
