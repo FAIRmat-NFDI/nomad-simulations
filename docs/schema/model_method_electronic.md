@@ -10,12 +10,15 @@
 
 ```mermaid
 classDiagram
+    class ADC
     class BSE
     class CC
     class CI
     class CoreHoleSpectra
     class DFT
     class DMFT
+    class EOMCC
+    class ElectronicResponseMethod
     class ExcitedStateMethodology
     class GW
     class HF
@@ -27,13 +30,16 @@ classDiagram
     class TDDFT
     class Wannier
     class xTB
+    ElectronicResponseMethod <|-- ADC
     ExcitedStateMethodology <|-- BSE
     ModelMethodElectronic <|-- CC
     ModelMethodElectronic <|-- CI
     ModelMethodElectronic <|-- CoreHoleSpectra
     ModelMethodElectronic <|-- DFT
-    ModelMethodElectronic <|-- DMFT
-    ModelMethodElectronic <|-- ExcitedStateMethodology
+    ElectronicResponseMethod <|-- DMFT
+    ElectronicResponseMethod <|-- EOMCC
+    ModelMethodElectronic <|-- ElectronicResponseMethod
+    ElectronicResponseMethod <|-- ExcitedStateMethodology
     ExcitedStateMethodology <|-- GW
     ModelMethodElectronic <|-- HF
     ModelMethodElectronic <|-- PerturbationMethod
@@ -64,6 +70,25 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `is_spin_polarized` | m_bool(bool) | If the simulation is done considering the spin degrees of freedom (then there are two spin channels, 'down' and 'up') or not. |
+
+### `ElectronicResponseMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ElectronicResponseMethod` | Base section for electronic-structure methods that compute excitations, spectra, quasiparticle corrections, response properties, or correlation functions through a response, propagator, Green's-function, self-energy, or equation-of-motion formalism. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.ElectronicResponseMethod){:target="_blank"} |
+
+| Quantity | Type | Description |
+|---|---|---|
+| `response_formalism` | Enum | <details><summary>Broad response or propagator formalism used by the method.</summary>Broad response or propagator formalism used by the method.<br>- `linear_response`: response to a weak perturbation in the linear<br>regime, e.g. LR-TDDFT, LR-CC, response CI.<br>- `real_time`: real-time propagation after an external perturbation,<br>e.g. real-time TDDFT.<br>- `equation_of_motion`: EOM formulation in a many-body state space,<br>e.g. EOM-CC, EOM-MRCC.<br>- `greens_function`: Green's-function formulation, e.g. one-particle<br>Green's-function based quasiparticle or spectral methods.<br>- `polarization_propagator`: propagator formulation for neutral<br>excitations or response functions, e.g. ADC-like methods.<br>- `self_energy`: self-energy based formulation, e.g. GW or DMFT-like<br>treatments where the central object is an electronic self-energy.<br>- `sum_over_states`: explicit sum-over-states response representation.<br>- `other`: method-specific response formalism not covered by the enum.</details> |
+| `representation_domain` | Enum | <details><summary>Domain in which the response, propagator, or equation-of-motion problem</summary>Domain in which the response, propagator, or equation-of-motion problem<br>is represented or solved.<br>- `time`: real-time propagation or time-domain response.<br>- `frequency`: real-frequency response, spectra, dielectric functions,<br>or quasiparticle corrections.<br>- `imaginary_time`: imaginary-time Green's functions or propagators.<br>- `matsubara_frequency`: finite-temperature Matsubara-frequency<br>representation.<br>- `state_space`: matrix/eigenvalue problem in a many-body, excitation,<br>electron-hole, or configuration space, e.g. EOM-CC, ADC, BSE.<br>- `mixed`: method combines multiple domains, e.g. imaginary-frequency<br>integration plus analytic continuation.<br>- `other`: code-specific or uncommon representation.</details> |
+| `target_sector` | Enum | <details><summary>Physical sector or class of states/properties targeted by the response</summary>Physical sector or class of states/properties targeted by the response<br>or propagator method.<br>Examples:<br>- `neutral_excitation`: neutral excited states, e.g. TDDFT, BSE,<br>EOM-EE-CC, ADC for excitation energies.<br>- `ionization`: ionized states or electron-removal sector, e.g.<br>IP-EOM-CC.<br>- `electron_attachment`: electron-addition sector, e.g. EA-EOM-CC.<br>- `spin_flip`: spin-flip excitation sector.<br>- `double_ionization`: double electron-removal sector.<br>- `double_electron_attachment`: double electron-addition sector.<br>- `quasiparticle`: quasiparticle corrections, e.g. GW.<br>- `optical_response`: optical absorption or dielectric response.<br>- `magnetic_response`: magnetic-field response, NMR-like or magnetic<br>susceptibility response.<br>- `core_excitation`: core-level excitations, e.g. XAS/XES-related<br>response calculations.<br>- `charge_transfer`: charge-transfer target states or response.<br>- `other`: method-specific target sector.</details> |
+| `response_order` | m_int_bounded(int) | <details><summary>Order of the response with respect to the external perturbation.</summary>Order of the response with respect to the external perturbation.<br>Examples:<br>- 1: linear response<br>- 2: quadratic or second-order response<br>- 3: cubic or third-order response<br>This is not the same as many-body perturbation order, ADC order, or<br>excitation rank.</details> |
+| `operator_excitation_order` | m_int32(int32) (shape: ['*']) | <details><summary>Excitation ranks included in the response, equation-of-motion, or</summary>Excitation ranks included in the response, equation-of-motion, or<br>propagator operator manifold, where applicable.<br>Examples:<br>- EOM-CCSD: [1, 2]<br>- CIS / TDA-like single excitations: [1]<br>- EOM-CCSDT: [1, 2, 3]<br>This quantity should be left unset for methods where excitation rank is<br>not the appropriate descriptor, such as many GW or DMFT implementations.</details> |
+| `n_states` | m_int32(int32) | Number of target states, roots, poles, or quasiparticle solutions requested or computed by the method, when applicable. |
+| `target_spin_multiplicities` | m_int32(int32) (shape: ['*']) | Spin multiplicities of the targeted states, if specified. |
+| `target_symmetry_labels` | m_str(str) (shape: ['*']) | Code-specific symmetry, irrep, k-point, or sector labels for targeted states or response solutions. |
+| `uses_tamm_dancoff_approximation` | m_bool(bool) | Whether the Tamm-Dancoff approximation or an equivalent resonant-block approximation is used. Common in TDDFT, BSE, and related response eigenvalue problems. |
+| `is_self_consistent` | m_bool(bool) | Whether the response/propagator/self-energy method is solved self-consistently with respect to its central response object, Green's function, self-energy, or density response, depending on the method. |
 
 ### `DFT`
 
@@ -146,11 +171,11 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `GW` | A base section used to define the parameters of a GW calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.GW){:target="_blank"} |
+| `GW` | GW approximation for quasiparticle corrections based on a one-particle Green's function and screened Coulomb interaction. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.GW){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
-| `type` | Enum | <details><summary>GW Hedin's self-consistency cycle:</summary>GW Hedin's self-consistency cycle:<br>\| Name      \| Description                      \| Reference             \|<br>\| --------- \| -------------------------------- \| --------------------- \|<br>\| `'G0W0'`  \| single-shot                      \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.74.035101 \|<br>\| `'scGW'`  \| self-consistent G and W               \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.75.235102 \|<br>\| `'scGW0'` \| self-consistent G with fixed W0  \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.54.8411 \|<br>\| `'scG0W'` \| self-consistent W with fixed G0  \| -                     \|<br>\| `'ev-scGW0'`  \| eigenvalues self-consistent G with fixed W0   \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.34.5390 \|<br>\| `'ev-scGW'`  \| eigenvalues self-consistent G and W   \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.74.045102 \|<br>\| `'qp-scGW0'`  \| quasiparticle self-consistent G with fixed W0 \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.76.115109 \|<br>\| `'qp-scGW'`  \| quasiparticle self-consistent G and W \| https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.96.226402 \|</details> |
+| `type` | Enum | <details><summary>GW Hedin's self-consistency cycle:</summary>GW Hedin's self-consistency cycle:<br>\| Name      \| Description                      \| Reference             \|<br>\| --------- \| -------------------------------- \| --------------------- \|<br>\| `'G0W0'`  \| single-shot                      \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.74.035101 \|<br>\| `'GW0'`  \| self-consistent G with fixed W0  \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.54.8411 \|<br>\| `'scGW'`  \| self-consistent G and W               \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.75.235102 \|<br>\| `'scGW0'` \| self-consistent G with fixed W0  \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.54.8411 \|<br>\| `'scG0W'` \| self-consistent W with fixed G0  \| -                     \|<br>\| `'evGW'`  \| eigenvalues self-consistent G and W   \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.74.045102 \|<br>\| `'ev-scGW0'`  \| eigenvalues self-consistent G with fixed W0   \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.34.5390 \|<br>\| `'ev-scGW'`  \| eigenvalues self-consistent G and W   \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.74.045102 \|<br>\| `'qsGW'`  \| quasiparticle self-consistent G and W \| https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.96.226402 \|<br>\| `'qp-scGW0'`  \| quasiparticle self-consistent G with fixed W0 \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.76.115109 \|<br>\| `'qp-scGW'`  \| quasiparticle self-consistent G and W \| https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.96.226402 \|<br>\| `'other'`  \| code-specific GW variant \|</details> |
 | `analytical_continuation` | Enum | <details><summary>Analytical continuation approximations of the GW self-energy:</summary>Analytical continuation approximations of the GW self-energy:<br>\| Name           \| Description         \| Reference                        \|<br>\| -------------- \| ------------------- \| -------------------------------- \|<br>\| `'pade'` \| Pade's approximant  \| https://link.springer.com/article/10.1007/BF00655090 \|<br>\| `'contour_deformation'` \| Contour deformation \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.67.155208 \|<br>\| `'ppm_GodbyNeeds'` \| Godby-Needs plasmon-pole model \| https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.62.1169 \|<br>\| `'ppm_HybertsenLouie'` \| Hybertsen and Louie plasmon-pole model \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.34.5390 \|<br>\| `'ppm_vonderLindenHorsh'` \| von der Linden and P. Horsh plasmon-pole model \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.37.8351 \|<br>\| `'ppm_FaridEngel'` \| Farid and Engel plasmon-pole model  \| https://journals.aps.org/prb/abstract/10.1103/PhysRevB.47.15931 \|<br>\| `'multi_pole'` \| Multi-pole fitting  \| https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.74.1827 \|</details> |
 | `interval_qp_corrections` | m_int32(int32) (shape: [2]) | Band indices (in an interval) for which the GW quasiparticle corrections are calculated. |
 | `screening_ref` | Reference | Reference to the `Screening` section that the GW calculation used to obtain the screened Coulomb interactions. |
@@ -159,13 +184,14 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `BSE` | A base section used to define the parameters of a BSE calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.BSE){:target="_blank"} |
+| `BSE` | Bethe-Salpeter equation method for two-particle/electron-hole response, often used for optical excitations in solids and molecules. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.BSE){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
 | `type` | Enum | <details><summary>Type of the BSE Hamiltonian solved:</summary>Type of the BSE Hamiltonian solved:<br>H_BSE = H_diagonal + 2 * gx * Hx - gc * Hc<br>Online resources for the theory:<br>- http://exciting.wikidot.com/carbon-excited-states-from-bse#toc1<br>- https://www.vasp.at/wiki/index.php/Bethe-Salpeter-equations_calculations<br>- https://docs.abinit.org/theory/bse/<br>- https://www.yambo-code.eu/wiki/index.php/Bethe-Salpeter_kernel<br>\| Name \| Description \|<br>\| --------- \| ----------------------- \|<br>\| `'Singlet'` \| gx = 1, gc = 1 \|<br>\| `'Triplet'` \| gx = 0, gc = 1 \|<br>\| `'IP'` \| Independent-particle approach \|<br>\| `'RPA'` \| Random Phase Approximation \|</details> |
 | `solver` | Enum | <details><summary>Solver algotithm used to diagonalize the BSE Hamiltonian.</summary>Solver algotithm used to diagonalize the BSE Hamiltonian.<br>\| Name \| Description \| Reference \|<br>\| --------- \| ----------------------- \| ----------- \|<br>\| `'Full-diagonalization'` \| Full diagonalization of the BSE Hamiltonian \| - \|<br>\| `'Lanczos-Haydock'` \| Subspace iterative Lanczos-Haydock algorithm \| https://doi.org/10.1103/PhysRevB.59.5441 \|<br>\| `'GMRES'` \| Generalized minimal residual method \| https://doi.org/10.1137/0907058 \|<br>\| `'SLEPc'` \| Scalable Library for Eigenvalue Problem Computations \| https://slepc.upv.es/ \|<br>\| `'TDA'` \| Tamm-Dancoff approximation \| https://doi.org/10.1016/S0009-2614(99)01149-5 \|</details> |
 | `screening_ref` | Reference | Reference to the `Screening` section that the BSE calculation used to obtain the screened Coulomb interactions. |
+| `kernel` | Enum | BSE interaction kernel treatment, if known. |
 
 ### `TDDFT`
 
@@ -205,6 +231,16 @@ classDiagram
 | `perturbative_correction` | Enum | <details><summary>Label for the perturbative corrections:</summary>Label for the perturbative corrections:<br>- '(T)'   : standard perturbative triples<br>- '[T]'   : Brueckner-based or other variant<br>- '(T0)'  : approximate version of (T)<br>- '[T0]'  : approximate, typically for Brueckner references<br>- '(Q)'   : perturbative quadruples, e.g., CCSDT(Q)</details> |
 | `explicit_correlation` | Enum | <details><summary>Explicit correlation treatment.</summary>Explicit correlation treatment.<br>These methods introduce the interelectronic distance coordinate<br>directly into the wavefunction to treat dynamical electron correlation.<br>It can be added linearly (R12) or exponentially (F12).</details> |
 
+### `EOMCC`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `EOMCC` | Equation-of-motion coupled-cluster method for excited, ionized, electron-attached, spin-flip, or related target states. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.EOMCC){:target="_blank"} |
+
+| Quantity | Type | Description |
+|---|---|---|
+| `reference_cc` | m_str(str) | Coupled-cluster reference or parent method label, e.g. CCSD, CCSDT, CC3, CCSDTQ. |
+
 ### `CI`
 
 | Section | Description | MetaInfo |
@@ -215,6 +251,16 @@ classDiagram
 |---|---|---|
 | `type` | Enum | CI variant to employ |
 | `excitation_order` | m_int32(int32) (shape: ['*']) | List of excitation orders included in the CI expansion (1=singles, 2=doubles, 3=triples, 4=quadruples, …). |
+
+### `ADC`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ADC` | Algebraic diagrammatic construction / polarization propagator method. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.ADC){:target="_blank"} |
+
+| Quantity | Type | Description |
+|---|---|---|
+| `order` | m_int32(int32) | ADC perturbation order, e.g. 2 for ADC(2), 3 for ADC(3). This is not the same as `response_order`. |
 
 ### `PerturbationMethod`
 
@@ -246,7 +292,7 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `DMFT` | A base section used to define the parameters of a DMFT calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.DMFT){:target="_blank"} |
+| `DMFT` | Dynamical mean-field theory method based on a local impurity problem and a frequency- or imaginary-time-dependent self-energy. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.DMFT){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

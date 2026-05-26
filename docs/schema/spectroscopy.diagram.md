@@ -13,12 +13,18 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum
-    class Energy2
-    class Frequency
-    class Permittivity
-    class SpectralProfile
-    class XASSpectrum
+    class AbsorptionSpectrum {
+    }
+    class Energy2 {
+    }
+    class Frequency {
+    }
+    class Permittivity {
+    }
+    class SpectralProfile {
+    }
+    class XASSpectrum {
+    }
     SpectralProfile <|-- AbsorptionSpectrum
     AbsorptionSpectrum <|-- XASSpectrum
     Permittivity *-- Frequency : frequencies

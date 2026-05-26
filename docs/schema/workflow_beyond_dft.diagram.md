@@ -13,29 +13,52 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BeyondDFTMethod
-    class BeyondDFTResults
-    class BeyondDFTWorkflow
-    class DFTGWMethod
-    class DFTGWResults
-    class DFTGWWorkflow
-    class DFTTBDMFTMethod
-    class DFTTBDMFTResults
-    class DFTTBDMFTWorkflow
-    class DFTTBMethod
-    class DFTTBResults
-    class DFTTBWorkflow
-    class DMFTMaxEntWorkflow
-    class DMTMaxEntMethod
-    class DMTMaxEntResults
-    class ElectronicStructureResults
-    class SerialWorkflow
-    class SimulationWorkflowMethod
-    class SimulationWorkflowResults
-    class WorkflowConvergenceResults
-    class XSMethod
-    class XSResults
-    class XSWorkflow
+    class BeyondDFTMethod {
+    }
+    class BeyondDFTResults {
+    }
+    class BeyondDFTWorkflow {
+    }
+    class DFTGWMethod {
+    }
+    class DFTGWResults {
+    }
+    class DFTGWWorkflow {
+    }
+    class DFTTBDMFTMethod {
+    }
+    class DFTTBDMFTResults {
+    }
+    class DFTTBDMFTWorkflow {
+    }
+    class DFTTBMethod {
+    }
+    class DFTTBResults {
+    }
+    class DFTTBWorkflow {
+    }
+    class DMFTMaxEntWorkflow {
+    }
+    class DMTMaxEntMethod {
+    }
+    class DMTMaxEntResults {
+    }
+    class ElectronicStructureResults {
+    }
+    class SerialWorkflow {
+    }
+    class SimulationWorkflowMethod {
+    }
+    class SimulationWorkflowResults {
+    }
+    class WorkflowConvergenceResults {
+    }
+    class XSMethod {
+    }
+    class XSResults {
+    }
+    class XSWorkflow {
+    }
     SimulationWorkflowMethod <|-- BeyondDFTMethod
     SimulationWorkflowResults <|-- BeyondDFTResults
     SerialWorkflow <|-- BeyondDFTWorkflow

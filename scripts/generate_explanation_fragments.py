@@ -31,9 +31,13 @@ METHOD_FAMILIES = [
     ('CI', 'CI'),
     ('Wannier', 'Wannier'),
     ('Slater-Koster', 'SlaterKoster'),
+    ('Electronic Response Method', 'ElectronicResponseMethod'),
     ('GW', 'GW'),
     ('BSE', 'BSE'),
+    ('TDDFT', 'TDDFT'),
     ('DMFT', 'DMFT'),
+    ('EOM-CC', 'EOMCC'),
+    ('ADC', 'ADC'),
     ('Excited-State Methodology', 'ExcitedStateMethodology'),
     ('Photon', 'Photon'),
 ]
