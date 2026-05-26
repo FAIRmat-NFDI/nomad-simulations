@@ -13,14 +13,22 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class Elastic
-    class ElasticMethod
-    class ElasticResults
-    class SimulationWorkflow
-    class SimulationWorkflowMethod
-    class SimulationWorkflowResults
-    class StrainDiagrams
-    class ThermodynamicsResults
+    class Elastic {
+    }
+    class ElasticMethod {
+    }
+    class ElasticResults {
+    }
+    class SimulationWorkflow {
+    }
+    class SimulationWorkflowMethod {
+    }
+    class SimulationWorkflowResults {
+    }
+    class StrainDiagrams {
+    }
+    class ThermodynamicsResults {
+    }
     SimulationWorkflow <|-- Elastic
     SimulationWorkflowMethod <|-- ElasticMethod
     ThermodynamicsResults <|-- ElasticResults

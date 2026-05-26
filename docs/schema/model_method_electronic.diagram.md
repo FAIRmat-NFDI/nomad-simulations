@@ -13,30 +13,56 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BSE
-    class CC
-    class CI
-    class CoreHoleSpectra
-    class DFT
-    class DMFT
-    class ExcitedStateMethodology
-    class GW
-    class HF
-    class ModelMethodElectronic
-    class PerturbationMethod
-    class Screening
-    class SlaterKoster
-    class TB
-    class TDDFT
-    class Wannier
-    class xTB
+    class ADC {
+    }
+    class BSE {
+    }
+    class CC {
+    }
+    class CI {
+    }
+    class CoreHoleSpectra {
+    }
+    class DFT {
+    }
+    class DMFT {
+    }
+    class EOMCC {
+    }
+    class ElectronicResponseMethod {
+    }
+    class ExcitedStateMethodology {
+    }
+    class GW {
+    }
+    class HF {
+    }
+    class ModelMethodElectronic {
+    }
+    class PerturbationMethod {
+    }
+    class Screening {
+    }
+    class SlaterKoster {
+    }
+    class TB {
+    }
+    class TDDFT {
+    }
+    class Wannier {
+    }
+    class xTB {
+    }
+    ElectronicResponseMethod <|-- ADC
     ExcitedStateMethodology <|-- BSE
     ModelMethodElectronic <|-- CC
     ModelMethodElectronic <|-- CI
     ModelMethodElectronic <|-- CoreHoleSpectra
     ModelMethodElectronic <|-- DFT
-    ModelMethodElectronic <|-- DMFT
-    ModelMethodElectronic <|-- ExcitedStateMethodology
+    ElectronicResponseMethod <|-- DMFT
+    ElectronicResponseMethod <|-- EOMCC
+    ModelMethodElectronic <|-- ElectronicResponseMethod
+    ElectronicResponseMethod <|-- ExcitedStateMethodology
     ExcitedStateMethodology <|-- GW
     ModelMethodElectronic <|-- HF
     ModelMethodElectronic <|-- PerturbationMethod

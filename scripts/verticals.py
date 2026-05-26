@@ -316,6 +316,7 @@ VERTICALS = {
         'purpose': 'Electronic method subclasses branching from ModelMethodElectronic',
         'sections': [
             'ModelMethodElectronic',
+            'ElectronicResponseMethod',
             'DFT',
             'TB',
             'xTB',
@@ -328,7 +329,9 @@ VERTICALS = {
             'TDDFT',
             'HF',
             'CC',
+            'EOMCC',
             'CI',
+            'ADC',
             'PerturbationMethod',
             'CoreHoleSpectra',
             'DMFT',

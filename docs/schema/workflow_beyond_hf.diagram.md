@@ -13,20 +13,34 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BeyondHFMethod
-    class BeyondHFResults
-    class BeyondHFWorkflow
-    class ElectronicStructureResults
-    class HFCCMethod
-    class HFCCResults
-    class HFCCWorkflow
-    class HFCIMethod
-    class HFCIResults
-    class HFCIWorkflow
-    class SerialWorkflow
-    class SimulationWorkflowMethod
-    class SimulationWorkflowResults
-    class WorkflowConvergenceResults
+    class BeyondHFMethod {
+    }
+    class BeyondHFResults {
+    }
+    class BeyondHFWorkflow {
+    }
+    class ElectronicStructureResults {
+    }
+    class HFCCMethod {
+    }
+    class HFCCResults {
+    }
+    class HFCCWorkflow {
+    }
+    class HFCIMethod {
+    }
+    class HFCIResults {
+    }
+    class HFCIWorkflow {
+    }
+    class SerialWorkflow {
+    }
+    class SimulationWorkflowMethod {
+    }
+    class SimulationWorkflowResults {
+    }
+    class WorkflowConvergenceResults {
+    }
     SimulationWorkflowMethod <|-- BeyondHFMethod
     SimulationWorkflowResults <|-- BeyondHFResults
     SerialWorkflow <|-- BeyondHFWorkflow

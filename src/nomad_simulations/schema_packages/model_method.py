@@ -538,6 +538,192 @@ class ModelMethodElectronic(ModelMethod):
     )
 
 
+class ElectronicResponseMethod(ModelMethodElectronic):
+    """
+    Base section for electronic-structure methods that compute excitations,
+    spectra, quasiparticle corrections, response properties, or correlation
+    functions through a response, propagator, Green's-function, self-energy,
+    or equation-of-motion formalism.
+
+    This section describes the computational method/formalism. The response
+    functions, spectra, transition properties, self-energies, susceptibilities,
+    polarizabilities, or other computed quantities belong in outputs/properties.
+    """
+
+    response_formalism = Quantity(
+        type=MEnum(
+            'linear_response',
+            'real_time',
+            'equation_of_motion',
+            'greens_function',
+            'polarization_propagator',
+            'self_energy',
+            'sum_over_states',
+            'other',
+        ),
+        description="""
+        Broad response or propagator formalism used by the method.
+
+        - `linear_response`: response to a weak perturbation in the linear
+          regime, e.g. LR-TDDFT, LR-CC, response CI.
+        - `real_time`: real-time propagation after an external perturbation,
+          e.g. real-time TDDFT.
+        - `equation_of_motion`: EOM formulation in a many-body state space,
+          e.g. EOM-CC, EOM-MRCC.
+        - `greens_function`: Green's-function formulation, e.g. one-particle
+          Green's-function based quasiparticle or spectral methods.
+        - `polarization_propagator`: propagator formulation for neutral
+          excitations or response functions, e.g. ADC-like methods.
+        - `self_energy`: self-energy based formulation, e.g. GW or DMFT-like
+          treatments where the central object is an electronic self-energy.
+        - `sum_over_states`: explicit sum-over-states response representation.
+        - `other`: method-specific response formalism not covered by the enum.
+        """,
+    )
+
+    representation_domain = Quantity(
+        type=MEnum(
+            'time',
+            'frequency',
+            'imaginary_time',
+            'matsubara_frequency',
+            'state_space',
+            'mixed',
+            'other',
+        ),
+        description="""
+        Domain in which the response, propagator, or equation-of-motion problem
+        is represented or solved.
+
+        - `time`: real-time propagation or time-domain response.
+        - `frequency`: real-frequency response, spectra, dielectric functions,
+          or quasiparticle corrections.
+        - `imaginary_time`: imaginary-time Green's functions or propagators.
+        - `matsubara_frequency`: finite-temperature Matsubara-frequency
+          representation.
+        - `state_space`: matrix/eigenvalue problem in a many-body, excitation,
+          electron-hole, or configuration space, e.g. EOM-CC, ADC, BSE.
+        - `mixed`: method combines multiple domains, e.g. imaginary-frequency
+          integration plus analytic continuation.
+        - `other`: code-specific or uncommon representation.
+        """,
+    )
+
+    target_sector = Quantity(
+        type=MEnum(
+            'neutral_excitation',
+            'ionization',
+            'electron_attachment',
+            'spin_flip',
+            'double_ionization',
+            'double_electron_attachment',
+            'quasiparticle',
+            'optical_response',
+            'magnetic_response',
+            'core_excitation',
+            'charge_transfer',
+            'other',
+        ),
+        description="""
+        Physical sector or class of states/properties targeted by the response
+        or propagator method.
+
+        Examples:
+        - `neutral_excitation`: neutral excited states, e.g. TDDFT, BSE,
+          EOM-EE-CC, ADC for excitation energies.
+        - `ionization`: ionized states or electron-removal sector, e.g.
+          IP-EOM-CC.
+        - `electron_attachment`: electron-addition sector, e.g. EA-EOM-CC.
+        - `spin_flip`: spin-flip excitation sector.
+        - `double_ionization`: double electron-removal sector.
+        - `double_electron_attachment`: double electron-addition sector.
+        - `quasiparticle`: quasiparticle corrections, e.g. GW.
+        - `optical_response`: optical absorption or dielectric response.
+        - `magnetic_response`: magnetic-field response, NMR-like or magnetic
+          susceptibility response.
+        - `core_excitation`: core-level excitations, e.g. XAS/XES-related
+          response calculations.
+        - `charge_transfer`: charge-transfer target states or response.
+        - `other`: method-specific target sector.
+        """,
+    )
+
+    response_order = Quantity(
+        type=positive_int(),
+        description="""
+        Order of the response with respect to the external perturbation.
+
+        Examples:
+        - 1: linear response
+        - 2: quadratic or second-order response
+        - 3: cubic or third-order response
+
+        This is not the same as many-body perturbation order, ADC order, or
+        excitation rank.
+        """,
+    )
+
+    operator_excitation_order = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Excitation ranks included in the response, equation-of-motion, or
+        propagator operator manifold, where applicable.
+
+        Examples:
+        - EOM-CCSD: [1, 2]
+        - CIS / TDA-like single excitations: [1]
+        - EOM-CCSDT: [1, 2, 3]
+
+        This quantity should be left unset for methods where excitation rank is
+        not the appropriate descriptor, such as many GW or DMFT implementations.
+        """,
+    )
+
+    n_states = Quantity(
+        type=np.int32,
+        description="""
+        Number of target states, roots, poles, or quasiparticle solutions
+        requested or computed by the method, when applicable.
+        """,
+    )
+
+    target_spin_multiplicities = Quantity(
+        type=np.int32,
+        shape=['*'],
+        description="""
+        Spin multiplicities of the targeted states, if specified.
+        """,
+    )
+
+    # target_symmetry_labels = Quantity(
+    #     type=str,
+    #     shape=['*'],
+    #     description="""
+    #     Code-specific symmetry, irrep, k-point, or sector labels for targeted
+    #     states or response solutions.
+    #     """,
+    # )
+
+    uses_tamm_dancoff_approximation = Quantity(
+        type=bool,
+        description="""
+        Whether the Tamm-Dancoff approximation or an equivalent resonant-block
+        approximation is used. Common in TDDFT, BSE, and related response
+        eigenvalue problems.
+        """,
+    )
+
+    is_self_consistent = Quantity(
+        type=bool,
+        description="""
+        Whether the response/propagator/self-energy method is solved
+        self-consistently with respect to its central response object, Green's
+        function, self-energy, or density response, depending on the method.
+        """,
+    )
+
+
 class XCComponent(ArchiveSection):
     """
     One exchange-correlation functional component using LibXC nomenclature for standardization.
@@ -1367,7 +1553,7 @@ class Photon(ArchiveSection):
             )
 
 
-class ExcitedStateMethodology(ModelMethodElectronic):
+class ExcitedStateMethodology(ElectronicResponseMethod):
     """
     A base section used to define the parameters typical of excited-state calculations. "ExcitedStateMethodology"
     mainly refers to methodologies which consider many-body effects as a perturbation of the original
@@ -1414,19 +1600,24 @@ class Screening(ExcitedStateMethodology):
 
 class GW(ExcitedStateMethodology):
     """
-    A base section used to define the parameters of a GW calculation.
+    GW approximation for quasiparticle corrections based on a one-particle
+    Green's function and screened Coulomb interaction.
     """
 
     type = Quantity(
         type=MEnum(
             'G0W0',
+            'GW0',
             'scGW',
             'scGW0',
             'scG0W',
+            'evGW',
             'ev-scGW0',
             'ev-scGW',
+            'qsGW',
             'qp-scGW0',
             'qp-scGW',
+            'other',
         ),
         description="""
         GW Hedin's self-consistency cycle:
@@ -1434,13 +1625,17 @@ class GW(ExcitedStateMethodology):
         | Name      | Description                      | Reference             |
         | --------- | -------------------------------- | --------------------- |
         | `'G0W0'`  | single-shot                      | https://journals.aps.org/prb/abstract/10.1103/PhysRevB.74.035101 |
+        | `'GW0'`  | self-consistent G with fixed W0  | https://journals.aps.org/prb/abstract/10.1103/PhysRevB.54.8411 |
         | `'scGW'`  | self-consistent G and W               | https://journals.aps.org/prb/abstract/10.1103/PhysRevB.75.235102 |
         | `'scGW0'` | self-consistent G with fixed W0  | https://journals.aps.org/prb/abstract/10.1103/PhysRevB.54.8411 |
         | `'scG0W'` | self-consistent W with fixed G0  | -                     |
+        | `'evGW'`  | eigenvalues self-consistent G and W   | https://journals.aps.org/prb/abstract/10.1103/PhysRevB.74.045102 |
         | `'ev-scGW0'`  | eigenvalues self-consistent G with fixed W0   | https://journals.aps.org/prb/abstract/10.1103/PhysRevB.34.5390 |
         | `'ev-scGW'`  | eigenvalues self-consistent G and W   | https://journals.aps.org/prb/abstract/10.1103/PhysRevB.74.045102 |
+        | `'qsGW'`  | quasiparticle self-consistent G and W | https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.96.226402 |
         | `'qp-scGW0'`  | quasiparticle self-consistent G with fixed W0 | https://journals.aps.org/prb/abstract/10.1103/PhysRevB.76.115109 |
         | `'qp-scGW'`  | quasiparticle self-consistent G and W | https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.96.226402 |
+        | `'other'`  | code-specific GW variant |
         """,
     )
 
@@ -1485,10 +1680,21 @@ class GW(ExcitedStateMethodology):
         """,
     )
 
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is None:
+            self.name = 'GW'
+        if self.response_formalism is None:
+            self.response_formalism = 'self_energy'
+        if self.target_sector is None:
+            self.target_sector = 'quasiparticle'
+
 
 class BSE(ExcitedStateMethodology):
     """
-    A base section used to define the parameters of a BSE calculation.
+    Bethe-Salpeter equation method for two-particle/electron-hole response,
+    often used for optical excitations in solids and molecules.
     """
 
     # ? does RPA relates with `screening_ref`?
@@ -1535,6 +1741,25 @@ class BSE(ExcitedStateMethodology):
         Reference to the `Screening` section that the BSE calculation used to obtain the screened Coulomb interactions.
         """,
     )
+
+    kernel = Quantity(
+        type=MEnum('static', 'dynamic', 'other'),
+        description='BSE interaction kernel treatment, if known.',
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is None:
+            self.name = 'BSE'
+        if self.response_formalism is None:
+            self.response_formalism = 'linear_response'
+        if self.target_sector is None:
+            self.target_sector = 'neutral_excitation'
+        if self.representation_domain is None:
+            self.representation_domain = 'state_space'
+        if self.uses_tamm_dancoff_approximation is None and self.solver == 'TDA':
+            self.uses_tamm_dancoff_approximation = True
 
 
 class TDDFT(ExcitedStateMethodology):
@@ -1593,7 +1818,16 @@ class TDDFT(ExcitedStateMethodology):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-        self.name = 'TDDFT'
+        if self.name is None:
+            self.name = 'TDDFT'
+
+        if self.response_formalism is None and self.type in [
+            'linear_response',
+            'real_time',
+        ]:
+            self.response_formalism = self.type
+        if self.target_sector is None:
+            self.target_sector = 'neutral_excitation'
 
         # Light consistency checks
         if self.type == 'real_time':
@@ -1687,9 +1921,10 @@ class CoreHoleSpectra(ModelMethodElectronic):
     # TODO add normalization to obtain `edge`
 
 
-class DMFT(ModelMethodElectronic):
+class DMFT(ElectronicResponseMethod):
     """
-    A base section used to define the parameters of a DMFT calculation.
+    Dynamical mean-field theory method based on a local impurity problem and
+    a frequency- or imaginary-time-dependent self-energy.
     """
 
     m_def = Section(a_eln={'hide': ['type']})
@@ -1796,6 +2031,14 @@ class DMFT(ModelMethodElectronic):
         `orbitals_ref` and their spin state.
         """,
     )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is None:
+            self.name = 'DMFT'
+        if self.response_formalism is None:
+            self.response_formalism = 'self_energy'
 
 
 class HF(ModelMethodElectronic):
@@ -1932,6 +2175,31 @@ class CC(ModelMethodElectronic):
     )
 
 
+class EOMCC(ElectronicResponseMethod):
+    """
+    Equation-of-motion coupled-cluster method for excited, ionized,
+    electron-attached, spin-flip, or related target states.
+    """
+
+    reference_cc = Quantity(
+        type=str,
+        description="""
+        Coupled-cluster reference or parent method label, e.g. CCSD, CCSDT,
+        CC3, CCSDTQ.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is None:
+            self.name = 'EOM-CC'
+        if self.response_formalism is None:
+            self.response_formalism = 'equation_of_motion'
+        if self.representation_domain is None:
+            self.representation_domain = 'state_space'
+
+
 class CI(ModelMethodElectronic):
     """
     Single-reference Configuration Interaction (CI) methods using atom-centered basis sets.
@@ -1989,6 +2257,30 @@ class CI(ModelMethodElectronic):
             orders = default_orders.get(self.type)
             if orders is not None:
                 self.excitation_order = np.array(orders, dtype=np.int32)
+
+
+class ADC(ElectronicResponseMethod):
+    """
+    Algebraic diagrammatic construction / polarization propagator method.
+    """
+
+    order = Quantity(
+        type=np.int32,
+        description="""
+        ADC perturbation order, e.g. 2 for ADC(2), 3 for ADC(3).
+        This is not the same as `response_order`.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is None:
+            self.name = 'ADC'
+        if self.response_formalism is None:
+            self.response_formalism = 'polarization_propagator'
+        if self.representation_domain is None:
+            self.representation_domain = 'state_space'
 
 
 class ActiveSpace(ArchiveSection):
