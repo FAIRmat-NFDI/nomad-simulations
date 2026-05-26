@@ -6,11 +6,10 @@ import unicodedata
 from functools import lru_cache
 from importlib.resources import files
 from typing import Any
-from urllib.parse import quote
 
 _SOURCE = 'Basis Set Exchange'
-_URL_TEMPLATE = 'https://www.basissetexchange.org/api/basis/{external_id}/format/json/?version={version}'
-_WHITESPACE = re.compile(r'\s+')
+_REGISTRY_VERSION = 'basis-set-exchange-0.12'
+_IGNORED_LABEL_CHARS = re.compile(r'[\s_-]+')
 _DASHES = str.maketrans(
     {
         '\u2010': '-',
@@ -25,26 +24,34 @@ _DASHES = str.maketrans(
 
 def _normalize_label(label: str) -> str:
     label = unicodedata.normalize('NFKC', label or '').translate(_DASHES)
-    label = _WHITESPACE.sub('', label)
-    return label.casefold()
+    return _IGNORED_LABEL_CHARS.sub('', label.casefold())
 
 
 @lru_cache(maxsize=1)
 def _registry() -> dict[str, dict[str, Any]]:
     path = files(__package__).joinpath('registry_min.json')
     with path.open('r', encoding='utf-8') as f:
-        return json.load(f)
+        data: list[dict[str, Any]] = json.load(f)
+
+    registry: dict[str, dict[str, Any]] = {}
+    for rec in data:
+        key = rec['key']
+        registry[key] = {
+            'canonical_key': key,
+            'canonical_name': rec['canonical_name'],
+            'aliases': rec.get('aliases', []),
+        }
+    return registry
 
 
 @lru_cache(maxsize=1)
-def _index() -> tuple[dict[str, str], dict[str, set[str]]]:
-    exact: dict[str, str] = {}
+def _index() -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+    exact: dict[str, set[str]] = {}
     aliases: dict[str, set[str]] = {}
 
     for key, rec in _registry().items():
-        exact[_normalize_label(key)] = key
-        exact[_normalize_label(rec['external_id'])] = key
-        exact[_normalize_label(rec['canonical_name'])] = key
+        for label in (key, rec['canonical_name']):
+            exact.setdefault(_normalize_label(label), set()).add(key)
 
         for alias in rec.get('aliases', []):
             aliases.setdefault(_normalize_label(alias), set()).add(key)
@@ -54,9 +61,9 @@ def _index() -> tuple[dict[str, str], dict[str, set[str]]]:
 
 def lookup_by_label(label: str) -> dict[str, Any] | None:
     """
-    Look up lightweight Basis Set Exchange metadata from a raw basis set label.
+    Look up a lightweight canonical basis-set record from a raw parsed label.
 
-    Exact matches against the registry key, external ID, or canonical name take
+    Exact matches against the registry key or canonical name take
     precedence over aliases. Alias matches are accepted only when unambiguous.
     """
     if not label or not label.strip():
@@ -65,9 +72,11 @@ def lookup_by_label(label: str) -> dict[str, Any] | None:
     normalized = _normalize_label(label)
     exact, aliases = _index()
 
-    key = exact.get(normalized)
-    if key is not None:
-        return _registry()[key]
+    exact_matches = exact.get(normalized)
+    if exact_matches is not None:
+        if len(exact_matches) == 1:
+            return _registry()[next(iter(exact_matches))]
+        return None
 
     alias_matches = aliases.get(normalized)
     if alias_matches is None or len(alias_matches) != 1:
@@ -80,7 +89,5 @@ def source_name() -> str:
     return _SOURCE
 
 
-def resource_url(external_id: str, version: str) -> str:
-    return _URL_TEMPLATE.format(
-        external_id=quote(external_id, safe=''), version=quote(version, safe='')
-    )
+def registry_version() -> str:
+    return _REGISTRY_VERSION

@@ -12,7 +12,7 @@ import numpy as np
 import pint
 from nomad import utils
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import JSON, URL, MEnum, Quantity, SubSection
+from nomad.metainfo import JSON, MEnum, Quantity, SubSection
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
@@ -27,7 +27,7 @@ from nomad_simulations.schema_packages.numerical_settings import (
     NumericalSettings,
 )
 from nomad_simulations.schema_packages.utils.basis_set_exchange.build import (
-    reference_from_label as basis_set_exchange_reference_from_label,
+    spec_from_label as basis_set_spec_from_label,
 )
 
 logger = utils.get_logger(__name__)
@@ -432,62 +432,6 @@ class EffectiveCorePotential(BasisSetComponent):
         super().__init__(*args, **kwargs)
 
 
-class ExternalBasisSetReference(ArchiveSection):
-    """
-    Minimal metadata linking a parsed basis set object to an external basis set
-    registry.
-
-    This section is intended for lightweight identity and traceability metadata,
-    not for storing external numerical basis data. For Basis Set Exchange links,
-    the stable identifier is the tuple (`source`, `external_id`, `version`).
-    """
-
-    source = Quantity(
-        type=str,
-        description="""
-        External registry or authority used for the basis set match. Use the full
-        name, e.g. "Basis Set Exchange", to avoid ambiguity with Bethe-Salpeter
-        Equation methods commonly abbreviated as BSE.
-        """,
-    )
-
-    external_id = Quantity(
-        type=str,
-        description="""
-        Registry-specific basis set identifier. For Basis Set Exchange, this is
-        the case-normalized lookup key used by the BSE metadata/API endpoints,
-        e.g. "sto-3g", "cc-pvdz", or "def2-svp".
-        """,
-    )
-
-    version = Quantity(
-        type=str,
-        description="""
-        Version of the external basis set definition used for the match. For
-        Basis Set Exchange, this is the BSE basis set version, not the version of
-        the BSE software or REST API.
-        """,
-    )
-
-    canonical_name = Quantity(
-        type=str,
-        description="""
-        Human-readable canonical or display name reported by the external
-        registry, e.g. "STO-3G" or "cc-pVDZ". This is normalized descriptive
-        metadata and should not replace the raw parsed `basis_set` label.
-        """,
-    )
-
-    url = Quantity(
-        type=URL,
-        description="""
-        Version-pinned URL for the external resource describing this basis set.
-        For Basis Set Exchange, prefer an API or web URL containing both the
-        external basis set identifier and the matched version.
-        """,
-    )
-
-
 class AtomicOrbitals(ArchiveSection):
     """
     Expanded **atomic orbital (AO) layer** associated with a specific
@@ -583,14 +527,12 @@ class AtomCenteredBasisSet(BasisSetComponent):
         """,
     )
 
-    external_reference = SubSection(
-        sub_section=ExternalBasisSetReference.m_def,
-        repeats=False,
+    canonical_basis_set = Quantity(
+        type=str,
         description="""
-        Optional normalized external registry reference for this basis set. This
-        must not replace `basis_set`, which preserves the raw parsed or
-        code-specific label. Use this section only when a parser or normalizer
-        can link the parsed basis set unambiguously to an external resource.
+        Canonical NOMAD display name for the basis set, filled only when the raw
+        parsed `basis_set` label can be matched unambiguously to NOMAD's internal
+        lightweight basis-set-name registry. This does not replace `basis_set`.
         """,
     )
 
@@ -704,19 +646,19 @@ class AtomCenteredBasisSet(BasisSetComponent):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        if self.external_reference is None and self.basis_set:
+        if self.basis_set:
             try:
-                ref_spec = basis_set_exchange_reference_from_label(self.basis_set)
-                if ref_spec is not None:
-                    self.external_reference = ExternalBasisSetReference(**ref_spec)
+                basis_set_spec = basis_set_spec_from_label(self.basis_set)
+                if basis_set_spec is not None:
+                    self.canonical_basis_set = basis_set_spec['canonical_name']
                 else:
                     logger.debug(
-                        'Basis Set Exchange metadata lookup produced no match.',
+                        'Basis set canonicalization produced no unambiguous match.',
                         basis_set=self.basis_set,
                     )
             except Exception:
                 logger.warning(
-                    'Basis Set Exchange metadata lookup failed.',
+                    'Basis set canonicalization failed.',
                     basis_set=self.basis_set,
                 )
 

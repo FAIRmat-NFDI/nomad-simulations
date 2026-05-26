@@ -2,35 +2,25 @@ from __future__ import annotations
 
 from typing import TypedDict
 
-from .registry import lookup_by_label, resource_url, source_name
+from .registry import lookup_by_label
 
 
-class ExternalBasisSetReferenceSpec(TypedDict):
-    source: str
-    external_id: str
-    version: str
+class BasisSetSpec(TypedDict):
     canonical_name: str
-    url: str
 
 
-def reference_from_label(label: str) -> ExternalBasisSetReferenceSpec | None:
+def spec_from_label(label: str) -> BasisSetSpec | None:
     """
-    Build external basis set reference metadata from a raw parsed basis set label.
+    Build an internal canonical basis-set specification from a raw parsed label.
 
     Returns:
-        ExternalBasisSetReferenceSpec if the label has an unambiguous lightweight
-        Basis Set Exchange metadata match, otherwise None.
+        BasisSetSpec if the label has an unambiguous lightweight registry match,
+        otherwise None.
     """
     rec = lookup_by_label(label)
     if rec is None:
         return None
 
-    external_id = rec['external_id']
-    version = rec['version']
-    return ExternalBasisSetReferenceSpec(
-        source=source_name(),
-        external_id=external_id,
-        version=version,
+    return BasisSetSpec(
         canonical_name=rec['canonical_name'],
-        url=resource_url(external_id, version),
     )

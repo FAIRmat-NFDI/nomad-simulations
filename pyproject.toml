@@ -148,6 +148,10 @@ package-dir = { "" = "src" }
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"nomad_simulations.schema_packages.utils.basis_set_exchange" = ["*.json"]
+"nomad_simulations.schema_packages.utils.libxc" = ["*.json"]
+
 [tool.setuptools_scm]
 write_to = "src/nomad_simulations/_version.py"
 

@@ -19,7 +19,6 @@ from nomad_simulations.schema_packages.basis_set import (
     AtomicOrbitals,
     BasisSetContainer,
     EffectiveCorePotential,
-    ExternalBasisSetReference,
     MuffinTinRegion,
     PlaneWaveBasisSet,
     generate_apw,
@@ -705,40 +704,10 @@ def test_additional_basis_functions_assigned_to_subset_of_atoms() -> None:
     assert np.allclose(s1['contraction_coefficients'], [1.0])
 
 
-def test_atom_centered_basis_set_external_reference() -> None:
+def test_atom_centered_basis_set_normalize_adds_canonical_metadata() -> None:
     """
-    External references keep normalized registry metadata separate from the raw
-    parser/code basis set label.
-    """
-    url = 'https://www.basissetexchange.org/api/basis/6-31g_st__st_/format/json/?version=1'
-    bs = AtomCenteredBasisSet(
-        basis_set='6-31G**',
-        external_reference=ExternalBasisSetReference(
-            source='Basis Set Exchange',
-            external_id='6-31g_st__st_',
-            version='1',
-            canonical_name='6-31G**',
-            url=url,
-        ),
-    )
-
-    d = bs.m_to_dict()
-
-    assert d['basis_set'] == '6-31G**'
-    assert d['external_reference'] == {
-        'source': 'Basis Set Exchange',
-        'external_id': '6-31g_st__st_',
-        'version': '1',
-        'canonical_name': '6-31G**',
-        'url': url,
-    }
-
-
-def test_atom_centered_basis_set_resolves_external_reference() -> None:
-    """
-    Basis Set Exchange linkage is resolved centrally during schema normalization.
-    Parsers only need to preserve the raw basis_set label when the match is known
-    to the lightweight schema registry.
+    Normalization preserves the raw parsed basis_set label and adds internal
+    canonical metadata only when the lightweight registry match is unambiguous.
     """
     bs = AtomCenteredBasisSet(basis_set='6-31G**')
 
@@ -746,37 +715,27 @@ def test_atom_centered_basis_set_resolves_external_reference() -> None:
 
     d = bs.m_to_dict()
     assert d['basis_set'] == '6-31G**'
-    assert d['external_reference'] == {
-        'source': 'Basis Set Exchange',
-        'external_id': '6-31g_st__st_',
-        'version': '1',
-        'canonical_name': '6-31G**',
-        'url': 'https://www.basissetexchange.org/api/basis/6-31g_st__st_/format/json/?version=1',
-    }
+    assert d['canonical_basis_set'] == '6-31G**'
 
 
-def test_atom_centered_basis_set_keeps_explicit_external_reference() -> None:
-    bs = AtomCenteredBasisSet(
-        basis_set='STO-3G',
-        external_reference=ExternalBasisSetReference(
-            source='User registry',
-            external_id='custom-sto-3g',
-            version='2026',
-            canonical_name='Custom STO-3G',
-            url='https://example.org/custom-sto-3g',
-        ),
-    )
+def test_atom_centered_basis_set_normalize_keeps_unknown_label() -> None:
+    bs = AtomCenteredBasisSet(basis_set='user-defined-basis')
 
     bs.normalize(None, logger)
 
     d = bs.m_to_dict()
-    assert d['external_reference'] == {
-        'source': 'User registry',
-        'external_id': 'custom-sto-3g',
-        'version': '2026',
-        'canonical_name': 'Custom STO-3G',
-        'url': 'https://example.org/custom-sto-3g',
-    }
+    assert d['basis_set'] == 'user-defined-basis'
+    assert 'canonical_basis_set' not in d
+
+
+def test_atom_centered_basis_set_normalize_keeps_ambiguous_label() -> None:
+    bs = AtomCenteredBasisSet(basis_set='Pople polarized')
+
+    bs.normalize(None, logger)
+
+    d = bs.m_to_dict()
+    assert d['basis_set'] == 'Pople polarized'
+    assert 'canonical_basis_set' not in d
 
 
 def test_mixed_orbital_aux_ecp() -> None:

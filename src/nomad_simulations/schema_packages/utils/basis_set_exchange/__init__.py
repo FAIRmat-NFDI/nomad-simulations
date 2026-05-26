@@ -1,1 +1,1 @@
-"""Lightweight Basis Set Exchange metadata lookup helpers."""
+"""Lightweight basis-set canonicalization helpers derived from BSE names."""
