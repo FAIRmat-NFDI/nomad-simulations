@@ -19,6 +19,9 @@ classDiagram
     class DFTGWMethod
     class DFTGWResults
     class DFTGWWorkflow
+    class DFTLocalCCMethod
+    class DFTLocalCCResults
+    class DFTLocalCCWorkflow
     class DFTTBDMFTMethod
     class DFTTBDMFTResults
     class DFTTBDMFTWorkflow
@@ -61,6 +64,10 @@ classDiagram
     BeyondDFTWorkflow *-- BeyondDFTResults : results
     DFTGWWorkflow *-- DFTGWMethod : method
     DFTGWWorkflow *-- DFTGWResults : results
+    DFTLocalCCResults *-- ElectronicStructureResults : dft
+    DFTLocalCCResults *-- ElectronicStructureResults : ext
+    DFTLocalCCWorkflow *-- DFTLocalCCMethod : method
+    DFTLocalCCWorkflow *-- DFTLocalCCResults : results
     DFTTBDMFTWorkflow *-- DFTTBDMFTMethod : method
     DFTTBDMFTWorkflow *-- DFTTBDMFTResults : results
     DFTTBWorkflow *-- DFTTBMethod : method

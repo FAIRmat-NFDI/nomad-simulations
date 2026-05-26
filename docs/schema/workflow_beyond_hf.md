@@ -23,7 +23,6 @@ classDiagram
     class HFLocalCCMethod
     class HFLocalCCResults
     class HFLocalCCWorkflow
-    class OrbitalLocalization
     class SerialWorkflow
     class SimulationWorkflowMethod
     class SimulationWorkflowResults
@@ -38,9 +37,6 @@ classDiagram
     BeyondHFMethod <|-- HFCIMethod
     BeyondHFResults <|-- HFCIResults
     BeyondHFWorkflow <|-- HFCIWorkflow
-    BeyondHFMethod <|-- HFLocalCCMethod
-    BeyondHFResults <|-- HFLocalCCResults
-    BeyondHFWorkflow <|-- HFLocalCCWorkflow
     BeyondHFResults *-- ElectronicStructureResults : ext
     BeyondHFResults *-- ElectronicStructureResults : hf
     BeyondHFWorkflow *-- BeyondHFMethod : method
@@ -49,7 +45,10 @@ classDiagram
     HFCCWorkflow *-- HFCCResults : results
     HFCIWorkflow *-- HFCIMethod : method
     HFCIWorkflow *-- HFCIResults : results
-    HFLocalCCMethod *-- OrbitalLocalization : orbital_localization
+    HFLocalCCResults *-- ElectronicStructureResults : ext
+    HFLocalCCResults *-- ElectronicStructureResults : hf
+    HFLocalCCWorkflow *-- HFLocalCCMethod : method
+    HFLocalCCWorkflow *-- HFLocalCCResults : results
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence
 ```
 

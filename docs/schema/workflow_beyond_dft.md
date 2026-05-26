@@ -42,9 +42,6 @@ classDiagram
     BeyondDFTMethod <|-- DFTGWMethod
     BeyondDFTResults <|-- DFTGWResults
     BeyondDFTWorkflow <|-- DFTGWWorkflow
-    BeyondDFTMethod <|-- DFTLocalCCMethod
-    BeyondDFTResults <|-- DFTLocalCCResults
-    BeyondDFTWorkflow <|-- DFTLocalCCWorkflow
     BeyondDFTMethod <|-- DFTTBDMFTMethod
     BeyondDFTResults <|-- DFTTBDMFTResults
     BeyondDFTWorkflow <|-- DFTTBDMFTWorkflow
@@ -64,6 +61,10 @@ classDiagram
     BeyondDFTWorkflow *-- BeyondDFTResults : results
     DFTGWWorkflow *-- DFTGWMethod : method
     DFTGWWorkflow *-- DFTGWResults : results
+    DFTLocalCCResults *-- ElectronicStructureResults : dft
+    DFTLocalCCResults *-- ElectronicStructureResults : ext
+    DFTLocalCCWorkflow *-- DFTLocalCCMethod : method
+    DFTLocalCCWorkflow *-- DFTLocalCCResults : results
     DFTTBDMFTWorkflow *-- DFTTBDMFTMethod : method
     DFTTBDMFTWorkflow *-- DFTTBDMFTResults : results
     DFTTBWorkflow *-- DFTTBMethod : method
@@ -151,7 +152,7 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `DFTLocalCCWorkflow` | Definitions for local coupled-cluster calculations based on DFT (DFT -> orbital localization -> local CC). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.DFTLocalCCWorkflow){:target="_blank"} |
+| `DFTLocalCCWorkflow` | Definitions for local coupled-cluster calculations using a DFT/Kohn-Sham reference (DFT reference -> orbital localization -> local CC). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.DFTLocalCCWorkflow){:target="_blank"} |
 
 *This section has no direct quantities.*
 

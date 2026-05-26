@@ -1,3 +1,5 @@
+from nomad_simulations.schema_packages.model_method import OrbitalLocalization
+from nomad_simulations.schema_packages.workflow.beyond_dft import BeyondDFTWorkflow
 from nomad_simulations.schema_packages.workflow.coupled_cluster import (
     DFTLocalCCMethod,
     DFTLocalCCResults,
@@ -41,9 +43,18 @@ class TestDFTLocalCCWorkflow:
         assert isinstance(workflow.results, DFTLocalCCResults)
         assert len(workflow.inputs) == 1
         assert len(workflow.outputs) == 1
-        assert workflow.inputs[0].name == 'DFT+local-CC workflow parameters'
-        assert workflow.outputs[0].name == 'DFT+local-CC workflow results'
+        assert workflow.inputs[0].name == 'DFT-reference local-CC workflow parameters'
+        assert workflow.outputs[0].name == 'DFT-reference local-CC workflow results'
         assert 'Incorrect number of tasks found.' in log_output.entries[0]['event']
+
+    def test_not_a_beyond_dft_workflow(self):
+        assert not issubclass(DFTLocalCCWorkflow, BeyondDFTWorkflow)
+
+    def test_method_stores_orbital_localization(self):
+        localization = OrbitalLocalization(method='Pipek-Mezey')
+        method = DFTLocalCCMethod(orbital_localization=localization)
+
+        assert method.orbital_localization is localization
 
     def test_tasks(self, logger, archive):
         workflow = DFTLocalCCWorkflow(
@@ -79,6 +90,12 @@ class TestHFLocalCCWorkflow:
         assert workflow.inputs[0].name == 'HF+local-CC workflow parameters'
         assert workflow.outputs[0].name == 'HF+local-CC workflow results'
         assert 'Incorrect number of tasks found.' in log_output.entries[0]['event']
+
+    def test_method_stores_orbital_localization(self):
+        localization = OrbitalLocalization(method='Foster-Boys')
+        method = HFLocalCCMethod(orbital_localization=localization)
+
+        assert method.orbital_localization is localization
 
     def test_tasks(self, logger, archive):
         workflow = HFLocalCCWorkflow(

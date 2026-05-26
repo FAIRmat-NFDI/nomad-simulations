@@ -484,8 +484,8 @@ class TestMultireferenceMethods:
 
 def build_local_correlation_space(**overrides) -> LocalCorrelationSpace:
     space_kwargs = {
-        'kind': 'domain',
-        'domain_kind': 'pair',
+        'space_kind': 'occupied_domain',
+        'occupied_tuple_kind': 'pair',
         'excitation_order': 2,
     }
     space_kwargs.update(overrides)
@@ -503,8 +503,8 @@ def build_local_correlation(
         spaces=spaces
         or [
             build_local_correlation_space(
-                kind='orbital',
-                domain_kind=None,
+                space_kind='local_virtual_space',
+                occupied_tuple_kind=None,
                 virtual_space_type='PNO',
                 excitation_order=2,
             )
@@ -527,22 +527,22 @@ class TestCC:
             localization=localization,
             spaces=[
                 build_local_correlation_space(
-                    kind='domain',
-                    domain_kind='pair',
+                    space_kind='occupied_domain',
+                    occupied_tuple_kind='pair',
                     excitation_order=2,
                     defining_orbitals_ref=[occ_i, occ_j],
                 ),
                 build_local_correlation_space(
-                    kind='orbital',
-                    domain_kind=None,
+                    space_kind='local_virtual_space',
+                    occupied_tuple_kind='pair',
                     virtual_space_type='PNO',
                     excitation_order=2,
                     defining_orbitals_ref=[occ_i, occ_j],
                     orbitals_ref=[pno_1, pno_2],
                 ),
                 build_local_correlation_space(
-                    kind='orbital',
-                    domain_kind=None,
+                    space_kind='local_virtual_space',
+                    occupied_tuple_kind='triple',
                     virtual_space_type='PNO',
                     excitation_order=3,
                     defining_orbitals_ref=[occ_i, occ_j, occ_k],
@@ -559,7 +559,7 @@ class TestCC:
                 LocalCorrelationThreshold(
                     name='TCutPNO',
                     value=1.0e-8,
-                    applies_to='orbital',
+                    applies_to='local_virtual_space',
                 ),
             ]
         )
@@ -576,9 +576,10 @@ class TestCC:
         assert cc.local_correlation.type == 'DLPNO'
         assert cc.local_correlation.orbital_localization_ref is localization
         assert len(cc.local_correlation.spaces) == 3
-        assert cc.local_correlation.spaces[0].kind == 'domain'
-        assert cc.local_correlation.spaces[0].domain_kind == 'pair'
+        assert cc.local_correlation.spaces[0].space_kind == 'occupied_domain'
+        assert cc.local_correlation.spaces[0].occupied_tuple_kind == 'pair'
         assert cc.local_correlation.spaces[1].virtual_space_type == 'PNO'
+        assert cc.local_correlation.spaces[1].occupied_tuple_kind == 'pair'
         assert list(cc.local_correlation.spaces[0].defining_orbitals_ref) == [
             occ_i,
             occ_j,
@@ -611,8 +612,8 @@ class TestCC:
                 local_type=local_type,
                 spaces=[
                     build_local_correlation_space(
-                        kind='orbital',
-                        domain_kind=None,
+                        space_kind='local_virtual_space',
+                        occupied_tuple_kind=None,
                         virtual_space_type=space_type,
                         excitation_order=2,
                     )
@@ -627,17 +628,17 @@ class TestCC:
 
     def test_local_correlation_space_supports_orbital_domain(self):
         space = build_local_correlation_space(
-            kind='domain',
-            domain_kind='orbital',
+            space_kind='occupied_domain',
+            occupied_tuple_kind='orbital',
             excitation_order=1,
         )
 
-        assert space.domain_kind == 'orbital'
+        assert space.occupied_tuple_kind == 'orbital'
 
     def test_local_correlation_space_supports_quadruples_order(self):
         space = build_local_correlation_space(
-            kind='orbital',
-            domain_kind=None,
+            space_kind='local_virtual_space',
+            occupied_tuple_kind=None,
             virtual_space_type='PNO',
             excitation_order=4,
         )
@@ -651,8 +652,8 @@ class TestCC:
         pno_2 = ElectronicState(name='pno_2')
 
         space = build_local_correlation_space(
-            kind='orbital',
-            domain_kind=None,
+            space_kind='local_virtual_space',
+            occupied_tuple_kind='pair',
             virtual_space_type='PNO',
             defining_orbitals_ref=[occ_i, occ_j],
             orbitals_ref=[pno_1, pno_2],
@@ -670,8 +671,8 @@ class TestCC:
         pno_2 = ElectronicState(name='pno_2')
 
         space = build_local_correlation_space(
-            kind=None,
-            domain_kind=None,
+            space_kind=None,
+            occupied_tuple_kind=None,
             defining_orbitals_ref=[occ_i, occ_j],
             orbitals_ref=[pno_1, pno_2],
         )
@@ -687,8 +688,8 @@ class TestCC:
         import logging
 
         space = build_local_correlation_space(
-            kind=None,
-            domain_kind=None,
+            space_kind=None,
+            occupied_tuple_kind=None,
             n_defining_orbitals=3,
             defining_orbitals_ref=[ElectronicState(name='i')],
             n_orbitals=3,
@@ -707,23 +708,31 @@ class TestCC:
             in caplog.text
         )
 
-    def test_local_correlation_space_normalize_validates_domain_kind_cardinality(
-        self, caplog
+    @pytest.mark.parametrize(
+        'occupied_tuple_kind, n_expected',
+        [
+            ('orbital', 1),
+            ('pair', 2),
+            ('triple', 3),
+        ],
+    )
+    def test_local_correlation_space_normalize_validates_occupied_tuple_cardinality(
+        self, caplog, occupied_tuple_kind: str, n_expected: int
     ):
         import logging
 
         space = build_local_correlation_space(
-            kind='domain',
-            domain_kind='pair',
-            defining_orbitals_ref=[ElectronicState(name='i')],
+            space_kind='occupied_domain',
+            occupied_tuple_kind=occupied_tuple_kind,
+            n_defining_orbitals=n_expected + 1,
         )
 
         with caplog.at_level(logging.WARNING):
             space.normalize(EntryArchive(), logger=logger)
 
         assert (
-            'LocalCorrelationSpace.domain_kind `pair` expects 2 defining orbitals'
-            in caplog.text
+            f'LocalCorrelationSpace.occupied_tuple_kind `{occupied_tuple_kind}` '
+            f'expects {n_expected} defining orbitals' in caplog.text
         )
 
     @pytest.mark.parametrize(
@@ -731,46 +740,30 @@ class TestCC:
         [
             (
                 {
-                    'kind': 'domain',
-                    'domain_kind': None,
+                    'space_kind': 'occupied_domain',
+                    'occupied_tuple_kind': None,
                     'virtual_space_type': 'PNO',
                 },
-                'LocalCorrelationSpace.kind `domain` requires `domain_kind`.',
+                'LocalCorrelationSpace.space_kind `occupied_domain` requires `occupied_tuple_kind`.',
             ),
             (
                 {
-                    'kind': 'domain',
+                    'space_kind': 'occupied_domain',
                     'virtual_space_type': 'PNO',
                 },
-                'LocalCorrelationSpace.kind `domain` must not define `virtual_space_type` (`PNO`).',
+                'LocalCorrelationSpace.space_kind `occupied_domain` must not define `virtual_space_type` (`PNO`).',
             ),
             (
                 {
-                    'kind': 'orbital',
-                    'domain_kind': 'pair',
+                    'space_kind': 'local_virtual_space',
+                    'occupied_tuple_kind': 'pair',
                     'virtual_space_type': None,
                 },
-                'LocalCorrelationSpace.kind `orbital` requires `virtual_space_type`.',
-            ),
-            (
-                {
-                    'kind': 'orbital',
-                    'domain_kind': 'pair',
-                    'virtual_space_type': 'PNO',
-                },
-                'LocalCorrelationSpace.kind `orbital` must not define `domain_kind` (`pair`).',
-            ),
-            (
-                {
-                    'kind': 'orbital',
-                    'domain_kind': 'pair',
-                    'virtual_space_type': 'PNO',
-                },
-                'LocalCorrelationSpace must not define both `domain_kind` and `virtual_space_type`.',
+                'LocalCorrelationSpace.space_kind `local_virtual_space` requires `virtual_space_type`.',
             ),
         ],
     )
-    def test_local_correlation_space_normalize_validates_domain_orbital_fields(
+    def test_local_correlation_space_normalize_validates_space_fields(
         self, caplog, kwargs: dict[str, str | None], expected_warning: str
     ):
         import logging
@@ -781,6 +774,43 @@ class TestCC:
             space.normalize(EntryArchive(), logger=logger)
 
         assert expected_warning in caplog.text
+
+    def test_local_virtual_space_can_be_pair_associated(self, caplog):
+        import logging
+
+        space = build_local_correlation_space(
+            space_kind='local_virtual_space',
+            occupied_tuple_kind='pair',
+            virtual_space_type='PNO',
+            defining_orbitals_ref=[
+                ElectronicState(name='i'),
+                ElectronicState(name='j'),
+            ],
+        )
+
+        with caplog.at_level(logging.WARNING):
+            space.normalize(EntryArchive(), logger=logger)
+
+        assert space.n_defining_orbitals == 2
+        assert 'must not define' not in caplog.text
+
+    def test_local_virtual_space_can_be_triple_associated(self):
+        space = build_local_correlation_space(
+            space_kind='local_virtual_space',
+            occupied_tuple_kind='triple',
+            virtual_space_type='PNO',
+            excitation_order=3,
+            defining_orbitals_ref=[
+                ElectronicState(name='i'),
+                ElectronicState(name='j'),
+                ElectronicState(name='k'),
+            ],
+        )
+
+        space.normalize(EntryArchive(), logger=logger)
+
+        assert space.n_defining_orbitals == 3
+        assert space.occupied_tuple_kind == 'triple'
 
 
 class TestDFT:
