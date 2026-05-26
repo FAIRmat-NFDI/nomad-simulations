@@ -110,7 +110,7 @@ Core workflow hierarchy and shared method/results structures
 
 Beyond-DFT workflow base classes and derived GW/TB/DMFT/XS specializations
 
-**Key sections:** SerialWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults, ElectronicStructureResults, BeyondDFTWorkflow, BeyondDFTMethod, BeyondDFTResults, DFTLocalCCWorkflow, DFTLocalCCMethod, DFTLocalCCResults, DFTGWWorkflow, DFTGWMethod, DFTGWResults, DFTTBWorkflow, DFTTBMethod, DFTTBResults, DFTTBDMFTWorkflow, DFTTBDMFTMethod, DFTTBDMFTResults, DMFTMaxEntWorkflow, DMTMaxEntMethod, DMTMaxEntResults, XSWorkflow, XSMethod, XSResults
+**Key sections:** SerialWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults, ElectronicStructureResults, BeyondDFTWorkflow, BeyondDFTMethod, BeyondDFTResults, LocalCCWorkflow, LocalCCWorkflowMethod, LocalCCWorkflowResults, DFTLocalCCWorkflow, DFTLocalCCMethod, DFTLocalCCResults, DFTGWWorkflow, DFTGWMethod, DFTGWResults, DFTTBWorkflow, DFTTBMethod, DFTTBResults, DFTTBDMFTWorkflow, DFTTBDMFTMethod, DFTTBDMFTResults, DMFTMaxEntWorkflow, DMTMaxEntMethod, DMTMaxEntResults, XSWorkflow, XSMethod, XSResults
 
 ## [Beyond-HF Workflow Family](workflow_beyond_hf.md)
 

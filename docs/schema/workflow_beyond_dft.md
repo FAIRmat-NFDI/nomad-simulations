@@ -29,6 +29,10 @@ classDiagram
     class DMTMaxEntMethod
     class DMTMaxEntResults
     class ElectronicStructureResults
+    class LocalCCWorkflow
+    class LocalCCWorkflowMethod
+    class LocalCCWorkflowResults
+    class OrbitalLocalization
     class SerialWorkflow
     class SimulationWorkflowMethod
     class SimulationWorkflowResults
@@ -42,6 +46,9 @@ classDiagram
     BeyondDFTMethod <|-- DFTGWMethod
     BeyondDFTResults <|-- DFTGWResults
     BeyondDFTWorkflow <|-- DFTGWWorkflow
+    LocalCCWorkflowMethod <|-- DFTLocalCCMethod
+    LocalCCWorkflowResults <|-- DFTLocalCCResults
+    LocalCCWorkflow <|-- DFTLocalCCWorkflow
     BeyondDFTMethod <|-- DFTTBDMFTMethod
     BeyondDFTResults <|-- DFTTBDMFTResults
     BeyondDFTWorkflow <|-- DFTTBDMFTWorkflow
@@ -52,6 +59,9 @@ classDiagram
     BeyondDFTMethod <|-- DMTMaxEntMethod
     BeyondDFTResults <|-- DMTMaxEntResults
     SimulationWorkflowResults <|-- ElectronicStructureResults
+    SerialWorkflow <|-- LocalCCWorkflow
+    SimulationWorkflowMethod <|-- LocalCCWorkflowMethod
+    SimulationWorkflowResults <|-- LocalCCWorkflowResults
     BeyondDFTMethod <|-- XSMethod
     BeyondDFTResults <|-- XSResults
     BeyondDFTWorkflow <|-- XSWorkflow
@@ -71,6 +81,9 @@ classDiagram
     DFTTBWorkflow *-- DFTTBResults : results
     DMFTMaxEntWorkflow *-- DMTMaxEntMethod : method
     DMFTMaxEntWorkflow *-- DMTMaxEntResults : results
+    LocalCCWorkflow *-- LocalCCWorkflowMethod : method
+    LocalCCWorkflow *-- LocalCCWorkflowResults : results
+    LocalCCWorkflowMethod *-- OrbitalLocalization : orbital_localization
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence
     XSWorkflow *-- XSMethod : method
     XSWorkflow *-- XSResults : results
@@ -145,6 +158,30 @@ classDiagram
 | Section | Description | MetaInfo |
 |---|---|---|
 | `BeyondDFTResults` | Contains reference to DFT outputs. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.beyond_dft.BeyondDFTResults){:target="_blank"} |
+
+*This section has no direct quantities.*
+
+### `LocalCCWorkflow`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `LocalCCWorkflow` | Common workflow for local coupled-cluster correlation treatments. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.LocalCCWorkflow){:target="_blank"} |
+
+*This section has no direct quantities.*
+
+### `LocalCCWorkflowMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `LocalCCWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.LocalCCWorkflowMethod){:target="_blank"} |
+
+*This section has no direct quantities.*
+
+### `LocalCCWorkflowResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `LocalCCWorkflowResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.LocalCCWorkflowResults){:target="_blank"} |
 
 *This section has no direct quantities.*
 
