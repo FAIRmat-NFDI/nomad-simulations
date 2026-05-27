@@ -21,6 +21,8 @@ from nomad_simulations.schema_packages.basis_set import (
     EffectiveCorePotential,
     MuffinTinRegion,
     PlaneWaveBasisSet,
+    RadialFunction,
+    SplineRadialRepresentation,
     generate_apw,
 )
 from nomad_simulations.schema_packages.general import Simulation
@@ -464,6 +466,120 @@ def test_acf_invalid_length_reset() -> None:
     assert acf.exponents is None
     assert acf.contraction_coefficients is None
     assert acf.n_primitive == 3
+
+
+def test_nao_radial_function_tabulated_R_of_r() -> None:
+    """
+    NAO shells can store an explicit numerical radial function without analytic
+    primitive data.
+    """
+    bs = AtomCenteredBasisSet(
+        type='NAO',
+        role='orbital',
+        functional_compositions=[
+            AtomCenteredFunction(
+                function_type='s',
+                radial_function=RadialFunction(
+                    stored_radial_function='R_of_r',
+                    representation_type='tabulated_values',
+                    radial_coordinate_type='radius',
+                    radial_grid=np.array([0.0, 0.5, 1.0]) * ureg.angstrom,
+                    radial_values=[1.0, 0.4, 0.0],
+                    radial_cutoff=1.0 * ureg.angstrom,
+                    support_type='finite_support',
+                    radial_channel_index=0,
+                    normalization_convention='R_radial_integral',
+                ),
+            )
+        ],
+    )
+
+    bs.normalize(None, logger)
+    acf = bs.functional_compositions[0]
+
+    assert acf.angular_momentum == 0
+    assert acf.n_primitive is None
+    assert acf.radial_function.n_radial_grid_points == 3
+    assert acf.radial_function.stored_radial_function == 'R_of_r'
+    assert acf.radial_function.support_type == 'finite_support'
+
+
+def test_nao_radial_function_u_of_r_convention_serializes() -> None:
+    """
+    The stored radial convention is explicit, so u(r)=rR(r) data are not
+    confused with R(r) data.
+    """
+    acf = AtomCenteredFunction(
+        function_type='p',
+        radial_function=RadialFunction(
+            stored_radial_function='u_of_r_equals_r_R_of_r',
+            representation_type='tabulated_values',
+            radial_coordinate_type='radius',
+            radial_grid=np.array([0.0, 0.2, 0.4]) * ureg.angstrom,
+            radial_values=[0.0, 0.3, 0.1],
+            normalization_convention='u_radial_integral',
+        ),
+    )
+
+    acf.normalize(None, logger)
+    d = acf.m_to_dict()
+
+    assert d['radial_function']['stored_radial_function'] == 'u_of_r_equals_r_R_of_r'
+    assert d['radial_function']['normalization_convention'] == 'u_radial_integral'
+
+
+def test_spline_interpolated_radial_representation_is_not_basis_type() -> None:
+    """
+    A spline representation can describe interpolation of a radial function
+    without changing the basis-set family from NAO.
+    """
+    bs = AtomCenteredBasisSet(
+        type='NAO',
+        functional_compositions=[
+            AtomCenteredFunction(
+                function_type='p',
+                radial_function=RadialFunction(
+                    stored_radial_function='R_of_r',
+                    representation_type='spline_interpolated',
+                    radial_coordinate_type='radius',
+                    normalization_convention='R_radial_integral',
+                    spline_representation=SplineRadialRepresentation(
+                        spline_family='cubic_spline',
+                        degree=3,
+                        knots=np.array([0.0, 0.5, 1.0]) * ureg.angstrom,
+                        coefficients=[1.0, 0.3, 0.0],
+                        boundary_condition='natural',
+                        extrapolation='zero',
+                    ),
+                ),
+            )
+        ],
+    )
+
+    bs.normalize(None, logger)
+    radial = bs.functional_compositions[0].radial_function
+
+    assert bs.type == 'NAO'
+    assert radial.representation_type == 'spline_interpolated'
+    assert radial.spline_representation.n_knots == 3
+    assert radial.spline_representation.n_coefficients == 3
+    assert radial.spline_representation.spline_family == 'cubic_spline'
+
+
+def test_radial_values_length_mismatch_reset() -> None:
+    """
+    Radial values must match the declared radial grid point count when provided.
+    """
+    radial = RadialFunction(
+        n_radial_grid_points=3,
+        radial_grid=np.array([0.0, 0.5, 1.0]) * ureg.angstrom,
+        radial_values=[1.0, 0.0],
+    )
+
+    radial.normalize(None, logger)
+
+    assert radial.radial_grid is not None
+    assert radial.radial_values is None
 
 
 # -------------------------------

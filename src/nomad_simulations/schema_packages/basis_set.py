@@ -182,21 +182,338 @@ class APWPlaneWaveBasisSet(PlaneWaveBasisSet):
                 self.cutoff_fractional = cutoff_fractional
 
 
+class SplineRadialRepresentation(ArchiveSection):
+    """
+    Describes a spline representation used to store, interpolate, or reconstruct
+    a radial function.
+
+    This section describes the representation of an underlying radial function
+    and does not by itself imply that the atom-centered basis set is a spline
+    basis.
+    """
+
+    spline_family = Quantity(
+        type=MEnum(
+            'b_spline',
+            'cubic_spline',
+            'piecewise_polynomial',
+            'interpolating_spline',
+            'smoothing_spline',
+            'other',
+            'unknown',
+        ),
+        description="""
+        Type of spline representation used for the radial function.
+        """,
+    )
+
+    degree = Quantity(
+        type=np.int32,
+        description="""
+        Polynomial degree of the spline pieces.
+        """,
+    )
+
+    n_knots = Quantity(
+        type=np.int32,
+        description="""
+        Number of knots in the spline representation.
+        """,
+    )
+
+    knots = Quantity(
+        type=np.float64,
+        shape=['n_knots'],
+        unit='meter',
+        description="""
+        Knot positions for the spline representation, expressed as radial
+        coordinates.
+        """,
+    )
+
+    n_coefficients = Quantity(
+        type=np.int32,
+        description="""
+        Number of coefficients in the spline representation.
+        """,
+    )
+
+    coefficients = Quantity(
+        type=np.float64,
+        shape=['n_coefficients'],
+        description="""
+        Coefficients of the spline representation. Their interpretation depends
+        on the spline family and on the stored radial-function convention.
+        """,
+    )
+
+    boundary_condition = Quantity(
+        type=MEnum(
+            'natural',
+            'clamped',
+            'not_a_knot',
+            'periodic',
+            'zero',
+            'unknown',
+        ),
+        description="""
+        Boundary condition used by the spline representation.
+        """,
+    )
+
+    extrapolation = Quantity(
+        type=MEnum(
+            'zero',
+            'constant',
+            'linear',
+            'polynomial',
+            'undefined',
+            'unknown',
+        ),
+        description="""
+        Behavior assumed outside the spline representation range.
+        """,
+    )
+
+    @check_normalized
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.knots is not None and self.n_knots is None:
+            self.n_knots = len(self.knots)
+        if self.coefficients is not None and self.n_coefficients is None:
+            self.n_coefficients = len(self.coefficients)
+
+        if (
+            self.n_knots is not None
+            and self.knots is not None
+            and len(self.knots) != self.n_knots
+        ):
+            logger.warning('Spline knots length mismatch. Resetting.')
+            self.m_set(self.m_def.all_quantities['knots'], None)
+
+        if (
+            self.n_coefficients is not None
+            and self.coefficients is not None
+            and len(self.coefficients) != self.n_coefficients
+        ):
+            logger.warning('Spline coefficients length mismatch. Resetting.')
+            self.m_set(self.m_def.all_quantities['coefficients'], None)
+
+    @set_not_normalized
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
+class RadialFunction(ArchiveSection):
+    """
+    Describes the radial part of an atom-centered function in a
+    code-independent form.
+
+    For a numerical atomic orbital, this section can describe the numerical
+    radial factor used in functions commonly written as
+    phi_nlm(r) = R_nl(r) Y_lm(r_hat), or equivalently using
+    u_nl(r) = r R_nl(r). The stored radial convention should be stated
+    explicitly so that radial values and optional representation data can be
+    interpreted correctly.
+    """
+
+    stored_radial_function = Quantity(
+        type=MEnum(
+            'R_of_r',
+            'u_of_r_equals_r_R_of_r',
+            'unknown',
+        ),
+        description="""
+        Specifies whether stored radial values and representation data describe
+        R(r), u(r) = r R(r), or an unknown radial-function convention.
+
+        This quantity should be provided whenever `radial_values` or
+        `spline_representation` are present.
+        """,
+    )
+
+    representation_type = Quantity(
+        type=MEnum(
+            'tabulated_values',
+            'spline_interpolated',
+            'tabulated_values_and_spline_interpolated',
+            'unknown',
+        ),
+        description="""
+        Storage or interpolation form available for the radial function.
+        `spline_interpolated` means that splines represent or interpolate the
+        radial function; it does not mean that spline functions are themselves
+        the basis functions.
+        """,
+    )
+
+    radial_coordinate_type = Quantity(
+        type=MEnum(
+            'radius',
+            'transformed_radius',
+            'unknown',
+        ),
+        description="""
+        Type of coordinate used in `radial_grid`. Most radial functions use the
+        physical radius, but transformed radial coordinates can be identified
+        explicitly when needed.
+        """,
+    )
+
+    n_radial_grid_points = Quantity(
+        type=np.int32,
+        description="""
+        Number of points in the radial grid.
+        """,
+    )
+
+    radial_grid = Quantity(
+        type=np.float64,
+        shape=['n_radial_grid_points'],
+        unit='meter',
+        description="""
+        Radial coordinate points at which `radial_values` are sampled.
+        """,
+    )
+
+    radial_values = Quantity(
+        type=np.float64,
+        shape=['n_radial_grid_points'],
+        description="""
+        Values of the stored radial function on `radial_grid`. The quantity has
+        no fixed unit because dimensionality depends on whether the stored
+        function is R(r), u(r) = r R(r), or another explicitly stated convention.
+        """,
+    )
+
+    radial_cutoff = Quantity(
+        type=np.float64,
+        unit='meter',
+        description="""
+        Radius associated with the radial function support or available radial
+        data extent. Interpret this together with `support_type`.
+        """,
+    )
+
+    support_type = Quantity(
+        type=MEnum(
+            'finite_support',
+            'truncated',
+            'smoothly_confined',
+            'infinite_tail',
+            'unknown',
+        ),
+        description="""
+        Scientific meaning of `radial_cutoff`, distinguishing exact finite
+        support, hard truncation, smooth confinement, infinite-tail functions,
+        and unknown support behavior.
+        """,
+    )
+
+    radial_channel_index = Quantity(
+        type=np.int32,
+        description="""
+        General index distinguishing multiple radial functions with the same
+        angular momentum.
+        """,
+    )
+
+    radial_quantum_number = Quantity(
+        type=np.int32,
+        description="""
+        Principal or radial quantum-number label when such a label is meaningful.
+        """,
+    )
+
+    zeta_index = Quantity(
+        type=np.int32,
+        description="""
+        Optional multiple-zeta label when such terminology is meaningful.
+        """,
+    )
+
+    n_radial_nodes = Quantity(
+        type=np.int32,
+        description="""
+        Number of radial nodes, if known.
+        """,
+    )
+
+    normalization_convention = Quantity(
+        type=MEnum(
+            'R_radial_integral',
+            'u_radial_integral',
+            'full_orbital_integral',
+            'unnormalized',
+            'unknown',
+        ),
+        description="""
+        Normalization convention for the stored radial function:
+        - `R_radial_integral`: integral |R(r)|^2 r^2 dr = 1
+        - `u_radial_integral`: integral |u(r)|^2 dr = 1
+        - `full_orbital_integral`: integral |phi(r)|^2 d^3r = 1, including
+          the angular part
+        - `unnormalized`: explicitly not normalized
+        - `unknown`: normalization is not known
+        """,
+    )
+
+    spline_representation = SubSection(
+        sub_section=SplineRadialRepresentation.m_def,
+        repeats=False,
+        description="""
+        Optional spline representation used to store, interpolate, or reconstruct
+        this radial function.
+        """,
+    )
+
+    @check_normalized
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.radial_grid is not None and self.n_radial_grid_points is None:
+            self.n_radial_grid_points = len(self.radial_grid)
+
+        if (
+            self.n_radial_grid_points is not None
+            and self.radial_grid is not None
+            and len(self.radial_grid) != self.n_radial_grid_points
+        ):
+            logger.warning('Radial grid length mismatch. Resetting.')
+            self.m_set(self.m_def.all_quantities['radial_grid'], None)
+
+        if (
+            self.n_radial_grid_points is not None
+            and self.radial_values is not None
+            and len(self.radial_values) != self.n_radial_grid_points
+        ):
+            logger.warning('Radial values length mismatch. Resetting.')
+            self.m_set(self.m_def.all_quantities['radial_values'], None)
+
+        if self.spline_representation is not None:
+            self.spline_representation.normalize(archive, logger)
+
+    @set_not_normalized
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+
 class AtomCenteredFunction(ArchiveSection):
     """
-    Specifies a single contracted basis function in an atom-centered basis set.
+    Specifies a single atom-centered radial-angular function or shell in an
+    atom-centered basis set.
 
     In many quantum-chemistry codes, an atom-centered basis set is composed of
     several "shells," each shell containing one or more basis functions of a certain
-    angular momentum. For instance, a shell of p-type orbitals (ℓ=1) typically
-    consists of 3 degenerate functions (p_x, p_y, p_z) if `harmonic_type='cartesian'`
-    or 3 spherical harmonics if `harmonic_type='spherical'`.
+    angular momentum. For instance, a shell of p-type orbitals (l=1) typically
+    consists of 3 degenerate functions (p_x, p_y, p_z) if `angular_type='cartesian'`
+    or 3 spherical harmonics if `angular_type='spherical'`.
 
-    A single "atom-centered function" can be a linear combination of multiple
-    primitive Gaussians (or Slater-type orbitals, STOs).
-    In practice, these contract together to form the final basis function used by
-    the SCF or post-SCF method. Often, each contraction is labeled by its
-    angular momentum (e.g., s, p, d, f) and a set of exponents and coefficients.
+    For analytic basis families, a single atom-centered function can be a linear
+    combination of multiple primitive Gaussians or Slater-type orbitals. For
+    numerical atomic orbitals, the radial dependence can instead be described by
+    the optional `radial_function` subsection.
 
     **References**:
       - T. Helgaker, P. Jørgensen, J. Olsen, *Molecular Electronic-Structure Theory*, Wiley (2000).
@@ -229,12 +546,16 @@ class AtomCenteredFunction(ArchiveSection):
     # explicit single-ℓ metadata
     angular_momentum = Quantity(
         type=np.int32,
-        description='Angular momentum quantum number ℓ.',
+        description='Angular momentum quantum number l.',
     )
 
     r_power = Quantity(
         type=np.int32,
-        description="Radial power n_s for this shell's analytic form (typically 0 for GTOs).",
+        description="""
+        Radial power n_s for this shell's analytic form. This is typically used
+        for GTO/STO-style analytic primitives and is not generally required for
+        numerical radial functions.
+        """,
     )
 
     # per-shell normalization (contracted)
@@ -253,29 +574,42 @@ class AtomCenteredFunction(ArchiveSection):
         description="""
             Number of primitives in this shell.
             A primitive is a single uncontracted radial basis function such as one
-            Gaussian or Slater-type orbital before contraction into a full atomic orbital.
+            Gaussian or Slater-type orbital before contraction into a full atomic
+            orbital. This quantity is mainly intended for analytic primitive
+            expansions and is not required for numerical radial functions.
             """,
     )
 
     exponents = Quantity(
-        type=np.float32, shape=['n_primitive'], description='Primitive exponents.'
+        type=np.float32,
+        shape=['n_primitive'],
+        description='Primitive exponents for analytic primitive expansions.',
     )
 
     contraction_coefficients = Quantity(
         type=np.float32,
         shape=['n_primitive'],
-        description='Contraction coefficients for the primitives in this single-ℓ shell.',
+        description='Contraction coefficients for analytic primitives in this single-l shell.',
     )
 
     primitive_factor = Quantity(
         type=np.float64,
         shape=['n_primitive'],
-        description='Extra per-primitive multiplier (dimensionless).',
+        description='Extra per-primitive multiplier for analytic primitive expansions (dimensionless).',
     )
 
     # optional embedded point charge
     point_charge = Quantity(
         type=np.float32, description='Optional embedded point charge.'
+    )
+
+    radial_function = SubSection(
+        sub_section=RadialFunction.m_def,
+        repeats=False,
+        description="""
+        Optional radial-function description. This is the primary place to store
+        code-independent numerical radial data for numerical atomic orbitals.
+        """,
     )
 
     _L_MAP = {
@@ -325,6 +659,9 @@ class AtomCenteredFunction(ArchiveSection):
             ):
                 logger.warning('Primitive factor length mismatch. Resetting.')
                 self.m_set(self.m_def.all_quantities['primitive_factor'], None)
+
+        if self.radial_function is not None:
+            self.radial_function.normalize(archive, logger)
 
     @set_not_normalized
     def __init__(self, *args, **kwargs):
@@ -535,7 +872,11 @@ class AtomCenteredBasisSet(BasisSetComponent):
         The **functional form** of the basis set:
           - 'STO': Slater-type orbitals
           - 'GTO': Gaussian-type orbitals
-          - 'NAO': Numerical atomic orbitals
+          - 'NAO': Numerical atomic orbitals, i.e. atom-centered functions
+            whose radial dependence is represented numerically rather than by
+            a compact analytic primitive expansion such as Gaussian or Slater
+            functions. The numerical radial part may be tabulated,
+            spline-interpolated, or otherwise represented numerically.
           - 'PC': Point charges (or ghost basis centers)
 
         If a code uses a mixture (e.g., GTO + ECP), store them as separate `AtomCenteredBasisSet` sections,
@@ -633,6 +974,10 @@ class AtomCenteredBasisSet(BasisSetComponent):
     @check_normalized
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+        for function in self.functional_compositions:
+            if function.radial_function is not None:
+                function.normalize(archive, logger)
 
         # Set AO count from AO view if present
         if (
