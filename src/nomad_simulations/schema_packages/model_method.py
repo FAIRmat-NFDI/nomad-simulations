@@ -112,6 +112,99 @@ class ModelMethod(BaseModelMethod):
     )
 
 
+class ONIOMLayer(ArchiveSection):
+    """
+    One layer in an ONIOM-style multilayer method.
+
+    Each layer stores the method used at one ONIOM level. The actual nested
+    subsystem structure belongs in `ModelSystem.sub_systems`; this section only
+    captures the ONIOM-specific layer ordering and method assignment.
+
+    The layering order is expressed by `rank`, where 1 denotes the highest-level
+    layer. Typical labels are 'high', 'medium', and 'low', but arbitrary labels
+    are supported to keep the schema generic.
+    """
+
+    label = Quantity(
+        type=str,
+        description="""
+        Human-readable ONIOM layer label, e.g. 'high', 'medium', or 'low'.
+        """,
+    )
+
+    rank = Quantity(
+        type=positive_int(),
+        description="""
+        Relative ONIOM layer rank, where 1 is the highest-level layer.
+        """,
+    )
+
+    method_ref = Quantity(
+        type=ModelMethod,
+        description="""
+        Reference to the model method used to evaluate this ONIOM layer.
+        """,
+    )
+
+
+class ONIOM(ModelMethod):
+    """
+    Generic representation of ONIOM-style multilayer methods.
+
+    ONIOM combines results from nested subsystems evaluated at different levels
+    of theory. This section stores the global ONIOM setup and references the
+    layer-specific method definitions through `layers`. The nested region
+    structure itself should be represented through `ModelSystem.sub_systems`.
+
+    Typical examples are two-layer and three-layer ONIOM calculations:
+
+    - ONIOM2: high/low
+    - ONIOM3: high/medium/low
+
+    """
+
+    type = Quantity(
+        type=MEnum('ONIOM2', 'ONIOM3'),
+        description="""
+        ONIOM scheme classification based on the number of defined layers.
+        Standard values are:
+          - ONIOM2: two-layer setup
+          - ONIOM3: three-layer setup
+        If omitted, normalization derives this value from `n_layers` for the
+        standard two-layer and three-layer cases.
+        """,
+    )
+
+    n_layers = Quantity(
+        type=positive_int(),
+        description="""
+        Number of ONIOM layers. If omitted, normalization derives this value from
+        the length of `layers`.
+        """,
+    )
+
+    layers = SubSection(
+        sub_section=ONIOMLayer.m_def,
+        repeats=True,
+        description="""
+        Ordered ONIOM layers describing the subsystem and method associated with
+        each theory level.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.n_layers is None and self.layers:
+            self.n_layers = len(self.layers)
+
+        if self.type is None and self.n_layers is not None:
+            if self.n_layers == 2:
+                self.type = 'ONIOM2'
+            elif self.n_layers == 3:
+                self.type = 'ONIOM3'
+
+
 class ImplicitSolvationModel(BaseModelMethod):
     """Implicit-solvent or polarizable continuum treatments.
 
