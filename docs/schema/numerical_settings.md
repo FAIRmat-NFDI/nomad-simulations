@@ -130,8 +130,7 @@ classDiagram
 |---|---|---|
 | `scf_minimization_algorithm` | m_str(str) | Specifies the algorithm used for self consistency minimization. |
 | `n_max_iterations` | m_int32(int32) | Specifies the maximum number of allowed self-consistent iterations. The simulation `is_scf_converged` if the number of iterations is not larger or equal than this quantity. |
-| `threshold_change` | m_float64(float64) | Specifies the threshold for the change between two subsequent self-consistent iterations on a given output property. The simulation `is_scf_converged` if this total change is below this threshold. |
-| `threshold_change_unit` | m_str(str) | Unit using the pint UnitRegistry() notation for the `threshold_change`. |
+| `threshold_change` | m_float64(float64) | Specifies the threshold for the change between two subsequent self-consistent iterations on a given output property. The simulation `is_scf_converged` if this total change is below this threshold. Supports flexible units (e.g., energy in eV/joule, density as dimensionless). |
 
 ### `ForceCalculations`
 

@@ -54,7 +54,7 @@ without parser-plugin complexity. The page ends with a short normalization-metho
 ## Assignment 2.4: `SelfConsistency` in `numerical_settings`
 
 !!! abstract "Assignment 2.4"
-    Add `SelfConsistency(threshold_change=1e-3, threshold_change_unit='joule')`
+    Add `SelfConsistency(threshold_change=1e-3 * ureg.joule)`
     under `DFT.numerical_settings` and verify parent-child linkage.
 
 ### Related schema diagrams
