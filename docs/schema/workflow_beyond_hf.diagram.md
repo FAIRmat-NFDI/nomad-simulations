@@ -26,9 +26,14 @@ classDiagram
     class HFLocalCCMethod
     class HFLocalCCResults
     class HFLocalCCWorkflow
+    class LocalCCWorkflow
+    class LocalCCWorkflowMethod
+    class LocalCCWorkflowResults
+    class OrbitalLocalization
     class SerialWorkflow
     class SimulationWorkflowMethod
     class SimulationWorkflowResults
+    class WorkflowConvergenceResults
     class WorkflowConvergenceResults
     SimulationWorkflowMethod <|-- BeyondHFMethod
     SimulationWorkflowResults <|-- BeyondHFResults
