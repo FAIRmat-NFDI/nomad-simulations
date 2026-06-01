@@ -948,17 +948,11 @@ class SelfConsistency(NumericalSettings):
 
     threshold_change = Quantity(
         type=np.float64,
+        flexible_unit=True,
         description="""
         Specifies the threshold for the change between two subsequent self-consistent iterations on
         a given output property. The simulation `is_scf_converged` if this total change is below
-        this threshold.
-        """,
-    )
-
-    threshold_change_unit = Quantity(
-        type=str,
-        description="""
-        Unit using the pint UnitRegistry() notation for the `threshold_change`.
+        this threshold. Supports flexible units (e.g., energy in eV/joule, density as dimensionless).
         """,
     )
 
