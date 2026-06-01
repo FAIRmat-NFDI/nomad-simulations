@@ -45,13 +45,6 @@ classDiagram
     HFCCWorkflow *-- HFCCResults : results
     HFCIWorkflow *-- HFCIMethod : method
     HFCIWorkflow *-- HFCIResults : results
-    SimulationWorkflowMethod <|-- LocalCCWorkflowMethod
-    SimulationWorkflowResults <|-- LocalCCWorkflowResults
-    SerialWorkflow <|-- LocalCCWorkflow
-    LocalCCWorkflowMethod <|-- HFLocalCCMethod
-    LocalCCWorkflowResults <|-- HFLocalCCResults
-    LocalCCWorkflow <|-- HFLocalCCWorkflow
-    LocalCCWorkflowMethod *-- OrbitalLocalization : orbital_localization
     HFLocalCCResults *-- ElectronicStructureResults : ext
     HFLocalCCResults *-- ElectronicStructureResults : hf
     HFLocalCCWorkflow *-- HFLocalCCMethod : method
