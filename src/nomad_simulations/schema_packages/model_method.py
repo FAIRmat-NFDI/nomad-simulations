@@ -1958,8 +1958,8 @@ class LocalCorrelationSpace(ArchiveSection):
           - 4: quadruples-related treatment, if supported
 
         This describes the excitation level of the correlation treatment, not
-        the number of occupied orbitals used to define the local domain. Use the
-        defining-orbital quantities for that.
+        the number of occupied orbitals used to define the local domain. Use
+        `n_defining_orbitals` for that.
         """,
     )
 
@@ -1969,16 +1969,6 @@ class LocalCorrelationSpace(ArchiveSection):
         Number of occupied orbitals that define this local space. For example,
         1 for an orbital-associated domain, 2 for a pair-associated local
         virtual space, and 3 for a triple-associated local treatment.
-        """,
-    )
-
-    defining_orbitals_ref = Quantity(
-        type=ElectronicState,
-        shape=['n_defining_orbitals'],
-        description="""
-        References to the occupied `ElectronicState` sections that define this
-        local space. For example, a pair domain or pair-natural-orbital space is
-        defined by two localized occupied orbitals.
         """,
     )
 
@@ -1993,39 +1983,8 @@ class LocalCorrelationSpace(ArchiveSection):
         """,
     )
 
-    orbitals_ref = Quantity(
-        type=ElectronicState,
-        shape=['n_orbitals'],
-        description="""
-        References to the `ElectronicState` sections spanning the local space,
-        when the individual orbitals are explicitly available in the archive.
-        """,
-    )
-
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-
-        if self.n_defining_orbitals is None and self.defining_orbitals_ref is not None:
-            self.n_defining_orbitals = len(self.defining_orbitals_ref)
-        if self.n_orbitals is None and self.orbitals_ref is not None:
-            self.n_orbitals = len(self.orbitals_ref)
-
-        if (
-            self.n_defining_orbitals is not None
-            and self.defining_orbitals_ref is not None
-            and self.n_defining_orbitals != len(self.defining_orbitals_ref)
-        ):
-            logger.warning(
-                'LocalCorrelationSpace.n_defining_orbitals does not match the length of `defining_orbitals_ref`.'
-            )
-        if (
-            self.n_orbitals is not None
-            and self.orbitals_ref is not None
-            and self.n_orbitals != len(self.orbitals_ref)
-        ):
-            logger.warning(
-                'LocalCorrelationSpace.n_orbitals does not match the length of `orbitals_ref`.'
-            )
 
         expected_defining_orbitals = {
             'orbital': 1,

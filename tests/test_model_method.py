@@ -541,11 +541,6 @@ class TestCC:
             method='Pipek-Mezey',
             n_localized_orbitals=12,
         )
-        occ_i = ElectronicState(name='i')
-        occ_j = ElectronicState(name='j')
-        occ_k = ElectronicState(name='k')
-        pno_1 = ElectronicState(name='pno_1')
-        pno_2 = ElectronicState(name='pno_2')
         local_corr = build_local_correlation(
             localization=localization,
             spaces=[
@@ -553,22 +548,22 @@ class TestCC:
                     space_kind='occupied_domain',
                     occupied_tuple_kind='pair',
                     excitation_order=2,
-                    defining_orbitals_ref=[occ_i, occ_j],
+                    n_defining_orbitals=2,
                 ),
                 build_local_correlation_space(
                     space_kind='local_virtual_space',
                     occupied_tuple_kind='pair',
                     virtual_space_type='PNO',
                     excitation_order=2,
-                    defining_orbitals_ref=[occ_i, occ_j],
-                    orbitals_ref=[pno_1, pno_2],
+                    n_defining_orbitals=2,
+                    n_orbitals=2,
                 ),
                 build_local_correlation_space(
                     space_kind='local_virtual_space',
                     occupied_tuple_kind='triple',
                     virtual_space_type='PNO',
                     excitation_order=3,
-                    defining_orbitals_ref=[occ_i, occ_j, occ_k],
+                    n_defining_orbitals=3,
                 ),
             ],
         )
@@ -603,11 +598,8 @@ class TestCC:
         assert cc.local_correlation.spaces[0].occupied_tuple_kind == 'pair'
         assert cc.local_correlation.spaces[1].virtual_space_type == 'PNO'
         assert cc.local_correlation.spaces[1].occupied_tuple_kind == 'pair'
-        assert list(cc.local_correlation.spaces[0].defining_orbitals_ref) == [
-            occ_i,
-            occ_j,
-        ]
-        assert list(cc.local_correlation.spaces[1].orbitals_ref) == [pno_1, pno_2]
+        assert cc.local_correlation.spaces[0].n_defining_orbitals == 2
+        assert cc.local_correlation.spaces[1].n_orbitals == 2
         assert cc.local_correlation.spaces[2].excitation_order == 3
         assert len(cc.numerical_settings) == 1
         assert isinstance(cc.numerical_settings[0], LocalCorrelationSettings)
@@ -667,69 +659,6 @@ class TestCC:
         )
 
         assert space.excitation_order == 4
-
-    def test_local_correlation_space_normalize_sets_counts_from_references(self):
-        occ_i = ElectronicState(name='i')
-        occ_j = ElectronicState(name='j')
-        pno_1 = ElectronicState(name='pno_1')
-        pno_2 = ElectronicState(name='pno_2')
-
-        space = build_local_correlation_space(
-            space_kind='local_virtual_space',
-            occupied_tuple_kind='pair',
-            virtual_space_type='PNO',
-            defining_orbitals_ref=[occ_i, occ_j],
-            orbitals_ref=[pno_1, pno_2],
-        )
-
-        space.normalize(EntryArchive(), logger=logger)
-
-        assert space.n_defining_orbitals == 2
-        assert space.n_orbitals == 2
-
-    def test_local_correlation_space_normalize_sets_counts_without_kind(self):
-        occ_i = ElectronicState(name='i')
-        occ_j = ElectronicState(name='j')
-        pno_1 = ElectronicState(name='pno_1')
-        pno_2 = ElectronicState(name='pno_2')
-
-        space = build_local_correlation_space(
-            space_kind=None,
-            occupied_tuple_kind=None,
-            defining_orbitals_ref=[occ_i, occ_j],
-            orbitals_ref=[pno_1, pno_2],
-        )
-
-        space.normalize(EntryArchive(), logger=logger)
-
-        assert space.n_defining_orbitals == 2
-        assert space.n_orbitals == 2
-
-    def test_local_correlation_space_normalize_warns_on_count_mismatch_without_kind(
-        self, caplog
-    ):
-        import logging
-
-        space = build_local_correlation_space(
-            space_kind=None,
-            occupied_tuple_kind=None,
-            n_defining_orbitals=3,
-            defining_orbitals_ref=[ElectronicState(name='i')],
-            n_orbitals=3,
-            orbitals_ref=[ElectronicState(name='pno_1')],
-        )
-
-        with caplog.at_level(logging.WARNING):
-            space.normalize(EntryArchive(), logger=logger)
-
-        assert (
-            'LocalCorrelationSpace.n_defining_orbitals does not match the length of `defining_orbitals_ref`.'
-            in caplog.text
-        )
-        assert (
-            'LocalCorrelationSpace.n_orbitals does not match the length of `orbitals_ref`.'
-            in caplog.text
-        )
 
     @pytest.mark.parametrize(
         'occupied_tuple_kind, n_expected',
@@ -805,10 +734,7 @@ class TestCC:
             space_kind='local_virtual_space',
             occupied_tuple_kind='pair',
             virtual_space_type='PNO',
-            defining_orbitals_ref=[
-                ElectronicState(name='i'),
-                ElectronicState(name='j'),
-            ],
+            n_defining_orbitals=2,
         )
 
         with caplog.at_level(logging.WARNING):
@@ -823,11 +749,7 @@ class TestCC:
             occupied_tuple_kind='triple',
             virtual_space_type='PNO',
             excitation_order=3,
-            defining_orbitals_ref=[
-                ElectronicState(name='i'),
-                ElectronicState(name='j'),
-                ElectronicState(name='k'),
-            ],
+            n_defining_orbitals=3,
         )
 
         space.normalize(EntryArchive(), logger=logger)
