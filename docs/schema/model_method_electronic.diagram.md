@@ -23,6 +23,7 @@ classDiagram
     class GW
     class HF
     class ModelMethodElectronic
+    class NDDO
     class PerturbationMethod
     class Screening
     class SlaterKoster
@@ -39,6 +40,7 @@ classDiagram
     ModelMethodElectronic <|-- ExcitedStateMethodology
     ExcitedStateMethodology <|-- GW
     ModelMethodElectronic <|-- HF
+    ModelMethodElectronic <|-- NDDO
     ModelMethodElectronic <|-- PerturbationMethod
     ExcitedStateMethodology <|-- Screening
     TB <|-- SlaterKoster

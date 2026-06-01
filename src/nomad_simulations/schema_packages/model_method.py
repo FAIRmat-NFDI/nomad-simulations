@@ -1287,20 +1287,20 @@ class xTB(TB):
     # ? Deprecate this
 
 
-class SemiEmpirical(ModelMethodElectronic):
+class NDDO(ModelMethodElectronic):
     """
-    A base section used to define semi-empirical quantum chemistry methods such as MINDO, MNDO,
-    AM1, PM3, PM6, PM7, and SAM1.
+    A base section used to define Neglect of Diatomic Differential Overlap (NDDO)-type
+    semi-empirical quantum chemistry methods such as MNDO, AM1, PM3, PM6, PM7, and SAM1.
     """
 
     type = Quantity(
-        type=MEnum('MINDO', 'MNDO', 'AM1', 'PM3', 'PM6', 'PM7', 'SAM1'),
+        type=MEnum('MNDO', 'AM1', 'PM3', 'PM6', 'PM7', 'SAM1'),
         description="""
-        Semi-empirical quantum chemistry method. These can be:
+        Neglect of Diatomic Differential Overlap (NDDO)-type semi-empirical quantum chemistry
+        method. These can be:
 
         | Value | Description |
         | --------- | ----------------------- |
-        | `'MINDO'` | Modified Intermediate Neglect of Differential Overlap |
         | `'MNDO'` | Modified Neglect of Diatomic Overlap |
         | `'AM1'` | Austin Model 1 |
         | `'PM3'` | Parametric Method 3 |
@@ -1313,7 +1313,7 @@ class SemiEmpirical(ModelMethodElectronic):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        self.name = 'SemiEmpirical'
+        self.name = 'NDDO'
 
 
 class Photon(ArchiveSection):

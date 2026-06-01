@@ -330,6 +330,7 @@ VERTICALS = {
             'xTB',
             'Wannier',
             'SlaterKoster',
+            'NDDO',
             'ExcitedStateMethodology',
             'Screening',
             'GW',
