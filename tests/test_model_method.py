@@ -21,6 +21,7 @@ from nomad_simulations.schema_packages.model_method import (
     MultireferenceSCF,
     NonlocalCorrelation,
     OrbitalLocalization,
+    PerturbationMethod,
     RelativityModel,
     SelfInteractionCorrection,
     SlaterKoster,
@@ -513,6 +514,28 @@ def build_local_correlation(
 
 
 class TestCC:
+    def test_cc_normalize_prefixes_base_method_with_local_correlation(self):
+        cc = CC(
+            type='CCSD',
+            perturbative_correction='(T)',
+            local_correlation=build_local_correlation(local_type='DLPNO'),
+        )
+
+        cc.normalize(EntryArchive(), logger=logger)
+
+        assert cc.name == 'DLPNO-CCSD(T)'
+
+    def test_cc_normalize_does_not_duplicate_existing_local_prefix(self):
+        cc = CC(
+            type='DLPNO-CCSD',
+            perturbative_correction='(T)',
+            local_correlation=build_local_correlation(local_type='DLPNO'),
+        )
+
+        cc.normalize(EntryArchive(), logger=logger)
+
+        assert cc.name == 'DLPNO-CCSD(T)'
+
     def test_cc_stores_local_correlation_subsection(self):
         localization = OrbitalLocalization(
             method='Pipek-Mezey',
@@ -811,6 +834,19 @@ class TestCC:
 
         assert space.n_defining_orbitals == 3
         assert space.occupied_tuple_kind == 'triple'
+
+
+class TestPerturbationMethod:
+    def test_perturbation_method_normalize_prefixes_base_method(self):
+        method = PerturbationMethod(
+            type='MP',
+            order=2,
+            local_correlation=build_local_correlation(local_type='LNO'),
+        )
+
+        method.normalize(EntryArchive(), logger=logger)
+
+        assert method.name == 'LNO-MP2'
 
 
 class TestDFT:

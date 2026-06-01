@@ -1823,12 +1823,6 @@ class HF(ModelMethodElectronic):
     )
 
 
-def _format_local_method_prefix(local_correlation: 'LocalCorrelation | None') -> str:
-    if local_correlation is None or local_correlation.type in (None, 'other'):
-        return ''
-    return f'{local_correlation.type}-'
-
-
 class PerturbationMethod(ModelMethodElectronic):
     type = Quantity(
         type=MEnum('MP', 'RS', 'BW'),
@@ -1893,9 +1887,10 @@ class PerturbationMethod(ModelMethodElectronic):
         if self.order is not None:
             method_label = f'{method_label}{self.order}'
 
-        self.name = (
-            f'{_format_local_method_prefix(self.local_correlation)}{method_label}'
-        )
+        local_prefix = ''
+        if self.local_correlation is not None:
+            local_prefix = self.local_correlation.resolve_method_prefix(method_label)
+        self.name = f'{local_prefix}{method_label}'
 
 
 class LocalCorrelationSpace(ArchiveSection):
@@ -2114,6 +2109,15 @@ class LocalCorrelation(ArchiveSection):
         """,
     )
 
+    def resolve_method_prefix(self, method_label: str | None = None) -> str:
+        if self.type in (None, 'other'):
+            return ''
+
+        prefix = f'{self.type}-'
+        if method_label is not None and method_label.upper().startswith(prefix.upper()):
+            return ''
+        return prefix
+
 
 class CC(ModelMethodElectronic):
     """
@@ -2132,6 +2136,11 @@ class CC(ModelMethodElectronic):
           - CCSDT     : Singles, Doubles, and Triples
           - CCSDTQ    : Singles, Doubles, Triples, and Quadruples
         By default, the "perturbative corrections" like (T) are not included in this string.
+        For local coupled-cluster methods, prefer storing the non-local base
+        method here (e.g., `CCSD`) and the local approximation in
+        `local_correlation`. If a parser stores a local-prefixed label here
+        anyway (e.g., `DLPNO-CCSD`), normalization will not duplicate the local
+        prefix in `name`.
         """,
     )
 
@@ -2202,9 +2211,10 @@ class CC(ModelMethodElectronic):
         if self.explicit_correlation is not None:
             method_label = f'{method_label}-{self.explicit_correlation}'
 
-        self.name = (
-            f'{_format_local_method_prefix(self.local_correlation)}{method_label}'
-        )
+        local_prefix = ''
+        if self.local_correlation is not None:
+            local_prefix = self.local_correlation.resolve_method_prefix(method_label)
+        self.name = f'{local_prefix}{method_label}'
 
 
 class CI(ModelMethodElectronic):
