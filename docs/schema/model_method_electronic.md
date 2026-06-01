@@ -20,6 +20,7 @@ classDiagram
     class GW
     class HF
     class ModelMethodElectronic
+    class NDDO
     class PerturbationMethod
     class Screening
     class SlaterKoster
@@ -36,6 +37,7 @@ classDiagram
     ModelMethodElectronic <|-- ExcitedStateMethodology
     ExcitedStateMethodology <|-- GW
     ModelMethodElectronic <|-- HF
+    ModelMethodElectronic <|-- NDDO
     ModelMethodElectronic <|-- PerturbationMethod
     ExcitedStateMethodology <|-- Screening
     TB <|-- SlaterKoster
@@ -119,6 +121,16 @@ classDiagram
 | `SlaterKoster` | A base section used to define the parameters used in a Slater-Koster tight-binding fitting. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.SlaterKoster){:target="_blank"} |
 
 *This section has no direct quantities.*
+
+### `NDDO`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `NDDO` | A base section used to define Neglect of Diatomic Differential Overlap (NDDO)-type semi-empirical quantum chemistry methods such as MNDO, AM1, PM3, PM... | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.NDDO){:target="_blank"} |
+
+| Quantity | Type | Description |
+|---|---|---|
+| `type` | Enum | <details><summary>Neglect of Diatomic Differential Overlap (NDDO)-type semi-empirical quantum chem...</summary>Neglect of Diatomic Differential Overlap (NDDO)-type semi-empirical quantum chemistry<br>method. These can be:<br>\| Value \| Description \|<br>\| --------- \| ----------------------- \|<br>\| `'MNDO'` \| Modified Neglect of Diatomic Overlap \|<br>\| `'AM1'` \| Austin Model 1 \|<br>\| `'PM3'` \| Parametric Method 3 \|<br>\| `'PM6'` \| Parametric Method 6 \|<br>\| `'PM7'` \| Parametric Method 7 \|<br>\| `'SAM1'` \| Semi-Ab Initio Method 1 \|</details> |
 
 ### `ExcitedStateMethodology`
 

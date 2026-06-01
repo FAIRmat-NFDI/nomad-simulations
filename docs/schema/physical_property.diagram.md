@@ -13,19 +13,32 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BaseElectronicEigenvalues
-    class BaseEnergy
-    class BaseForce
-    class BaseGreensFunction
-    class Energy2
-    class ErrorEstimate
-    class Frequency
-    class ImaginaryTime
-    class MatsubaraFrequency
-    class PhysicalProperty
-    class SpectralProfile
-    class Time
-    class WignerSeitz
+    class BaseElectronicEigenvalues {
+    }
+    class BaseEnergy {
+    }
+    class BaseForce {
+    }
+    class BaseGreensFunction {
+    }
+    class Energy2 {
+    }
+    class ErrorEstimate {
+    }
+    class Frequency {
+    }
+    class ImaginaryTime {
+    }
+    class MatsubaraFrequency {
+    }
+    class PhysicalProperty {
+    }
+    class SpectralProfile {
+    }
+    class Time {
+    }
+    class WignerSeitz {
+    }
     PhysicalProperty <|-- BaseElectronicEigenvalues
     PhysicalProperty <|-- BaseEnergy
     PhysicalProperty <|-- BaseForce

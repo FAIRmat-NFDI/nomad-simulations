@@ -13,9 +13,12 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BaseModelMethod
-    class ModelMethod
-    class ModelMethodElectronic
+    class BaseModelMethod {
+    }
+    class ModelMethod {
+    }
+    class ModelMethodElectronic {
+    }
     BaseModelMethod <|-- ModelMethod
     ModelMethod <|-- ModelMethodElectronic
 ```

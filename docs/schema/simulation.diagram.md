@@ -13,12 +13,18 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BaseSimulation
-    class ModelMethod
-    class ModelSystem
-    class Outputs
-    class Program
-    class Simulation
+    class BaseSimulation {
+    }
+    class ModelMethod {
+    }
+    class ModelSystem {
+    }
+    class Outputs {
+    }
+    class Program {
+    }
+    class Simulation {
+    }
     BaseSimulation <|-- Simulation
     BaseSimulation *-- Program
     Simulation *-- ModelMethod

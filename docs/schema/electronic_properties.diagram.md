@@ -13,15 +13,24 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BaseElectronicEigenvalues
-    class DOSProfile
-    class ElectronicBandGap
-    class ElectronicBandStructure
-    class ElectronicDensityOfStates
-    class ElectronicEigenvalues
-    class Energy2
-    class FermiSurface
-    class Occupancy
+    class BaseElectronicEigenvalues {
+    }
+    class DOSProfile {
+    }
+    class ElectronicBandGap {
+    }
+    class ElectronicBandStructure {
+    }
+    class ElectronicDensityOfStates {
+    }
+    class ElectronicEigenvalues {
+    }
+    class Energy2 {
+    }
+    class FermiSurface {
+    }
+    class Occupancy {
+    }
     ElectronicEigenvalues <|-- ElectronicBandStructure
     DOSProfile <|-- ElectronicDensityOfStates
     BaseElectronicEigenvalues <|-- ElectronicEigenvalues

@@ -13,13 +13,20 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AtomicOrbitals
-    class AtomsState
-    class CGBeadState
-    class CoreHole
-    class ElectronicState
-    class HubbardInteractions
-    class ParticleState
+    class AtomicOrbitals {
+    }
+    class AtomsState {
+    }
+    class CGBeadState {
+    }
+    class CoreHole {
+    }
+    class ElectronicState {
+    }
+    class HubbardInteractions {
+    }
+    class ParticleState {
+    }
     ParticleState <|-- AtomsState
     ParticleState <|-- CGBeadState
     AtomsState *-- ElectronicState
