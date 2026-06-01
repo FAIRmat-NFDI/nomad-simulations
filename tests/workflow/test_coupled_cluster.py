@@ -91,7 +91,9 @@ class TestHFLocalCCWorkflow:
         assert len(workflow.outputs) == 1
         assert workflow.inputs[0].name == 'HF+local-CC workflow parameters'
         assert workflow.outputs[0].name == 'HF+local-CC workflow results'
-        assert 'Incorrect number of tasks found.' in log_output.entries[0]['event']
+        assert any(
+            entry['event'] == 'Incorrect number of tasks found.' for entry in log_output.entries
+        )
 
     def test_method_stores_orbital_localization(self):
         localization = OrbitalLocalization(method='Foster-Boys')
