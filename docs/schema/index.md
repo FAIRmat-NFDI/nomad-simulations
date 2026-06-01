@@ -56,7 +56,7 @@ Classical force-field model method branch rooted at ForceField
 
 Electronic method subclasses branching from ModelMethodElectronic
 
-**Key sections:** ModelMethodElectronic, DFT, TB, xTB, Wannier, SlaterKoster, ExcitedStateMethodology, Screening, GW, BSE, TDDFT, HF, CC, CI, PerturbationMethod, CoreHoleSpectra, DMFT
+**Key sections:** ModelMethodElectronic, DFT, TB, xTB, Wannier, SlaterKoster, NDDO, ExcitedStateMethodology, Screening, GW, BSE, TDDFT, HF, CC, CI, PerturbationMethod, CoreHoleSpectra, DMFT
 
 ## [Numerical Settings](numerical_settings.md)
 
