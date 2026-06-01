@@ -20,7 +20,6 @@ from nomad_simulations.schema_packages.model_method import (
     MultireferencePT,
     MultireferenceSCF,
     NonlocalCorrelation,
-    OrbitalLocalization,
     PerturbationMethod,
     RelativityModel,
     SelfInteractionCorrection,
@@ -496,11 +495,9 @@ def build_local_correlation_space(**overrides) -> LocalCorrelationSpace:
 def build_local_correlation(
     local_type: str = 'DLPNO',
     spaces: list[LocalCorrelationSpace] | None = None,
-    localization: OrbitalLocalization | None = None,
 ) -> LocalCorrelation:
     return LocalCorrelation(
         type=local_type,
-        orbital_localization_ref=localization,
         spaces=spaces
         or [
             build_local_correlation_space(
@@ -537,12 +534,7 @@ class TestCC:
         assert cc.name == 'DLPNO-CCSD(T)'
 
     def test_cc_stores_local_correlation_subsection(self):
-        localization = OrbitalLocalization(
-            method='Pipek-Mezey',
-            n_localized_orbitals=12,
-        )
         local_corr = build_local_correlation(
-            localization=localization,
             spaces=[
                 build_local_correlation_space(
                     space_kind='occupied_domain',
@@ -592,7 +584,6 @@ class TestCC:
 
         assert cc.local_correlation is local_corr
         assert cc.local_correlation.type == 'DLPNO'
-        assert cc.local_correlation.orbital_localization_ref is localization
         assert len(cc.local_correlation.spaces) == 3
         assert cc.local_correlation.spaces[0].space_kind == 'occupied_domain'
         assert cc.local_correlation.spaces[0].occupied_tuple_kind == 'pair'

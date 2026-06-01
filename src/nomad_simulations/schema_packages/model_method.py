@@ -2028,9 +2028,8 @@ class LocalCorrelation(ArchiveSection):
 
     Covers domain-based and local-virtual-space approximations used to reduce the
     cost of correlated calculations, including local MP2 and local coupled-cluster
-    methods. Store here the overall approximation family, a reference to the
-    occupied-orbital localization procedure, and the local spaces entering pair
-    or triples-level treatments.
+    methods. Store here the overall approximation family and the local spaces
+    entering pair or triples-level treatments.
 
     Representative references
     -------------------------
@@ -2048,14 +2047,6 @@ class LocalCorrelation(ArchiveSection):
         approximation only when no more specific family label such as `LPNO` or
         `DLPNO` is available. Store the actual local virtual-orbital type in
         `LocalCorrelationSpace.virtual_space_type`.
-        """,
-    )
-
-    orbital_localization_ref = Quantity(
-        type=Reference(SectionProxy('OrbitalLocalization')),
-        description="""
-        Reference to the orbital-localization procedure used to construct the local
-        occupied orbitals.
         """,
     )
 
