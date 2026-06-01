@@ -13,20 +13,13 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class Phonon {
-    }
-    class PhononMethod {
-    }
-    class PhononResults {
-    }
-    class SimulationWorkflow {
-    }
-    class SimulationWorkflowMethod {
-    }
-    class SimulationWorkflowResults {
-    }
-    class WorkflowConvergenceResults {
-    }
+    class Phonon
+    class PhononMethod
+    class PhononResults
+    class SimulationWorkflow
+    class SimulationWorkflowMethod
+    class SimulationWorkflowResults
+    class WorkflowConvergenceResults
     SimulationWorkflow <|-- Phonon
     SimulationWorkflowMethod <|-- PhononMethod
     SimulationWorkflowResults <|-- PhononResults

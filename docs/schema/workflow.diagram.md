@@ -13,30 +13,18 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class ParallelWorkflow {
-    }
-    class SerialWorkflow {
-    }
-    class SerialWorkflowResults {
-    }
-    class SimulationTask {
-    }
-    class SimulationTaskReference {
-    }
-    class SimulationWorkflow {
-    }
-    class SimulationWorkflowMethod {
-    }
-    class SimulationWorkflowModel {
-    }
-    class SimulationWorkflowResults {
-    }
-    class WorkflowConvergenceResults {
-    }
-    class WorkflowConvergenceTarget {
-    }
-    class WorkflowTime {
-    }
+    class ParallelWorkflow
+    class SerialWorkflow
+    class SerialWorkflowResults
+    class SimulationTask
+    class SimulationTaskReference
+    class SimulationWorkflow
+    class SimulationWorkflowMethod
+    class SimulationWorkflowModel
+    class SimulationWorkflowResults
+    class WorkflowConvergenceResults
+    class WorkflowConvergenceTarget
+    class WorkflowTime
     SimulationWorkflow <|-- ParallelWorkflow
     SimulationWorkflow <|-- SerialWorkflow
     SimulationWorkflowResults <|-- SerialWorkflowResults

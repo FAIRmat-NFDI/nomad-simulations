@@ -13,40 +13,27 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BeyondHFMethod {
-    }
-    class BeyondHFResults {
-    }
-    class BeyondHFWorkflow {
-    }
-    class ElectronicStructureResults {
-    }
-    class HFCCMethod {
-    }
-    class HFCCResults {
-    }
-    class HFCCWorkflow {
-    }
-    class HFCIMethod {
-    }
-    class HFCIResults {
-    }
-    class HFCIWorkflow {
-    }
-    class HFLocalCCMethod {
-    }
-    class HFLocalCCResults {
-    }
-    class HFLocalCCWorkflow {
-    }
-    class SerialWorkflow {
-    }
-    class SimulationWorkflowMethod {
-    }
-    class SimulationWorkflowResults {
-    }
-    class WorkflowConvergenceResults {
-    }
+    class BeyondHFMethod
+    class BeyondHFResults
+    class BeyondHFWorkflow
+    class ElectronicStructureResults
+    class HFCCMethod
+    class HFCCResults
+    class HFCCWorkflow
+    class HFCIMethod
+    class HFCIResults
+    class HFCIWorkflow
+    class HFLocalCCMethod
+    class HFLocalCCResults
+    class HFLocalCCWorkflow
+    class LocalCCWorkflow
+    class LocalCCWorkflowMethod
+    class LocalCCWorkflowResults
+    class OrbitalLocalization
+    class SerialWorkflow
+    class SimulationWorkflowMethod
+    class SimulationWorkflowResults
+    class WorkflowConvergenceResults
     SimulationWorkflowMethod <|-- BeyondHFMethod
     SimulationWorkflowResults <|-- BeyondHFResults
     SerialWorkflow <|-- BeyondHFWorkflow
@@ -65,6 +52,13 @@ classDiagram
     HFCCWorkflow *-- HFCCResults : results
     HFCIWorkflow *-- HFCIMethod : method
     HFCIWorkflow *-- HFCIResults : results
+    SimulationWorkflowMethod <|-- LocalCCWorkflowMethod
+    SimulationWorkflowResults <|-- LocalCCWorkflowResults
+    SerialWorkflow <|-- LocalCCWorkflow
+    LocalCCWorkflowMethod <|-- HFLocalCCMethod
+    LocalCCWorkflowResults <|-- HFLocalCCResults
+    LocalCCWorkflow <|-- HFLocalCCWorkflow
+    LocalCCWorkflowMethod *-- OrbitalLocalization : orbital_localization
     HFLocalCCResults *-- ElectronicStructureResults : ext
     HFLocalCCResults *-- ElectronicStructureResults : hf
     HFLocalCCWorkflow *-- HFLocalCCMethod : method

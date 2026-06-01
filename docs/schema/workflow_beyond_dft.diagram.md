@@ -13,75 +13,38 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BeyondDFTMethod {
-    }
-    class BeyondDFTResults {
-    }
-    class BeyondDFTWorkflow {
-    }
-    class DFTGWMethod {
-    }
-    class DFTGWResults {
-    }
-    class DFTGWWorkflow {
-    }
-    class DFTLocalCCMethod {
-    }
-    class DFTLocalCCResults {
-    }
-    class DFTLocalCCWorkflow {
-    }
-    class DFTTBDMFTMethod {
-    }
-    class DFTTBDMFTResults {
-    }
-    class DFTTBDMFTWorkflow {
-    }
-    class DFTTBMethod {
-    }
-    class DFTTBResults {
-    }
-    class DFTTBWorkflow {
-    }
-    class DMFTMaxEntWorkflow {
-    }
-    class DMTMaxEntMethod {
-    }
-    class DMTMaxEntResults {
-    }
-    class ElectronicStructureResults {
-    }
-    class LocalCCWorkflow {
-    }
-    class LocalCCWorkflowMethod {
-    }
-    class LocalCCWorkflowResults {
-    }
-    class OrbitalLocalization {
-    }
-    class SerialWorkflow {
-    }
-    class SimulationWorkflowMethod {
-    }
-    class SimulationWorkflowResults {
-    }
-    class WorkflowConvergenceResults {
-    }
-    class XSMethod {
-    }
-    class XSResults {
-    }
-    class XSWorkflow {
-    }
+    class BeyondDFTMethod
+    class BeyondDFTResults
+    class BeyondDFTWorkflow
+    class DFTGWMethod
+    class DFTGWResults
+    class DFTGWWorkflow
+    class DFTLocalCCMethod
+    class DFTLocalCCResults
+    class DFTLocalCCWorkflow
+    class DFTTBDMFTMethod
+    class DFTTBDMFTResults
+    class DFTTBDMFTWorkflow
+    class DFTTBMethod
+    class DFTTBResults
+    class DFTTBWorkflow
+    class DMFTMaxEntWorkflow
+    class DMTMaxEntMethod
+    class DMTMaxEntResults
+    class ElectronicStructureResults
+    class SerialWorkflow
+    class SimulationWorkflowMethod
+    class SimulationWorkflowResults
+    class WorkflowConvergenceResults
+    class XSMethod
+    class XSResults
+    class XSWorkflow
     SimulationWorkflowMethod <|-- BeyondDFTMethod
     SimulationWorkflowResults <|-- BeyondDFTResults
     SerialWorkflow <|-- BeyondDFTWorkflow
     BeyondDFTMethod <|-- DFTGWMethod
     BeyondDFTResults <|-- DFTGWResults
     BeyondDFTWorkflow <|-- DFTGWWorkflow
-    LocalCCWorkflowMethod <|-- DFTLocalCCMethod
-    LocalCCWorkflowResults <|-- DFTLocalCCResults
-    LocalCCWorkflow <|-- DFTLocalCCWorkflow
     BeyondDFTMethod <|-- DFTTBDMFTMethod
     BeyondDFTResults <|-- DFTTBDMFTResults
     BeyondDFTWorkflow <|-- DFTTBDMFTWorkflow
@@ -92,9 +55,6 @@ classDiagram
     BeyondDFTMethod <|-- DMTMaxEntMethod
     BeyondDFTResults <|-- DMTMaxEntResults
     SimulationWorkflowResults <|-- ElectronicStructureResults
-    SerialWorkflow <|-- LocalCCWorkflow
-    SimulationWorkflowMethod <|-- LocalCCWorkflowMethod
-    SimulationWorkflowResults <|-- LocalCCWorkflowResults
     BeyondDFTMethod <|-- XSMethod
     BeyondDFTResults <|-- XSResults
     BeyondDFTWorkflow <|-- XSWorkflow
@@ -114,9 +74,6 @@ classDiagram
     DFTTBWorkflow *-- DFTTBResults : results
     DMFTMaxEntWorkflow *-- DMTMaxEntMethod : method
     DMFTMaxEntWorkflow *-- DMTMaxEntResults : results
-    LocalCCWorkflow *-- LocalCCWorkflowMethod : method
-    LocalCCWorkflow *-- LocalCCWorkflowResults : results
-    LocalCCWorkflowMethod *-- OrbitalLocalization
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence
     XSWorkflow *-- XSMethod : method
     XSWorkflow *-- XSResults : results

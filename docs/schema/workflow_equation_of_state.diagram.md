@@ -13,22 +13,14 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class EOSFit {
-    }
-    class EquationOfState {
-    }
-    class EquationOfStateMethod {
-    }
-    class EquationOfStateResults {
-    }
-    class ParallelWorkflow {
-    }
-    class SimulationWorkflowMethod {
-    }
-    class SimulationWorkflowResults {
-    }
-    class WorkflowConvergenceResults {
-    }
+    class EOSFit
+    class EquationOfState
+    class EquationOfStateMethod
+    class EquationOfStateResults
+    class ParallelWorkflow
+    class SimulationWorkflowMethod
+    class SimulationWorkflowResults
+    class WorkflowConvergenceResults
     ParallelWorkflow <|-- EquationOfState
     SimulationWorkflowMethod <|-- EquationOfStateMethod
     SimulationWorkflowResults <|-- EquationOfStateResults
