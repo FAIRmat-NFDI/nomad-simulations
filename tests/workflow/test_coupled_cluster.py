@@ -46,7 +46,8 @@ class TestDFTLocalCCWorkflow:
         assert workflow.inputs[0].name == 'DFT-reference local-CC workflow parameters'
         assert workflow.outputs[0].name == 'DFT-reference local-CC workflow results'
         assert any(
-            entry['event'] == 'Incorrect number of tasks found.' for entry in log_output.entries
+            entry['event'] == 'Incorrect number of tasks found.'
+            for entry in log_output.entries
         )
 
     def test_not_a_beyond_dft_workflow(self):
@@ -92,7 +93,8 @@ class TestHFLocalCCWorkflow:
         assert workflow.inputs[0].name == 'HF+local-CC workflow parameters'
         assert workflow.outputs[0].name == 'HF+local-CC workflow results'
         assert any(
-            entry['event'] == 'Incorrect number of tasks found.' for entry in log_output.entries
+            entry['event'] == 'Incorrect number of tasks found.'
+            for entry in log_output.entries
         )
 
     def test_method_stores_orbital_localization(self):
