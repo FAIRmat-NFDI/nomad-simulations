@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
 
@@ -1632,9 +1633,14 @@ class LocalCorrelationThreshold(ArchiveSection):
     )
 
     value = Quantity(
-        type=np.float64,
+        type=positive_float(),
+        flexible_unit=True,
         description="""
-        Numerical value of the screening threshold.
+        Numerical value of the local-correlation screening threshold.
+
+        Dimensionless thresholds may be stored as plain numbers. Thresholds with
+        physical units should be stored with the corresponding unit, e.g. energy
+        or length units, depending on the screening criterion.
         """,
     )
 
