@@ -136,6 +136,9 @@ class LocalCCWorkflow(SerialWorkflow):
     def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
         super().normalize(archive, logger)
 
+        if not self.tasks:
+            return
+
         if not self.name:
             self.name = self.m_def.name
         if self.tasks and not self.tasks[0].name:
