@@ -20,6 +20,9 @@ classDiagram
     class HFCIMethod
     class HFCIResults
     class HFCIWorkflow
+    class HFLocalCCMethod
+    class HFLocalCCResults
+    class HFLocalCCWorkflow
     class SerialWorkflow
     class SimulationWorkflowMethod
     class SimulationWorkflowResults
@@ -42,6 +45,10 @@ classDiagram
     HFCCWorkflow *-- HFCCResults : results
     HFCIWorkflow *-- HFCIMethod : method
     HFCIWorkflow *-- HFCIResults : results
+    HFLocalCCResults *-- ElectronicStructureResults : ext
+    HFLocalCCResults *-- ElectronicStructureResults : hf
+    HFLocalCCWorkflow *-- HFLocalCCMethod : method
+    HFLocalCCWorkflow *-- HFLocalCCResults : results
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence
 ```
 
@@ -138,6 +145,30 @@ classDiagram
 | Section | Description | MetaInfo |
 |---|---|---|
 | `HFCCResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.HFCCResults){:target="_blank"} |
+
+*This section has no direct quantities.*
+
+### `HFLocalCCWorkflow`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `HFLocalCCWorkflow` | Definitions for local coupled-cluster calculations based on HF (HF -> orbital localization -> local CC). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.HFLocalCCWorkflow){:target="_blank"} |
+
+*This section has no direct quantities.*
+
+### `HFLocalCCMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `HFLocalCCMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.HFLocalCCMethod){:target="_blank"} |
+
+*This section has no direct quantities.*
+
+### `HFLocalCCResults`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `HFLocalCCResults` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.coupled_cluster.HFLocalCCResults){:target="_blank"} |
 
 *This section has no direct quantities.*
 

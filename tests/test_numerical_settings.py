@@ -11,11 +11,34 @@ from nomad_simulations.schema_packages.numerical_settings import (
     KLinePath,
     KMesh,
     KSpaceFunctionalities,
+    LocalCorrelationThreshold,
     Pseudopotential,
 )
 
 from . import logger
 from .conftest import generate_k_line_path, generate_k_space_simulation
+
+
+class TestLocalCorrelationThreshold:
+    def test_accepts_dimensionless_threshold(self):
+        threshold = LocalCorrelationThreshold(
+            name='TCutPNO',
+            value=1.0e-7,
+            applies_to='local_virtual_space',
+        )
+
+        assert threshold.value == pytest.approx(1.0e-7)
+        assert threshold.applies_to == 'local_virtual_space'
+
+    def test_accepts_unit_aware_threshold(self):
+        threshold = LocalCorrelationThreshold(
+            name='DistanceCutoff',
+            value=8.0 * ureg.angstrom,
+            applies_to='occupied_domain',
+        )
+
+        assert threshold.value.to(ureg.angstrom).magnitude == pytest.approx(8.0)
+        assert threshold.applies_to == 'occupied_domain'
 
 
 class TestKSpace:

@@ -8,15 +8,19 @@ from nomad_simulations.schema_packages.atoms_state import (
 )
 from nomad_simulations.schema_packages.model_method import (
     BSDFT,
+    CC,
     DFT,
     TB,
     ActiveSpace,
     BrokenSymmetryCenter,
     EmpiricalDispersionModel,
     ImplicitSolvationModel,
+    LocalCorrelation,
+    LocalCorrelationSpace,
     MultireferencePT,
     MultireferenceSCF,
     NonlocalCorrelation,
+    PerturbationMethod,
     RelativityModel,
     SelfInteractionCorrection,
     SlaterKoster,
@@ -26,6 +30,10 @@ from nomad_simulations.schema_packages.model_method import (
     XCFunctional,
 )
 from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
+from nomad_simulations.schema_packages.numerical_settings import (
+    LocalCorrelationSettings,
+    LocalCorrelationThreshold,
+)
 
 from . import logger
 from .conftest import generate_simulation
@@ -472,6 +480,286 @@ class TestMultireferenceMethods:
         assert mref.active_space is active
         assert list(mref.state_multiplicities) == [3, 1]
         assert list(mref.n_roots_per_multiplicity) == [2, 3]
+
+
+def build_local_correlation_space(**overrides) -> LocalCorrelationSpace:
+    space_kwargs = {
+        'space_kind': 'occupied_domain',
+        'occupied_tuple_kind': 'pair',
+        'excitation_order': 2,
+    }
+    space_kwargs.update(overrides)
+    return LocalCorrelationSpace(**space_kwargs)
+
+
+def build_local_correlation(
+    local_type: str = 'DLPNO',
+    spaces: list[LocalCorrelationSpace] | None = None,
+) -> LocalCorrelation:
+    return LocalCorrelation(
+        type=local_type,
+        spaces=spaces
+        or [
+            build_local_correlation_space(
+                space_kind='local_virtual_space',
+                occupied_tuple_kind=None,
+                virtual_space_type='PNO',
+                excitation_order=2,
+            )
+        ],
+    )
+
+
+class TestCC:
+    def test_cc_normalize_prefixes_base_method_with_local_correlation(self):
+        cc = CC(
+            type='CCSD',
+            perturbative_correction='(T)',
+            local_correlation=build_local_correlation(local_type='DLPNO'),
+        )
+
+        cc.normalize(EntryArchive(), logger=logger)
+
+        assert cc.name == 'DLPNO-CCSD(T)'
+
+    def test_cc_normalize_does_not_duplicate_existing_local_prefix(self):
+        cc = CC(
+            type='DLPNO-CCSD',
+            perturbative_correction='(T)',
+            local_correlation=build_local_correlation(local_type='DLPNO'),
+        )
+
+        cc.normalize(EntryArchive(), logger=logger)
+
+        assert cc.name == 'DLPNO-CCSD(T)'
+
+    def test_cc_stores_local_correlation_subsection(self):
+        local_corr = build_local_correlation(
+            spaces=[
+                build_local_correlation_space(
+                    space_kind='occupied_domain',
+                    occupied_tuple_kind='pair',
+                    excitation_order=2,
+                    n_defining_orbitals=2,
+                ),
+                build_local_correlation_space(
+                    space_kind='local_virtual_space',
+                    occupied_tuple_kind='pair',
+                    virtual_space_type='PNO',
+                    excitation_order=2,
+                    n_defining_orbitals=2,
+                    n_orbitals=2,
+                ),
+                build_local_correlation_space(
+                    space_kind='local_virtual_space',
+                    occupied_tuple_kind='triple',
+                    virtual_space_type='PNO',
+                    excitation_order=3,
+                    n_defining_orbitals=3,
+                ),
+            ],
+        )
+        local_corr_settings = LocalCorrelationSettings(
+            screening_thresholds=[
+                LocalCorrelationThreshold(
+                    name='TCutPairs',
+                    value=1.0e-4,
+                    applies_to='pair_screening',
+                ),
+                LocalCorrelationThreshold(
+                    name='TCutPNO',
+                    value=1.0e-8,
+                    applies_to='local_virtual_space',
+                ),
+            ]
+        )
+        cc = CC(
+            type='CCSD',
+            excitation_order=[1, 2],
+            perturbative_correction='(T)',
+            perturbative_correction_order=[3],
+            local_correlation=local_corr,
+            numerical_settings=[local_corr_settings],
+        )
+
+        assert cc.local_correlation is local_corr
+        assert cc.local_correlation.type == 'DLPNO'
+        assert len(cc.local_correlation.spaces) == 3
+        assert cc.local_correlation.spaces[0].space_kind == 'occupied_domain'
+        assert cc.local_correlation.spaces[0].occupied_tuple_kind == 'pair'
+        assert cc.local_correlation.spaces[1].virtual_space_type == 'PNO'
+        assert cc.local_correlation.spaces[1].occupied_tuple_kind == 'pair'
+        assert cc.local_correlation.spaces[0].n_defining_orbitals == 2
+        assert cc.local_correlation.spaces[1].n_orbitals == 2
+        assert cc.local_correlation.spaces[2].excitation_order == 3
+        assert len(cc.numerical_settings) == 1
+        assert isinstance(cc.numerical_settings[0], LocalCorrelationSettings)
+        assert len(cc.numerical_settings[0].screening_thresholds) == 2
+        assert cc.numerical_settings[0].screening_thresholds[0].name == 'TCutPairs'
+        assert cc.numerical_settings[0].screening_thresholds[1].value == pytest.approx(
+            1.0e-8
+        )
+
+    @pytest.mark.parametrize(
+        'local_type, space_type',
+        [
+            ('LNO', 'LNO'),
+            ('PNO', 'PNO'),
+            ('LPNO', 'PNO'),
+            ('DLPNO', 'PNO'),
+        ],
+    )
+    def test_cc_local_correlation_supports_generic_local_cc_families(
+        self, local_type: str, space_type: str
+    ):
+        cc = CC(
+            type='CCSD',
+            local_correlation=build_local_correlation(
+                local_type=local_type,
+                spaces=[
+                    build_local_correlation_space(
+                        space_kind='local_virtual_space',
+                        occupied_tuple_kind=None,
+                        virtual_space_type=space_type,
+                        excitation_order=2,
+                    )
+                ],
+            ),
+        )
+
+        assert cc.local_correlation is not None
+        assert cc.local_correlation.type == local_type
+        assert len(cc.local_correlation.spaces) == 1
+        assert cc.local_correlation.spaces[0].virtual_space_type == space_type
+
+    def test_local_correlation_space_supports_orbital_domain(self):
+        space = build_local_correlation_space(
+            space_kind='occupied_domain',
+            occupied_tuple_kind='orbital',
+            excitation_order=1,
+        )
+
+        assert space.occupied_tuple_kind == 'orbital'
+
+    def test_local_correlation_space_supports_quadruples_order(self):
+        space = build_local_correlation_space(
+            space_kind='local_virtual_space',
+            occupied_tuple_kind=None,
+            virtual_space_type='PNO',
+            excitation_order=4,
+        )
+
+        assert space.excitation_order == 4
+
+    @pytest.mark.parametrize(
+        'occupied_tuple_kind, n_expected',
+        [
+            ('orbital', 1),
+            ('pair', 2),
+            ('triple', 3),
+        ],
+    )
+    def test_local_correlation_space_normalize_validates_occupied_tuple_cardinality(
+        self, caplog, occupied_tuple_kind: str, n_expected: int
+    ):
+        import logging
+
+        space = build_local_correlation_space(
+            space_kind='occupied_domain',
+            occupied_tuple_kind=occupied_tuple_kind,
+            n_defining_orbitals=n_expected + 1,
+        )
+
+        with caplog.at_level(logging.WARNING):
+            space.normalize(EntryArchive(), logger=logger)
+
+        assert (
+            f'LocalCorrelationSpace.occupied_tuple_kind `{occupied_tuple_kind}` '
+            f'expects {n_expected} defining orbitals' in caplog.text
+        )
+
+    @pytest.mark.parametrize(
+        'kwargs, expected_warning',
+        [
+            (
+                {
+                    'space_kind': 'occupied_domain',
+                    'occupied_tuple_kind': None,
+                    'virtual_space_type': 'PNO',
+                },
+                'LocalCorrelationSpace.space_kind `occupied_domain` requires `occupied_tuple_kind`.',
+            ),
+            (
+                {
+                    'space_kind': 'occupied_domain',
+                    'virtual_space_type': 'PNO',
+                },
+                'LocalCorrelationSpace.space_kind `occupied_domain` must not define `virtual_space_type` (`PNO`).',
+            ),
+            (
+                {
+                    'space_kind': 'local_virtual_space',
+                    'occupied_tuple_kind': 'pair',
+                    'virtual_space_type': None,
+                },
+                'LocalCorrelationSpace.space_kind `local_virtual_space` requires `virtual_space_type`.',
+            ),
+        ],
+    )
+    def test_local_correlation_space_normalize_validates_space_fields(
+        self, caplog, kwargs: dict[str, str | None], expected_warning: str
+    ):
+        import logging
+
+        space = build_local_correlation_space(**kwargs)
+
+        with caplog.at_level(logging.WARNING):
+            space.normalize(EntryArchive(), logger=logger)
+
+        assert expected_warning in caplog.text
+
+    def test_local_virtual_space_can_be_pair_associated(self, caplog):
+        import logging
+
+        space = build_local_correlation_space(
+            space_kind='local_virtual_space',
+            occupied_tuple_kind='pair',
+            virtual_space_type='PNO',
+            n_defining_orbitals=2,
+        )
+
+        with caplog.at_level(logging.WARNING):
+            space.normalize(EntryArchive(), logger=logger)
+
+        assert space.n_defining_orbitals == 2
+        assert 'must not define' not in caplog.text
+
+    def test_local_virtual_space_can_be_triple_associated(self):
+        space = build_local_correlation_space(
+            space_kind='local_virtual_space',
+            occupied_tuple_kind='triple',
+            virtual_space_type='PNO',
+            excitation_order=3,
+            n_defining_orbitals=3,
+        )
+
+        space.normalize(EntryArchive(), logger=logger)
+
+        assert space.n_defining_orbitals == 3
+        assert space.occupied_tuple_kind == 'triple'
+
+
+class TestPerturbationMethod:
+    def test_perturbation_method_normalize_prefixes_base_method(self):
+        method = PerturbationMethod(
+            type='MP',
+            order=2,
+            local_correlation=build_local_correlation(local_type='LNO'),
+        )
+
+        method.normalize(EntryArchive(), logger=logger)
+
+        assert method.name == 'LNO-MP2'
 
 
 class TestDFT:

@@ -1864,6 +1864,210 @@ class PerturbationMethod(ModelMethodElectronic):
         """,
     )
 
+    local_correlation = SubSection(
+        sub_section=SectionProxy('LocalCorrelation'),
+        repeats=False,
+        description="""
+        Local-correlation approximation applied within the perturbation treatment,
+        including local spaces and orbital localization used in methods such as
+        local MP2, PNO-MP2, or LNO-MP2.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is not None:
+            return
+
+        if self.type is None:
+            return
+
+        method_label = self.type
+        if self.order is not None:
+            method_label = f'{method_label}{self.order}'
+
+        local_prefix = ''
+        if self.local_correlation is not None:
+            local_prefix = self.local_correlation.resolve_method_prefix(method_label)
+        self.name = f'{local_prefix}{method_label}'
+
+
+class LocalCorrelationSpace(ArchiveSection):
+    """One local space used within a local wavefunction-correlation treatment.
+
+    For `space_kind='occupied_domain'`, the space represents a domain associated
+    with one or more localized occupied orbitals or occupied-orbital tuples. The
+    actual construction may involve PAOs, atom domains, distance criteria,
+    population criteria, pair screening, or code-specific thresholds.
+
+    For `space_kind='local_virtual_space'`, the space represents the truncated
+    virtual subspace used in the local correlation treatment, such as PNO, LNO,
+    PAO, or OSV.
+    """
+
+    space_kind = Quantity(
+        type=MEnum('occupied_domain', 'local_virtual_space'),
+        description="""
+        Category of the local object:
+          - `occupied_domain`: a local domain associated with one or more
+            localized occupied orbitals or occupied-orbital tuples
+          - `local_virtual_space`: a truncated virtual-orbital subspace used in
+            the correlation treatment, such as `PNO`, `LNO`, `PAO`, or `OSV`
+        """,
+    )
+
+    occupied_tuple_kind = Quantity(
+        type=MEnum('orbital', 'pair', 'triple'),
+        description="""
+        Occupied-orbital object defining this local domain or local virtual
+        space:
+          - `orbital`: one localized occupied orbital
+          - `pair`: pair of localized occupied orbitals
+          - `triple`: triple of localized occupied orbitals, if explicitly used
+            for a triples-specific local treatment
+
+        This describes the occupied object defining the space, not the
+        excitation level itself. Use `excitation_order` to describe whether the
+        space is used for singles, doubles, triples, etc.
+        """,
+    )
+
+    virtual_space_type = Quantity(
+        type=MEnum('PNO', 'LNO', 'PAO', 'OSV'),
+        description="""
+        Identifier of the local virtual-orbital space:
+        - `PNO`: pair natural orbitals
+        - `LNO`: local natural orbitals
+        - `PAO`: projected atomic orbitals
+        - `OSV`: orbital-specific virtuals
+        Method family labels such as `LPNO` or `DLPNO` belong in
+        `LocalCorrelation.type`, not here. Use this when
+        `space_kind='local_virtual_space'`.
+        """,
+    )
+
+    excitation_order = Quantity(
+        type=positive_int(),
+        description="""
+        Excitation order in the correlated treatment for which this local space
+        is used:
+          - 1: singles-related local space
+          - 2: doubles/pair-amplitude local space
+          - 3: triples correction or triples-amplitude local treatment
+          - 4: quadruples-related treatment, if supported
+
+        This describes the excitation level of the correlation treatment, not
+        the number of occupied orbitals used to define the local domain. Use
+        `n_defining_orbitals` for that.
+        """,
+    )
+
+    n_defining_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of occupied orbitals that define this local space. For example,
+        1 for an orbital-associated domain, 2 for a pair-associated local
+        virtual space, and 3 for a triple-associated local treatment.
+        """,
+    )
+
+    n_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of orbitals spanning the local space. For
+        `space_kind='local_virtual_space'`, this is typically the size of the
+        truncated local virtual space. For `space_kind='occupied_domain'`, it
+        may be used when the code reports the number of orbitals contained in
+        the domain.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        expected_defining_orbitals = {
+            'orbital': 1,
+            'pair': 2,
+            'triple': 3,
+        }
+        if (
+            self.occupied_tuple_kind in expected_defining_orbitals
+            and self.n_defining_orbitals is not None
+            and self.n_defining_orbitals
+            != expected_defining_orbitals[self.occupied_tuple_kind]
+        ):
+            logger.warning(
+                f'LocalCorrelationSpace.occupied_tuple_kind `{self.occupied_tuple_kind}` expects '
+                f'{expected_defining_orbitals[self.occupied_tuple_kind]} defining orbitals, '
+                f'but `n_defining_orbitals` is {self.n_defining_orbitals}.'
+            )
+
+        if self.space_kind is None:
+            return
+
+        if self.space_kind == 'occupied_domain':
+            if self.occupied_tuple_kind is None:
+                logger.warning(
+                    'LocalCorrelationSpace.space_kind `occupied_domain` requires `occupied_tuple_kind`.'
+                )
+            if self.virtual_space_type is not None:
+                logger.warning(
+                    f'LocalCorrelationSpace.space_kind `occupied_domain` must not define `virtual_space_type` '
+                    f'(`{self.virtual_space_type}`).'
+                )
+        if self.space_kind == 'local_virtual_space':
+            if self.virtual_space_type is None:
+                logger.warning(
+                    'LocalCorrelationSpace.space_kind `local_virtual_space` requires `virtual_space_type`.'
+                )
+
+
+class LocalCorrelation(ArchiveSection):
+    """Local-correlation approximation layered on top of a correlated wavefunction method.
+
+    Covers domain-based and local-virtual-space approximations used to reduce the
+    cost of correlated calculations, including local MP2 and local coupled-cluster
+    methods. Store here the overall approximation family and the local spaces
+    entering pair or triples-level treatments.
+
+    Representative references
+    -------------------------
+    - M. Schütz, J. Chem. Phys. 113, 9986 (2000).
+    - E. Riplinger and F. Neese, J. Chem. Phys. 138, 034106 (2013).
+    """
+
+    type = Quantity(
+        type=MEnum('LNO', 'PNO', 'LPNO', 'DLPNO', 'other'),
+        description="""
+        Identifier of the local-correlation approximation used together with a
+        correlated wavefunction method. `LPNO` and `DLPNO` denote method
+        families that typically employ `PNO` spaces stored separately under
+        `spaces`. `PNO` denotes a generic PNO-based local-correlation
+        approximation only when no more specific family label such as `LPNO` or
+        `DLPNO` is available. Store the actual local virtual-orbital type in
+        `LocalCorrelationSpace.virtual_space_type`.
+        """,
+    )
+
+    spaces = SubSection(
+        sub_section=LocalCorrelationSpace.m_def,
+        repeats=True,
+        description="""
+        Local spaces entering the local-correlation treatment, such as
+        occupied-orbital domains or local virtual-orbital spaces.
+        """,
+    )
+
+    def resolve_method_prefix(self, method_label: str | None = None) -> str:
+        if self.type in (None, 'other'):
+            return ''
+
+        prefix = f'{self.type}-'
+        if method_label is not None and method_label.upper().startswith(prefix.upper()):
+            return ''
+        return prefix
+
 
 class CC(ModelMethodElectronic):
     """
@@ -1882,6 +2086,11 @@ class CC(ModelMethodElectronic):
           - CCSDT     : Singles, Doubles, and Triples
           - CCSDTQ    : Singles, Doubles, Triples, and Quadruples
         By default, the "perturbative corrections" like (T) are not included in this string.
+        For local coupled-cluster methods, prefer storing the non-local base
+        method here (e.g., `CCSD`) and the local approximation in
+        `local_correlation`. If a parser stores a local-prefixed label here
+        anyway (e.g., `DLPNO-CCSD`), normalization will not duplicate the local
+        prefix in `name`.
         """,
     )
 
@@ -1930,6 +2139,32 @@ class CC(ModelMethodElectronic):
         It can be added linearly (R12) or exponentially (F12).
         """,
     )
+
+    local_correlation = SubSection(
+        sub_section=LocalCorrelation.m_def,
+        repeats=False,
+        description="""
+        Local-correlation approximation applied within the coupled-cluster
+        treatment, including local spaces and their screening thresholds.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is not None or self.type is None:
+            return
+
+        method_label = self.type
+        if self.perturbative_correction is not None:
+            method_label = f'{method_label}{self.perturbative_correction}'
+        if self.explicit_correlation is not None:
+            method_label = f'{method_label}-{self.explicit_correlation}'
+
+        local_prefix = ''
+        if self.local_correlation is not None:
+            local_prefix = self.local_correlation.resolve_method_prefix(method_label)
+        self.name = f'{local_prefix}{method_label}'
 
 
 class CI(ModelMethodElectronic):

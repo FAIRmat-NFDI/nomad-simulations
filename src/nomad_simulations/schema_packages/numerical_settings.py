@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
 
@@ -1611,6 +1612,60 @@ class MultireferencePTSettings(NumericalSettings):
           • partially_contracted: partially contracted NEVPT / CASPT variants
           • internally_contracted: generic internal contraction (e.g., MRMP)
           • uncontracted: no contraction of perturber space
+        """,
+    )
+
+
+class LocalCorrelationThreshold(ArchiveSection):
+    """Numerical cutoff controlling screening in a local-correlation workflow."""
+
+    name = Quantity(
+        type=str,
+        description="""
+        Code- or method-specific threshold label, e.g. `TCutPNO` or `TCutPairs`.
+        """,
+    )
+
+    value = Quantity(
+        type=positive_float(),
+        flexible_unit=True,
+        description="""
+        Numerical value of the local-correlation screening threshold.
+
+        Dimensionless thresholds may be stored as plain numbers. Thresholds with
+        physical units should be stored with the corresponding unit, e.g. energy
+        or length units, depending on the screening criterion.
+        """,
+    )
+
+    applies_to = Quantity(
+        type=MEnum(
+            'occupied_domain',
+            'local_virtual_space',
+            'pair_screening',
+            'triple_screening',
+            'amplitude_screening',
+            'other',
+        ),
+        description="""
+        Local-correlation object or screening stage controlled by this
+        code- or method-specific threshold.
+        """,
+    )
+
+
+class LocalCorrelationSettings(NumericalSettings):
+    """
+    Numerical controls for local-correlation approximations used in correlated
+    wavefunction calculations such as local MP2 or local coupled cluster.
+    """
+
+    screening_thresholds = SubSection(
+        sub_section=LocalCorrelationThreshold.m_def,
+        repeats=True,
+        description="""
+        Thresholds used to screen local spaces or pair contributions in the
+        local-correlation workflow.
         """,
     )
 
