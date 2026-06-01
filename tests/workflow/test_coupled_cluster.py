@@ -45,7 +45,9 @@ class TestDFTLocalCCWorkflow:
         assert len(workflow.outputs) == 1
         assert workflow.inputs[0].name == 'DFT-reference local-CC workflow parameters'
         assert workflow.outputs[0].name == 'DFT-reference local-CC workflow results'
-        assert 'Incorrect number of tasks found.' in log_output.entries[0]['event']
+        assert any(
+            entry['event'] == 'Incorrect number of tasks found.' for entry in log_output.entries
+        )
 
     def test_not_a_beyond_dft_workflow(self):
         assert not issubclass(DFTLocalCCWorkflow, BeyondDFTWorkflow)
