@@ -34,7 +34,6 @@ classDiagram
     class SimulationWorkflowMethod
     class SimulationWorkflowResults
     class WorkflowConvergenceResults
-    class WorkflowConvergenceResults
     SimulationWorkflowMethod <|-- BeyondHFMethod
     SimulationWorkflowResults <|-- BeyondHFResults
     SerialWorkflow <|-- BeyondHFWorkflow
