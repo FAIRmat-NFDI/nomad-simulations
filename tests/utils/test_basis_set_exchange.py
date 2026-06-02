@@ -63,6 +63,14 @@ def test_registry_contains_full_bse_name_export_shape():
 
     assert len(data) > 700
     assert all(set(row) == {'key', 'canonical_name'} for row in data)
+    assert all(
+        isinstance(row['key'], str)
+        and row['key']
+        and isinstance(row['canonical_name'], str)
+        and row['canonical_name']
+        for row in data
+    )
+    assert len({row['key'] for row in data}) == len(data)
 
 
 def test_registry_provenance_is_module_level_metadata():
