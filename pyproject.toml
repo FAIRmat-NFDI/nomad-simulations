@@ -53,6 +53,10 @@ dev = [
     'structlog>=1.0',
     'typing-extensions>=4.12',
 ]
+dev-electronic = [
+    'basis-set-exchange==0.12',
+    'pylibxc7==7.0.0',
+]
 docs = [
     'mkdocs>=1.6',
     'mkdocs-material>=9.5',
