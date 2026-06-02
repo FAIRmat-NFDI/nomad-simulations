@@ -1,3 +1,5 @@
+from collections.abc import Generator
+
 import numpy as np
 import pytest
 from nomad import files, processing
@@ -30,7 +32,9 @@ class RecordingLogger:
 
 
 @pytest.fixture
-def archive_with_mo() -> tuple[EntryArchive, MolecularOrbitals, str, str]:
+def archive_with_mo() -> Generator[
+    tuple[EntryArchive, MolecularOrbitals, str, str], None, None
+]:
     upload_id = f'test_upload_molecular_orbitals_h5_{create_uuid()}'
     entry_id = 'test_entry_molecular_orbitals_h5'
     upload_files = files.StagingUploadFiles(upload_id, create=True)
