@@ -704,6 +704,45 @@ def test_additional_basis_functions_assigned_to_subset_of_atoms() -> None:
     assert np.allclose(s1['contraction_coefficients'], [1.0])
 
 
+def test_atom_centered_basis_set_normalize_adds_canonical_metadata() -> None:
+    """
+    Normalization preserves the raw parsed basis_set label and adds internal
+    canonical metadata only when the lightweight registry match is unambiguous.
+    """
+    bs = AtomCenteredBasisSet(basis_set='6-31G**')
+
+    bs.normalize(None, logger)
+
+    d = bs.m_to_dict()
+    assert d['basis_set'] == '6-31G**'
+    assert d['canonical_basis_set'] == '6-31G**'
+
+
+def test_atom_centered_basis_set_normalize_keeps_unknown_label() -> None:
+    bs = AtomCenteredBasisSet(basis_set='user-defined-basis')
+
+    bs.normalize(None, logger)
+
+    d = bs.m_to_dict()
+    assert d['basis_set'] == 'user-defined-basis'
+    assert 'canonical_basis_set' not in d
+
+
+def test_atom_centered_basis_set_normalize_clears_stale_canonical_metadata() -> None:
+    bs = AtomCenteredBasisSet(basis_set='cc-pVTZ')
+
+    bs.normalize(None, logger)
+    assert bs.canonical_basis_set == 'cc-pVTZ'
+
+    bs.basis_set = 'user-defined-basis'
+    bs._is_normalized = False
+    bs.normalize(None, logger)
+
+    d = bs.m_to_dict()
+    assert d['basis_set'] == 'user-defined-basis'
+    assert 'canonical_basis_set' not in d
+
+
 def test_mixed_orbital_aux_ecp() -> None:
     """
     Mixed atom-centered setup:
