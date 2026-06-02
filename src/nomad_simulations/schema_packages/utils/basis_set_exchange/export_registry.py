@@ -22,8 +22,8 @@ def _load_bse_names() -> tuple[str | None, list[dict[str, Any]]]:
     except ImportError as exc:
         raise SystemExit(
             'basis_set_exchange is required only to regenerate this registry. '
-            'Install it in a development environment, e.g. '
-            '`uv run --with basis-set-exchange python -m '
+            'Install the electronic-registry development dependencies, e.g. '
+            '`uv run --extra dev-electronic python -m '
             'nomad_simulations.schema_packages.utils.basis_set_exchange.export_registry`.'
         ) from exc
 
