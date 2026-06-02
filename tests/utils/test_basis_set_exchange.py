@@ -4,9 +4,6 @@ from importlib.resources import files
 from nomad_simulations.schema_packages.utils.basis_set_exchange import (
     registry as basis_set_registry,
 )
-from nomad_simulations.schema_packages.utils.basis_set_exchange.build import (
-    spec_from_label,
-)
 
 
 def test_exact_canonical_label_lookup():
@@ -47,16 +44,16 @@ def test_pople_star_and_parenthesized_labels_are_distinct_canonical_entries():
 
 def test_unknown_basis_set_returns_none():
     assert basis_set_registry.lookup_by_label('not-a-real-basis-set') is None
-    assert spec_from_label('not-a-real-basis-set') is None
+    assert basis_set_registry.spec_from_label('not-a-real-basis-set') is None
 
 
 def test_ambiguous_alias_returns_none():
     assert basis_set_registry.lookup_by_label('Pople polarized') is None
-    assert spec_from_label('Pople polarized') is None
+    assert basis_set_registry.spec_from_label('Pople polarized') is None
 
 
 def test_spec_from_label_returns_internal_canonical_record():
-    spec = spec_from_label('sto 3g')
+    spec = basis_set_registry.spec_from_label('sto 3g')
 
     assert spec == {
         'canonical_name': 'STO-3G',

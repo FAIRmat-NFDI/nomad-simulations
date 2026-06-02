@@ -26,7 +26,7 @@ from nomad_simulations.schema_packages.numerical_settings import (
     Mesh,
     NumericalSettings,
 )
-from nomad_simulations.schema_packages.utils.basis_set_exchange.build import (
+from nomad_simulations.schema_packages.utils.basis_set_exchange.registry import (
     spec_from_label as basis_set_spec_from_label,
 )
 

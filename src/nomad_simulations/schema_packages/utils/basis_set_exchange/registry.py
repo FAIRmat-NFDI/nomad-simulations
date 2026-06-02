@@ -4,11 +4,15 @@ import json
 import re
 from functools import lru_cache
 from importlib.resources import files
-from typing import Any
+from typing import Any, TypedDict
 
 _SOURCE = 'Basis Set Exchange'
 _REGISTRY_VERSION = 'basis-set-exchange-0.12'
 _IGNORED_LABEL_CHARS = re.compile(r'[\s_-]+')
+
+
+class BasisSetSpec(TypedDict):
+    canonical_name: str
 
 
 def _normalize_label(label: str) -> str:
@@ -71,6 +75,23 @@ def lookup_by_label(label: str) -> dict[str, Any] | None:
         return None
 
     return _registry()[next(iter(alias_matches))]
+
+
+def spec_from_label(label: str) -> BasisSetSpec | None:
+    """
+    Convert a raw parsed label to an internal canonical basis-set specification.
+
+    Returns:
+        BasisSetSpec if the label has an unambiguous lightweight registry match,
+        otherwise None.
+    """
+    rec = lookup_by_label(label)
+    if rec is None:
+        return None
+
+    return BasisSetSpec(
+        canonical_name=rec['canonical_name'],
+    )
 
 
 def source_name() -> str:
