@@ -47,11 +47,6 @@ def test_unknown_basis_set_returns_none():
     assert basis_set_registry.spec_from_label('not-a-real-basis-set') is None
 
 
-def test_ambiguous_alias_returns_none():
-    assert basis_set_registry.lookup_by_label('Pople polarized') is None
-    assert basis_set_registry.spec_from_label('Pople polarized') is None
-
-
 def test_spec_from_label_returns_internal_canonical_record():
     spec = basis_set_registry.spec_from_label('sto 3g')
 
@@ -67,7 +62,7 @@ def test_registry_contains_full_bse_name_export_shape():
     data = json.loads(path.read_text(encoding='utf-8'))
 
     assert len(data) > 700
-    assert all(set(row) == {'key', 'canonical_name', 'aliases'} for row in data)
+    assert all(set(row) == {'key', 'canonical_name'} for row in data)
 
 
 def test_registry_provenance_is_module_level_metadata():

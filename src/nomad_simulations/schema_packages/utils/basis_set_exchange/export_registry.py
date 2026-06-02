@@ -31,7 +31,6 @@ def _load_bse_names() -> tuple[str | None, list[dict[str, Any]]]:
         {
             'key': misc.basis_name_to_filename(name),
             'canonical_name': name,
-            'aliases': [],
         }
         for name in bse.get_all_basis_names()
     ]
