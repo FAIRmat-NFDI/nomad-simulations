@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import re
-import unicodedata
 from functools import lru_cache
 from importlib.resources import files
 from typing import Any
@@ -10,21 +9,10 @@ from typing import Any
 _SOURCE = 'Basis Set Exchange'
 _REGISTRY_VERSION = 'basis-set-exchange-0.12'
 _IGNORED_LABEL_CHARS = re.compile(r'[\s_-]+')
-_DASHES = str.maketrans(
-    {
-        '\u2010': '-',
-        '\u2011': '-',
-        '\u2012': '-',
-        '\u2013': '-',
-        '\u2014': '-',
-        '\u2212': '-',
-    }
-)
 
 
 def _normalize_label(label: str) -> str:
-    label = unicodedata.normalize('NFKC', label or '').translate(_DASHES)
-    return _IGNORED_LABEL_CHARS.sub('', label.casefold())
+    return _IGNORED_LABEL_CHARS.sub('', (label or '').casefold())
 
 
 @lru_cache(maxsize=1)
