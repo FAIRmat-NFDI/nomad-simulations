@@ -150,19 +150,60 @@ class MolecularOrbitals(ElectronicEigenvalues):
         super().normalize(archive, logger)
 
         coefficient_shape = self._resolve_dataset_shape(self.mo_coefficients)
+        coefficient_im_shape = self._resolve_dataset_shape(self.mo_coefficients_im)
 
         # ---------- infer n_mo ----------
         if self.n_mo is None:
             if coefficient_shape is not None:
-                self.n_mo = int(coefficient_shape[0])
+                if len(coefficient_shape) == 2:
+                    self.n_mo = int(coefficient_shape[0])
             elif self.mo_spin is not None:
                 self.n_mo = len(self.mo_spin)
             elif self.mo_energies is not None:
                 self.n_mo = len(self.mo_energies)
 
         # ---------- infer n_ao ----------
-        if self.n_ao is None and coefficient_shape is not None:
+        if (
+            self.n_ao is None
+            and coefficient_shape is not None
+            and len(coefficient_shape) == 2
+        ):
             self.n_ao = int(coefficient_shape[1])
+
+        self._validate_coefficient_shape(
+            'mo_coefficients', coefficient_shape, logger=logger
+        )
+        self._validate_coefficient_shape(
+            'mo_coefficients_im', coefficient_im_shape, logger=logger
+        )
+        if (
+            coefficient_shape is not None
+            and coefficient_im_shape is not None
+            and coefficient_shape != coefficient_im_shape
+        ):
+            logger.error(
+                '`mo_coefficients_im` shape must match `mo_coefficients`; '
+                f'got {coefficient_im_shape} and {coefficient_shape}.'
+            )
+
+    def _validate_coefficient_shape(
+        self, quantity_name: str, shape: tuple[int, ...] | None, logger: 'BoundLogger'
+    ) -> None:
+        if shape is None:
+            return
+        if len(shape) != 2:
+            logger.error(
+                f'`{quantity_name}` must be a 2D dataset with shape '
+                f'[`n_mo`, `n_ao`]; got shape {shape}.'
+            )
+            return
+
+        expected_shape = (self.n_mo, self.n_ao)
+        if None not in expected_shape and shape != expected_shape:
+            logger.error(
+                f'`{quantity_name}` shape must match [`n_mo`, `n_ao`]; '
+                f'got {shape}, expected {expected_shape}.'
+            )
 
     @staticmethod
     def _resolve_dataset_shape(value: Any) -> tuple[int, ...] | None:
