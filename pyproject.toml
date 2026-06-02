@@ -55,7 +55,6 @@ dev = [
 ]
 dev-electronic = [
     'basis-set-exchange==0.12',
-    'pylibxc7==7.0.0',
 ]
 docs = [
     'mkdocs>=1.6',
