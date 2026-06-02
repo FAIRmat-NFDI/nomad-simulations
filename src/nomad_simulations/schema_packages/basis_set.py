@@ -646,6 +646,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
+        self.canonical_basis_set = None
         if self.basis_set:
             try:
                 basis_set_spec = basis_set_spec_from_label(self.basis_set)
@@ -660,6 +661,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
                 logger.warning(
                     'Basis set canonicalization failed.',
                     basis_set=self.basis_set,
+                    exc_info=True,
                 )
 
         # Set AO count from AO view if present

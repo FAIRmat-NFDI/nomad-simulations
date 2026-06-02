@@ -728,13 +728,18 @@ def test_atom_centered_basis_set_normalize_keeps_unknown_label() -> None:
     assert 'canonical_basis_set' not in d
 
 
-def test_atom_centered_basis_set_normalize_keeps_ambiguous_label() -> None:
-    bs = AtomCenteredBasisSet(basis_set='Pople polarized')
+def test_atom_centered_basis_set_normalize_clears_stale_canonical_metadata() -> None:
+    bs = AtomCenteredBasisSet(basis_set='cc-pVTZ')
 
+    bs.normalize(None, logger)
+    assert bs.canonical_basis_set == 'cc-pVTZ'
+
+    bs.basis_set = 'user-defined-basis'
+    bs._is_normalized = False
     bs.normalize(None, logger)
 
     d = bs.m_to_dict()
-    assert d['basis_set'] == 'Pople polarized'
+    assert d['basis_set'] == 'user-defined-basis'
     assert 'canonical_basis_set' not in d
 
 
