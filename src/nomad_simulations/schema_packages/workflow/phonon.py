@@ -85,17 +85,6 @@ class PhononMethod(SimulationWorkflowMethod):
         """,
     )
 
-    # TODO This can be populated by the normalizer
-    method = Quantity(
-        type=MEnum('finite_differences', 'DFPT'),
-        description="""
-        Method that was used to compute phonons. 
-        Options: 
-            - 'finite_differences': Series of calculations with dislocated atoms in a supercell in real space.
-            - 'DFPT': Density-functional perturbation theory, solution of the Sternheimer equations in reciprocal space.
-        """,
-    )
-
     finite_differences_method = SubSection(
         sub_section=FiniteDifferenceMethod.m_def,
         repeats=False,
@@ -151,6 +140,22 @@ class DFPTResults(ArchiveSection):
 
 class PhononResults(SimulationWorkflowResults):
     _label = 'Phonon results'
+
+    finite_difference_results=SubSection(
+        sub_section=FiniteDifferenceResults.m_def,
+        repeats=False,
+        description="""
+        Results specific for finite-differences calculations.
+        """,
+    )
+
+    dfpt_results=SubSection(
+        sub_section=DFPTResults.m_def,
+        repeats=False,
+        description="""
+        Results specific for DFPT calculations.
+        """,
+    )
 
     n_imaginary_frequencies = Quantity(
         type=int,
@@ -260,7 +265,18 @@ class Phonon(SimulationWorkflow):
     Definitions for a phonon workflow.
     """
 
-    _task_label = 'Force calculation'
+    _task_label = 'Phonon calculation'
+
+    # TODO This can be populated by the normalizer
+    approach = Quantity(
+        type=MEnum('finite_differences', 'DFPT'),
+        description="""
+        Approach that was used to compute phonons. 
+        Options: 
+            - 'finite_differences': Series of calculations with dislocated atoms in a supercell in real space.
+            - 'DFPT': Density-functional perturbation theory, solution of the Sternheimer equations in reciprocal space.
+        """,
+    )
 
     method = SubSection(sub_section=PhononMethod.m_def)
 
