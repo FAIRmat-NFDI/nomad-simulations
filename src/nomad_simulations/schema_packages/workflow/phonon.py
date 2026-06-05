@@ -1,47 +1,38 @@
-from nomad.datamodel import EntryArchive
+from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, TaskReference
-from nomad.metainfo import Quantity, SubSection
+from nomad.metainfo import MEnum, Quantity, SubSection
 from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.utils import log
 
 from .general import (
     INCORRECT_N_TASKS,
-    ParallelWorkflow,
-    SerialWorkflow,
     SimulationWorkflow,
     SimulationWorkflowMethod,
     SimulationWorkflowResults,
+    WorkflowConvergenceTarget,
 )
 
 
-class PhononMethod(SimulationWorkflowMethod):
-    _label = 'Phonon calculation parameters'
-
-    force_calculator = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Name of the program used to calculate the forces.
-        """,
-    )
-
-    phonon_calculator = Quantity(
-        type=str,
-        shape=[],
-        description="""
-        Name of the program used to perform phonon calculation.
-        """,
-    )
-
-    mesh_density = Quantity(
+class FiniteDifferenceMethod(ArchiveSection):
+    
+    displacement = Quantity(
         type=float,
-        shape=[],
-        unit='1 / meter ** 3',
         description="""
-        Density of the k-mesh for sampling.
+        Magnitude of the displacement applied to atoms.
+        """,        
+    )
+
+    supercell_size = Quantity(
+        type=int,
+        shape=[3],
+        description="""
+        Size of the supercell that is used in the calculation.
         """,
     )
+
+    force_calculator = SubSection(sub_section=ModelMethod.m_def, repeats=False)
 
     random_displacements = Quantity(
         type=bool,
@@ -51,20 +42,110 @@ class PhononMethod(SimulationWorkflowMethod):
         """,
     )
 
-    with_non_analytic_correction = Quantity(
-        type=bool,
-        shape=[],
+    # TODO move to SimulationWorkflowMethod? - it is also used in geometry optimization workflows
+    # in cases where the workflow has no individual targets, it will not be populated
+    single_point_convergence_targets = SubSection(
+        sub_section=WorkflowConvergenceTarget.m_def,
+        repeats=True,
         description="""
-        Identifies if non-analytical term corrections are applied to dynamical matrix.
+        SCF convergence targets applied to each task, i.e., displacement.
         """,
     )
 
-    with_grueneisen_parameters = Quantity(
-        type=bool,
+    mesh_density = Quantity(
+        type=float,
+        shape=[3],
+        unit='1 / meter ** 3',
+        description="""
+        Density of the k-mesh for sampling.
+        """,
+    )
+
+
+class DFPTMethod(ArchiveSection):
+    
+    q_mesh = Quantity(
+        type=int,
+        shape=[3],
+        unit='1 / meter ** 3',
+        description="""
+        Number of q-points in each direction in reciprocal space.
+        """
+    )
+    # The convergene threshold for the Sternheimer equation is represented by an EnergyConvergenceTarget in SimulationWorkflowMethod.
+
+class PhononMethod(SimulationWorkflowMethod):
+    _label = 'Phonon calculation parameters'
+
+    program_name = Quantity(
+        type=str,
         shape=[],
         description="""
-        Identifies if Grueneisen parameters are calculated.
+        Name of the program used to perform phonon calculation.
         """,
+    )
+
+    # TODO This can be populated by the normalizer
+    method = Quantity(
+        type=MEnum('finite_differences', 'DFPT'),
+        description="""
+        Method that was used to compute phonons. 
+        Options: 
+            - 'finite_differences': Series of calculations with dislocated atoms in a supercell in real space.
+            - 'DFPT': Density-functional perturbation theory, solution of the Sternheimer equations in reciprocal space.
+        """,
+    )
+
+    finite_differences_method = SubSection(
+        sub_section=FiniteDifferenceMethod.m_def,
+        repeats=False,
+        description="""
+        Method details for finite-differences calculations.
+        """,
+    )
+
+    dfpt_method = SubSection(
+        sub_section=DFPTMethod.m_def,
+        repeats=False,
+        description="""
+        Method details for DFPT calculations.
+        """,
+    )
+
+class FiniteDifferenceResults(ArchiveSection):
+
+    n_displacements = Quantity(
+        type=int,
+        shape=[],
+        description="""
+        Number of independent displacements.
+        """,
+    )
+
+    # TODO This is a repetition here - it needs to be read from PhononResults instead (?)
+    n_atoms = Quantity(
+        type=int,
+        shape=[],
+        description="""
+        Number of atoms in the simulation cell.
+        """,
+    )
+
+    displacements = Quantity(
+        type=float,
+        shape=['n_displacements', 'n_atoms', 3],
+        unit='meter',
+        description="""
+        Value of the displacements applied to each atom in the simulation cell.
+        """,
+    )
+
+class DFPTResults(ArchiveSection):
+
+    perturbed_potential = Quantity(
+        description="""
+        Perturbed potential as obtained from the DFPT calculation.
+        """
     )
 
 
@@ -112,14 +193,6 @@ class PhononResults(SimulationWorkflowResults):
         """,
     )
 
-    n_displacements = Quantity(
-        type=int,
-        shape=[],
-        description="""
-        Number of independent displacements.
-        """,
-    )
-
     n_atoms = Quantity(
         type=int,
         shape=[],
@@ -128,16 +201,58 @@ class PhononResults(SimulationWorkflowResults):
         """,
     )
 
-    displacements = Quantity(
+    # TODO verify the shape
+    interatomic_force_constants = Quantity(
         type=float,
-        shape=['n_displacements', 'n_atoms', 3],
-        unit='meter',
-        description="""
-        Value of the displacements applied to each atom in the simulation cell.
-        """,
+        shape=[3 * 'n_atoms', 3 * 'n_atoms'],
+        description = """
+        Second derivatives of the total energy with respect to the Cartesian displacements of two atoms. 
+        """
     )
 
-    # TODO add band dos and bandstructure
+    dynamical_tensor = Quantity(
+        type=float,
+        shape=['n_qpoints', 3, 3],
+        description="""
+        Mass-weighted force-constant matrix that governs how the lattice responds to infinitesimal atomic displacements.
+        """
+    )
+
+    ewald_parameter = Quantity(
+        type=float,
+        description="""
+        Controls how the Coulombic (or dipolar) interaction is partitioned between long- and short-range contributions.
+        """
+    )
+
+    # TODO BEC can be obtained both by derivatives of the forces w.r.t. the energy, or from the polarizability w.r.t. the displacement.
+    # If the calculation is converged, both should be identical - this can be used as a measure of quality for the result.
+    born_effective_charges = Quantity(
+        type=float,
+        shape=['n_atoms', 3, 3],
+        description="""
+        Born-effective charges obtained from an electronic-structure calculation.
+        """
+    )
+
+    # TODO verify shape
+    gauge = Quantity(
+        type=float,
+        shape=[3],
+        description="""
+        Gauge that is applied to the eigenvectors, typically such that the first eigenvector is real. 
+        """
+    )
+
+    # TODO add dos and bandstructure - implement properties in properties.band_structure and properites.spectral_profile
+
+    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger)
+
+        # compute band structure and density of states
+        # apply transformations to obtain interatomic force constants from dynamical tensor, or vice versa
+        # TODO implement
+        pass
 
 
 class Phonon(SimulationWorkflow):
