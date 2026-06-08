@@ -1,8 +1,8 @@
 # Basis Sets
 
-The following lays down the schema annotation for several families of basis sets.
-We start off genercially before running over specific examples.
-The aim is not to introduce the full theory behind every basis set, but just enough to understand its main concepts and how they relate.
+The following outlines how several families of basis sets are represented in the schema.
+We start from the general structure before moving through specific examples.
+The aim is not to introduce the full theory behind every basis set, but just enough to understand the main concepts and how they relate.
 
 For model-method hierarchy conventions and generated structure references, see
 [Model Method Overview](overview.md).
@@ -21,10 +21,10 @@ Note that typically, different kinds of regions also have different mathematical
 Each formulation has its own dedicated section, to facilitate their reuse.
 These are all derived from the abstract section `BasisSetComponent`, so that `basis_set_components: list[BasisSetComponent]`.
 
-Generically, `BasisSetComponent` will allude to the the formula at large and just focus on capturing the _subtype_, as well as relevant _parameters_.
+Generically, `BasisSetComponent` alludes to the formula at large and focuses on capturing the _subtype_ together with the relevant _parameters_.
 The most relevant ones are those that most commonly listed in the Method section of an article.
 These typically also influence the _precision_ most.
-Extra, code-specific subtypes and parameters can be added by their respective parsers.
+Code-specific subtypes and parameters may also appear when they are needed to describe a particular method faithfully.
 
 This then coalesces into the following diagram:
 
@@ -85,11 +85,11 @@ Different DFT codes use varying terminology and file organization schemes for ps
 
 - Hardness terminology across codes refers to the same underlying physics: smaller core radii require higher plane-wave cutoffs but provide better transferability and accuracy.
 
-- VASP, QE, and CASTEP all support PAW, but implementation details differ. VASP's PAW follows Kresse & Joubert (1999), while QE implements the original Blöchl formulation.
+- VASP, QE, and CASTEP all support PAW, but the formalism appears in somewhat different code-specific forms. VASP's PAW follows Kresse & Joubert (1999), while QE follows the original Blöchl formulation.
 
-- The Morrison-Bylander-Kleinman (MBK) separable form is an implementation technique used across all types in modern codes, not a distinct pseudopotential classification.
+- The Morrison-Bylander-Kleinman (MBK) separable form is a computational reformulation used across all types in modern codes, not a distinct pseudopotential classification.
 
-- Standard pseudopotential libraries (SSSP, PseudoDojo) provide validation data including recommended cutoffs and accuracy metrics (Δ-gauge). These should be used when available rather than arbitrary cutoff choices.
+- Standard pseudopotential libraries (SSSP, PseudoDojo) provide validation data including recommended cutoffs and accuracy metrics (Δ-gauge). When available, they offer more consistent reference points than arbitrary cutoff choices.
 
 ## LAPW
 
@@ -169,8 +169,8 @@ The CP2K code introduces an algorithm called QuickStep that partitions by Hamilt
 - the kinetic and Coulombic electron-nuclei interaction terms of a Gaussian-type orbital (GTO).
 - the electronic Hartree energy via plane-waves.
 
-This GPW choice is to increase performance. [1]
-In the schema, we would write:
+This GPW choice is made to increase performance. [1]
+A corresponding schema representation can look like:
 
 ```
 BasisSetContainer(name: GPW)
@@ -178,7 +178,7 @@ BasisSetContainer(name: GPW)
 └── AtomCenteredBasisSet(name: GTO, hamiltonian_scope: [`/path/to/hartree_term/hamiltonian`])
 ```
 
-For further details on the schema, see the CP2K parser documentation.
+The same partitioning idea carries over to schema entries originating from CP2K-based calculations.
 
 [1]: J. VandeVondele, M. Krack, et al., Quickstep: Fast and accurate density functional calculations using a mixed Gaussian and plane waves approach,
 _Comp. Phys. Commun._ **167**(2), 103-128, 2005. DOI: 10.1016/j.cpc.2004.12.014.

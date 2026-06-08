@@ -1,5 +1,5 @@
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import SchemaPackage
+from nomad.metainfo import SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
@@ -21,6 +21,10 @@ class HFCIWorkflow(BeyondHFWorkflow):
     """
     Definitions for Configuration-Interaction calculations based on HF (HF → CI).
     """
+
+    method = SubSection(sub_section=HFCIMethod.m_def)
+
+    results = SubSection(sub_section=HFCIResults.m_def)
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

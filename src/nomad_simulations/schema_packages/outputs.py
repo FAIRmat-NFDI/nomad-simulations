@@ -242,13 +242,26 @@ class Outputs(SimulationTime):
         if self.m_parent is not None:
             model_systems = self.m_parent.model_system
             outputs = self.m_parent.outputs
-            if (
-                isinstance(model_systems, list)
-                and isinstance(outputs, list)
-                and len(model_systems) == len(outputs)
-                and len(model_systems) > 0
-            ):
+            if model_systems is None or len(model_systems) == 0:
+                return None
+
+            if outputs and len(model_systems) == len(outputs):
                 return model_systems[self.m_parent_index]
+
+            # Prefer representative system when explicit 1-1 mapping is unavailable.
+            idx = getattr(self.m_parent, 'representative_system_index', None)
+            if isinstance(idx, (int, np.integer)) and 0 <= idx < len(model_systems):
+                return model_systems[idx]
+
+            # Fallback for trajectory-like archives: use the first system carrying
+            # particle-state topology metadata.
+            for model_system in model_systems:
+                if getattr(model_system, 'particle_states', None):
+                    return model_system
+
+            # Last-resort fallback to keep downstream reference-dependent
+            # normalization paths functional in mismatched-length payloads.
+            return model_systems[-1]
         return None
 
     def set_model_method_ref(self) -> ModelMethod | None:
@@ -320,13 +333,21 @@ class Outputs(SimulationTime):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        # Set ref to the last `ModelSystem` if this is not set in the output
-        if self.model_system_ref is None:
-            self.model_system_ref = self.set_model_system_ref()
+        # Set refs opportunistically in all contexts.
+        # Some lightweight/CLI contexts can fail reference assignment depending on
+        # serialization backend state, so keep this best-effort and non-fatal.
+        try:
+            if self.model_system_ref is None:
+                self.model_system_ref = self.set_model_system_ref()
+        except Exception as e:
+            logger.debug(f'Could not set model_system_ref: {e}')
 
-        # Set ref to the last `ModelMethod` if this is not set in the output
-        if self.model_method_ref is None:
-            self.model_method_ref = self.set_model_method_ref()
+        try:
+            # Set ref to the last `ModelMethod` if this is not set in the output
+            if self.model_method_ref is None:
+                self.model_method_ref = self.set_model_method_ref()
+        except Exception as e:
+            logger.debug(f'Could not set model_method_ref: {e}')
 
         # Populate missing SCF delta quantities from available data
         if self.scf_steps is not None:

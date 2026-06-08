@@ -54,7 +54,7 @@ without parser-plugin complexity. The page ends with a short normalization-metho
 ## Assignment 2.4: `SelfConsistency` in `numerical_settings`
 
 !!! abstract "Assignment 2.4"
-    Add `SelfConsistency(threshold_change=1e-3, threshold_change_unit='joule')`
+    Add `SelfConsistency(threshold_change=1e-3 * ureg.joule)`
     under `DFT.numerical_settings` and verify parent-child linkage.
 
 ### Related schema diagrams
@@ -168,12 +168,12 @@ The following exercises focus on practical normalization behavior from current t
     --8<-- "snippets/tutorials/part2_foundations/normalization_exercise_2.py"
     ```
 
-For full normalization execution-order rules, see [Normalization](../explanation/normalize.md).
+For full normalization execution-order rules, see [Normalization](../schema_development/normalize.md).
 
 ## Related Pages
 
 - [Simulation Entry](../explanation/simulation_entry.md)
 - [Model Method Overview](../explanation/model_method/overview.md)
-- [ModelMethod vs NumericalSettings](../explanation/model_method/model_method_vs_numerical_settings.md)
-- [Model System](../explanation/model_system/model_system.md)
-- [Model System Usage Guidelines](../explanation/model_system/usage_guidelines.md)
+- [ModelMethod vs NumericalSettings](../schema_development/model_method_vs_numerical_settings.md)
+- [Model System](../explanation/model_system/overview.md)
+- [Model System Usage Guidelines](../schema_development/model_system_usage_guidelines.md)

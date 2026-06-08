@@ -81,7 +81,12 @@ class DOSProfile(SpectralProfile):
         """
         logger = self.resolve_pdos_name.__annotations__['logger']
         if self.entity_ref is None:
-            if not self.m_parent.name == 'ElectronicDensityOfStates':
+            if (
+                self.m_parent is not None
+                and self.m_parent.m_def.name != 'ElectronicDensityOfStates'
+            ):
+                # Only warn for true PDOS contexts (parent != ElectronicDensityOfStates).
+                # Top-level DOS profiles legitimately lack entity_ref and stay silent.
                 logger.warning(
                     'The `entity_ref` is not set for the DOS profile. Could not resolve the `name`.'
                 )
@@ -228,13 +233,15 @@ class ElectronicDensityOfStates(DOSProfile):
 
         # Check that the closest `energies` to the energy reference is not too far away.
         # If it is very far away, normalization may be very inaccurate and we do not report it.
-        dos_values = self.value.magnitude
         eref = highest_occupied_energy if fermi_level is None else fermi_level
+        if eref is None:
+            return None
+        dos_values = self.value.magnitude
         fermi_idx = (np.abs(energies_points - eref)).argmin()
         fermi_energy_closest = energies_points[fermi_idx]
         distance = np.abs(fermi_energy_closest - eref)
         single_peak_fermi = False
-        if distance.magnitude <= configuration.dos_energy_tolerance:
+        if distance <= configuration.dos_energy_tolerance:
             # See if there are zero values close below the energy reference.
             idx = fermi_idx
             idx_descend = fermi_idx
@@ -244,7 +251,7 @@ class ElectronicDensityOfStates(DOSProfile):
                     energy_distance = np.abs(eref - energies_points[idx])
                 except IndexError:
                     break
-                if energy_distance.magnitude > configuration.dos_energy_tolerance:
+                if energy_distance > configuration.dos_energy_tolerance:
                     break
                 if value <= configuration.dos_intensities_threshold:
                     idx_descend = idx
@@ -260,7 +267,7 @@ class ElectronicDensityOfStates(DOSProfile):
                     energy_distance = np.abs(eref - energies_points[idx])
                 except IndexError:
                     break
-                if energy_distance.magnitude > configuration.dos_energy_tolerance:
+                if energy_distance > configuration.dos_energy_tolerance:
                     break
                 if value <= configuration.dos_intensities_threshold:
                     idx_ascend = idx
@@ -460,6 +467,7 @@ class ElectronicDensityOfStates(DOSProfile):
             return
 
         # Resolve `fermi_level` from a sibling section with respect to `ElectronicDensityOfStates`
+        # Optional sibling lookups use cached results and log at debug level (warn_if_missing=False default).
         fermi_level = get_sibling_section(
             section=self, sibling_section_name='fermi_level', logger=logger
         )  # * we consider `index_sibling` to be 0

@@ -28,6 +28,7 @@ from nomad.datamodel.metainfo.workflow import Link
 from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
 from nomad.units import ureg
 
+from nomad_simulations.schema_packages.errors import ErrorEstimate
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
@@ -526,7 +527,7 @@ class Lambdas(ArchiveSection):
         """,
     )
 
-    values = Quantity(
+    lambda_values = Quantity(
         type=np.float64,
         shape=['*'],
         description='Grid of λ values for this interaction (e.g., [0.0, 0.1, …, 1.0]).',
@@ -572,17 +573,20 @@ class Lambdas(ArchiveSection):
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
 
-        # Basic λ-grid validation
-        vals = self.values or []
-        if len(vals) == 0:
+        vals = (
+            list(self.lambda_values)
+            if self.lambda_values is not None and len(self.lambda_values) > 0
+            else []
+        )
+        if not vals:
             logger.warning(
                 'No Lambda grid is defined; downstream behavior may be undefined.'
             )
         else:
-            # monotonic non-decreasing check
             if any(vals[i] > vals[i + 1] for i in range(len(vals) - 1)):
                 logger.warning(
-                    'Lambda grid is not monotonic non-decreasing; results may be inconsistent.'
+                    'Lambda grid is not monotonic non-decreasing; '
+                    'results may be inconsistent.'
                 )
 
         # Scheme applicability (only meaningful for nonbonded)
@@ -648,14 +652,62 @@ class FreeEnergyCalculationParameters(MDSettings):
     current_lambda_index = Quantity(
         type=int,
         shape=[],
-        description='Index of each Lambdas.values for the current simulation step/state '
+        description='Index into each Lambdas.lambda_values for the current simulation '
+        'step/state '
         '(only valid if all targets share an aligned λ grid).',
     )
-    # Otherwise, prefer per-target scalar λ values for the current state (one scalar per Lambdas entry):
+    # Otherwise, prefer per-target scalar λ values for the current state (one scalar per
+    # Lambdas entry):
     current_lambdas = Quantity(
         type=np.float64, shape=['*'], description='Scalar λ per Lambdas entry order.'
     )
     # TODO not really sure how to deal with this, cause it corresponds to a hierarchical workflow that may not be contained in the same upload
+
+    n_frames = Quantity(
+        type=np.int32,
+        shape=[],
+        description='Number of time frames in the XVG free-energy output.',
+    )
+
+    n_states = Quantity(
+        type=np.int32,
+        shape=[],
+        description='Number of lambda states in the XVG free-energy differences.',
+    )
+
+    times = Quantity(
+        type=np.float64,
+        shape=['n_frames'],
+        unit='picosecond',
+        description='Simulation time for each frame in the XVG output.',
+    )
+
+    energy_derivative = Quantity(
+        type=np.float64,
+        shape=['n_frames'],
+        unit='kilojoule / avogadro_number',
+        description=(
+            'dH/dλ at the current lambda state for each time frame, '
+            'as written by GROMACS to the XVG file.'
+        ),
+    )
+
+    energy_differences = Quantity(
+        type=np.float64,
+        shape=['n_frames', 'n_states'],
+        unit='kilojoule / avogadro_number',
+        description=(
+            'ΔH between the current lambda state and each other state '
+            'for each time frame (n_states columns in the XVG file).'
+        ),
+    )
+
+    pv_energy = Quantity(
+        type=np.float64,
+        shape=['n_frames'],
+        unit='kilojoule / avogadro_number',
+        description='PV contribution to the free energy for each time frame.',
+    )
 
     # TODO make sure this is covered in the outputs
     # atom_indices = Quantity(
@@ -696,8 +748,10 @@ class FreeEnergyCalculationParameters(MDSettings):
                 [
                     val
                     for lam in self.lambdas
-                    if lam.interaction_type in strict_targets and lam.values
-                    for val in lam.values
+                    if lam.interaction_type in strict_targets
+                    and lam.lambda_values is not None
+                    and len(lam.lambda_values) > 0
+                    for val in lam.lambda_values
                 ]
             )
             if values.size > 0 and (np.any(values < 0.0) or np.any(values > 1.0)):
@@ -707,7 +761,11 @@ class FreeEnergyCalculationParameters(MDSettings):
 
         # Alignment check for single current_lambda_index
         if self.current_lambda_index is not None:
-            grids = [tuple(getattr(lam, 'values', []) or []) for lam in self.lambdas]
+            grids = [
+                tuple(lam.lambda_values)
+                for lam in self.lambdas
+                if lam.lambda_values is not None
+            ]
             non_empty = [g for g in grids if len(g) > 0]
             if len(non_empty) > 1 and any(g != non_empty[0] for g in non_empty[1:]):
                 logger.warning(
@@ -747,15 +805,19 @@ class FreeEnergyCalculationParameters(MDSettings):
         # Use single "output" grid as default for missing per-target grids
         output_grid = None
         for lam in self.lambdas:
-            if lam.interaction_type == 'output' and lam.values:
-                output_grid = list(lam.values)
+            if (
+                lam.interaction_type == 'output'
+                and lam.lambda_values is not None
+                and len(lam.lambda_values) > 0
+            ):
+                output_grid = list(lam.lambda_values)
                 break
         if output_grid is not None:
             for lam in self.lambdas:
                 if lam.interaction_type != 'output':
-                    vals = lam.values
+                    vals = lam.lambda_values
                     if vals is None or len(vals) == 0:
-                        lam.values = list(output_grid)
+                        lam.lambda_values = list(output_grid)
                         logger.info(
                             'Missing Lambda grids have been filled from the "output" grid.'
                         )
@@ -789,7 +851,7 @@ class MolecularDynamicsMethod(SimulationWorkflowMethod):
     integrator_type = Quantity(
         type=MEnum(
             'brownian',
-            'conjugant_gradient',
+            'conjugate_gradient',
             'langevin_goga',
             'langevin_schneider',
             'leap_frog',
@@ -1093,10 +1155,11 @@ class MolecularDynamicsResults(SerialWorkflowResults):
             return None
         try:
             universe = archive_to_universe(archive)
-        except Exception:
+        except Exception as exc:
             universe = None
             logger.warning(
-                'Could not convert archive to MDAnalysis Universe, skipping MD results normalization.'
+                'Could not convert archive to MDAnalysis Universe, skipping MD results normalization.',
+                exc_info=exc,
             )
         return universe
 
@@ -1105,7 +1168,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         self, archive: EntryArchive
     ) -> list[RadialDistributionFunction]:
         # logger = self._get_molecular_rdfs.__annotations__['logger']
-        if not self.radial_distribution_functions:
+        if self.radial_distribution_functions:
             return self.radial_distribution_functions
 
         n_traj_split = 10  # number of intervals to split trajectory into for averaging
@@ -1139,15 +1202,11 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         if rdf_results:
             for i_pair, pair_type in enumerate(rdf_results.get('types', [])):
                 rdf = RadialDistributionFunction()
-                rdf.type = rdf_results.get(
-                    'type'
-                )  # TODO this no longer exists (atomic, molecular)
                 rdf.n_smooth = rdf_results.get('n_smooth')
                 rdf.n_prune = n_prune
                 rdf.n_variables = 1
                 rdf.variables_name = ['distance']
 
-                rdf.label = str(pair_type)
                 bins_list = rdf_results.get('bins', [])
                 value_list = rdf_results.get('value', [])
                 frame_start_list = rdf_results.get('frame_start', [])
@@ -1166,6 +1225,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                 rdf.frame_end = (
                     frame_end_list[i_pair] if i_pair < len(frame_end_list) else 0
                 )
+                rdf.label = f'{pair_type}_frames_{rdf.frame_start}-{rdf.frame_end}'
                 sec_rdfs.append(rdf)
 
         return sec_rdfs
@@ -1177,6 +1237,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         # logger = self._get_molecular_msds.__annotations__['logger']
         if (
             self.mean_squared_displacements is not None
+            and len(self.mean_squared_displacements) > 0
         ):  # TODO add check for diffusion_constants too?
             return self.mean_squared_displacements, self.diffusion_constants or []
 
@@ -1207,18 +1268,15 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                     else []
                 )
                 if diffusion_constant.value is not None:
-                    diffusion_constant.error_type = (
-                        'Pearson correlation coefficient'  # TODO Update treatment!
-                    )
                     if msd_results.get('error_diffusion_constant') is not None:
-                        errors = msd_results['error_diffusion_constant'][i_type]
-                        diffusion_constant.errors = (
-                            list(errors)
-                            if isinstance(errors, list | np.ndarray)
-                            else [errors]
+                        error_val = msd_results['error_diffusion_constant'][i_type]
+                        error_estimate = ErrorEstimate(
+                            metric='other',
+                            value=[float(error_val)],
+                            notes='Pearson correlation coefficient of the linear MSD fit',
                         )
-                    diffusion_constant.is_derived = True
-                    diffusion_constant.physical_property_ref = [msd]
+                        diffusion_constant.errors = [error_estimate]
+                    diffusion_constant.physical_property_ref = msd
                     sec_diffusion_constants.append(diffusion_constant)
                 sec_msds.append(msd)
 
@@ -1233,7 +1291,7 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         """
         try:
             data = archive.data
-            sec_systems = data.system
+            sec_systems = data.model_system
             sec_outputs = data.outputs
         except Exception:
             logger.warning('Could not access archive data for populating output RGs')
@@ -1260,13 +1318,6 @@ class MolecularDynamicsResults(SerialWorkflowResults):
                 else:
                     sec_rgs_out = out.radii_of_gyration[0]
 
-                # TODO Fix this assignment fails with TypeError
-                # TODO atomsgroup_ref is now only in RadiiOfGyration, assess
-                # relevance in both classes
-                # try:
-                #     sec_rgs_out.atomsgroup_ref = [rg.get('atomsgroup_ref')]
-                # except Exception:
-                #     pass
                 sec_rgs_out.label = rg.get('label')
                 sec_rgs_out.value = rg.get('value')[sys_ind]
 
@@ -1287,11 +1338,22 @@ class MolecularDynamicsResults(SerialWorkflowResults):
 
         try:
             data = archive.data
-            sec_systems = data.system
-            sec_system = sec_systems[data.representative_system_index]
+            # Use the first system that has sub_systems (topology frame),
+            # since representative_system_index may point to a trajectory frame
+            # with no sub_systems.
+            sec_system = next(
+                (s for s in data.model_system if s.sub_systems),
+                None,
+            )
             sec_outputs = data.outputs
         except Exception:
             logger.warning('Could not access archive data for RG calculation')
+            return []
+
+        if sec_system is None:
+            logger.warning(
+                'Could not find a system with sub_systems for RG calculation'
+            )
             return []
 
         # Check if RGs are already present in outputs
@@ -1325,22 +1387,39 @@ class MolecularDynamicsResults(SerialWorkflowResults):
     def normalize(self, archive, logger):
         super().normalize(archive, logger)
 
+        # Populate n_steps and trajectory references from parsed model_system list
+        model_systems = archive.data.model_system if archive.data else []
+        if model_systems and self.n_steps is None:
+            self.n_steps = len(model_systems)
+            self.trajectory = model_systems
+
         self._universe = self.get_universe(archive)
         if self._universe is None:
             return
 
         self._bead_groups = _get_molecular_bead_groups(self._universe)
 
-        # calculate molecular radial distribution functions
-        self.radial_distribution_functions.extend(self._get_molecular_rdfs(archive))
+        # Calculate derived observables only when parser/mapping did not provide them.
+        # This avoids duplicating data when normalization is executed multiple times.
+        if not self.radial_distribution_functions:
+            self.radial_distribution_functions.extend(self._get_molecular_rdfs(archive))
 
-        # calculate the molecular mean squared displacements
-        msds, diffusion_constants = self._get_molecular_msds()
-        self.mean_squared_displacements.extend(msds)
-        self.diffusion_constants.extend(diffusion_constants)
+        if not self.mean_squared_displacements and not self.diffusion_constants:
+            msds, diffusion_constants = self._get_molecular_msds()
+            self.mean_squared_displacements.extend(msds)
+            self.diffusion_constants.extend(diffusion_constants)
 
         # calculate radius of gyration for polymers
         self.radii_of_gyration = self.get_molecular_rgs(archive)
+
+        for sec in (
+            list(self.radial_distribution_functions or [])
+            + list(self.mean_squared_displacements or [])
+            + list(self.diffusion_constants or [])
+            + list(self.radii_of_gyration or [])
+        ):
+            if hasattr(sec, 'normalize'):
+                sec.normalize(archive, logger)
 
 
 class MolecularDynamics(SerialWorkflow):
@@ -1350,14 +1429,18 @@ class MolecularDynamics(SerialWorkflow):
 
     results = SubSection(sub_section=MolecularDynamicsResults.m_def)
 
-    def map_inputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
+    @log
+    def map_inputs(self, archive: EntryArchive) -> None:
         if not self.method:
             self.method = MolecularDynamicsMethod()
+        logger = self.map_inputs.__annotations__['logger']
         super().map_inputs(archive, logger=logger)
 
-    def map_outputs(self, archive: EntryArchive, logger: BoundLogger = None) -> None:
+    @log
+    def map_outputs(self, archive: EntryArchive) -> None:
         if not self.results:
             self.results = MolecularDynamicsResults()
+        logger = self.map_outputs.__annotations__['logger']
         super().map_outputs(archive, logger=logger)
 
     def normalize(self, archive, logger):

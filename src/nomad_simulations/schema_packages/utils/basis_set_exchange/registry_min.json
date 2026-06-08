@@ -1,0 +1,3106 @@
+[
+  {
+    "key": "2zap",
+    "canonical_name": "2ZaP"
+  },
+  {
+    "key": "2zapa-nr",
+    "canonical_name": "2ZaPa-NR"
+  },
+  {
+    "key": "2zapa-nr-cv",
+    "canonical_name": "2ZaPa-NR-CV"
+  },
+  {
+    "key": "3-21g",
+    "canonical_name": "3-21G"
+  },
+  {
+    "key": "3zap",
+    "canonical_name": "3ZaP"
+  },
+  {
+    "key": "3zapa-nr",
+    "canonical_name": "3ZaPa-NR"
+  },
+  {
+    "key": "3zapa-nr-cv",
+    "canonical_name": "3ZaPa-NR-CV"
+  },
+  {
+    "key": "4-31g",
+    "canonical_name": "4-31G"
+  },
+  {
+    "key": "4zap",
+    "canonical_name": "4ZaP"
+  },
+  {
+    "key": "4zapa-nr",
+    "canonical_name": "4ZaPa-NR"
+  },
+  {
+    "key": "4zapa-nr-cv",
+    "canonical_name": "4ZaPa-NR-CV"
+  },
+  {
+    "key": "5-21g",
+    "canonical_name": "5-21G"
+  },
+  {
+    "key": "5zap",
+    "canonical_name": "5ZaP"
+  },
+  {
+    "key": "5zapa-nr",
+    "canonical_name": "5ZaPa-NR"
+  },
+  {
+    "key": "5zapa-nr-cv",
+    "canonical_name": "5ZaPa-NR-CV"
+  },
+  {
+    "key": "6-21g",
+    "canonical_name": "6-21G"
+  },
+  {
+    "key": "6-31++g",
+    "canonical_name": "6-31++G"
+  },
+  {
+    "key": "6-31++g_st_",
+    "canonical_name": "6-31++G*"
+  },
+  {
+    "key": "6-31++g_st__st_",
+    "canonical_name": "6-31++G**"
+  },
+  {
+    "key": "6-31++g_st__st_-j",
+    "canonical_name": "6-31++G**-J"
+  },
+  {
+    "key": "6-31+g",
+    "canonical_name": "6-31+G"
+  },
+  {
+    "key": "6-31+g_st_",
+    "canonical_name": "6-31+G*"
+  },
+  {
+    "key": "6-31+g_st_-j",
+    "canonical_name": "6-31+G*-J"
+  },
+  {
+    "key": "6-31+g_st__st_",
+    "canonical_name": "6-31+G**"
+  },
+  {
+    "key": "6-311++g",
+    "canonical_name": "6-311++G"
+  },
+  {
+    "key": "6-311++g(2d,2p)",
+    "canonical_name": "6-311++G(2d,2p)"
+  },
+  {
+    "key": "6-311++g(3df,3pd)",
+    "canonical_name": "6-311++G(3df,3pd)"
+  },
+  {
+    "key": "6-311++g_st_",
+    "canonical_name": "6-311++G*"
+  },
+  {
+    "key": "6-311++g_st__st_",
+    "canonical_name": "6-311++G**"
+  },
+  {
+    "key": "6-311++g_st__st_-j",
+    "canonical_name": "6-311++G**-J"
+  },
+  {
+    "key": "6-311+g",
+    "canonical_name": "6-311+G"
+  },
+  {
+    "key": "6-311+g(2d,p)",
+    "canonical_name": "6-311+G(2d,p)"
+  },
+  {
+    "key": "6-311+g_st_",
+    "canonical_name": "6-311+G*"
+  },
+  {
+    "key": "6-311+g_st_-j",
+    "canonical_name": "6-311+G*-J"
+  },
+  {
+    "key": "6-311+g_st__st_",
+    "canonical_name": "6-311+G**"
+  },
+  {
+    "key": "6-311g",
+    "canonical_name": "6-311G"
+  },
+  {
+    "key": "6-311g(2df,2pd)",
+    "canonical_name": "6-311G(2df,2pd)"
+  },
+  {
+    "key": "6-311g(d,p)",
+    "canonical_name": "6-311G(d,p)"
+  },
+  {
+    "key": "6-311g-j",
+    "canonical_name": "6-311G-J"
+  },
+  {
+    "key": "6-311g_st_",
+    "canonical_name": "6-311G*"
+  },
+  {
+    "key": "6-311g_st__st_",
+    "canonical_name": "6-311G**"
+  },
+  {
+    "key": "6-311g_st__st_-rifit",
+    "canonical_name": "6-311G**-RIFIT"
+  },
+  {
+    "key": "6-311xxg(d,p)",
+    "canonical_name": "6-311xxG(d,p)"
+  },
+  {
+    "key": "6-31g",
+    "canonical_name": "6-31G"
+  },
+  {
+    "key": "6-31g(2df,p)",
+    "canonical_name": "6-31G(2df,p)"
+  },
+  {
+    "key": "6-31g(3df,3pd)",
+    "canonical_name": "6-31G(3df,3pd)"
+  },
+  {
+    "key": "6-31g(d,p)",
+    "canonical_name": "6-31G(d,p)"
+  },
+  {
+    "key": "6-31g-blaudeau",
+    "canonical_name": "6-31G-Blaudeau"
+  },
+  {
+    "key": "6-31g-j",
+    "canonical_name": "6-31G-J"
+  },
+  {
+    "key": "6-31g_st_",
+    "canonical_name": "6-31G*"
+  },
+  {
+    "key": "6-31g_st_-blaudeau",
+    "canonical_name": "6-31G*-Blaudeau"
+  },
+  {
+    "key": "6-31g_st__st_",
+    "canonical_name": "6-31G**"
+  },
+  {
+    "key": "6-31g_st__st_-rifit",
+    "canonical_name": "6-31G**-RIFIT"
+  },
+  {
+    "key": "6zap",
+    "canonical_name": "6ZaP"
+  },
+  {
+    "key": "6zapa-nr",
+    "canonical_name": "6ZaPa-NR"
+  },
+  {
+    "key": "7zapa-nr",
+    "canonical_name": "7ZaPa-NR"
+  },
+  {
+    "key": "acv2z-j",
+    "canonical_name": "acv2z-J"
+  },
+  {
+    "key": "acv3z-j",
+    "canonical_name": "acv3z-J"
+  },
+  {
+    "key": "acv4z-j",
+    "canonical_name": "acv4z-J"
+  },
+  {
+    "key": "admm-1",
+    "canonical_name": "admm-1"
+  },
+  {
+    "key": "admm-2",
+    "canonical_name": "admm-2"
+  },
+  {
+    "key": "admm-3",
+    "canonical_name": "admm-3"
+  },
+  {
+    "key": "ahgbs-5",
+    "canonical_name": "AHGBS-5"
+  },
+  {
+    "key": "ahgbs-7",
+    "canonical_name": "AHGBS-7"
+  },
+  {
+    "key": "ahgbs-9",
+    "canonical_name": "AHGBS-9"
+  },
+  {
+    "key": "ahgbsp1-5",
+    "canonical_name": "AHGBSP1-5"
+  },
+  {
+    "key": "ahgbsp1-7",
+    "canonical_name": "AHGBSP1-7"
+  },
+  {
+    "key": "ahgbsp1-9",
+    "canonical_name": "AHGBSP1-9"
+  },
+  {
+    "key": "ahgbsp2-5",
+    "canonical_name": "AHGBSP2-5"
+  },
+  {
+    "key": "ahgbsp2-7",
+    "canonical_name": "AHGBSP2-7"
+  },
+  {
+    "key": "ahgbsp2-9",
+    "canonical_name": "AHGBSP2-9"
+  },
+  {
+    "key": "ahgbsp3-5",
+    "canonical_name": "AHGBSP3-5"
+  },
+  {
+    "key": "ahgbsp3-7",
+    "canonical_name": "AHGBSP3-7"
+  },
+  {
+    "key": "ahgbsp3-9",
+    "canonical_name": "AHGBSP3-9"
+  },
+  {
+    "key": "ahlrichs pvdz",
+    "canonical_name": "Ahlrichs pVDZ"
+  },
+  {
+    "key": "ahlrichs tzv",
+    "canonical_name": "Ahlrichs TZV"
+  },
+  {
+    "key": "ahlrichs vdz",
+    "canonical_name": "Ahlrichs VDZ"
+  },
+  {
+    "key": "ahlrichs vtz",
+    "canonical_name": "Ahlrichs VTZ"
+  },
+  {
+    "key": "ano-dk3",
+    "canonical_name": "ANO-DK3"
+  },
+  {
+    "key": "ano-pv5z",
+    "canonical_name": "ano-pV5Z"
+  },
+  {
+    "key": "ano-pvdz",
+    "canonical_name": "ano-pVDZ"
+  },
+  {
+    "key": "ano-pvqz",
+    "canonical_name": "ano-pVQZ"
+  },
+  {
+    "key": "ano-pvtz",
+    "canonical_name": "ano-pVTZ"
+  },
+  {
+    "key": "ano-r",
+    "canonical_name": "ANO-R"
+  },
+  {
+    "key": "ano-r0",
+    "canonical_name": "ANO-R0"
+  },
+  {
+    "key": "ano-r1",
+    "canonical_name": "ANO-R1"
+  },
+  {
+    "key": "ano-r2",
+    "canonical_name": "ANO-R2"
+  },
+  {
+    "key": "ano-r3",
+    "canonical_name": "ANO-R3"
+  },
+  {
+    "key": "ano-rcc",
+    "canonical_name": "ANO-RCC"
+  },
+  {
+    "key": "ano-rcc-mb",
+    "canonical_name": "ANO-RCC-MB"
+  },
+  {
+    "key": "ano-rcc-vdz",
+    "canonical_name": "ANO-RCC-VDZ"
+  },
+  {
+    "key": "ano-rcc-vdzp",
+    "canonical_name": "ANO-RCC-VDZP"
+  },
+  {
+    "key": "ano-rcc-vqzp",
+    "canonical_name": "ANO-RCC-VQZP"
+  },
+  {
+    "key": "ano-rcc-vtz",
+    "canonical_name": "ANO-RCC-VTZ"
+  },
+  {
+    "key": "ano-rcc-vtzp",
+    "canonical_name": "ANO-RCC-VTZP"
+  },
+  {
+    "key": "ano-vt-dz",
+    "canonical_name": "ANO-VT-DZ"
+  },
+  {
+    "key": "ano-vt-qz",
+    "canonical_name": "ANO-VT-QZ"
+  },
+  {
+    "key": "ano-vt-tz",
+    "canonical_name": "ANO-VT-TZ"
+  },
+  {
+    "key": "apr-cc-pv(q+d)z",
+    "canonical_name": "apr-cc-pV(Q+d)Z"
+  },
+  {
+    "key": "asigmadz",
+    "canonical_name": "asigmaDZ"
+  },
+  {
+    "key": "asigmaqz",
+    "canonical_name": "asigmaQZ"
+  },
+  {
+    "key": "asigmatz",
+    "canonical_name": "asigmaTZ"
+  },
+  {
+    "key": "atzp-zora",
+    "canonical_name": "ATZP-ZORA"
+  },
+  {
+    "key": "aug-admm-1",
+    "canonical_name": "aug-admm-1"
+  },
+  {
+    "key": "aug-admm-2",
+    "canonical_name": "aug-admm-2"
+  },
+  {
+    "key": "aug-admm-3",
+    "canonical_name": "aug-admm-3"
+  },
+  {
+    "key": "aug-ano-pv5z",
+    "canonical_name": "aug-ano-pV5Z"
+  },
+  {
+    "key": "aug-ano-pvdz",
+    "canonical_name": "aug-ano-pVDZ"
+  },
+  {
+    "key": "aug-ano-pvqz",
+    "canonical_name": "aug-ano-pVQZ"
+  },
+  {
+    "key": "aug-ano-pvtz",
+    "canonical_name": "aug-ano-pVTZ"
+  },
+  {
+    "key": "aug-cc-pcv5z",
+    "canonical_name": "aug-cc-pCV5Z"
+  },
+  {
+    "key": "aug-cc-pcvdz",
+    "canonical_name": "aug-cc-pCVDZ"
+  },
+  {
+    "key": "aug-cc-pcvdz-dk",
+    "canonical_name": "aug-cc-pCVDZ-DK"
+  },
+  {
+    "key": "aug-cc-pcvqz",
+    "canonical_name": "aug-cc-pCVQZ"
+  },
+  {
+    "key": "aug-cc-pcvqz-dk",
+    "canonical_name": "aug-cc-pCVQZ-DK"
+  },
+  {
+    "key": "aug-cc-pcvtz",
+    "canonical_name": "aug-cc-pCVTZ"
+  },
+  {
+    "key": "aug-cc-pcvtz-dk",
+    "canonical_name": "aug-cc-pCVTZ-DK"
+  },
+  {
+    "key": "aug-cc-pv(5+d)z",
+    "canonical_name": "aug-cc-pV(5+d)Z"
+  },
+  {
+    "key": "aug-cc-pv(d+d)z",
+    "canonical_name": "aug-cc-pV(D+d)Z"
+  },
+  {
+    "key": "aug-cc-pv(q+d)z",
+    "canonical_name": "aug-cc-pV(Q+d)Z"
+  },
+  {
+    "key": "aug-cc-pv(t+d)z",
+    "canonical_name": "aug-cc-pV(T+d)Z"
+  },
+  {
+    "key": "aug-cc-pv5z",
+    "canonical_name": "aug-cc-pV5Z"
+  },
+  {
+    "key": "aug-cc-pv5z-dk",
+    "canonical_name": "aug-cc-pV5Z-DK"
+  },
+  {
+    "key": "aug-cc-pv5z-optri",
+    "canonical_name": "aug-cc-pV5Z-OPTRI"
+  },
+  {
+    "key": "aug-cc-pv5z-pp",
+    "canonical_name": "aug-cc-pV5Z-PP"
+  },
+  {
+    "key": "aug-cc-pv5z-pp-optri",
+    "canonical_name": "aug-cc-pV5Z-PP-OPTRI"
+  },
+  {
+    "key": "aug-cc-pv5z-pp-rifit",
+    "canonical_name": "aug-cc-pV5Z-PP-RIFIT"
+  },
+  {
+    "key": "aug-cc-pv5z-rifit",
+    "canonical_name": "aug-cc-pV5Z-RIFIT"
+  },
+  {
+    "key": "aug-cc-pv6z",
+    "canonical_name": "aug-cc-pV6Z"
+  },
+  {
+    "key": "aug-cc-pv6z-rifit",
+    "canonical_name": "aug-cc-pV6Z-RIFIT"
+  },
+  {
+    "key": "aug-cc-pv7z",
+    "canonical_name": "aug-cc-pV7Z"
+  },
+  {
+    "key": "aug-cc-pvdz",
+    "canonical_name": "aug-cc-pVDZ"
+  },
+  {
+    "key": "aug-cc-pvdz-dk",
+    "canonical_name": "aug-cc-pVDZ-DK"
+  },
+  {
+    "key": "aug-cc-pvdz-dk3",
+    "canonical_name": "aug-cc-pVDZ-DK3"
+  },
+  {
+    "key": "aug-cc-pvdz-optri",
+    "canonical_name": "aug-cc-pVDZ-OPTRI"
+  },
+  {
+    "key": "aug-cc-pvdz-pp",
+    "canonical_name": "aug-cc-pVDZ-PP"
+  },
+  {
+    "key": "aug-cc-pvdz-pp-optri",
+    "canonical_name": "aug-cc-pVDZ-PP-OPTRI"
+  },
+  {
+    "key": "aug-cc-pvdz-pp-rifit",
+    "canonical_name": "aug-cc-pVDZ-PP-RIFIT"
+  },
+  {
+    "key": "aug-cc-pvdz-rifit",
+    "canonical_name": "aug-cc-pVDZ-RIFIT"
+  },
+  {
+    "key": "aug-cc-pvdz-x2c",
+    "canonical_name": "aug-cc-pVDZ-X2C"
+  },
+  {
+    "key": "aug-cc-pvqz",
+    "canonical_name": "aug-cc-pVQZ"
+  },
+  {
+    "key": "aug-cc-pvqz-dk",
+    "canonical_name": "aug-cc-pVQZ-DK"
+  },
+  {
+    "key": "aug-cc-pvqz-dk3",
+    "canonical_name": "aug-cc-pVQZ-DK3"
+  },
+  {
+    "key": "aug-cc-pvqz-optri",
+    "canonical_name": "aug-cc-pVQZ-OPTRI"
+  },
+  {
+    "key": "aug-cc-pvqz-pp",
+    "canonical_name": "aug-cc-pVQZ-PP"
+  },
+  {
+    "key": "aug-cc-pvqz-pp-optri",
+    "canonical_name": "aug-cc-pVQZ-PP-OPTRI"
+  },
+  {
+    "key": "aug-cc-pvqz-pp-rifit",
+    "canonical_name": "aug-cc-pVQZ-PP-RIFIT"
+  },
+  {
+    "key": "aug-cc-pvqz-rifit",
+    "canonical_name": "aug-cc-pVQZ-RIFIT"
+  },
+  {
+    "key": "aug-cc-pvqz-x2c",
+    "canonical_name": "aug-cc-pVQZ-X2C"
+  },
+  {
+    "key": "aug-cc-pvtz",
+    "canonical_name": "aug-cc-pVTZ"
+  },
+  {
+    "key": "aug-cc-pvtz-dk",
+    "canonical_name": "aug-cc-pVTZ-DK"
+  },
+  {
+    "key": "aug-cc-pvtz-dk3",
+    "canonical_name": "aug-cc-pVTZ-DK3"
+  },
+  {
+    "key": "aug-cc-pvtz-j",
+    "canonical_name": "aug-cc-pVTZ-J"
+  },
+  {
+    "key": "aug-cc-pvtz-optri",
+    "canonical_name": "aug-cc-pVTZ-OPTRI"
+  },
+  {
+    "key": "aug-cc-pvtz-pp",
+    "canonical_name": "aug-cc-pVTZ-PP"
+  },
+  {
+    "key": "aug-cc-pvtz-pp-optri",
+    "canonical_name": "aug-cc-pVTZ-PP-OPTRI"
+  },
+  {
+    "key": "aug-cc-pvtz-pp-rifit",
+    "canonical_name": "aug-cc-pVTZ-PP-RIFIT"
+  },
+  {
+    "key": "aug-cc-pvtz-rifit",
+    "canonical_name": "aug-cc-pVTZ-RIFIT"
+  },
+  {
+    "key": "aug-cc-pvtz-x2c",
+    "canonical_name": "aug-cc-pVTZ-X2C"
+  },
+  {
+    "key": "aug-cc-pwcv5z",
+    "canonical_name": "aug-cc-pwCV5Z"
+  },
+  {
+    "key": "aug-cc-pwcv5z-dk",
+    "canonical_name": "aug-cc-pwCV5Z-DK"
+  },
+  {
+    "key": "aug-cc-pwcv5z-pp",
+    "canonical_name": "aug-cc-pwCV5Z-PP"
+  },
+  {
+    "key": "aug-cc-pwcv5z-pp-optri",
+    "canonical_name": "aug-cc-pwCV5Z-PP-OPTRI"
+  },
+  {
+    "key": "aug-cc-pwcv5z-pp-rifit",
+    "canonical_name": "aug-cc-pwCV5Z-PP-RIFIT"
+  },
+  {
+    "key": "aug-cc-pwcv5z-rifit",
+    "canonical_name": "aug-cc-pwCV5Z-RIFIT"
+  },
+  {
+    "key": "aug-cc-pwcvdz",
+    "canonical_name": "aug-cc-pwCVDZ"
+  },
+  {
+    "key": "aug-cc-pwcvdz-dk3",
+    "canonical_name": "aug-cc-pwCVDZ-DK3"
+  },
+  {
+    "key": "aug-cc-pwcvdz-pp",
+    "canonical_name": "aug-cc-pwCVDZ-PP"
+  },
+  {
+    "key": "aug-cc-pwcvdz-pp-optri",
+    "canonical_name": "aug-cc-pwCVDZ-PP-OPTRI"
+  },
+  {
+    "key": "aug-cc-pwcvdz-pp-rifit",
+    "canonical_name": "aug-cc-pwCVDZ-PP-RIFIT"
+  },
+  {
+    "key": "aug-cc-pwcvdz-rifit",
+    "canonical_name": "aug-cc-pwCVDZ-RIFIT"
+  },
+  {
+    "key": "aug-cc-pwcvdz-x2c",
+    "canonical_name": "aug-cc-pwCVDZ-X2C"
+  },
+  {
+    "key": "aug-cc-pwcvqz",
+    "canonical_name": "aug-cc-pwCVQZ"
+  },
+  {
+    "key": "aug-cc-pwcvqz-dk",
+    "canonical_name": "aug-cc-pwCVQZ-DK"
+  },
+  {
+    "key": "aug-cc-pwcvqz-dk3",
+    "canonical_name": "aug-cc-pwCVQZ-DK3"
+  },
+  {
+    "key": "aug-cc-pwcvqz-pp",
+    "canonical_name": "aug-cc-pwCVQZ-PP"
+  },
+  {
+    "key": "aug-cc-pwcvqz-pp-optri",
+    "canonical_name": "aug-cc-pwCVQZ-PP-OPTRI"
+  },
+  {
+    "key": "aug-cc-pwcvqz-pp-rifit",
+    "canonical_name": "aug-cc-pwCVQZ-PP-RIFIT"
+  },
+  {
+    "key": "aug-cc-pwcvqz-rifit",
+    "canonical_name": "aug-cc-pwCVQZ-RIFIT"
+  },
+  {
+    "key": "aug-cc-pwcvqz-x2c",
+    "canonical_name": "aug-cc-pwCVQZ-X2C"
+  },
+  {
+    "key": "aug-cc-pwcvtz",
+    "canonical_name": "aug-cc-pwCVTZ"
+  },
+  {
+    "key": "aug-cc-pwcvtz-dk",
+    "canonical_name": "aug-cc-pwCVTZ-DK"
+  },
+  {
+    "key": "aug-cc-pwcvtz-dk3",
+    "canonical_name": "aug-cc-pwCVTZ-DK3"
+  },
+  {
+    "key": "aug-cc-pwcvtz-pp",
+    "canonical_name": "aug-cc-pwCVTZ-PP"
+  },
+  {
+    "key": "aug-cc-pwcvtz-pp-optri",
+    "canonical_name": "aug-cc-pwCVTZ-PP-OPTRI"
+  },
+  {
+    "key": "aug-cc-pwcvtz-pp-rifit",
+    "canonical_name": "aug-cc-pwCVTZ-PP-RIFIT"
+  },
+  {
+    "key": "aug-cc-pwcvtz-rifit",
+    "canonical_name": "aug-cc-pwCVTZ-RIFIT"
+  },
+  {
+    "key": "aug-cc-pwcvtz-x2c",
+    "canonical_name": "aug-cc-pwCVTZ-X2C"
+  },
+  {
+    "key": "aug-ccx-5z",
+    "canonical_name": "aug-ccX-5Z"
+  },
+  {
+    "key": "aug-ccx-dz",
+    "canonical_name": "aug-ccX-DZ"
+  },
+  {
+    "key": "aug-ccx-qz",
+    "canonical_name": "aug-ccX-QZ"
+  },
+  {
+    "key": "aug-ccx-tz",
+    "canonical_name": "aug-ccX-TZ"
+  },
+  {
+    "key": "aug-mcc-pv5z",
+    "canonical_name": "aug-mcc-pV5Z"
+  },
+  {
+    "key": "aug-mcc-pv6z",
+    "canonical_name": "aug-mcc-pV6Z"
+  },
+  {
+    "key": "aug-mcc-pv7z",
+    "canonical_name": "aug-mcc-pV7Z"
+  },
+  {
+    "key": "aug-mcc-pv8z",
+    "canonical_name": "aug-mcc-pV8Z"
+  },
+  {
+    "key": "aug-mcc-pvqz",
+    "canonical_name": "aug-mcc-pVQZ"
+  },
+  {
+    "key": "aug-mcc-pvtz",
+    "canonical_name": "aug-mcc-pVTZ"
+  },
+  {
+    "key": "aug-pc-0",
+    "canonical_name": "aug-pc-0"
+  },
+  {
+    "key": "aug-pc-1",
+    "canonical_name": "aug-pc-1"
+  },
+  {
+    "key": "aug-pc-2",
+    "canonical_name": "aug-pc-2"
+  },
+  {
+    "key": "aug-pc-3",
+    "canonical_name": "aug-pc-3"
+  },
+  {
+    "key": "aug-pc-4",
+    "canonical_name": "aug-pc-4"
+  },
+  {
+    "key": "aug-pch-1",
+    "canonical_name": "aug-pcH-1"
+  },
+  {
+    "key": "aug-pch-2",
+    "canonical_name": "aug-pcH-2"
+  },
+  {
+    "key": "aug-pch-3",
+    "canonical_name": "aug-pcH-3"
+  },
+  {
+    "key": "aug-pch-4",
+    "canonical_name": "aug-pcH-4"
+  },
+  {
+    "key": "aug-pcj-0",
+    "canonical_name": "aug-pcJ-0"
+  },
+  {
+    "key": "aug-pcj-0_2006",
+    "canonical_name": "aug-pcJ-0_2006"
+  },
+  {
+    "key": "aug-pcj-1",
+    "canonical_name": "aug-pcJ-1"
+  },
+  {
+    "key": "aug-pcj-1_2006",
+    "canonical_name": "aug-pcJ-1_2006"
+  },
+  {
+    "key": "aug-pcj-2",
+    "canonical_name": "aug-pcJ-2"
+  },
+  {
+    "key": "aug-pcj-2_2006",
+    "canonical_name": "aug-pcJ-2_2006"
+  },
+  {
+    "key": "aug-pcj-3",
+    "canonical_name": "aug-pcJ-3"
+  },
+  {
+    "key": "aug-pcj-3_2006",
+    "canonical_name": "aug-pcJ-3_2006"
+  },
+  {
+    "key": "aug-pcj-4",
+    "canonical_name": "aug-pcJ-4"
+  },
+  {
+    "key": "aug-pcj-4_2006",
+    "canonical_name": "aug-pcJ-4_2006"
+  },
+  {
+    "key": "aug-pcs-0",
+    "canonical_name": "aug-pcS-0"
+  },
+  {
+    "key": "aug-pcs-1",
+    "canonical_name": "aug-pcS-1"
+  },
+  {
+    "key": "aug-pcs-2",
+    "canonical_name": "aug-pcS-2"
+  },
+  {
+    "key": "aug-pcs-3",
+    "canonical_name": "aug-pcS-3"
+  },
+  {
+    "key": "aug-pcs-4",
+    "canonical_name": "aug-pcS-4"
+  },
+  {
+    "key": "aug-pcseg-0",
+    "canonical_name": "aug-pcseg-0"
+  },
+  {
+    "key": "aug-pcseg-1",
+    "canonical_name": "aug-pcseg-1"
+  },
+  {
+    "key": "aug-pcseg-2",
+    "canonical_name": "aug-pcseg-2"
+  },
+  {
+    "key": "aug-pcseg-3",
+    "canonical_name": "aug-pcseg-3"
+  },
+  {
+    "key": "aug-pcseg-4",
+    "canonical_name": "aug-pcseg-4"
+  },
+  {
+    "key": "aug-pcsseg-0",
+    "canonical_name": "aug-pcSseg-0"
+  },
+  {
+    "key": "aug-pcsseg-1",
+    "canonical_name": "aug-pcSseg-1"
+  },
+  {
+    "key": "aug-pcsseg-2",
+    "canonical_name": "aug-pcSseg-2"
+  },
+  {
+    "key": "aug-pcsseg-3",
+    "canonical_name": "aug-pcSseg-3"
+  },
+  {
+    "key": "aug-pcsseg-4",
+    "canonical_name": "aug-pcSseg-4"
+  },
+  {
+    "key": "aug-pcx-1",
+    "canonical_name": "aug-pcX-1"
+  },
+  {
+    "key": "aug-pcx-2",
+    "canonical_name": "aug-pcX-2"
+  },
+  {
+    "key": "aug-pcx-3",
+    "canonical_name": "aug-pcX-3"
+  },
+  {
+    "key": "aug-pcx-4",
+    "canonical_name": "aug-pcX-4"
+  },
+  {
+    "key": "aug-pv7z",
+    "canonical_name": "aug-pV7Z"
+  },
+  {
+    "key": "aug-seg-cc-pv5z-pp",
+    "canonical_name": "aug-seg-cc-pV5Z-PP"
+  },
+  {
+    "key": "aug-seg-cc-pvdz-pp",
+    "canonical_name": "aug-seg-cc-pVDZ-PP"
+  },
+  {
+    "key": "aug-seg-cc-pvqz-pp",
+    "canonical_name": "aug-seg-cc-pVQZ-PP"
+  },
+  {
+    "key": "aug-seg-cc-pvtz-pp",
+    "canonical_name": "aug-seg-cc-pVTZ-PP"
+  },
+  {
+    "key": "aug-seg-cc-pwcv5z-pp",
+    "canonical_name": "aug-seg-cc-pwCV5Z-PP"
+  },
+  {
+    "key": "aug-seg-cc-pwcvdz-pp",
+    "canonical_name": "aug-seg-cc-pwCVDZ-PP"
+  },
+  {
+    "key": "aug-seg-cc-pwcvqz-pp",
+    "canonical_name": "aug-seg-cc-pwCVQZ-PP"
+  },
+  {
+    "key": "aug-seg-cc-pwcvtz-pp",
+    "canonical_name": "aug-seg-cc-pwCVTZ-PP"
+  },
+  {
+    "key": "binning 641",
+    "canonical_name": "binning 641"
+  },
+  {
+    "key": "binning 641(d)",
+    "canonical_name": "binning 641(d)"
+  },
+  {
+    "key": "binning 641(df)",
+    "canonical_name": "binning 641(df)"
+  },
+  {
+    "key": "binning 641+",
+    "canonical_name": "binning 641+"
+  },
+  {
+    "key": "binning 641+(d)",
+    "canonical_name": "binning 641+(d)"
+  },
+  {
+    "key": "binning 641+(df)",
+    "canonical_name": "binning 641+(df)"
+  },
+  {
+    "key": "binning 962",
+    "canonical_name": "binning 962"
+  },
+  {
+    "key": "binning 962(d)",
+    "canonical_name": "binning 962(d)"
+  },
+  {
+    "key": "binning 962(df)",
+    "canonical_name": "binning 962(df)"
+  },
+  {
+    "key": "binning 962+",
+    "canonical_name": "binning 962+"
+  },
+  {
+    "key": "binning 962+(d)",
+    "canonical_name": "binning 962+(d)"
+  },
+  {
+    "key": "binning 962+(df)",
+    "canonical_name": "binning 962+(df)"
+  },
+  {
+    "key": "cadpac-tz2p",
+    "canonical_name": "CADPAC-TZ2P"
+  },
+  {
+    "key": "cc-pcv5z",
+    "canonical_name": "cc-pCV5Z"
+  },
+  {
+    "key": "cc-pcvdz",
+    "canonical_name": "cc-pCVDZ"
+  },
+  {
+    "key": "cc-pcvdz-dk",
+    "canonical_name": "cc-pCVDZ-DK"
+  },
+  {
+    "key": "cc-pcvdz-f12",
+    "canonical_name": "cc-pCVDZ-F12"
+  },
+  {
+    "key": "cc-pcvdz-f12-optri",
+    "canonical_name": "cc-pCVDZ-F12-OPTRI"
+  },
+  {
+    "key": "cc-pcvdz-f12-rifit",
+    "canonical_name": "cc-pCVDZ-F12-RIFIT"
+  },
+  {
+    "key": "cc-pcvqz",
+    "canonical_name": "cc-pCVQZ"
+  },
+  {
+    "key": "cc-pcvqz-dk",
+    "canonical_name": "cc-pCVQZ-DK"
+  },
+  {
+    "key": "cc-pcvqz-f12",
+    "canonical_name": "cc-pCVQZ-F12"
+  },
+  {
+    "key": "cc-pcvqz-f12-optri",
+    "canonical_name": "cc-pCVQZ-F12-OPTRI"
+  },
+  {
+    "key": "cc-pcvqz-f12-rifit",
+    "canonical_name": "cc-pCVQZ-F12-RIFIT"
+  },
+  {
+    "key": "cc-pcvtz",
+    "canonical_name": "cc-pCVTZ"
+  },
+  {
+    "key": "cc-pcvtz-dk",
+    "canonical_name": "cc-pCVTZ-DK"
+  },
+  {
+    "key": "cc-pcvtz-f12",
+    "canonical_name": "cc-pCVTZ-F12"
+  },
+  {
+    "key": "cc-pcvtz-f12-optri",
+    "canonical_name": "cc-pCVTZ-F12-OPTRI"
+  },
+  {
+    "key": "cc-pcvtz-f12-rifit",
+    "canonical_name": "cc-pCVTZ-F12-RIFIT"
+  },
+  {
+    "key": "cc-pv(5+d)z",
+    "canonical_name": "cc-pV(5+d)Z"
+  },
+  {
+    "key": "cc-pv(d+d)z",
+    "canonical_name": "cc-pV(D+d)Z"
+  },
+  {
+    "key": "cc-pv(q+d)z",
+    "canonical_name": "cc-pV(Q+d)Z"
+  },
+  {
+    "key": "cc-pv(t+d)z",
+    "canonical_name": "cc-pV(T+d)Z"
+  },
+  {
+    "key": "cc-pv5z",
+    "canonical_name": "cc-pV5Z"
+  },
+  {
+    "key": "cc-pv5z(fi_sl_sf_sl_fw)",
+    "canonical_name": "cc-pV5Z(fi/sf/fw)"
+  },
+  {
+    "key": "cc-pv5z(fi_sl_sf_sl_lc)",
+    "canonical_name": "cc-pV5Z(fi/sf/lc)"
+  },
+  {
+    "key": "cc-pv5z(fi_sl_sf_sl_sc)",
+    "canonical_name": "cc-pV5Z(fi/sf/sc)"
+  },
+  {
+    "key": "cc-pv5z(pt_sl_sf_sl_fw)",
+    "canonical_name": "cc-pV5Z(pt/sf/fw)"
+  },
+  {
+    "key": "cc-pv5z(pt_sl_sf_sl_lc)",
+    "canonical_name": "cc-pV5Z(pt/sf/lc)"
+  },
+  {
+    "key": "cc-pv5z(pt_sl_sf_sl_sc)",
+    "canonical_name": "cc-pV5Z(pt/sf/sc)"
+  },
+  {
+    "key": "cc-pv5z-dk",
+    "canonical_name": "cc-pV5Z-DK"
+  },
+  {
+    "key": "cc-pv5z-f12",
+    "canonical_name": "cc-pV5Z-F12"
+  },
+  {
+    "key": "cc-pv5z-f12(rev2)",
+    "canonical_name": "cc-pV5Z-F12(rev2)"
+  },
+  {
+    "key": "cc-pv5z-jkfit",
+    "canonical_name": "cc-pV5Z-JKFIT"
+  },
+  {
+    "key": "cc-pv5z-pp",
+    "canonical_name": "cc-pV5Z-PP"
+  },
+  {
+    "key": "cc-pv5z-pp-rifit",
+    "canonical_name": "cc-pV5Z-PP-RIFIT"
+  },
+  {
+    "key": "cc-pv5z-rifit",
+    "canonical_name": "cc-pV5Z-RIFIT"
+  },
+  {
+    "key": "cc-pv6z",
+    "canonical_name": "cc-pV6Z"
+  },
+  {
+    "key": "cc-pv6z-rifit",
+    "canonical_name": "cc-pV6Z-RIFIT"
+  },
+  {
+    "key": "cc-pv8z",
+    "canonical_name": "cc-pV8Z"
+  },
+  {
+    "key": "cc-pv9z",
+    "canonical_name": "cc-pV9Z"
+  },
+  {
+    "key": "cc-pvdz",
+    "canonical_name": "cc-pVDZ"
+  },
+  {
+    "key": "cc-pvdz(fi_sl_sf_sl_fw)",
+    "canonical_name": "cc-pVDZ(fi/sf/fw)"
+  },
+  {
+    "key": "cc-pvdz(fi_sl_sf_sl_lc)",
+    "canonical_name": "cc-pVDZ(fi/sf/lc)"
+  },
+  {
+    "key": "cc-pvdz(fi_sl_sf_sl_sc)",
+    "canonical_name": "cc-pVDZ(fi/sf/sc)"
+  },
+  {
+    "key": "cc-pvdz(pt_sl_sf_sl_fw)",
+    "canonical_name": "cc-pVDZ(pt/sf/fw)"
+  },
+  {
+    "key": "cc-pvdz(pt_sl_sf_sl_lc)",
+    "canonical_name": "cc-pVDZ(pt/sf/lc)"
+  },
+  {
+    "key": "cc-pvdz(pt_sl_sf_sl_sc)",
+    "canonical_name": "cc-pVDZ(pt/sf/sc)"
+  },
+  {
+    "key": "cc-pvdz(seg-opt)",
+    "canonical_name": "cc-pVDZ(seg-opt)"
+  },
+  {
+    "key": "cc-pvdz-dk",
+    "canonical_name": "cc-pVDZ-DK"
+  },
+  {
+    "key": "cc-pvdz-dk3",
+    "canonical_name": "cc-pVDZ-DK3"
+  },
+  {
+    "key": "cc-pvdz-f12",
+    "canonical_name": "cc-pVDZ-F12"
+  },
+  {
+    "key": "cc-pvdz-f12(rev2)",
+    "canonical_name": "cc-pVDZ-F12(rev2)"
+  },
+  {
+    "key": "cc-pvdz-f12-optri",
+    "canonical_name": "cc-pVDZ-F12-OPTRI"
+  },
+  {
+    "key": "cc-pvdz-f12-optri+",
+    "canonical_name": "cc-pVDZ-F12-OPTRI+"
+  },
+  {
+    "key": "cc-pvdz-pp",
+    "canonical_name": "cc-pVDZ-PP"
+  },
+  {
+    "key": "cc-pvdz-pp-rifit",
+    "canonical_name": "cc-pVDZ-PP-RIFIT"
+  },
+  {
+    "key": "cc-pvdz-rifit",
+    "canonical_name": "cc-pVDZ-RIFIT"
+  },
+  {
+    "key": "cc-pvdz-x2c",
+    "canonical_name": "cc-pVDZ-X2C"
+  },
+  {
+    "key": "cc-pvqz",
+    "canonical_name": "cc-pVQZ"
+  },
+  {
+    "key": "cc-pvqz(fi_sl_sf_sl_fw)",
+    "canonical_name": "cc-pVQZ(fi/sf/fw)"
+  },
+  {
+    "key": "cc-pvqz(fi_sl_sf_sl_lc)",
+    "canonical_name": "cc-pVQZ(fi/sf/lc)"
+  },
+  {
+    "key": "cc-pvqz(fi_sl_sf_sl_sc)",
+    "canonical_name": "cc-pVQZ(fi/sf/sc)"
+  },
+  {
+    "key": "cc-pvqz(pt_sl_sf_sl_fw)",
+    "canonical_name": "cc-pVQZ(pt/sf/fw)"
+  },
+  {
+    "key": "cc-pvqz(pt_sl_sf_sl_lc)",
+    "canonical_name": "cc-pVQZ(pt/sf/lc)"
+  },
+  {
+    "key": "cc-pvqz(pt_sl_sf_sl_sc)",
+    "canonical_name": "cc-pVQZ(pt/sf/sc)"
+  },
+  {
+    "key": "cc-pvqz(seg-opt)",
+    "canonical_name": "cc-pVQZ(seg-opt)"
+  },
+  {
+    "key": "cc-pvqz-dk",
+    "canonical_name": "cc-pVQZ-DK"
+  },
+  {
+    "key": "cc-pvqz-dk3",
+    "canonical_name": "cc-pVQZ-DK3"
+  },
+  {
+    "key": "cc-pvqz-f12",
+    "canonical_name": "cc-pVQZ-F12"
+  },
+  {
+    "key": "cc-pvqz-f12(rev2)",
+    "canonical_name": "cc-pVQZ-F12(rev2)"
+  },
+  {
+    "key": "cc-pvqz-f12-optri",
+    "canonical_name": "cc-pVQZ-F12-OPTRI"
+  },
+  {
+    "key": "cc-pvqz-f12-optri+",
+    "canonical_name": "cc-pVQZ-F12-OPTRI+"
+  },
+  {
+    "key": "cc-pvqz-jkfit",
+    "canonical_name": "cc-pVQZ-JKFIT"
+  },
+  {
+    "key": "cc-pvqz-pp",
+    "canonical_name": "cc-pVQZ-PP"
+  },
+  {
+    "key": "cc-pvqz-pp-rifit",
+    "canonical_name": "cc-pVQZ-PP-RIFIT"
+  },
+  {
+    "key": "cc-pvqz-rifit",
+    "canonical_name": "cc-pVQZ-RIFIT"
+  },
+  {
+    "key": "cc-pvqz-x2c",
+    "canonical_name": "cc-pVQZ-X2C"
+  },
+  {
+    "key": "cc-pvtz",
+    "canonical_name": "cc-pVTZ"
+  },
+  {
+    "key": "cc-pvtz(fi_sl_sf_sl_fw)",
+    "canonical_name": "cc-pVTZ(fi/sf/fw)"
+  },
+  {
+    "key": "cc-pvtz(fi_sl_sf_sl_lc)",
+    "canonical_name": "cc-pVTZ(fi/sf/lc)"
+  },
+  {
+    "key": "cc-pvtz(fi_sl_sf_sl_sc)",
+    "canonical_name": "cc-pVTZ(fi/sf/sc)"
+  },
+  {
+    "key": "cc-pvtz(pt_sl_sf_sl_fw)",
+    "canonical_name": "cc-pVTZ(pt/sf/fw)"
+  },
+  {
+    "key": "cc-pvtz(pt_sl_sf_sl_lc)",
+    "canonical_name": "cc-pVTZ(pt/sf/lc)"
+  },
+  {
+    "key": "cc-pvtz(pt_sl_sf_sl_sc)",
+    "canonical_name": "cc-pVTZ(pt/sf/sc)"
+  },
+  {
+    "key": "cc-pvtz(seg-opt)",
+    "canonical_name": "cc-pVTZ(seg-opt)"
+  },
+  {
+    "key": "cc-pvtz-dk",
+    "canonical_name": "cc-pVTZ-DK"
+  },
+  {
+    "key": "cc-pvtz-dk3",
+    "canonical_name": "cc-pVTZ-DK3"
+  },
+  {
+    "key": "cc-pvtz-f12",
+    "canonical_name": "cc-pVTZ-F12"
+  },
+  {
+    "key": "cc-pvtz-f12(rev2)",
+    "canonical_name": "cc-pVTZ-F12(rev2)"
+  },
+  {
+    "key": "cc-pvtz-f12-optri",
+    "canonical_name": "cc-pVTZ-F12-OPTRI"
+  },
+  {
+    "key": "cc-pvtz-f12-optri+",
+    "canonical_name": "cc-pVTZ-F12-OPTRI+"
+  },
+  {
+    "key": "cc-pvtz-jkfit",
+    "canonical_name": "cc-pVTZ-JKFIT"
+  },
+  {
+    "key": "cc-pvtz-pp",
+    "canonical_name": "cc-pVTZ-PP"
+  },
+  {
+    "key": "cc-pvtz-pp-rifit",
+    "canonical_name": "cc-pVTZ-PP-RIFIT"
+  },
+  {
+    "key": "cc-pvtz-rifit",
+    "canonical_name": "cc-pVTZ-RIFIT"
+  },
+  {
+    "key": "cc-pvtz-x2c",
+    "canonical_name": "cc-pVTZ-X2C"
+  },
+  {
+    "key": "cc-pwcv5z",
+    "canonical_name": "cc-pwCV5Z"
+  },
+  {
+    "key": "cc-pwcv5z-dk",
+    "canonical_name": "cc-pwCV5Z-DK"
+  },
+  {
+    "key": "cc-pwcv5z-pp",
+    "canonical_name": "cc-pwCV5Z-PP"
+  },
+  {
+    "key": "cc-pwcv5z-pp-rifit",
+    "canonical_name": "cc-pwCV5Z-PP-RIFIT"
+  },
+  {
+    "key": "cc-pwcv5z-rifit",
+    "canonical_name": "cc-pwCV5Z-RIFIT"
+  },
+  {
+    "key": "cc-pwcvdz",
+    "canonical_name": "cc-pwCVDZ"
+  },
+  {
+    "key": "cc-pwcvdz-dk3",
+    "canonical_name": "cc-pwCVDZ-DK3"
+  },
+  {
+    "key": "cc-pwcvdz-pp",
+    "canonical_name": "cc-pwCVDZ-PP"
+  },
+  {
+    "key": "cc-pwcvdz-pp-rifit",
+    "canonical_name": "cc-pwCVDZ-PP-RIFIT"
+  },
+  {
+    "key": "cc-pwcvdz-rifit",
+    "canonical_name": "cc-pwCVDZ-RIFIT"
+  },
+  {
+    "key": "cc-pwcvdz-x2c",
+    "canonical_name": "cc-pwCVDZ-X2C"
+  },
+  {
+    "key": "cc-pwcvqz",
+    "canonical_name": "cc-pwCVQZ"
+  },
+  {
+    "key": "cc-pwcvqz-dk",
+    "canonical_name": "cc-pwCVQZ-DK"
+  },
+  {
+    "key": "cc-pwcvqz-dk3",
+    "canonical_name": "cc-pwCVQZ-DK3"
+  },
+  {
+    "key": "cc-pwcvqz-pp",
+    "canonical_name": "cc-pwCVQZ-PP"
+  },
+  {
+    "key": "cc-pwcvqz-pp-rifit",
+    "canonical_name": "cc-pwCVQZ-PP-RIFIT"
+  },
+  {
+    "key": "cc-pwcvqz-rifit",
+    "canonical_name": "cc-pwCVQZ-RIFIT"
+  },
+  {
+    "key": "cc-pwcvqz-x2c",
+    "canonical_name": "cc-pwCVQZ-X2C"
+  },
+  {
+    "key": "cc-pwcvtz",
+    "canonical_name": "cc-pwCVTZ"
+  },
+  {
+    "key": "cc-pwcvtz-dk",
+    "canonical_name": "cc-pwCVTZ-DK"
+  },
+  {
+    "key": "cc-pwcvtz-dk3",
+    "canonical_name": "cc-pwCVTZ-DK3"
+  },
+  {
+    "key": "cc-pwcvtz-pp",
+    "canonical_name": "cc-pwCVTZ-PP"
+  },
+  {
+    "key": "cc-pwcvtz-pp-rifit",
+    "canonical_name": "cc-pwCVTZ-PP-RIFIT"
+  },
+  {
+    "key": "cc-pwcvtz-rifit",
+    "canonical_name": "cc-pwCVTZ-RIFIT"
+  },
+  {
+    "key": "cc-pwcvtz-x2c",
+    "canonical_name": "cc-pwCVTZ-X2C"
+  },
+  {
+    "key": "ccemd-2",
+    "canonical_name": "ccemd-2"
+  },
+  {
+    "key": "ccemd-3",
+    "canonical_name": "ccemd-3"
+  },
+  {
+    "key": "ccj-pv5z",
+    "canonical_name": "ccJ-pV5Z"
+  },
+  {
+    "key": "ccj-pvdz",
+    "canonical_name": "ccJ-pVDZ"
+  },
+  {
+    "key": "ccj-pvqz",
+    "canonical_name": "ccJ-pVQZ"
+  },
+  {
+    "key": "ccj-pvtz",
+    "canonical_name": "ccJ-pVTZ"
+  },
+  {
+    "key": "ccx-5z",
+    "canonical_name": "ccX-5Z"
+  },
+  {
+    "key": "ccx-dz",
+    "canonical_name": "ccX-DZ"
+  },
+  {
+    "key": "ccx-qz",
+    "canonical_name": "ccX-QZ"
+  },
+  {
+    "key": "ccx-tz",
+    "canonical_name": "ccX-TZ"
+  },
+  {
+    "key": "coemd-2",
+    "canonical_name": "coemd-2"
+  },
+  {
+    "key": "coemd-3",
+    "canonical_name": "coemd-3"
+  },
+  {
+    "key": "coemd-4",
+    "canonical_name": "coemd-4"
+  },
+  {
+    "key": "coemd-ref",
+    "canonical_name": "coemd-ref"
+  },
+  {
+    "key": "cologne dkh2",
+    "canonical_name": "Cologne DKH2"
+  },
+  {
+    "key": "crenbl",
+    "canonical_name": "CRENBL"
+  },
+  {
+    "key": "crenbl ecp",
+    "canonical_name": "CRENBL ECP"
+  },
+  {
+    "key": "crenbs",
+    "canonical_name": "CRENBS"
+  },
+  {
+    "key": "crenbs ecp",
+    "canonical_name": "CRENBS ECP"
+  },
+  {
+    "key": "d-aug-cc-pv5z",
+    "canonical_name": "d-aug-cc-pV5Z"
+  },
+  {
+    "key": "d-aug-cc-pv6z",
+    "canonical_name": "d-aug-cc-pV6Z"
+  },
+  {
+    "key": "d-aug-cc-pvdz",
+    "canonical_name": "d-aug-cc-pVDZ"
+  },
+  {
+    "key": "d-aug-cc-pvqz",
+    "canonical_name": "d-aug-cc-pVQZ"
+  },
+  {
+    "key": "d-aug-cc-pvtz",
+    "canonical_name": "d-aug-cc-pVTZ"
+  },
+  {
+    "key": "def2-ecp",
+    "canonical_name": "def2-ECP"
+  },
+  {
+    "key": "def2-mtzvp",
+    "canonical_name": "def2-mTZVP"
+  },
+  {
+    "key": "def2-mtzvpp",
+    "canonical_name": "def2-mTZVPP"
+  },
+  {
+    "key": "def2-mtzvpp-rij",
+    "canonical_name": "def2-mTZVPP-RIJ"
+  },
+  {
+    "key": "def2-qzvp",
+    "canonical_name": "def2-QZVP"
+  },
+  {
+    "key": "def2-qzvp-rifit",
+    "canonical_name": "def2-QZVP-RIFIT"
+  },
+  {
+    "key": "def2-qzvpd",
+    "canonical_name": "def2-QZVPD"
+  },
+  {
+    "key": "def2-qzvpp",
+    "canonical_name": "def2-QZVPP"
+  },
+  {
+    "key": "def2-qzvpp-rifit",
+    "canonical_name": "def2-QZVPP-RIFIT"
+  },
+  {
+    "key": "def2-qzvppd",
+    "canonical_name": "def2-QZVPPD"
+  },
+  {
+    "key": "def2-qzvppd-rifit",
+    "canonical_name": "def2-QZVPPD-RIFIT"
+  },
+  {
+    "key": "def2-sv(p)",
+    "canonical_name": "def2-SV(P)"
+  },
+  {
+    "key": "def2-sv(p)-jkfit",
+    "canonical_name": "def2-SV(P)-JKFIT"
+  },
+  {
+    "key": "def2-sv(p)-rifit",
+    "canonical_name": "def2-SV(P)-RIFIT"
+  },
+  {
+    "key": "def2-svp",
+    "canonical_name": "def2-SVP"
+  },
+  {
+    "key": "def2-svp-rifit",
+    "canonical_name": "def2-SVP-RIFIT"
+  },
+  {
+    "key": "def2-svpd",
+    "canonical_name": "def2-SVPD"
+  },
+  {
+    "key": "def2-svpd-rifit",
+    "canonical_name": "def2-SVPD-RIFIT"
+  },
+  {
+    "key": "def2-tzvp",
+    "canonical_name": "def2-TZVP"
+  },
+  {
+    "key": "def2-tzvp-rifit",
+    "canonical_name": "def2-TZVP-RIFIT"
+  },
+  {
+    "key": "def2-tzvpd",
+    "canonical_name": "def2-TZVPD"
+  },
+  {
+    "key": "def2-tzvpd-rifit",
+    "canonical_name": "def2-TZVPD-RIFIT"
+  },
+  {
+    "key": "def2-tzvpp",
+    "canonical_name": "def2-TZVPP"
+  },
+  {
+    "key": "def2-tzvpp-rifit",
+    "canonical_name": "def2-TZVPP-RIFIT"
+  },
+  {
+    "key": "def2-tzvppd",
+    "canonical_name": "def2-TZVPPD"
+  },
+  {
+    "key": "def2-tzvppd-rifit",
+    "canonical_name": "def2-TZVPPD-RIFIT"
+  },
+  {
+    "key": "def2-universal-jfit",
+    "canonical_name": "def2-universal-JFIT"
+  },
+  {
+    "key": "def2-universal-jkfit",
+    "canonical_name": "def2-universal-JKFIT"
+  },
+  {
+    "key": "demon2k-dzvp-gga",
+    "canonical_name": "deMon2k-DZVP-GGA"
+  },
+  {
+    "key": "dfo+-nrlmol",
+    "canonical_name": "DFO+-NRLMOL"
+  },
+  {
+    "key": "dfo-1",
+    "canonical_name": "DFO-1"
+  },
+  {
+    "key": "dfo-1-bhs",
+    "canonical_name": "DFO-1-BHS"
+  },
+  {
+    "key": "dfo-2",
+    "canonical_name": "DFO-2"
+  },
+  {
+    "key": "dfo-nrlmol",
+    "canonical_name": "DFO-NRLMOL"
+  },
+  {
+    "key": "dgauss-a1-dftjfit",
+    "canonical_name": "dgauss-a1-dftjfit"
+  },
+  {
+    "key": "dgauss-a1-dftxfit",
+    "canonical_name": "dgauss-a1-dftxfit"
+  },
+  {
+    "key": "dgauss-a2-dftjfit",
+    "canonical_name": "dgauss-a2-dftjfit"
+  },
+  {
+    "key": "dgauss-a2-dftxfit",
+    "canonical_name": "dgauss-a2-dftxfit"
+  },
+  {
+    "key": "dgauss-dzvp",
+    "canonical_name": "dgauss-dzvp"
+  },
+  {
+    "key": "dgauss-dzvp2",
+    "canonical_name": "dgauss-dzvp2"
+  },
+  {
+    "key": "dgauss-tzvp",
+    "canonical_name": "dgauss-tzvp"
+  },
+  {
+    "key": "dhf-ecp",
+    "canonical_name": "dhf-ECP"
+  },
+  {
+    "key": "dhf-qzvp",
+    "canonical_name": "dhf-QZVP"
+  },
+  {
+    "key": "dhf-qzvpp",
+    "canonical_name": "dhf-QZVPP"
+  },
+  {
+    "key": "dhf-sv(p)",
+    "canonical_name": "dhf-SV(P)"
+  },
+  {
+    "key": "dhf-svp",
+    "canonical_name": "dhf-SVP"
+  },
+  {
+    "key": "dhf-tzvp",
+    "canonical_name": "dhf-TZVP"
+  },
+  {
+    "key": "dhf-tzvpp",
+    "canonical_name": "dhf-TZVPP"
+  },
+  {
+    "key": "dyall-aae2z",
+    "canonical_name": "dyall-aae2z"
+  },
+  {
+    "key": "dyall-aae3z",
+    "canonical_name": "dyall-aae3z"
+  },
+  {
+    "key": "dyall-aae4z",
+    "canonical_name": "dyall-aae4z"
+  },
+  {
+    "key": "dyall-aae5z",
+    "canonical_name": "dyall-aae5z"
+  },
+  {
+    "key": "dyall-acv2z",
+    "canonical_name": "dyall-acv2z"
+  },
+  {
+    "key": "dyall-acv3z",
+    "canonical_name": "dyall-acv3z"
+  },
+  {
+    "key": "dyall-acv4z",
+    "canonical_name": "dyall-acv4z"
+  },
+  {
+    "key": "dyall-acv5z",
+    "canonical_name": "dyall-acv5z"
+  },
+  {
+    "key": "dyall-ae2z",
+    "canonical_name": "dyall-ae2z"
+  },
+  {
+    "key": "dyall-ae3z",
+    "canonical_name": "dyall-ae3z"
+  },
+  {
+    "key": "dyall-ae4z",
+    "canonical_name": "dyall-ae4z"
+  },
+  {
+    "key": "dyall-ae5z",
+    "canonical_name": "dyall-ae5z"
+  },
+  {
+    "key": "dyall-av2z",
+    "canonical_name": "dyall-av2z"
+  },
+  {
+    "key": "dyall-av3z",
+    "canonical_name": "dyall-av3z"
+  },
+  {
+    "key": "dyall-av4z",
+    "canonical_name": "dyall-av4z"
+  },
+  {
+    "key": "dyall-av5z",
+    "canonical_name": "dyall-av5z"
+  },
+  {
+    "key": "dyall-cv2z",
+    "canonical_name": "dyall-cv2z"
+  },
+  {
+    "key": "dyall-cv3z",
+    "canonical_name": "dyall-cv3z"
+  },
+  {
+    "key": "dyall-cv4z",
+    "canonical_name": "dyall-cv4z"
+  },
+  {
+    "key": "dyall-cv5z",
+    "canonical_name": "dyall-cv5z"
+  },
+  {
+    "key": "dyall-v2z",
+    "canonical_name": "dyall-v2z"
+  },
+  {
+    "key": "dyall-v3z",
+    "canonical_name": "dyall-v3z"
+  },
+  {
+    "key": "dyall-v4z",
+    "canonical_name": "dyall-v4z"
+  },
+  {
+    "key": "dyall-v5z",
+    "canonical_name": "dyall-v5z"
+  },
+  {
+    "key": "dz (dunning-hay)",
+    "canonical_name": "DZ (Dunning-Hay)"
+  },
+  {
+    "key": "dz + double rydberg (dunning-hay)",
+    "canonical_name": "DZ + Double Rydberg (Dunning-Hay)"
+  },
+  {
+    "key": "dz + rydberg (dunning-hay)",
+    "canonical_name": "DZ + Rydberg (Dunning-Hay)"
+  },
+  {
+    "key": "dzp (dunning-hay)",
+    "canonical_name": "DZP (Dunning-Hay)"
+  },
+  {
+    "key": "dzp + diffuse (dunning-hay)",
+    "canonical_name": "DZP + Diffuse (Dunning-Hay)"
+  },
+  {
+    "key": "dzp + rydberg (dunning-hay)",
+    "canonical_name": "DZP + Rydberg (Dunning-Hay)"
+  },
+  {
+    "key": "epc-10s10p10d10f",
+    "canonical_name": "epc-10s10p10d10f"
+  },
+  {
+    "key": "epc-8s8p8d",
+    "canonical_name": "epc-8s8p8d"
+  },
+  {
+    "key": "fano-5z",
+    "canonical_name": "FANO-5Z"
+  },
+  {
+    "key": "fano-6z",
+    "canonical_name": "FANO-6Z"
+  },
+  {
+    "key": "fano-dz",
+    "canonical_name": "FANO-DZ"
+  },
+  {
+    "key": "fano-qz",
+    "canonical_name": "FANO-QZ"
+  },
+  {
+    "key": "fano-tz",
+    "canonical_name": "FANO-TZ"
+  },
+  {
+    "key": "grimme vdzp",
+    "canonical_name": "Grimme vDZP"
+  },
+  {
+    "key": "hgbs-5",
+    "canonical_name": "HGBS-5"
+  },
+  {
+    "key": "hgbs-7",
+    "canonical_name": "HGBS-7"
+  },
+  {
+    "key": "hgbs-9",
+    "canonical_name": "HGBS-9"
+  },
+  {
+    "key": "hgbsp1-5",
+    "canonical_name": "HGBSP1-5"
+  },
+  {
+    "key": "hgbsp1-7",
+    "canonical_name": "HGBSP1-7"
+  },
+  {
+    "key": "hgbsp1-9",
+    "canonical_name": "HGBSP1-9"
+  },
+  {
+    "key": "hgbsp2-5",
+    "canonical_name": "HGBSP2-5"
+  },
+  {
+    "key": "hgbsp2-7",
+    "canonical_name": "HGBSP2-7"
+  },
+  {
+    "key": "hgbsp2-9",
+    "canonical_name": "HGBSP2-9"
+  },
+  {
+    "key": "hgbsp3-5",
+    "canonical_name": "HGBSP3-5"
+  },
+  {
+    "key": "hgbsp3-7",
+    "canonical_name": "HGBSP3-7"
+  },
+  {
+    "key": "hgbsp3-9",
+    "canonical_name": "HGBSP3-9"
+  },
+  {
+    "key": "iglo-ii",
+    "canonical_name": "IGLO-II"
+  },
+  {
+    "key": "iglo-iii",
+    "canonical_name": "IGLO-III"
+  },
+  {
+    "key": "jgauss-dzp",
+    "canonical_name": "jgauss-dzp"
+  },
+  {
+    "key": "jgauss-qz2p",
+    "canonical_name": "jgauss-qz2p"
+  },
+  {
+    "key": "jgauss-qzp",
+    "canonical_name": "jgauss-qzp"
+  },
+  {
+    "key": "jgauss-tzp1",
+    "canonical_name": "jgauss-tzp1"
+  },
+  {
+    "key": "jgauss-tzp2",
+    "canonical_name": "jgauss-tzp2"
+  },
+  {
+    "key": "jorge-5zp",
+    "canonical_name": "jorge-5ZP"
+  },
+  {
+    "key": "jorge-5zp-dkh",
+    "canonical_name": "jorge-5ZP-DKH"
+  },
+  {
+    "key": "jorge-5zp-zora",
+    "canonical_name": "jorge-5ZP-ZORA"
+  },
+  {
+    "key": "jorge-6zp",
+    "canonical_name": "jorge-6ZP"
+  },
+  {
+    "key": "jorge-6zp-dkh",
+    "canonical_name": "jorge-6ZP-DKH"
+  },
+  {
+    "key": "jorge-6zp-zora",
+    "canonical_name": "jorge-6ZP-ZORA"
+  },
+  {
+    "key": "jorge-a5zp",
+    "canonical_name": "jorge-A5ZP"
+  },
+  {
+    "key": "jorge-a6zp",
+    "canonical_name": "jorge-A6ZP"
+  },
+  {
+    "key": "jorge-adzp",
+    "canonical_name": "jorge-ADZP"
+  },
+  {
+    "key": "jorge-aqzp",
+    "canonical_name": "jorge-AQZP"
+  },
+  {
+    "key": "jorge-atzp",
+    "canonical_name": "jorge-ATZP"
+  },
+  {
+    "key": "jorge-atzp-zora",
+    "canonical_name": "jorge-ATZP-ZORA"
+  },
+  {
+    "key": "jorge-dzp",
+    "canonical_name": "jorge-DZP"
+  },
+  {
+    "key": "jorge-dzp-dkh",
+    "canonical_name": "jorge-DZP-DKH"
+  },
+  {
+    "key": "jorge-dzp-zora",
+    "canonical_name": "jorge-DZP-ZORA"
+  },
+  {
+    "key": "jorge-qzp",
+    "canonical_name": "jorge-QZP"
+  },
+  {
+    "key": "jorge-qzp-dkh",
+    "canonical_name": "jorge-QZP-DKH"
+  },
+  {
+    "key": "jorge-qzp-zora",
+    "canonical_name": "jorge-QZP-ZORA"
+  },
+  {
+    "key": "jorge-tzp",
+    "canonical_name": "jorge-TZP"
+  },
+  {
+    "key": "jorge-tzp-dkh",
+    "canonical_name": "jorge-TZP-DKH"
+  },
+  {
+    "key": "jorge-tzp-zora",
+    "canonical_name": "jorge-TZP-ZORA"
+  },
+  {
+    "key": "jul-cc-pv(d+d)z",
+    "canonical_name": "jul-cc-pV(D+d)Z"
+  },
+  {
+    "key": "jul-cc-pv(q+d)z",
+    "canonical_name": "jul-cc-pV(Q+d)Z"
+  },
+  {
+    "key": "jul-cc-pv(t+d)z",
+    "canonical_name": "jul-cc-pV(T+d)Z"
+  },
+  {
+    "key": "jun-cc-pv(d+d)z",
+    "canonical_name": "jun-cc-pV(D+d)Z"
+  },
+  {
+    "key": "jun-cc-pv(q+d)z",
+    "canonical_name": "jun-cc-pV(Q+d)Z"
+  },
+  {
+    "key": "jun-cc-pv(t+d)z",
+    "canonical_name": "jun-cc-pV(T+d)Z"
+  },
+  {
+    "key": "koga unpolarized",
+    "canonical_name": "Koga unpolarized"
+  },
+  {
+    "key": "lanl08",
+    "canonical_name": "LANL08"
+  },
+  {
+    "key": "lanl08(d)",
+    "canonical_name": "LANL08(d)"
+  },
+  {
+    "key": "lanl08(f)",
+    "canonical_name": "LANL08(f)"
+  },
+  {
+    "key": "lanl08+",
+    "canonical_name": "LANL08+"
+  },
+  {
+    "key": "lanl2dz",
+    "canonical_name": "LANL2DZ"
+  },
+  {
+    "key": "lanl2dz ecp",
+    "canonical_name": "LANL2DZ ECP"
+  },
+  {
+    "key": "lanl2dzdp",
+    "canonical_name": "LANL2DZdp"
+  },
+  {
+    "key": "lanl2tz",
+    "canonical_name": "LANL2TZ"
+  },
+  {
+    "key": "lanl2tz(f)",
+    "canonical_name": "LANL2TZ(f)"
+  },
+  {
+    "key": "lanl2tz+",
+    "canonical_name": "LANL2TZ+"
+  },
+  {
+    "key": "lcecp-0-qzvp",
+    "canonical_name": "lcecp-0-QZVP"
+  },
+  {
+    "key": "lcecp-0-qzvpp",
+    "canonical_name": "lcecp-0-QZVPP"
+  },
+  {
+    "key": "lcecp-0-sv(p)",
+    "canonical_name": "lcecp-0-SV(P)"
+  },
+  {
+    "key": "lcecp-0-svp",
+    "canonical_name": "lcecp-0-SVP"
+  },
+  {
+    "key": "lcecp-0-tzvp",
+    "canonical_name": "lcecp-0-TZVP"
+  },
+  {
+    "key": "lcecp-0-tzvpp",
+    "canonical_name": "lcecp-0-TZVPP"
+  },
+  {
+    "key": "lcecp-1-qzvp",
+    "canonical_name": "lcecp-1-QZVP"
+  },
+  {
+    "key": "lcecp-1-qzvpp",
+    "canonical_name": "lcecp-1-QZVPP"
+  },
+  {
+    "key": "lcecp-1-sv(p)",
+    "canonical_name": "lcecp-1-SV(P)"
+  },
+  {
+    "key": "lcecp-1-svp",
+    "canonical_name": "lcecp-1-SVP"
+  },
+  {
+    "key": "lcecp-1-tzvp",
+    "canonical_name": "lcecp-1-TZVP"
+  },
+  {
+    "key": "lcecp-1-tzvpp",
+    "canonical_name": "lcecp-1-TZVPP"
+  },
+  {
+    "key": "lcecp-2-qzvp",
+    "canonical_name": "lcecp-2-QZVP"
+  },
+  {
+    "key": "lcecp-2-qzvpp",
+    "canonical_name": "lcecp-2-QZVPP"
+  },
+  {
+    "key": "lcecp-2-sv(p)",
+    "canonical_name": "lcecp-2-SV(P)"
+  },
+  {
+    "key": "lcecp-2-svp",
+    "canonical_name": "lcecp-2-SVP"
+  },
+  {
+    "key": "lcecp-2-tzvp",
+    "canonical_name": "lcecp-2-TZVP"
+  },
+  {
+    "key": "lcecp-2-tzvpp",
+    "canonical_name": "lcecp-2-TZVPP"
+  },
+  {
+    "key": "m6-31g",
+    "canonical_name": "m6-31G"
+  },
+  {
+    "key": "m6-31g_st_",
+    "canonical_name": "m6-31G*"
+  },
+  {
+    "key": "maug-cc-pv(d+d)z",
+    "canonical_name": "maug-cc-pV(D+d)Z"
+  },
+  {
+    "key": "maug-cc-pv(q+d)z",
+    "canonical_name": "maug-cc-pV(Q+d)Z"
+  },
+  {
+    "key": "maug-cc-pv(t+d)z",
+    "canonical_name": "maug-cc-pV(T+d)Z"
+  },
+  {
+    "key": "may-cc-pv(q+d)z",
+    "canonical_name": "may-cc-pV(Q+d)Z"
+  },
+  {
+    "key": "may-cc-pv(t+d)z",
+    "canonical_name": "may-cc-pV(T+d)Z"
+  },
+  {
+    "key": "midi",
+    "canonical_name": "MIDI"
+  },
+  {
+    "key": "midi!",
+    "canonical_name": "MIDI!"
+  },
+  {
+    "key": "midix",
+    "canonical_name": "MIDIX"
+  },
+  {
+    "key": "mini",
+    "canonical_name": "MINI"
+  },
+  {
+    "key": "modified-lanl2dz",
+    "canonical_name": "modified-LANL2DZ"
+  },
+  {
+    "key": "nasa ames ano",
+    "canonical_name": "NASA Ames ANO"
+  },
+  {
+    "key": "nasa ames ano2",
+    "canonical_name": "NASA Ames ANO2"
+  },
+  {
+    "key": "nasa ames cc-pcv5z",
+    "canonical_name": "NASA Ames cc-pCV5Z"
+  },
+  {
+    "key": "nasa ames cc-pcvqz",
+    "canonical_name": "NASA Ames cc-pCVQZ"
+  },
+  {
+    "key": "nasa ames cc-pcvtz",
+    "canonical_name": "NASA Ames cc-pCVTZ"
+  },
+  {
+    "key": "nasa ames cc-pv5z",
+    "canonical_name": "NASA Ames cc-pV5Z"
+  },
+  {
+    "key": "nasa ames cc-pvqz",
+    "canonical_name": "NASA Ames cc-pVQZ"
+  },
+  {
+    "key": "nasa ames cc-pvtz",
+    "canonical_name": "NASA Ames cc-pVTZ"
+  },
+  {
+    "key": "nlo-v",
+    "canonical_name": "NLO-V"
+  },
+  {
+    "key": "nmr-dkh (tz2p)",
+    "canonical_name": "NMR-DKH (TZ2P)"
+  },
+  {
+    "key": "orp",
+    "canonical_name": "ORP"
+  },
+  {
+    "key": "partridge uncontracted 1",
+    "canonical_name": "Partridge Uncontracted 1"
+  },
+  {
+    "key": "partridge uncontracted 2",
+    "canonical_name": "Partridge Uncontracted 2"
+  },
+  {
+    "key": "partridge uncontracted 3",
+    "canonical_name": "Partridge Uncontracted 3"
+  },
+  {
+    "key": "partridge uncontracted 4",
+    "canonical_name": "Partridge Uncontracted 4"
+  },
+  {
+    "key": "paw-l05",
+    "canonical_name": "PAW-L05"
+  },
+  {
+    "key": "paw-l1",
+    "canonical_name": "PAW-L1"
+  },
+  {
+    "key": "paw-l1-contracted",
+    "canonical_name": "PAW-L1-contracted"
+  },
+  {
+    "key": "paw-l2",
+    "canonical_name": "PAW-L2"
+  },
+  {
+    "key": "paw-l2-contracted",
+    "canonical_name": "PAW-L2-contracted"
+  },
+  {
+    "key": "pb4-d",
+    "canonical_name": "PB4-D"
+  },
+  {
+    "key": "pb4-f1",
+    "canonical_name": "PB4-F1"
+  },
+  {
+    "key": "pb4-f2",
+    "canonical_name": "PB4-F2"
+  },
+  {
+    "key": "pb5-d",
+    "canonical_name": "PB5-D"
+  },
+  {
+    "key": "pb5-f",
+    "canonical_name": "PB5-F"
+  },
+  {
+    "key": "pb5-g",
+    "canonical_name": "PB5-G"
+  },
+  {
+    "key": "pb6-d",
+    "canonical_name": "PB6-D"
+  },
+  {
+    "key": "pb6-f",
+    "canonical_name": "PB6-F"
+  },
+  {
+    "key": "pb6-g",
+    "canonical_name": "PB6-G"
+  },
+  {
+    "key": "pb6-h",
+    "canonical_name": "PB6-H"
+  },
+  {
+    "key": "pc-0",
+    "canonical_name": "pc-0"
+  },
+  {
+    "key": "pc-1",
+    "canonical_name": "pc-1"
+  },
+  {
+    "key": "pc-2",
+    "canonical_name": "pc-2"
+  },
+  {
+    "key": "pc-3",
+    "canonical_name": "pc-3"
+  },
+  {
+    "key": "pc-4",
+    "canonical_name": "pc-4"
+  },
+  {
+    "key": "pcemd-2",
+    "canonical_name": "pcemd-2"
+  },
+  {
+    "key": "pcemd-3",
+    "canonical_name": "pcemd-3"
+  },
+  {
+    "key": "pcemd-4",
+    "canonical_name": "pcemd-4"
+  },
+  {
+    "key": "pch-1",
+    "canonical_name": "pcH-1"
+  },
+  {
+    "key": "pch-2",
+    "canonical_name": "pcH-2"
+  },
+  {
+    "key": "pch-3",
+    "canonical_name": "pcH-3"
+  },
+  {
+    "key": "pch-4",
+    "canonical_name": "pcH-4"
+  },
+  {
+    "key": "pcj-0",
+    "canonical_name": "pcJ-0"
+  },
+  {
+    "key": "pcj-0_2006",
+    "canonical_name": "pcJ-0_2006"
+  },
+  {
+    "key": "pcj-1",
+    "canonical_name": "pcJ-1"
+  },
+  {
+    "key": "pcj-1_2006",
+    "canonical_name": "pcJ-1_2006"
+  },
+  {
+    "key": "pcj-2",
+    "canonical_name": "pcJ-2"
+  },
+  {
+    "key": "pcj-2_2006",
+    "canonical_name": "pcJ-2_2006"
+  },
+  {
+    "key": "pcj-3",
+    "canonical_name": "pcJ-3"
+  },
+  {
+    "key": "pcj-3_2006",
+    "canonical_name": "pcJ-3_2006"
+  },
+  {
+    "key": "pcj-4",
+    "canonical_name": "pcJ-4"
+  },
+  {
+    "key": "pcj-4_2006",
+    "canonical_name": "pcJ-4_2006"
+  },
+  {
+    "key": "pcs-0",
+    "canonical_name": "pcS-0"
+  },
+  {
+    "key": "pcs-1",
+    "canonical_name": "pcS-1"
+  },
+  {
+    "key": "pcs-2",
+    "canonical_name": "pcS-2"
+  },
+  {
+    "key": "pcs-3",
+    "canonical_name": "pcS-3"
+  },
+  {
+    "key": "pcs-4",
+    "canonical_name": "pcS-4"
+  },
+  {
+    "key": "pcseg-0",
+    "canonical_name": "pcseg-0"
+  },
+  {
+    "key": "pcseg-1",
+    "canonical_name": "pcseg-1"
+  },
+  {
+    "key": "pcseg-2",
+    "canonical_name": "pcseg-2"
+  },
+  {
+    "key": "pcseg-3",
+    "canonical_name": "pcseg-3"
+  },
+  {
+    "key": "pcseg-4",
+    "canonical_name": "pcseg-4"
+  },
+  {
+    "key": "pcsseg-0",
+    "canonical_name": "pcSseg-0"
+  },
+  {
+    "key": "pcsseg-1",
+    "canonical_name": "pcSseg-1"
+  },
+  {
+    "key": "pcsseg-2",
+    "canonical_name": "pcSseg-2"
+  },
+  {
+    "key": "pcsseg-3",
+    "canonical_name": "pcSseg-3"
+  },
+  {
+    "key": "pcsseg-4",
+    "canonical_name": "pcSseg-4"
+  },
+  {
+    "key": "pcx-1",
+    "canonical_name": "pcX-1"
+  },
+  {
+    "key": "pcx-2",
+    "canonical_name": "pcX-2"
+  },
+  {
+    "key": "pcx-3",
+    "canonical_name": "pcX-3"
+  },
+  {
+    "key": "pcx-4",
+    "canonical_name": "pcX-4"
+  },
+  {
+    "key": "pecj-1",
+    "canonical_name": "pecJ-1"
+  },
+  {
+    "key": "pecj-2",
+    "canonical_name": "pecJ-2"
+  },
+  {
+    "key": "pob-dzvp-rev2",
+    "canonical_name": "pob-DZVP-rev2"
+  },
+  {
+    "key": "pob-tzvp",
+    "canonical_name": "pob-TZVP"
+  },
+  {
+    "key": "pob-tzvp-rev2",
+    "canonical_name": "pob-TZVP-rev2"
+  },
+  {
+    "key": "psbkjc",
+    "canonical_name": "pSBKJC"
+  },
+  {
+    "key": "psx-dz",
+    "canonical_name": "PsX-DZ"
+  },
+  {
+    "key": "psx-qz",
+    "canonical_name": "PsX-QZ"
+  },
+  {
+    "key": "psx-tz",
+    "canonical_name": "PsX-TZ"
+  },
+  {
+    "key": "pt - mdzp",
+    "canonical_name": "Pt - mDZP"
+  },
+  {
+    "key": "pv6z",
+    "canonical_name": "pV6Z"
+  },
+  {
+    "key": "pv7z",
+    "canonical_name": "pV7Z"
+  },
+  {
+    "key": "roos augmented double zeta ano",
+    "canonical_name": "Roos Augmented Double Zeta ANO"
+  },
+  {
+    "key": "roos augmented triple zeta ano",
+    "canonical_name": "Roos Augmented Triple Zeta ANO"
+  },
+  {
+    "key": "s3-21g",
+    "canonical_name": "s3-21G"
+  },
+  {
+    "key": "s3-21g_st_",
+    "canonical_name": "s3-21G*"
+  },
+  {
+    "key": "s6-31g",
+    "canonical_name": "s6-31G"
+  },
+  {
+    "key": "s6-31g_st_",
+    "canonical_name": "s6-31G*"
+  },
+  {
+    "key": "sadlej pvtz",
+    "canonical_name": "Sadlej pVTZ"
+  },
+  {
+    "key": "sadlej+",
+    "canonical_name": "Sadlej+"
+  },
+  {
+    "key": "sap_grasp_large",
+    "canonical_name": "sap_grasp_large"
+  },
+  {
+    "key": "sap_grasp_small",
+    "canonical_name": "sap_grasp_small"
+  },
+  {
+    "key": "sap_helfem_large",
+    "canonical_name": "sap_helfem_large"
+  },
+  {
+    "key": "sap_helfem_small",
+    "canonical_name": "sap_helfem_small"
+  },
+  {
+    "key": "sapporo-dkh3-dzp",
+    "canonical_name": "Sapporo-DKH3-DZP"
+  },
+  {
+    "key": "sapporo-dkh3-dzp-2012",
+    "canonical_name": "Sapporo-DKH3-DZP-2012"
+  },
+  {
+    "key": "sapporo-dkh3-dzp-2012-diffuse",
+    "canonical_name": "Sapporo-DKH3-DZP-2012-diffuse"
+  },
+  {
+    "key": "sapporo-dkh3-dzp-diffuse",
+    "canonical_name": "Sapporo-DKH3-DZP-diffuse"
+  },
+  {
+    "key": "sapporo-dkh3-qzp",
+    "canonical_name": "Sapporo-DKH3-QZP"
+  },
+  {
+    "key": "sapporo-dkh3-qzp-2012",
+    "canonical_name": "Sapporo-DKH3-QZP-2012"
+  },
+  {
+    "key": "sapporo-dkh3-qzp-2012-diffuse",
+    "canonical_name": "Sapporo-DKH3-QZP-2012-diffuse"
+  },
+  {
+    "key": "sapporo-dkh3-qzp-diffuse",
+    "canonical_name": "Sapporo-DKH3-QZP-diffuse"
+  },
+  {
+    "key": "sapporo-dkh3-tzp",
+    "canonical_name": "Sapporo-DKH3-TZP"
+  },
+  {
+    "key": "sapporo-dkh3-tzp-2012",
+    "canonical_name": "Sapporo-DKH3-TZP-2012"
+  },
+  {
+    "key": "sapporo-dkh3-tzp-2012-diffuse",
+    "canonical_name": "Sapporo-DKH3-TZP-2012-diffuse"
+  },
+  {
+    "key": "sapporo-dkh3-tzp-diffuse",
+    "canonical_name": "Sapporo-DKH3-TZP-diffuse"
+  },
+  {
+    "key": "sapporo-dzp",
+    "canonical_name": "Sapporo-DZP"
+  },
+  {
+    "key": "sapporo-dzp-2012",
+    "canonical_name": "Sapporo-DZP-2012"
+  },
+  {
+    "key": "sapporo-dzp-2012-diffuse",
+    "canonical_name": "Sapporo-DZP-2012-diffuse"
+  },
+  {
+    "key": "sapporo-dzp-diffuse",
+    "canonical_name": "Sapporo-DZP-diffuse"
+  },
+  {
+    "key": "sapporo-qzp",
+    "canonical_name": "Sapporo-QZP"
+  },
+  {
+    "key": "sapporo-qzp-2012",
+    "canonical_name": "Sapporo-QZP-2012"
+  },
+  {
+    "key": "sapporo-qzp-2012-diffuse",
+    "canonical_name": "Sapporo-QZP-2012-diffuse"
+  },
+  {
+    "key": "sapporo-qzp-diffuse",
+    "canonical_name": "Sapporo-QZP-diffuse"
+  },
+  {
+    "key": "sapporo-tzp",
+    "canonical_name": "Sapporo-TZP"
+  },
+  {
+    "key": "sapporo-tzp-2012",
+    "canonical_name": "Sapporo-TZP-2012"
+  },
+  {
+    "key": "sapporo-tzp-2012-diffuse",
+    "canonical_name": "Sapporo-TZP-2012-diffuse"
+  },
+  {
+    "key": "sapporo-tzp-diffuse",
+    "canonical_name": "Sapporo-TZP-diffuse"
+  },
+  {
+    "key": "sarc-dkh2",
+    "canonical_name": "SARC-DKH2"
+  },
+  {
+    "key": "sarc-zora",
+    "canonical_name": "SARC-ZORA"
+  },
+  {
+    "key": "sarc2-qzv-dkh2",
+    "canonical_name": "SARC2-QZV-DKH2"
+  },
+  {
+    "key": "sarc2-qzv-dkh2-jkfit",
+    "canonical_name": "SARC2-QZV-DKH2-JKFIT"
+  },
+  {
+    "key": "sarc2-qzv-zora",
+    "canonical_name": "SARC2-QZV-ZORA"
+  },
+  {
+    "key": "sarc2-qzv-zora-jkfit",
+    "canonical_name": "SARC2-QZV-ZORA-JKFIT"
+  },
+  {
+    "key": "sarc2-qzvp-dkh2",
+    "canonical_name": "SARC2-QZVP-DKH2"
+  },
+  {
+    "key": "sarc2-qzvp-dkh2-jkfit",
+    "canonical_name": "SARC2-QZVP-DKH2-JKFIT"
+  },
+  {
+    "key": "sarc2-qzvp-zora",
+    "canonical_name": "SARC2-QZVP-ZORA"
+  },
+  {
+    "key": "sarc2-qzvp-zora-jkfit",
+    "canonical_name": "SARC2-QZVP-ZORA-JKFIT"
+  },
+  {
+    "key": "saug-ano-pv5z",
+    "canonical_name": "saug-ano-pV5Z"
+  },
+  {
+    "key": "saug-ano-pvdz",
+    "canonical_name": "saug-ano-pVDZ"
+  },
+  {
+    "key": "saug-ano-pvqz",
+    "canonical_name": "saug-ano-pVQZ"
+  },
+  {
+    "key": "saug-ano-pvtz",
+    "canonical_name": "saug-ano-pVTZ"
+  },
+  {
+    "key": "sbkjc polarized (p,2d) - lfk",
+    "canonical_name": "SBKJC Polarized (p,2d) - LFK"
+  },
+  {
+    "key": "sbkjc-ecp",
+    "canonical_name": "SBKJC-ECP"
+  },
+  {
+    "key": "sbkjc-vdz",
+    "canonical_name": "SBKJC-VDZ"
+  },
+  {
+    "key": "sbo4-dz(d)-3g",
+    "canonical_name": "SBO4-DZ(d)-3G"
+  },
+  {
+    "key": "sbo4-dz(d,p)-3g",
+    "canonical_name": "SBO4-DZ(d,p)-3G"
+  },
+  {
+    "key": "sbo4-sz-3g",
+    "canonical_name": "SBO4-SZ-3G"
+  },
+  {
+    "key": "scaled mini",
+    "canonical_name": "Scaled MINI"
+  },
+  {
+    "key": "seg-cc-pv5z-pp",
+    "canonical_name": "seg-cc-pV5Z-PP"
+  },
+  {
+    "key": "seg-cc-pvdz-pp",
+    "canonical_name": "seg-cc-pVDZ-PP"
+  },
+  {
+    "key": "seg-cc-pvqz-pp",
+    "canonical_name": "seg-cc-pVQZ-PP"
+  },
+  {
+    "key": "seg-cc-pvtz-pp",
+    "canonical_name": "seg-cc-pVTZ-PP"
+  },
+  {
+    "key": "seg-cc-pwcv5z-pp",
+    "canonical_name": "seg-cc-pwCV5Z-PP"
+  },
+  {
+    "key": "seg-cc-pwcvdz-pp",
+    "canonical_name": "seg-cc-pwCVDZ-PP"
+  },
+  {
+    "key": "seg-cc-pwcvqz-pp",
+    "canonical_name": "seg-cc-pwCVQZ-PP"
+  },
+  {
+    "key": "seg-cc-pwcvtz-pp",
+    "canonical_name": "seg-cc-pwCVTZ-PP"
+  },
+  {
+    "key": "sigmadz",
+    "canonical_name": "sigmaDZ"
+  },
+  {
+    "key": "sigmadzhf",
+    "canonical_name": "sigmaDZHF"
+  },
+  {
+    "key": "sigmaqz",
+    "canonical_name": "sigmaQZ"
+  },
+  {
+    "key": "sigmaszhf",
+    "canonical_name": "sigmaSZHF"
+  },
+  {
+    "key": "sigmatz",
+    "canonical_name": "sigmaTZ"
+  },
+  {
+    "key": "sigmatzhf",
+    "canonical_name": "sigmaTZHF"
+  },
+  {
+    "key": "sto-2g",
+    "canonical_name": "STO-2G"
+  },
+  {
+    "key": "sto-3g",
+    "canonical_name": "STO-3G"
+  },
+  {
+    "key": "sto-3g_st_",
+    "canonical_name": "STO-3G*"
+  },
+  {
+    "key": "sto-4g",
+    "canonical_name": "STO-4G"
+  },
+  {
+    "key": "sto-5g",
+    "canonical_name": "STO-5G"
+  },
+  {
+    "key": "sto-6g",
+    "canonical_name": "STO-6G"
+  },
+  {
+    "key": "stuttgart rlc",
+    "canonical_name": "Stuttgart RLC"
+  },
+  {
+    "key": "stuttgart rlc ecp",
+    "canonical_name": "Stuttgart RLC ECP"
+  },
+  {
+    "key": "stuttgart rsc 1997",
+    "canonical_name": "Stuttgart RSC 1997"
+  },
+  {
+    "key": "stuttgart rsc 1997 ecp",
+    "canonical_name": "Stuttgart RSC 1997 ECP"
+  },
+  {
+    "key": "stuttgart rsc ano",
+    "canonical_name": "Stuttgart RSC ANO"
+  },
+  {
+    "key": "stuttgart rsc segmented + ecp",
+    "canonical_name": "Stuttgart RSC Segmented + ECP"
+  },
+  {
+    "key": "sv (dunning-hay)",
+    "canonical_name": "SV (Dunning-Hay)"
+  },
+  {
+    "key": "sv + double rydberg (dunning-hay)",
+    "canonical_name": "SV + Double Rydberg (Dunning-Hay)"
+  },
+  {
+    "key": "sv + rydberg (dunning-hay)",
+    "canonical_name": "SV + Rydberg (Dunning-Hay)"
+  },
+  {
+    "key": "svp (dunning-hay)",
+    "canonical_name": "SVP (Dunning-Hay)"
+  },
+  {
+    "key": "svp + diffuse (dunning-hay)",
+    "canonical_name": "SVP + Diffuse (Dunning-Hay)"
+  },
+  {
+    "key": "svp + diffuse + rydberg (dunning-hay)",
+    "canonical_name": "SVP + Diffuse + Rydberg (Dunning-Hay)"
+  },
+  {
+    "key": "svp + rydberg (dunning-hay)",
+    "canonical_name": "SVP + Rydberg (Dunning-Hay)"
+  },
+  {
+    "key": "tz (dunning-hay)",
+    "canonical_name": "TZ (Dunning-Hay)"
+  },
+  {
+    "key": "tzp-zora",
+    "canonical_name": "TZP-ZORA"
+  },
+  {
+    "key": "ugbs",
+    "canonical_name": "UGBS"
+  },
+  {
+    "key": "un-ccemd-ref",
+    "canonical_name": "un-ccemd-ref"
+  },
+  {
+    "key": "un-pcemd-ref",
+    "canonical_name": "un-pcemd-ref"
+  },
+  {
+    "key": "wachters+f",
+    "canonical_name": "Wachters+f"
+  },
+  {
+    "key": "wtbs",
+    "canonical_name": "WTBS"
+  },
+  {
+    "key": "x2c-jfit",
+    "canonical_name": "x2c-JFIT"
+  },
+  {
+    "key": "x2c-jfit-universal",
+    "canonical_name": "x2c-JFIT-universal"
+  },
+  {
+    "key": "x2c-qzvpall",
+    "canonical_name": "x2c-QZVPall"
+  },
+  {
+    "key": "x2c-qzvpall-2c",
+    "canonical_name": "x2c-QZVPall-2c"
+  },
+  {
+    "key": "x2c-qzvpall-2c-s",
+    "canonical_name": "x2c-QZVPall-2c-s"
+  },
+  {
+    "key": "x2c-qzvpall-s",
+    "canonical_name": "x2c-QZVPall-s"
+  },
+  {
+    "key": "x2c-qzvppall",
+    "canonical_name": "x2c-QZVPPall"
+  },
+  {
+    "key": "x2c-qzvppall-2c",
+    "canonical_name": "x2c-QZVPPall-2c"
+  },
+  {
+    "key": "x2c-qzvppall-2c-s",
+    "canonical_name": "x2c-QZVPPall-2c-s"
+  },
+  {
+    "key": "x2c-qzvppall-s",
+    "canonical_name": "x2c-QZVPPall-s"
+  },
+  {
+    "key": "x2c-sv(p)all",
+    "canonical_name": "x2c-SV(P)all"
+  },
+  {
+    "key": "x2c-sv(p)all-2c",
+    "canonical_name": "x2c-SV(P)all-2c"
+  },
+  {
+    "key": "x2c-sv(p)all-s",
+    "canonical_name": "x2c-SV(P)all-s"
+  },
+  {
+    "key": "x2c-svpall",
+    "canonical_name": "x2c-SVPall"
+  },
+  {
+    "key": "x2c-svpall-2c",
+    "canonical_name": "x2c-SVPall-2c"
+  },
+  {
+    "key": "x2c-svpall-s",
+    "canonical_name": "x2c-SVPall-s"
+  },
+  {
+    "key": "x2c-tzvpall",
+    "canonical_name": "x2c-TZVPall"
+  },
+  {
+    "key": "x2c-tzvpall-2c",
+    "canonical_name": "x2c-TZVPall-2c"
+  },
+  {
+    "key": "x2c-tzvpall-s",
+    "canonical_name": "x2c-TZVPall-s"
+  },
+  {
+    "key": "x2c-tzvppall",
+    "canonical_name": "x2c-TZVPPall"
+  },
+  {
+    "key": "x2c-tzvppall-2c",
+    "canonical_name": "x2c-TZVPPall-2c"
+  },
+  {
+    "key": "x2c-tzvppall-s",
+    "canonical_name": "x2c-TZVPPall-s"
+  }
+]

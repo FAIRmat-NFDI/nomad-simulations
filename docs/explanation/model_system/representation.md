@@ -18,9 +18,9 @@ The geometric quantities use a consistent implicit Cartesian frame:
 
 - **`fractional_coordinates`** (in `Representation`): Dimensionless coordinates relative to the lattice vectors, typically in the range [0, 1] within the unit cell.
 
-- **`positions`** (in `ModelSystem`): Cartesian coordinates (x, y, z) of each atom in the top-level system. The orientation of the frame comes from the simulation code or parser that generated the data. Subsystems reference these positions via `particle_indices`.
+- **`positions`** (in `ModelSystem`): Cartesian coordinates (x, y, z) of each atom in the top-level system. The orientation of the frame comes from the source data represented in the archive. Subsystems reference these positions via `particle_indices`.
 
-### Setting Geometric Properties
+### Example: Geometric Data on ModelSystem
 
 ```python
 --8<-- "snippets/explanation/model_system/representation/block_01.py"
@@ -40,27 +40,27 @@ Alternative representations are stored in the `representations` subsection of `M
 --8<-- "snippets/explanation/model_system/representation/block_02.py"
 ```
 
-This pattern allows the same physical system to be described from multiple geometric perspectives while maintaining the original parser output as the primary data on the `ModelSystem` itself.
+This pattern allows the same physical system to be described from multiple geometric perspectives while maintaining the original system description stored in the NOMAD archive as the primary data on the `ModelSystem` itself.
 
 ## Integration with Symmetry Analysis
 
-The `Representation` architecture integrates naturally with symmetry analysis. When `ModelSystem.normalize()` is called with `is_representative=True`, the symmetry analysis workflow automatically generates primitive and conventional cell representations:
+The `Representation` architecture integrates naturally with symmetry analysis. For representative systems, normalization can add primitive and conventional cell representations alongside the original one:
 
 ```python
 --8<-- "snippets/explanation/model_system/representation/block_03.py"
 ```
 
-## Usage Patterns and Best Practices
+## Understanding Representation Data
 
-### When to Use Alternative Representations
+### Representation Views in Practice
 
-Alternative representations should be used when you need to describe the same physical system from different geometric perspectives: primitive cells (minimal unit cell with smallest volume), conventional cells (standard unit cells aligned with crystallographic conventions), supercells (larger cells created by replicating the unit cell), or transformed cells (rotated or transformed for specific computational purposes). Each representation in the `representations` subsection should have a descriptive `name` that clearly indicates its purpose.
+Alternative representations describe the same physical system from different geometric perspectives: primitive cells (minimal unit cell with smallest volume), conventional cells (standard unit cells aligned with crystallographic conventions), supercells (larger cells created by replicating the unit cell), or transformed cells (rotated or transformed for specific computational purposes). In NOMAD-Simulations archives, the `name` field helps distinguish these views.
 
 ### Direct vs. Subsection Storage
 
-The design principle is straightforward: the original system description (as provided by the parser or user) lives directly on `ModelSystem` properties, while derived or alternative views are stored in the `representations` subsection. This maintains a clear provenance for the data.
+The design principle is straightforward: the original system description lives directly on `ModelSystem` properties, while derived or alternative views are stored in the `representations` subsection. This maintains a clear provenance for the data.
 
-### Working with ASE Atoms Objects
+### ASE Conversions
 
 The `to_ase_atoms()` method allows you to convert any geometric representation to ASE format. By default, it uses the cell geometry (lattice vectors and periodic boundary conditions) directly from `ModelSystem`. The optional `representation_index` parameter lets you select an alternative representation's cell geometry instead, while atomic positions always come from the main `ModelSystem`:
 
@@ -68,23 +68,23 @@ The `to_ase_atoms()` method allows you to convert any geometric representation t
 --8<-- "snippets/explanation/model_system/representation/block_04.py"
 ```
 
-This is particularly useful when you need to perform ASE-based analyses with different cell definitions. For example, you might want to compute phonons in the primitive cell or visualize the structure in the conventional cell, all while using the same atomic positions from the original system.
+This is useful when interpreting how a single atomic structure can be viewed with different cell definitions. For example, the same positions can be paired with primitive-cell or conventional-cell geometry when comparing analyses, visualizations, or downstream calculations.
 
 The separation between atomic positions (from `ModelSystem`) and cell geometry (from `ModelSystem` or `ModelSystem.representations[index]`) reflects the fact that alternative representations typically provide different unit cell choices for the same atomic structure.
 
-### Programmatic Access to Named Representations
+### Finding Named Representations
 
-When searching for a specific representation by name, use a simple loop:
+Named representations are commonly inspected by iterating over the available entries:
 
 ```python
 --8<-- "snippets/explanation/model_system/representation/block_05.py"
 ```
 
-This pattern is used throughout the NOMAD simulations schema, particularly in numerical settings where primitive cells are often required for k-space sampling.
+This illustrates how readers of NOMAD-Simulations archives can identify a specific stored representation, such as the primitive cell, without changing the underlying system hierarchy. The same pattern is also useful in parts of the schema where a particular cell choice matters, such as numerical settings that refer to primitive-cell-based sampling.
 
 ## Representation Does Not Interfere with Navigation
 
-The `Representation` class focuses solely on geometric details and does not affect how you navigate through system hierarchies. Navigation through the subsystem hierarchy (via `ModelSystem.sub_systems`) is handled separately and is documented in the [ModelSystem Overview](model_system.md).
+The `Representation` class focuses solely on geometric details and does not affect how you navigate through system hierarchies. Navigation through the subsystem hierarchy (via `ModelSystem.sub_systems`) is handled separately and is documented in the [ModelSystem Overview](overview.md).
 
 What `Representation` does provide is the ability to access alternative geometric views at any point in the hierarchy. Each `ModelSystem`, at any level, can have its own `representations` subsection containing different geometric perspectives of that specific system:
 
@@ -96,6 +96,6 @@ This means you can explore different geometric descriptions (primitive cells, co
 
 ## See Also
 
-- [ModelSystem Overview](model_system.md): General introduction to the ModelSystem class
+- [ModelSystem Overview](overview.md): General introduction to the ModelSystem class
 - [Electronic States](electronic_states.md): Similar hierarchical design pattern for electronic structure
-- [Normalization](../normalize.md): How normalization populates alternative representations
+- [Normalization](../../schema_development/normalize.md): How normalization populates alternative representations

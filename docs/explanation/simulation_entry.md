@@ -35,7 +35,7 @@ The `Simulation` section inherits from a _base section_ `BaseSimulation`. In NOM
 
     E.g., there is a sub-section under `Simulation` named `'model_method'` whose section defintion can be found in the `ModelMethod` section. We will represent this sub-section containment in more complex UML diagrams in the future using the containment arrow (see below for [an example using `Program`](#program)).
 
-`Simulation` inherits from `BaseSimulation` and `Schema` and is used as the simulation entry section in the archive. All of the base sections discussed here are subject to the [public normalize function](normalize.md) in NOMAD. The private function `_set_system_branch_depth()` is related with the [ModelSystem base section](model_system/model_system.md).
+`Simulation` inherits from `BaseSimulation` and `Schema` and is used as the simulation entry section in the archive. All of the base sections discussed here are subject to the [public normalize function](../schema_development/normalize.md) in NOMAD. The private function `_set_system_branch_depth()` is related with the [ModelSystem base section](model_system/overview.md).
 
 ## Main sub-sections in `Simulation` {#sub-sections-in-simulation}
 
@@ -43,8 +43,8 @@ The `Simulation` base section is composed of 4 main sub-sections:
 
 1. `Program`: contains all the program information, e.g., `name` of the program, `version`, etc.
 2. `ModelSystem`: contains all the system information about geometrical positions of atoms, their states, simulation cells, symmetry information, etc.
-3. `ModelMethod`: contains the methodological information for the simulation. In practice this combines the model identity itself (e.g., `DFT`, `GW`, `ForceFields`) with attached numerical realizations stored under `numerical_settings` (e.g., meshes, self-consistency parameters, basis-set settings). See [ModelMethod vs NumericalSettings](model_method/model_method_vs_numerical_settings.md) for the distinction.
-4. `Outputs`: contains all the output properties, as well as references to the `ModelSystem` used to obtain such properties. It might also contain information which will populate `ModelSystem` (e.g., atomic occupations, atomic moments, crystal field energies, etc.).
+3. `ModelMethod`: contains the methodological information for the simulation. In practice this combines the model identity itself (e.g., `DFT`, `GW`, `ForceFields`) with attached numerical realizations stored under `numerical_settings` (e.g., meshes, self-consistency parameters, basis-set settings). See [Model Method Overview](model_method/overview.md) for how this structure is organized in NOMAD-Simulations archives.
+4. `Outputs`: contains all the output properties, as well as references to the `ModelSystem` used to obtain such properties. It can also contain information that is reflected back into `ModelSystem` descriptions, such as atomic occupations, atomic moments, or crystal field energies.
 
 !!! note "Self-consistent steps, SinglePoint entries, and more complex workflows."
     The minimal unit for storing data in the NOMAD archive is an [*entry*](https://nomad-lab.eu/prod/v1/staging/docs/reference/glossary.html#entry). In the context of simulation data, an entry may contain data from a calculation on an individual system configuration (e.g., a single-point DFT calculation) using **only** the above-mentioned sections of the `Simulation` section. Information from self-consistent iterations to converge properties for this configuration are also contained within these sections.
@@ -72,44 +72,13 @@ The `Program` base section contains all the information about the program / soft
 </div>
 
 
-When [writing a parser](https://nomad-lab.eu/prod/v1/staging/docs/howto/customization/parsers.html), we recommend to start by instantiating the `Program` section and populating its quantities, in order to get acquainted with the NOMAD parsing infrastructure.
+In normalized archive data, the `Program` subsection records the software used
+to produce the simulation data, including identifiers such as the program name,
+version, and related metadata. It serves as the software anchor for the rest of
+the entry.
 
-For example, imagine we have a file which we want to parse with the following information:
-```txt
-! * * * * * * *
-! Welcome to SUPERCODE, version 7.0
-...
-```
-
-We can parse the program `name` and `version` by matching the texts (see, e.g., [Wikipedia page for Regular expressions, also called _regex_](https://en.wikipedia.org/wiki/Regular_expression)):
-
-```python
-from nomad.parsing.file_parser import TextParser, Quantity
-from nomad_simulations.schema_packages.general import Simulation, Program
-
-
-class SUPERCODEParser:
-    """
-    Class responsible to populate the NOMAD `archive` from the files given by a
-    SUPERCODE simulation.
-    """
-
-    def parse(self, filepath, archive, logger):
-        output_parser = TextParser(
-            quantities=[
-                Quantity('program_version', r'version *([\d\.]+) *', repeats=False)
-            ]
-        )
-        output_parser.mainfile = filepath
-
-        simulation = Simulation()
-        simulation.program = Program(
-            name='SUPERCODE',
-            version=output_parser.get('program_version'),
-        )
-        # append `Simulation` as an `archive.data` section
-        archive.data.append(simulation)
-```
+Implementation-oriented examples for `Simulation` and `Program` population are
+documented under [Populating `Simulation` and `Program`](../schema_development/simulation_entry_population.md).
 
 ## Homogenization and the role of Workflows
 
@@ -121,7 +90,7 @@ This mapping may be a mixture of (workflow) entries and sections.
 
 Below are a few examples of actual mappings.
 Important to note is that these examples already presuppose a certain structure on the side of the referenced `archive.data` sections.
-In reality, workflow should be capable of hosting multiple underlying structures.
+In practice, workflows can host multiple underlying structures.
 
 ### Serial Updates to `ModelSystem`
 
@@ -159,7 +128,7 @@ entry_x#workflow2.task[0].output -> entry_y#data.outputs[0]
 There are two main design choices here:
 
 1. the methodology and computed outputs are split along major subroutines.
-2. they are kept in a single entry. This is especially useful for legacy cases, where some subroutines were originally not distinguished.
+2. they are kept in a single entry. This is especially useful when some subroutines are not represented as distinct archive-level stages.
 
 In option 2, for any workflows at are not simply _serial_, there is no canonical way of ordering `outputs`.
 This burden remains with `workflow2.tasks`.

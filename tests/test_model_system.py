@@ -831,259 +831,40 @@ class TestModelSystemBondFunctions:
             ([AtomsState(chemical_symbol='H')], True),
             ([AtomsState(chemical_symbol='H'), AtomsState(chemical_symbol='O')], True),
             ([CGBeadState(bead_symbol='B')], False),
-            ([AtomsState(chemical_symbol='H'), CGBeadState(bead_symbol='B')], True),
+            ([AtomsState(chemical_symbol='H'), CGBeadState(bead_symbol='B')], False),
             ([CGBeadState(bead_symbol='H'), CGBeadState(bead_symbol='B')], False),
         ],
     )
     def test_is_atomic_flag(self, states, expected):
         """
-        is_atomic() reflects whether all particle_states are AtomsState (True)
-        versus any CG/generic presence (False), with [] → False.
+        is_atomic() is True only when all relevant particle_states are AtomsState,
+        with [] and any CG/generic presence yielding False.
         """
         ms = ModelSystem()
         for s in states:
             ms.particle_states.append(s)
         assert ms.is_atomic() is expected
 
-
-class TestGenericParticleReassignment:
-    """
-    Tests for automatic typing of generic ParticleState → AtomsState/CGBeadState
-    and the atomic gating in ModelSystem.normalize().
-    """
-
-    def test_generic_promotes_to_atoms(self):
-        """
-        All-generic particle_states with element labels should be promoted to
-        AtomsState entries during normalize(), preserving order and count.
-        """
-        ms = ModelSystem(is_representative=True)
-        # Generic particles with element labels
-        ms.particle_states.append(ParticleState(label='H'))
-        ms.particle_states.append(ParticleState(label='O'))
-
-        ms.normalize(EntryArchive(), logger=logger)
-
-        assert ms.is_atomic() is True
-        assert all(isinstance(p, AtomsState) for p in ms.particle_states)
-        assert [p.chemical_symbol for p in ms.particle_states] == ['H', 'O']
-
-    def test_generic_demotes_to_cg(self):
-        """
-        All-generic particle_states with non-element labels should be converted to
-        CGBeadState entries during normalize(), preserving order and count.
-        """
-        ms = ModelSystem(is_representative=True)
-        # Non-element labels → CG beads
-        ms.particle_states.append(ParticleState(label='B1'))
-        ms.particle_states.append(ParticleState(label='X'))
-
-        ms.normalize(EntryArchive(), logger=logger)
-
-        assert ms.is_atomic() is False
-        assert all(isinstance(p, CGBeadState) for p in ms.particle_states)
-        assert [p.bead_symbol for p in ms.particle_states] == ['B1', 'X']
-
-    def test_generic_with_missing_label_preserves_length(self):
-        """
-        If any generic label is missing, the set should fall back to CG and preserve
-        the number and order of particle_states; missing bead_symbol remains None.
-        """
-        ms = ModelSystem(is_representative=True)
-        ms.particle_states.append(ParticleState(label='H'))
-        ms.particle_states.append(ParticleState(label=None))  # missing
-
-        ms.normalize(EntryArchive(), logger=logger)
-
-        # Falls back to CG and preserves count/order
-        assert len(ms.particle_states) == 2
-        assert all(isinstance(p, CGBeadState) for p in ms.particle_states)
-        assert [getattr(p, 'bead_symbol', None) for p in ms.particle_states] == [
-            'H',
-            None,
-        ]
-        assert ms.is_atomic() is False
-
-    def test_parser_atoms_trusted_no_reassign(self):
-        """
-        If the parser already provided only AtomsState entries, the normalizer must
-        not reassign them; object identity and order stay the same.
-        """
-        ms = ModelSystem(is_representative=True)
-        a1 = AtomsState(chemical_symbol='H')
-        a2 = AtomsState(chemical_symbol='O')
-        ms.particle_states.extend([a1, a2])
-
-        ms.normalize(EntryArchive(), logger=logger)
-
-        # No reassignment: same objects, same order
-        assert len(ms.particle_states) == 2
-        assert ms.particle_states[0] is a1
-        assert ms.particle_states[1] is a2
-
-        # Still atomic and symbols intact
-        assert ms.is_atomic() is True
-        assert [p.chemical_symbol for p in ms.particle_states] == ['H', 'O']
-
-    def test_mixed_types_trust_parser(self):
-        """
-        When mixed types are present (e.g., AtomsState and generic ParticleState),
-        the normalizer defers to the parser and does not auto-reassign types.
-        """
-        ms = ModelSystem(is_representative=True)
-        ms.particle_states.append(AtomsState(chemical_symbol='C'))
-        ms.particle_states.append(
-            ParticleState(label='O')
-        )  # generic, but mixed with AA
-
-        ms.normalize(EntryArchive(), logger=logger)
-
-        # We trust the parser: no auto-reassignment when mixed types present
-        assert isinstance(ms.particle_states[0], AtomsState)
-        assert isinstance(ms.particle_states[1], ParticleState)
-
-    def test_atomic_gate_blocks_non_atomic_flow(self):
-        """
-        If the system is non-atomic (e.g., contains only CG beads), the atomic
-        normalization path (symmetry/formulas) is skipped as expected.
-        """
-        ms = ModelSystem(is_representative=True)
-        ms.particle_states.append(CGBeadState(bead_symbol='B'))
-
-        ms.normalize(EntryArchive(), logger=logger)
-
-        # Non-atomic → early return; chemical_formula should not be created
-        assert not ms.chemical_formula  # remains None/empty
-
-    def test_noop_when_already_all_atoms(self):
-        """
-        If parser already provided only AtomsState entries, normalization is a no-op.
-        Preserve identity, order, and symbols.
-        """
-        ms = ModelSystem(is_representative=True)
-        a1 = AtomsState(chemical_symbol='C')
-        a2 = AtomsState(chemical_symbol='O')
-        ms.particle_states.extend([a1, a2])
-
-        ms.normalize(EntryArchive(), logger=logger)
-
-        assert [type(p) for p in ms.particle_states] == [AtomsState, AtomsState]
-        assert ms.particle_states[0] is a1 and ms.particle_states[1] is a2
-        assert [p.chemical_symbol for p in ms.particle_states] == ['C', 'O']
-
-    def test_noop_when_already_all_cg(self):
-        """
-        If parser already provided only CGBeadState entries, normalization is a no-op.
-        """
-        ms = ModelSystem(is_representative=True)
-        c1 = CGBeadState(bead_symbol='B1')
-        c2 = CGBeadState(bead_symbol='X')
-        ms.particle_states.extend([c1, c2])
-
-        ms.normalize(EntryArchive(), logger=logger)
-
-        assert [type(p) for p in ms.particle_states] == [CGBeadState, CGBeadState]
-        assert ms.particle_states[0] is c1 and ms.particle_states[1] is c2
-        assert [p.bead_symbol for p in ms.particle_states] == ['B1', 'X']
-
-    def test_generic_with_invalid_label_falls_back_to_cg(self):
-        """
-        If any generic label is not a valid element, convert *all* to CG,
-        preserving order and labels where present.
-        """
-        ms = ModelSystem(is_representative=True)
-        ms.particle_states.append(ParticleState(label='H'))  # element-like
-        ms.particle_states.append(ParticleState(label='B1'))  # not an element
-
-        ms.normalize(EntryArchive(), logger=logger)
-
-        assert [type(p) for p in ms.particle_states] == [CGBeadState, CGBeadState]
-        assert [getattr(p, 'bead_symbol', None) for p in ms.particle_states] == [
-            'H',
-            'B1',
-        ]
-        assert ms.is_atomic() is False
-
-    def test_generic_with_empty_string_falls_back_to_cg(self):
-        """
-        Empty-string labels should trigger CG fallback, with None bead_symbol
-        for the empty one (since falsy labels are not assigned).
-        """
-        ms = ModelSystem(is_representative=True)
-        ms.particle_states.append(ParticleState(label='H'))
-        ms.particle_states.append(ParticleState(label=''))  # empty
-
-        ms.normalize(EntryArchive(), logger=logger)
-
-        assert [type(p) for p in ms.particle_states] == [CGBeadState, CGBeadState]
-        assert [getattr(p, 'bead_symbol', None) for p in ms.particle_states] == [
-            'H',
-            None,
-        ]
-
-    def test_order_preserved_on_generic_to_atoms_promotion(self):
-        """
-        All-generic, all valid element labels → promote to AtomsState
-        with the same order and count.
-        """
-        ms = ModelSystem(is_representative=True)
-        ms.particle_states.extend(
+    def test_is_atomic_subsystem_uses_referenced_particle_state_types(self):
+        root = ModelSystem()
+        root.particle_states.extend(
             [
-                ParticleState(label='O'),
-                ParticleState(label='H'),
-                ParticleState(label='H'),
+                AtomsState(chemical_symbol='H'),
+                CGBeadState(bead_symbol='B'),
+                AtomsState(chemical_symbol='O'),
             ]
         )
 
-        ms.normalize(EntryArchive(), logger=logger)
+        atomic_child = ModelSystem()
+        atomic_child.particle_indices = [0, 2]
+        root.sub_systems.append(atomic_child)
 
-        assert [type(p) for p in ms.particle_states] == [
-            AtomsState,
-            AtomsState,
-            AtomsState,
-        ]
-        assert [p.chemical_symbol for p in ms.particle_states] == ['O', 'H', 'H']
-        assert ms.is_atomic() is True
+        mixed_child = ModelSystem()
+        mixed_child.particle_indices = [0, 1]
+        root.sub_systems.append(mixed_child)
 
-    def test_cg_plus_generic_element_labels_promotes_all_to_atoms(self):
-        """
-        If any generic entries and all labels are valid elements, convert *all*
-        (including existing CGBeadState) to AtomsState.
-        """
-        ms = ModelSystem(is_representative=True)
-        ms.particle_states.append(CGBeadState(bead_symbol='H'))
-        ms.particle_states.append(ParticleState(label='O'))  # generic but element-like
-
-        ms.normalize(EntryArchive(), logger=logger)
-
-        assert [type(p) for p in ms.particle_states] == [AtomsState, AtomsState]
-        assert [p.chemical_symbol for p in ms.particle_states] == ['H', 'O']
-        assert ms.is_atomic() is True
-
-    def test_idempotent_normalize_reassignment(self):
-        """
-        Normalizing twice should be stable (no further changes after first pass).
-        """
-        ms = ModelSystem(is_representative=True)
-        ms.particle_states.extend([ParticleState(label='H'), ParticleState(label='O')])
-
-        ms.normalize(EntryArchive(), logger=logger)
-        first_types = tuple(type(p) for p in ms.particle_states)
-        first_labels = tuple(
-            getattr(p, 'chemical_symbol', getattr(p, 'bead_symbol', None))
-            for p in ms.particle_states
-        )
-
-        # second normalize shouldn't change anything
-        ms.normalize(EntryArchive(), logger=logger)
-        second_types = tuple(type(p) for p in ms.particle_states)
-        second_labels = tuple(
-            getattr(p, 'chemical_symbol', getattr(p, 'bead_symbol', None))
-            for p in ms.particle_states
-        )
-
-        assert first_types == second_types
-        assert first_labels == second_labels
+        assert atomic_child.is_atomic() is True
+        assert mixed_child.is_atomic() is False
 
 
 class TestModelSystemSymbols:

@@ -26,9 +26,7 @@ simulation.model_system.append(model_system)
 method = DFT(
     name='DFT',
     type='KS',
-    numerical_settings=[
-        SelfConsistency(threshold_change=1e-6, threshold_change_unit='joule')
-    ],
+    numerical_settings=[SelfConsistency(threshold_change=1e-6 * ureg.joule)],
 )
 simulation.model_method.append(method)
 

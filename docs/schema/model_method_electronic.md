@@ -2,14 +2,6 @@
 
 **Purpose:** Electronic method subclasses branching from ModelMethodElectronic
 
-**In scope:**
-
-- Electronic-method inheritance rooted at ModelMethodElectronic
-- Ground-state electronic methods (DFT, HF, CC, CI, perturbative approaches)
-- Tight-binding family (TB, xTB, Wannier, SlaterKoster)
-- Excited-state methodology branch (ExcitedStateMethodology, Screening, GW, BSE, TDDFT)
-- Core-hole and many-body electronic methods (CoreHoleSpectra, DMFT)
-
 
 ## Relationship map
 
@@ -28,6 +20,7 @@ classDiagram
     class GW
     class HF
     class ModelMethodElectronic
+    class NDDO
     class PerturbationMethod
     class Screening
     class SlaterKoster
@@ -44,6 +37,7 @@ classDiagram
     ModelMethodElectronic <|-- ExcitedStateMethodology
     ExcitedStateMethodology <|-- GW
     ModelMethodElectronic <|-- HF
+    ModelMethodElectronic <|-- NDDO
     ModelMethodElectronic <|-- PerturbationMethod
     ExcitedStateMethodology <|-- Screening
     TB <|-- SlaterKoster
@@ -61,45 +55,34 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `ModelMethodElectronic`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `ModelMethodElectronic` | A base section used to define the parameters of a model Hamiltonian used in electronic structure calculations (TB, DFT, GW, BSE, DMFT, etc). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.ModelMethodElectronic){:target="_blank"} |
-| `DFT` | A base section used to define the parameters used in a density functional theory (DFT) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.DFT){:target="_blank"} |
-| `TB` | A base section containing the parameters pertaining to a tight-binding (TB) model calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.TB){:target="_blank"} |
-| `xTB` | A base section used to define the parameters used in an extended tight-binding (xTB) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.xTB){:target="_blank"} |
-| `Wannier` | A base section used to define the parameters used in a Wannier tight-binding fitting. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.Wannier){:target="_blank"} |
-| `SlaterKoster` | A base section used to define the parameters used in a Slater-Koster tight-binding fitting. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.SlaterKoster){:target="_blank"} |
-| `ExcitedStateMethodology` | A base section used to define the parameters typical of excited-state calculations. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.ExcitedStateMethodology){:target="_blank"} |
-| `Screening` | A base section used to define the parameters that define the calculation of screening. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.Screening){:target="_blank"} |
-| `GW` | A base section used to define the parameters of a GW calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.GW){:target="_blank"} |
-| `BSE` | A base section used to define the parameters of a BSE calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.BSE){:target="_blank"} |
-| `TDDFT` | Time-dependent density functional theory settings. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.TDDFT){:target="_blank"} |
-| `HF` | Defines a Hartree-Fock (HF) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.HF){:target="_blank"} |
-| `CC` | A base section used to define the parameters of a Coupled Cluster calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.CC){:target="_blank"} |
-| `CI` | Single-reference Configuration Interaction (CI) methods using atom-centered basis sets. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.CI){:target="_blank"} |
-| `PerturbationMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.PerturbationMethod){:target="_blank"} |
-| `CoreHoleSpectra` | A base section used to define the parameters used in a core-hole spectra calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.CoreHoleSpectra){:target="_blank"} |
-| `DMFT` | A base section used to define the parameters of a DMFT calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.DMFT){:target="_blank"} |
-
-
-## Quantities by section
-
-### `ModelMethodElectronic`
 
 | Quantity | Type | Description |
 |---|---|---|
 | `is_spin_polarized` | m_bool(bool) | If the simulation is done considering the spin degrees of freedom (then there are two spin channels, 'down' and 'up') or not. |
-| `determinant` | Enum | <details><summary>The spin-coupling form of the determinant used for the</summary>The spin-coupling form of the determinant used for the<br>self-consistent field (SCF) calculation.<br>- **restricted**  (RHF/RKS): α and β electrons share the same spatial orbitals<br>- **unrestricted** (UHF/UKS): α and β orbitals are optimized independently<br>- **restricted-open-shell** (ROHF/ROKS): closed-shell core with spin-unpaired electrons<br>sharing spatial orbitals in the open-shell manifold</details> |
 
 ### `DFT`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `DFT` | A base section used to define the parameters used in a density functional theory (DFT) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.DFT){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
 | `jacobs_ladder` | Enum | <details><summary>Highest Jacob's ladder rung present among XC components.</summary>Highest Jacob's ladder rung present among XC components.<br>See:<br>- https://doi.org/10.1063/1.1390175 (original paper)<br>- https://doi.org/10.1103/PhysRevLett.91.146401 (meta-GGA)<br>- https://doi.org/10.1063/1.1904565 (hyper-GGA)</details> |
+| `reference_form` | Enum | <details><summary>Kohn-Sham reference form used for the DFT calculation.</summary>Kohn-Sham reference form used for the DFT calculation.<br>- **RKS**: restricted Kohn-Sham reference<br>- **UKS**: unrestricted Kohn-Sham reference<br>- **ROKS**: restricted open-shell Kohn-Sham reference</details> |
 
 ### `TB`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `TB` | A base section containing the parameters pertaining to a tight-binding (TB) model calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.TB){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -111,9 +94,17 @@ classDiagram
 
 ### `xTB`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `xTB` | A base section used to define the parameters used in an extended tight-binding (xTB) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.xTB){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `Wannier`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Wannier` | A base section used to define the parameters used in a Wannier tight-binding fitting. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.Wannier){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -125,9 +116,27 @@ classDiagram
 
 ### `SlaterKoster`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SlaterKoster` | A base section used to define the parameters used in a Slater-Koster tight-binding fitting. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.SlaterKoster){:target="_blank"} |
+
 *This section has no direct quantities.*
 
+### `NDDO`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `NDDO` | A base section used to define Neglect of Diatomic Differential Overlap (NDDO)-type semi-empirical quantum chemistry methods such as MNDO, AM1, PM3, PM... | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.NDDO){:target="_blank"} |
+
+| Quantity | Type | Description |
+|---|---|---|
+| `type` | Enum | <details><summary>Neglect of Diatomic Differential Overlap (NDDO)-type semi-empirical quantum chem...</summary>Neglect of Diatomic Differential Overlap (NDDO)-type semi-empirical quantum chemistry<br>method. These can be:<br>\| Value \| Description \|<br>\| --------- \| ----------------------- \|<br>\| `'MNDO'` \| Modified Neglect of Diatomic Overlap \|<br>\| `'AM1'` \| Austin Model 1 \|<br>\| `'PM3'` \| Parametric Method 3 \|<br>\| `'PM6'` \| Parametric Method 6 \|<br>\| `'PM7'` \| Parametric Method 7 \|<br>\| `'SAM1'` \| Semi-Ab Initio Method 1 \|</details> |
+
 ### `ExcitedStateMethodology`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `ExcitedStateMethodology` | A base section used to define the parameters typical of excited-state calculations. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.ExcitedStateMethodology){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -137,11 +146,19 @@ classDiagram
 
 ### `Screening`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Screening` | A base section used to define the parameters that define the calculation of screening. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.Screening){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `dielectric_infinity` | m_int32(int32) | Value of the static dielectric constant at infinite q. For metals, this is infinite (or a very large value), while for insulators is finite. |
 
 ### `GW`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `GW` | A base section used to define the parameters of a GW calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.GW){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -152,6 +169,10 @@ classDiagram
 
 ### `BSE`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `BSE` | A base section used to define the parameters of a BSE calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.BSE){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `type` | Enum | <details><summary>Type of the BSE Hamiltonian solved:</summary>Type of the BSE Hamiltonian solved:<br>H_BSE = H_diagonal + 2 * gx * Hx - gc * Hc<br>Online resources for the theory:<br>- http://exciting.wikidot.com/carbon-excited-states-from-bse#toc1<br>- https://www.vasp.at/wiki/index.php/Bethe-Salpeter-equations_calculations<br>- https://docs.abinit.org/theory/bse/<br>- https://www.yambo-code.eu/wiki/index.php/Bethe-Salpeter_kernel<br>\| Name \| Description \|<br>\| --------- \| ----------------------- \|<br>\| `'Singlet'` \| gx = 1, gc = 1 \|<br>\| `'Triplet'` \| gx = 0, gc = 1 \|<br>\| `'IP'` \| Independent-particle approach \|<br>\| `'RPA'` \| Random Phase Approximation \|</details> |
@@ -159,6 +180,10 @@ classDiagram
 | `screening_ref` | Reference | Reference to the `Screening` section that the BSE calculation used to obtain the screened Coulomb interactions. |
 
 ### `TDDFT`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `TDDFT` | Time-dependent density functional theory settings. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.TDDFT){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -170,15 +195,23 @@ classDiagram
 
 ### `HF`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `HF` | Defines a Hartree-Fock (HF) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.HF){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
-| `type` | Enum | The type of HF determinant. |
+| `reference_form` | Enum | Hartree-Fock reference form used for the HF calculation. |
 
 ### `CC`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `CC` | A base section used to define the parameters of a Coupled Cluster calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.CC){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
-| `type` | m_str(str) | <details><summary>String labeling the Coupled Cluster flavor (e.g., CC2, CC3, CCD, CCSD, CCSDT, etc.).</summary>String labeling the Coupled Cluster flavor (e.g., CC2, CC3, CCD, CCSD, CCSDT, etc.).<br>If a known standard approach, it might match these examples:<br>- CC2, CC3  : approximate CC models (commonly used for excited-state calculations)<br>- CCD       : Coupled Cluster Doubles<br>- CCSD      : Singles and Doubles<br>- CCSDT     : Singles, Doubles, and Triples<br>- CCSDTQ    : Singles, Doubles, Triples, and Quadruples<br>By default, the "perturbative corrections" like (T) are not included in this string.</details> |
+| `type` | m_str(str) | <details><summary>String labeling the Coupled Cluster flavor (e.g., CC2, CC3, CCD, CCSD, CCSDT, etc.).</summary>String labeling the Coupled Cluster flavor (e.g., CC2, CC3, CCD, CCSD, CCSDT, etc.).<br>If a known standard approach, it might match these examples:<br>- CC2, CC3  : approximate CC models (commonly used for excited-state calculations)<br>- CCD       : Coupled Cluster Doubles<br>- CCSD      : Singles and Doubles<br>- CCSDT     : Singles, Doubles, and Triples<br>- CCSDTQ    : Singles, Doubles, Triples, and Quadruples<br>By default, the "perturbative corrections" like (T) are not included in this string.<br>For local coupled-cluster methods, prefer storing the non-local base<br>method here (e.g., `CCSD`) and the local approximation in<br>`local_correlation`. If a parser stores a local-prefixed label here<br>anyway (e.g., `DLPNO-CCSD`), normalization will not duplicate the local<br>prefix in `name`.</details> |
 | `excitation_order` | m_int32(int32) (shape: ['*']) | <details><summary>The excitation orders explicitly included in the cluster operator, e.g.</summary>The excitation orders explicitly included in the cluster operator, e.g. [1,2]<br>for CCSD.<br>- 1 = singles<br>- 2 = doubles<br>- 3 = triples<br>- 4 = quadruples, etc.<br>Example: CCSDT => [1, 2, 3].</details> |
 | `perturbative_correction_order` | m_int32(int32) (shape: ['*']) | The excitation orders included only in a perturbative manner. For instance, in CCSD(T), singles and doubles are solved iteratively, while triples appear as a perturbative correction => [3]. |
 | `perturbative_correction` | Enum | <details><summary>Label for the perturbative corrections:</summary>Label for the perturbative corrections:<br>- '(T)'   : standard perturbative triples<br>- '[T]'   : Brueckner-based or other variant<br>- '(T0)'  : approximate version of (T)<br>- '[T0]'  : approximate, typically for Brueckner references<br>- '(Q)'   : perturbative quadruples, e.g., CCSDT(Q)</details> |
@@ -186,12 +219,20 @@ classDiagram
 
 ### `CI`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `CI` | Single-reference Configuration Interaction (CI) methods using atom-centered basis sets. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.CI){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `type` | Enum | CI variant to employ |
 | `excitation_order` | m_int32(int32) (shape: ['*']) | List of excitation orders included in the CI expansion (1=singles, 2=doubles, 3=triples, 4=quadruples, …). |
 
 ### `PerturbationMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `PerturbationMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.PerturbationMethod){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -202,6 +243,10 @@ classDiagram
 
 ### `CoreHoleSpectra`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `CoreHoleSpectra` | A base section used to define the parameters used in a core-hole spectra calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.CoreHoleSpectra){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `type` | Enum | Type of the CoreHole excitation spectra calculated, either "absorption" or "emission". |
@@ -210,6 +255,10 @@ classDiagram
 | `excited_state_method_ref` | Reference | Reference to the `ModelMethodElectronic` section (e.g., `DFT` or `BSE`) that was used to obtain the core-hole spectra. |
 
 ### `DMFT`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `DMFT` | A base section used to define the parameters of a DMFT calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_method.DMFT){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

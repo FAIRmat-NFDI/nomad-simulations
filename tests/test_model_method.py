@@ -7,14 +7,20 @@ from nomad_simulations.schema_packages.atoms_state import (
     SphericalSymmetryState,
 )
 from nomad_simulations.schema_packages.model_method import (
+    BSDFT,
+    CC,
     DFT,
     TB,
     ActiveSpace,
+    BrokenSymmetryCenter,
     EmpiricalDispersionModel,
     ImplicitSolvationModel,
+    LocalCorrelation,
+    LocalCorrelationSpace,
     MultireferencePT,
     MultireferenceSCF,
     NonlocalCorrelation,
+    PerturbationMethod,
     RelativityModel,
     SelfInteractionCorrection,
     SlaterKoster,
@@ -24,6 +30,10 @@ from nomad_simulations.schema_packages.model_method import (
     XCFunctional,
 )
 from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
+from nomad_simulations.schema_packages.numerical_settings import (
+    LocalCorrelationSettings,
+    LocalCorrelationThreshold,
+)
 
 from . import logger
 from .conftest import generate_simulation
@@ -457,7 +467,7 @@ class TestMultireferenceMethods:
         active = ActiveSpace(n_active_orbitals=4, n_active_electrons=6)
         mref = MultireferenceSCF(
             type='CASSCF',
-            reference_type='state_averaged',
+            state_treatment='state_averaged',
             state_multiplicities=[3, 1],
             n_roots_per_multiplicity=[2, 3],
             active_space=active,
@@ -466,9 +476,290 @@ class TestMultireferenceMethods:
         mref.normalize(EntryArchive(), logger=logger)
 
         assert mref.n_state_groups == 2
+        assert mref.state_treatment == 'state_averaged'
         assert mref.active_space is active
         assert list(mref.state_multiplicities) == [3, 1]
         assert list(mref.n_roots_per_multiplicity) == [2, 3]
+
+
+def build_local_correlation_space(**overrides) -> LocalCorrelationSpace:
+    space_kwargs = {
+        'space_kind': 'occupied_domain',
+        'occupied_tuple_kind': 'pair',
+        'excitation_order': 2,
+    }
+    space_kwargs.update(overrides)
+    return LocalCorrelationSpace(**space_kwargs)
+
+
+def build_local_correlation(
+    local_type: str = 'DLPNO',
+    spaces: list[LocalCorrelationSpace] | None = None,
+) -> LocalCorrelation:
+    return LocalCorrelation(
+        type=local_type,
+        spaces=spaces
+        or [
+            build_local_correlation_space(
+                space_kind='local_virtual_space',
+                occupied_tuple_kind=None,
+                virtual_space_type='PNO',
+                excitation_order=2,
+            )
+        ],
+    )
+
+
+class TestCC:
+    def test_cc_normalize_prefixes_base_method_with_local_correlation(self):
+        cc = CC(
+            type='CCSD',
+            perturbative_correction='(T)',
+            local_correlation=build_local_correlation(local_type='DLPNO'),
+        )
+
+        cc.normalize(EntryArchive(), logger=logger)
+
+        assert cc.name == 'DLPNO-CCSD(T)'
+
+    def test_cc_normalize_does_not_duplicate_existing_local_prefix(self):
+        cc = CC(
+            type='DLPNO-CCSD',
+            perturbative_correction='(T)',
+            local_correlation=build_local_correlation(local_type='DLPNO'),
+        )
+
+        cc.normalize(EntryArchive(), logger=logger)
+
+        assert cc.name == 'DLPNO-CCSD(T)'
+
+    def test_cc_stores_local_correlation_subsection(self):
+        local_corr = build_local_correlation(
+            spaces=[
+                build_local_correlation_space(
+                    space_kind='occupied_domain',
+                    occupied_tuple_kind='pair',
+                    excitation_order=2,
+                    n_defining_orbitals=2,
+                ),
+                build_local_correlation_space(
+                    space_kind='local_virtual_space',
+                    occupied_tuple_kind='pair',
+                    virtual_space_type='PNO',
+                    excitation_order=2,
+                    n_defining_orbitals=2,
+                    n_orbitals=2,
+                ),
+                build_local_correlation_space(
+                    space_kind='local_virtual_space',
+                    occupied_tuple_kind='triple',
+                    virtual_space_type='PNO',
+                    excitation_order=3,
+                    n_defining_orbitals=3,
+                ),
+            ],
+        )
+        local_corr_settings = LocalCorrelationSettings(
+            screening_thresholds=[
+                LocalCorrelationThreshold(
+                    name='TCutPairs',
+                    value=1.0e-4,
+                    applies_to='pair_screening',
+                ),
+                LocalCorrelationThreshold(
+                    name='TCutPNO',
+                    value=1.0e-8,
+                    applies_to='local_virtual_space',
+                ),
+            ]
+        )
+        cc = CC(
+            type='CCSD',
+            excitation_order=[1, 2],
+            perturbative_correction='(T)',
+            perturbative_correction_order=[3],
+            local_correlation=local_corr,
+            numerical_settings=[local_corr_settings],
+        )
+
+        assert cc.local_correlation is local_corr
+        assert cc.local_correlation.type == 'DLPNO'
+        assert len(cc.local_correlation.spaces) == 3
+        assert cc.local_correlation.spaces[0].space_kind == 'occupied_domain'
+        assert cc.local_correlation.spaces[0].occupied_tuple_kind == 'pair'
+        assert cc.local_correlation.spaces[1].virtual_space_type == 'PNO'
+        assert cc.local_correlation.spaces[1].occupied_tuple_kind == 'pair'
+        assert cc.local_correlation.spaces[0].n_defining_orbitals == 2
+        assert cc.local_correlation.spaces[1].n_orbitals == 2
+        assert cc.local_correlation.spaces[2].excitation_order == 3
+        assert len(cc.numerical_settings) == 1
+        assert isinstance(cc.numerical_settings[0], LocalCorrelationSettings)
+        assert len(cc.numerical_settings[0].screening_thresholds) == 2
+        assert cc.numerical_settings[0].screening_thresholds[0].name == 'TCutPairs'
+        assert cc.numerical_settings[0].screening_thresholds[1].value == pytest.approx(
+            1.0e-8
+        )
+
+    @pytest.mark.parametrize(
+        'local_type, space_type',
+        [
+            ('LNO', 'LNO'),
+            ('PNO', 'PNO'),
+            ('LPNO', 'PNO'),
+            ('DLPNO', 'PNO'),
+        ],
+    )
+    def test_cc_local_correlation_supports_generic_local_cc_families(
+        self, local_type: str, space_type: str
+    ):
+        cc = CC(
+            type='CCSD',
+            local_correlation=build_local_correlation(
+                local_type=local_type,
+                spaces=[
+                    build_local_correlation_space(
+                        space_kind='local_virtual_space',
+                        occupied_tuple_kind=None,
+                        virtual_space_type=space_type,
+                        excitation_order=2,
+                    )
+                ],
+            ),
+        )
+
+        assert cc.local_correlation is not None
+        assert cc.local_correlation.type == local_type
+        assert len(cc.local_correlation.spaces) == 1
+        assert cc.local_correlation.spaces[0].virtual_space_type == space_type
+
+    def test_local_correlation_space_supports_orbital_domain(self):
+        space = build_local_correlation_space(
+            space_kind='occupied_domain',
+            occupied_tuple_kind='orbital',
+            excitation_order=1,
+        )
+
+        assert space.occupied_tuple_kind == 'orbital'
+
+    def test_local_correlation_space_supports_quadruples_order(self):
+        space = build_local_correlation_space(
+            space_kind='local_virtual_space',
+            occupied_tuple_kind=None,
+            virtual_space_type='PNO',
+            excitation_order=4,
+        )
+
+        assert space.excitation_order == 4
+
+    @pytest.mark.parametrize(
+        'occupied_tuple_kind, n_expected',
+        [
+            ('orbital', 1),
+            ('pair', 2),
+            ('triple', 3),
+        ],
+    )
+    def test_local_correlation_space_normalize_validates_occupied_tuple_cardinality(
+        self, caplog, occupied_tuple_kind: str, n_expected: int
+    ):
+        import logging
+
+        space = build_local_correlation_space(
+            space_kind='occupied_domain',
+            occupied_tuple_kind=occupied_tuple_kind,
+            n_defining_orbitals=n_expected + 1,
+        )
+
+        with caplog.at_level(logging.WARNING):
+            space.normalize(EntryArchive(), logger=logger)
+
+        assert (
+            f'LocalCorrelationSpace.occupied_tuple_kind `{occupied_tuple_kind}` '
+            f'expects {n_expected} defining orbitals' in caplog.text
+        )
+
+    @pytest.mark.parametrize(
+        'kwargs, expected_warning',
+        [
+            (
+                {
+                    'space_kind': 'occupied_domain',
+                    'occupied_tuple_kind': None,
+                    'virtual_space_type': 'PNO',
+                },
+                'LocalCorrelationSpace.space_kind `occupied_domain` requires `occupied_tuple_kind`.',
+            ),
+            (
+                {
+                    'space_kind': 'occupied_domain',
+                    'virtual_space_type': 'PNO',
+                },
+                'LocalCorrelationSpace.space_kind `occupied_domain` must not define `virtual_space_type` (`PNO`).',
+            ),
+            (
+                {
+                    'space_kind': 'local_virtual_space',
+                    'occupied_tuple_kind': 'pair',
+                    'virtual_space_type': None,
+                },
+                'LocalCorrelationSpace.space_kind `local_virtual_space` requires `virtual_space_type`.',
+            ),
+        ],
+    )
+    def test_local_correlation_space_normalize_validates_space_fields(
+        self, caplog, kwargs: dict[str, str | None], expected_warning: str
+    ):
+        import logging
+
+        space = build_local_correlation_space(**kwargs)
+
+        with caplog.at_level(logging.WARNING):
+            space.normalize(EntryArchive(), logger=logger)
+
+        assert expected_warning in caplog.text
+
+    def test_local_virtual_space_can_be_pair_associated(self, caplog):
+        import logging
+
+        space = build_local_correlation_space(
+            space_kind='local_virtual_space',
+            occupied_tuple_kind='pair',
+            virtual_space_type='PNO',
+            n_defining_orbitals=2,
+        )
+
+        with caplog.at_level(logging.WARNING):
+            space.normalize(EntryArchive(), logger=logger)
+
+        assert space.n_defining_orbitals == 2
+        assert 'must not define' not in caplog.text
+
+    def test_local_virtual_space_can_be_triple_associated(self):
+        space = build_local_correlation_space(
+            space_kind='local_virtual_space',
+            occupied_tuple_kind='triple',
+            virtual_space_type='PNO',
+            excitation_order=3,
+            n_defining_orbitals=3,
+        )
+
+        space.normalize(EntryArchive(), logger=logger)
+
+        assert space.n_defining_orbitals == 3
+        assert space.occupied_tuple_kind == 'triple'
+
+
+class TestPerturbationMethod:
+    def test_perturbation_method_normalize_prefixes_base_method(self):
+        method = PerturbationMethod(
+            type='MP',
+            order=2,
+            local_correlation=build_local_correlation(local_type='LNO'),
+        )
+
+        method.normalize(EntryArchive(), logger=logger)
+
+        assert method.name == 'LNO-MP2'
 
 
 class TestDFT:
@@ -620,6 +911,122 @@ class TestDFT:
             assert dft.xc.global_exact_exchange is None
         else:
             assert dft.xc.global_exact_exchange == pytest.approx(expected_alpha)
+
+
+class TestBSDFT:
+    @staticmethod
+    def _spin_centers(*ms_quantum_numbers: float | None) -> list[BrokenSymmetryCenter]:
+        return [
+            BrokenSymmetryCenter(
+                atom_ref=AtomsState(chemical_symbol='Fe'),
+                spin_state=(
+                    SphericalSymmetryState(ms_quantum_number=ms_quantum_number)
+                    if ms_quantum_number is not None
+                    else None
+                ),
+            )
+            for ms_quantum_number in ms_quantum_numbers
+        ]
+
+    def test_valid_bsdft_mixed_spin_centers(self, log_output):
+        site_a = AtomsState(chemical_symbol='Fe', label='Fe1')
+        site_b = AtomsState(chemical_symbol='Fe', label='Fe2')
+        bsdft = BSDFT(
+            reference_form='UKS',
+            is_spin_polarized=True,
+            total_spin_projection=1,
+            spin_centers=[
+                BrokenSymmetryCenter(
+                    atom_ref=site_a,
+                    spin_state=SphericalSymmetryState(ms_quantum_number=0.5),
+                    label='site_a',
+                ),
+                BrokenSymmetryCenter(
+                    atom_ref=site_b,
+                    spin_state=SphericalSymmetryState(ms_quantum_number=-0.5),
+                    label='site_b',
+                ),
+            ],
+        )
+
+        bsdft.normalize(EntryArchive(), logger=logger)
+
+        assert bsdft.name == 'BSDFT'
+        assert bsdft.total_spin_projection == 1
+        assert len(log_output.entries) == 0
+
+    @pytest.mark.parametrize(
+        'reference_form, is_spin_polarized, ms_quantum_numbers, expected_event',
+        [
+            pytest.param(
+                'RKS',
+                True,
+                (0.5, -0.5),
+                'BSDFT requires `reference_form` to be `UKS`.',
+                id='restricted-reference',
+            ),
+            pytest.param(
+                None,
+                True,
+                (0.5, -0.5),
+                'BSDFT requires `reference_form` to be `UKS`.',
+                id='missing-reference',
+            ),
+            pytest.param(
+                'UKS',
+                False,
+                (0.5, -0.5),
+                'BSDFT requires `is_spin_polarized` to be `True`.',
+                id='non-spin-polarized',
+            ),
+            pytest.param(
+                'UKS',
+                None,
+                (0.5, -0.5),
+                'BSDFT requires `is_spin_polarized` to be `True`.',
+                id='missing-spin-polarization',
+            ),
+            pytest.param(
+                'UKS',
+                True,
+                (0.5,),
+                'BSDFT requires at least two `spin_centers` to define a broken-symmetry assignment.',
+                id='too-few-spin-centers',
+            ),
+            pytest.param(
+                'UKS',
+                True,
+                (0.5, 0.5),
+                'BSDFT requires at least one up and one down spin center.',
+                id='same-spin-sign',
+            ),
+            pytest.param(
+                'UKS',
+                True,
+                (0.0, -0.5),
+                'BSDFT `spin_centers` must provide a resolvable spin sign (e.g. via a '
+                '`SphericalSymmetryState` `spin_state` with non-zero `ms_quantum_number`).',
+                id='unresolvable-spin-sign',
+            ),
+        ],
+    )
+    def test_warns_on_invalid_bsdft_metadata(
+        self,
+        log_output,
+        reference_form,
+        is_spin_polarized,
+        ms_quantum_numbers,
+        expected_event,
+    ):
+        bsdft = BSDFT(
+            reference_form=reference_form,
+            is_spin_polarized=is_spin_polarized,
+            spin_centers=self._spin_centers(*ms_quantum_numbers),
+        )
+
+        bsdft.normalize(EntryArchive(), logger=logger)
+
+        assert any(entry['event'] == expected_event for entry in log_output.entries)
 
 
 def test_dft_contributions_solvation_dispersion_relativity_normalize():

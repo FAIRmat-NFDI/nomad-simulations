@@ -131,7 +131,7 @@ class TestShearParameters:
 class TestLambdas:
     def test_default_initialization(self, lambdas):
         assert lambdas.interaction_type is None
-        assert lambdas.values is None
+        assert lambdas.lambda_values is None
         assert lambdas.endpoints_on is None
 
     @pytest.mark.parametrize(
@@ -142,18 +142,16 @@ class TestLambdas:
         lambdas.interaction_type = interaction_type
         assert lambdas.interaction_type == interaction_type
 
-    def test_lambda_grid(self, lambdas):
+    def test_lambda_grid(self, lambdas, archive, logger):
         lambda_values = np.linspace(0.0, 1.0, 11)
-        lambdas.values = lambda_values
-        # Note: normalize has a bug with numpy array truth checking
-        # Just test that values are set correctly
-        assert np.array_equal(lambdas.values, lambda_values)
+        lambdas.lambda_values = lambda_values
+        lambdas.normalize(archive, logger)
+        assert np.array_equal(lambdas.lambda_values, lambda_values)
 
-    def test_non_monotonic_warning(self, lambdas):
-        lambdas.values = [0.0, 0.5, 0.3, 1.0]  # Non-monotonic
-        # Note: normalize has a bug with numpy array truth checking
-        # Just verify the values are set
-        assert len(lambdas.values) == 4
+    def test_non_monotonic_warning(self, lambdas, archive, logger):
+        lambdas.lambda_values = np.array([0.0, 0.5, 0.3, 1.0])
+        lambdas.normalize(archive, logger)
+        assert len(lambdas.lambda_values) == 4
 
     def test_softcore_parameters(self, lambdas):
         lambdas.interaction_type = 'vdw'
@@ -179,39 +177,46 @@ class TestFreeEnergyCalculationParameters:
 
     def test_multiple_lambda_dimensions(self, free_energy_parameters, logger, archive):
         # Create lambda schedules for vdw and coulomb
-        lambda_vdw = Lambdas(interaction_type='vdw', values=np.linspace(0.0, 1.0, 11))
+        lambda_vdw = Lambdas(
+            interaction_type='vdw', lambda_values=np.linspace(0.0, 1.0, 11)
+        )
         lambda_coul = Lambdas(
-            interaction_type='coulomb', values=np.linspace(0.0, 1.0, 11)
+            interaction_type='coulomb', lambda_values=np.linspace(0.0, 1.0, 11)
         )
         free_energy_parameters.lambdas = [lambda_vdw, lambda_coul]
         free_energy_parameters.normalize(archive, logger)
         assert len(free_energy_parameters.lambdas) == 2
 
-    def test_duplicate_output_removal(self, free_energy_parameters):
-        # Multiple "output" lambdas should be collapsed
-        lambda_out1 = Lambdas(interaction_type='output', values=[0.0, 0.5, 1.0])
-        lambda_out2 = Lambdas(
-            interaction_type='output', values=[0.0, 0.25, 0.5, 0.75, 1.0]
-        )
-        free_energy_parameters.lambdas = [lambda_out1, lambda_out2]
-        # Note: normalize has bugs with numpy arrays, test setup instead
-        assert len(free_energy_parameters.lambdas) == 2
-        output_lambdas = [
-            lam
-            for lam in free_energy_parameters.lambdas
-            if lam.interaction_type == 'output'
-        ]
-        assert len(output_lambdas) == 2
+    def test_range_check_outside_bounds(self, free_energy_parameters, archive, logger):
+        free_energy_parameters.calc_type = 'alchemical'
+        lam = Lambdas(interaction_type='vdw', lambda_values=np.array([0.0, 0.5, 1.5]))
+        free_energy_parameters.lambdas.append(lam)
+        free_energy_parameters.normalize(archive, logger)
+        # Values outside [0,1] — normalize should warn but not raise
 
-    def test_current_lambda_index(self, free_energy_parameters):
-        lambda_out = Lambdas(
-            interaction_type='output', values=[0.0, 0.2, 0.4, 0.6, 0.8, 1.0]
+    def test_current_lambda_index_in_bounds(
+        self, free_energy_parameters, archive, logger
+    ):
+        lam = Lambdas(
+            interaction_type='output',
+            lambda_values=np.array([0.0, 0.2, 0.4, 0.6, 0.8, 1.0]),
         )
-        free_energy_parameters.lambdas = [lambda_out]
+        free_energy_parameters.lambdas.append(lam)
         free_energy_parameters.current_lambda_index = 3
-        # Note: normalize has bugs with numpy arrays, test setup instead
+        free_energy_parameters.normalize(archive, logger)
         assert free_energy_parameters.current_lambda_index == 3
-        assert len(free_energy_parameters.lambdas[0].values) == 6
+
+    def test_current_lambda_index_out_of_bounds(
+        self, free_energy_parameters, archive, logger
+    ):
+        lam = Lambdas(
+            interaction_type='output', lambda_values=np.array([0.0, 0.5, 1.0])
+        )
+        free_energy_parameters.lambdas.append(lam)
+        free_energy_parameters.current_lambda_index = 10
+        free_energy_parameters.normalize(archive, logger)
+        # Out-of-bounds index is clamped to grid_len - 1, not cleared
+        assert free_energy_parameters.current_lambda_index == 2
 
 
 class TestMolecularDynamicsMethod:
@@ -303,3 +308,27 @@ class TestMolecularDynamics:
         workflow.normalize(archive, logger)
         assert workflow.results is not None
         assert isinstance(workflow.results, MolecularDynamicsResults)
+
+    def test_prevents_duplicate_observables_on_renormalization(self, logger, archive):
+        """Test that re-running normalize() doesn't duplicate RDF/MSD calculations."""
+        # Create a workflow and add some mock observables to simulate first normalization
+        workflow = MolecularDynamics()
+        # Pre-populate observables as if they were calculated
+        from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
+            RadialDistributionFunction,
+        )
+
+        mock_rdf = RadialDistributionFunction()
+        workflow.radial_distribution_functions = [mock_rdf]
+
+        # Store initial counts
+        initial_rdf_count = len(workflow.radial_distribution_functions)
+
+        # Re-run normalization
+        workflow.normalize(archive, logger)
+        final_rdf_count = len(workflow.radial_distribution_functions)
+
+        # Assert that observables were not duplicated
+        assert initial_rdf_count == final_rdf_count, (
+            f'RDFs were duplicated: initial={initial_rdf_count}, final={final_rdf_count}'
+        )

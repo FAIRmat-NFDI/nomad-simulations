@@ -18,7 +18,13 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import CoreHole, ElectronicState
+from nomad_simulations.schema_packages.atoms_state import (
+    AtomsState,
+    BaseSpinOrbitalState,
+    CoreHole,
+    ElectronicState,
+    SphericalSymmetryState,
+)
 from nomad_simulations.schema_packages.data_types import (
     positive_float,
     positive_int,
@@ -482,7 +488,7 @@ class NonlocalCorrelation(BaseModelMethod):
     )
 
 
-class OrbitalLocalization(BaseModelMethod):
+class OrbitalLocalization(ModelMethod):
     """Transforming canonical MOs into a localized representation.
 
     Localized orbitals are used by local correlation methods such as
@@ -523,27 +529,11 @@ class ModelMethodElectronic(ModelMethod):
     calculations (TB, DFT, GW, BSE, DMFT, etc).
     """
 
-    # ? Is this necessary or will it be defined in another way?
-    # TODO @ndaelman-hu & EBB2675, we need to assess how to reconcile is_spin_polarized and determinant
     is_spin_polarized = Quantity(
         type=bool,
         description="""
         If the simulation is done considering the spin degrees of freedom (then there are two spin
         channels, 'down' and 'up') or not.
-        """,
-    )
-    # TODO : this part should be revisited once Spin is handled.
-    # TODO : this part should be revisited in general.
-    determinant = Quantity(
-        type=MEnum('unrestricted', 'restricted', 'restricted-open-shell'),
-        description="""
-        The spin-coupling form of the determinant used for the
-        self-consistent field (SCF) calculation.
-
-        - **restricted**  (RHF/RKS): α and β electrons share the same spatial orbitals  
-        - **unrestricted** (UHF/UKS): α and β orbitals are optimized independently  
-        - **restricted-open-shell** (ROHF/ROKS): closed-shell core with spin-unpaired electrons
-        sharing spatial orbitals in the open-shell manifold
         """,
     )
 
@@ -721,6 +711,17 @@ class DFT(ModelMethodElectronic):
         """,
     )
 
+    reference_form = Quantity(
+        type=MEnum('RKS', 'UKS', 'ROKS'),
+        description="""
+        Kohn-Sham reference form used for the DFT calculation.
+
+        - **RKS**: restricted Kohn-Sham reference
+        - **UKS**: unrestricted Kohn-Sham reference
+        - **ROKS**: restricted open-shell Kohn-Sham reference
+        """,
+    )
+
     xc = SubSection(sub_section=XCFunctional.m_def, repeats=False)
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
@@ -761,6 +762,125 @@ class DFT(ModelMethodElectronic):
             self.jacobs_ladder = hinted
         else:
             self.jacobs_ladder = self.jacobs_ladder or 'unavailable'
+
+
+class BrokenSymmetryCenter(ArchiveSection):
+    """
+    Atom-centered local spin assignment used to describe a broken-symmetry DFT reference.
+    """
+
+    atom_ref = Quantity(
+        type=Reference(AtomsState),
+        description="""
+        Reference to the atom/site participating in the broken-symmetry assignment.
+        """,
+    )
+
+    spin_state = SubSection(
+        section_def=BaseSpinOrbitalState.m_def,
+        description="""
+        Local spin-state descriptor for this spin center. For collinear BSDFT this is
+        typically a `SphericalSymmetryState` carrying `ms_quantum_number = +/- 0.5`.
+        """,
+    )
+
+    label = Quantity(
+        type=str,
+        description="""
+        Optional code- or parser-specific identifier for the spin center.
+        """,
+    )
+
+    def resolve_spin_sign(self) -> str | None:
+        """
+        Resolve the local spin sign from the nested spin state.
+        """
+        if self.spin_state is None:
+            return None
+        if not isinstance(self.spin_state, SphericalSymmetryState):
+            return None
+
+        ms_quantum_number = self.spin_state.ms_quantum_number
+        if ms_quantum_number is None:
+            return None
+        if ms_quantum_number > 0:
+            return 'up'
+        if ms_quantum_number < 0:
+            return 'down'
+        return None
+
+
+class BSDFT(DFT):
+    """
+    Broken-symmetry density functional theory calculation.
+
+    This class specializes a DFT calculation to represent a symmetry-broken,
+    collinear, unrestricted Kohn-Sham reference without linking to the high-spin
+    reference. Workflow-level orchestration is handled separately. Consistency
+    checks require `reference_form='UKS'`, `is_spin_polarized=True`, and
+    `spin_centers` containing at least one up and one down local spin assignment.
+
+    References
+    ----------
+    • L. Noodleman, J. Chem. Phys. 74, 5737 (1981) - broken-symmetry description
+      of antiferromagnetic coupling in transition-metal dimers
+    • S. Yamanaka and K. Yamaguchi, Bull. Chem. Soc. Jpn. 77, 1269 (2004) -
+      extended DFT review of the broken-symmetry approach for strongly correlated systems
+    """
+
+    spin_centers = SubSection(
+        sub_section=BrokenSymmetryCenter.m_def,
+        repeats=True,
+        description="""
+        Atom-centered local spin assignments defining the broken-symmetry pattern.
+        """,
+    )
+
+    total_spin_projection = Quantity(
+        type=np.int32,
+        description="""
+        Total spin projection M_S of the broken-symmetry reference, stored in doubled
+        form to preserve half-integer values (e.g. M_S = 1/2 is stored as 1).
+        This is not the total spin quantum number S of a spin eigenstate.
+        """,
+    )
+
+    def _validate_spin_centers(self, logger: 'BoundLogger') -> bool:
+        """
+        Validate that `spin_centers` define a mixed-sign broken-symmetry assignment.
+        """
+        spin_centers = self.spin_centers or []
+
+        if len(spin_centers) < 2:
+            logger.warning(
+                'BSDFT requires at least two `spin_centers` to define a broken-symmetry assignment.'
+            )
+            return False
+
+        signs = {center.resolve_spin_sign() for center in spin_centers}
+        if None in signs:
+            logger.warning(
+                'BSDFT `spin_centers` must provide a resolvable spin sign (e.g. via a '
+                '`SphericalSymmetryState` `spin_state` with non-zero `ms_quantum_number`).'
+            )
+            return False
+        if 'up' not in signs or 'down' not in signs:
+            logger.warning('BSDFT requires at least one up and one down spin center.')
+            return False
+        return True
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        self.name = 'BSDFT'
+
+        if self.reference_form != 'UKS':
+            logger.warning('BSDFT requires `reference_form` to be `UKS`.')
+
+        if self.is_spin_polarized is not True:
+            logger.warning('BSDFT requires `is_spin_polarized` to be `True`.')
+
+        self._validate_spin_centers(logger)
 
 
 class TB(ModelMethodElectronic):
@@ -1167,20 +1287,20 @@ class xTB(TB):
     # ? Deprecate this
 
 
-class SemiEmpirical(ModelMethodElectronic):
+class NDDO(ModelMethodElectronic):
     """
-    A base section used to define semi-empirical quantum chemistry methods such as MINDO, MNDO,
-    AM1, PM3, PM6, PM7, and SAM1.
+    A base section used to define Neglect of Diatomic Differential Overlap (NDDO)-type
+    semi-empirical quantum chemistry methods such as MNDO, AM1, PM3, PM6, PM7, and SAM1.
     """
 
     type = Quantity(
-        type=MEnum('MINDO', 'MNDO', 'AM1', 'PM3', 'PM6', 'PM7', 'SAM1'),
+        type=MEnum('MNDO', 'AM1', 'PM3', 'PM6', 'PM7', 'SAM1'),
         description="""
-        Semi-empirical quantum chemistry method. These can be:
+        Neglect of Diatomic Differential Overlap (NDDO)-type semi-empirical quantum chemistry
+        method. These can be:
 
         | Value | Description |
         | --------- | ----------------------- |
-        | `'MINDO'` | Modified Intermediate Neglect of Differential Overlap |
         | `'MNDO'` | Modified Neglect of Diatomic Overlap |
         | `'AM1'` | Austin Model 1 |
         | `'PM3'` | Parametric Method 3 |
@@ -1193,7 +1313,7 @@ class SemiEmpirical(ModelMethodElectronic):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
-        self.name = 'SemiEmpirical'
+        self.name = 'NDDO'
 
 
 class Photon(ArchiveSection):
@@ -1695,10 +1815,10 @@ class HF(ModelMethodElectronic):
       - Jensen, F. (2007). *Introduction to Computational Chemistry*. 2nd ed., Wiley.
     """
 
-    type = Quantity(
+    reference_form = Quantity(
         type=MEnum('RHF', 'UHF', 'ROHF'),
         description="""
-        The type of HF determinant.
+        Hartree-Fock reference form used for the HF calculation.
         """,
     )
 
@@ -1744,6 +1864,210 @@ class PerturbationMethod(ModelMethodElectronic):
         """,
     )
 
+    local_correlation = SubSection(
+        sub_section=SectionProxy('LocalCorrelation'),
+        repeats=False,
+        description="""
+        Local-correlation approximation applied within the perturbation treatment,
+        including local spaces and orbital localization used in methods such as
+        local MP2, PNO-MP2, or LNO-MP2.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is not None:
+            return
+
+        if self.type is None:
+            return
+
+        method_label = self.type
+        if self.order is not None:
+            method_label = f'{method_label}{self.order}'
+
+        local_prefix = ''
+        if self.local_correlation is not None:
+            local_prefix = self.local_correlation.resolve_method_prefix(method_label)
+        self.name = f'{local_prefix}{method_label}'
+
+
+class LocalCorrelationSpace(ArchiveSection):
+    """One local space used within a local wavefunction-correlation treatment.
+
+    For `space_kind='occupied_domain'`, the space represents a domain associated
+    with one or more localized occupied orbitals or occupied-orbital tuples. The
+    actual construction may involve PAOs, atom domains, distance criteria,
+    population criteria, pair screening, or code-specific thresholds.
+
+    For `space_kind='local_virtual_space'`, the space represents the truncated
+    virtual subspace used in the local correlation treatment, such as PNO, LNO,
+    PAO, or OSV.
+    """
+
+    space_kind = Quantity(
+        type=MEnum('occupied_domain', 'local_virtual_space'),
+        description="""
+        Category of the local object:
+          - `occupied_domain`: a local domain associated with one or more
+            localized occupied orbitals or occupied-orbital tuples
+          - `local_virtual_space`: a truncated virtual-orbital subspace used in
+            the correlation treatment, such as `PNO`, `LNO`, `PAO`, or `OSV`
+        """,
+    )
+
+    occupied_tuple_kind = Quantity(
+        type=MEnum('orbital', 'pair', 'triple'),
+        description="""
+        Occupied-orbital object defining this local domain or local virtual
+        space:
+          - `orbital`: one localized occupied orbital
+          - `pair`: pair of localized occupied orbitals
+          - `triple`: triple of localized occupied orbitals, if explicitly used
+            for a triples-specific local treatment
+
+        This describes the occupied object defining the space, not the
+        excitation level itself. Use `excitation_order` to describe whether the
+        space is used for singles, doubles, triples, etc.
+        """,
+    )
+
+    virtual_space_type = Quantity(
+        type=MEnum('PNO', 'LNO', 'PAO', 'OSV'),
+        description="""
+        Identifier of the local virtual-orbital space:
+        - `PNO`: pair natural orbitals
+        - `LNO`: local natural orbitals
+        - `PAO`: projected atomic orbitals
+        - `OSV`: orbital-specific virtuals
+        Method family labels such as `LPNO` or `DLPNO` belong in
+        `LocalCorrelation.type`, not here. Use this when
+        `space_kind='local_virtual_space'`.
+        """,
+    )
+
+    excitation_order = Quantity(
+        type=positive_int(),
+        description="""
+        Excitation order in the correlated treatment for which this local space
+        is used:
+          - 1: singles-related local space
+          - 2: doubles/pair-amplitude local space
+          - 3: triples correction or triples-amplitude local treatment
+          - 4: quadruples-related treatment, if supported
+
+        This describes the excitation level of the correlation treatment, not
+        the number of occupied orbitals used to define the local domain. Use
+        `n_defining_orbitals` for that.
+        """,
+    )
+
+    n_defining_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of occupied orbitals that define this local space. For example,
+        1 for an orbital-associated domain, 2 for a pair-associated local
+        virtual space, and 3 for a triple-associated local treatment.
+        """,
+    )
+
+    n_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of orbitals spanning the local space. For
+        `space_kind='local_virtual_space'`, this is typically the size of the
+        truncated local virtual space. For `space_kind='occupied_domain'`, it
+        may be used when the code reports the number of orbitals contained in
+        the domain.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        expected_defining_orbitals = {
+            'orbital': 1,
+            'pair': 2,
+            'triple': 3,
+        }
+        if (
+            self.occupied_tuple_kind in expected_defining_orbitals
+            and self.n_defining_orbitals is not None
+            and self.n_defining_orbitals
+            != expected_defining_orbitals[self.occupied_tuple_kind]
+        ):
+            logger.warning(
+                f'LocalCorrelationSpace.occupied_tuple_kind `{self.occupied_tuple_kind}` expects '
+                f'{expected_defining_orbitals[self.occupied_tuple_kind]} defining orbitals, '
+                f'but `n_defining_orbitals` is {self.n_defining_orbitals}.'
+            )
+
+        if self.space_kind is None:
+            return
+
+        if self.space_kind == 'occupied_domain':
+            if self.occupied_tuple_kind is None:
+                logger.warning(
+                    'LocalCorrelationSpace.space_kind `occupied_domain` requires `occupied_tuple_kind`.'
+                )
+            if self.virtual_space_type is not None:
+                logger.warning(
+                    f'LocalCorrelationSpace.space_kind `occupied_domain` must not define `virtual_space_type` '
+                    f'(`{self.virtual_space_type}`).'
+                )
+        if self.space_kind == 'local_virtual_space':
+            if self.virtual_space_type is None:
+                logger.warning(
+                    'LocalCorrelationSpace.space_kind `local_virtual_space` requires `virtual_space_type`.'
+                )
+
+
+class LocalCorrelation(ArchiveSection):
+    """Local-correlation approximation layered on top of a correlated wavefunction method.
+
+    Covers domain-based and local-virtual-space approximations used to reduce the
+    cost of correlated calculations, including local MP2 and local coupled-cluster
+    methods. Store here the overall approximation family and the local spaces
+    entering pair or triples-level treatments.
+
+    Representative references
+    -------------------------
+    - M. Schütz, J. Chem. Phys. 113, 9986 (2000).
+    - E. Riplinger and F. Neese, J. Chem. Phys. 138, 034106 (2013).
+    """
+
+    type = Quantity(
+        type=MEnum('LNO', 'PNO', 'LPNO', 'DLPNO', 'other'),
+        description="""
+        Identifier of the local-correlation approximation used together with a
+        correlated wavefunction method. `LPNO` and `DLPNO` denote method
+        families that typically employ `PNO` spaces stored separately under
+        `spaces`. `PNO` denotes a generic PNO-based local-correlation
+        approximation only when no more specific family label such as `LPNO` or
+        `DLPNO` is available. Store the actual local virtual-orbital type in
+        `LocalCorrelationSpace.virtual_space_type`.
+        """,
+    )
+
+    spaces = SubSection(
+        sub_section=LocalCorrelationSpace.m_def,
+        repeats=True,
+        description="""
+        Local spaces entering the local-correlation treatment, such as
+        occupied-orbital domains or local virtual-orbital spaces.
+        """,
+    )
+
+    def resolve_method_prefix(self, method_label: str | None = None) -> str:
+        if self.type in (None, 'other'):
+            return ''
+
+        prefix = f'{self.type}-'
+        if method_label is not None and method_label.upper().startswith(prefix.upper()):
+            return ''
+        return prefix
+
 
 class CC(ModelMethodElectronic):
     """
@@ -1762,6 +2086,11 @@ class CC(ModelMethodElectronic):
           - CCSDT     : Singles, Doubles, and Triples
           - CCSDTQ    : Singles, Doubles, Triples, and Quadruples
         By default, the "perturbative corrections" like (T) are not included in this string.
+        For local coupled-cluster methods, prefer storing the non-local base
+        method here (e.g., `CCSD`) and the local approximation in
+        `local_correlation`. If a parser stores a local-prefixed label here
+        anyway (e.g., `DLPNO-CCSD`), normalization will not duplicate the local
+        prefix in `name`.
         """,
     )
 
@@ -1810,6 +2139,32 @@ class CC(ModelMethodElectronic):
         It can be added linearly (R12) or exponentially (F12).
         """,
     )
+
+    local_correlation = SubSection(
+        sub_section=LocalCorrelation.m_def,
+        repeats=False,
+        description="""
+        Local-correlation approximation applied within the coupled-cluster
+        treatment, including local spaces and their screening thresholds.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        if self.name is not None or self.type is None:
+            return
+
+        method_label = self.type
+        if self.perturbative_correction is not None:
+            method_label = f'{method_label}{self.perturbative_correction}'
+        if self.explicit_correlation is not None:
+            method_label = f'{method_label}-{self.explicit_correlation}'
+
+        local_prefix = ''
+        if self.local_correlation is not None:
+            local_prefix = self.local_correlation.resolve_method_prefix(method_label)
+        self.name = f'{local_prefix}{method_label}'
 
 
 class CI(ModelMethodElectronic):
@@ -2008,7 +2363,7 @@ class BaseMultireferenceMethod(BaseModelMethod):
 
     active_space = SubSection(sub_section=ActiveSpace.m_def, repeats=False)
 
-    reference_type = Quantity(
+    state_treatment = Quantity(
         type=MEnum('state_specific', 'state_averaged'),
         description="""
         Whether the reference wavefunction is optimized for a single state or averaged
@@ -2073,11 +2428,20 @@ class BaseMultireferenceMethod(BaseModelMethod):
             elif self.n_roots_per_multiplicity is not None:
                 self.n_state_groups = len(self.n_roots_per_multiplicity)
 
+        # Prefer the selected multireference flavor over the generic section
+        # name when no parser-specific name was provided.
+        if self.type is not None and (
+            self.name is None or self.name == self.m_def.name
+        ):
+            self.name = self.type
+
 
 class MultireferenceSCF(BaseMultireferenceMethod):
     """
     Multiconfigurational SCF calculations (e.g., CASSCF, RASSCF, DMRG-SCF).
     """
+
+    m_def = Section(label_quantity='type')
 
     type = Quantity(
         type=MEnum('CASSCF', 'RASSCF', 'DMRGSCF'),
@@ -2094,6 +2458,8 @@ class MultireferenceCI(BaseMultireferenceMethod):
     Multireference configuration interaction methods (e.g., MRCI).
     """
 
+    m_def = Section(label_quantity='type')
+
     type = Quantity(
         type=MEnum('MRCI', 'MR-ACPF', 'MR-AQCC', 'CASCI', 'RASCI', 'DMRGCI'),
         description="""
@@ -2108,6 +2474,8 @@ class MultireferencePT(BaseMultireferenceMethod):
 
     Defaults are PT2-style, but `order` can capture higher-order variants.
     """
+
+    m_def = Section(label_quantity='type')
 
     type = Quantity(
         type=MEnum('CASPT', 'NEVPT', 'RASPT', 'MRMP', 'XMCQDPT'),

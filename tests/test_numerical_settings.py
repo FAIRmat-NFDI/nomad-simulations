@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
@@ -9,11 +11,34 @@ from nomad_simulations.schema_packages.numerical_settings import (
     KLinePath,
     KMesh,
     KSpaceFunctionalities,
+    LocalCorrelationThreshold,
     Pseudopotential,
 )
 
 from . import logger
 from .conftest import generate_k_line_path, generate_k_space_simulation
+
+
+class TestLocalCorrelationThreshold:
+    def test_accepts_dimensionless_threshold(self):
+        threshold = LocalCorrelationThreshold(
+            name='TCutPNO',
+            value=1.0e-7,
+            applies_to='local_virtual_space',
+        )
+
+        assert threshold.value == pytest.approx(1.0e-7)
+        assert threshold.applies_to == 'local_virtual_space'
+
+    def test_accepts_unit_aware_threshold(self):
+        threshold = LocalCorrelationThreshold(
+            name='DistanceCutoff',
+            value=8.0 * ureg.angstrom,
+            applies_to='occupied_domain',
+        )
+
+        assert threshold.value.to(ureg.angstrom).magnitude == pytest.approx(8.0)
+        assert threshold.applies_to == 'occupied_domain'
 
 
 class TestKSpace:
@@ -156,6 +181,43 @@ class TestKSpaceFunctionalities:
         else:
             assert len(high_symmetry_points) == 4
             assert high_symmetry_points == expected_result
+
+    def test_resolve_high_symmetry_points_monoclinic_convention_fallback(self):
+        """
+        Invalid monoclinic ordering should fall back to None instead of raising.
+        """
+
+        class FakeLattice:
+            a = 2.0
+            b = 3.0
+            c = 1.0
+            alpha = 80.0
+            beta = 90.0
+            gamma = 90.0
+
+            def get_special_points(self):
+                return {'G': [0, 0, 0]}
+
+        class FakeCell:
+            def get_bravais_lattice(self, eps=3e-3):
+                return FakeLattice()
+
+        class FakeAtoms:
+            def get_cell(self):
+                return FakeCell()
+
+        model_system = SimpleNamespace(
+            is_representative=True,
+            symmetry=SimpleNamespace(bravais_lattice='mP'),
+            representations=[SimpleNamespace(name='primitive')],
+            to_ase_atoms=lambda representation_index, logger: FakeAtoms(),
+        )
+
+        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
+            model_systems=[model_system], logger=logger
+        )
+
+        assert high_symmetry_points is None
 
 
 @pytest.mark.parametrize(

@@ -36,6 +36,10 @@ class BeyondHFWorkflow(SerialWorkflow):
     Base workflow for post-HF methods (e.g., HF → CC, HF → CI).
     """
 
+    method = SubSection(sub_section=BeyondHFMethod.m_def)
+
+    results = SubSection(sub_section=BeyondHFResults.m_def)
+
     @log
     def map_inputs(self, archive: EntryArchive) -> None:
         if not self.method:

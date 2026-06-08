@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
 
@@ -263,26 +264,54 @@ class KSpaceFunctionalities:
             return None
 
         # Non-conventional ordering testing for certain lattices:
-        if bravais_lattice in ['oP', 'oF', 'oI', 'oS']:
-            a, b, c = lattice.a, lattice.b, lattice.c
-            assert a < b
-            if bravais_lattice != 'oS':
-                assert b < c
-        elif bravais_lattice in ['mP', 'mS']:
-            a, b, c = lattice.a, lattice.b, lattice.c
-            alpha = lattice.alpha * np.pi / 180
-            assert a <= c and b <= c  # ordering of the conventional lattice
-            assert alpha < np.pi / 2
+        try:
+            if bravais_lattice in ['oP', 'oF', 'oI', 'oS']:
+                a, b, c = lattice.a, lattice.b, lattice.c
+                if not a < b:
+                    raise ValueError(
+                        'ASE lattice does not satisfy the expected orthorhombic convention.'
+                    )
+                if bravais_lattice != 'oS' and not b < c:
+                    raise ValueError(
+                        'ASE lattice does not satisfy the expected orthorhombic convention.'
+                    )
+            elif bravais_lattice in ['mP', 'mS']:
+                a, b, c = lattice.a, lattice.b, lattice.c
+                alpha = lattice.alpha * np.pi / 180
+                if not (a <= c and b <= c):
+                    raise ValueError(
+                        'ASE lattice does not satisfy the expected monoclinic convention.'
+                    )
+                if not alpha < np.pi / 2:
+                    raise ValueError(
+                        'ASE lattice does not satisfy the expected monoclinic convention.'
+                    )
 
-        # Extracting the `high_symmetry_points` from the `lattice` object
-        special_points = lattice.get_special_points()
+            # Extracting the `high_symmetry_points` from the `lattice` object
+            special_points = lattice.get_special_points()
+        except (AssertionError, ValueError, RuntimeError) as exc:
+            logger.warning(
+                'Could not resolve high-symmetry points (ASE special points).',
+                details=str(exc),
+                bravais_lattice=bravais_lattice,
+                lattice_parameters={
+                    'a': getattr(lattice, 'a', None),
+                    'b': getattr(lattice, 'b', None),
+                    'c': getattr(lattice, 'c', None),
+                    'alpha': getattr(lattice, 'alpha', None),
+                    'beta': getattr(lattice, 'beta', None),
+                    'gamma': getattr(lattice, 'gamma', None),
+                },
+            )
+            return None
+
         if special_points is None:
             logger.warning(
                 'Could not find `lattice.get_special_points()` from the ASE package.'
             )
             return None
         high_symmetry_points = {}
-        for key, value in lattice.get_special_points().items():
+        for key, value in special_points.items():
             if key == 'G':
                 key = 'Gamma'
             if bravais_lattice == 'tI':
@@ -920,17 +949,11 @@ class SelfConsistency(NumericalSettings):
 
     threshold_change = Quantity(
         type=np.float64,
+        flexible_unit=True,
         description="""
         Specifies the threshold for the change between two subsequent self-consistent iterations on
         a given output property. The simulation `is_scf_converged` if this total change is below
-        this threshold.
-        """,
-    )
-
-    threshold_change_unit = Quantity(
-        type=str,
-        description="""
-        Unit using the pint UnitRegistry() notation for the `threshold_change`.
+        this threshold. Supports flexible units (e.g., energy in eV/joule, density as dimensionless).
         """,
     )
 
@@ -1589,6 +1612,60 @@ class MultireferencePTSettings(NumericalSettings):
           • partially_contracted: partially contracted NEVPT / CASPT variants
           • internally_contracted: generic internal contraction (e.g., MRMP)
           • uncontracted: no contraction of perturber space
+        """,
+    )
+
+
+class LocalCorrelationThreshold(ArchiveSection):
+    """Numerical cutoff controlling screening in a local-correlation workflow."""
+
+    name = Quantity(
+        type=str,
+        description="""
+        Code- or method-specific threshold label, e.g. `TCutPNO` or `TCutPairs`.
+        """,
+    )
+
+    value = Quantity(
+        type=positive_float(),
+        flexible_unit=True,
+        description="""
+        Numerical value of the local-correlation screening threshold.
+
+        Dimensionless thresholds may be stored as plain numbers. Thresholds with
+        physical units should be stored with the corresponding unit, e.g. energy
+        or length units, depending on the screening criterion.
+        """,
+    )
+
+    applies_to = Quantity(
+        type=MEnum(
+            'occupied_domain',
+            'local_virtual_space',
+            'pair_screening',
+            'triple_screening',
+            'amplitude_screening',
+            'other',
+        ),
+        description="""
+        Local-correlation object or screening stage controlled by this
+        code- or method-specific threshold.
+        """,
+    )
+
+
+class LocalCorrelationSettings(NumericalSettings):
+    """
+    Numerical controls for local-correlation approximations used in correlated
+    wavefunction calculations such as local MP2 or local coupled cluster.
+    """
+
+    screening_thresholds = SubSection(
+        sub_section=LocalCorrelationThreshold.m_def,
+        repeats=True,
+        description="""
+        Thresholds used to screen local spaces or pair contributions in the
+        local-correlation workflow.
         """,
     )
 

@@ -1,6 +1,6 @@
 import numpy as np
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import SchemaPackage
+from nomad.metainfo import SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
@@ -22,6 +22,10 @@ class XSWorkflow(BeyondDFTWorkflow):
     """
     Definitions for XS workflow based in DFT, GW and PhotonPolarizationWorkflow.
     """
+
+    method = SubSection(sub_section=XSMethod.m_def)
+
+    results = SubSection(sub_section=XSResults.m_def)
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

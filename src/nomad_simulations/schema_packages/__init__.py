@@ -1,11 +1,14 @@
+from typing import Any
+
 from nomad.config.models.plugins import SchemaPackageEntryPoint
+from nomad.units import ureg
 from pydantic import Field
 
 
 class NOMADSimulationsEntryPoint(SchemaPackageEntryPoint):
-    dos_energy_tolerance: float = Field(
-        8.01088e-21,
-        description='Tolerance (in joules) of the DOS energies to match the reference of energies in the DOS normalize function.',
+    dos_energy_tolerance: Any = Field(
+        8.01088e-21 * ureg.joule,
+        description='Tolerance of the DOS energies to match the reference of energies in the DOS normalize function.',
     )
     dos_intensities_threshold: float = Field(
         1e-8,

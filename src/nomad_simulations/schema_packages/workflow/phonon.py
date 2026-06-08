@@ -1,6 +1,6 @@
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, TaskReference
-from nomad.metainfo import Quantity
+from nomad.metainfo import Quantity, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
@@ -146,6 +146,10 @@ class Phonon(SimulationWorkflow):
     """
 
     _task_label = 'Force calculation'
+
+    method = SubSection(sub_section=PhononMethod.m_def)
+
+    results = SubSection(sub_section=PhononResults.m_def)
 
     @log
     def map_inputs(self, archive: EntryArchive) -> None:

@@ -2,14 +2,6 @@
 
 **Purpose:** Root ModelSystem section with direct representation relationships and complete system tree
 
-**In scope:**
-
-- ModelSystem as the root of the system tree
-- Recursive sub_systems containment (ModelSystem contains ModelSystem)
-- System type and dimensionality
-- Direct relationships to Representation and AlternativeRepresentation
-- References to ParticleState, Local/Global symmetry, and ChemicalFormula subsections
-
 
 ## Relationship map
 
@@ -43,18 +35,13 @@ classDiagram
 </div>
 
 
-## Key sections
+## Quantities by Key Sections
+
+### `ModelSystem`
 
 | Section | Description | MetaInfo |
 |---|---|---|
 | `ModelSystem` | Model system used as an input for simulating the material. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.ModelSystem){:target="_blank"} |
-| `Representation` | A comprehensive section containing all representation information of a system, including lattice vectors, periodic boundary conditions, positions, and symmetry-related data. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.Representation){:target="_blank"} |
-| `AlternativeRepresentation` | A representation relative to another, reference representation, typically the original computed system. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.AlternativeRepresentation){:target="_blank"} |
-
-
-## Quantities by section
-
-### `ModelSystem`
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -76,6 +63,10 @@ classDiagram
 
 ### `Representation`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `Representation` | A comprehensive section containing all representation information of a system, including lattice vectors, periodic boundary conditions, positions, and symmetry-related data. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.Representation){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `name` | m_str(str) | Name of the specific representation. This can be used for easy identification. |
@@ -91,6 +82,10 @@ classDiagram
 
 ### `AlternativeRepresentation`
 
+| Section | Description | MetaInfo |
+|---|---|---|
+| `AlternativeRepresentation` | A representation relative to another, reference representation, typically the original computed system. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.model_system.AlternativeRepresentation){:target="_blank"} |
+
 | Quantity | Type | Description |
 |---|---|---|
 | `origin_shift` | m_float64(float64) (shape: [3]) | <details><summary>Translation vector relating the origin of this representation to the reference r...</summary>Translation vector relating the origin of this representation to the reference representation,<br>expressed in fractional coordinates. Together with transformation_matrix, defines how fractional<br>coordinates transform between representations: x_alt = P @ x_ref + p, where both representations<br>use the same implicit Cartesian frame but different lattice vectors. Commonly used to relate<br>input cells to standardized conventional cells in symmetry analysis (e.g., from [spglib](https://spglib.readthedocs.io/en/latest/definition.html)).</details> |
@@ -101,4 +96,4 @@ classDiagram
 
 ## Related Pages
 
-- [ModelSystem](../explanation/model_system/model_system.md)
+- [ModelSystem](../explanation/model_system/overview.md)

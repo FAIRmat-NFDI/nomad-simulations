@@ -26,6 +26,9 @@ from nomad_simulations.schema_packages.numerical_settings import (
     Mesh,
     NumericalSettings,
 )
+from nomad_simulations.schema_packages.utils.basis_set_exchange.registry import (
+    spec_from_label as basis_set_spec_from_label,
+)
 
 logger = utils.get_logger(__name__)
 
@@ -524,6 +527,15 @@ class AtomCenteredBasisSet(BasisSetComponent):
         """,
     )
 
+    canonical_basis_set = Quantity(
+        type=str,
+        description="""
+        Canonical NOMAD display name for the basis set, filled only when the raw
+        parsed `basis_set` label can be matched unambiguously to NOMAD's internal
+        lightweight basis-set-name registry. This does not replace `basis_set`.
+        """,
+    )
+
     type = Quantity(
         type=MEnum(
             'STO',  # Slater-type orbitals
@@ -633,6 +645,24 @@ class AtomCenteredBasisSet(BasisSetComponent):
     @check_normalized
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+
+        self.canonical_basis_set = None
+        if self.basis_set:
+            try:
+                basis_set_spec = basis_set_spec_from_label(self.basis_set)
+                if basis_set_spec is not None:
+                    self.canonical_basis_set = basis_set_spec['canonical_name']
+                else:
+                    logger.debug(
+                        'Basis set canonicalization produced no unambiguous match.',
+                        basis_set=self.basis_set,
+                    )
+            except Exception:
+                logger.warning(
+                    'Basis set canonicalization failed.',
+                    basis_set=self.basis_set,
+                    exc_info=True,
+                )
 
         # Set AO count from AO view if present
         if (
@@ -1056,11 +1086,13 @@ class BasisSetContainer(NumericalSettings):
         super().normalize(archive, logger)
 
         mt_r_min = self._find_mt_r_min()
-        plane_waves: list[APWPlaneWaveBasisSet] = []
+        apw_plane_waves: list[APWPlaneWaveBasisSet] = []
+        has_muffin_tin_region = False
         for component in self.basis_set_components:
-            if isinstance(component, PlaneWaveBasisSet):
-                plane_waves.append(component)
+            if isinstance(component, APWPlaneWaveBasisSet):
+                apw_plane_waves.append(component)
             elif isinstance(component, MuffinTinRegion):
+                has_muffin_tin_region = True
                 component.mt_r_min = mt_r_min
                 component.normalize(archive, logger)
             elif isinstance(component, AtomCenteredBasisSet):
@@ -1068,10 +1100,12 @@ class BasisSetContainer(NumericalSettings):
             elif isinstance(component, EffectiveCorePotential):
                 component.normalize(archive, logger)
 
-        if len(plane_waves) == 0:
+        if has_muffin_tin_region and len(apw_plane_waves) == 0:
             logger.error('Expected a `APWPlaneWaveBasisSet` instance, but found none.')
-        elif len(plane_waves) > 1:
-            logger.warning('Multiple plane-wave basis sets found were found.')
+        elif len(apw_plane_waves) > 1:
+            logger.warning(
+                'Multiple components of `APWPlaneWaveBasisSet` type were found.'
+            )
         self.name = self._determine_apw()
 
 
