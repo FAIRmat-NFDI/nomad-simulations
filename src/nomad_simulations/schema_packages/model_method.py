@@ -2356,7 +2356,7 @@ class ActiveSpace(ArchiveSection):
                     )
 
 
-class BaseMultireferenceMethod(BaseModelMethod):
+class BaseMultireferenceMethod(ModelMethod):
     """
     Shared multireference parameters (active space, state-averaging, symmetry).
     """
