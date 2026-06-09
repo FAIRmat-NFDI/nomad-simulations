@@ -124,7 +124,7 @@ class MolecularOrbitals(ElectronicEigenvalues):
         Imaginary component of the AO→MO coefficient matrix **C**. 
         Combine it with `mo_coefficients` to obtain the full complex matrix:
             C_complex = mo_coefficients + 1j * mo_coefficients_im  
-        Leave this quantity unset (or an empty array) when the wave-function
+        Leave this quantity unset when the wave-function
         is strictly real, as is typical in non-relativistic calculations without complex basis functions.
         The expected dataset shape is [`n_mo`, `n_ao`].
         """,

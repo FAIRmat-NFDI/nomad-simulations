@@ -38,31 +38,6 @@ This command writes deterministic Markdown fragments to
 
 These fragments are included by explanation pages to reduce manual duplication.
 
-## Benchmark Utility
-
-For HDF5-backed bulky numerics work, there is also a focused benchmark for
-molecular-orbital coefficient matrices and synthetic 3D charge-density-like grids:
-
-```bash
-uv run python scripts/benchmark_hdf5_bulky_numerics.py --benchmark mo --n-mo 1024 --n-ao 1024 --repeats 3
-```
-
-This compares a benchmark-only plain nested-array control section against an
-HDF5-backed section and reports:
-
-- assignment time
-- `m_to_dict()` time
-- JSON payload size
-- HDF5 file size
-- read-back time
-
-Useful variants:
-
-- `--benchmark mo --complex` to include the imaginary MO coefficient matrix
-- `--benchmark density --grid-shape 200 200 200` for a bulky 3D array
-- `--benchmark both` to run both payload types in one command
-- `--output-json <path>` to save the full result payload
-
 ## Diagram Zoom Configuration
 
 The pipeline supports two methods for diagram interaction:
