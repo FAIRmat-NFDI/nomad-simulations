@@ -79,7 +79,6 @@ class MolecularOrbitals(ElectronicEigenvalues):
         """,
     )
 
-    # TODO: check via normalization
     mo_class = Quantity(
         type=MEnum('core', 'inactive', 'active', 'virtual', 'deleted'),
         shape=['n_mo'],
@@ -151,24 +150,24 @@ class MolecularOrbitals(ElectronicEigenvalues):
 
         coefficient_shape = self._resolve_dataset_shape(self.mo_coefficients)
         coefficient_im_shape = self._resolve_dataset_shape(self.mo_coefficients_im)
+        valid_coefficient_shapes = [
+            shape
+            for shape in (coefficient_shape, coefficient_im_shape)
+            if shape is not None and len(shape) == 2
+        ]
 
         # ---------- infer n_mo ----------
         if self.n_mo is None:
-            if coefficient_shape is not None:
-                if len(coefficient_shape) == 2:
-                    self.n_mo = int(coefficient_shape[0])
+            if valid_coefficient_shapes:
+                self.n_mo = int(valid_coefficient_shapes[0][0])
             elif self.mo_spin is not None:
                 self.n_mo = len(self.mo_spin)
             elif self.mo_energies is not None:
                 self.n_mo = len(self.mo_energies)
 
         # ---------- infer n_ao ----------
-        if (
-            self.n_ao is None
-            and coefficient_shape is not None
-            and len(coefficient_shape) == 2
-        ):
-            self.n_ao = int(coefficient_shape[1])
+        if self.n_ao is None and valid_coefficient_shapes:
+            self.n_ao = int(valid_coefficient_shapes[0][1])
 
         self._validate_coefficient_shape(
             'mo_coefficients', coefficient_shape, logger=logger

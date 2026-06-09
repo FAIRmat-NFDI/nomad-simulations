@@ -95,11 +95,23 @@ class TestMolecularOrbitals:
         logger = RecordingLogger()
 
         molecular_orbitals.mo_coefficients = np.ones(3, dtype=np.float64)
+        molecular_orbitals.mo_spin = np.zeros(4, dtype=np.int32)
         molecular_orbitals.normalize(archive=EntryArchive(), logger=logger)
 
-        assert molecular_orbitals.n_mo is None
+        assert molecular_orbitals.n_mo == 4
         assert molecular_orbitals.n_ao is None
         assert any('must be a 2D dataset' in error for error in logger.errors)
+
+    def test_normalize_infers_dimensions_from_imaginary_coefficients(
+        self, archive_with_mo
+    ):
+        _, molecular_orbitals, _, _ = archive_with_mo
+
+        molecular_orbitals.mo_coefficients_im = np.ones((3, 4), dtype=np.float64)
+        molecular_orbitals.normalize(archive=EntryArchive(), logger=logger)
+
+        assert molecular_orbitals.n_mo == 3
+        assert molecular_orbitals.n_ao == 4
 
     def test_normalize_logs_coefficient_shape_mismatches(self, archive_with_mo):
         _, molecular_orbitals, _, _ = archive_with_mo
