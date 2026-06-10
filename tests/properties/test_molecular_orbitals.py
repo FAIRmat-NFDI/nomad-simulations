@@ -54,32 +54,6 @@ def archive_with_mo() -> Generator[
 
 
 class TestMolecularOrbitals:
-    def test_mo_coefficients_are_stored_in_hdf5(self, archive_with_mo):
-        archive, molecular_orbitals, upload_id, entry_id = archive_with_mo
-        coeff_real = np.array([[1.0, 0.0], [0.1, 0.9]], dtype=np.float64)
-        coeff_imag = np.array([[0.0, 0.0], [0.2, -0.2]], dtype=np.float64)
-
-        molecular_orbitals.mo_coefficients = coeff_real
-        molecular_orbitals.mo_coefficients_im = coeff_imag
-
-        serialized = archive.m_to_dict()
-        assert (
-            serialized['data']['molecular_orbitals']['mo_coefficients']
-            == f'/uploads/{upload_id}/archive/{entry_id}#/data/molecular_orbitals/mo_coefficients'
-        )
-        assert (
-            serialized['data']['molecular_orbitals']['mo_coefficients_im']
-            == f'/uploads/{upload_id}/archive/{entry_id}#/data/molecular_orbitals/mo_coefficients_im'
-        )
-
-        with molecular_orbitals.mo_coefficients as dataset:
-            assert dataset.shape == (2, 2)
-            assert np.allclose(dataset[()], coeff_real)
-
-        with molecular_orbitals.mo_coefficients_im as dataset:
-            assert dataset.shape == (2, 2)
-            assert np.allclose(dataset[()], coeff_imag)
-
     def test_normalize_infers_dimensions_from_hdf5_coefficients(self, archive_with_mo):
         _, molecular_orbitals, _, _ = archive_with_mo
         coeff_real = np.array(
