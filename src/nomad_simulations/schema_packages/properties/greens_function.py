@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
+from nomad.datamodel.hdf5 import HDF5Dataset
 from nomad.metainfo import MEnum, Quantity, SubSection
 
 if TYPE_CHECKING:
@@ -170,10 +171,12 @@ class ElectronicGreensFunction(BaseGreensFunction):
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicGreensFunction'
 
     value = Quantity(
-        type=np.complex128,
+        type=HDF5Dataset,
+        shape=[],
         unit='1/joule',
         description="""
         Value of the electronic Green's function matrix.
+        The dataset dimensions follow the represented spaces and matrix indices.
         """,
     )
 
@@ -186,10 +189,12 @@ class ElectronicSelfEnergy(BaseGreensFunction):
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicSelfEnergy'
 
     value = Quantity(
-        type=np.complex128,
+        type=HDF5Dataset,
+        shape=[],
         unit='joule',
         description="""
         Value of the electronic self-energy matrix.
+        The dataset dimensions follow the represented spaces and matrix indices.
         """,
     )
 
@@ -202,10 +207,12 @@ class HybridizationFunction(BaseGreensFunction):
     iri = 'http://fairmat-nfdi.eu/taxonomy/HybridizationFunction'
 
     value = Quantity(
-        type=np.complex128,
+        type=HDF5Dataset,
+        shape=[],
         unit='joule',
         description="""
         Value of the electronic hybridization function.
+        The dataset dimensions follow the represented spaces and matrix indices.
         """,
     )
 
