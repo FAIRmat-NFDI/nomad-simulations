@@ -9,15 +9,18 @@ from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Wrapper
 from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 
 from nomad_simulations.schema_packages.data_types import positive_float
-from nomad_simulations.schema_packages.properties import ElectronicEigenvalues
+from nomad_simulations.schema_packages.properties.electronic_eigenvalues import (
+    ElectronicEigenvalues,
+)
 
 
 class MolecularOrbitals(ElectronicEigenvalues):
     """
     Molecular-orbital eigenstates expressed in an atom-centred AO basis.
 
-    Inherits `value` (orbital energies), `occupation`, `n_levels`, `spin_channel`,
-    `highest_occupied`, and `lowest_unoccupied` from `ElectronicEigenvalues`.
+    Inherits `n_levels`, `spin_channel`, `highest_occupied`, and
+    `lowest_unoccupied` from `ElectronicEigenvalues`. Overrides `value` (orbital
+    energies) and `occupation` with one-dimensional shapes for molecular systems.
 
     For spin-polarized calculations use two separate sections, one per spin channel
     (spin_channel=0 for α, spin_channel=1 for β), consistent with the convention
@@ -140,6 +143,12 @@ class MolecularOrbitals(ElectronicEigenvalues):
         if self.n_levels is None:
             if valid_shapes:
                 self.n_levels = int(valid_shapes[0][0])
+            else:
+                for values in (self.value, self.occupation):
+                    shape = getattr(values, 'shape', None)
+                    if shape is not None and len(shape) == 1:
+                        self.n_levels = int(shape[0])
+                        break
 
         if self.n_ao is None and valid_shapes:
             self.n_ao = int(valid_shapes[0][1])

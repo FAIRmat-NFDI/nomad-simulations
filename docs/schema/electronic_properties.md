@@ -84,7 +84,7 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `value` | m_float64(float64) (shape: ['n_levels']) | Orbital energies — eigenvalues of the effective one-particle Hamiltonian (Fock matrix for HF/DFT, natural-orbital energies for correlated methods). |
-| `occupation` | m_float64(float64) (shape: ['n_levels']) | Occupation number for each molecular orbital. For a closed-shell restricted calculation the values are 0.0 or 2.0; for an unrestricted calculation (one section per spin channel) they are 0.0 or 1.0. |
+| `occupation` | m_float_bounded(float) (shape: ['n_levels']) | Occupation number for each molecular orbital. For a closed-shell restricted calculation the values are 0.0 or 2.0; for an unrestricted calculation (one section per spin channel) they are 0.0 or 1.0. |
 | `n_ao` | m_int32(int32) | Number of atomic orbitals (size of the AO basis). |
 | `basis_set_ref` | Reference | Reference to the atom-centered basis set used to expand these orbitals. |
 | `coefficients` | HDF5Dataset | <details><summary>The AO→MO coefficient matrix **C**, such that</summary>The AO→MO coefficient matrix **C**, such that<br>ψ_i(r) = ∑_μ C[i,μ] φ_μ(r).<br>Row index i runs over MOs (n_levels), column index μ runs over AOs (n_ao).<br>Expected dataset shape: [n_levels, n_ao].</details> |
