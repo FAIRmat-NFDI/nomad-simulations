@@ -124,12 +124,12 @@ class TestMolecularOrbitals:
         molecular_orbitals.normalize(archive=EntryArchive(), logger=logger)
 
         assert any(
-            'mo_coefficients` shape must match' in error for error in logger.errors
+            'mo_coefficients shape must match' in error for error in logger.errors
         )
         assert any(
-            'mo_coefficients_im` shape must match' in error for error in logger.errors
+            'mo_coefficients_im shape must match' in error for error in logger.errors
         )
         assert any(
-            '`mo_coefficients_im` shape must match `mo_coefficients`' in error
+            'mo_coefficients_im shape must match mo_coefficients' in error
             for error in logger.errors
         )
