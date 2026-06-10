@@ -1,16 +1,12 @@
-import itertools
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
 import numpy as np
-from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Wrapper
-from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy
+from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 
 from nomad_simulations.schema_packages.properties import ElectronicEigenvalues
 
@@ -19,162 +15,139 @@ class MolecularOrbitals(ElectronicEigenvalues):
     """
     Molecular-orbital eigenstates expressed in an atom-centred AO basis.
 
-    Every quantity is either directly mappable to the TREXIO *mo* group or
-    provides auxiliary metadata needed by NOMAD tooling.
+    Inherits `value` (orbital energies), `occupation`, `n_levels`, `spin_channel`,
+    `highest_occupied`, and `lowest_unoccupied` from `ElectronicEigenvalues`.
+
+    For spin-polarized calculations use two separate sections, one per spin channel
+    (spin_channel=0 for α, spin_channel=1 for β), consistent with the convention
+    used by `ElectronicEigenvalues`.
 
     The TREXIO format:
     Posenitsky et al., J. Chem. Phys. 158, 174801 (2023).
     """
 
-    # References
+    # Override value to 1-D: no k-point axis for molecular systems
+    value = Quantity(
+        type=np.float64,
+        unit='joule',
+        shape=['n_levels'],
+        description="""
+        Orbital energies — eigenvalues of the effective one-particle Hamiltonian
+        (Fock matrix for HF/DFT, natural-orbital energies for correlated methods).
+        """,
+    )
+
+    # Override occupation to match the 1-D shape of value
+    occupation = Quantity(
+        type=np.float64,
+        shape=['n_levels'],
+        description="""
+        Occupation number for each molecular orbital.
+        For a closed-shell restricted calculation the values are 0.0 or 2.0;
+        for an unrestricted calculation (one section per spin channel) they are 0.0 or 1.0.
+        """,
+    )
+
+    # AO basis metadata
+    n_ao = Quantity(
+        type=np.int32,
+        description='Number of atomic orbitals (size of the AO basis).',
+    )
+
     basis_set_ref = Quantity(
         type=Reference(
             SectionProxy(
                 'nomad_simulations.schema_packages.basis_set.AtomCenteredBasisSet'
             )
         ),
+        description='Reference to the atom-centered basis set used to expand these orbitals.',
+    )
+
+    # AO → MO coefficient matrix
+    coefficients = Quantity(
+        type=HDF5Dataset,
+        shape=[],
         description="""
-        Reference to the atom-centered basis set in which these molecular
-        orbitals are expanded.
+        The AO→MO coefficient matrix **C**, such that
+        ψ_i(r) = ∑_μ C[i,μ] φ_μ(r).
+        Row index i runs over MOs (n_levels), column index μ runs over AOs (n_ao).
+        Expected dataset shape: [n_levels, n_ao].
         """,
     )
 
-    # Dimension-defining scalars
-    n_mo = Quantity(
-        type=np.int32,
-        description='Number of molecular orbitals stored.',
-    )
-
-    n_ao = Quantity(
-        type=np.int32,
-        description='Number of atomic orbitals (size of AO basis).',
-    )
-
-    # Per-orbital mandatory metadata
-    mo_spin = Quantity(
-        type=np.int32,
-        shape=['n_mo'],
+    coefficients_im = Quantity(
+        type=HDF5Dataset,
+        shape=[],
         description="""
-        Spin index of each molecular orbital: 0 for α-spin, 1 for β-spin.
+        Imaginary component of the AO→MO coefficient matrix.
+        Combine with `coefficients` to obtain the full complex matrix:
+            C_complex = coefficients + 1j * coefficients_im
+        Omit for strictly real wave functions (non-relativistic calculations
+        without complex basis functions).
+        Expected dataset shape: [n_levels, n_ao].
         """,
     )
 
-    mo_energies = Quantity(
-        type=np.float64,
-        unit='electron_volt',
-        shape=['n_mo'],
-        description="""
-        Orbital energies for each MO. In a canonical SCF these are the eigenvalues 
-        of the (Fock) Hamiltonian; in correlated frameworks they may be natural-orbital
-        energies or any other chosen set.
-        """,
-    )
-
-    mo_occupations = Quantity(
-        type=np.float64,
-        shape=['n_mo'],
-        description="""
-        Occupation numbers for each MO. Closed-shell codes will typically give 2.0 
-        for occupied and 0.0 for virtual orbitals; unrestricted codes use two channels.
-        """,
-    )
-
-    mo_class = Quantity(
+    # Per-orbital classification
+    role = Quantity(
         type=MEnum('core', 'inactive', 'active', 'virtual', 'deleted'),
-        shape=['n_mo'],
+        shape=['n_levels'],
         description="""
-        Role of each MO within a correlated calculation or active-space
-        protocol:
+        Role of each MO within a correlated calculation or active-space protocol:
 
-        * core     : energy-frozen doubly-occupied  
-        * inactive : doubly-occupied but variationally optimised  
-        * active   : part of the active space  
-        * virtual  : unoccupied (correlated) orbital  
+        * core     : energy-frozen doubly-occupied
+        * inactive : doubly-occupied but variationally optimised
+        * active   : part of the active space
+        * virtual  : unoccupied (correlated) orbital
         * deleted  : pruned for technical reasons
         """,
     )
 
-    mo_symmetry = Quantity(
+    symmetry = Quantity(
         type=str,
-        shape=['n_mo'],
+        shape=['n_levels'],
         description="""
         Symmetry label of each MO in the molecule's point group
-        (e.g. *a₁*, *b₂u*, *pi_g*). Leave empty for systems with
-        no detected symmetry.
-        """,
-    )
-
-    # AO → MO coefficient matrices
-    mo_coefficients = Quantity(
-        type=HDF5Dataset,
-        shape=[],
-        description="""
-        The AO→MO coefficient matrix **C**, such that 
-        ψ_i(r) = ∑_μ C[i,μ] φ_μ(r). 
-        Row index i runs over MOs, column index μ runs over AOs in `basis_set_ref`.
-        The expected dataset shape is [`n_mo`, `n_ao`].
-        """,
-    )
-
-    mo_coefficients_im = Quantity(
-        type=HDF5Dataset,
-        shape=[],
-        description="""
-        Imaginary component of the AO→MO coefficient matrix **C**. 
-        Combine it with `mo_coefficients` to obtain the full complex matrix:
-            C_complex = mo_coefficients + 1j * mo_coefficients_im  
-        Leave this quantity unset when the wave-function
-        is strictly real, as is typical in non-relativistic calculations without complex basis functions.
-        The expected dataset shape is [`n_mo`, `n_ao`].
+        (e.g. a₁, b₂u, π_g). Leave empty for systems with no detected symmetry.
         """,
     )
 
     # Whole-set classification
-    mo_type = Quantity(
+    kind = Quantity(
         type=MEnum('canonical', 'natural', 'localized', 'hybrid'),
-        # default='canonical',
         description="""
-        Classification of these orbitals:
-          - canonical  : standard SCF eigenfunctions
-          - natural    : eigenfunctions of the 1-RDM
-          - localized  : after a localization transform (Boys, Pipek-Mezey, …)
-          - hybrid     : e.g. post-HF (CASSCF) orbitals, etc.
+        Classification of the orbital set:
+
+        * canonical  : standard SCF eigenfunctions
+        * natural    : eigenfunctions of the 1-RDM
+        * localized  : after a localization transform (Boys, Pipek-Mezey, …)
+        * hybrid     : post-HF orbitals, e.g. CASSCF
         """,
     )
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        """
-        Infer `n_mo` / `n_ao` from supplied arrays when absent.
-        """
         super().normalize(archive, logger)
 
-        coefficient_shape = self._resolve_dataset_shape(self.mo_coefficients)
-        coefficient_im_shape = self._resolve_dataset_shape(self.mo_coefficients_im)
-        valid_coefficient_shapes = [
-            shape
-            for shape in (coefficient_shape, coefficient_im_shape)
-            if shape is not None and len(shape) == 2
+        coefficient_shape = self._resolve_dataset_shape(self.coefficients)
+        coefficient_im_shape = self._resolve_dataset_shape(self.coefficients_im)
+        valid_shapes = [
+            s
+            for s in (coefficient_shape, coefficient_im_shape)
+            if s is not None and len(s) == 2
         ]
 
-        # ---------- infer n_mo ----------
-        if self.n_mo is None:
-            if valid_coefficient_shapes:
-                self.n_mo = int(valid_coefficient_shapes[0][0])
-            elif self.mo_spin is not None:
-                self.n_mo = len(self.mo_spin)
-            elif self.mo_energies is not None:
-                self.n_mo = len(self.mo_energies)
+        if self.n_levels is None:
+            if valid_shapes:
+                self.n_levels = int(valid_shapes[0][0])
 
-        # ---------- infer n_ao ----------
-        if self.n_ao is None and valid_coefficient_shapes:
-            self.n_ao = int(valid_coefficient_shapes[0][1])
+        if self.n_ao is None and valid_shapes:
+            self.n_ao = int(valid_shapes[0][1])
 
+        self._validate_coefficient_shape('coefficients', coefficient_shape, logger)
         self._validate_coefficient_shape(
-            'mo_coefficients', coefficient_shape, logger=logger
+            'coefficients_im', coefficient_im_shape, logger
         )
-        self._validate_coefficient_shape(
-            'mo_coefficients_im', coefficient_im_shape, logger=logger
-        )
+
         if (
             coefficient_shape is not None
             and coefficient_im_shape is not None
@@ -182,8 +155,8 @@ class MolecularOrbitals(ElectronicEigenvalues):
         ):
             logger.error(
                 'Molecular orbital coefficient shapes do not match.',
-                mo_coefficients_shape=coefficient_shape,
-                mo_coefficients_im_shape=coefficient_im_shape,
+                coefficients_shape=coefficient_shape,
+                coefficients_im_shape=coefficient_im_shape,
             )
 
     def _validate_coefficient_shape(
@@ -198,19 +171,17 @@ class MolecularOrbitals(ElectronicEigenvalues):
                 shape=shape,
             )
             return
-
-        expected_shape = (self.n_mo, self.n_ao)
-        if None not in expected_shape and shape != expected_shape:
+        expected = (self.n_levels, self.n_ao)
+        if None not in expected and shape != expected:
             logger.error(
                 'Molecular orbital coefficient shape does not match expected shape.',
                 quantity_name=quantity_name,
                 shape=shape,
-                expected_shape=expected_shape,
+                expected_shape=expected,
             )
 
     @staticmethod
     def _resolve_dataset_shape(value: Any) -> tuple[int, ...] | None:
-        """Return the shape of an in-memory array or HDF5-backed dataset."""
         if value is None:
             return None
         if isinstance(value, HDF5Wrapper):

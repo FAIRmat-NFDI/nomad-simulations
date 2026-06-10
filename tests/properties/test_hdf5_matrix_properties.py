@@ -97,8 +97,8 @@ class TestMatrixHDF5Storage:
 
         for quantity_name, value in values.items():
             getattr(data, quantity_name).value = value
-        data.molecular_orbitals.mo_coefficients = mo_coefficients
-        data.molecular_orbitals.mo_coefficients_im = mo_coefficients_im
+        data.molecular_orbitals.coefficients = mo_coefficients
+        data.molecular_orbitals.coefficients_im = mo_coefficients_im
 
         serialized = archive.m_to_dict()
         entry_id = archive.metadata.entry_id
@@ -115,8 +115,8 @@ class TestMatrixHDF5Storage:
             )
 
         for mo_name, mo_expected in (
-            ('mo_coefficients', mo_coefficients),
-            ('mo_coefficients_im', mo_coefficients_im),
+            ('coefficients', mo_coefficients),
+            ('coefficients_im', mo_coefficients_im),
         ):
             assert (
                 serialized['data']['molecular_orbitals'][mo_name]

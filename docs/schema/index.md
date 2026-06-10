@@ -72,9 +72,9 @@ Base output structure and common property definitions
 
 ## [Electronic Structure Properties](electronic_properties.md)
 
-Electronic eigenvalues, band structures, DOS, band gaps, occupancies, and Fermi surfaces
+Electronic eigenvalues, band structures, DOS, band gaps, molecular orbitals, occupancies, and Fermi surfaces
 
-**Key sections:** BaseElectronicEigenvalues, ElectronicEigenvalues, ElectronicBandStructure, ElectronicBandGap, DOSProfile, ElectronicDensityOfStates, Occupancy, FermiSurface
+**Key sections:** BaseElectronicEigenvalues, ElectronicEigenvalues, ElectronicBandStructure, MolecularOrbitals, ElectronicBandGap, DOSProfile, ElectronicDensityOfStates, Occupancy, FermiSurface
 
 ## [Many-Body Properties](manybody_properties.md)
 
