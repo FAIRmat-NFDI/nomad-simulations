@@ -28,14 +28,23 @@ class MatrixPropertiesTestEntry(EntryData):
     molecular_orbitals = SubSection(sub_section=MolecularOrbitals.m_def)
 
 
-@pytest.fixture
-def archive_with_matrix_properties() -> Generator[
-    tuple[EntryArchive, MatrixPropertiesTestEntry, str, str], None, None
-]:
+@pytest.fixture(scope='module')
+def server_context() -> Generator[ServerContext, None, None]:
     upload_id = f'test_upload_matrix_properties_h5_{create_uuid()}'
-    entry_id = 'test_entry_matrix_properties_h5'
     upload_files = files.StagingUploadFiles(upload_id, create=True)
     upload = processing.Upload(upload_id=upload_id)
+    try:
+        yield ServerContext(upload=upload)
+    finally:
+        upload_files.delete()
+
+
+@pytest.fixture
+def archive_with_matrix_properties(
+    server_context: ServerContext,
+) -> tuple[EntryArchive, MatrixPropertiesTestEntry, str, str]:
+    upload_id = server_context.upload.upload_id
+    entry_id = 'test_entry_matrix_properties_h5'
     data = MatrixPropertiesTestEntry(
         electronic_greens_function=ElectronicGreensFunction(),
         electronic_self_energy=ElectronicSelfEnergy(),
@@ -44,14 +53,11 @@ def archive_with_matrix_properties() -> Generator[
         molecular_orbitals=MolecularOrbitals(),
     )
     archive = EntryArchive(
-        m_context=ServerContext(upload=upload),
+        m_context=server_context,
         metadata=EntryMetadata(upload_id=upload_id, entry_id=entry_id),
         data=data,
     )
-    try:
-        yield archive, data, upload_id, entry_id
-    finally:
-        upload_files.delete()
+    return archive, data, upload_id, entry_id
 
 
 def test_complex_matrix_properties_are_stored_in_hdf5(
