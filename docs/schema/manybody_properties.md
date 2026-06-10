@@ -65,7 +65,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `value` | m_complex128(complex128) | Value of the electronic Green's function matrix. |
+| `value` | HDF5Dataset | Value of the electronic Green's function matrix. The dataset dimensions follow the represented spaces and matrix indices. |
 
 ### `ElectronicSelfEnergy`
 
@@ -75,7 +75,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `value` | m_complex128(complex128) | Value of the electronic self-energy matrix. |
+| `value` | HDF5Dataset | Value of the electronic self-energy matrix. The dataset dimensions follow the represented spaces and matrix indices. |
 
 ### `HybridizationFunction`
 
@@ -85,7 +85,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `value` | m_complex128(complex128) | Value of the electronic hybridization function. |
+| `value` | HDF5Dataset | Value of the electronic hybridization function. The dataset dimensions follow the represented spaces and matrix indices. |
 
 ### `QuasiparticleWeight`
 
@@ -112,7 +112,7 @@ classDiagram
 |---|---|---|
 | `n_orbitals` | m_int32(int32) | Number of orbitals in the tight-binding model. The `entity_ref` reference is used to refer to the `ElectronicState` section, which navigates to the relevant basis orbitals (e.g., `SphericalSymmetryState`). |
 | `degeneracy_factors` | m_int32(int32) (shape: ['*']) | Degeneracy of each Wigner-Seitz point. |
-| `value` | m_complex128(complex128) | Value of the hopping matrix in joules. The elements are complex numbers defined for each Wigner-Seitz point and each pair of orbitals. Note this contains also the onsite values, i.e., it includes the Wigner-Seitz point (0, 0, 0), hence the `CrystalFieldSplitting` values. |
+| `value` | HDF5Dataset | Value of the hopping matrix in joules. The elements are complex numbers defined for each Wigner-Seitz point and each pair of orbitals. Note this contains also the onsite values, i.e., it includes the Wigner-Seitz point (0, 0, 0), hence the `CrystalFieldSplitting` values. The expected dataset dimensions are the Wigner-Seitz points followed by the two orbital indices. |
 
 ### `CrystalFieldSplitting`
 
