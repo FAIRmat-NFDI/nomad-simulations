@@ -8,6 +8,7 @@ if TYPE_CHECKING:
 
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
+from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Wrapper
 from nomad.datamodel.metainfo.basesections.v2 import Entity
 from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy
 
@@ -78,7 +79,6 @@ class MolecularOrbitals(ElectronicEigenvalues):
         """,
     )
 
-    # TODO: check via normalization
     mo_class = Quantity(
         type=MEnum('core', 'inactive', 'active', 'virtual', 'deleted'),
         shape=['n_mo'],
@@ -106,24 +106,26 @@ class MolecularOrbitals(ElectronicEigenvalues):
 
     # AO → MO coefficient matrices
     mo_coefficients = Quantity(
-        type=np.float64,
-        shape=['n_mo', 'n_ao'],
+        type=HDF5Dataset,
+        shape=[],
         description="""
         The AO→MO coefficient matrix **C**, such that 
         ψ_i(r) = ∑_μ C[i,μ] φ_μ(r). 
         Row index i runs over MOs, column index μ runs over AOs in `basis_set_ref`.
+        The expected dataset shape is [`n_mo`, `n_ao`].
         """,
     )
 
     mo_coefficients_im = Quantity(
-        type=np.float64,
-        shape=['n_mo', 'n_ao'],
+        type=HDF5Dataset,
+        shape=[],
         description="""
         Imaginary component of the AO→MO coefficient matrix **C**. 
         Combine it with `mo_coefficients` to obtain the full complex matrix:
             C_complex = mo_coefficients + 1j * mo_coefficients_im  
-        Leave this quantity unset (or an empty array) when the wave-function
+        Leave this quantity unset when the wave-function
         is strictly real, as is typical in non-relativistic calculations without complex basis functions.
+        The expected dataset shape is [`n_mo`, `n_ao`].
         """,
     )
 
@@ -146,15 +148,73 @@ class MolecularOrbitals(ElectronicEigenvalues):
         """
         super().normalize(archive, logger)
 
+        coefficient_shape = self._resolve_dataset_shape(self.mo_coefficients)
+        coefficient_im_shape = self._resolve_dataset_shape(self.mo_coefficients_im)
+        valid_coefficient_shapes = [
+            shape
+            for shape in (coefficient_shape, coefficient_im_shape)
+            if shape is not None and len(shape) == 2
+        ]
+
         # ---------- infer n_mo ----------
         if self.n_mo is None:
-            if self.mo_coefficients is not None:
-                self.n_mo = int(self.mo_coefficients.shape[0])
+            if valid_coefficient_shapes:
+                self.n_mo = int(valid_coefficient_shapes[0][0])
             elif self.mo_spin is not None:
                 self.n_mo = len(self.mo_spin)
             elif self.mo_energies is not None:
                 self.n_mo = len(self.mo_energies)
 
         # ---------- infer n_ao ----------
-        if self.n_ao is None and self.mo_coefficients is not None:
-            self.n_ao = int(self.mo_coefficients.shape[1])
+        if self.n_ao is None and valid_coefficient_shapes:
+            self.n_ao = int(valid_coefficient_shapes[0][1])
+
+        self._validate_coefficient_shape(
+            'mo_coefficients', coefficient_shape, logger=logger
+        )
+        self._validate_coefficient_shape(
+            'mo_coefficients_im', coefficient_im_shape, logger=logger
+        )
+        if (
+            coefficient_shape is not None
+            and coefficient_im_shape is not None
+            and coefficient_shape != coefficient_im_shape
+        ):
+            logger.error(
+                'Molecular orbital coefficient shapes do not match.',
+                mo_coefficients_shape=coefficient_shape,
+                mo_coefficients_im_shape=coefficient_im_shape,
+            )
+
+    def _validate_coefficient_shape(
+        self, quantity_name: str, shape: tuple[int, ...] | None, logger: 'BoundLogger'
+    ) -> None:
+        if shape is None:
+            return
+        if len(shape) != 2:
+            logger.error(
+                'Molecular orbital coefficients must be a 2D dataset.',
+                quantity_name=quantity_name,
+                shape=shape,
+            )
+            return
+
+        expected_shape = (self.n_mo, self.n_ao)
+        if None not in expected_shape and shape != expected_shape:
+            logger.error(
+                'Molecular orbital coefficient shape does not match expected shape.',
+                quantity_name=quantity_name,
+                shape=shape,
+                expected_shape=expected_shape,
+            )
+
+    @staticmethod
+    def _resolve_dataset_shape(value: Any) -> tuple[int, ...] | None:
+        """Return the shape of an in-memory array or HDF5-backed dataset."""
+        if value is None:
+            return None
+        if isinstance(value, HDF5Wrapper):
+            with value as dataset:
+                return tuple(dataset.shape)
+        shape = getattr(value, 'shape', None)
+        return tuple(shape) if shape is not None else None
