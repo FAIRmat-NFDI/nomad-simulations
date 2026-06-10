@@ -44,9 +44,11 @@ class HoppingMatrix(PhysicalProperty):
         shape=[],
         unit='joule',
         description="""
-        Value of the hopping matrix in joules. The elements are complex numbers defined for each Wigner-Seitz point and
-        each pair of orbitals. Note this contains also the onsite values, i.e., it includes the Wigner-Seitz point (0, 0, 0), hence the `CrystalFieldSplitting` values.
-        The expected dataset dimensions are the Wigner-Seitz points followed by the two orbital indices.
+        Value of the hopping matrix in joules stored as an HDF5 dataset. The elements are complex
+        numbers defined for each Wigner-Seitz point and each pair of orbitals. Note this contains
+        also the onsite values, i.e., it includes the Wigner-Seitz point (0, 0, 0), hence the
+        `CrystalFieldSplitting` values. The conventional dataset layout is
+        [n_wigner_seitz_points, n_orbitals, n_orbitals].
         """,
     )
 

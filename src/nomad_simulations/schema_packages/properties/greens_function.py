@@ -175,8 +175,10 @@ class ElectronicGreensFunction(BaseGreensFunction):
         shape=[],
         unit='1/joule',
         description="""
-        Value of the electronic Green's function matrix.
-        The dataset dimensions follow the represented spaces and matrix indices.
+        Value of the electronic Green's function matrix stored as an HDF5 dataset.
+        The conventional dataset layout is [n_kpoints, n_frequencies, n_orbitals, n_orbitals]
+        for k- and frequency-resolved Green's functions, but the actual dimensions depend on
+        the represented spaces set via the `space_id` field.
         """,
     )
 
@@ -193,8 +195,10 @@ class ElectronicSelfEnergy(BaseGreensFunction):
         shape=[],
         unit='joule',
         description="""
-        Value of the electronic self-energy matrix.
-        The dataset dimensions follow the represented spaces and matrix indices.
+        Value of the electronic self-energy matrix stored as an HDF5 dataset.
+        The conventional dataset layout is [n_kpoints, n_frequencies, n_orbitals, n_orbitals]
+        for k- and frequency-resolved self-energies, but the actual dimensions depend on
+        the represented spaces set via the `space_id` field.
         """,
     )
 
@@ -211,8 +215,10 @@ class HybridizationFunction(BaseGreensFunction):
         shape=[],
         unit='joule',
         description="""
-        Value of the electronic hybridization function.
-        The dataset dimensions follow the represented spaces and matrix indices.
+        Value of the electronic hybridization function stored as an HDF5 dataset.
+        The conventional dataset layout is [n_kpoints, n_frequencies, n_orbitals, n_orbitals]
+        for k- and frequency-resolved hybridization functions, but the actual dimensions depend on
+        the represented spaces set via the `space_id` field.
         """,
     )
 

@@ -1,12 +1,15 @@
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from typing import Any
 
 import numpy as np
 import pytest
 import structlog
+from nomad import files, processing
 from nomad.datamodel import EntryArchive
+from nomad.datamodel.context import ServerContext
 from nomad.units import ureg
+from nomad.utils import create_uuid
 from structlog.testing import LogCapture
 
 from nomad_simulations.schema_packages.atoms_state import (
@@ -501,6 +504,46 @@ refs_apw = [
         ],
     },
 ]
+
+
+@pytest.fixture(scope='module')
+def hdf5_server_context() -> Generator[ServerContext, None, None]:
+    """
+    Module-scoped ServerContext backed by a temporary staging upload.
+
+    Use this fixture in any test module that needs to write HDF5 datasets to
+    the archive (e.g. tests for quantities typed as HDF5Dataset).  The upload
+    files are deleted after the module finishes.
+    """
+    upload_id = f'test_upload_hdf5_{create_uuid()}'
+    upload_files = files.StagingUploadFiles(upload_id, create=True)
+    upload = processing.Upload(upload_id=upload_id)
+    try:
+        yield ServerContext(upload=upload)
+    finally:
+        upload_files.delete()
+
+
+def assert_hdf5_dataset_matches(dataset_ref, expected: np.ndarray, dtype=None) -> None:
+    """
+    Open an HDF5Dataset reference and assert it matches *expected*.
+
+    Parameters
+    ----------
+    dataset_ref:
+        The HDF5Dataset value (HDF5Wrapper) returned by a quantity accessor.
+    expected:
+        NumPy array the dataset should equal.
+    dtype:
+        If given, assert ``dataset.dtype == np.dtype(dtype)``.  When *None*
+        the dtype check is skipped (useful for testing pass-through of
+        non-standard dtypes).
+    """
+    with dataset_ref as dataset:
+        if dtype is not None:
+            assert dataset.dtype == np.dtype(dtype)
+        assert dataset.shape == expected.shape
+        assert np.array_equal(dataset[()], expected)
 
 
 @pytest.fixture
