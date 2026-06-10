@@ -65,7 +65,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `value` | HDF5Dataset | Value of the electronic Green's function matrix. The dataset dimensions follow the represented spaces and matrix indices. |
+| `value` | HDF5Dataset | <details><summary>Value of the electronic Green's function matrix stored as an HDF5 dataset.</summary>Value of the electronic Green's function matrix stored as an HDF5 dataset.<br>The conventional dataset layout is [n_kpoints, n_frequencies, n_orbitals, n_orbitals]<br>for k- and frequency-resolved Green's functions, but the actual dimensions depend on<br>the represented spaces set via the `space_id` field.</details> |
 
 ### `ElectronicSelfEnergy`
 
@@ -75,7 +75,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `value` | HDF5Dataset | Value of the electronic self-energy matrix. The dataset dimensions follow the represented spaces and matrix indices. |
+| `value` | HDF5Dataset | <details><summary>Value of the electronic self-energy matrix stored as an HDF5 dataset.</summary>Value of the electronic self-energy matrix stored as an HDF5 dataset.<br>The conventional dataset layout is [n_kpoints, n_frequencies, n_orbitals, n_orbitals]<br>for k- and frequency-resolved self-energies, but the actual dimensions depend on<br>the represented spaces set via the `space_id` field.</details> |
 
 ### `HybridizationFunction`
 
@@ -85,7 +85,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `value` | HDF5Dataset | Value of the electronic hybridization function. The dataset dimensions follow the represented spaces and matrix indices. |
+| `value` | HDF5Dataset | <details><summary>Value of the electronic hybridization function stored as an HDF5 dataset.</summary>Value of the electronic hybridization function stored as an HDF5 dataset.<br>The conventional dataset layout is [n_kpoints, n_frequencies, n_orbitals, n_orbitals]<br>for k- and frequency-resolved hybridization functions, but the actual dimensions depend on<br>the represented spaces set via the `space_id` field.</details> |
 
 ### `QuasiparticleWeight`
 
@@ -112,7 +112,7 @@ classDiagram
 |---|---|---|
 | `n_orbitals` | m_int32(int32) | Number of orbitals in the tight-binding model. The `entity_ref` reference is used to refer to the `ElectronicState` section, which navigates to the relevant basis orbitals (e.g., `SphericalSymmetryState`). |
 | `degeneracy_factors` | m_int32(int32) (shape: ['*']) | Degeneracy of each Wigner-Seitz point. |
-| `value` | HDF5Dataset | Value of the hopping matrix in joules. The elements are complex numbers defined for each Wigner-Seitz point and each pair of orbitals. Note this contains also the onsite values, i.e., it includes the Wigner-Seitz point (0, 0, 0), hence the `CrystalFieldSplitting` values. The expected dataset dimensions are the Wigner-Seitz points followed by the two orbital indices. |
+| `value` | HDF5Dataset | <details><summary>Value of the hopping matrix in joules stored as an HDF5 dataset.</summary>Value of the hopping matrix in joules stored as an HDF5 dataset. The elements are complex<br>numbers defined for each Wigner-Seitz point and each pair of orbitals. Note this contains<br>also the onsite values, i.e., it includes the Wigner-Seitz point (0, 0, 0), hence the<br>`CrystalFieldSplitting` values. The conventional dataset layout is<br>[n_wigner_seitz_points, n_orbitals, n_orbitals].</details> |
 
 ### `CrystalFieldSplitting`
 

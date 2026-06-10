@@ -114,17 +114,17 @@ class TestMatrixHDF5Storage:
                 dtype=np.complex128,
             )
 
-        for quantity_name, expected in (
+        for mo_name, mo_expected in (
             ('mo_coefficients', mo_coefficients),
             ('mo_coefficients_im', mo_coefficients_im),
         ):
             assert (
-                serialized['data']['molecular_orbitals'][quantity_name]
-                == f'/uploads/{upload_id}/archive/{entry_id}#/data/molecular_orbitals/{quantity_name}'
+                serialized['data']['molecular_orbitals'][mo_name]
+                == f'/uploads/{upload_id}/archive/{entry_id}#/data/molecular_orbitals/{mo_name}'
             )
             assert_hdf5_dataset_matches(
-                getattr(data.molecular_orbitals, quantity_name),
-                expected,
+                getattr(data.molecular_orbitals, mo_name),
+                mo_expected,
                 dtype=np.float64,
             )
 
