@@ -181,8 +181,9 @@ class MolecularOrbitals(ElectronicEigenvalues):
             and coefficient_shape != coefficient_im_shape
         ):
             logger.error(
-                'mo_coefficients_im shape must match mo_coefficients; '
-                f'got {coefficient_im_shape} and {coefficient_shape}.'
+                'Molecular orbital coefficient shapes do not match.',
+                mo_coefficients_shape=coefficient_shape,
+                mo_coefficients_im_shape=coefficient_im_shape,
             )
 
     def _validate_coefficient_shape(
@@ -192,16 +193,19 @@ class MolecularOrbitals(ElectronicEigenvalues):
             return
         if len(shape) != 2:
             logger.error(
-                f'{quantity_name} must be a 2D dataset with shape '
-                f'[n_mo, n_ao]; got shape {shape}.'
+                'Molecular orbital coefficients must be a 2D dataset.',
+                quantity_name=quantity_name,
+                shape=shape,
             )
             return
 
         expected_shape = (self.n_mo, self.n_ao)
         if None not in expected_shape and shape != expected_shape:
             logger.error(
-                f'{quantity_name} shape must match [n_mo, n_ao]; '
-                f'got {shape}, expected {expected_shape}.'
+                'Molecular orbital coefficient shape does not match expected shape.',
+                quantity_name=quantity_name,
+                shape=shape,
+                expected_shape=expected_shape,
             )
 
     @staticmethod

@@ -23,9 +23,11 @@ class MOTestEntry(EntryData):
 class RecordingLogger:
     def __init__(self):
         self.errors: list[str] = []
+        self.error_contexts: list[dict] = []
 
     def error(self, message: str, *args, **kwargs) -> None:
         self.errors.append(message % args if args else message)
+        self.error_contexts.append(kwargs)
 
     def warning(self, *args, **kwargs) -> None:
         pass
@@ -100,7 +102,11 @@ class TestMolecularOrbitals:
 
         assert molecular_orbitals.n_mo == 4
         assert molecular_orbitals.n_ao is None
-        assert any('must be a 2D dataset' in error for error in logger.errors)
+        assert 'Molecular orbital coefficients must be a 2D dataset.' in logger.errors
+        assert {
+            'quantity_name': 'mo_coefficients',
+            'shape': (3,),
+        } in logger.error_contexts
 
     def test_normalize_infers_dimensions_from_imaginary_coefficients(
         self, archive_with_mo
@@ -123,13 +129,22 @@ class TestMolecularOrbitals:
         molecular_orbitals.mo_coefficients_im = np.ones((5, 6), dtype=np.float64)
         molecular_orbitals.normalize(archive=EntryArchive(), logger=logger)
 
-        assert any(
-            'mo_coefficients shape must match' in error for error in logger.errors
+        shape_mismatch_message = (
+            'Molecular orbital coefficient shape does not match expected shape.'
         )
-        assert any(
-            'mo_coefficients_im shape must match' in error for error in logger.errors
-        )
-        assert any(
-            'mo_coefficients_im shape must match mo_coefficients' in error
-            for error in logger.errors
-        )
+        assert logger.errors.count(shape_mismatch_message) == 2
+        assert 'Molecular orbital coefficient shapes do not match.' in logger.errors
+        assert {
+            'quantity_name': 'mo_coefficients',
+            'shape': (3, 4),
+            'expected_shape': (2, 2),
+        } in logger.error_contexts
+        assert {
+            'quantity_name': 'mo_coefficients_im',
+            'shape': (5, 6),
+            'expected_shape': (2, 2),
+        } in logger.error_contexts
+        assert {
+            'mo_coefficients_shape': (3, 4),
+            'mo_coefficients_im_shape': (5, 6),
+        } in logger.error_contexts
