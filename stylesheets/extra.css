@@ -1,0 +1,367 @@
+.md-header__button.md-logo :where(img,svg) {
+    width: 100%;
+    height: 30px;
+}
+
+/* .md-nav--primary .md-nav__title[for=__drawer] {
+    background-color: var(--md-default-fg-color--lightest);
+    color: var(--md-default-fg-color--light);
+} */
+
+.md-header, .md-header__inner {
+    background-color: var(--md-default-bg-color);
+    color: #2A4CDF;
+}
+
+.md-header[data-md-state=shadow] {
+    box-shadow: 0px 2px 4px -1px rgb(0 0 0 / 20%), 0px 4px 5px 0px rgb(0 0 0 / 14%), 0px 1px 10px 0px rgb(0 0 0 / 12%);
+    transition: box-shadow 200ms linear;
+}
+
+.md-header__inner {
+    height: 80px;
+}
+
+.md-header__topic {
+    font-size: 24px;
+}
+
+.md-footer {
+    background-color: #2A4CDF;
+}
+
+.md-search__form:hover {
+    background-color: rgba(0,0,0,.13);
+}
+
+.md-typeset h1 {
+    color: var(--md-typeset-color);
+    font-weight: 700;
+}
+
+[data-md-color-scheme="slate"] .md-header,
+[data-md-color-scheme="slate"] .md-header__inner {
+    background-color: #1c2128;
+    color: var(--md-default-fg-color);
+}
+
+[data-md-color-scheme="slate"] .md-header__button,
+[data-md-color-scheme="slate"] .md-header__topic,
+[data-md-color-scheme="slate"] .md-header__title,
+[data-md-color-scheme="slate"] .md-header__ellipsis,
+[data-md-color-scheme="slate"] .md-search__icon,
+[data-md-color-scheme="slate"] .md-source {
+    color: var(--md-default-fg-color);
+}
+
+.youtube {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%;
+}
+
+.youtube iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.home-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-column-gap: 24px;
+    row-gap: 24px;
+}
+
+.home-grid div {
+    border-radius: 4px;
+    padding: 24px;
+    background-color: #f3e9d9;
+}
+
+.home-grid h3 {
+    margin-top: 0;
+    font-weight: 700;
+}
+
+.image-container p {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 1em;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    align-content: stretch
+}
+
+.image-container img {
+    flex-grow: 1;
+    width: 100%;
+}
+
+.image-container::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+.screenshot {
+    /* border: 1px solid var(--md-primary-fg-color--dark); */
+    box-shadow: var(--md-shadow-z3);
+    margin: 1em;
+    max-width: calc(100% - 2em) !important;
+}
+
+.nomad-button {
+    display: inline-block;
+    /* font-size: 14px; */
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    cursor: pointer;
+    border-radius: 4px !important;
+    background-color: #2A4CDF;
+    color: #ffffff !important;
+    border: none !important;
+    margin: 0;
+
+    /* Additional styles from the original SCSS */
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+.nomad-button--card-action {
+    margin: 1em 0 0 0 !important;
+}
+
+.click-zoom {
+    text-align: center;
+}
+
+.click-zoom input[type=checkbox] {
+    z-index: 0;
+    display: none
+}
+
+.click-zoom img {
+    transition: transform 0.25s ease;
+    z-index: 0;
+    cursor: zoom-in
+}
+
+.click-zoom input[type=checkbox]:checked~img {
+    transform: scale(2.3);
+    z-index: 0;
+    cursor: zoom-out
+}
+
+/* Mermaid + panzoom: keep wide diagrams readable on page */
+.md-typeset .uml-diagram-card {
+    margin: 1.25rem 0;
+    padding: 0.75rem 0.875rem 0.875rem;
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.75rem;
+    background: var(--md-default-bg-color);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.md-typeset .uml-diagram-card .mermaid {
+    margin: 0;
+    padding: 0.25rem 0 0.5rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.md-typeset .mermaid {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.5rem 0.25rem 0.75rem;
+    min-height: clamp(240px, 40vw, 520px);
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.5rem;
+    background: var(--md-default-bg-color);
+}
+
+.md-typeset .mermaid > svg {
+    display: block;
+    width: max-content;
+    min-width: 100%;
+    max-width: none;
+    height: auto;
+    margin: 0 auto;
+}
+
+.md-typeset .uml-legend {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-typeset .uml-legend__title {
+    margin: 0 0 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--md-default-fg-color--light);
+}
+
+.md-typeset .uml-legend__item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.35rem 0;
+}
+
+.md-typeset .uml-legend__item code {
+    white-space: nowrap;
+}
+
+.md-typeset .uml-legend__swatch {
+    flex: 0 0 4rem;
+    width: 4rem;
+    height: 1.125rem;
+    overflow: visible;
+    color: var(--md-default-fg-color);
+}
+
+.md-typeset .uml-legend__line,
+.md-typeset .uml-legend__head {
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.md-typeset .uml-legend__line--dashed {
+    stroke-dasharray: 4 3;
+}
+
+.md-typeset .uml-legend__head--open {
+    fill: none;
+}
+
+.md-typeset .uml-legend__head--filled {
+    fill: currentColor;
+}
+
+/* Mermaid namespaces class-diagram inheritance markers like
+   classDiagram-extensionStart/End. Force a hollow triangle to match UML. */
+.md-typeset .mermaid svg marker.extension,
+.md-typeset .mermaid svg marker[id$="extensionStart"],
+.md-typeset .mermaid svg marker[id$="extensionEnd"],
+.md-typeset .mermaid svg marker.extension path,
+.md-typeset .mermaid svg marker[id$="extensionStart"] path,
+.md-typeset .mermaid svg marker[id$="extensionEnd"] path {
+    fill: var(--md-default-bg-color) !important;
+    stroke: currentColor !important;
+    stroke-width: 1.8px !important;
+}
+
+/* Preserve usable viewport on smaller screens */
+@media screen and (max-width: 76.1875em) {
+    .md-typeset .uml-diagram-card {
+        padding: 0.625rem 0.75rem 0.75rem;
+    }
+
+    .md-typeset .mermaid {
+        min-height: clamp(220px, 52vw, 420px);
+    }
+}
+
+/* Panzoom plugin uses md-code-bg-color (gray) by default; force white canvas in light mode. */
+.panzoom-box,
+.panzoom-fullscreen {
+    background-color: #fff !important;
+}
+
+/* Dark mode: use dark background for panzoom diagrams */
+[data-md-color-scheme="slate"] .panzoom-box,
+[data-md-color-scheme="slate"] .panzoom-fullscreen {
+    background-color: #1e1e1e !important;
+}
+
+/* Clear visual frame around pan/zoom viewport. */
+.panzoom-box {
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.6rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+
+.panzoom-box::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow: inset 0 0 0 1px rgba(42, 76, 223, 0.08);
+    pointer-events: none;
+}
+
+/* Panzoom help discoverability: show hint when hovering/focusing the diagram box. */
+.panzoom-box:hover .panzoom-info-box.panzoom-hidden,
+.panzoom-box:focus-within .panzoom-info-box.panzoom-hidden {
+    display: block;
+}
+
+/* Clarify modifier key wording for panzoom hint (Option on macOS == Alt). */
+.panzoom-box[data-key="alt"] .panzoom-info-box {
+    color: transparent;
+}
+
+.panzoom-box[data-key="alt"] .panzoom-info-box::before {
+    content: "Hold Option (macOS) or Alt (Windows/Linux), then scroll to zoom and drag to pan.";
+    color: var(--md-default-fg-color--light);
+}
+
+/* ====================
+   Dark Mode: Mermaid Diagram Support
+   ==================== */
+
+/* Dark mode: Force white/light text in Mermaid diagrams */
+[data-md-color-scheme="slate"] .mermaid text,
+[data-md-color-scheme="slate"] .mermaid .nodeLabel,
+[data-md-color-scheme="slate"] .mermaid .edgeLabel,
+[data-md-color-scheme="slate"] .mermaid .label,
+[data-md-color-scheme="slate"] .mermaid .labelText,
+[data-md-color-scheme="slate"] .mermaid tspan {
+    fill: #e8e8e8 !important;
+    color: #e8e8e8 !important;
+}
+
+/* Dark mode: Make lines visible */
+[data-md-color-scheme="slate"] .mermaid line,
+[data-md-color-scheme="slate"] .mermaid path,
+[data-md-color-scheme="slate"] .mermaid polyline,
+[data-md-color-scheme="slate"] .mermaid polygon {
+    stroke: #b0b0b0 !important;
+}
+
+/* Dark mode: Adjust rectangle fills for class boxes */
+[data-md-color-scheme="slate"] .mermaid rect.node,
+[data-md-color-scheme="slate"] .mermaid rect.nodeLabel {
+    fill: #2d2d2d !important;
+    stroke: #606060 !important;
+}
+
+/* Dark mode: Markers (arrowheads) visibility */
+[data-md-color-scheme="slate"] .mermaid marker path {
+    fill: #b0b0b0 !important;
+    stroke: #b0b0b0 !important;
+}
+
+/* Dark mode: Adjust borders and backgrounds for panzoom box */
+[data-md-color-scheme="slate"] .panzoom-box {
+    border-color: #444;
+}
+
+[data-md-color-scheme="slate"] .panzoom-box::after {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
