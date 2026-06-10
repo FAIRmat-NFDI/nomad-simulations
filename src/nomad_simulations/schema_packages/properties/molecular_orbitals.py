@@ -8,6 +8,7 @@ import numpy as np
 from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Wrapper
 from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 
+from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.properties import ElectronicEigenvalues
 
 
@@ -39,7 +40,7 @@ class MolecularOrbitals(ElectronicEigenvalues):
 
     # Override occupation to match the 1-D shape of value
     occupation = Quantity(
-        type=np.float64,
+        type=positive_float(dtype=np.float64),
         shape=['n_levels'],
         description="""
         Occupation number for each molecular orbital.
