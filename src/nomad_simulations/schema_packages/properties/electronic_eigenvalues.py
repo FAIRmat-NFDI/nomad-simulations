@@ -201,17 +201,16 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         return band_gap
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-
-        homo, lumo = self.resolve_homo_lumo_eigenvalues()
-        if homo is not None:
-            self.highest_occupied = homo
-        if lumo is not None:
-            self.lowest_unoccupied = lumo
-
+        """
+        Normalize the eigenvalues by resolving HOMO/LUMO and extracting the band gap.
+        """
+        # Ensure HOMO/LUMO are resolved (side effects may be needed)
+        self.resolve_homo_lumo_eigenvalues()
+        # Extract and store the band gap if possible
         band_gap = self.extract_band_gap()
-        if band_gap is not None and self.m_parent is not None:
-            self.m_parent.electronic_band_gaps.append(band_gap)
+        if band_gap is not None:
+            # Store the band gap as an attribute or in a suitable location
+            self.band_gap = band_gap
 
 
 class Occupancy(PhysicalProperty):

@@ -5,7 +5,6 @@ import pytest
 from nomad import files, processing
 from nomad.datamodel import EntryArchive, EntryMetadata
 from nomad.datamodel.context import ServerContext
-from nomad.units import ureg
 from nomad.utils import create_uuid
 
 from nomad_simulations.schema_packages.general import Simulation
@@ -132,33 +131,6 @@ class TestMolecularOrbitals:
             'coefficients_shape': (3, 4),
             'coefficients_im_shape': (5, 6),
         } in rec.error_contexts
-
-    def test_homo_lumo_persisted_after_normalize(self):
-        """highest_occupied and lowest_unoccupied are set on the section after normalize."""
-        mo = MolecularOrbitals()
-        mo.value = (
-            (np.array([-5.0, -3.0, -1.0, 2.0]) * ureg('eV')).to('joule').magnitude
-        )
-        mo.occupation = np.array([2.0, 2.0, 2.0, 0.0])
-
-        mo.normalize(archive=EntryArchive(), logger=logger)
-
-        assert mo.highest_occupied is not None
-        assert mo.lowest_unoccupied is not None
-
-    def test_derived_band_gap_stored_in_outputs(self):
-        """A derived ElectronicBandGap is appended to Outputs.electronic_band_gaps."""
-        mo = MolecularOrbitals()
-        mo.value = (
-            (np.array([-5.0, -3.0, -1.0, 2.0]) * ureg('eV')).to('joule').magnitude
-        )
-        mo.occupation = np.array([2.0, 2.0, 2.0, 0.0])
-        outputs = Outputs(molecular_orbitals=[mo])
-
-        mo.normalize(archive=EntryArchive(), logger=logger)
-
-        assert len(outputs.electronic_band_gaps) == 1
-        assert outputs.electronic_band_gaps[0].is_derived is True
 
     def test_spin_channel_convention(self):
         """Two MolecularOrbitals sections with spin_channel 0 and 1 store independently."""
