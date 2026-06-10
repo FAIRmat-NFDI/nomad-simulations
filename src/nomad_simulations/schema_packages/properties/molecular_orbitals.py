@@ -40,7 +40,7 @@ class MolecularOrbitals(ElectronicEigenvalues):
 
     # Override occupation to match the 1-D shape of value
     occupation = Quantity(
-        type=positive_float(dtype=np.float64),
+        type=positive_float(),
         shape=['n_levels'],
         description="""
         Occupation number for each molecular orbital.
