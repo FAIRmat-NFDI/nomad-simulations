@@ -79,11 +79,11 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `MolecularOrbitals` | Molecular-orbital eigenstates expressed in an atom-centred AO basis. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.molecular_orbitals.MolecularOrbitals){:target="_blank"} |
+| `MolecularOrbitals` | Molecular-orbital eigenstates expressed in an atom-centered AO basis. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.molecular_orbitals.MolecularOrbitals){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
-| `value` | m_float64(float64) (shape: ['n_levels']) | Orbital energies — eigenvalues of the effective one-particle Hamiltonian (Fock matrix for HF/DFT, natural-orbital energies for correlated methods). |
+| `value` | m_float64(float64) (shape: ['n_levels']) | Orbital energies: eigenvalues of the effective one-particle Hamiltonian (Fock matrix for HF/DFT, natural-orbital energies for correlated methods). |
 | `occupation` | m_float_bounded(float) (shape: ['n_levels']) | Occupation number for each molecular orbital. For a closed-shell restricted calculation the values are 0.0 or 2.0; for an unrestricted calculation (one section per spin channel) they are 0.0 or 1.0. |
 | `n_ao` | m_int32(int32) | Number of atomic orbitals (size of the AO basis). |
 | `basis_set_ref` | Reference | Reference to the atom-centered basis set used to expand these orbitals. |
