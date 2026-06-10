@@ -16,7 +16,7 @@ from nomad_simulations.schema_packages.properties.electronic_eigenvalues import 
 
 class MolecularOrbitals(ElectronicEigenvalues):
     """
-    Molecular-orbital eigenstates expressed in an atom-centred AO basis.
+    Molecular-orbital eigenstates expressed in an atom-centered AO basis.
 
     Inherits `n_levels`, `spin_channel`, `highest_occupied`, and
     `lowest_unoccupied` from `ElectronicEigenvalues`. Overrides `value` (orbital
@@ -25,9 +25,6 @@ class MolecularOrbitals(ElectronicEigenvalues):
     For spin-polarized calculations use two separate sections, one per spin channel
     (spin_channel=0 for α, spin_channel=1 for β), consistent with the convention
     used by `ElectronicEigenvalues`.
-
-    The TREXIO format:
-    Posenitsky et al., J. Chem. Phys. 158, 174801 (2023).
     """
 
     # Override value to 1-D: no k-point axis for molecular systems
@@ -36,7 +33,7 @@ class MolecularOrbitals(ElectronicEigenvalues):
         unit='joule',
         shape=['n_levels'],
         description="""
-        Orbital energies — eigenvalues of the effective one-particle Hamiltonian
+        Orbital energies: eigenvalues of the effective one-particle Hamiltonian
         (Fock matrix for HF/DFT, natural-orbital energies for correlated methods).
         """,
     )
