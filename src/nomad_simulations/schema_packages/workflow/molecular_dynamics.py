@@ -1172,12 +1172,19 @@ class MolecularDynamicsResults(SerialWorkflowResults):
             return self.radial_distribution_functions
 
         n_traj_split = 10  # number of intervals to split trajectory into for averaging
+        _ANALYSIS_MAX_FRAMES = 100
         try:
             n_prune = int(
                 self._universe.trajectory.n_frames / len(archive.data.model_system)
             )
         except Exception:
             n_prune = 1
+        n_universe_frames = self._universe.trajectory.n_frames
+        if n_universe_frames > _ANALYSIS_MAX_FRAMES:
+            n_prune = max(
+                n_prune,
+                int(np.ceil(n_universe_frames / _ANALYSIS_MAX_FRAMES)),
+            )
 
         interval_indices: list[
             np.ndarray

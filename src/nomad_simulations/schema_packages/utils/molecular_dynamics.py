@@ -495,13 +495,13 @@ def archive_to_universe(
             _charges_list.append(0.0)
     if _missing_masses:
         LOGGER.warning(
-            '%d particle(s) missing mass; atomic particles fall back to ASE defaults, '
-            'CG particles default to 0.0.',
-            _missing_masses,
+            'particles missing mass; atomic fall back to ASE defaults, CG default to 0.0',
+            count=_missing_masses,
         )
     if _missing_charges:
         LOGGER.warning(
-            '%d particle(s) missing charge; defaulting to 0.0.', _missing_charges
+            'particles missing charge; defaulting to 0.0',
+            count=_missing_charges,
         )
 
     masses = np.array(_masses_list)
