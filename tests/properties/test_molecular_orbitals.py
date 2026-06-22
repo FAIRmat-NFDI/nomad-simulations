@@ -9,6 +9,10 @@ from nomad.utils import create_uuid
 
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.outputs import Outputs
+from nomad_simulations.schema_packages.physical_property import PhysicalProperty
+from nomad_simulations.schema_packages.properties.electronic_eigenvalues import (
+    ElectronicEigenvalues,
+)
 from nomad_simulations.schema_packages.properties.molecular_orbitals import (
     MolecularOrbitals,
 )
@@ -58,6 +62,13 @@ def archive_with_mo() -> Generator[
 
 
 class TestMolecularOrbitals:
+    def test_is_independent_physical_property(self):
+        molecular_orbitals = MolecularOrbitals()
+
+        assert issubclass(MolecularOrbitals, PhysicalProperty)
+        assert isinstance(molecular_orbitals, PhysicalProperty)
+        assert not isinstance(molecular_orbitals, ElectronicEigenvalues)
+
     def test_stored_in_outputs(self):
         """MolecularOrbitals can be stored through the canonical Outputs path."""
         mo = MolecularOrbitals()
@@ -73,7 +84,7 @@ class TestMolecularOrbitals:
         molecular_orbitals.coefficients = coeff_real
         molecular_orbitals.normalize(archive=EntryArchive(), logger=logger)
 
-        assert molecular_orbitals.n_levels == 3
+        assert molecular_orbitals.n_mo == 3
         assert molecular_orbitals.n_ao == 3
 
     def test_normalize_logs_invalid_coefficient_rank(self, archive_with_mo):
@@ -83,7 +94,7 @@ class TestMolecularOrbitals:
         molecular_orbitals.coefficients = np.ones(3, dtype=np.float64)
         molecular_orbitals.normalize(archive=EntryArchive(), logger=rec)
 
-        assert molecular_orbitals.n_levels is None
+        assert molecular_orbitals.n_mo is None
         assert molecular_orbitals.n_ao is None
         assert 'Molecular orbital coefficients must be a 2D dataset.' in rec.errors
         assert {
@@ -99,14 +110,31 @@ class TestMolecularOrbitals:
         molecular_orbitals.coefficients_im = np.ones((3, 4), dtype=np.float64)
         molecular_orbitals.normalize(archive=EntryArchive(), logger=logger)
 
-        assert molecular_orbitals.n_levels == 3
+        assert molecular_orbitals.n_mo == 3
         assert molecular_orbitals.n_ao == 4
+
+    @pytest.mark.parametrize(
+        'quantity_name, values',
+        [
+            ('value', np.array([-1.0, -0.5, 0.2])),
+            ('occupations', np.array([2.0, 2.0, 0.0, 0.0])),
+        ],
+    )
+    def test_normalize_infers_n_mo_from_orbital_values(
+        self, archive_with_mo, quantity_name, values
+    ):
+        _, molecular_orbitals, _, _ = archive_with_mo
+        setattr(molecular_orbitals, quantity_name, values)
+
+        molecular_orbitals.normalize(archive=EntryArchive(), logger=logger)
+
+        assert molecular_orbitals.n_mo == len(values)
 
     def test_normalize_logs_coefficient_shape_mismatches(self, archive_with_mo):
         _, molecular_orbitals, _, _ = archive_with_mo
         rec = RecordingLogger()
 
-        molecular_orbitals.n_levels = 2
+        molecular_orbitals.n_mo = 2
         molecular_orbitals.n_ao = 2
         molecular_orbitals.coefficients = np.ones((3, 4), dtype=np.float64)
         molecular_orbitals.coefficients_im = np.ones((5, 6), dtype=np.float64)
@@ -140,3 +168,14 @@ class TestMolecularOrbitals:
 
         assert outputs.molecular_orbitals[0].spin_channel == 0
         assert outputs.molecular_orbitals[1].spin_channel == 1
+
+    def test_does_not_derive_eigenvalue_properties(self):
+        molecular_orbitals = MolecularOrbitals(
+            value=np.array([-1.0, 0.5]),
+            occupations=np.array([2.0, 0.0]),
+        )
+
+        molecular_orbitals.normalize(archive=EntryArchive(), logger=logger)
+
+        for quantity_name in ('highest_occupied', 'lowest_unoccupied', 'band_gap'):
+            assert quantity_name not in molecular_orbitals.m_def.all_quantities

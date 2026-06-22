@@ -8,40 +8,36 @@ import numpy as np
 from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Wrapper
 from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 
-from nomad_simulations.schema_packages.data_types import positive_float
-from nomad_simulations.schema_packages.properties.electronic_eigenvalues import (
-    ElectronicEigenvalues,
-)
+from nomad_simulations.schema_packages.data_types import positive_float, positive_int
+from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 
-class MolecularOrbitals(ElectronicEigenvalues):
+class MolecularOrbitals(PhysicalProperty):
     """
     Molecular-orbital eigenstates expressed in an atom-centered AO basis.
 
-    Inherits `n_levels`, `spin_channel`, `highest_occupied`, and
-    `lowest_unoccupied` from `ElectronicEigenvalues`. Overrides `value` (orbital
-    energies) and `occupation` with one-dimensional shapes for molecular systems.
-
     For spin-polarized calculations use two separate sections, one per spin channel
-    (spin_channel=0 for α, spin_channel=1 for β), consistent with the convention
-    used by `ElectronicEigenvalues`.
+    (`spin_channel=0` for α, `spin_channel=1` for β).
     """
 
-    # Override value to 1-D: no k-point axis for molecular systems
+    n_mo = Quantity(
+        type=positive_int(),
+        description='Number of molecular orbitals.',
+    )
+
     value = Quantity(
         type=np.float64,
         unit='joule',
-        shape=['n_levels'],
+        shape=['n_mo'],
         description="""
         Orbital energies: eigenvalues of the effective one-particle Hamiltonian
         (Fock matrix for HF/DFT, natural-orbital energies for correlated methods).
         """,
     )
 
-    # Override occupation to match the 1-D shape of value
-    occupation = Quantity(
+    occupations = Quantity(
         type=positive_float(),
-        shape=['n_levels'],
+        shape=['n_mo'],
         description="""
         Occupation number for each molecular orbital.
         For a closed-shell restricted calculation the values are 0.0 or 2.0;
@@ -49,9 +45,14 @@ class MolecularOrbitals(ElectronicEigenvalues):
         """,
     )
 
+    spin_channel = Quantity(
+        type=np.int32,
+        description='Spin channel of the molecular orbitals: 0 for α-spin, 1 for β-spin.',
+    )
+
     # AO basis metadata
     n_ao = Quantity(
-        type=np.int32,
+        type=positive_int(),
         description='Number of atomic orbitals (size of the AO basis).',
     )
 
@@ -71,8 +72,8 @@ class MolecularOrbitals(ElectronicEigenvalues):
         description="""
         The AO→MO coefficient matrix **C**, such that
         ψ_i(r) = ∑_μ C[i,μ] φ_μ(r).
-        Row index i runs over MOs (n_levels), column index μ runs over AOs (n_ao).
-        Expected dataset shape: [n_levels, n_ao].
+        Row index i runs over MOs (n_mo), column index μ runs over AOs (n_ao).
+        Expected dataset shape: [n_mo, n_ao].
         """,
     )
 
@@ -85,14 +86,14 @@ class MolecularOrbitals(ElectronicEigenvalues):
             C_complex = coefficients + 1j * coefficients_im
         Omit for strictly real wave functions (non-relativistic calculations
         without complex basis functions).
-        Expected dataset shape: [n_levels, n_ao].
+        Expected dataset shape: [n_mo, n_ao].
         """,
     )
 
     # Per-orbital classification
     role = Quantity(
         type=MEnum('core', 'inactive', 'active', 'virtual', 'deleted'),
-        shape=['n_levels'],
+        shape=['n_mo'],
         description="""
         Role of each MO within a correlated calculation or active-space protocol:
 
@@ -106,7 +107,7 @@ class MolecularOrbitals(ElectronicEigenvalues):
 
     symmetry = Quantity(
         type=str,
-        shape=['n_levels'],
+        shape=['n_mo'],
         description="""
         Symmetry label of each MO in the molecule's point group
         (e.g. a₁, b₂u, π_g). Leave empty for systems with no detected symmetry.
@@ -137,14 +138,22 @@ class MolecularOrbitals(ElectronicEigenvalues):
             if s is not None and len(s) == 2
         ]
 
-        if self.n_levels is None:
+        if self.n_mo is None:
             if valid_shapes:
-                self.n_levels = int(valid_shapes[0][0])
+                self.n_mo = int(valid_shapes[0][0])
             else:
-                for values in (self.value, self.occupation):
+                for values in (
+                    self.value,
+                    self.occupations,
+                    self.role,
+                    self.symmetry,
+                ):
                     shape = getattr(values, 'shape', None)
-                    if shape is not None and len(shape) == 1:
-                        self.n_levels = int(shape[0])
+                    if shape is not None and len(shape) > 0:
+                        self.n_mo = int(shape[0])
+                        break
+                    if values is not None:
+                        self.n_mo = len(values)
                         break
 
         if self.n_ao is None and valid_shapes:
@@ -178,7 +187,7 @@ class MolecularOrbitals(ElectronicEigenvalues):
                 shape=shape,
             )
             return
-        expected = (self.n_levels, self.n_ao)
+        expected = (self.n_mo, self.n_ao)
         if None not in expected and shape != expected:
             logger.error(
                 'Molecular orbital coefficient shape does not match expected shape.',

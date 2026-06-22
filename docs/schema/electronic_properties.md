@@ -23,7 +23,6 @@ classDiagram
     ElectronicEigenvalues <|-- ElectronicBandStructure
     DOSProfile <|-- ElectronicDensityOfStates
     BaseElectronicEigenvalues <|-- ElectronicEigenvalues
-    ElectronicEigenvalues <|-- MolecularOrbitals
     DOSProfile *-- Energy2 : energies
     ElectronicDensityOfStates *-- DOSProfile : projected_dos
     ElectronicDensityOfStates *-- Energy2 : energies
@@ -83,14 +82,16 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `value` | m_float64(float64) (shape: ['n_levels']) | Orbital energies: eigenvalues of the effective one-particle Hamiltonian (Fock matrix for HF/DFT, natural-orbital energies for correlated methods). |
-| `occupation` | m_float_bounded(float) (shape: ['n_levels']) | Occupation number for each molecular orbital. For a closed-shell restricted calculation the values are 0.0 or 2.0; for an unrestricted calculation (one section per spin channel) they are 0.0 or 1.0. |
-| `n_ao` | m_int32(int32) | Number of atomic orbitals (size of the AO basis). |
+| `n_mo` | m_int_bounded(int) | Number of molecular orbitals. |
+| `value` | m_float64(float64) (shape: ['n_mo']) | Orbital energies: eigenvalues of the effective one-particle Hamiltonian (Fock matrix for HF/DFT, natural-orbital energies for correlated methods). |
+| `occupations` | m_float_bounded(float) (shape: ['n_mo']) | Occupation number for each molecular orbital. For a closed-shell restricted calculation the values are 0.0 or 2.0; for an unrestricted calculation (one section per spin channel) they are 0.0 or 1.0. |
+| `spin_channel` | m_int32(int32) | Spin channel of the molecular orbitals: 0 for α-spin, 1 for β-spin. |
+| `n_ao` | m_int_bounded(int) | Number of atomic orbitals (size of the AO basis). |
 | `basis_set_ref` | Reference | Reference to the atom-centered basis set used to expand these orbitals. |
-| `coefficients` | HDF5Dataset | <details><summary>The AO→MO coefficient matrix **C**, such that</summary>The AO→MO coefficient matrix **C**, such that<br>ψ_i(r) = ∑_μ C[i,μ] φ_μ(r).<br>Row index i runs over MOs (n_levels), column index μ runs over AOs (n_ao).<br>Expected dataset shape: [n_levels, n_ao].</details> |
-| `coefficients_im` | HDF5Dataset | <details><summary>Imaginary component of the AO→MO coefficient matrix.</summary>Imaginary component of the AO→MO coefficient matrix.<br>Combine with `coefficients` to obtain the full complex matrix:<br>C_complex = coefficients + 1j * coefficients_im<br>Omit for strictly real wave functions (non-relativistic calculations<br>without complex basis functions).<br>Expected dataset shape: [n_levels, n_ao].</details> |
-| `role` | Enum (shape: ['n_levels']) | <details><summary>Role of each MO within a correlated calculation or active-space protocol:</summary>Role of each MO within a correlated calculation or active-space protocol:<br>* core     : energy-frozen doubly-occupied<br>* inactive : doubly-occupied but variationally optimised<br>* active   : part of the active space<br>* virtual  : unoccupied (correlated) orbital<br>* deleted  : pruned for technical reasons</details> |
-| `symmetry` | m_str(str) (shape: ['n_levels']) | Symmetry label of each MO in the molecule's point group (e.g. a₁, b₂u, π_g). Leave empty for systems with no detected symmetry. |
+| `coefficients` | HDF5Dataset | <details><summary>The AO→MO coefficient matrix **C**, such that</summary>The AO→MO coefficient matrix **C**, such that<br>ψ_i(r) = ∑_μ C[i,μ] φ_μ(r).<br>Row index i runs over MOs (n_mo), column index μ runs over AOs (n_ao).<br>Expected dataset shape: [n_mo, n_ao].</details> |
+| `coefficients_im` | HDF5Dataset | <details><summary>Imaginary component of the AO→MO coefficient matrix.</summary>Imaginary component of the AO→MO coefficient matrix.<br>Combine with `coefficients` to obtain the full complex matrix:<br>C_complex = coefficients + 1j * coefficients_im<br>Omit for strictly real wave functions (non-relativistic calculations<br>without complex basis functions).<br>Expected dataset shape: [n_mo, n_ao].</details> |
+| `role` | Enum (shape: ['n_mo']) | <details><summary>Role of each MO within a correlated calculation or active-space protocol:</summary>Role of each MO within a correlated calculation or active-space protocol:<br>* core     : energy-frozen doubly-occupied<br>* inactive : doubly-occupied but variationally optimised<br>* active   : part of the active space<br>* virtual  : unoccupied (correlated) orbital<br>* deleted  : pruned for technical reasons</details> |
+| `symmetry` | m_str(str) (shape: ['n_mo']) | Symmetry label of each MO in the molecule's point group (e.g. a₁, b₂u, π_g). Leave empty for systems with no detected symmetry. |
 | `kind` | Enum | <details><summary>Classification of the orbital set:</summary>Classification of the orbital set:<br>* canonical  : standard SCF eigenfunctions<br>* natural    : eigenfunctions of the 1-RDM<br>* localized  : after a localization transform (Boys, Pipek-Mezey, …)<br>* hybrid     : post-HF orbitals, e.g. CASSCF</details> |
 
 ### `ElectronicBandGap`

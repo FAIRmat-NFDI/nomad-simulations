@@ -24,7 +24,6 @@ classDiagram
     class MolecularOrbitals
     class Occupancy
     ElectronicEigenvalues <|-- ElectronicBandStructure
-    ElectronicEigenvalues <|-- MolecularOrbitals
     DOSProfile <|-- ElectronicDensityOfStates
     BaseElectronicEigenvalues <|-- ElectronicEigenvalues
     DOSProfile *-- Energy2 : energies
