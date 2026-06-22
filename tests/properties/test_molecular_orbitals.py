@@ -120,8 +120,8 @@ class TestMolecularOrbitals:
     @pytest.mark.parametrize(
         'quantity_name, values',
         [
-            ('orbital_energies', np.array([-1.0, -0.5, 0.2])),
-            ('orbital_occupations', np.array([2.0, 2.0, 0.0, 0.0])),
+            ('energies', np.array([-1.0, -0.5, 0.2])),
+            ('occupations', np.array([2.0, 2.0, 0.0, 0.0])),
         ],
     )
     def test_normalize_infers_n_mo_from_orbital_values(
@@ -142,7 +142,7 @@ class TestMolecularOrbitals:
         molecular_orbitals.n_ao = 2
         molecular_orbitals.coefficients = np.ones((3, 4), dtype=np.float64)
         molecular_orbitals.coefficients_im = np.ones((5, 6), dtype=np.float64)
-        molecular_orbitals.orbital_energies = np.array([-1.0, 0.5, 1.0])
+        molecular_orbitals.energies = np.array([-1.0, 0.5, 1.0])
         molecular_orbitals.normalize(archive=EntryArchive(), logger=rec)
 
         shape_mismatch_message = (
@@ -166,7 +166,7 @@ class TestMolecularOrbitals:
             'coefficients_im_shape': (5, 6),
         } in rec.error_contexts
         assert {
-            'quantity_name': 'orbital_energies',
+            'quantity_name': 'energies',
             'length': 3,
             'expected_length': 2,
         } in rec.error_contexts
@@ -182,8 +182,8 @@ class TestMolecularOrbitals:
 
     def test_does_not_derive_eigenvalue_properties(self):
         molecular_orbitals = MolecularOrbitals(
-            orbital_energies=np.array([-1.0, 0.5]),
-            orbital_occupations=np.array([2.0, 0.0]),
+            energies=np.array([-1.0, 0.5]),
+            occupations=np.array([2.0, 0.0]),
         )
 
         molecular_orbitals.normalize(archive=EntryArchive(), logger=logger)

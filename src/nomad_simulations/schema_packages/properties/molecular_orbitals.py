@@ -28,14 +28,14 @@ class MolecularOrbitals(PhysicalProperty):
         description='Number of molecular orbitals.',
     )
 
-    orbital_energies = Quantity(
+    energies = Quantity(
         type=np.float64,
         unit='joule',
         shape=['n_mo'],
         description='Orbital energies for each molecular orbital.',
     )
 
-    orbital_occupations = Quantity(
+    occupations = Quantity(
         type=positive_float(),
         shape=['n_mo'],
         description='Occupation number for each molecular orbital.',
@@ -139,8 +139,8 @@ class MolecularOrbitals(PhysicalProperty):
                 self.n_mo = int(valid_shapes[0][0])
             else:
                 for values in (
-                    self.orbital_energies,
-                    self.orbital_occupations,
+                    self.energies,
+                    self.occupations,
                     self.role,
                     self.symmetry,
                 ):
@@ -176,8 +176,8 @@ class MolecularOrbitals(PhysicalProperty):
         if self.n_mo is None:
             return
         for quantity_name in (
-            'orbital_energies',
-            'orbital_occupations',
+            'energies',
+            'occupations',
             'role',
             'symmetry',
         ):
