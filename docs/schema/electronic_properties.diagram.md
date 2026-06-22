@@ -21,6 +21,7 @@ classDiagram
     class ElectronicEigenvalues
     class Energy2
     class FermiSurface
+    class MolecularOrbitals
     class Occupancy
     ElectronicEigenvalues <|-- ElectronicBandStructure
     DOSProfile <|-- ElectronicDensityOfStates
