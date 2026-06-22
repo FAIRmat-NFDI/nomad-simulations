@@ -24,13 +24,16 @@ class RecordingLogger:
     def __init__(self):
         self.errors: list[str] = []
         self.error_contexts: list[dict] = []
+        self.warnings: list[str] = []
+        self.warning_contexts: list[dict] = []
 
     def error(self, message: str, *args, **kwargs) -> None:
         self.errors.append(message % args if args else message)
         self.error_contexts.append(kwargs)
 
-    def warning(self, *args, **kwargs) -> None:
-        pass
+    def warning(self, message: str, *args, **kwargs) -> None:
+        self.warnings.append(message % args if args else message)
+        self.warning_contexts.append(kwargs)
 
     def info(self, *args, **kwargs) -> None:
         pass
@@ -100,11 +103,10 @@ class TestMolecularOrbitals:
 
         assert molecular_orbitals.n_mo is None
         assert molecular_orbitals.n_ao is None
-        assert 'Molecular orbital coefficients must be a 2D dataset.' in rec.errors
-        assert {
-            'quantity_name': 'coefficients',
-            'shape': (3,),
-        } in rec.error_contexts
+        assert (
+            'The coefficient matrix must be a 2D dataset with shape [`n_mo`, `n_ao`].'
+            in rec.errors
+        )
 
     def test_normalize_infers_dimensions_from_imaginary_coefficients(
         self, archive_with_mo
@@ -145,31 +147,20 @@ class TestMolecularOrbitals:
         molecular_orbitals.energies = np.array([-1.0, 0.5, 1.0])
         molecular_orbitals.normalize(archive=EntryArchive(), logger=rec)
 
-        shape_mismatch_message = (
-            'Molecular orbital coefficient shape does not match expected shape.'
+        assert (
+            rec.errors.count(
+                'Coefficient matrix shape does not match [`n_mo`, `n_ao`]; check that `n_mo` and `n_ao` are consistent with the dataset dimensions.'
+            )
+            == 2
         )
-        assert rec.errors.count(shape_mismatch_message) == 2
-        assert 'Molecular orbital coefficient shapes do not match.' in rec.errors
-        assert 'Molecular orbital quantity length does not match n_mo.' in rec.errors
-        assert {
-            'quantity_name': 'coefficients',
-            'shape': (3, 4),
-            'expected_shape': (2, 2),
-        } in rec.error_contexts
-        assert {
-            'quantity_name': 'coefficients_im',
-            'shape': (5, 6),
-            'expected_shape': (2, 2),
-        } in rec.error_contexts
-        assert {
-            'coefficients_shape': (3, 4),
-            'coefficients_im_shape': (5, 6),
-        } in rec.error_contexts
-        assert {
-            'quantity_name': 'energies',
-            'length': 3,
-            'expected_length': 2,
-        } in rec.error_contexts
+        assert (
+            'The real and imaginary coefficient matrices have different shapes and cannot be combined.'
+            in rec.errors
+        )
+        assert (
+            'Length of a per-orbital quantity does not match `n_mo`; all of `energies`, `occupations`, `role`, and `symmetry` must have exactly `n_mo` entries.'
+            in rec.errors
+        )
 
     def test_spin_channel_convention(self):
         """Two MolecularOrbitals sections with spin_channel 0 and 1 store independently."""
@@ -190,3 +181,75 @@ class TestMolecularOrbitals:
 
         for quantity_name in ('highest_occupied', 'lowest_unoccupied', 'band_gap'):
             assert quantity_name not in molecular_orbitals.m_def.all_quantities
+
+    # T4: energies unit
+    def test_energies_unit_is_joule(self):
+        assert str(MolecularOrbitals.energies.unit) == 'joule'
+
+    # T1 normalize: occupation validation — spatial (spin-summed) orbitals
+    def test_spatial_occupations_pass(self):
+        rec = RecordingLogger()
+        mo = MolecularOrbitals(occupations=np.array([2.0, 2.0, 0.0, 0.0]))
+        mo.normalize(archive=EntryArchive(), logger=rec)
+
+        assert not rec.errors
+
+    def test_spatial_occupation_exceeds_two_errors(self):
+        rec = RecordingLogger()
+        mo = MolecularOrbitals(occupations=np.array([2.5, 1.0]))
+        mo.normalize(archive=EntryArchive(), logger=rec)
+
+        assert any(
+            '`occupations` exceed the maximum allowed value' in e for e in rec.errors
+        )
+
+    # T1 normalize: occupation validation — spin orbitals
+    def test_spin_channel_occupations_pass(self):
+        rec = RecordingLogger()
+        mo = MolecularOrbitals(spin_channel=0, occupations=np.array([1.0, 1.0, 0.0]))
+        mo.normalize(archive=EntryArchive(), logger=rec)
+
+        assert not any('occupations exceed' in e for e in rec.errors)
+
+    def test_spin_channel_occupation_exceeds_one_errors(self):
+        rec = RecordingLogger()
+        mo = MolecularOrbitals(spin_channel=0, occupations=np.array([1.5, 0.0]))
+        mo.normalize(archive=EntryArchive(), logger=rec)
+
+        assert any(
+            '`occupations` exceed the maximum allowed value' in e for e in rec.errors
+        )
+
+    def test_negative_occupation_errors(self):
+        rec = RecordingLogger()
+        mo = MolecularOrbitals(occupations=np.array([-0.5, 1.0]))
+        mo.normalize(archive=EntryArchive(), logger=rec)
+
+        assert (
+            'Occupations must be non-negative, but negative values were found.'
+            in rec.errors
+        )
+
+    # T1 normalize: spin_channel validation
+    def test_spin_channel_invalid_value_errors(self):
+        rec = RecordingLogger()
+        mo = MolecularOrbitals(spin_channel=2)
+        mo.normalize(archive=EntryArchive(), logger=rec)
+
+        assert '`spin_channel` must be 0 (alpha) or 1 (beta) when set.' in rec.errors
+
+    # T3: energies optional — natural orbitals without energies normalize cleanly
+    def test_natural_orbitals_without_energies_normalize(self, archive_with_mo):
+        _, mo, _, _ = archive_with_mo
+        rec = RecordingLogger()
+
+        mo.kind = 'natural'
+        mo.occupations = np.array([1.0, 0.5, 0.0])
+        mo.coefficients = np.ones((3, 4), dtype=np.float64)
+        # energies intentionally absent
+
+        mo.normalize(archive=EntryArchive(), logger=rec)
+
+        assert not rec.errors
+        assert mo.n_mo == 3
+        assert mo.n_ao == 4
