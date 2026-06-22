@@ -8,7 +8,10 @@ import numpy as np
 from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Wrapper
 from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 
-from nomad_simulations.schema_packages.data_types import positive_float, positive_int
+from nomad_simulations.schema_packages.data_types import (
+    positive_float,
+    strictly_positive_int,
+)
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 
@@ -21,28 +24,21 @@ class MolecularOrbitals(PhysicalProperty):
     """
 
     n_mo = Quantity(
-        type=positive_int(),
+        type=strictly_positive_int(),
         description='Number of molecular orbitals.',
     )
 
-    value = Quantity(
+    orbital_energies = Quantity(
         type=np.float64,
         unit='joule',
         shape=['n_mo'],
-        description="""
-        Orbital energies: eigenvalues of the effective one-particle Hamiltonian
-        (Fock matrix for HF/DFT, natural-orbital energies for correlated methods).
-        """,
+        description='Orbital energies for each molecular orbital.',
     )
 
-    occupations = Quantity(
+    orbital_occupations = Quantity(
         type=positive_float(),
         shape=['n_mo'],
-        description="""
-        Occupation number for each molecular orbital.
-        For a closed-shell restricted calculation the values are 0.0 or 2.0;
-        for an unrestricted calculation (one section per spin channel) they are 0.0 or 1.0.
-        """,
+        description='Occupation number for each molecular orbital.',
     )
 
     spin_channel = Quantity(
@@ -52,7 +48,7 @@ class MolecularOrbitals(PhysicalProperty):
 
     # AO basis metadata
     n_ao = Quantity(
-        type=positive_int(),
+        type=strictly_positive_int(),
         description='Number of atomic orbitals (size of the AO basis).',
     )
 
@@ -143,8 +139,8 @@ class MolecularOrbitals(PhysicalProperty):
                 self.n_mo = int(valid_shapes[0][0])
             else:
                 for values in (
-                    self.value,
-                    self.occupations,
+                    self.orbital_energies,
+                    self.orbital_occupations,
                     self.role,
                     self.symmetry,
                 ):
@@ -163,6 +159,7 @@ class MolecularOrbitals(PhysicalProperty):
         self._validate_coefficient_shape(
             'coefficients_im', coefficient_im_shape, logger
         )
+        self._validate_per_orbital_lengths(logger)
 
         if (
             coefficient_shape is not None
@@ -174,6 +171,30 @@ class MolecularOrbitals(PhysicalProperty):
                 coefficients_shape=coefficient_shape,
                 coefficients_im_shape=coefficient_im_shape,
             )
+
+    def _validate_per_orbital_lengths(self, logger: 'BoundLogger') -> None:
+        if self.n_mo is None:
+            return
+        for quantity_name in (
+            'orbital_energies',
+            'orbital_occupations',
+            'role',
+            'symmetry',
+        ):
+            values = getattr(self, quantity_name)
+            if values is None:
+                continue
+            shape = getattr(values, 'shape', None)
+            length = (
+                int(shape[0]) if shape is not None and len(shape) > 0 else len(values)
+            )
+            if length != self.n_mo:
+                logger.error(
+                    'Molecular orbital quantity length does not match n_mo.',
+                    quantity_name=quantity_name,
+                    length=length,
+                    expected_length=self.n_mo,
+                )
 
     def _validate_coefficient_shape(
         self, quantity_name: str, shape: tuple[int, ...] | None, logger: 'BoundLogger'

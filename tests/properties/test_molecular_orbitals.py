@@ -86,6 +86,10 @@ class TestMolecularOrbitals:
 
         assert molecular_orbitals.n_mo == 3
         assert molecular_orbitals.n_ao == 3
+        with pytest.raises(ValueError):
+            molecular_orbitals.n_mo = 0
+        with pytest.raises(ValueError):
+            molecular_orbitals.n_ao = 0
 
     def test_normalize_logs_invalid_coefficient_rank(self, archive_with_mo):
         _, molecular_orbitals, _, _ = archive_with_mo
@@ -116,8 +120,8 @@ class TestMolecularOrbitals:
     @pytest.mark.parametrize(
         'quantity_name, values',
         [
-            ('value', np.array([-1.0, -0.5, 0.2])),
-            ('occupations', np.array([2.0, 2.0, 0.0, 0.0])),
+            ('orbital_energies', np.array([-1.0, -0.5, 0.2])),
+            ('orbital_occupations', np.array([2.0, 2.0, 0.0, 0.0])),
         ],
     )
     def test_normalize_infers_n_mo_from_orbital_values(
@@ -138,6 +142,7 @@ class TestMolecularOrbitals:
         molecular_orbitals.n_ao = 2
         molecular_orbitals.coefficients = np.ones((3, 4), dtype=np.float64)
         molecular_orbitals.coefficients_im = np.ones((5, 6), dtype=np.float64)
+        molecular_orbitals.orbital_energies = np.array([-1.0, 0.5, 1.0])
         molecular_orbitals.normalize(archive=EntryArchive(), logger=rec)
 
         shape_mismatch_message = (
@@ -145,6 +150,7 @@ class TestMolecularOrbitals:
         )
         assert rec.errors.count(shape_mismatch_message) == 2
         assert 'Molecular orbital coefficient shapes do not match.' in rec.errors
+        assert 'Molecular orbital quantity length does not match n_mo.' in rec.errors
         assert {
             'quantity_name': 'coefficients',
             'shape': (3, 4),
@@ -159,6 +165,11 @@ class TestMolecularOrbitals:
             'coefficients_shape': (3, 4),
             'coefficients_im_shape': (5, 6),
         } in rec.error_contexts
+        assert {
+            'quantity_name': 'orbital_energies',
+            'length': 3,
+            'expected_length': 2,
+        } in rec.error_contexts
 
     def test_spin_channel_convention(self):
         """Two MolecularOrbitals sections with spin_channel 0 and 1 store independently."""
@@ -171,8 +182,8 @@ class TestMolecularOrbitals:
 
     def test_does_not_derive_eigenvalue_properties(self):
         molecular_orbitals = MolecularOrbitals(
-            value=np.array([-1.0, 0.5]),
-            occupations=np.array([2.0, 0.0]),
+            orbital_energies=np.array([-1.0, 0.5]),
+            orbital_occupations=np.array([2.0, 0.0]),
         )
 
         molecular_orbitals.normalize(archive=EntryArchive(), logger=logger)
