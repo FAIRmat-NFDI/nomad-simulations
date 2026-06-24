@@ -219,6 +219,100 @@ class TestKSpaceFunctionalities:
 
         assert high_symmetry_points is None
 
+    @pytest.mark.parametrize(
+        'bravais_lattice, lattice_attributes',
+        [
+            pytest.param('oP', {'a': 1.0}, id='orthorhombic_to_cubic_like'),
+            pytest.param(
+                'mP',
+                {'a': 1.0, 'b': 2.0, 'c': 3.0},
+                id='monoclinic_to_orthorhombic_like',
+            ),
+        ],
+    )
+    def test_resolve_high_symmetry_points_skips_incompatible_convention_check(
+        self, bravais_lattice, lattice_attributes
+    ):
+        """
+        ASE may return a higher-symmetry lattice object than the stored Pearson
+        symbol. These objects can omit redundant attributes, but their special
+        points should still be used.
+        """
+
+        class FakeLattice:
+            def __init__(self, attributes):
+                for key, value in attributes.items():
+                    setattr(self, key, value)
+
+            def get_special_points(self):
+                return {'G': [0, 0, 0], 'X': [0.5, 0, 0]}
+
+        class FakeCell:
+            def get_bravais_lattice(self, eps=3e-3):
+                return FakeLattice(lattice_attributes)
+
+        class FakeAtoms:
+            def get_cell(self):
+                return FakeCell()
+
+        model_system = SimpleNamespace(
+            is_representative=True,
+            symmetry=SimpleNamespace(bravais_lattice=bravais_lattice),
+            representations=[SimpleNamespace(name='primitive')],
+            to_ase_atoms=lambda representation_index, logger: FakeAtoms(),
+        )
+
+        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
+            model_systems=[model_system], logger=logger
+        )
+
+        assert high_symmetry_points == {'Gamma': [0, 0, 0], 'X': [0.5, 0, 0]}
+
+    def test_resolve_high_symmetry_points_logs_attribute_error(self):
+        """
+        ASE-side AttributeErrors should be logged and should not escape into NOMAD
+        section normalization.
+        """
+
+        class CaptureLogger:
+            def __init__(self):
+                self.warnings = []
+
+            def warning(self, event):
+                self.warnings.append(event)
+
+        class FakeLattice:
+            def __str__(self):
+                return 'FakeLattice'
+
+            def get_special_points(self):
+                raise AttributeError('missing special point data')
+
+        class FakeCell:
+            def get_bravais_lattice(self, eps=3e-3):
+                return FakeLattice()
+
+        class FakeAtoms:
+            def get_cell(self):
+                return FakeCell()
+
+        capture_logger = CaptureLogger()
+        model_system = SimpleNamespace(
+            is_representative=True,
+            symmetry=SimpleNamespace(bravais_lattice='cP'),
+            representations=[SimpleNamespace(name='primitive')],
+            to_ase_atoms=lambda representation_index, logger: FakeAtoms(),
+        )
+
+        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
+            model_systems=[model_system], logger=capture_logger
+        )
+
+        assert high_symmetry_points is None
+        assert capture_logger.warnings == [
+            'Could not resolve high-symmetry points (ASE special points).'
+        ]
+
 
 @pytest.mark.parametrize(
     'subsection_kwargs, subsection_accessor, expected_attrs',

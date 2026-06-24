@@ -263,45 +263,36 @@ class KSpaceFunctionalities:
             )
             return None
 
-        # Non-conventional ordering testing for certain lattices:
+        # Non-conventional ordering testing for certain lattices. Run these checks
+        # only when ASE exposes the needed parameters: higher-symmetry ASE lattice
+        # objects omit redundant attributes even though their special points are valid.
         try:
+            a = getattr(lattice, 'a', None)
+            b = getattr(lattice, 'b', None)
+            c = getattr(lattice, 'c', None)
+            alpha = getattr(lattice, 'alpha', None)
             if bravais_lattice in ['oP', 'oF', 'oI', 'oS']:
-                a, b, c = lattice.a, lattice.b, lattice.c
-                if not a < b:
-                    raise ValueError(
+                if all(parameter is not None for parameter in [a, b, c]) and (
+                    not a < b or (bravais_lattice != 'oS' and not b < c)
+                ):
+                    logger.warning(
                         'ASE lattice does not satisfy the expected orthorhombic convention.'
                     )
-                if bravais_lattice != 'oS' and not b < c:
-                    raise ValueError(
-                        'ASE lattice does not satisfy the expected orthorhombic convention.'
-                    )
+                    return None
             elif bravais_lattice in ['mP', 'mS']:
-                a, b, c = lattice.a, lattice.b, lattice.c
-                alpha = lattice.alpha * np.pi / 180
-                if not (a <= c and b <= c):
-                    raise ValueError(
-                        'ASE lattice does not satisfy the expected monoclinic convention.'
-                    )
-                if not alpha < np.pi / 2:
-                    raise ValueError(
-                        'ASE lattice does not satisfy the expected monoclinic convention.'
-                    )
+                if all(parameter is not None for parameter in [a, b, c, alpha]):
+                    alpha = alpha * np.pi / 180
+                    if not (a <= c and b <= c) or not alpha < np.pi / 2:
+                        logger.warning(
+                            'ASE lattice does not satisfy the expected monoclinic convention.'
+                        )
+                        return None
 
             # Extracting the `high_symmetry_points` from the `lattice` object
             special_points = lattice.get_special_points()
-        except (AssertionError, ValueError, RuntimeError) as exc:
+        except (AssertionError, AttributeError, ValueError, RuntimeError):
             logger.warning(
-                'Could not resolve high-symmetry points (ASE special points).',
-                details=str(exc),
-                bravais_lattice=bravais_lattice,
-                lattice_parameters={
-                    'a': getattr(lattice, 'a', None),
-                    'b': getattr(lattice, 'b', None),
-                    'c': getattr(lattice, 'c', None),
-                    'alpha': getattr(lattice, 'alpha', None),
-                    'beta': getattr(lattice, 'beta', None),
-                    'gamma': getattr(lattice, 'gamma', None),
-                },
+                'Could not resolve high-symmetry points (ASE special points).'
             )
             return None
 
