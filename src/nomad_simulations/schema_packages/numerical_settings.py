@@ -272,13 +272,16 @@ class KSpaceFunctionalities:
             c = getattr(lattice, 'c', None)
             alpha = getattr(lattice, 'alpha', None)
             if bravais_lattice in ['oP', 'oF', 'oI', 'oS']:
-                if all(parameter is not None for parameter in [a, b, c]) and (
-                    not a < b or (bravais_lattice != 'oS' and not b < c)
-                ):
+                if all(parameter is not None for parameter in [a, b, c]):
+                    if not a < b or (bravais_lattice != 'oS' and not b < c):
+                        logger.warning(
+                            'ASE lattice does not satisfy the expected orthorhombic convention.'
+                        )
+                        return None
+                else:
                     logger.warning(
-                        'ASE lattice does not satisfy the expected orthorhombic convention.'
+                        'Skipping orthorhombic convention check because ASE lattice object does not expose all required parameters.'
                     )
-                    return None
             elif bravais_lattice in ['mP', 'mS']:
                 if all(parameter is not None for parameter in [a, b, c, alpha]):
                     alpha = alpha * np.pi / 180
@@ -287,6 +290,10 @@ class KSpaceFunctionalities:
                             'ASE lattice does not satisfy the expected monoclinic convention.'
                         )
                         return None
+                else:
+                    logger.warning(
+                        'Skipping monoclinic convention check because ASE lattice object does not expose all required parameters.'
+                    )
 
             # Extracting the `high_symmetry_points` from the `lattice` object
             special_points = lattice.get_special_points()
