@@ -104,13 +104,6 @@ class TestKSpaceFunctionalities:
     Test the `KSpaceFunctionalities` class defined in `numerical_settings.py`.
     """
 
-    class CaptureLogger:
-        def __init__(self):
-            self.warnings = []
-
-        def warning(self, event):
-            self.warnings.append(event)
-
     @pytest.mark.parametrize(
         'reciprocal_lattice_vectors, check_grid, grid, result',
         [
@@ -244,7 +237,7 @@ class TestKSpaceFunctionalities:
         ],
     )
     def test_resolve_high_symmetry_points_skips_incompatible_convention_check(
-        self, bravais_lattice, lattice_attributes, expected_warning
+        self, bravais_lattice, lattice_attributes, expected_warning, log_output
     ):
         """
         ASE may return a higher-symmetry lattice object than the stored Pearson
@@ -275,15 +268,14 @@ class TestKSpaceFunctionalities:
             to_ase_atoms=lambda representation_index, logger: FakeAtoms(),
         )
 
-        capture_logger = self.CaptureLogger()
         high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
-            model_systems=[model_system], logger=capture_logger
+            model_systems=[model_system], logger=logger
         )
 
-        assert capture_logger.warnings == [expected_warning]
+        assert [entry['event'] for entry in log_output.entries] == [expected_warning]
         assert high_symmetry_points == {'Gamma': [0, 0, 0], 'X': [0.5, 0, 0]}
 
-    def test_resolve_high_symmetry_points_logs_convention_violation(self):
+    def test_resolve_high_symmetry_points_logs_convention_violation(self, log_output):
         """
         If all parameters are available, actual convention violations should
         still return None instead of falling through to ASE special points.
@@ -312,22 +304,22 @@ class TestKSpaceFunctionalities:
             to_ase_atoms=lambda representation_index, logger: FakeAtoms(),
         )
 
-        capture_logger = self.CaptureLogger()
         high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
-            model_systems=[model_system], logger=capture_logger
+            model_systems=[model_system], logger=logger
         )
 
+        warning_events = [entry['event'] for entry in log_output.entries]
         skip_warnings = [
             'Skipping orthorhombic convention check because ASE lattice object does not expose all required parameters.',
             'Skipping monoclinic convention check because ASE lattice object does not expose all required parameters.',
         ]
         assert high_symmetry_points is None
-        assert capture_logger.warnings == [
+        assert warning_events == [
             'ASE lattice does not satisfy the expected orthorhombic convention.'
         ]
-        assert not any(warning in capture_logger.warnings for warning in skip_warnings)
+        assert not any(warning in warning_events for warning in skip_warnings)
 
-    def test_resolve_high_symmetry_points_logs_attribute_error(self):
+    def test_resolve_high_symmetry_points_logs_attribute_error(self, log_output):
         """
         ASE-side AttributeErrors should be logged and should not escape into NOMAD
         section normalization.
@@ -348,7 +340,6 @@ class TestKSpaceFunctionalities:
             def get_cell(self):
                 return FakeCell()
 
-        capture_logger = self.CaptureLogger()
         model_system = SimpleNamespace(
             is_representative=True,
             symmetry=SimpleNamespace(bravais_lattice='cP'),
@@ -357,11 +348,11 @@ class TestKSpaceFunctionalities:
         )
 
         high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
-            model_systems=[model_system], logger=capture_logger
+            model_systems=[model_system], logger=logger
         )
 
         assert high_symmetry_points is None
-        assert capture_logger.warnings == [
+        assert [entry['event'] for entry in log_output.entries] == [
             'Could not resolve high-symmetry points (ASE special points).'
         ]
 
