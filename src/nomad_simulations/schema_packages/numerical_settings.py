@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Union
 import numpy as np
 import pint
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
+from ase.lattice import bravais_classes
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
@@ -19,6 +20,104 @@ from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
+
+# Mapping from Pearson symbols to ASE lattice class names
+PEARSON_TO_ASE_NAME = {
+    # Cubic
+    'cP': 'CUB',   # Primitive cubic
+    'cF': 'FCC',   # Face-centered cubic
+    'cI': 'BCC',   # Body-centered cubic
+    # Tetragonal
+    'tP': 'TET',   # Primitive tetragonal
+    'tI': 'BCT',   # Body-centered tetragonal
+    # Orthorhombic
+    'oP': 'ORC',   # Primitive orthorhombic
+    'oF': 'ORCF',  # Face-centered orthorhombic
+    'oI': 'ORCI',  # Body-centered orthorhombic
+    'oC': 'ORCC',  # Base-centered orthorhombic
+    # Hexagonal & Rhombohedral
+    'hP': 'HEX',   # Hexagonal
+    'hR': 'RHL',   # Rhombohedral
+    # Monoclinic
+    'mP': 'MCL',   # Primitive monoclinic
+    'mC': 'MCLC',  # Base-centered monoclinic
+    # Triclinic
+    'aP': 'TRI',   # Triclinic
+    # 2D lattices
+    'mp': 'OBL',   # Oblique
+    'op': 'RECT',  # Rectangular
+    'oc': 'CRECT', # Centered rectangular
+    'tp': 'SQR',   # Square
+    'hp': 'HEX2D', # Hexagonal 2D
+}
+
+
+def filter_unique_lattice_params(pearson: str, a: float, b: float, c: float, alpha: float, beta: float, gamma: float) -> dict:
+    """
+    Filter unique lattice parameters for ASE BravaisLattice class instantiation.
+
+    Each Bravais lattice type requires only its independent (non-redundant) parameters.
+    This function extracts the correct subset from the six parameters returned by
+    Cell.cellpar() based on crystallographic conventions.
+
+    Args:
+        pearson: Pearson symbol (e.g., 'oP', 'cP', 'tP')
+        a, b, c: Lattice parameters in Angstroms
+        alpha, beta, gamma: Lattice angles in degrees
+
+    Returns:
+        Dictionary of parameters required by the corresponding ASE lattice class
+
+    Note:
+        Uses ase.lattice.bravais_classes dictionary to map Pearson symbols to
+        BravaisLattice class constructors (e.g., 'oP' -> ORC, 'cP' -> CUB).
+
+    References:
+        Cell.cellpar(): https://docs.ase-lib.org/ase/geometry.html#ase.geometry.Cell.cellpar
+        BravaisLattice classes: https://docs.ase-lib.org/ase/lattice.html
+    """
+    # Cubic: only a
+    if pearson in ['cP', 'cF', 'cI']:
+        return {'a': a}
+
+    # Tetragonal: a and c
+    elif pearson in ['tP', 'tI']:
+        return {'a': a, 'c': c}
+
+    # Orthorhombic: a, b, c
+    elif pearson in ['oP', 'oF', 'oI', 'oC', 'oS']:
+        return {'a': a, 'b': b, 'c': c}
+
+    # Hexagonal: a and c
+    elif pearson == 'hP':
+        return {'a': a, 'c': c}
+
+    # Rhombohedral: a and alpha
+    elif pearson == 'hR':
+        return {'a': a, 'alpha': alpha}
+
+    # Monoclinic: a, b, c, alpha
+    elif pearson in ['mP', 'mC', 'mS']:
+        return {'a': a, 'b': b, 'c': c, 'alpha': alpha}
+
+    # Triclinic: all six parameters
+    elif pearson == 'aP':
+        return {'a': a, 'b': b, 'c': c, 'alpha': alpha, 'beta': beta, 'gamma': gamma}
+
+    # 2D lattices
+    elif pearson == 'mp':  # Oblique
+        return {'a': a, 'b': b, 'alpha': alpha}
+    elif pearson == 'op':  # Rectangular
+        return {'a': a, 'b': b}
+    elif pearson == 'oc':  # Centered rectangular
+        return {'a': a, 'alpha': alpha}
+    elif pearson == 'tp':  # Square
+        return {'a': a}
+    elif pearson == 'hp':  # Hexagonal 2D
+        return {'a': a}
+
+    else:
+        raise ValueError(f"Unknown Pearson symbol: {pearson}")
 
 
 class NumericalSettings(ArchiveSection):
@@ -222,6 +321,7 @@ class KSpaceFunctionalities:
                 'Could not find `model_systems` to resolve high symmetry points.'
             )
             return None
+
         for model_system in model_systems:
             # General checks to proceed with normalization
             if not model_system.is_representative:
@@ -253,7 +353,47 @@ class KSpaceFunctionalities:
                 logger=logger,
             )
             cell = atoms.get_cell()
-            lattice = cell.get_bravais_lattice(eps=eps)
+
+            # Check consistency between spglib (via MatID) and ASE lattice detection
+            ase_lattice = cell.get_bravais_lattice(eps=eps)
+            ase_type = type(ase_lattice).__name__
+
+            if bravais_lattice in PEARSON_TO_ASE_NAME:
+                expected_ase_type = PEARSON_TO_ASE_NAME[bravais_lattice]
+
+                if ase_type != expected_ase_type:
+                    # Disagreement: spglib says one thing, ASE detects another
+                    logger.warning(
+                        'ASE detected %s but spglib says %s. Using spglib (more authoritative).',
+                        ase_type,
+                        bravais_lattice,
+                    )
+
+                    # Force ASE to use spglib's label by directly instantiating the lattice class
+                    try:
+                        a, b, c = cell.cellpar()[:3]
+                        alpha, beta, gamma = cell.cellpar()[3:]
+                        params = filter_unique_lattice_params(bravais_lattice, a, b, c, alpha, beta, gamma)
+                        lattice = bravais_classes[bravais_lattice](**params)
+                    except (KeyError, ValueError, TypeError, AttributeError) as e:
+                        logger.error(
+                            'Failed to instantiate lattice for Pearson symbol %s: %s',
+                            bravais_lattice,
+                            e,
+                        )
+                        return None
+                else:
+                    # Agreement: use ASE's detected lattice object
+                    lattice = ase_lattice
+            else:
+                # No stored label or unknown Pearson symbol: trust ASE
+                if bravais_lattice:
+                    logger.info(
+                        'Unknown Pearson symbol %s, using ASE detection.',
+                        bravais_lattice,
+                    )
+                lattice = ase_lattice
+
             break  # only cover the first representative `ModelSystem`
 
         # Checking if `bravais_lattice` and `lattice` are defined
