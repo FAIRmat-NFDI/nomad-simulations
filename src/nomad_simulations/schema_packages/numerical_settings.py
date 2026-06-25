@@ -34,21 +34,28 @@ PEARSON_TO_ASE_NAME = {
     'oP': 'ORC',  # Primitive orthorhombic
     'oF': 'ORCF',  # Face-centered orthorhombic
     'oI': 'ORCI',  # Body-centered orthorhombic
-    'oC': 'ORCC',  # Base-centered orthorhombic
+    'oC': 'ORCC',  # C-centered orthorhombic
+    'oS': 'ORCC',  # S-centered orthorhombic (equivalent to C-centered in ASE)
     # Hexagonal & Rhombohedral
     'hP': 'HEX',  # Hexagonal
     'hR': 'RHL',  # Rhombohedral
     # Monoclinic
     'mP': 'MCL',  # Primitive monoclinic
-    'mC': 'MCLC',  # Base-centered monoclinic
+    'mC': 'MCLC',  # C-centered monoclinic
+    'mS': 'MCLC',  # S-centered monoclinic (equivalent to C-centered in ASE)
     # Triclinic
     'aP': 'TRI',  # Triclinic
     # 2D lattices
-    'mp': 'OBL',  # Oblique
-    'op': 'RECT',  # Rectangular
-    'oc': 'CRECT',  # Centered rectangular
-    'tp': 'SQR',  # Square
-    'hp': 'HEX2D',  # Hexagonal 2D
+    'mp': 'OBL',  # Oblique (2-letter legacy)
+    'mpp': 'OBL',  # Oblique (3-letter from MatID)
+    'op': 'RECT',  # Rectangular (2-letter legacy)
+    'opp': 'RECT',  # Rectangular primitive (3-letter from MatID)
+    'oc': 'CRECT',  # Centered rectangular (2-letter legacy)
+    'ocp': 'CRECT',  # Centered rectangular (3-letter from MatID)
+    'tp': 'SQR',  # Square (2-letter legacy)
+    'tpp': 'SQR',  # Square (3-letter from MatID)
+    'hp': 'HEX2D',  # Hexagonal 2D (2-letter legacy)
+    'hpp': 'HEX2D',  # Hexagonal 2D (3-letter from MatID)
 }
 
 
@@ -70,12 +77,12 @@ def reorder_lattice_params_for_convention(
         Tuple of reordered (a, b, c, alpha, beta, gamma) satisfying conventions
 
     Note:
-        Orthorhombic (oP, oF, oI, oC): Requires a < b < c
-        Monoclinic (mP, mC): Requires b <= c and alpha < 90°
+        Orthorhombic (oP, oF, oI, oC, oS): Requires a < b < c
+        Monoclinic (mP, mC, mS): Requires b <= c (angles not modified)
         Other lattices: Return parameters unchanged
     """
     # Orthorhombic: enforce a < b < c
-    if pearson in ['oP', 'oF', 'oI', 'oC']:
+    if pearson in ['oP', 'oF', 'oI', 'oC', 'oS']:
         sorted_lengths = sorted([a, b, c])
         return (
             sorted_lengths[0],
@@ -86,9 +93,9 @@ def reorder_lattice_params_for_convention(
             gamma,
         )
 
-    # Monoclinic: enforce b <= c and alpha < 90°
+    # Monoclinic: enforce b <= c
     # Convention: unique axis is b, so alpha (angle opposite to a) is the unique angle
-    elif pearson in ['mP', 'mC']:
+    elif pearson in ['mP', 'mC', 'mS']:
         if b > c:
             # Swap b and c to satisfy b <= c
             return (a, c, b, alpha, beta, gamma)
@@ -155,15 +162,15 @@ def filter_unique_lattice_params(
         return {'a': a, 'b': b, 'c': c, 'alpha': alpha, 'beta': beta, 'gamma': gamma}
 
     # 2D lattices
-    elif pearson == 'mp':  # Oblique
+    elif pearson in ['mp', 'mpp']:  # Oblique
         return {'a': a, 'b': b, 'alpha': alpha}
-    elif pearson == 'op':  # Rectangular
+    elif pearson in ['op', 'opp']:  # Rectangular
         return {'a': a, 'b': b}
-    elif pearson == 'oc':  # Centered rectangular
+    elif pearson in ['oc', 'ocp']:  # Centered rectangular
         return {'a': a, 'alpha': alpha}
-    elif pearson == 'tp':  # Square
+    elif pearson in ['tp', 'tpp']:  # Square
         return {'a': a}
-    elif pearson == 'hp':  # Hexagonal 2D
+    elif pearson in ['hp', 'hpp']:  # Hexagonal 2D
         return {'a': a}
 
     else:

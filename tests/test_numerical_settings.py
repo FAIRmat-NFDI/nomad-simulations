@@ -278,12 +278,13 @@ class TestKSpaceFunctionalities:
             'ASE detected %s but spglib says %s' in event for event in warning_events
         )
 
-    def test_resolve_high_symmetry_points_consistency_check_agreement(self):
+    def test_resolve_high_symmetry_points_consistency_check_agreement(self, log_output):
         """
         Integration test: when spglib and ASE agree on symmetry, use ASE's object.
 
         This test verifies that when both spglib and ASE detect the same lattice
-        type, the code uses ASE's detected object without forcing instantiation.
+        type, the code uses ASE's detected object without forcing instantiation,
+        and no mismatch warning is logged.
         """
         from ase import Atoms
         from ase.cell import Cell
@@ -318,6 +319,11 @@ class TestKSpaceFunctionalities:
         assert 'R' in high_symmetry_points
         assert 'X' in high_symmetry_points
 
+        # Verify no mismatch warning was logged
+        warning_events = [entry['event'] for entry in log_output.entries]
+        assert not any('ASE detected' in event for event in warning_events)
+        assert not any('but spglib says' in event for event in warning_events)
+
     @pytest.mark.parametrize(
         'pearson, expected_ase_type, cell_vectors, expected_point_count',
         [
@@ -325,14 +331,14 @@ class TestKSpaceFunctionalities:
                 'tP',
                 'TET',
                 [[4.0, 0, 0], [0, 4.001, 0], [0, 0, 6.0]],
-                7,  # Tetragonal: Gamma, A, M, R, X, Z
+                6,  # Tetragonal: Gamma, A, M, R, X, Z
                 id='tetragonal_near_cubic_base',
             ),
             pytest.param(
                 'hP',
                 'HEX',
                 [[3.0, 0, 0], [-1.5, 2.598, 0], [0, 0, 5.0]],
-                4,  # Hexagonal: Gamma, A, H, K, L, M
+                6,  # Hexagonal: Gamma, A, H, K, L, M
                 id='hexagonal',
             ),
         ],
@@ -364,6 +370,7 @@ class TestKSpaceFunctionalities:
 
         assert high_symmetry_points is not None
         assert 'Gamma' in high_symmetry_points
+        assert len(high_symmetry_points) == expected_point_count
 
 
 @pytest.mark.parametrize(
