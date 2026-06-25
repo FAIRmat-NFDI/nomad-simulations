@@ -453,39 +453,12 @@ class KSpaceFunctionalities:
             )
             return None
 
-        # Non-conventional ordering testing for certain lattices. Run these checks
-        # only when ASE exposes the needed parameters: higher-symmetry ASE lattice
-        # objects omit redundant attributes even though their special points are valid.
+        # Extract high-symmetry k-points from the lattice object.
+        # Note: Convention compliance is guaranteed either by:
+        # 1. ASE's auto-detection (reorders vectors to satisfy conventions)
+        # 2. Our reorder_lattice_params_for_convention() when forcing spglib's label
+        # 3. ASE's instantiation validation (raises UnconventionalLattice if violated)
         try:
-            a = getattr(lattice, 'a', None)
-            b = getattr(lattice, 'b', None)
-            c = getattr(lattice, 'c', None)
-            alpha = getattr(lattice, 'alpha', None)
-            if bravais_lattice in ['oP', 'oF', 'oI', 'oS']:
-                if all(parameter is not None for parameter in [a, b, c]):
-                    if not a < b or (bravais_lattice != 'oS' and not b < c):
-                        logger.warning(
-                            'ASE lattice does not satisfy the expected orthorhombic convention.'
-                        )
-                        return None
-                else:
-                    logger.warning(
-                        'Skipping orthorhombic convention check because ASE lattice object does not expose all required parameters.'
-                    )
-            elif bravais_lattice in ['mP', 'mS']:
-                if all(parameter is not None for parameter in [a, b, c, alpha]):
-                    alpha = alpha * np.pi / 180
-                    if not (a <= c and b <= c) or not alpha < np.pi / 2:
-                        logger.warning(
-                            'ASE lattice does not satisfy the expected monoclinic convention.'
-                        )
-                        return None
-                else:
-                    logger.warning(
-                        'Skipping monoclinic convention check because ASE lattice object does not expose all required parameters.'
-                    )
-
-            # Extracting the `high_symmetry_points` from the `lattice` object
             special_points = lattice.get_special_points()
         except (AssertionError, AttributeError, ValueError, RuntimeError):
             logger.warning(
