@@ -24,35 +24,37 @@ from nomad_simulations.schema_packages.utils import log
 # Mapping from Pearson symbols to ASE lattice class names
 PEARSON_TO_ASE_NAME = {
     # Cubic
-    'cP': 'CUB',   # Primitive cubic
-    'cF': 'FCC',   # Face-centered cubic
-    'cI': 'BCC',   # Body-centered cubic
+    'cP': 'CUB',  # Primitive cubic
+    'cF': 'FCC',  # Face-centered cubic
+    'cI': 'BCC',  # Body-centered cubic
     # Tetragonal
-    'tP': 'TET',   # Primitive tetragonal
-    'tI': 'BCT',   # Body-centered tetragonal
+    'tP': 'TET',  # Primitive tetragonal
+    'tI': 'BCT',  # Body-centered tetragonal
     # Orthorhombic
-    'oP': 'ORC',   # Primitive orthorhombic
+    'oP': 'ORC',  # Primitive orthorhombic
     'oF': 'ORCF',  # Face-centered orthorhombic
     'oI': 'ORCI',  # Body-centered orthorhombic
     'oC': 'ORCC',  # Base-centered orthorhombic
     # Hexagonal & Rhombohedral
-    'hP': 'HEX',   # Hexagonal
-    'hR': 'RHL',   # Rhombohedral
+    'hP': 'HEX',  # Hexagonal
+    'hR': 'RHL',  # Rhombohedral
     # Monoclinic
-    'mP': 'MCL',   # Primitive monoclinic
+    'mP': 'MCL',  # Primitive monoclinic
     'mC': 'MCLC',  # Base-centered monoclinic
     # Triclinic
-    'aP': 'TRI',   # Triclinic
+    'aP': 'TRI',  # Triclinic
     # 2D lattices
-    'mp': 'OBL',   # Oblique
+    'mp': 'OBL',  # Oblique
     'op': 'RECT',  # Rectangular
-    'oc': 'CRECT', # Centered rectangular
-    'tp': 'SQR',   # Square
-    'hp': 'HEX2D', # Hexagonal 2D
+    'oc': 'CRECT',  # Centered rectangular
+    'tp': 'SQR',  # Square
+    'hp': 'HEX2D',  # Hexagonal 2D
 }
 
 
-def reorder_lattice_params_for_convention(pearson: str, a: float, b: float, c: float, alpha: float, beta: float, gamma: float) -> tuple:
+def reorder_lattice_params_for_convention(
+    pearson: str, a: float, b: float, c: float, alpha: float, beta: float, gamma: float
+) -> tuple:
     """
     Reorder lattice parameters to satisfy crystallographic conventions.
 
@@ -75,7 +77,14 @@ def reorder_lattice_params_for_convention(pearson: str, a: float, b: float, c: f
     # Orthorhombic: enforce a < b < c
     if pearson in ['oP', 'oF', 'oI', 'oC']:
         sorted_lengths = sorted([a, b, c])
-        return (sorted_lengths[0], sorted_lengths[1], sorted_lengths[2], alpha, beta, gamma)
+        return (
+            sorted_lengths[0],
+            sorted_lengths[1],
+            sorted_lengths[2],
+            alpha,
+            beta,
+            gamma,
+        )
 
     # Monoclinic: enforce b <= c and alpha < 90°
     # Convention: unique axis is b, so alpha (angle opposite to a) is the unique angle
@@ -91,7 +100,9 @@ def reorder_lattice_params_for_convention(pearson: str, a: float, b: float, c: f
         return (a, b, c, alpha, beta, gamma)
 
 
-def filter_unique_lattice_params(pearson: str, a: float, b: float, c: float, alpha: float, beta: float, gamma: float) -> dict:
+def filter_unique_lattice_params(
+    pearson: str, a: float, b: float, c: float, alpha: float, beta: float, gamma: float
+) -> dict:
     """
     Filter unique lattice parameters for ASE BravaisLattice class instantiation.
 
@@ -156,7 +167,7 @@ def filter_unique_lattice_params(pearson: str, a: float, b: float, c: float, alp
         return {'a': a}
 
     else:
-        raise ValueError(f"Unknown Pearson symbol: {pearson}")
+        raise ValueError(f'Unknown Pearson symbol: {pearson}')
 
 
 class NumericalSettings(ArchiveSection):
@@ -416,12 +427,16 @@ class KSpaceFunctionalities:
                         alpha, beta, gamma = cell.cellpar()[3:]
 
                         # Reorder to satisfy conventions (e.g., a < b < c for orthorhombic)
-                        a, b, c, alpha, beta, gamma = reorder_lattice_params_for_convention(
-                            bravais_lattice, a, b, c, alpha, beta, gamma
+                        a, b, c, alpha, beta, gamma = (
+                            reorder_lattice_params_for_convention(
+                                bravais_lattice, a, b, c, alpha, beta, gamma
+                            )
                         )
 
                         # Filter to only parameters needed for this lattice type
-                        params = filter_unique_lattice_params(bravais_lattice, a, b, c, alpha, beta, gamma)
+                        params = filter_unique_lattice_params(
+                            bravais_lattice, a, b, c, alpha, beta, gamma
+                        )
 
                         # Force spglib's lattice type with reordered parameters
                         lattice = bravais_classes[bravais_lattice](**params)

@@ -195,7 +195,9 @@ class TestKSpaceFunctionalities:
 
         # Orthorhombic cell - ASE will reorder to satisfy a < b < c
         cell = Cell([[2.0, 0, 0], [0, 1.0, 0], [0, 0, 3.0]])
-        atoms = Atoms('Si2', positions=[[0, 0, 0], [1.0, 0.5, 1.5]], cell=cell, pbc=True)
+        atoms = Atoms(
+            'Si2', positions=[[0, 0, 0], [1.0, 0.5, 1.5]], cell=cell, pbc=True
+        )
 
         # ASE will detect this as orthorhombic and reorder automatically
         ase_lattice = cell.get_bravais_lattice(eps=3e-3)
@@ -205,7 +207,9 @@ class TestKSpaceFunctionalities:
 
         model_system = SimpleNamespace(
             is_representative=True,
-            symmetry=SimpleNamespace(bravais_lattice='oP'),  # spglib also says orthorhombic
+            symmetry=SimpleNamespace(
+                bravais_lattice='oP'
+            ),  # spglib also says orthorhombic
             representations=[SimpleNamespace(name='primitive')],
             to_ase_atoms=lambda representation_index, logger: atoms,
         )
@@ -236,7 +240,9 @@ class TestKSpaceFunctionalities:
         # Near-cubic orthorhombic cell that ASE will detect as cubic within eps=3e-3
         # These parameters are within 0.3% of each other
         cell = Cell([[5.0, 0, 0], [0, 5.001, 0], [0, 0, 5.002]])
-        atoms = Atoms('Si2', positions=[[0, 0, 0], [2.5, 2.5, 2.5]], cell=cell, pbc=True)
+        atoms = Atoms(
+            'Si2', positions=[[0, 0, 0], [2.5, 2.5, 2.5]], cell=cell, pbc=True
+        )
 
         # Verify ASE detects this as cubic
         ase_lattice = cell.get_bravais_lattice(eps=3e-3)
@@ -269,8 +275,7 @@ class TestKSpaceFunctionalities:
         warning_events = [entry['event'] for entry in log_output.entries]
         # With %s placeholders, check the template and positional args
         assert any(
-            'ASE detected %s but spglib says %s' in event
-            for event in warning_events
+            'ASE detected %s but spglib says %s' in event for event in warning_events
         )
 
     def test_resolve_high_symmetry_points_consistency_check_agreement(self):
@@ -285,7 +290,9 @@ class TestKSpaceFunctionalities:
 
         # Clearly cubic cell - both spglib and ASE will agree
         cell = Cell([[5.0, 0, 0], [0, 5.0, 0], [0, 0, 5.0]])
-        atoms = Atoms('Si2', positions=[[0, 0, 0], [2.5, 2.5, 2.5]], cell=cell, pbc=True)
+        atoms = Atoms(
+            'Si2', positions=[[0, 0, 0], [2.5, 2.5, 2.5]], cell=cell, pbc=True
+        )
 
         # Verify ASE detects cubic
         ase_lattice = cell.get_bravais_lattice(eps=3e-3)
@@ -340,7 +347,9 @@ class TestKSpaceFunctionalities:
         from ase.cell import Cell
 
         cell = Cell(cell_vectors)
-        atoms = Atoms('Si2', positions=[[0, 0, 0], [1.0, 1.0, 1.0]], cell=cell, pbc=True)
+        atoms = Atoms(
+            'Si2', positions=[[0, 0, 0], [1.0, 1.0, 1.0]], cell=cell, pbc=True
+        )
 
         model_system = SimpleNamespace(
             is_representative=True,
