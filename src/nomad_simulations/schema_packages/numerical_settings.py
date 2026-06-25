@@ -440,7 +440,7 @@ class KSpaceFunctionalities:
 
                         # Force spglib's lattice type with reordered parameters
                         lattice = bravais_classes[bravais_lattice](**params)
-                    except (KeyError, ValueError, TypeError, AttributeError) as e:
+                    except ValueError as e:
                         logger.error(
                             'Failed to instantiate lattice for Pearson symbol %s: %s',
                             bravais_lattice,
