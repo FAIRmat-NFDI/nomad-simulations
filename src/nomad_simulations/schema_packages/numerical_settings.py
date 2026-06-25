@@ -52,6 +52,45 @@ PEARSON_TO_ASE_NAME = {
 }
 
 
+def reorder_lattice_params_for_convention(pearson: str, a: float, b: float, c: float, alpha: float, beta: float, gamma: float) -> tuple:
+    """
+    Reorder lattice parameters to satisfy crystallographic conventions.
+
+    ASE lattice classes enforce strict conventions (e.g., orthorhombic requires a < b < c).
+    This function reorders the input parameters to match those conventions.
+
+    Args:
+        pearson: Pearson symbol (e.g., 'oP', 'mP', 'hR')
+        a, b, c: Lattice parameters in Angstroms
+        alpha, beta, gamma: Lattice angles in degrees
+
+    Returns:
+        Tuple of reordered (a, b, c, alpha, beta, gamma) satisfying conventions
+
+    Note:
+        Orthorhombic (oP, oF, oI, oC): Requires a < b < c
+        Monoclinic (mP, mC): Requires b <= c and alpha < 90°
+        Other lattices: Return parameters unchanged
+    """
+    # Orthorhombic: enforce a < b < c
+    if pearson in ['oP', 'oF', 'oI', 'oC']:
+        sorted_lengths = sorted([a, b, c])
+        return (sorted_lengths[0], sorted_lengths[1], sorted_lengths[2], alpha, beta, gamma)
+
+    # Monoclinic: enforce b <= c and alpha < 90°
+    # Convention: unique axis is b, so alpha (angle opposite to a) is the unique angle
+    elif pearson in ['mP', 'mC']:
+        if b > c:
+            # Swap b and c to satisfy b <= c
+            return (a, c, b, alpha, beta, gamma)
+        else:
+            return (a, b, c, alpha, beta, gamma)
+
+    # Other lattices: no reordering needed
+    else:
+        return (a, b, c, alpha, beta, gamma)
+
+
 def filter_unique_lattice_params(pearson: str, a: float, b: float, c: float, alpha: float, beta: float, gamma: float) -> dict:
     """
     Filter unique lattice parameters for ASE BravaisLattice class instantiation.
@@ -363,17 +402,28 @@ class KSpaceFunctionalities:
 
                 if ase_type != expected_ase_type:
                     # Disagreement: spglib says one thing, ASE detects another
+                    # Use spglib's classification (more authoritative - includes atomic positions)
+                    # but reorder cell parameters to satisfy conventions
                     logger.warning(
-                        'ASE detected %s but spglib says %s. Using spglib (more authoritative).',
+                        'ASE detected %s but spglib says %s. Using spglib label with reordered parameters.',
                         ase_type,
                         bravais_lattice,
                     )
 
-                    # Force ASE to use spglib's label by directly instantiating the lattice class
                     try:
+                        # Get raw parameters from cell
                         a, b, c = cell.cellpar()[:3]
                         alpha, beta, gamma = cell.cellpar()[3:]
+
+                        # Reorder to satisfy conventions (e.g., a < b < c for orthorhombic)
+                        a, b, c, alpha, beta, gamma = reorder_lattice_params_for_convention(
+                            bravais_lattice, a, b, c, alpha, beta, gamma
+                        )
+
+                        # Filter to only parameters needed for this lattice type
                         params = filter_unique_lattice_params(bravais_lattice, a, b, c, alpha, beta, gamma)
+
+                        # Force spglib's lattice type with reordered parameters
                         lattice = bravais_classes[bravais_lattice](**params)
                     except (KeyError, ValueError, TypeError, AttributeError) as e:
                         logger.error(

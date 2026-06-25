@@ -227,7 +227,7 @@ class TestKSpaceFunctionalities:
                 {'a': 1.0},
                 'CUB',
                 [
-                    'ASE detected %s but spglib says %s. Using spglib (more authoritative).',
+                    'ASE detected %s but spglib says %s. Using spglib label with reordered parameters.',
                 ],
                 id='orthorhombic_to_cubic_like',
             ),
@@ -236,7 +236,7 @@ class TestKSpaceFunctionalities:
                 {'a': 1.0, 'b': 2.0, 'c': 3.0},
                 'ORC',
                 [
-                    'ASE detected %s but spglib says %s. Using spglib (more authoritative).',
+                    'ASE detected %s but spglib says %s. Using spglib label with reordered parameters.',
                 ],
                 id='monoclinic_to_orthorhombic_like',
             ),
