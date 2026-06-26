@@ -447,7 +447,7 @@ class KSpaceFunctionalities:
 
                         # Force spglib's lattice type with reordered parameters
                         lattice = bravais_classes[bravais_lattice](**params)
-                    except ValueError as e:
+                    except (KeyError, ValueError, TypeError) as e:
                         logger.error(
                             'Failed to instantiate lattice for Pearson symbol %s: %s',
                             bravais_lattice,
@@ -568,15 +568,16 @@ class KMesh(Mesh):
                 ...
             }
 
-        **Symmetry source preference**: NOMAD uses the Bravais lattice classification from spglib (via MatID) as the
-        authoritative source for k-point generation, rather than ASE's geometric detection. This choice reflects the fact
-        that spglib analyzes both the lattice parameters and atomic positions during symmetry determination, while ASE's
-        `cell.get_bravais_lattice()` examines only the lattice geometry. In practice, the two analyses usually agree, but
-        near-symmetric structures can trigger disagreements—for example, a slightly distorted orthorhombic cell with
-        parameters within 0.3% of each other might be classified as cubic by ASE's tolerance-based detection, while spglib
-        identifies it as orthorhombic based on the full crystal structure. When such mismatches occur, NOMAD forces ASE to
-        generate k-points using spglib's classification, ensuring consistency between the stored `bravais_lattice` metadata
-        and the k-point mesh used in calculations.
+        **Symmetry source preference**: NOMAD prefers the Bravais lattice classification from spglib (via MatID) for
+        k-point generation when available, as spglib analyzes both the lattice parameters and atomic positions during
+        symmetry determination, while ASE's
+        `cell.get_bravais_lattice()` examines only the lattice geometry. When the stored Bravais lattice classification
+        is absent or unrecognized, ASE's geometric detection is used as a fallback. In practice, the two analyses usually
+        agree, but near-symmetric structures can trigger disagreements—for example, a slightly distorted orthorhombic cell
+        with parameters within 0.3% of each other might be classified as cubic by ASE's tolerance-based detection, while
+        spglib identifies it as orthorhombic based on the full crystal structure. When such mismatches occur, NOMAD forces
+        ASE to generate k-points using spglib's classification, ensuring consistency between the stored `bravais_lattice`
+        metadata and the k-point mesh used in calculations.
         """,
     )
 

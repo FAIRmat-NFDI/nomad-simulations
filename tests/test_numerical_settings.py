@@ -182,13 +182,14 @@ class TestKSpaceFunctionalities:
             assert len(high_symmetry_points) == 4
             assert high_symmetry_points == expected_result
 
-    def test_resolve_high_symmetry_points_logs_convention_violation(self, log_output):
+    def test_resolve_high_symmetry_points_ase_automatic_reordering(self, log_output):
         """
-        If ASE and spglib agree on the lattice type, ASE already reorders vectors
-        to satisfy conventions, so violations don't typically occur with real ASE.
+        Test that ASE automatically reorders vectors to satisfy conventions.
 
-        This test verifies that when ASE and spglib agree, k-points are successfully
-        generated without convention violations.
+        When ASE detects a lattice type, it reorders vectors to satisfy
+        crystallographic conventions (e.g., a < b < c for orthorhombic).
+        This test verifies that k-points are successfully generated when
+        ASE and spglib agree on the lattice type.
         """
         from ase import Atoms
         from ase.cell import Cell
@@ -325,18 +326,16 @@ class TestKSpaceFunctionalities:
         assert not any('but spglib says' in event for event in warning_events)
 
     @pytest.mark.parametrize(
-        'pearson, expected_ase_type, cell_vectors, expected_point_count',
+        'pearson, cell_vectors, expected_point_count',
         [
             pytest.param(
                 'tP',
-                'TET',
                 [[4.0, 0, 0], [0, 4.001, 0], [0, 0, 6.0]],
                 6,  # Tetragonal: Gamma, A, M, R, X, Z
                 id='tetragonal_near_cubic_base',
             ),
             pytest.param(
                 'hP',
-                'HEX',
                 [[3.0, 0, 0], [-1.5, 2.598, 0], [0, 0, 5.0]],
                 6,  # Hexagonal: Gamma, A, H, K, L, M
                 id='hexagonal',
@@ -344,7 +343,7 @@ class TestKSpaceFunctionalities:
         ],
     )
     def test_resolve_high_symmetry_points_consistency_check_parametrized(
-        self, pearson, expected_ase_type, cell_vectors, expected_point_count, log_output
+        self, pearson, cell_vectors, expected_point_count, log_output
     ):
         """
         Parametrized test for consistency check across different lattice types.
