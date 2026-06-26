@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Union
 import numpy as np
 import pint
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
+from ase.lattice import bravais_classes
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
@@ -19,6 +20,161 @@ from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
+
+# Mapping from Pearson symbols to ASE lattice class names
+PEARSON_TO_ASE_NAME = {
+    # Cubic
+    'cP': 'CUB',  # Primitive cubic
+    'cF': 'FCC',  # Face-centered cubic
+    'cI': 'BCC',  # Body-centered cubic
+    # Tetragonal
+    'tP': 'TET',  # Primitive tetragonal
+    'tI': 'BCT',  # Body-centered tetragonal
+    # Orthorhombic
+    'oP': 'ORC',  # Primitive orthorhombic
+    'oF': 'ORCF',  # Face-centered orthorhombic
+    'oI': 'ORCI',  # Body-centered orthorhombic
+    'oC': 'ORCC',  # C-centered orthorhombic
+    'oS': 'ORCC',  # S-centered orthorhombic (equivalent to C-centered in ASE)
+    # Hexagonal & Rhombohedral
+    'hP': 'HEX',  # Hexagonal
+    'hR': 'RHL',  # Rhombohedral
+    # Monoclinic
+    'mP': 'MCL',  # Primitive monoclinic
+    'mC': 'MCLC',  # C-centered monoclinic
+    'mS': 'MCLC',  # S-centered monoclinic (equivalent to C-centered in ASE)
+    # Triclinic
+    'aP': 'TRI',  # Triclinic
+    # 2D lattices
+    'mp': 'OBL',  # Oblique (2-letter legacy)
+    'mpp': 'OBL',  # Oblique (3-letter from MatID)
+    'op': 'RECT',  # Rectangular (2-letter legacy)
+    'opp': 'RECT',  # Rectangular primitive (3-letter from MatID)
+    'oc': 'CRECT',  # Centered rectangular (2-letter legacy)
+    'ocp': 'CRECT',  # Centered rectangular (3-letter from MatID)
+    'tp': 'SQR',  # Square (2-letter legacy)
+    'tpp': 'SQR',  # Square (3-letter from MatID)
+    'hp': 'HEX2D',  # Hexagonal 2D (2-letter legacy)
+    'hpp': 'HEX2D',  # Hexagonal 2D (3-letter from MatID)
+}
+
+
+def reorder_lattice_params_for_convention(
+    pearson: str, a: float, b: float, c: float, alpha: float, beta: float, gamma: float
+) -> tuple:
+    """
+    Reorder lattice parameters to satisfy crystallographic conventions.
+
+    ASE lattice classes enforce strict conventions (e.g., orthorhombic requires a < b < c).
+    This function reorders the input parameters to match those conventions.
+
+    Args:
+        pearson: Pearson symbol (e.g., 'oP', 'mP', 'hR')
+        a, b, c: Lattice parameters in Angstroms
+        alpha, beta, gamma: Lattice angles in degrees
+
+    Returns:
+        Tuple of reordered (a, b, c, alpha, beta, gamma) satisfying conventions
+
+    Note:
+        Orthorhombic (oP, oF, oI, oC, oS): Requires a < b < c
+        Monoclinic (mP, mC, mS): Requires b <= c (angles not modified)
+        Other lattices: Return parameters unchanged
+    """
+    # Orthorhombic: enforce a < b < c
+    if pearson in ['oP', 'oF', 'oI', 'oC', 'oS']:
+        sorted_lengths = sorted([a, b, c])
+        return (
+            sorted_lengths[0],
+            sorted_lengths[1],
+            sorted_lengths[2],
+            alpha,
+            beta,
+            gamma,
+        )
+
+    # Monoclinic: enforce b <= c
+    # Convention: unique axis is b, so alpha (angle opposite to a) is the unique angle
+    elif pearson in ['mP', 'mC', 'mS']:
+        if b > c:
+            # Swap b and c to satisfy b <= c
+            return (a, c, b, alpha, beta, gamma)
+        else:
+            return (a, b, c, alpha, beta, gamma)
+
+    # Other lattices: no reordering needed
+    else:
+        return (a, b, c, alpha, beta, gamma)
+
+
+def filter_unique_lattice_params(
+    pearson: str, a: float, b: float, c: float, alpha: float, beta: float, gamma: float
+) -> dict:
+    """
+    Filter unique lattice parameters for ASE BravaisLattice class instantiation.
+
+    Each Bravais lattice type requires only its independent (non-redundant) parameters.
+    This function extracts the correct subset from the six parameters returned by
+    Cell.cellpar() based on crystallographic conventions.
+
+    Args:
+        pearson: Pearson symbol (e.g., 'oP', 'cP', 'tP')
+        a, b, c: Lattice parameters in Angstroms
+        alpha, beta, gamma: Lattice angles in degrees
+
+    Returns:
+        Dictionary of parameters required by the corresponding ASE lattice class
+
+    Note:
+        Uses ase.lattice.bravais_classes dictionary to map Pearson symbols to
+        BravaisLattice class constructors (e.g., 'oP' -> ORC, 'cP' -> CUB).
+
+    References:
+        Cell.cellpar(): https://docs.ase-lib.org/ase/geometry.html#ase.geometry.Cell.cellpar
+        BravaisLattice classes: https://docs.ase-lib.org/ase/lattice.html
+    """
+    # Cubic: only a
+    if pearson in ['cP', 'cF', 'cI']:
+        return {'a': a}
+
+    # Tetragonal: a and c
+    elif pearson in ['tP', 'tI']:
+        return {'a': a, 'c': c}
+
+    # Orthorhombic: a, b, c
+    elif pearson in ['oP', 'oF', 'oI', 'oC', 'oS']:
+        return {'a': a, 'b': b, 'c': c}
+
+    # Hexagonal: a and c
+    elif pearson == 'hP':
+        return {'a': a, 'c': c}
+
+    # Rhombohedral: a and alpha
+    elif pearson == 'hR':
+        return {'a': a, 'alpha': alpha}
+
+    # Monoclinic: a, b, c, alpha
+    elif pearson in ['mP', 'mC', 'mS']:
+        return {'a': a, 'b': b, 'c': c, 'alpha': alpha}
+
+    # Triclinic: all six parameters
+    elif pearson == 'aP':
+        return {'a': a, 'b': b, 'c': c, 'alpha': alpha, 'beta': beta, 'gamma': gamma}
+
+    # 2D lattices
+    elif pearson in ['mp', 'mpp']:  # Oblique
+        return {'a': a, 'b': b, 'alpha': alpha}
+    elif pearson in ['op', 'opp']:  # Rectangular
+        return {'a': a, 'b': b}
+    elif pearson in ['oc', 'ocp']:  # Centered rectangular
+        return {'a': a, 'alpha': alpha}
+    elif pearson in ['tp', 'tpp']:  # Square
+        return {'a': a}
+    elif pearson in ['hp', 'hpp']:  # Hexagonal 2D
+        return {'a': a}
+
+    else:
+        raise ValueError(f'Unknown Pearson symbol: {pearson}')
 
 
 class NumericalSettings(ArchiveSection):
@@ -222,6 +378,7 @@ class KSpaceFunctionalities:
                 'Could not find `model_systems` to resolve high symmetry points.'
             )
             return None
+
         for model_system in model_systems:
             # General checks to proceed with normalization
             if not model_system.is_representative:
@@ -253,7 +410,62 @@ class KSpaceFunctionalities:
                 logger=logger,
             )
             cell = atoms.get_cell()
-            lattice = cell.get_bravais_lattice(eps=eps)
+
+            # Check consistency between spglib (via MatID) and ASE lattice detection
+            ase_lattice = cell.get_bravais_lattice(eps=eps)
+            ase_type = type(ase_lattice).__name__
+
+            if bravais_lattice in PEARSON_TO_ASE_NAME:
+                expected_ase_type = PEARSON_TO_ASE_NAME[bravais_lattice]
+
+                if ase_type != expected_ase_type:
+                    # Disagreement: spglib says one thing, ASE detects another
+                    # Use spglib's classification (more authoritative - includes atomic positions)
+                    # but reorder cell parameters to satisfy conventions
+                    logger.warning(
+                        'ASE detected %s but spglib says %s. Using spglib label with reordered parameters.',
+                        ase_type,
+                        bravais_lattice,
+                    )
+
+                    try:
+                        # Get raw parameters from cell
+                        a, b, c = cell.cellpar()[:3]
+                        alpha, beta, gamma = cell.cellpar()[3:]
+
+                        # Reorder to satisfy conventions (e.g., a < b < c for orthorhombic)
+                        a, b, c, alpha, beta, gamma = (
+                            reorder_lattice_params_for_convention(
+                                bravais_lattice, a, b, c, alpha, beta, gamma
+                            )
+                        )
+
+                        # Filter to only parameters needed for this lattice type
+                        params = filter_unique_lattice_params(
+                            bravais_lattice, a, b, c, alpha, beta, gamma
+                        )
+
+                        # Force spglib's lattice type with reordered parameters
+                        lattice = bravais_classes[bravais_lattice](**params)
+                    except (KeyError, ValueError, TypeError) as e:
+                        logger.error(
+                            'Failed to instantiate lattice for Pearson symbol %s: %s',
+                            bravais_lattice,
+                            e,
+                        )
+                        return None
+                else:
+                    # Agreement: use ASE's detected lattice object
+                    lattice = ase_lattice
+            else:
+                # No stored label or unknown Pearson symbol: trust ASE
+                if bravais_lattice:
+                    logger.info(
+                        'Unknown Pearson symbol %s, using ASE detection.',
+                        bravais_lattice,
+                    )
+                lattice = ase_lattice
+
             break  # only cover the first representative `ModelSystem`
 
         # Checking if `bravais_lattice` and `lattice` are defined
@@ -263,45 +475,16 @@ class KSpaceFunctionalities:
             )
             return None
 
-        # Non-conventional ordering testing for certain lattices:
+        # Extract high-symmetry k-points from the lattice object.
+        # Note: Convention compliance is guaranteed either by:
+        # 1. ASE's auto-detection (reorders vectors to satisfy conventions)
+        # 2. Our reorder_lattice_params_for_convention() when forcing spglib's label
+        # 3. ASE's instantiation validation (raises UnconventionalLattice if violated)
         try:
-            if bravais_lattice in ['oP', 'oF', 'oI', 'oS']:
-                a, b, c = lattice.a, lattice.b, lattice.c
-                if not a < b:
-                    raise ValueError(
-                        'ASE lattice does not satisfy the expected orthorhombic convention.'
-                    )
-                if bravais_lattice != 'oS' and not b < c:
-                    raise ValueError(
-                        'ASE lattice does not satisfy the expected orthorhombic convention.'
-                    )
-            elif bravais_lattice in ['mP', 'mS']:
-                a, b, c = lattice.a, lattice.b, lattice.c
-                alpha = lattice.alpha * np.pi / 180
-                if not (a <= c and b <= c):
-                    raise ValueError(
-                        'ASE lattice does not satisfy the expected monoclinic convention.'
-                    )
-                if not alpha < np.pi / 2:
-                    raise ValueError(
-                        'ASE lattice does not satisfy the expected monoclinic convention.'
-                    )
-
-            # Extracting the `high_symmetry_points` from the `lattice` object
             special_points = lattice.get_special_points()
-        except (AssertionError, ValueError, RuntimeError) as exc:
+        except (AssertionError, AttributeError, ValueError, RuntimeError):
             logger.warning(
-                'Could not resolve high-symmetry points (ASE special points).',
-                details=str(exc),
-                bravais_lattice=bravais_lattice,
-                lattice_parameters={
-                    'a': getattr(lattice, 'a', None),
-                    'b': getattr(lattice, 'b', None),
-                    'c': getattr(lattice, 'c', None),
-                    'alpha': getattr(lattice, 'alpha', None),
-                    'beta': getattr(lattice, 'beta', None),
-                    'gamma': getattr(lattice, 'gamma', None),
-                },
+                'Could not resolve high-symmetry points (ASE special points).'
             )
             return None
 
@@ -383,7 +566,18 @@ class KMesh(Mesh):
                 'X': [0.5, 0, 0],
                 'Y': [0, 0.5, 0],
                 ...
-            ]
+            }
+
+        **Symmetry source preference**: NOMAD prefers the Bravais lattice classification from spglib (via MatID) for
+        k-point generation when available, as spglib analyzes both the lattice parameters and atomic positions during
+        symmetry determination, while ASE's
+        `cell.get_bravais_lattice()` examines only the lattice geometry. When the stored Bravais lattice classification
+        is absent or unrecognized, ASE's geometric detection is used as a fallback. In practice, the two analyses usually
+        agree, but near-symmetric structures can trigger disagreements—for example, a slightly distorted orthorhombic cell
+        with parameters within 0.3% of each other might be classified as cubic by ASE's tolerance-based detection, while
+        spglib identifies it as orthorhombic based on the full crystal structure. When such mismatches occur, NOMAD forces
+        ASE to generate k-points using spglib's classification, ensuring consistency between the stored `bravais_lattice`
+        metadata and the k-point mesh used in calculations.
         """,
     )
 
