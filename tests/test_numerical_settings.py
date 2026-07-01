@@ -340,6 +340,24 @@ class TestKSpaceFunctionalities:
                 6,  # Hexagonal: Gamma, A, H, K, L, M
                 id='hexagonal',
             ),
+            pytest.param(
+                'oS',
+                [[3.0, 0, 0], [0, 4.0, 0], [0, 0, 5.0]],
+                None,  # Bug 1: Non-canonical Pearson symbol (oS equivalent to oC)
+                id='bug_1_non_canonical_pearson',
+            ),
+            pytest.param(
+                'mP',
+                [[3.0, 0, 0], [0, 4.0, 0.2], [0, 0, 5.0]],
+                None,  # Bug 2: Monoclinic with alpha≈90°, beta≈87°
+                id='bug_2_monoclinic_alpha_90',
+            ),
+            pytest.param(
+                'oP',
+                [[4.0, 0, 0], [0, 4.001, 0], [0, 0, 4.002]],
+                None,  # Bug 3: Orthorhombic a≈b≈c
+                id='bug_3_metrically_cubic',
+            ),
         ],
     )
     def test_resolve_high_symmetry_points_consistency_check_parametrized(
@@ -369,7 +387,11 @@ class TestKSpaceFunctionalities:
 
         assert high_symmetry_points is not None
         assert 'Gamma' in high_symmetry_points
-        assert len(high_symmetry_points) == expected_point_count
+        if expected_point_count is not None:
+            assert len(high_symmetry_points) == expected_point_count
+        else:
+            # For bug regression tests: just verify we got points without error
+            assert len(high_symmetry_points) >= 4
 
 
 @pytest.mark.parametrize(
