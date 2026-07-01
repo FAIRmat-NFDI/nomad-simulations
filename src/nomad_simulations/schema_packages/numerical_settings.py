@@ -4,7 +4,11 @@ from typing import TYPE_CHECKING, Union
 
 import numpy as np
 import pint
-from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, get_special_points, monkhorst_pack
+from ase.dft.kpoints import (
+    get_monkhorst_pack_size_and_offset,
+    get_special_points,
+    monkhorst_pack,
+)
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
