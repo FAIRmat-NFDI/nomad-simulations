@@ -351,6 +351,24 @@ class TestKSpaceFunctionalities:
                 6,  # Hexagonal: Gamma, A, H, K, L, M
                 id='hexagonal',
             ),
+            pytest.param(
+                'oS',
+                [[3.0, 0, 0], [0, 4.0, 0], [0, 0, 5.0]],
+                8,  # Bug 1: Non-canonical Pearson symbol (oS equivalent to oC)
+                id='bug_1_non_canonical_pearson',
+            ),
+            pytest.param(
+                'mP',
+                [[3.0, 0, 0], [0, 4.0, 0.2], [0, 0, 5.0]],
+                16,  # Bug 2: Monoclinic with alpha≈90°, beta≈87° - ASE detects monoclinic
+                id='bug_2_monoclinic_alpha_90',
+            ),
+            pytest.param(
+                'oP',
+                [[4.0, 0, 0], [0, 4.001, 0], [0, 0, 4.002]],
+                8,  # Bug 3: Orthorhombic a≈b≈c, ASE detects as orthorhombic
+                id='bug_3_metrically_cubic',
+            ),
         ],
     )
     def test_resolve_high_symmetry_points_consistency_check_parametrized(
