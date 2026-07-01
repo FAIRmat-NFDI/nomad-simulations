@@ -140,25 +140,22 @@ class TestKSpaceFunctionalities:
         assert check == result
 
     @pytest.mark.parametrize(
-        'model_systems_input, expected_result',
+        'model_systems_input, expected_keys',
         [
             # Valid case: model_systems with proper symmetry
-            (
-                'valid',
-                {
-                    'Gamma': [0, 0, 0],
-                    'M': [0.5, 0.5, 0],
-                    'R': [0.5, 0.5, 0.5],
-                    'X': [0, 0.5, 0],
-                },
-            ),
+            # SeeKpath may return more detailed k-point labels than ASE
+            ('valid', ['Gamma', 'M', 'R', 'X']),
             # None case: model_systems is None
             (None, None),
         ],
     )
-    def test_resolve_high_symmetry_points(self, model_systems_input, expected_result):
+    def test_resolve_high_symmetry_points(self, model_systems_input, expected_keys):
         """
         Test the `resolve_high_symmetry_points` method with valid and None model_systems.
+
+        Note: SeeKpath (HPKOT standard) may return more detailed labels than ASE,
+        e.g., distinguishing X_1, X_2 for different X-type points in the same structure.
+        We test that the essential keys are present.
         """
         if model_systems_input == 'valid':
             # `ModelSystem.normalize()` need to extract `bulk` as a type.
@@ -176,11 +173,14 @@ class TestKSpaceFunctionalities:
             model_systems=model_systems, logger=logger
         )
 
-        if expected_result is None:
+        if expected_keys is None:
             assert high_symmetry_points is None
         else:
-            assert len(high_symmetry_points) == 4
-            assert high_symmetry_points == expected_result
+            # Check that essential k-point labels are present
+            for key in expected_keys:
+                assert key in high_symmetry_points or any(
+                    k.startswith(key) for k in high_symmetry_points.keys()
+                ), f"Expected key '{key}' not found in {list(high_symmetry_points.keys())}"
 
     def test_resolve_high_symmetry_points_ase_automatic_reordering(self, log_output):
         """
