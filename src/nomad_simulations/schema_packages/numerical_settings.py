@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Union
 
 import numpy as np
 import pint
-from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 import seekpath
+from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
@@ -226,7 +226,6 @@ class KSpaceFunctionalities:
             (dict | None): The resolved `high_symmetry_points`.
         """
         # Extracting `bravais_lattice` from `ModelSystem.symmetry` section and `ASE.cell` from `ModelSystem.representations`
-        lattice = None
         if model_systems is None:
             logger.warning(
                 'Could not find `model_systems` to resolve high symmetry points.'
