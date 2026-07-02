@@ -22,15 +22,6 @@ from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
 
-# NOTE: The following code is no longer needed with the SeeKpath approach,
-# which handles lattice classification and k-point generation internally.
-# Kept commented for reference.
-
-# # Mapping from Pearson symbols to ASE lattice class names
-# PEARSON_TO_ASE_NAME = {...}
-# def reorder_lattice_params_for_convention(...): ...
-# def filter_unique_lattice_params(...): ...
-
 
 class NumericalSettings(ArchiveSection):
     """
