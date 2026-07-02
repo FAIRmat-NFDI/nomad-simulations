@@ -377,6 +377,95 @@ class TestKSpaceFunctionalities:
             # For bug regression tests: just verify we got points without error
             assert len(high_symmetry_points) >= 4
 
+    @pytest.mark.parametrize(
+        'symbols, cell_vectors, scaled_positions, expected_points',
+        [
+            # SeeKpath standardizes the conventional BCC cell to its primitive
+            # cell; the returned coordinates must be re-expressed in the input
+            # (conventional) reciprocal basis, e.g. H = (0, 1, 0).
+            pytest.param(
+                'Fe2',
+                [[2.87, 0, 0], [0, 2.87, 0], [0, 0, 2.87]],
+                [[0, 0, 0], [0.5, 0.5, 0.5]],
+                {
+                    'Gamma': [0.0, 0.0, 0.0],
+                    'H': [0.0, 1.0, 0.0],
+                    'P': [0.5, 0.5, 0.5],
+                },
+                id='bcc_conventional_cell',
+            ),
+            # Valid FCC primitive cell with permuted lattice vectors: SeeKpath
+            # re-standardizes the vector order, so the coordinates only match
+            # the input basis after transformation.
+            pytest.param(
+                'Cu',
+                [[2.03, 2.03, 0], [0, 2.03, 2.03], [2.03, 0, 2.03]],
+                [[0, 0, 0]],
+                {
+                    'Gamma': [0.0, 0.0, 0.0],
+                    'X': [0.5, 0.5, 0.0],
+                    'L': [0.5, 0.5, 0.5],
+                },
+                id='fcc_primitive_permuted_axes',
+            ),
+            # BCC primitive cell rigidly rotated by 30 degrees about z: spglib
+            # idealization rotates the standardized frame back to axis-aligned,
+            # so the rotation must be undone via `std_rotation_matrix`.
+            pytest.param(
+                'Fe',
+                [
+                    [-1.960246, 0.525246, 1.435],
+                    [1.960246, -0.525246, 1.435],
+                    [0.525246, 1.960246, -1.435],
+                ],
+                [[0, 0, 0]],
+                {
+                    'Gamma': [0.0, 0.0, 0.0],
+                    'H': [0.5, -0.5, 0.5],
+                    'P': [0.25, 0.25, 0.25],
+                },
+                id='bcc_primitive_rotated_frame',
+            ),
+        ],
+    )
+    def test_resolve_high_symmetry_points_input_basis(
+        self, symbols, cell_vectors, scaled_positions, expected_points
+    ):
+        """
+        Regression test: `high_symmetry_points` must be fractional coordinates of
+        the input cell's reciprocal basis (the `KSpace.reciprocal_lattice_vectors`
+        contract), not of SeeKpath's standardized primitive cell.
+        """
+        from ase import Atoms
+
+        atoms = Atoms(
+            symbols,
+            scaled_positions=scaled_positions,
+            cell=cell_vectors,
+            pbc=True,
+        )
+
+        model_system = SimpleNamespace(
+            is_representative=True,
+            symmetry=None,
+            representations=[SimpleNamespace(name='primitive')],
+            to_ase_atoms=lambda representation_index, logger: atoms,
+        )
+
+        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
+            model_systems=[model_system], logger=logger
+        )
+
+        assert high_symmetry_points is not None
+        for label, expected_coords in expected_points.items():
+            assert label in high_symmetry_points
+            assert np.allclose(
+                high_symmetry_points[label], expected_coords, atol=1e-6
+            ), (
+                f'{label}: expected {expected_coords} in the input reciprocal basis, '
+                f'got {high_symmetry_points[label]}'
+            )
+
 
 @pytest.mark.parametrize(
     'subsection_kwargs, subsection_accessor, expected_attrs',

@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Union
 import numpy as np
 import pint
 import seekpath
+import spglib
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
@@ -287,6 +288,41 @@ class KSpaceFunctionalities:
                 if not special_points:
                     logger.warning('SeeKpath returned empty special points dictionary.')
                     return None
+
+                # SeeKpath expresses `point_coords` in fractional coordinates of the
+                # reciprocal basis of its own standardized primitive cell, which may
+                # differ from the input cell by a lattice-vector choice (e.g., a
+                # conventional or permuted setting) and, after spglib idealization,
+                # by a rigid rotation. Transform each point to the input cell's
+                # reciprocal basis, which is what `KSpace.reciprocal_lattice_vectors`
+                # and the `high_symmetry_points` schema contract refer to.
+                input_cell = np.array(cell_vectors)
+                reciprocal_input = 2 * np.pi * np.linalg.inv(input_cell).T
+                reciprocal_primitive = np.array(
+                    seekpath_result['reciprocal_primitive_lattice']
+                )
+                primitive_lattice = np.array(seekpath_result['primitive_lattice'])
+
+                # The input and standardized primitive cells share a Cartesian frame
+                # only if the input lattice vectors are integer combinations of the
+                # primitive ones; otherwise idealization rotated the standardized
+                # frame and the rotation must be undone via spglib.
+                supercell_matrix = input_cell @ np.linalg.inv(primitive_lattice)
+                rotation = np.eye(3)
+                if not np.allclose(
+                    supercell_matrix, np.round(supercell_matrix), atol=1e-5
+                ):
+                    dataset = spglib.get_symmetry_dataset(structure, symprec=eps)
+                    rotation = np.array(dataset.std_rotation_matrix)
+
+                # k_frac_input = ((k_frac_prim @ B_prim) @ R) @ B_input^-1
+                to_input_basis = (
+                    reciprocal_primitive @ rotation @ np.linalg.inv(reciprocal_input)
+                )
+                special_points = {
+                    label: (np.array(coords) @ to_input_basis).tolist()
+                    for label, coords in special_points.items()
+                }
 
                 # Log informational message if SeeKpath's classification differs from stored
                 if bravais_lattice:
