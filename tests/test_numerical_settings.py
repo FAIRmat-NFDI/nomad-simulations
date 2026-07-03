@@ -17,6 +17,7 @@ from nomad_simulations.schema_packages.numerical_settings import (
 
 from . import logger
 from .conftest import generate_k_line_path, generate_k_space_simulation
+from .data_kpoint_structures import KPOINT_STRUCTURES
 
 
 class TestLocalCorrelationThreshold:
@@ -463,6 +464,58 @@ class TestKSpaceFunctionalities:
                 high_symmetry_points[label], expected_coords, atol=1e-6
             ), (
                 f'{label}: expected {expected_coords} in the input reciprocal basis, '
+                f'got {high_symmetry_points[label]}'
+            )
+
+    @pytest.mark.parametrize(
+        'structure_id',
+        [pytest.param(key, id=key) for key in KPOINT_STRUCTURES],
+    )
+    def test_resolve_high_symmetry_points_reference_structures(self, structure_id):
+        """
+        Regression test against distilled reference structures (MagRes DB primitive
+        cells) whose cell metrics suggest a higher symmetry than their actual space
+        group - the failure modes reported in PR #403. Verifies that the space-group
+        detection is stable and that the resolved points keep their locked-in
+        fractional coordinates in the input reciprocal basis.
+        """
+        import spglib
+        from ase import Atoms
+
+        fixture = KPOINT_STRUCTURES[structure_id]
+        atoms = Atoms(
+            numbers=fixture['atomic_numbers'],
+            scaled_positions=fixture['scaled_positions'],
+            cell=fixture['cell'],
+            pbc=True,
+        )
+
+        # Guard against silent classification drift of the fixture itself
+        dataset = spglib.get_symmetry_dataset(
+            (fixture['cell'], fixture['scaled_positions'], fixture['atomic_numbers']),
+            symprec=3e-3,
+        )
+        assert dataset.number == fixture['spacegroup_number']
+
+        model_system = SimpleNamespace(
+            is_representative=True,
+            symmetry=None,
+            representations=[SimpleNamespace(name='primitive')],
+            to_ase_atoms=lambda representation_index, logger: atoms,
+        )
+
+        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
+            model_systems=[model_system], logger=logger
+        )
+
+        assert high_symmetry_points is not None
+        assert len(high_symmetry_points) == fixture['n_high_symmetry_points']
+        for label, expected_coords in fixture['expected_points'].items():
+            assert label in high_symmetry_points
+            assert np.allclose(
+                high_symmetry_points[label], expected_coords, atol=1e-6
+            ), (
+                f'{structure_id}/{label}: expected {expected_coords}, '
                 f'got {high_symmetry_points[label]}'
             )
 
