@@ -76,7 +76,8 @@ class PhysicalProperty(PlotSection):
             - a simulated physical property may refer to the macroscopic system as a whole. In that case,
               `outputs.model_system_ref` (see outputs.py) points to the `ModelSystem` section.
             - a simulated physical property may instead refer to a specific entity within that system, such as
-              an `AtomsState`, another `ParticleState`, or an `ElectronicState`, via `entity_ref`.
+              an `AtomsState`, a `CGBeadState`, another `ParticleState` subclass, or an
+              `ElectronicState`, via `entity_ref`.
         """,
     )  # TODO: only used for electronic states, remove
 
