@@ -15,15 +15,17 @@ This diagram shows the relationships between schema classes:
 classDiagram
     class AbsorptionSpectrum {
     }
-    class ElectronicBandGap {
+    class ChemicalPotential {
+    }
+    class CrystalFieldSplitting {
     }
     class ElectronicBandStructure {
     }
-    class ElectronicEigenvalues {
+    class ElectronicDensityOfStates {
+    }
+    class ElectronicSelfEnergy {
     }
     class FermiSurface {
-    }
-    class KineticEnergy {
     }
     class Occupancy {
     }
@@ -35,22 +37,20 @@ classDiagram
     }
     class QuasiparticleWeight {
     }
-    class Temperature {
-    }
     class TotalForce {
     }
     class XASSpectrum {
     }
     Outputs *-- AbsorptionSpectrum : absorption_spectra
-    Outputs *-- ElectronicBandGap
+    Outputs *-- ChemicalPotential
+    Outputs *-- CrystalFieldSplitting
     Outputs *-- ElectronicBandStructure
-    Outputs *-- ElectronicEigenvalues
+    Outputs *-- ElectronicDensityOfStates : electronic_dos
+    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
     Outputs *-- FermiSurface
-    Outputs *-- KineticEnergy : kinetic_energies
     Outputs *-- Occupancy : occupancies
     Outputs *-- PotentialEnergy : potential_energies
     Outputs *-- QuasiparticleWeight
-    Outputs *-- Temperature
     Outputs *-- TotalForce
     Outputs *-- XASSpectrum : xas_spectra
 ```
@@ -67,19 +67,17 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
-    class ChemicalPotential {
+    class ElectronicBandGap {
     }
-    class CrystalFieldSplitting {
-    }
-    class ElectronicDensityOfStates {
+    class ElectronicEigenvalues {
     }
     class ElectronicGreensFunction {
-    }
-    class ElectronicSelfEnergy {
     }
     class HoppingMatrix {
     }
     class HybridizationFunction {
+    }
+    class KineticEnergy {
     }
     class Outputs {
     }
@@ -91,18 +89,20 @@ classDiagram
     }
     class SCFSteps {
     }
+    class Temperature {
+    }
     class TotalEnergy {
     }
-    Outputs *-- ChemicalPotential
-    Outputs *-- CrystalFieldSplitting
-    Outputs *-- ElectronicDensityOfStates : electronic_dos
+    Outputs *-- ElectronicBandGap
+    Outputs *-- ElectronicEigenvalues
     Outputs *-- ElectronicGreensFunction
-    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
     Outputs *-- HoppingMatrix : hopping_matrices
     Outputs *-- HybridizationFunction
+    Outputs *-- KineticEnergy : kinetic_energies
     Outputs *-- Permittivity : permittivities
     Outputs *-- RadiusOfGyration : radii_of_gyration
     Outputs *-- SCFSteps
+    Outputs *-- Temperature
     Outputs *-- TotalEnergy : total_energies
 ```
 
