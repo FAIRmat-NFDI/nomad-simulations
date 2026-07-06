@@ -1493,7 +1493,7 @@ class ModelSystem(System, Representation):
         section_def=ElectronicState.m_def,
         description="""
         Electronic state of the system, e.g., the electronic structure information.
-        This is an starting point for navigating the electronic hierarchy.
+        This is a starting point for navigating the electronic hierarchy.
         """,
     )
 
