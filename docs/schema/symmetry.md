@@ -36,7 +36,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `equivalent_atoms` | m_int32(int32) (shape: ['*']) | <details><summary>Equivalence grouping of atoms by symmetry operations.</summary>Equivalence grouping of atoms by symmetry operations.<br>Atoms with the same index value are symmetrically equivalent.<br>Examples:<br>- [0, 1, 2, 3]: all four atoms are non-equivalent<br>- [0, 0, 0, 3]: first three atoms are equivalent, fourth is unique</details> |
+| `equivalent_atoms` | m_int32(int32) (shape: ['*']) | <details><summary>Equivalence grouping of atomic sites by symmetry operations.</summary>Equivalence grouping of atomic sites by symmetry operations.<br>Atomic sites with the same index value are symmetrically equivalent.<br>This quantity is intentionally atom-specific. It reflects crystallographic<br>symmetry analysis on atomic structures and should not be interpreted as a<br>generic particle-equivalence relation for arbitrary `ParticleState` subclasses.<br>Examples:<br>- [0, 1, 2, 3]: all four atomic sites are non-equivalent<br>- [0, 0, 0, 3]: first three atomic sites are equivalent, fourth is unique</details> |
 
 ### `LocalCrystalSymmetry`
 

@@ -19,7 +19,7 @@ The `ModelSystem` class represents the physical system that serves as input for 
 
 For complete field-level structure, see the schema navigation references above.
 
-`ModelSystem` combines two fundamental capabilities: geometric representation (from the `Representation` class) and hierarchical navigation (from the `System` class). This means each model system has direct access to its geometric data (lattice vectors, atomic positions, periodic boundary conditions) while also supporting navigation through subsystem hierarchies and alternative geometric views.
+`ModelSystem` combines two fundamental capabilities: geometric representation (from the `Representation` class) and hierarchical navigation (from the `System` class). This means each model system has direct access to its geometric data (lattice vectors, particle positions, periodic boundary conditions) while also supporting navigation through subsystem hierarchies and alternative geometric views.
 
 A `ModelSystem` can represent various types of systems: bulk crystals, surfaces, molecules, clusters, or complex hierarchical structures.
 
@@ -40,7 +40,7 @@ A `ModelSystem` can represent various types of systems: bulk crystals, surfaces,
 The `ModelSystem` inherits all geometric properties from the `Representation` base class, providing direct access to:
 
 - **Cell geometry**: `lattice_vectors`, `periodic_boundary_conditions`
-- **Atomic positions**: `positions` (Cartesian coordinates), `fractional_coordinates` (relative to lattice vectors)
+- **Particle positions**: `positions` (Cartesian coordinates), `fractional_coordinates` (relative to lattice vectors)
 - **Symmetry information**: `wyckoff_letters`, `equivalent_atoms`
 - **Geometric measures**: `volume`, `area`, `length`
 
@@ -108,7 +108,7 @@ branch depth and composition labels consistently along the tree. In practice:
 
 - root systems summarize child groups in `composition_formula`,
 - intermediate groups summarize repeated motifs,
-- leaf systems resolve to atom-level formulas.
+- leaf systems resolve to particle-label formulas.
 
 Keep subsystem-hierarchy semantics (`sub_systems`) distinct from alternative geometric
 views (`representations`).

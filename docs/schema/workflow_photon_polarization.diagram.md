@@ -13,13 +13,20 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class ParallelWorkflow
-    class PhotonPolarizationMethod
-    class PhotonPolarizationResults
-    class PhotonPolarizationWorkflow
-    class SimulationWorkflowMethod
-    class SimulationWorkflowResults
-    class WorkflowConvergenceResults
+    class ParallelWorkflow {
+    }
+    class PhotonPolarizationMethod {
+    }
+    class PhotonPolarizationResults {
+    }
+    class PhotonPolarizationWorkflow {
+    }
+    class SimulationWorkflowMethod {
+    }
+    class SimulationWorkflowResults {
+    }
+    class WorkflowConvergenceResults {
+    }
     SimulationWorkflowMethod <|-- PhotonPolarizationMethod
     SimulationWorkflowResults <|-- PhotonPolarizationResults
     ParallelWorkflow <|-- PhotonPolarizationWorkflow
