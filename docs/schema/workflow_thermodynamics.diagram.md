@@ -13,12 +13,18 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class SerialWorkflow
-    class SerialWorkflowResults
-    class SimulationWorkflowMethod
-    class Thermodynamics
-    class ThermodynamicsMethod
-    class ThermodynamicsResults
+    class SerialWorkflow {
+    }
+    class SerialWorkflowResults {
+    }
+    class SimulationWorkflowMethod {
+    }
+    class Thermodynamics {
+    }
+    class ThermodynamicsMethod {
+    }
+    class ThermodynamicsResults {
+    }
     SerialWorkflow <|-- Thermodynamics
     SimulationWorkflowMethod <|-- ThermodynamicsMethod
     SerialWorkflowResults <|-- ThermodynamicsResults

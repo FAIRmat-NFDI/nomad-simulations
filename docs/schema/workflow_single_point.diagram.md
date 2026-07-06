@@ -13,13 +13,20 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class SimulationWorkflow
-    class SimulationWorkflowMethod
-    class SimulationWorkflowResults
-    class SinglePoint
-    class SinglePointMethod
-    class SinglePointResults
-    class WorkflowConvergenceResults
+    class SimulationWorkflow {
+    }
+    class SimulationWorkflowMethod {
+    }
+    class SimulationWorkflowResults {
+    }
+    class SinglePoint {
+    }
+    class SinglePointMethod {
+    }
+    class SinglePointResults {
+    }
+    class WorkflowConvergenceResults {
+    }
     SimulationWorkflow <|-- SinglePoint
     SimulationWorkflowMethod <|-- SinglePointMethod
     SimulationWorkflowResults <|-- SinglePointResults
