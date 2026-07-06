@@ -1501,7 +1501,7 @@ class ModelSystem(System, Representation):
         section_def=ParticleState.m_def,
         repeats=True,
         description="""
-        Particle state of each of the particles conforming the ModelSystem.
+        Particle state for each particle comprising the `ModelSystem`.
         This is a list of `n_particles` elements and the order matches that of `positions`.
 
             Example
