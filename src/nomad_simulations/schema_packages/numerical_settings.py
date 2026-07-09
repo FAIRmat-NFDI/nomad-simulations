@@ -382,14 +382,15 @@ class KSpaceFunctionalities:
             )
             return None
 
-        # Convert SeeKpath format to NOMAD format
+        # Convert SeeKpath format to NOMAD format. SeeKpath spells Greek-letter
+        # points in upper case (e.g. `GAMMA`, `SIGMA_0`); normalize these to the
+        # conventional title case (`Gamma`, `Sigma_0`). Single-letter Latin labels
+        # (`X`, `L`, `H_2`) are already in the expected case and left untouched.
         high_symmetry_points = {}
         for key, value in special_points.items():
-            # SeeKpath uses 'GAMMA' - convert to 'Gamma'
-            if key == 'GAMMA':
-                key = 'Gamma'
-            # SeeKpath may use different naming - handle special cases
-            # Note: SeeKpath follows HPKOT standard naming conventions
+            prefix, sep, suffix = key.partition('_')
+            if len(prefix) > 1 and prefix.isalpha():
+                key = prefix.capitalize() + sep + suffix
             high_symmetry_points[key] = list(value)
         return high_symmetry_points
 
