@@ -20,6 +20,32 @@ from .conftest import generate_k_line_path, generate_k_space_simulation
 from .data_kpoint_structures import KPOINT_STRUCTURES
 
 
+def make_kpoint_model_system(
+    atoms, bravais_lattice=None, representation_names=('primitive',)
+):
+    """
+    SimpleNamespace stand-in for a normalized `ModelSystem`, exposing only what
+    `resolve_high_symmetry_points` consumes. `to_ase_atoms` asserts it is queried
+    with the index of the `primitive` representation.
+    """
+    prim_index = representation_names.index('primitive')
+
+    def to_ase_atoms(representation_index, logger):
+        assert representation_index == prim_index
+        return atoms
+
+    return SimpleNamespace(
+        is_representative=True,
+        symmetry=(
+            SimpleNamespace(bravais_lattice=bravais_lattice)
+            if bravais_lattice is not None
+            else None
+        ),
+        representations=[SimpleNamespace(name=name) for name in representation_names],
+        to_ase_atoms=to_ase_atoms,
+    )
+
+
 class TestLocalCorrelationThreshold:
     def test_accepts_dimensionless_threshold(self):
         threshold = LocalCorrelationThreshold(
@@ -146,13 +172,16 @@ class TestKSpaceFunctionalities:
             # Valid case: model_systems with proper symmetry
             # SeeKpath may return more detailed k-point labels than ASE
             ('valid', ['Gamma', 'M', 'R', 'X']),
-            # None case: model_systems is None
+            # Degenerate inputs must return None instead of raising
             (None, None),
+            ('empty', None),
+            ('non_representative', None),
         ],
     )
     def test_resolve_high_symmetry_points(self, model_systems_input, expected_keys):
         """
-        Test the `resolve_high_symmetry_points` method with valid and None model_systems.
+        Test the `resolve_high_symmetry_points` method with valid and degenerate
+        `model_systems` inputs.
 
         Note: SeeKpath (HPKOT standard) may return more detailed labels than ASE,
         e.g., distinguishing X_1, X_2 for different X-type points in the same structure.
@@ -166,6 +195,10 @@ class TestKSpaceFunctionalities:
             model_systems = simulation.model_system
             # normalize to extract symmetry
             simulation.model_system[0].normalize(EntryArchive(), logger)
+        elif model_systems_input == 'empty':
+            model_systems = []
+        elif model_systems_input == 'non_representative':
+            model_systems = [SimpleNamespace(is_representative=False)]
         else:
             model_systems = model_systems_input
 
@@ -185,198 +218,141 @@ class TestKSpaceFunctionalities:
                     f"Expected key '{key}' not found in {list(high_symmetry_points.keys())}"
                 )
 
-    def test_resolve_high_symmetry_points_ase_automatic_reordering(self, log_output):
-        """
-        Test that SeeKpath generates k-points for orthorhombic structures.
-
-        SeeKpath uses spglib's symmetry analysis to generate comprehensive
-        k-point sets including intermediate points with numeric suffixes.
-        """
-        from ase import Atoms
-        from ase.cell import Cell
-
-        # Orthorhombic cell
-        cell = Cell([[2.0, 0, 0], [0, 1.0, 0], [0, 0, 3.0]])
-        atoms = Atoms(
-            'Si2', positions=[[0, 0, 0], [1.0, 0.5, 1.5]], cell=cell, pbc=True
-        )
-
-        # ASE will detect this as orthorhombic
-        ase_lattice = cell.get_bravais_lattice(eps=3e-3)
-        assert type(ase_lattice).__name__ == 'ORC'
-        # ASE reorders: a=1.0, b=2.0, c=3.0 (satisfies a < b < c)
-        assert ase_lattice.a < ase_lattice.b < ase_lattice.c
-
-        model_system = SimpleNamespace(
-            is_representative=True,
-            symmetry=SimpleNamespace(
-                bravais_lattice='oP'
-            ),  # spglib also says orthorhombic
-            representations=[SimpleNamespace(name='primitive')],
-            to_ase_atoms=lambda representation_index, logger: atoms,
-        )
-
-        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
-            model_systems=[model_system], logger=logger
-        )
-
-        # SeeKpath returns comprehensive set with intermediate points
-        assert high_symmetry_points is not None
-        assert len(high_symmetry_points) >= 8  # At least basic orthorhombic points
-        assert 'Gamma' in high_symmetry_points
-
-    def test_resolve_high_symmetry_points_consistency_check_with_real_ase(
-        self, log_output
-    ):
-        """
-        Integration test with real ASE objects: near-cubic orthorhombic structure.
-
-        SeeKpath uses spglib's full symmetry analysis (cell + positions) to determine
-        the actual symmetry. For metrically cubic cells, it may detect cubic symmetry
-        and return cubic k-points with HPKOT naming (H/P/N instead of M/R/X).
-        """
-        from ase import Atoms
-        from ase.cell import Cell
-
-        # Near-cubic orthorhombic cell that ASE will detect as cubic within eps=3e-3
-        # These parameters are within 0.3% of each other
-        cell = Cell([[5.0, 0, 0], [0, 5.001, 0], [0, 0, 5.002]])
-        atoms = Atoms(
-            'Si2', positions=[[0, 0, 0], [2.5, 2.5, 2.5]], cell=cell, pbc=True
-        )
-
-        # Verify ASE detects this as cubic
-        ase_lattice = cell.get_bravais_lattice(eps=3e-3)
-        assert type(ase_lattice).__name__ == 'CUB'
-
-        # Create a model system where spglib (via MatID) has stored 'oP'
-        model_system = SimpleNamespace(
-            is_representative=True,
-            symmetry=SimpleNamespace(bravais_lattice='oP'),  # spglib says orthorhombic
-            representations=[SimpleNamespace(name='primitive')],
-            to_ase_atoms=lambda representation_index, logger: atoms,
-        )
-
-        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
-            model_systems=[model_system], logger=logger
-        )
-
-        # SeeKpath detects actual symmetry and returns appropriate k-points
-        assert high_symmetry_points is not None
-        assert len(high_symmetry_points) >= 4  # At least basic cubic points
-        assert 'Gamma' in high_symmetry_points
-
-    def test_resolve_high_symmetry_points_consistency_check_agreement(self, log_output):
-        """
-        Integration test: when spglib and ASE agree on symmetry, use ASE's object.
-
-        This test verifies that when both spglib and ASE detect the same lattice
-        type, the code uses ASE's detected object without forcing instantiation,
-        and no mismatch warning is logged.
-        """
-        from ase import Atoms
-        from ase.cell import Cell
-
-        # Clearly cubic cell - both spglib and ASE will agree
-        cell = Cell([[5.0, 0, 0], [0, 5.0, 0], [0, 0, 5.0]])
-        atoms = Atoms(
-            'Si2', positions=[[0, 0, 0], [2.5, 2.5, 2.5]], cell=cell, pbc=True
-        )
-
-        # Verify ASE detects cubic
-        ase_lattice = cell.get_bravais_lattice(eps=3e-3)
-        assert type(ase_lattice).__name__ == 'CUB'
-
-        # Model system where spglib also says cubic
-        model_system = SimpleNamespace(
-            is_representative=True,
-            symmetry=SimpleNamespace(bravais_lattice='cP'),  # Both agree: cubic
-            representations=[SimpleNamespace(name='primitive')],
-            to_ase_atoms=lambda representation_index, logger: atoms,
-        )
-
-        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
-            model_systems=[model_system], logger=logger
-        )
-
-        # Should get cubic k-points (SeeKpath uses HPKOT naming: H/P/N instead of M/R/X)
-        assert high_symmetry_points is not None
-        assert len(high_symmetry_points) == 4  # Cubic has 4 points
-        assert 'Gamma' in high_symmetry_points
-        # SeeKpath uses HPKOT standard naming for cubic: H, P, N (not M, R, X)
-        assert (
-            'H' in high_symmetry_points
-            or 'P' in high_symmetry_points
-            or 'N' in high_symmetry_points
-        )
-
     @pytest.mark.parametrize(
-        'pearson, cell_vectors, expected_point_count',
+        'bravais_lattice, cell_vectors, positions, expected_labels',
         [
             pytest.param(
                 'tP',
                 [[4.0, 0, 0], [0, 4.001, 0], [0, 0, 6.0]],
-                None,  # SeeKpath detects as orthorhombic (a≠b) with comprehensive points
+                [[0, 0, 0], [1.0, 1.0, 1.0]],
+                [
+                    'A',
+                    'F',
+                    'F_2',
+                    'F_4',
+                    'G',
+                    'G_2',
+                    'G_4',
+                    'G_6',
+                    'Gamma',
+                    'H',
+                    'H_2',
+                    'H_4',
+                    'L_2',
+                    'M',
+                    'V_2',
+                    'Y',
+                ],  # noqa: E501
                 id='tetragonal_near_cubic_base',
             ),
             pytest.param(
                 'hP',
                 [[3.0, 0, 0], [-1.5, 2.598, 0], [0, 0, 5.0]],
-                None,  # SeeKpath returns extended hexagonal set with _2 suffixes
-                id='hexagonal',
+                [[0, 0, 0], [1.0, 1.0, 1.0]],
+                ['Gamma', 'R_2', 'T_2', 'U_2', 'V_2', 'X', 'Y', 'Y_2', 'Z'],
+                id='hexagonal_cell_symmetry_broken_by_basis',
             ),
             pytest.param(
                 'oS',
                 [[3.0, 0, 0], [0, 4.0, 0], [0, 0, 5.0]],
-                None,  # Bug 1: Non-canonical Pearson symbol (oS equivalent to oC)
+                [[0, 0, 0], [1.0, 1.0, 1.0]],
+                ['Gamma', 'R', 'T', 'U', 'V', 'X', 'Y', 'Z'],
                 id='bug_1_non_canonical_pearson',
             ),
             pytest.param(
                 'mP',
                 [[3.0, 0, 0], [0, 4.0, 0.2], [0, 0, 5.0]],
-                None,  # Bug 2: Monoclinic with alpha≈90°, beta≈87°
+                [[0, 0, 0], [1.0, 1.0, 1.0]],
+                ['Gamma', 'R_2', 'T_2', 'U_2', 'V_2', 'X', 'Y', 'Y_2', 'Z'],
                 id='bug_2_monoclinic_alpha_90',
             ),
             pytest.param(
                 'oP',
                 [[4.0, 0, 0], [0, 4.001, 0], [0, 0, 4.002]],
-                None,  # Bug 3: Orthorhombic a≈b≈c
+                [[0, 0, 0], [1.0, 1.0, 1.0]],
+                [
+                    'F',
+                    'F_2',
+                    'Gamma',
+                    'H_0',
+                    'H_2',
+                    'H_4',
+                    'H_6',
+                    'L',
+                    'L_2',
+                    'L_4',
+                    'M_0',
+                    'M_2',
+                    'M_4',
+                    'M_6',
+                    'M_8',
+                    'S_0',
+                    'S_2',
+                    'S_4',
+                    'S_6',
+                    'T',
+                ],  # noqa: E501
                 id='bug_3_metrically_cubic',
+            ),
+            pytest.param(
+                'oP',
+                [[2.0, 0, 0], [0, 1.0, 0], [0, 0, 3.0]],
+                [[0, 0, 0], [1.0, 0.5, 1.5]],
+                [
+                    'F_2',
+                    'Gamma',
+                    'J_0',
+                    'L_0',
+                    'M_0',
+                    'R',
+                    'S',
+                    'SIGMA_0',
+                    'T',
+                    'U_0',
+                    'W',
+                    'X',
+                    'Y_0',
+                ],  # noqa: E501
+                id='orthorhombic_body_centered_basis',
+            ),
+            pytest.param(
+                'oP',
+                [[5.0, 0, 0], [0, 5.001, 0], [0, 0, 5.002]],
+                [[0, 0, 0], [2.5, 2.5, 2.5]],
+                ['Gamma', 'H', 'N', 'P'],
+                id='near_cubic_cell_bcc_basis',
+            ),
+            pytest.param(
+                'cP',
+                [[5.0, 0, 0], [0, 5.0, 0], [0, 0, 5.0]],
+                [[0, 0, 0], [2.5, 2.5, 2.5]],
+                ['Gamma', 'H', 'N', 'P'],
+                id='cubic_cell_bcc_basis',
             ),
         ],
     )
-    def test_resolve_high_symmetry_points_consistency_check_parametrized(
-        self, pearson, cell_vectors, expected_point_count, log_output
+    def test_resolve_high_symmetry_points_seekpath(
+        self, bravais_lattice, cell_vectors, positions, expected_labels, log_output
     ):
         """
-        Parametrized test for consistency check across different lattice types.
+        SeeKpath-based resolution across lattice types, including the three bug
+        scenarios from #403 and cells whose metrics suggest a different symmetry
+        than the atomic basis supports. SeeKpath determines the space group from
+        the full structure via spglib, so the resolved label sets reflect the
+        actual crystal symmetry (HPKOT naming, including suffixed variants) and
+        are locked in exactly.
         """
         from ase import Atoms
-        from ase.cell import Cell
 
-        cell = Cell(cell_vectors)
-        atoms = Atoms(
-            'Si2', positions=[[0, 0, 0], [1.0, 1.0, 1.0]], cell=cell, pbc=True
-        )
-
-        model_system = SimpleNamespace(
-            is_representative=True,
-            symmetry=SimpleNamespace(bravais_lattice=pearson),
-            representations=[SimpleNamespace(name='primitive')],
-            to_ase_atoms=lambda representation_index, logger: atoms,
-        )
+        atoms = Atoms('Si2', positions=positions, cell=cell_vectors, pbc=True)
+        model_system = make_kpoint_model_system(atoms, bravais_lattice=bravais_lattice)
 
         high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
             model_systems=[model_system], logger=logger
         )
 
         assert high_symmetry_points is not None
-        assert 'Gamma' in high_symmetry_points
-        if expected_point_count is not None:
-            assert len(high_symmetry_points) == expected_point_count
-        else:
-            # For bug regression tests: just verify we got points without error
-            assert len(high_symmetry_points) >= 4
+        assert sorted(high_symmetry_points) == expected_labels
 
     @pytest.mark.parametrize(
         'symbols, cell_vectors, scaled_positions, expected_points',
@@ -446,11 +422,10 @@ class TestKSpaceFunctionalities:
             pbc=True,
         )
 
-        model_system = SimpleNamespace(
-            is_representative=True,
-            symmetry=None,
-            representations=[SimpleNamespace(name='primitive')],
-            to_ase_atoms=lambda representation_index, logger: atoms,
+        # `primitive` deliberately not first: locks in that the resolver queries
+        # the representation it searched for, not index 0.
+        model_system = make_kpoint_model_system(
+            atoms, representation_names=('original', 'primitive')
         )
 
         high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
@@ -497,12 +472,7 @@ class TestKSpaceFunctionalities:
         )
         assert dataset.number == fixture['spacegroup_number']
 
-        model_system = SimpleNamespace(
-            is_representative=True,
-            symmetry=None,
-            representations=[SimpleNamespace(name='primitive')],
-            to_ase_atoms=lambda representation_index, logger: atoms,
-        )
+        model_system = make_kpoint_model_system(atoms)
 
         high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
             model_systems=[model_system], logger=logger
@@ -533,9 +503,9 @@ class TestKSpaceFunctionalities:
             {
                 'high_symmetry_path_names': [
                     'Gamma',
-                    'H',
-                    'P',
-                ],  # SeeKpath HPKOT naming for cubic
+                    'T',
+                    'L',
+                ],  # HPKOT naming for the rhombohedral (R3m) fixture structure
                 'high_symmetry_path_values': None,
             },
             lambda k_space: k_space.k_line_path,
@@ -583,10 +553,11 @@ def test_kspace_subsection_normalization_order(
     # Verify that subsection successfully accessed them during normalization
     for attr in expected_attrs:
         assert getattr(subsection, attr) is not None
-    # Special check for KLinePath length
+    # Special check for KLinePath length: every requested path name must resolve
     if 'high_symmetry_path_values' in expected_attrs:
-        # SeeKpath naming may differ from ASE - verify at least Gamma was resolved
-        assert len(subsection.high_symmetry_path_values) >= 1
+        assert len(subsection.high_symmetry_path_values) == len(
+            subsection.high_symmetry_path_names
+        )
 
 
 class TestKMesh:
