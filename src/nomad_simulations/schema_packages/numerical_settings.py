@@ -379,14 +379,17 @@ class KSpaceFunctionalities:
             )
             return None
 
-        # Convert SeeKpath format to NOMAD format, keeping SeeKpath's native HPKOT
-        # labels. Only `GAMMA` is normalized to `Gamma`, the spelling currently
-        # relied upon downstream; the wider label convention (capitalization of the
-        # other spelled-out Greek points, HPKOT vs. Setyawan-Curtarolo) is handled
-        # in issue #409.
+        # Keep SeeKpath's native HPKOT labels as-is, including the upper-case
+        # spelled-out Greek points (e.g. `SIGMA_0`). The one deliberate exception
+        # is `GAMMA -> Gamma`: that spelling is what downstream currently expects
+        # (parser-supplied `KLinePath.high_symmetry_path_names`, the schema
+        # examples), so remapping only it avoids breaking name matching. Settling
+        # the full label convention -- capitalization of the other Greek points and
+        # HPKOT vs. Setyawan-Curtarolo naming -- is deferred to issue #409, which
+        # should decide it once for both these points and the band-structure path.
         high_symmetry_points = {}
         for key, value in special_points.items():
-            if key == 'GAMMA':
+            if key == 'GAMMA':  # sole exception; see comment above
                 key = 'Gamma'
             high_symmetry_points[key] = list(value)
         return high_symmetry_points
