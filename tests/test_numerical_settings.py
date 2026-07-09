@@ -481,6 +481,8 @@ class TestKSpaceFunctionalities:
         import spglib
         from ase import Atoms
 
+        from nomad_simulations.schema_packages.numerical_settings import configuration
+
         fixture = KPOINT_STRUCTURES[structure_id]
         atoms = Atoms(
             numbers=fixture['atomic_numbers'],
@@ -489,10 +491,11 @@ class TestKSpaceFunctionalities:
             pbc=True,
         )
 
-        # Guard against silent classification drift of the fixture itself
+        # Guard against silent classification drift of the fixture itself, at the
+        # same tolerance the resolver uses.
         dataset = spglib.get_symmetry_dataset(
             (fixture['cell'], fixture['scaled_positions'], fixture['atomic_numbers']),
-            symprec=3e-3,
+            symprec=configuration.symmetry_tolerance,
         )
         assert dataset.number == fixture['spacegroup_number']
 

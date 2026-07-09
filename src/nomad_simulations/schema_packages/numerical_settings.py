@@ -7,6 +7,7 @@ import pint
 import seekpath
 import spglib
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
+from nomad.config import config
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
@@ -22,6 +23,10 @@ from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
+
+configuration = config.get_plugin_entry_point(
+    'nomad_simulations.schema_packages:nomad_simulations_plugin'
+)
 
 
 class NumericalSettings(ArchiveSection):
@@ -249,7 +254,7 @@ class KSpaceFunctionalities:
         self,
         model_systems: list[ModelSystem],
         logger: 'BoundLogger',
-        eps: float = 3e-3,
+        eps: float | None = None,
     ) -> dict | None:
         """
         Resolves the `high_symmetry_points` from the list of `ModelSystem`. This method relies on using the `ModelSystem`
@@ -263,11 +268,15 @@ class KSpaceFunctionalities:
         Args:
             model_systems (list[ModelSystem]): The list of `ModelSystem` sections.
             logger (BoundLogger): The logger to log messages.
-            eps (float, optional): Symmetry precision tolerance passed to SeeKpath/spglib. Defaults to 3e-3.
+            eps (float | None, optional): Symmetry precision (spglib `symprec`) passed to SeeKpath/spglib.
+                Defaults to `configuration.symmetry_tolerance`, the same tolerance MatID uses for the stored
+                `ModelSystem.symmetry`, so the k-points and the stored symmetry are derived consistently.
 
         Returns:
             (dict | None): The resolved `high_symmetry_points`.
         """
+        if eps is None:
+            eps = configuration.symmetry_tolerance
         # Extracting `bravais_lattice` from `ModelSystem.symmetry` and the primitive cell from `ModelSystem.representations`
         if model_systems is None:
             logger.warning(
@@ -448,12 +457,13 @@ class KMesh(Mesh):
             }
 
         **Symmetry source**: the points are generated with SeeKpath following the HPKOT recipe, which determines the
-        space group from the full crystal structure (lattice and atomic positions) via spglib. This is a structure-based
-        classification, so it may differ from the `bravais_lattice` metadata stored under `ModelSystem.symmetry` (which
-        can be derived with a different tolerance or unset); when they differ, the SeeKpath classification is used and
-        the discrepancy is logged. Labels follow the HPKOT convention, which is more detailed than the Setyawan-Curtarolo
-        one and may include suffixed variants such as `X_1`. SeeKpath returns the coordinates in the reciprocal basis of
-        its standardized primitive cell; they are transformed into the reciprocal basis of the input cell before storage.
+        space group from the full crystal structure (lattice and atomic positions) via spglib, using the same
+        `symmetry_tolerance` (spglib `symprec`) that MatID uses for the `bravais_lattice` metadata stored under
+        `ModelSystem.symmetry`. Deriving both at the same tolerance keeps the k-points consistent with the stored
+        symmetry; any residual difference in classification is logged. Labels follow the HPKOT convention, which is more
+        detailed than the Setyawan-Curtarolo one and may include suffixed variants such as `X_1`. SeeKpath returns the
+        coordinates in the reciprocal basis of its standardized primitive cell; they are transformed into the reciprocal
+        basis of the input cell before storage.
         """,
     )
 
