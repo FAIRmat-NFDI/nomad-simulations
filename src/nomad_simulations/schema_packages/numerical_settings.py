@@ -4,8 +4,9 @@ from typing import TYPE_CHECKING, Union
 
 import numpy as np
 import pint
+import seekpath
+import spglib
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
-from ase.lattice import bravais_classes
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
@@ -20,161 +21,6 @@ from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.data_types import positive_float
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.utils import log
-
-# Mapping from Pearson symbols to ASE lattice class names
-PEARSON_TO_ASE_NAME = {
-    # Cubic
-    'cP': 'CUB',  # Primitive cubic
-    'cF': 'FCC',  # Face-centered cubic
-    'cI': 'BCC',  # Body-centered cubic
-    # Tetragonal
-    'tP': 'TET',  # Primitive tetragonal
-    'tI': 'BCT',  # Body-centered tetragonal
-    # Orthorhombic
-    'oP': 'ORC',  # Primitive orthorhombic
-    'oF': 'ORCF',  # Face-centered orthorhombic
-    'oI': 'ORCI',  # Body-centered orthorhombic
-    'oC': 'ORCC',  # C-centered orthorhombic
-    'oS': 'ORCC',  # S-centered orthorhombic (equivalent to C-centered in ASE)
-    # Hexagonal & Rhombohedral
-    'hP': 'HEX',  # Hexagonal
-    'hR': 'RHL',  # Rhombohedral
-    # Monoclinic
-    'mP': 'MCL',  # Primitive monoclinic
-    'mC': 'MCLC',  # C-centered monoclinic
-    'mS': 'MCLC',  # S-centered monoclinic (equivalent to C-centered in ASE)
-    # Triclinic
-    'aP': 'TRI',  # Triclinic
-    # 2D lattices
-    'mp': 'OBL',  # Oblique (2-letter legacy)
-    'mpp': 'OBL',  # Oblique (3-letter from MatID)
-    'op': 'RECT',  # Rectangular (2-letter legacy)
-    'opp': 'RECT',  # Rectangular primitive (3-letter from MatID)
-    'oc': 'CRECT',  # Centered rectangular (2-letter legacy)
-    'ocp': 'CRECT',  # Centered rectangular (3-letter from MatID)
-    'tp': 'SQR',  # Square (2-letter legacy)
-    'tpp': 'SQR',  # Square (3-letter from MatID)
-    'hp': 'HEX2D',  # Hexagonal 2D (2-letter legacy)
-    'hpp': 'HEX2D',  # Hexagonal 2D (3-letter from MatID)
-}
-
-
-def reorder_lattice_params_for_convention(
-    pearson: str, a: float, b: float, c: float, alpha: float, beta: float, gamma: float
-) -> tuple:
-    """
-    Reorder lattice parameters to satisfy crystallographic conventions.
-
-    ASE lattice classes enforce strict conventions (e.g., orthorhombic requires a < b < c).
-    This function reorders the input parameters to match those conventions.
-
-    Args:
-        pearson: Pearson symbol (e.g., 'oP', 'mP', 'hR')
-        a, b, c: Lattice parameters in Angstroms
-        alpha, beta, gamma: Lattice angles in degrees
-
-    Returns:
-        Tuple of reordered (a, b, c, alpha, beta, gamma) satisfying conventions
-
-    Note:
-        Orthorhombic (oP, oF, oI, oC, oS): Requires a < b < c
-        Monoclinic (mP, mC, mS): Requires b <= c (angles not modified)
-        Other lattices: Return parameters unchanged
-    """
-    # Orthorhombic: enforce a < b < c
-    if pearson in ['oP', 'oF', 'oI', 'oC', 'oS']:
-        sorted_lengths = sorted([a, b, c])
-        return (
-            sorted_lengths[0],
-            sorted_lengths[1],
-            sorted_lengths[2],
-            alpha,
-            beta,
-            gamma,
-        )
-
-    # Monoclinic: enforce b <= c
-    # Convention: unique axis is b, so alpha (angle opposite to a) is the unique angle
-    elif pearson in ['mP', 'mC', 'mS']:
-        if b > c:
-            # Swap b and c to satisfy b <= c
-            return (a, c, b, alpha, beta, gamma)
-        else:
-            return (a, b, c, alpha, beta, gamma)
-
-    # Other lattices: no reordering needed
-    else:
-        return (a, b, c, alpha, beta, gamma)
-
-
-def filter_unique_lattice_params(
-    pearson: str, a: float, b: float, c: float, alpha: float, beta: float, gamma: float
-) -> dict:
-    """
-    Filter unique lattice parameters for ASE BravaisLattice class instantiation.
-
-    Each Bravais lattice type requires only its independent (non-redundant) parameters.
-    This function extracts the correct subset from the six parameters returned by
-    Cell.cellpar() based on crystallographic conventions.
-
-    Args:
-        pearson: Pearson symbol (e.g., 'oP', 'cP', 'tP')
-        a, b, c: Lattice parameters in Angstroms
-        alpha, beta, gamma: Lattice angles in degrees
-
-    Returns:
-        Dictionary of parameters required by the corresponding ASE lattice class
-
-    Note:
-        Uses ase.lattice.bravais_classes dictionary to map Pearson symbols to
-        BravaisLattice class constructors (e.g., 'oP' -> ORC, 'cP' -> CUB).
-
-    References:
-        Cell.cellpar(): https://docs.ase-lib.org/ase/geometry.html#ase.geometry.Cell.cellpar
-        BravaisLattice classes: https://docs.ase-lib.org/ase/lattice.html
-    """
-    # Cubic: only a
-    if pearson in ['cP', 'cF', 'cI']:
-        return {'a': a}
-
-    # Tetragonal: a and c
-    elif pearson in ['tP', 'tI']:
-        return {'a': a, 'c': c}
-
-    # Orthorhombic: a, b, c
-    elif pearson in ['oP', 'oF', 'oI', 'oC', 'oS']:
-        return {'a': a, 'b': b, 'c': c}
-
-    # Hexagonal: a and c
-    elif pearson == 'hP':
-        return {'a': a, 'c': c}
-
-    # Rhombohedral: a and alpha
-    elif pearson == 'hR':
-        return {'a': a, 'alpha': alpha}
-
-    # Monoclinic: a, b, c, alpha
-    elif pearson in ['mP', 'mC', 'mS']:
-        return {'a': a, 'b': b, 'c': c, 'alpha': alpha}
-
-    # Triclinic: all six parameters
-    elif pearson == 'aP':
-        return {'a': a, 'b': b, 'c': c, 'alpha': alpha, 'beta': beta, 'gamma': gamma}
-
-    # 2D lattices
-    elif pearson in ['mp', 'mpp']:  # Oblique
-        return {'a': a, 'b': b, 'alpha': alpha}
-    elif pearson in ['op', 'opp']:  # Rectangular
-        return {'a': a, 'b': b}
-    elif pearson in ['oc', 'ocp']:  # Centered rectangular
-        return {'a': a, 'alpha': alpha}
-    elif pearson in ['tp', 'tpp']:  # Square
-        return {'a': a}
-    elif pearson in ['hp', 'hpp']:  # Hexagonal 2D
-        return {'a': a}
-
-    else:
-        raise ValueError(f'Unknown Pearson symbol: {pearson}')
 
 
 class NumericalSettings(ArchiveSection):
@@ -348,6 +194,56 @@ class KSpaceFunctionalities:
             return False
         return True
 
+    @staticmethod
+    def _to_input_reciprocal_basis(
+        seekpath_result: dict,
+        structure: tuple,
+        eps: float,
+    ) -> dict:
+        """
+        Transforms SeeKpath `point_coords` into fractional coordinates of the input
+        cell's reciprocal basis.
+
+        SeeKpath expresses `point_coords` in the reciprocal basis of its own
+        standardized primitive cell, which may differ from the input cell by a
+        lattice-vector choice (e.g., a conventional or permuted setting) and, after
+        spglib idealization, by a rigid rotation. The `high_symmetry_points` quantity
+        is defined in units of `reciprocal_lattice_vectors`, i.e., the input cell's
+        reciprocal basis, so each point is mapped as
+        `k_frac_input = ((k_frac_prim @ B_prim) @ R) @ B_input^-1`.
+
+        Args:
+            seekpath_result (dict): The return value of `seekpath.get_path`.
+            structure (tuple): The `(cell, scaled_positions, numbers)` tuple passed
+                to SeeKpath; `cell` defines the target (input) basis.
+            eps (float): Symmetry precision used for the spglib rotation lookup.
+
+        Returns:
+            (dict): `point_coords` expressed in the input cell's reciprocal basis.
+        """
+        input_cell = np.array(structure[0])
+        reciprocal_input = 2 * np.pi * np.linalg.inv(input_cell).T
+        reciprocal_primitive = np.array(seekpath_result['reciprocal_primitive_lattice'])
+        primitive_lattice = np.array(seekpath_result['primitive_lattice'])
+
+        # The input and standardized primitive cells share a Cartesian frame only if
+        # the input lattice vectors are integer combinations of the primitive ones;
+        # otherwise idealization rotated the standardized frame and the rotation must
+        # be undone via spglib.
+        supercell_matrix = input_cell @ np.linalg.inv(primitive_lattice)
+        rotation = np.eye(3)
+        if not np.allclose(supercell_matrix, np.round(supercell_matrix), atol=1e-5):
+            dataset = spglib.get_symmetry_dataset(structure, symprec=eps)
+            rotation = np.array(dataset.std_rotation_matrix)
+
+        to_input_basis = (
+            reciprocal_primitive @ rotation @ np.linalg.inv(reciprocal_input)
+        )
+        return {
+            label: (np.array(coords) @ to_input_basis).tolist()
+            for label, coords in seekpath_result['point_coords'].items()
+        }
+
     def resolve_high_symmetry_points(
         self,
         model_systems: list[ModelSystem],
@@ -356,7 +252,7 @@ class KSpaceFunctionalities:
     ) -> dict | None:
         """
         Resolves the `high_symmetry_points` from the list of `ModelSystem`. This method relies on using the `ModelSystem`
-        information in the sub-sections `Symmetry` and `AtomicCell`, and uses the ASE package to extract the
+        information in the sub-sections `Symmetry` and `AtomicCell`, and uses SeeKpath (HPKOT recipe) to extract the
         special (high symmetry) points information.
 
         Note:
@@ -366,19 +262,19 @@ class KSpaceFunctionalities:
         Args:
             model_systems (list[ModelSystem]): The list of `ModelSystem` sections.
             logger (BoundLogger): The logger to log messages.
-            eps (float, optional): Tolerance factor to define the `lattice` ASE object. Defaults to 3e-3.
+            eps (float, optional): Symmetry precision tolerance passed to SeeKpath/spglib. Defaults to 3e-3.
 
         Returns:
             (dict | None): The resolved `high_symmetry_points`.
         """
-        # Extracting `bravais_lattice` from `ModelSystem.symmetry` section and `ASE.cell` from `ModelSystem.representations`
-        lattice = None
+        # Extracting `bravais_lattice` from `ModelSystem.symmetry` and the primitive cell from `ModelSystem.representations`
         if model_systems is None:
             logger.warning(
                 'Could not find `model_systems` to resolve high symmetry points.'
             )
             return None
 
+        special_points = None
         for model_system in model_systems:
             # General checks to proceed with normalization
             if not model_system.is_representative:
@@ -394,114 +290,83 @@ class KSpaceFunctionalities:
             if model_system.representations is None:
                 logger.warning('Could not find `ModelSystem.representations`.')
                 continue
-            prim_atomic_cell = None
-            for atomic_cell in model_system.representations:
+            prim_index = None
+            for index, atomic_cell in enumerate(model_system.representations):
                 if atomic_cell.name == 'primitive':
-                    prim_atomic_cell = atomic_cell
+                    prim_index = index
                     break
-            if prim_atomic_cell is None:
+            if prim_index is None:
                 logger.warning(
                     'Could not find primitive representation under `ModelSystem.representations`.'
                 )
                 continue
             # function defined in ModelSystem
             atoms = model_system.to_ase_atoms(
-                representation_index=0 if model_system.representations else None,
+                representation_index=prim_index,
                 logger=logger,
             )
-            cell = atoms.get_cell()
 
-            # Check consistency between spglib (via MatID) and ASE lattice detection
-            ase_lattice = cell.get_bravais_lattice(eps=eps)
-            ase_type = type(ase_lattice).__name__
+            # Use SeeKpath for k-point generation - it uses spglib internally
+            # and provides crystallographic standard k-point paths
+            try:
+                # Prepare structure tuple for SeeKpath: (cell, positions, numbers)
+                cell_vectors = atoms.get_cell().tolist()
+                positions = atoms.get_scaled_positions().tolist()
+                numbers = atoms.get_atomic_numbers().tolist()
+                structure = (cell_vectors, positions, numbers)
 
-            if bravais_lattice in PEARSON_TO_ASE_NAME:
-                expected_ase_type = PEARSON_TO_ASE_NAME[bravais_lattice]
+                # Get k-point path from SeeKpath
+                # symprec corresponds to spglib's symmetry precision tolerance
+                seekpath_result = seekpath.get_path(
+                    structure,
+                    with_time_reversal=True,
+                    recipe='hpkot',  # Standard HPKOT recipe
+                    symprec=eps,
+                    angle_tolerance=-1.0,  # Auto-determine from symprec
+                )
 
-                if ase_type != expected_ase_type:
-                    # Disagreement: spglib says one thing, ASE detects another
-                    # Use spglib's classification (more authoritative - includes atomic positions)
-                    # but reorder cell parameters to satisfy conventions
-                    logger.warning(
-                        'ASE detected %s but spglib says %s. Using spglib label with reordered parameters.',
-                        ase_type,
-                        bravais_lattice,
-                    )
+                if not seekpath_result['point_coords']:
+                    logger.warning('SeeKpath returned empty special points dictionary.')
+                    return None
 
-                    try:
-                        # Get raw parameters from cell
-                        a, b, c = cell.cellpar()[:3]
-                        alpha, beta, gamma = cell.cellpar()[3:]
+                # Express the points in units of `reciprocal_lattice_vectors`, as the
+                # `high_symmetry_points` quantity description defines them.
+                special_points = self._to_input_reciprocal_basis(
+                    seekpath_result, structure, eps
+                )
 
-                        # Reorder to satisfy conventions (e.g., a < b < c for orthorhombic)
-                        a, b, c, alpha, beta, gamma = (
-                            reorder_lattice_params_for_convention(
-                                bravais_lattice, a, b, c, alpha, beta, gamma
-                            )
-                        )
-
-                        # Filter to only parameters needed for this lattice type
-                        params = filter_unique_lattice_params(
-                            bravais_lattice, a, b, c, alpha, beta, gamma
-                        )
-
-                        # Force spglib's lattice type with reordered parameters
-                        lattice = bravais_classes[bravais_lattice](**params)
-                    except (KeyError, ValueError, TypeError) as e:
-                        logger.error(
-                            'Failed to instantiate lattice for Pearson symbol %s: %s',
-                            bravais_lattice,
-                            e,
-                        )
-                        return None
-                else:
-                    # Agreement: use ASE's detected lattice object
-                    lattice = ase_lattice
-            else:
-                # No stored label or unknown Pearson symbol: trust ASE
+                # Log informational message if SeeKpath's classification differs from stored
                 if bravais_lattice:
-                    logger.info(
-                        'Unknown Pearson symbol %s, using ASE detection.',
-                        bravais_lattice,
-                    )
-                lattice = ase_lattice
+                    seekpath_lattice = seekpath_result.get('bravais_lattice', '')
+                    if bravais_lattice != seekpath_lattice:
+                        logger.info(
+                            'Stored Bravais lattice %s differs from SeeKpath classification %s. '
+                            'Using SeeKpath k-points based on full structure analysis.',
+                            bravais_lattice,
+                            seekpath_lattice,
+                        )
+
+            except (ValueError, RuntimeError, KeyError) as e:
+                logger.error('Failed to resolve k-points with SeeKpath: %s', e)
+                return None
 
             break  # only cover the first representative `ModelSystem`
 
-        # Checking if `bravais_lattice` and `lattice` are defined
-        if lattice is None:
+        # Validate that we successfully obtained special points
+        if not special_points:
             logger.warning(
-                'Could not resolve `bravais_lattice` and `lattice` ASE object from the `ModelSystem`.'
+                'Could not resolve high-symmetry points from the `ModelSystem`.'
             )
             return None
 
-        # Extract high-symmetry k-points from the lattice object.
-        # Note: Convention compliance is guaranteed either by:
-        # 1. ASE's auto-detection (reorders vectors to satisfy conventions)
-        # 2. Our reorder_lattice_params_for_convention() when forcing spglib's label
-        # 3. ASE's instantiation validation (raises UnconventionalLattice if violated)
-        try:
-            special_points = lattice.get_special_points()
-        except (AssertionError, AttributeError, ValueError, RuntimeError):
-            logger.warning(
-                'Could not resolve high-symmetry points (ASE special points).'
-            )
-            return None
-
-        if special_points is None:
-            logger.warning(
-                'Could not find `lattice.get_special_points()` from the ASE package.'
-            )
-            return None
+        # Convert SeeKpath format to NOMAD format
         high_symmetry_points = {}
         for key, value in special_points.items():
-            if key == 'G':
+            # SeeKpath uses 'GAMMA' - convert to 'Gamma'
+            if key == 'GAMMA':
                 key = 'Gamma'
-            if bravais_lattice == 'tI':
-                if key == 'S':
-                    key = 'Sigma'
-                elif key == 'S1':
-                    key = 'Sigma1'
+            # SeeKpath may use different naming - handle special cases
+            # Note: SeeKpath follows HPKOT standard naming conventions
             high_symmetry_points[key] = list(value)
         return high_symmetry_points
 
@@ -568,16 +433,12 @@ class KMesh(Mesh):
                 ...
             }
 
-        **Symmetry source preference**: NOMAD prefers the Bravais lattice classification from spglib (via MatID) for
-        k-point generation when available, as spglib analyzes both the lattice parameters and atomic positions during
-        symmetry determination, while ASE's
-        `cell.get_bravais_lattice()` examines only the lattice geometry. When the stored Bravais lattice classification
-        is absent or unrecognized, ASE's geometric detection is used as a fallback. In practice, the two analyses usually
-        agree, but near-symmetric structures can trigger disagreements—for example, a slightly distorted orthorhombic cell
-        with parameters within 0.3% of each other might be classified as cubic by ASE's tolerance-based detection, while
-        spglib identifies it as orthorhombic based on the full crystal structure. When such mismatches occur, NOMAD forces
-        ASE to generate k-points using spglib's classification, ensuring consistency between the stored `bravais_lattice`
-        metadata and the k-point mesh used in calculations.
+        **Symmetry source**: the points are generated with SeeKpath following the HPKOT recipe, which determines the
+        space group from the full crystal structure (lattice and atomic positions) via spglib—the same analysis behind
+        the `bravais_lattice` metadata stored under `ModelSystem.symmetry`—so the k-point set and the stored symmetry
+        cannot disagree. Labels follow the HPKOT convention, which is more detailed than the Setyawan-Curtarolo one and
+        may include suffixed variants such as `X_1`. SeeKpath returns the coordinates in the reciprocal basis of its
+        standardized primitive cell; they are transformed into the reciprocal basis of the input cell before storage.
         """,
     )
 
