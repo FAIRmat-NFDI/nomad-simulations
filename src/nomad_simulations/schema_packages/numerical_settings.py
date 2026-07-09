@@ -310,21 +310,18 @@ class KSpaceFunctionalities:
                     'Could not find primitive representation under `ModelSystem.representations`.'
                 )
                 continue
-            # function defined in ModelSystem
-            atoms = model_system.to_ase_atoms(
-                representation_index=prim_index,
-                logger=logger,
-            )
+            # `(cell, scaled_positions, numbers)` straight from the schema, in the
+            # format SeeKpath and spglib consume (no ASE round-trip).
+            structure = model_system.to_structure_tuple(representation_index=prim_index)
+            if structure is None:
+                logger.warning(
+                    'Could not build the structure tuple for SeeKpath from the `ModelSystem`.'
+                )
+                continue
 
             # Use SeeKpath for k-point generation - it uses spglib internally
             # and provides crystallographic standard k-point paths
             try:
-                # Prepare structure tuple for SeeKpath: (cell, positions, numbers)
-                cell_vectors = atoms.get_cell().tolist()
-                positions = atoms.get_scaled_positions().tolist()
-                numbers = atoms.get_atomic_numbers().tolist()
-                structure = (cell_vectors, positions, numbers)
-
                 # Get k-point path from SeeKpath
                 # symprec corresponds to spglib's symmetry precision tolerance
                 seekpath_result = seekpath.get_path(

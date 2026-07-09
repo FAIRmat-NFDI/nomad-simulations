@@ -1682,6 +1682,33 @@ class ModelSystem(System, Representation):
         except KeyError:
             return False
 
+    def to_structure_tuple(
+        self, representation_index: int | None = None
+    ) -> tuple[list, list, list] | None:
+        """
+        Build the ``(cell, scaled_positions, atomic_numbers)`` tuple consumed by
+        spglib and SeeKpath directly from the schema, without an ASE round-trip.
+
+        The cell (in angstrom) is taken from ``representations[representation_index]``
+        when an index is given, otherwise from the top-level ``lattice_vectors``.
+        Positions are the top-level Cartesian ``positions`` expressed in fractional
+        coordinates of that cell. Returns ``None`` if the labels are not all valid
+        chemical symbols, or the cell or positions are missing.
+        """
+        symbols = self.get_symbols()
+        if not self._all_labels_are_elements(symbols):
+            return None
+        if representation_index is None:
+            lattice_vectors = self.lattice_vectors
+        else:
+            lattice_vectors = self.representations[representation_index].lattice_vectors
+        if lattice_vectors is None or self.positions is None:
+            return None
+        cell = np.asarray(lattice_vectors.to('angstrom').magnitude)
+        cartesian = self.positions.to('angstrom').magnitude
+        scaled_positions = cartesian @ np.linalg.inv(cell)
+        return cell.tolist(), scaled_positions.tolist(), list(symbols2numbers(symbols))
+
     @log
     def to_ase_atoms(
         self, representation_index: int | None = None

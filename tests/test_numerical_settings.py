@@ -25,14 +25,20 @@ def make_kpoint_model_system(
 ):
     """
     SimpleNamespace stand-in for a normalized `ModelSystem`, exposing only what
-    `resolve_high_symmetry_points` consumes. `to_ase_atoms` asserts it is queried
-    with the index of the `primitive` representation.
+    `resolve_high_symmetry_points` consumes. `to_structure_tuple` asserts it is
+    queried with the index of the `primitive` representation, and returns the
+    `(cell, scaled_positions, numbers)` tuple derived from the given ASE atoms.
     """
     prim_index = representation_names.index('primitive')
+    structure = (
+        atoms.get_cell().tolist(),
+        atoms.get_scaled_positions().tolist(),
+        atoms.get_atomic_numbers().tolist(),
+    )
 
-    def to_ase_atoms(representation_index, logger):
+    def to_structure_tuple(representation_index):
         assert representation_index == prim_index
-        return atoms
+        return structure
 
     return SimpleNamespace(
         is_representative=True,
@@ -42,7 +48,7 @@ def make_kpoint_model_system(
             else None
         ),
         representations=[SimpleNamespace(name=name) for name in representation_names],
-        to_ase_atoms=to_ase_atoms,
+        to_structure_tuple=to_structure_tuple,
     )
 
 
