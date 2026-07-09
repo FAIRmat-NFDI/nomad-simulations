@@ -306,7 +306,7 @@ class TestKSpaceFunctionalities:
                     'M_0',
                     'R',
                     'S',
-                    'Sigma_0',
+                    'SIGMA_0',
                     'T',
                     'U_0',
                     'W',
