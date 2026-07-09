@@ -10,6 +10,7 @@ from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
 from nomad.units import ureg
+from seekpath.hpkot import SymmetryDetectionError
 
 if TYPE_CHECKING:
     from nomad.datamodel.context import Context
@@ -346,8 +347,21 @@ class KSpaceFunctionalities:
                             seekpath_lattice,
                         )
 
-            except (ValueError, RuntimeError, KeyError) as e:
-                logger.error('Failed to resolve k-points with SeeKpath: %s', e)
+            except (
+                SymmetryDetectionError,
+                ValueError,
+                RuntimeError,
+                KeyError,
+                AttributeError,
+                TypeError,
+            ) as e:
+                # Recoverable: skip high-symmetry points rather than crash
+                # normalization. `SymmetryDetectionError` is raised by
+                # `seekpath.get_path` when spglib cannot detect the symmetry;
+                # AttributeError/TypeError guard against
+                # `spglib.get_symmetry_dataset` returning `None` in
+                # `_to_input_reciprocal_basis`.
+                logger.warning('Could not resolve k-points with SeeKpath: %s', e)
                 return None
 
             break  # only cover the first representative `ModelSystem`
@@ -434,11 +448,12 @@ class KMesh(Mesh):
             }
 
         **Symmetry source**: the points are generated with SeeKpath following the HPKOT recipe, which determines the
-        space group from the full crystal structure (lattice and atomic positions) via spglib—the same analysis behind
-        the `bravais_lattice` metadata stored under `ModelSystem.symmetry`—so the k-point set and the stored symmetry
-        cannot disagree. Labels follow the HPKOT convention, which is more detailed than the Setyawan-Curtarolo one and
-        may include suffixed variants such as `X_1`. SeeKpath returns the coordinates in the reciprocal basis of its
-        standardized primitive cell; they are transformed into the reciprocal basis of the input cell before storage.
+        space group from the full crystal structure (lattice and atomic positions) via spglib. This is a structure-based
+        classification, so it may differ from the `bravais_lattice` metadata stored under `ModelSystem.symmetry` (which
+        can be derived with a different tolerance or unset); when they differ, the SeeKpath classification is used and
+        the discrepancy is logged. Labels follow the HPKOT convention, which is more detailed than the Setyawan-Curtarolo
+        one and may include suffixed variants such as `X_1`. SeeKpath returns the coordinates in the reciprocal basis of
+        its standardized primitive cell; they are transformed into the reciprocal basis of the input cell before storage.
         """,
     )
 

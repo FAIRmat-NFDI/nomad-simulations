@@ -332,7 +332,7 @@ class TestKSpaceFunctionalities:
         ],
     )
     def test_resolve_high_symmetry_points_seekpath(
-        self, bravais_lattice, cell_vectors, positions, expected_labels, log_output
+        self, bravais_lattice, cell_vectors, positions, expected_labels
     ):
         """
         SeeKpath-based resolution across lattice types, including the three bug
@@ -353,6 +353,30 @@ class TestKSpaceFunctionalities:
 
         assert high_symmetry_points is not None
         assert sorted(high_symmetry_points) == expected_labels
+
+    def test_resolve_high_symmetry_points_symmetry_detection_failure(self, monkeypatch):
+        """
+        When spglib cannot detect the symmetry, `seekpath.get_path` raises
+        `SymmetryDetectionError` (which does not derive from `ValueError`). The
+        resolver must not crash normalization: it returns `None` with a warning.
+        """
+        from ase import Atoms
+
+        from nomad_simulations.schema_packages import numerical_settings
+
+        atoms = Atoms(
+            'Si2', positions=[[0, 0, 0], [2.5, 2.5, 2.5]], cell=[5.0] * 3, pbc=True
+        )
+        # Forcing spglib to report no symmetry makes seekpath raise.
+        monkeypatch.setattr(
+            numerical_settings.spglib, 'get_symmetry_dataset', lambda *a, **k: None
+        )
+
+        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
+            model_systems=[make_kpoint_model_system(atoms)], logger=logger
+        )
+
+        assert high_symmetry_points is None
 
     @pytest.mark.parametrize(
         'symbols, cell_vectors, scaled_positions, expected_points',
