@@ -487,7 +487,7 @@ class ElectronicDensityOfStates(DOSProfile):
         # `ElectronicBandGap` extraction
         band_gap = self.extract_band_gap()
         if band_gap is not None:
-            self.m_parent.electronic_band_gap.append(band_gap)
+            self.m_parent.electronic_band_gaps.append(band_gap)
 
         # Total `value` extraction from `projected_dos`
         value_from_pdos = self.generate_from_projected_dos(logger)
