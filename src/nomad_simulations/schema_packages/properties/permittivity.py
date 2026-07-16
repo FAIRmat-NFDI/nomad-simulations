@@ -97,4 +97,4 @@ class Permittivity(PhysicalProperty):
         # `AbsorptionSpectrum` extraction
         absorption_spectra = self.extract_absorption_spectra(logger)
         if absorption_spectra is not None:
-            self.m_parent.absorption_spectra.extend(absorption_spectra)
+            self.m_parent.m_append('absorption_spectra', absorption_spectra)
