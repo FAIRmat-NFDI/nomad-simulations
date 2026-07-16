@@ -21,6 +21,7 @@ from hashlib import sha1
 from typing import TYPE_CHECKING
 
 import ase
+import ase.units
 import numpy as np
 from ase.symbols import symbols2numbers
 from matid import Classifier, SymmetryAnalyzer  # pylint: disable=import-error
@@ -2266,7 +2267,11 @@ class ModelSystem(System, Representation):
             try:
                 velocities = ase_atoms.get_velocities()
                 if velocities is not None and len(velocities) == len(positions):
-                    model_system.velocities = velocities * ureg('angstrom/second')
+                    # get_velocities() returns ASE internal units
+                    # (Å per Å·sqrt(amu/eV)); ase.units.fs converts to Å/fs
+                    model_system.velocities = (
+                        velocities * ase.units.fs * ureg('angstrom/fs')
+                    )
             except Exception as e:
                 logger.debug(f'Could not map velocities: {e}')
 
