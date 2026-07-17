@@ -1551,7 +1551,9 @@ class IntegralDecomposition(ArchiveSection):
       - F. Weigend, M. Häser, The RI-MP2 method: Algorithmic
         implementation of efficient, approximate MP2 theories,
         Theor. Chem. Acc. 97, 331-340 (1997).
-      - S. Hättig, F. Weigend, J. Chem. Phys. 113, 5154 (2000). (RI-J)
+      - K. Eichkorn, O. Treutler, H. Öhm, M. Häser, R. Ahlrichs,
+        Chem. Phys. Lett. 240, 283 (1995). (RI-J)
+      - C. Hättig, F. Weigend, J. Chem. Phys. 113, 5154 (2000). (RI-CC2)
       - Neese et al., "Chain-of-spheres algorithms for HF exchange,"
         Chem. Phys. 356 (2008), 98-109.
     """

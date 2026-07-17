@@ -124,8 +124,9 @@ class ImplicitSolvationModel(BaseModelMethod):
     References
     ----------
     •  J. Tomasi, B. Mennucci, R. Cammi, *Chem. Rev.* **105**, 2999 (2005) - PCM overview
-    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) - COSMO
-    •  A. V. Marenich *et al.*, *J. Chem. Phys. B* **113**, 6378 (2009) - SMD
+    •  A. Klamt, G. Schüürmann, *J. Chem. Soc., Perkin Trans. 2*, 799 (1993) - COSMO
+    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) - COSMO-RS
+    •  A. V. Marenich *et al.*, *J. Phys. Chem. B* **113**, 6378 (2009) - SMD
     """
 
     model = Quantity(
@@ -247,7 +248,7 @@ class EmpiricalDispersionModel(BaseModelMethod):
     ----------
     • S. Grimme, J. Comp. Chem. 27, 1787 (2006) - DFT-D2
     • S. Grimme et al., J. Chem. Phys. 132, 154104 (2010) - DFT-D3
-    • S. Grimme et al., J. Chem. Phys. 136, 154105 (2012) - DFT-D3(BJ)
+    • S. Grimme, S. Ehrlich, L. Goerigk, J. Comput. Chem. 32, 1456 (2011) - DFT-D3(BJ)
     • A. Tkatchenko, M. Scheffler, Phys. Rev. Lett. 102, 073005 (2009) - TS
     • A. Tkatchenko et al., Phys. Rev. Lett. 108, 236402 (2012) - MBD
     • C. Steinmann, WIREs Comput. Mol. Sci. 10, e1438 (2020) - overview
@@ -707,7 +708,6 @@ class DFT(ModelMethodElectronic):
         See:
             - https://doi.org/10.1063/1.1390175 (original paper)
             - https://doi.org/10.1103/PhysRevLett.91.146401 (meta-GGA)
-            - https://doi.org/10.1063/1.1904565 (hyper-GGA)
         """,
     )
 
@@ -2233,7 +2233,7 @@ class ActiveSpace(ArchiveSection):
     Captures just the counts and labeling needed to identify the orbital/electron
     subspace used by CASSCF/CASPT2-style calculations.
 
-    - CAS: complete active space (Roos et al., Chem. Phys. Lett. 48, 157, 1980)
+    - CAS: complete active space (Roos et al., Chem. Phys. 48, 157, 1980)
     - RAS: restricted active space (Olsen et al., J. Chem. Phys. 89, 2185, 1988)
 
     CAS vs RAS
