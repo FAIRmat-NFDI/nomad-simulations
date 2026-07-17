@@ -95,6 +95,25 @@ class TestElectronicDensityOfStates:
         assert band_gap is not None
         assert np.isclose(band_gap.value.to('eV').magnitude, 0.0, atol=1e-12)
 
+    def test_resolve_energies_origin_without_occupied_states(self):
+        """The HOMO search must not wrap around to the end of the DOS array."""
+        electronic_dos = ElectronicDensityOfStates()
+        energies_points = np.linspace(-0.5, 0.5, 101) * ureg.eV
+        dos_values = np.zeros(101)
+        dos_values[80:] = 1.0  # unoccupied states only: E >= 0.30 eV
+        electronic_dos.value = dos_values * ureg('1/joule')
+
+        energies_origin = electronic_dos.resolve_energies_origin(
+            energies_points=energies_points,
+            fermi_level=0.0 * ureg.eV,
+            logger=logger,
+        )
+
+        assert electronic_dos.m_cache.get('highest_occupied_energy') is None
+        lumo = electronic_dos.m_cache.get('lowest_unoccupied_energy')
+        assert np.isclose(lumo.to('eV').magnitude, 0.30)
+        assert energies_origin == 0.0 * ureg.eV
+
     def test_resolve_energies_origin_no_reference(self):
         """
         Test that `resolve_energies_origin` returns `None` when neither an

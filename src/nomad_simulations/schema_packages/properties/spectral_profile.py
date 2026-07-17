@@ -284,11 +284,8 @@ class ElectronicDensityOfStates(DOSProfile):
             if not single_peak_fermi:
                 # Look for highest occupied energy below the descend index
                 idx = idx_descend
-                while True:
-                    try:
-                        value = dos_values[idx]
-                    except IndexError:
-                        break
+                while idx >= 0:
+                    value = dos_values[idx]
                     if value > configuration.dos_intensities_threshold:
                         self.m_cache['highest_occupied_energy'] = energies_points[idx]
                         break
