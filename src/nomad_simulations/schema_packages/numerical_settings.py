@@ -1554,7 +1554,7 @@ class IntegralDecomposition(ArchiveSection):
         Chem. Phys. Lett. 240, 283 (1995). (RI-J)
       - C. Hättig, F. Weigend, J. Chem. Phys. 113, 5154 (2000). (RI-CC2)
       - Neese et al., "Chain-of-spheres algorithms for HF exchange,"
-        Chem. Phys. 356 (2008), 98-109.
+        Chem. Phys. 356 (2009), 98-109.
     """
 
     approximation_type = Quantity(
