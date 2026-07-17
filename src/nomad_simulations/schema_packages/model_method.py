@@ -246,7 +246,7 @@ class EmpiricalDispersionModel(BaseModelMethod):
 
     References
     ----------
-    • S. Grimme, J. Comp. Chem. 27, 1787 (2006) - DFT-D2
+    • S. Grimme, J. Comput. Chem. 27, 1787 (2006) - DFT-D2
     • S. Grimme et al., J. Chem. Phys. 132, 154104 (2010) - DFT-D3
     • S. Grimme, S. Ehrlich, L. Goerigk, J. Comput. Chem. 32, 1456 (2011) - DFT-D3(BJ)
     • A. Tkatchenko, M. Scheffler, Phys. Rev. Lett. 102, 073005 (2009) - TS
@@ -2034,7 +2034,7 @@ class LocalCorrelation(ArchiveSection):
     Representative references
     -------------------------
     - M. Schütz, J. Chem. Phys. 113, 9986 (2000).
-    - E. Riplinger and F. Neese, J. Chem. Phys. 138, 034106 (2013).
+    - C. Riplinger and F. Neese, J. Chem. Phys. 138, 034106 (2013).
     """
 
     type = Quantity(
