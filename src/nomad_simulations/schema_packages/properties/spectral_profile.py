@@ -365,7 +365,7 @@ class ElectronicDensityOfStates(DOSProfile):
         band_gap = None
         homo = self.m_cache.get('highest_occupied_energy')
         lumo = self.m_cache.get('lowest_unoccupied_energy')
-        if homo and lumo:
+        if homo is not None and lumo is not None:
             band_gap = ElectronicBandGap()
             band_gap.is_derived = True
             band_gap.physical_property_ref = self
