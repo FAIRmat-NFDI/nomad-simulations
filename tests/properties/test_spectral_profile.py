@@ -39,8 +39,9 @@ class TestElectronicDensityOfStates:
 
         The DOS grid runs from -0.5 to 0.5 eV in steps of 0.01 eV, with a valence band
         below -0.2 eV and a conduction band above 0.3 eV. With the Fermi level inside
-        the gap, the HOMO/LUMO stored in `m_cache` are the gap-side grid points
-        adjacent to the band edges.
+        the gap, the HOMO/LUMO stored in `m_cache` are the highest occupied and lowest
+        unoccupied DOS points, i.e., the band-edge grid points where the DOS is
+        non-zero.
         """
         # ! extend to the `ElectronicEigenvalues` sibling path once it is implemented
         electronic_dos = ElectronicDensityOfStates()
@@ -58,14 +59,14 @@ class TestElectronicDensityOfStates:
 
         homo = electronic_dos.m_cache.get('highest_occupied_energy')
         lumo = electronic_dos.m_cache.get('lowest_unoccupied_energy')
-        assert np.isclose(homo.to('eV').magnitude, -0.19)
-        assert np.isclose(lumo.to('eV').magnitude, 0.29)
+        assert np.isclose(homo.to('eV').magnitude, -0.20)
+        assert np.isclose(lumo.to('eV').magnitude, 0.30)
         assert energies_origin == homo
 
         # The cached energies produce a finite DOS-derived band gap
         band_gap = electronic_dos.extract_band_gap()
         assert band_gap is not None
-        assert np.isclose(band_gap.value.to('eV').magnitude, 0.48)
+        assert np.isclose(band_gap.value.to('eV').magnitude, 0.50)
 
     def test_resolve_energies_origin_metallic(self):
         """

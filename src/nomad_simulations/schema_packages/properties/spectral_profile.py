@@ -290,7 +290,6 @@ class ElectronicDensityOfStates(DOSProfile):
                     except IndexError:
                         break
                     if value > configuration.dos_intensities_threshold:
-                        idx = idx if idx == idx_descend else idx + 1
                         self.m_cache['highest_occupied_energy'] = energies_points[idx]
                         break
                     idx -= 1
@@ -302,7 +301,6 @@ class ElectronicDensityOfStates(DOSProfile):
                     except IndexError:
                         break
                     if value > configuration.dos_intensities_threshold:
-                        idx = idx if idx == idx_ascend else idx - 1
                         self.m_cache['lowest_unoccupied_energy'] = energies_points[idx]
                         break
                     idx += 1
