@@ -251,7 +251,7 @@ class EmpiricalDispersionModel(BaseModelMethod):
     • S. Grimme, S. Ehrlich, L. Goerigk, J. Comput. Chem. 32, 1456 (2011) - DFT-D3(BJ)
     • A. Tkatchenko, M. Scheffler, Phys. Rev. Lett. 102, 073005 (2009) - TS
     • A. Tkatchenko et al., Phys. Rev. Lett. 108, 236402 (2012) - MBD
-    • C. Steinmann, WIREs Comput. Mol. Sci. 10, e1438 (2020) - overview
+    • S. Grimme, A. Hansen, J. G. Brandenburg, C. Bannwarth, Chem. Rev. 116, 5105 (2016) - overview
     """
 
     model = Quantity(
