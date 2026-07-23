@@ -13,7 +13,7 @@ import pytest
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.outputs import Outputs, SCFSteps
-from nomad_simulations.schema_packages.properties import TotalForce
+from nomad_simulations.schema_packages.properties import TotalEnergy, TotalForce
 from nomad_simulations.schema_packages.workflow.general import (
     ChargeConvergenceTarget,
     EnergyConvergenceTarget,
@@ -719,6 +719,26 @@ class TestFallbackPaths:
         is_reached = energy_target.normalize(archive, logger)
         # Last delta is 1e-7 < 1e-6
         assert is_reached is True
+
+    def test_energy_delta_ignores_output_total_energies(self, archive, logger):
+        """Test that generic total_energies are not treated as SCF iterations."""
+        outputs = Outputs(
+            total_energies=[
+                TotalEnergy(value=1.0 * ureg.joule),
+                TotalEnergy(value=2.0 * ureg.joule),
+            ],
+            scf_steps=SCFSteps(
+                energies_total=np.array([10.0, 10.1, 10.3]) * ureg.joule
+            ),
+        )
+        archive.data.outputs = [outputs]
+
+        outputs.normalize(archive, logger)
+
+        assert outputs.scf_steps.delta_energies_total is not None
+        assert list(outputs.scf_steps.delta_energies_total.magnitude) == pytest.approx(
+            [0.1, 0.2]
+        )
 
 
 class TestThresholdTypeValidation:
