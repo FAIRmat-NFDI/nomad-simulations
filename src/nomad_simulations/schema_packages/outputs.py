@@ -69,7 +69,8 @@ class SCFSteps(ArchiveSection):
         type=float,
         unit='joule',
         description="""
-        Root mean square of change of potential energy at each SCF step.
+        Code-reported effective-potential residual at each SCF step, in energy
+        units. The exact norm and normalization are code-specific.
         """,
     )
 
@@ -78,8 +79,8 @@ class SCFSteps(ArchiveSection):
         type=float,
         unit='coulomb',
         description="""
-        Root mean square of the integrated charge-density residual at each SCF
-        step.
+        Code-reported charge-density residual at each SCF step, in charge units.
+        The exact norm and normalization are code-specific.
         """,
     )
 
@@ -98,7 +99,8 @@ class SCFSteps(ArchiveSection):
         type=float,
         unit='newton',
         description="""
-        Absolute change of forces at each SCF step.
+        Code-reported absolute force-change convergence measure at each SCF step.
+        Values are not inferred from final forces.
         """,
     )
 
@@ -295,15 +297,12 @@ class Outputs(SimulationTime):
 
             energy_values = self.scf_steps.energies_total
 
-            # Compute differences manually to preserve Pint units
             deltas = []
             for i in range(1, len(energy_values)):
                 delta = np.abs(energy_values[i] - energy_values[i - 1])
                 deltas.append(delta)
 
-            # Convert list to array-like structure
             if len(deltas) > 0 and hasattr(deltas[0], 'magnitude'):
-                # Pint quantities - stack magnitudes and add units
                 magnitudes = [d.magnitude for d in deltas]
                 return np.array(magnitudes) * deltas[0].units
             else:
