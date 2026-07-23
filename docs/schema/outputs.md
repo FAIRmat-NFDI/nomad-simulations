@@ -90,7 +90,7 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `energies_total` | m_float64(float) (shape: ['*']) | Total energy at each SCF step. |
-| `delta_energies_total` | m_float64(float) (shape: ['*']) | Absolute change of total energy at each SCF step. |
+| `delta_energies_total` | m_float64(float) (shape: ['*']) | <details><summary>Absolute change of total energy between consecutive SCF steps.</summary>Absolute change of total energy between consecutive SCF steps. When<br>derived from `energies_total`, `delta_energies_total[i] =<br>abs(energies_total[i + 1] - energies_total[i])`, so N SCF energies<br>produce N - 1 energy deltas.</details> |
 | `delta_potential_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of potential energy at each SCF step. |
 | `delta_density_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of potential energy at each SCF step. |
 | `delta_wavefunction_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of wavefunction coefficients at each SCF step. Dimensionless quantity representing convergence of orbital coefficients. |

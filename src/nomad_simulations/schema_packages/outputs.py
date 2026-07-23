@@ -60,7 +60,10 @@ class SCFSteps(ArchiveSection):
         type=float,
         unit='joule',
         description="""
-        Absolute change of total energy at each SCF step.
+        Absolute change of total energy between consecutive SCF steps. When
+        derived from `energies_total`, `delta_energies_total[i] =
+        abs(energies_total[i + 1] - energies_total[i])`, so N SCF energies
+        produce N - 1 energy deltas.
         """,
     )
 
