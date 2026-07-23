@@ -76,9 +76,10 @@ class SCFSteps(ArchiveSection):
     delta_density_rms = Quantity(
         shape=['*'],
         type=float,
-        unit='coulomb / meter ** 3',
+        unit='coulomb',
         description="""
-        Root mean square of change of charge density at each SCF step.
+        Root mean square of the integrated charge-density residual at each SCF
+        step.
         """,
     )
 

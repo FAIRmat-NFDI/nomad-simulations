@@ -92,7 +92,7 @@ classDiagram
 | `energies_total` | m_float64(float) (shape: ['*']) | Total energy at each SCF step. |
 | `delta_energies_total` | m_float64(float) (shape: ['*']) | Absolute change of total energy at each SCF step. |
 | `delta_potential_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of potential energy at each SCF step. |
-| `delta_density_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of charge density at each SCF step. |
+| `delta_density_rms` | m_float64(float) (shape: ['*']) | Root mean square of the integrated charge-density residual at each SCF step. |
 | `delta_wavefunction_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of wavefunction coefficients at each SCF step. Dimensionless quantity representing convergence of orbital coefficients. |
 | `delta_force_abs` | m_float64(float) (shape: ['*']) | Absolute change of forces at each SCF step. |
 | `durations` | m_float64(float) (shape: ['*']) | Time spent at each SCF step. |

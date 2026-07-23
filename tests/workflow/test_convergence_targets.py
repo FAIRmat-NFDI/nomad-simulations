@@ -242,28 +242,28 @@ class TestChargeConvergenceTarget:
         [
             # Absolute convergence - converged
             (
-                1e-7 * ureg.coulomb / ureg.meter**3,
+                1e-7 * ureg.coulomb,
                 'absolute',
                 np.array([1e-10, 1e-10, 1e-10]),
                 True,
             ),
             # Absolute convergence - not converged
             (
-                1e-7 * ureg.coulomb / ureg.meter**3,
+                1e-7 * ureg.coulomb,
                 'absolute',
                 np.array([1e-5, 1e-5, 1e-5]),
                 False,
             ),
             # RMS convergence - converged
             (
-                1e-7 * ureg.coulomb / ureg.meter**3,
+                1e-7 * ureg.coulomb,
                 'rms',
                 np.array([1e-10, 1e-10, 1e-10, 1e-10]),
                 True,
             ),
             # RMS convergence - not converged
             (
-                1e-7 * ureg.coulomb / ureg.meter**3,
+                1e-7 * ureg.coulomb,
                 'rms',
                 np.array([1e-5, 1e-5, 1e-5, 1e-5]),
                 False,
@@ -294,7 +294,7 @@ class TestChargeConvergenceTarget:
 
         # Create SCF steps with density RMS values (charge convergence)
         scf_step = SCFSteps()
-        scf_step.delta_density_rms = charge_values * ureg.coulomb / ureg.meter**3
+        scf_step.delta_density_rms = charge_values * ureg.coulomb
 
         archive.data.outputs = [Outputs(scf_steps=scf_step)]
 
@@ -384,7 +384,7 @@ class TestMissingDataHandling:
             (EnergyConvergenceTarget, 1e-6, ureg.joule),
             (ForceConvergenceTarget, 1e-8, ureg.newton),
             (PotentialConvergenceTarget, 1e-5, ureg.joule),
-            (ChargeConvergenceTarget, 1e-7, ureg.coulomb / ureg.meter**3),
+            (ChargeConvergenceTarget, 1e-7, ureg.coulomb),
             (WavefunctionConvergenceTarget, 1e-8, ureg.dimensionless),
         ],
         ids=['Energy', 'Force', 'Potential', 'Charge', 'Wavefunction'],
@@ -566,7 +566,7 @@ class TestConvergenceInWorkflow:
                 threshold=1e-8 * ureg.newton, threshold_type='maximum'
             ),
             ChargeConvergenceTarget(
-                threshold=1e-7 * ureg.coulomb / ureg.meter**3,
+                threshold=1e-7 * ureg.coulomb,
                 threshold_type='rms',
             ),
         ]
@@ -574,7 +574,7 @@ class TestConvergenceInWorkflow:
         # Create test data
         scf_step = SCFSteps()
         scf_step.delta_energies_total = np.array([5e-7]) * ureg.joule
-        scf_step.delta_density_rms = np.array([1e-8]) * ureg.coulomb / ureg.meter**3
+        scf_step.delta_density_rms = np.array([1e-8]) * ureg.coulomb
         scf_step.delta_force_abs = np.array([1e-9, 2e-9]) * ureg.newton
 
         outputs = Outputs(scf_steps=scf_step)

@@ -510,7 +510,7 @@ class ChargeConvergenceTarget(WorkflowConvergenceTarget):
     """Convergence target for electron density/charge differences."""
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
-    threshold.m_annotations['expected_unit'] = 'coulomb / meter ** 3'
+    threshold.m_annotations['expected_unit'] = 'coulomb'
     threshold.m_annotations['convergence'] = {'path': '@.scf_steps.delta_density_rms'}
 
 
