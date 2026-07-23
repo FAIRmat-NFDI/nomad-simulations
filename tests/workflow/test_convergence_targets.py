@@ -158,11 +158,14 @@ class TestForceConvergenceTarget:
         force_target.threshold = threshold
         force_target.threshold_type = threshold_type
 
-        # Create outputs with explicitly parsed SCF force-change magnitudes.
-        scf_steps = SCFSteps()
-        scf_steps.delta_force_abs = np.sqrt((force_values**2).sum(axis=1)) * ureg.newton
-        outputs = Outputs(scf_steps=scf_steps)
+        # Create outputs with forces and scf_steps
+        forces = TotalForce(value=force_values * ureg.newton)
+        scf_steps = SCFSteps()  # Empty scf_steps for normalization to populate
+        outputs = Outputs(total_forces=[forces], scf_steps=scf_steps)
         archive.data.outputs = [outputs]
+
+        # Normalize outputs to compute delta_force_abs from total_forces
+        outputs.normalize(archive, logger)
 
         # Check convergence
         is_reached = force_target.normalize(archive, logger)
@@ -241,33 +244,13 @@ class TestChargeConvergenceTarget:
         'threshold, threshold_type, charge_values, expected_reached',
         [
             # Absolute convergence - converged
-            (
-                1e-7 * ureg.coulomb,
-                'absolute',
-                np.array([1e-10, 1e-10, 1e-10]),
-                True,
-            ),
+            (1e-7 * ureg.coulomb, 'absolute', np.array([1e-10, 1e-10, 1e-10]), True),
             # Absolute convergence - not converged
-            (
-                1e-7 * ureg.coulomb,
-                'absolute',
-                np.array([1e-5, 1e-5, 1e-5]),
-                False,
-            ),
+            (1e-7 * ureg.coulomb, 'absolute', np.array([1e-5, 1e-5, 1e-5]), False),
             # RMS convergence - converged
-            (
-                1e-7 * ureg.coulomb,
-                'rms',
-                np.array([1e-10, 1e-10, 1e-10, 1e-10]),
-                True,
-            ),
+            (1e-7 * ureg.coulomb, 'rms', np.array([1e-10, 1e-10, 1e-10, 1e-10]), True),
             # RMS convergence - not converged
-            (
-                1e-7 * ureg.coulomb,
-                'rms',
-                np.array([1e-5, 1e-5, 1e-5, 1e-5]),
-                False,
-            ),
+            (1e-7 * ureg.coulomb, 'rms', np.array([1e-5, 1e-5, 1e-5, 1e-5]), False),
         ],
     )
     def test_charge_convergence(
@@ -283,7 +266,7 @@ class TestChargeConvergenceTarget:
         Test charge convergence with absolute and RMS types.
 
         Args:
-            threshold: Convergence threshold.
+            threshold: Convergence threshold (dimensionless).
             threshold_type: Type of convergence check ('absolute' or 'rms').
             charge_values: Array of charge difference values.
             expected_reached: Expected value of is_reached flag.
@@ -566,8 +549,7 @@ class TestConvergenceInWorkflow:
                 threshold=1e-8 * ureg.newton, threshold_type='maximum'
             ),
             ChargeConvergenceTarget(
-                threshold=1e-7 * ureg.coulomb,
-                threshold_type='rms',
+                threshold=1e-7 * ureg.coulomb, threshold_type='rms'
             ),
         ]
 
@@ -575,10 +557,16 @@ class TestConvergenceInWorkflow:
         scf_step = SCFSteps()
         scf_step.delta_energies_total = np.array([5e-7]) * ureg.joule
         scf_step.delta_density_rms = np.array([1e-8]) * ureg.coulomb
-        scf_step.delta_force_abs = np.array([1e-9, 2e-9]) * ureg.newton
 
-        outputs = Outputs(scf_steps=scf_step)
+        forces = TotalForce(
+            value=np.array([[1e-9, 1e-9, 1e-9], [1e-9, 1e-9, 1e-9]]) * ureg.newton
+        )
+
+        outputs = Outputs(scf_steps=scf_step, total_forces=[forces])
         archive.data.outputs = [outputs]
+
+        # Normalize outputs to compute delta_force_abs
+        outputs.normalize(archive, logger)
 
         # Normalize workflow
         workflow.normalize(archive, logger)
@@ -628,10 +616,16 @@ class TestConvergenceInWorkflow:
         # Create test data
         scf_step = SCFSteps()
         scf_step.delta_energies_total = np.array([5e-7]) * ureg.joule  # Converges
-        scf_step.delta_force_abs = np.array([1e-5]) * ureg.newton  # Doesn't converge
 
-        outputs = Outputs(scf_steps=scf_step)
+        forces = TotalForce(
+            value=np.array([[1e-5, 1e-5, 1e-5]]) * ureg.newton
+        )  # Doesn't converge
+
+        outputs = Outputs(scf_steps=scf_step, total_forces=[forces])
         archive.data.outputs = [outputs]
+
+        # Normalize outputs to compute delta_force_abs
+        outputs.normalize(archive, logger)
 
         # Normalize targets and capture results
         convergence_results = []
@@ -662,8 +656,8 @@ class TestFallbackPaths:
         is_reached = force_target.normalize(archive, logger)
         assert is_reached is True  # max([1e-9, 2e-9, 1.5e-9]) < 1e-8
 
-    def test_force_is_not_inferred_from_final_total_forces(self, archive, logger):
-        """Test that final total_forces are not treated as SCF force changes."""
+    def test_force_fallback_to_computed(self, archive, logger):
+        """Test that delta_force_abs is computed from total_forces during normalization."""
         force_target = ForceConvergenceTarget()
         force_target.threshold = 1e-8 * ureg.newton
         force_target.threshold_type = 'maximum'
@@ -676,13 +670,16 @@ class TestFallbackPaths:
         outputs = Outputs(total_forces=[forces], scf_steps=scf_steps)
         archive.data.outputs = [outputs]
 
-        # Normalize outputs. A final force vector is not an SCF force-change delta.
+        # Normalize outputs to compute delta_force_abs from total_forces
         outputs.normalize(archive, logger)
 
-        assert outputs.scf_steps.delta_force_abs is None
+        # Verify delta_force_abs was computed
+        assert outputs.scf_steps.delta_force_abs is not None
 
+        # Check convergence using computed values
         is_reached = force_target.normalize(archive, logger)
-        assert is_reached is None
+        # max norm ≈ 3.46e-9 < 1e-8
+        assert is_reached is True
 
     def test_single_path_backwards_compatible(self, archive, logger):
         """Test that single 'path' annotation still works."""
