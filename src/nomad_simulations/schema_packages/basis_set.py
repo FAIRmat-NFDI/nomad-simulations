@@ -116,6 +116,9 @@ class PlaneWaveBasisSet(BasisSetComponent, KMesh):
         The cutoff radius is the wavevector magnitude `k_cut` of a plane wave `e^{i k·r}`,
         obtained from the cutoff energy as `k_cut = sqrt(2 * m_e * E_cut) / hbar`. It follows
         the same 2*pi-inclusive convention as `KSpace.reciprocal_lattice_vectors`.
+"""
+        Compute `cutoff_radius` from `cutoff_energy` as the plane-wave wavevector magnitude
+        `k_cut = sqrt(2 * m_e * E_cut) / hbar` (angular wavevector, 2*pi-inclusive).
         """
         if cutoff_energy is None:
             return None
