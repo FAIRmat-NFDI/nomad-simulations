@@ -115,7 +115,7 @@ class PlaneWaveBasisSet(BasisSetComponent, KMesh):
         if cutoff_energy is None:
             return None
         m_e = const.m_e * ureg(const.unit('electron mass'))
-        hbar = const.hbar * ureg.joule * ureg.second
+        hbar = const.hbar * ureg(const.unit('reduced Planck constant'))
         return np.sqrt(2 * m_e * cutoff_energy) / hbar
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
