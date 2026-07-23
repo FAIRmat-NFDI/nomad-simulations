@@ -110,7 +110,12 @@ class PlaneWaveBasisSet(BasisSetComponent, KMesh):
         self, cutoff_energy: pint.Quantity | None
     ) -> pint.Quantity | None:
         """
-        Compute the cutoff radius for the plane-wave basis set, expressed in reciprocal coordinates.
+        Compute the cutoff radius for the plane-wave basis set, expressed in reciprocal
+        coordinates.
+
+        The cutoff radius is the wavevector magnitude `k_cut` of a plane wave `e^{i k·r}`,
+        obtained from the cutoff energy as `k_cut = sqrt(2 * m_e * E_cut) / hbar`. It follows
+        the same 2*pi-inclusive convention as `KSpace.reciprocal_lattice_vectors`.
         """
         if cutoff_energy is None:
             return None
