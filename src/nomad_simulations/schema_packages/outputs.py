@@ -76,9 +76,9 @@ class SCFSteps(ArchiveSection):
     delta_density_rms = Quantity(
         shape=['*'],
         type=float,
-        unit='coulomb',
+        unit='coulomb / meter ** 3',
         description="""
-        Root mean square of change of potential energy at each SCF step.
+        Root mean square of change of charge density at each SCF step.
         """,
     )
 
@@ -280,16 +280,19 @@ class Outputs(SimulationTime):
 
     def _compute_energy_deltas(self, logger: 'BoundLogger'):
         """
-        Compute delta_energies_total from consecutive total_energies values.
+        Compute delta_energies_total from consecutive SCF total energies.
 
         Returns array of absolute energy differences between consecutive steps.
         """
         try:
-            if self.total_energies is None or len(self.total_energies) < 2:
+            if (
+                self.scf_steps is None
+                or self.scf_steps.energies_total is None
+                or len(self.scf_steps.energies_total) < 2
+            ):
                 return None
 
-            # Extract energy values from each step
-            energy_values = [e.value for e in self.total_energies]
+            energy_values = self.scf_steps.energies_total
 
             # Compute differences manually to preserve Pint units
             deltas = []
@@ -307,27 +310,6 @@ class Outputs(SimulationTime):
 
         except (AttributeError, IndexError, TypeError, ValueError) as e:
             logger.debug(f'Could not compute delta_energies_total: {e}')
-            return None
-
-    def _compute_force_norms(self, logger: 'BoundLogger'):
-        """
-        Compute delta_force_abs from total_forces as force norms.
-
-        Returns array of force norms (L2 norm of 3D force vectors).
-        """
-        try:
-            if self.total_forces is None or len(self.total_forces) == 0:
-                return None
-
-            # Get force values (Pint Quantity with shape [n_atoms, 3])
-            force_values = self.total_forces[-1].value
-
-            # Compute force norms (preserves Pint units)
-            force_norms = ((force_values**2).sum(axis=1)) ** 0.5
-
-            return force_norms
-        except (AttributeError, IndexError, TypeError) as e:
-            logger.debug(f'Could not compute delta_force_abs: {e}')
             return None
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
@@ -354,7 +336,6 @@ class Outputs(SimulationTime):
             # Define delta computations: (delta_field, compute_function)
             delta_computations = [
                 ('delta_energies_total', self._compute_energy_deltas),
-                ('delta_force_abs', self._compute_force_norms),
             ]
 
             for delta_field, compute_func in delta_computations:
