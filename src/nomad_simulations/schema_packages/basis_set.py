@@ -101,8 +101,8 @@ class PlaneWaveBasisSet(BasisSetComponent, KMesh):
         type=np.float64,
         unit='1/meter',
         description="""
-        Cutoff radius for the plane-wave basis set.
-        Is the less frequently used dual to `cutoff_energy`.
+        Cutoff radius of the plane-wave basis set; the reciprocal-space dual to `cutoff_energy`.     
+        Uses the 2*pi-inclusive convention of `KSpace.reciprocal_lattice_vectors`.
         """,
     )
 
