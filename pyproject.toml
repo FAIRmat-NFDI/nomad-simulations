@@ -72,7 +72,7 @@ constraint-dependencies = ["pymatgen-core!=2026.7.24"]
 build-constraint-dependencies = ["wheel<0.46"]
 
 [tool.ruff]
-include = ["*.py", "*.pyi", "*.ipynb"]
+include = ["*.py"]
 
 # Exclude a variety of commonly ignored directories.
 exclude = [
