@@ -408,8 +408,8 @@ class RelativityModel(BaseModelMethod):
         ),
         default='non-relativistic',
         description="""
-        Non-relativistic (Schrödinger), scalar (spin-free),
-        two-component (spin-orbit couple removed variationally, e.g. X2C),
+        Non-relativistic (Schrödinger), scalar (spin-free, spin-orbit coupling omitted),
+        two-component (spin-orbit coupling included variationally, e.g. X2C),
         or four-component Dirac treatment.
         """,
     )
@@ -598,9 +598,9 @@ class XCComponent(ArchiveSection):
         Functional form of the range-separation kernel used to partition the Coulomb operator.
 
         Common choices:
-        • erf     — error function (used in LC-ωPBE, CAM-B3LYP)
-        • erfc    — complementary error function (equivalent to erf split)
-        • Yukawa  — exponential screening, e.g. HSE-style
+        • erf     — error function (long-range split, e.g. LC-ωPBE, CAM-B3LYP)
+        • erfc    — complementary error function (short-range split; e.g. the screened exchange in HSE03/HSE06)
+        • Yukawa  — exponential (Yukawa) screening, e.g. Yukawa-range-separated hybrids
         • exp     — simple exponential decay
         • Gaussian — Gaussian screening form
         • Slater  — Slater-type exponential
