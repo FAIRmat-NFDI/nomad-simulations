@@ -114,7 +114,6 @@ jobs:
         - uses: chartboost/ruff-action@v1
           with:
             args: "check ."
-            version: "0.15.22"
   ruff-formatting:
       runs-on: ubuntu-latest
       steps:
@@ -122,4 +121,3 @@ jobs:
         - uses: chartboost/ruff-action@v1
           with:
             args: "format . --check --verbose"
-            version: "0.15.22"

@@ -51,7 +51,7 @@ dev = [
     'pytest-timeout>=1.4.2',
     'pytest-cov>=2.7.1',
     'pytest-asyncio>=0.21.0',
-    'ruff==0.15.22',
+    'ruff>=0.6',
     'structlog>=1.0',
     'typing-extensions>=4.12',
 ]
@@ -68,10 +68,12 @@ docs = [
 ]
 
 [tool.uv]
-constraint-dependencies = ["pymatgen-core<2026.7.24"]
+constraint-dependencies = ["pymatgen-core!=2026.7.24"]
 build-constraint-dependencies = ["wheel<0.46"]
 
 [tool.ruff]
+include = ["*.py", "*.pyi", "*.ipynb"]
+
 # Exclude a variety of commonly ignored directories.
 exclude = [
     ".bzr",
@@ -121,6 +123,7 @@ ignore = [
     "PLR0912", # Too many branches
     "PLR0913", # Too many arguments in function definition
     "PLR0915", # Too many statements
+    "PLR0917", # Too many positional arguments
     "PLR2004", # Magic value used instead of constant
     "PLW0603", # Using the global statement
     "PLW2901", # redefined-loop-name
