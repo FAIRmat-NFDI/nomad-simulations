@@ -1,4 +1,5 @@
 import ase
+import ase.units
 import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
@@ -206,11 +207,14 @@ class TestModelSystem:
         # Check velocities were mapped
         assert sys.velocities is not None
         assert sys.velocities.shape == (3, 3)
-        expected_velocities = np.array(
-            [[0.1, 0.2, 0.0], [0.0, -0.1, 0.0], [0.0, 0.0, 0.1]]
+        # set_velocities() takes ASE internal units (Å per Å·sqrt(amu/eV)),
+        # so the schema must store raw * ase.units.fs in Å/fs
+        expected_velocities = (
+            np.array([[0.1, 0.2, 0.0], [0.0, -0.1, 0.0], [0.0, 0.0, 0.1]])
+            * ase.units.fs
         )
         assert np.allclose(
-            sys.velocities.to('angstrom/second').magnitude, expected_velocities
+            sys.velocities.to('angstrom/fs').magnitude, expected_velocities
         )
 
         # Check fractional coordinates were computed

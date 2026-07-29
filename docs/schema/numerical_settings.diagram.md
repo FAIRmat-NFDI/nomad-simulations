@@ -13,18 +13,30 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class APWPlaneWaveBasisSet
-    class AtomCenteredFunction
-    class BasisSetComponent
-    class ForceCalculations
-    class KLinePath
-    class KMesh
-    class KSpace
-    class Mesh
-    class NumericalSettings
-    class PlaneWaveBasisSet
-    class SelfConsistency
-    class Smearing
+    class APWPlaneWaveBasisSet {
+    }
+    class AtomCenteredFunction {
+    }
+    class BasisSetComponent {
+    }
+    class ForceCalculations {
+    }
+    class KLinePath {
+    }
+    class KMesh {
+    }
+    class KSpace {
+    }
+    class Mesh {
+    }
+    class NumericalSettings {
+    }
+    class PlaneWaveBasisSet {
+    }
+    class SelfConsistency {
+    }
+    class Smearing {
+    }
     PlaneWaveBasisSet <|-- APWPlaneWaveBasisSet
     NumericalSettings <|-- ForceCalculations
     Mesh <|-- KMesh

@@ -13,13 +13,20 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AlternativeRepresentation
-    class ChemicalFormula
-    class ElectronicState
-    class GlobalSymmetry
-    class ModelSystem
-    class ParticleState
-    class Representation
+    class AlternativeRepresentation {
+    }
+    class ChemicalFormula {
+    }
+    class ElectronicState {
+    }
+    class GlobalSymmetry {
+    }
+    class ModelSystem {
+    }
+    class ParticleState {
+    }
+    class Representation {
+    }
     Representation <|-- AlternativeRepresentation
     Representation <|-- ModelSystem
     ModelSystem *-- AlternativeRepresentation : representations

@@ -427,7 +427,7 @@ def archive_to_universe(
         return None
     particle_names = [ps.label for ps in particle_states]
     particle_types = [
-        ps.chemical_symbol or (ps.bead_symbol if isinstance(ps, CGBeadState) else 'CGX')
+        (ps.bead_symbol if isinstance(ps, CGBeadState) else ps.chemical_symbol) or 'CGX'
         for ps in particle_states
     ]
 
@@ -475,9 +475,9 @@ def archive_to_universe(
             )
         else:
             _missing_masses += 1
-            symbol = ps.chemical_symbol or (
-                ps.bead_symbol if isinstance(ps, CGBeadState) else 'CGX'
-            )
+            symbol = (
+                ps.bead_symbol if isinstance(ps, CGBeadState) else ps.chemical_symbol
+            ) or 'CGX'
             ase_mass = (
                 ase.data.atomic_masses[ase.data.atomic_numbers.get(symbol, 0)]
                 if symbol is not None

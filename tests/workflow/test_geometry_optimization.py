@@ -19,6 +19,7 @@ class TestGeometryOptimization:
             ([1, 2, 3], 2, 1),
             ([None, 2, 3], None, None),
             ([1, 2, 2], 2, 1),
+            ([1, 1, 1], 1, None),
             ([1, 2e18 * ureg('hartree'), 3], 8.71948944441434, -5.719489444414339),
         ],
     )
@@ -48,6 +49,46 @@ class TestGeometryOptimization:
         assert workflow.results.energies is not None
         assert len(workflow.results.energies) == 1
         assert workflow.results.final_energy_difference is None
+
+    def test_flat_trajectory(self, logger, archive):
+        """Test full normalization of a trajectory where all energies are identical.
+
+        Mirrors a relaxation whose ionic steps do not change the energy: the
+        energies are recorded but no `final_energy_difference` is set.
+        """
+        energy = (-10.8234 * ureg('eV')).to('joule').magnitude
+        archive.data.outputs = [
+            Outputs(total_energies=[TotalEnergy(value=energy)], scf_steps=SCFSteps())
+            for _ in range(3)
+        ]
+        workflow = GeometryOptimization()
+        workflow.normalize(archive, logger)
+
+        assert isinstance(workflow.results, GeometryOptimizationResults)
+        assert len(workflow.results.energies) == 3
+        assert workflow.results.final_energy_difference is None
+        assert len(workflow.tasks) == 3
+        assert all(isinstance(t, SinglePoint) for t in workflow.tasks)
+
+    def test_normalize_outputs_without_timing(self, logger, archive):
+        """Test full normalization when outputs carry no wall-time information.
+
+        Timing-based linking is skipped, but the serial fallback still
+        connects each task to its predecessor.
+        """
+        archive.data.outputs = [
+            Outputs(total_energies=[TotalEnergy(value=e)], scf_steps=SCFSteps())
+            for e in [1, 2, 3]
+        ]
+        workflow = GeometryOptimization()
+        workflow.normalize(archive, logger)
+
+        assert len(workflow.tasks) == 3
+        for previous_task, task in zip(workflow.tasks, workflow.tasks[1:]):
+            assert len(task.inputs) == 1
+            assert task.inputs[0].name == 'Linked task'
+            assert task.inputs[0].section == previous_task
+        assert workflow.results.final_energy_difference.magnitude == 1
 
     def test_map_tasks_fallback_to_model_system_when_outputs_missing(
         self, logger, archive

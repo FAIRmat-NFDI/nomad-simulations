@@ -19,7 +19,7 @@ The `ModelSystem` class represents the physical system that serves as input for 
 
 For complete field-level structure, see the schema navigation references above.
 
-`ModelSystem` combines two fundamental capabilities: geometric representation (from the `Representation` class) and hierarchical navigation (from the `System` class). This means each model system has direct access to its geometric data (lattice vectors, atomic positions, periodic boundary conditions) while also supporting navigation through subsystem hierarchies and alternative geometric views.
+`ModelSystem` combines two fundamental capabilities: geometric representation (from the `Representation` class) and hierarchical navigation (from the `System` class). This means each model system has direct access to its geometric data (lattice vectors, particle positions, periodic boundary conditions) while also supporting navigation through subsystem hierarchies and alternative geometric views.
 
 A `ModelSystem` can represent various types of systems: bulk crystals, surfaces, molecules, clusters, or complex hierarchical structures.
 
@@ -40,7 +40,7 @@ A `ModelSystem` can represent various types of systems: bulk crystals, surfaces,
 The `ModelSystem` inherits all geometric properties from the `Representation` base class, providing direct access to:
 
 - **Cell geometry**: `lattice_vectors`, `periodic_boundary_conditions`
-- **Atomic positions**: `positions` (Cartesian coordinates), `fractional_coordinates` (relative to lattice vectors)
+- **Particle positions**: `positions` (Cartesian coordinates), `fractional_coordinates` (relative to lattice vectors)
 - **Symmetry information**: `wyckoff_letters`, `equivalent_atoms`
 - **Geometric measures**: `volume`, `area`, `length`
 
@@ -80,6 +80,10 @@ The `symmetry` subsection contains a `Symmetry` instance that describes the spac
 --8<-- "snippets/explanation/model_system/model_system/block_03.py"
 ```
 
+The symmetry analysis is governed by a single precision parameter, the plugin configuration `symmetry_tolerance` (spglib's `symprec`, in angstrom). It sets how far atoms and lattice vectors may deviate from an ideal arrangement and still be treated as symmetric: a larger value rounds slightly distorted cells up to a higher symmetry, a smaller value keeps genuinely distinct metrics apart. The default is `0.01`, chosen to absorb typical relaxation noise while still separating cells that differ by more than that. Because this parameter feeds the MatID analysis directly, changing it affects all derived symmetry metadata (Bravais lattice, space group, Wyckoff positions, crystal system, and the material classification), not only a single quantity.
+
+The same `symmetry_tolerance` is reused by the SeeKpath high-symmetry k-point resolution in `KSpace` (see [Numerical Settings](../../schema/numerical_settings.md)). Sharing one value ensures that the k-points and the stored `bravais_lattice` are derived at the same tolerance and therefore classify the structure consistently; if it is retuned, both move together.
+
 ### Chemical Formulas
 
 The `chemical_formula` subsection contains a `ChemicalFormula` instance providing various representations of the system's composition:
@@ -108,7 +112,7 @@ branch depth and composition labels consistently along the tree. In practice:
 
 - root systems summarize child groups in `composition_formula`,
 - intermediate groups summarize repeated motifs,
-- leaf systems resolve to atom-level formulas.
+- leaf systems resolve to particle-label formulas.
 
 Keep subsystem-hierarchy semantics (`sub_systems`) distinct from alternative geometric
 views (`representations`).

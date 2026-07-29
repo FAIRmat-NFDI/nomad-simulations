@@ -43,7 +43,19 @@
     "M11-L": ["XC_MGGA_X_M11_L", "XC_MGGA_C_M11_L"],
     "MN15-L": ["XC_MGGA_X_MN15_L", "XC_MGGA_C_MN15_L"],
     "TPSSLOC": ["XC_MGGA_X_TPSS", "XC_MGGA_C_TPSSLOC"],
-    "B97M-V": ["XC_MGGA_XC_B97M_V"]
+    "B97M-V": ["XC_MGGA_XC_B97M_V"],
+    "AM05": ["XC_GGA_X_AM05", "XC_GGA_C_AM05"],
+    "HL": ["XC_LDA_X", "XC_LDA_C_HL"],
+    "Wigner": ["XC_LDA_X", "XC_LDA_C_WIGNER"],
+    "RSCAN": ["XC_MGGA_X_RSCAN", "XC_MGGA_C_RSCAN"],
+    "MS0": ["XC_MGGA_X_MS0"],
+    "MS1": ["XC_MGGA_X_MS1"],
+    "MS2": ["XC_MGGA_X_MS2"],
+    "MBJ": ["XC_MGGA_X_TB09"],
+    "optPBE-vdW": ["XC_GGA_X_OPTPBE_VDW"],
+    "optB88-vdW": ["XC_GGA_X_OPTB88_VDW"],
+    "optB86b-vdW": ["XC_GGA_X_OPTB86B_VDW"],
+    "BEEF-vdW": ["XC_GGA_XC_BEEFVDW"]
   },
   "HYB": {
     "PBE0": ["XC_HYB_GGA_XC_PBEH"],

@@ -21,6 +21,7 @@ from hashlib import sha1
 from typing import TYPE_CHECKING
 
 import ase
+import ase.units
 import numpy as np
 from ase.symbols import symbols2numbers
 from matid import Classifier, SymmetryAnalyzer  # pylint: disable=import-error
@@ -312,18 +313,25 @@ class LocalSymmetry(ArchiveSection):
 
     Provides polymorphic interface for different types of local symmetry data.
     Each representation can have its own LocalSymmetry since particle counts differ.
+    Some quantities in this section, such as `equivalent_atoms`, are intentionally
+    atom-specific because they originate from crystallographic analysis of atomic
+    structures.
     """
 
     equivalent_atoms = Quantity(
         type=np.int32,
         shape=['*'],
         description="""
-        Equivalence grouping of atoms by symmetry operations.
-        Atoms with the same index value are symmetrically equivalent.
+        Equivalence grouping of atomic sites by symmetry operations.
+        Atomic sites with the same index value are symmetrically equivalent.
+
+        This quantity is intentionally atom-specific. It reflects crystallographic
+        symmetry analysis on atomic structures and should not be interpreted as a
+        generic particle-equivalence relation for arbitrary `ParticleState` subclasses.
 
         Examples:
-            - [0, 1, 2, 3]: all four atoms are non-equivalent
-            - [0, 0, 0, 3]: first three atoms are equivalent, fourth is unique
+            - [0, 1, 2, 3]: all four atomic sites are non-equivalent
+            - [0, 0, 0, 3]: first three atomic sites are equivalent, fourth is unique
         """,
     )
 
@@ -1241,7 +1249,7 @@ class ModelSystem(System, Representation):
     `ParticleState` entries or specialized subclasses such as `AtomsState` and
     `CGBeadState`. ModelSystem normalization does not reassign between these types.
 
-    Downstream subsystems refer to atoms via particle_indices.
+    Downstream subsystems refer to particles via `particle_indices`.
 
     Definitions:
         - `name` refers to all the verbose and user-dependent naming in ModelSystem,
@@ -1398,20 +1406,20 @@ class ModelSystem(System, Representation):
     n_particles = Quantity(
         type=np.int32,
         description="""
-        Number of particles/atoms in the simulation.
+        Number of particles in the simulation.
         """,
     )
 
     # positions is defined in ModelSystem (not Representation) because it represents the fixed
-    # Cartesian positions of atoms in the top-level system. Alternative representations can have
-    # different lattice_vectors and fractional_coordinates, but they all describe the same atoms
-    # at the same Cartesian positions. Subsystems reference these positions via particle_indices.
+    # Cartesian positions of the top-level particles. Alternative representations can have
+    # different lattice_vectors and fractional_coordinates, but they all describe the same
+    # top-level particle positions. Subsystems reference these positions via particle_indices.
     positions = Quantity(
         type=np.float64,
         shape=['*', 3],
         unit='meter',
         description="""
-        Cartesian coordinates of all atoms in the system. Values are expressed in an implicit
+        Cartesian coordinates of all particles in the system. Values are expressed in an implicit
         Cartesian coordinate system with axes ordered as (x, y, z). The orientation of this
         frame is determined by the simulation code or parser that generates the data.
         All subsystems reference these positions via particle_indices.
@@ -1433,8 +1441,11 @@ class ModelSystem(System, Representation):
         type=np.int32,
         shape=['*', 2],
         description="""
-        List of pairs of atom indices corresponding to bonds (e.g., as defined by a force field)
-        within this atoms_group.
+        List of pairs of particle indices corresponding to bonded or connected sites
+        (for example as defined by a force field) within this subsystem.
+
+        For atomistic systems these indices typically refer to atoms. For other particle
+        models they may refer to coarse-grained beads or other particle-like sites.
         """,
     )
 
@@ -1444,7 +1455,7 @@ class ModelSystem(System, Representation):
         The overall composition of the system with respect to its subsystems.
         The syntax for a system composed of X and Y with x and y components of each,
         respectively, is X(x)Y(y). At the deepest branch in the hierarchy, the
-        composition_formula is expressed in terms of the atomic labels.
+        composition_formula is expressed in terms of the resolved particle labels.
 
         Example: A system composed of 3 water molecules with the following hierarchy
 
@@ -1483,7 +1494,7 @@ class ModelSystem(System, Representation):
         section_def=ElectronicState.m_def,
         description="""
         Electronic state of the system, e.g., the electronic structure information.
-        This is an starting point for navigating the electronic hierarchy.
+        This is a starting point for navigating the electronic hierarchy.
         """,
     )
 
@@ -1491,7 +1502,7 @@ class ModelSystem(System, Representation):
         section_def=ParticleState.m_def,
         repeats=True,
         description="""
-        Particle state of each of the particles conforming the ModelSystem.
+        Particle state for each particle comprising the `ModelSystem`.
         This is a list of `n_particles` elements and the order matches that of `positions`.
 
             Example
@@ -1601,11 +1612,9 @@ class ModelSystem(System, Representation):
           - For subsystems, "relevant" means the root-system particle states
             referenced by `particle_indices`.
 
-        Example Usages:
-          - Decide whether to use AtomState. `is_atomic` must return True for all downstream functionalities to work properly.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
+        Example usages:
+          - Gate downstream atom-specific functionality such as ASE conversion,
+            MatID classification, and symmetry analysis.
         Returns:
             bool: True if all relevant particle states are `AtomsState`, False otherwise.
         """
@@ -1682,12 +1691,39 @@ class ModelSystem(System, Representation):
         except KeyError:
             return False
 
+    def to_structure_tuple(
+        self, representation_index: int | None = None
+    ) -> tuple[list, list, list] | None:
+        """
+        Build the ``(cell, scaled_positions, atomic_numbers)`` tuple consumed by
+        spglib and SeeKpath directly from the schema, without an ASE round-trip.
+
+        The cell (in angstrom) is taken from ``representations[representation_index]``
+        when an index is given, otherwise from the top-level ``lattice_vectors``.
+        Positions are the top-level Cartesian ``positions`` expressed in fractional
+        coordinates of that cell. Returns ``None`` if the labels are not all valid
+        chemical symbols, or the cell or positions are missing.
+        """
+        symbols = self.get_symbols()
+        if not self._all_labels_are_elements(symbols):
+            return None
+        if representation_index is None:
+            lattice_vectors = self.lattice_vectors
+        else:
+            lattice_vectors = self.representations[representation_index].lattice_vectors
+        if lattice_vectors is None or self.positions is None:
+            return None
+        cell = np.asarray(lattice_vectors.to('angstrom').magnitude)
+        cartesian = self.positions.to('angstrom').magnitude
+        scaled_positions = cartesian @ np.linalg.inv(cell)
+        return cell.tolist(), scaled_positions.tolist(), list(symbols2numbers(symbols))
+
     @log
     def to_ase_atoms(
         self, representation_index: int | None = None
     ) -> 'ase.Atoms | None':
         """
-        Generates an ASE Atoms object from ModelSystem data.
+        Generate an ASE `Atoms` object from atomistic `ModelSystem` data.
 
         Args:
             representation_index: Index of the alternative representation to use for cell geometry.
@@ -1696,6 +1732,10 @@ class ModelSystem(System, Representation):
                                  - int: Uses the alternative representation at ModelSystem.representations[index]
                                    This allows conversion of primitive cells, conventional cells, or other
                                    geometric views to ASE format while keeping the same atomic positions.
+
+        This method is intentionally atom-specific. It requires resolved particle labels
+        to be valid chemical symbols and is therefore only suitable for `AtomsState`-based
+        systems.
 
         Uses:
           - particle_states to obtain chemical symbols for ASE conversion; all resolved
@@ -2227,7 +2267,11 @@ class ModelSystem(System, Representation):
             try:
                 velocities = ase_atoms.get_velocities()
                 if velocities is not None and len(velocities) == len(positions):
-                    model_system.velocities = velocities * ureg('angstrom/second')
+                    # get_velocities() returns ASE internal units
+                    # (Å per Å·sqrt(amu/eV)); ase.units.fs converts to Å/fs
+                    model_system.velocities = (
+                        velocities * ase.units.fs * ureg('angstrom/fs')
+                    )
             except Exception as e:
                 logger.debug(f'Could not map velocities: {e}')
 

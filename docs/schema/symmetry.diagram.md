@@ -13,10 +13,14 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class GlobalCrystalSymmetry
-    class GlobalSymmetry
-    class LocalCrystalSymmetry
-    class LocalSymmetry
+    class GlobalCrystalSymmetry {
+    }
+    class GlobalSymmetry {
+    }
+    class LocalCrystalSymmetry {
+    }
+    class LocalSymmetry {
+    }
     GlobalSymmetry <|-- GlobalCrystalSymmetry
     LocalSymmetry <|-- LocalCrystalSymmetry
 ```

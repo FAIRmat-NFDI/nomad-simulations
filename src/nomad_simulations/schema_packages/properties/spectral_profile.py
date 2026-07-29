@@ -284,13 +284,9 @@ class ElectronicDensityOfStates(DOSProfile):
             if not single_peak_fermi:
                 # Look for highest occupied energy below the descend index
                 idx = idx_descend
-                while True:
-                    try:
-                        value = dos_values[idx]
-                    except IndexError:
-                        break
+                while idx >= 0:
+                    value = dos_values[idx]
                     if value > configuration.dos_intensities_threshold:
-                        idx = idx if idx == idx_descend else idx + 1
                         self.m_cache['highest_occupied_energy'] = energies_points[idx]
                         break
                     idx -= 1
@@ -302,8 +298,7 @@ class ElectronicDensityOfStates(DOSProfile):
                     except IndexError:
                         break
                     if value > configuration.dos_intensities_threshold:
-                        idx = idx if idx == idx_ascend else idx - 1
-                        self.m_cache['highest_occupied_energy'] = energies_points[idx]
+                        self.m_cache['lowest_unoccupied_energy'] = energies_points[idx]
                         break
                     idx += 1
 
@@ -356,8 +351,8 @@ class ElectronicDensityOfStates(DOSProfile):
     def extract_band_gap(self) -> ElectronicBandGap | None:
         """
         Extract the electronic band gap from the `highest_occupied_energy` and `lowest_unoccupied_energy` stored
-        in `m_cache` from `resolve_energies_origin()`. If the difference of `highest_occupied_energy` and
-        `lowest_unoccupied_energy` is negative, the band gap `value` is set to 0.0.
+        in `m_cache` from `resolve_energies_origin()`. If the difference of `lowest_unoccupied_energy` and
+        `highest_occupied_energy` is negative, the band gap `value` is set to 0.0.
 
         Returns:
             (Optional[ElectronicBandGap]): The extracted electronic band gap section to be stored in `Outputs`.
@@ -365,15 +360,15 @@ class ElectronicDensityOfStates(DOSProfile):
         band_gap = None
         homo = self.m_cache.get('highest_occupied_energy')
         lumo = self.m_cache.get('lowest_unoccupied_energy')
-        if homo and lumo:
+        if homo is not None and lumo is not None:
             band_gap = ElectronicBandGap()
             band_gap.is_derived = True
             band_gap.physical_property_ref = self
 
-            if (homo - lumo).magnitude < 0:
+            if (lumo - homo).magnitude < 0:
                 band_gap.value = 0.0
             else:
-                band_gap.value = homo - lumo
+                band_gap.value = lumo - homo
         return band_gap
 
     def extract_projected_dos(
@@ -487,7 +482,7 @@ class ElectronicDensityOfStates(DOSProfile):
         # `ElectronicBandGap` extraction
         band_gap = self.extract_band_gap()
         if band_gap is not None:
-            self.m_parent.electronic_band_gap.append(band_gap)
+            self.m_parent.m_append('electronic_band_gaps', band_gap)
 
         # Total `value` extraction from `projected_dos`
         value_from_pdos = self.generate_from_projected_dos(logger)
