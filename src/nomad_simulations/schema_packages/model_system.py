@@ -49,7 +49,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    import pint
     from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
     from nomad.metainfo import Section
@@ -57,7 +56,6 @@ if TYPE_CHECKING:
 
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
-    CGBeadState,
     ElectronicState,
     ParticleState,
 )

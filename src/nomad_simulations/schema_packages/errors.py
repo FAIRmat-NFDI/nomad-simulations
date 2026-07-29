@@ -1,6 +1,6 @@
 import numpy as np
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import MEnum, Quantity, Section, SubSection
+from nomad.metainfo import MEnum, Quantity
 
 
 # TODO This entire module is a prototype, to be tested and refined

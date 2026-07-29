@@ -1,16 +1,12 @@
-import itertools
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
 import numpy as np
-from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Wrapper
-from nomad.datamodel.metainfo.basesections.v2 import Entity
-from nomad.metainfo import URL, MEnum, Quantity, Reference, SectionProxy
+from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 
 from nomad_simulations.schema_packages.properties import ElectronicEigenvalues
 

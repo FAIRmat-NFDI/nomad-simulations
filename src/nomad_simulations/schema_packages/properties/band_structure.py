@@ -11,13 +11,7 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import (
-    AtomsState,
-    ElectronicState,
-)
 from nomad_simulations.schema_packages.numerical_settings import KSpace
-from nomad_simulations.schema_packages.physical_property import PhysicalProperty
-from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
 from nomad_simulations.schema_packages.properties.electronic_eigenvalues import (
     ElectronicEigenvalues,
 )
