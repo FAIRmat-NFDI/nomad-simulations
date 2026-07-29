@@ -10,7 +10,6 @@ This script:
 
 import subprocess
 import sys
-from pathlib import Path
 
 
 def run_gen_docs():

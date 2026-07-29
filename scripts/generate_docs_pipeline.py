@@ -292,7 +292,7 @@ def validate_diagram_complexity(repo_root: Path) -> bool:
 
     try:
         sys.path.insert(0, str(repo_root / 'scripts'))
-        from meta_introspect import collect_edges, iter_section_classes
+        from meta_introspect import collect_edges
         from verticals import VERTICALS
 
         # Collect all edges to analyze inheritance depth
