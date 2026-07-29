@@ -281,27 +281,27 @@ class Outputs(SimulationTime):
                 return model_methods[-1]
         return None
 
-    def _compute_energy_deltas(self, logger: 'BoundLogger'):
+    @staticmethod
+    def _compute_energy_deltas(energies, logger: 'BoundLogger'):
         """
-        Compute delta_energies_total from consecutive SCF total energies.
+        Compute absolute energy differences between consecutive energies.
 
-        Returns array of absolute energy differences between consecutive steps.
+        Given a sequence of `energies`, returns an array of the absolute
+        differences between consecutive entries, i.e. `deltas[i] =
+        abs(energies[i + 1] - energies[i])`, so N energies produce N - 1 deltas.
+        Accepting the energies as an argument keeps this decoupled from the
+        section, so deltas can be computed from various sources (e.g. SCF
+        `energies_total` or any other energy sequence). Returns None if fewer
+        than two energies are available.
         """
         try:
-            if (
-                self.scf_steps is None
-                or self.scf_steps.energies_total is None
-                or len(self.scf_steps.energies_total) < 2
-            ):
+            if energies is None or len(energies) < 2:
                 return None
-
-            # Extract energy values from each step
-            energy_values = self.scf_steps.energies_total
 
             # Compute differences manually to preserve Pint units
             deltas = []
-            for i in range(1, len(energy_values)):
-                delta = np.abs(energy_values[i] - energy_values[i - 1])
+            for i in range(1, len(energies)):
+                delta = np.abs(energies[i] - energies[i - 1])
                 deltas.append(delta)
 
             # Convert list to array-like structure
@@ -360,7 +360,12 @@ class Outputs(SimulationTime):
         if self.scf_steps is not None:
             # Define delta computations: (delta_field, compute_function)
             delta_computations = [
-                ('delta_energies_total', self._compute_energy_deltas),
+                (
+                    'delta_energies_total',
+                    lambda logger: self._compute_energy_deltas(
+                        self.scf_steps.energies_total, logger
+                    ),
+                ),
                 ('delta_force_abs', self._compute_force_norms),
             ]
 
