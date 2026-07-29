@@ -7,8 +7,6 @@ from nomad_simulations.schema_packages.utils import log
 
 from .general import (
     INCORRECT_N_TASKS,
-    ParallelWorkflow,
-    SerialWorkflow,
     SimulationWorkflow,
     SimulationWorkflowMethod,
     SimulationWorkflowResults,

@@ -36,10 +36,9 @@ except ImportError:
 # Import types for type checking only (not at runtime)
 if TYPE_CHECKING:
     from MDAnalysis import Universe as MDAUniverse
-    from MDAnalysis.core.groups import AtomGroup
 
 from nomad import atomutils
-from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
+from nomad.metainfo import MSection
 from nomad.units import ureg
 from nomad.utils import get_logger
 

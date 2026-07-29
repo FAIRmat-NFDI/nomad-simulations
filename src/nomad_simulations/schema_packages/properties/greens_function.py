@@ -5,12 +5,10 @@ from nomad.datamodel.hdf5 import HDF5Dataset
 from nomad.metainfo import MEnum, Quantity, SubSection
 
 if TYPE_CHECKING:
-    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState, ElectronicState
+from nomad_simulations.schema_packages.atoms_state import ElectronicState
 from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.variables import (

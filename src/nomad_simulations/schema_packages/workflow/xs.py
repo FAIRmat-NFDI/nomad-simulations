@@ -1,4 +1,3 @@
-import numpy as np
 from nomad.datamodel import EntryArchive
 from nomad.metainfo import SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger

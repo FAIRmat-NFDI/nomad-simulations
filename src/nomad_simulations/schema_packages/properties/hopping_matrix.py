@@ -5,10 +5,7 @@ from nomad.datamodel.hdf5 import HDF5Dataset
 from nomad.metainfo import Quantity
 
 if TYPE_CHECKING:
-    from nomad.datamodel.context import Context
-    from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Section
-    from structlog.stdlib import BoundLogger
+    pass
 
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
