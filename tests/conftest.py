@@ -1,5 +1,5 @@
 import os
-from collections.abc import Callable, Generator
+from collections.abc import Generator
 from typing import Any
 
 import numpy as np
@@ -35,7 +35,6 @@ from nomad_simulations.schema_packages.outputs import (
 )
 from nomad_simulations.schema_packages.properties import (
     DOSProfile,
-    ElectronicBandGap,
     ElectronicBandStructure,
     ElectronicDensityOfStates,
 )

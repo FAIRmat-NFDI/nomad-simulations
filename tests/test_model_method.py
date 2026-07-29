@@ -17,7 +17,6 @@ from nomad_simulations.schema_packages.model_method import (
     ImplicitSolvationModel,
     LocalCorrelation,
     LocalCorrelationSpace,
-    MultireferencePT,
     MultireferenceSCF,
     NonlocalCorrelation,
     PerturbationMethod,

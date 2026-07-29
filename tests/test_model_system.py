@@ -8,7 +8,6 @@ from nomad.units import ureg
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
     CGBeadState,
-    ParticleState,
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (

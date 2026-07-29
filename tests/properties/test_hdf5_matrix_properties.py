@@ -11,7 +11,6 @@ Key behavioral notes (documented here, not enforced by infrastructure):
 """
 
 import numpy as np
-import pytest
 from nomad.datamodel import EntryArchive, EntryMetadata
 from nomad.datamodel.context import ServerContext
 from nomad.datamodel.data import EntryData
