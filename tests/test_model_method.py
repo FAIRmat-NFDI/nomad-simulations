@@ -1360,6 +1360,12 @@ def test_dft_expands_widely_used_functionals_to_expected_labels(
         ),
         # a component carrying only a LibXC id (abinit's negative-ixc path)
         ([{'libxc_id': 101}], {'XC_GGA_X_PBE'}, 'GGA'),
+        # an unresolvable label falls back to the id
+        (
+            [{'canonical_label': 'XC_NOT_A_REAL_LABEL', 'libxc_id': 101}],
+            {'XC_GGA_X_PBE'},
+            'GGA',
+        ),
     ],
 )
 def test_dft_resolves_free_form_components(
@@ -1381,6 +1387,22 @@ def test_dft_resolves_free_form_components(
     # `weight` is a composition fraction the parser owns, not registry data;
     # the taxonomy fill must leave it untouched.
     assert all(c.weight is None for c in dft.xc.components)
+    # resolved components are not flagged unidentified
+    assert all(not c.unidentified for c in dft.xc.components)
+
+
+def test_dft_clears_unidentified_when_component_later_resolves():
+    """A component marked `unidentified` that also carries a resolvable identity
+    is completed and the flag is cleared, not left inconsistent."""
+    dft = DFT()
+    dft.xc = XCFunctional(
+        components=[XCComponent(unidentified=True, canonical_label='XC_GGA_X_PBE')]
+    )
+    dft.normalize(EntryArchive(), logger=logger)
+
+    comp = dft.xc.components[0]
+    assert comp.family == 'GGA' and comp.kind == 'exchange'
+    assert not comp.unidentified
 
 
 def test_dft_keeps_unidentified_placeholder_component():

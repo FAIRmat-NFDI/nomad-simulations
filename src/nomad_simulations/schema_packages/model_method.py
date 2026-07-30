@@ -641,7 +641,7 @@ class XCComponent(ArchiveSection):
         spec = None
         if self.canonical_label:
             spec = spec_from_label(self.canonical_label)
-        elif self.libxc_id is not None:
+        if spec is None and self.libxc_id is not None:
             spec = spec_from_id(int(self.libxc_id))
 
         if spec is None:
@@ -662,6 +662,10 @@ class XCComponent(ArchiveSection):
         self.kind = spec['kind']
         # canonicalize to the registry spelling (e.g. 'gga_x_pbe' -> 'XC_GGA_X_PBE')
         self.canonical_label = spec['canonical_label']
+        # a component that was marked as a placeholder but now resolves is no
+        # longer unidentified
+        if self.unidentified:
+            self.unidentified = False
 
 
 class XCFunctional(ArchiveSection):
