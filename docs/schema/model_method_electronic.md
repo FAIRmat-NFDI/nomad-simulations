@@ -152,7 +152,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `dielectric_infinity` | m_int32(int32) | Value of the static dielectric constant at infinite q. For metals, this is infinite (or a very large value), while for insulators is finite. |
+| `dielectric_infinity` | m_float_bounded(float) | <details><summary>Scalar macroscopic electronic dielectric constant in the static,</summary>Scalar macroscopic electronic dielectric constant in the static,<br>long-wavelength limit (ω → 0, q → 0), commonly denoted ε_∞.<br>Finite for insulators and semiconductors; for metals, the static long-wavelength<br>response diverges and may be represented by a large finite value.</details> |
 
 ### `GW`
 
