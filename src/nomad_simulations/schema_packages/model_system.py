@@ -1478,13 +1478,18 @@ class ModelSystem(System, Representation):
         """,
     )
 
-    total_spin = Quantity(
+    total_multiplicity = Quantity(
         type=np.int32,
         description="""
-        Total spin quantum number **S** of the system (so Ŝ² ψ = S(S+1) ħ² ψ).
-        Stored as an integer or half-integer represented in doubled form
-        (e.g. singlet → 0, doublet → 1, triplet → 2).
-        Not to be confused with the spin multiplicity 2S+1.
+        Spin multiplicity of the total system, i.e. the value **2S+1**, where S is the
+        total spin quantum number. It describes the system-level total electronic state
+        and is always a positive integer:
+
+            singlet → 1, doublet → 2, triplet → 3
+
+        This quantity is **not** S, **not** 2S, and **not** a spin projection. In
+        particular, it must not be confused with `BSDFT.total_spin_projection`, which
+        stores the doubled total spin projection **2M_S** of a broken-symmetry reference.
         """,
     )
 

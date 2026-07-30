@@ -1512,3 +1512,43 @@ def test_validate_array_lengths():
         )
     finally:
         logger.warning = original_warning
+
+
+class TestModelSystemTotalMultiplicity:
+    """
+    Test the `ModelSystem.total_multiplicity` quantity (the spin multiplicity 2S+1),
+    which replaces the ambiguous `total_spin` quantity.
+    """
+
+    def test_quantity_defined_in_schema(self):
+        """
+        `total_multiplicity` is part of the `ModelSystem` schema definition.
+        """
+        assert 'total_multiplicity' in ModelSystem.m_def.all_quantities
+
+    def test_total_spin_removed_from_schema(self):
+        """
+        The old, ambiguous `total_spin` quantity is no longer part of the schema.
+        """
+        assert 'total_spin' not in ModelSystem.m_def.all_quantities
+        assert 'total_spin' not in ModelSystem.m_def.all_properties
+
+    def test_quantity_is_integer(self):
+        """
+        `total_multiplicity` remains an integer quantity.
+        """
+        quantity = ModelSystem.m_def.all_quantities['total_multiplicity']
+        underlying_dtype = getattr(quantity.type, '_dtype', quantity.type)
+        assert np.issubdtype(underlying_dtype, np.integer)
+
+    @pytest.mark.parametrize(
+        'multiplicity',
+        [1, 2, 3],  # singlet, doublet, triplet
+    )
+    def test_accepts_representative_values(self, multiplicity):
+        """
+        Representative multiplicities are stored unchanged as integers.
+        """
+        model_system = ModelSystem(total_multiplicity=multiplicity)
+        assert model_system.total_multiplicity == multiplicity
+        assert np.issubdtype(type(model_system.total_multiplicity), np.integer)
