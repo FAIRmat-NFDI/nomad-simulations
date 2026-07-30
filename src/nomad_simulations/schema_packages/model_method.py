@@ -1403,7 +1403,7 @@ class Screening(ExcitedStateMethodology):
     """
 
     dielectric_infinity = Quantity(
-        type=np.int32,
+        type=positive_float(),
         description="""
         Value of the static dielectric constant at infinite q. For metals, this is infinite
         (or a very large value), while for insulators is finite.
