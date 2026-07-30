@@ -1486,10 +1486,6 @@ class ModelSystem(System, Representation):
         and is always a positive integer:
 
             singlet → 1, doublet → 2, triplet → 3
-
-        This quantity is **not** S, **not** 2S, and **not** a spin projection. In
-        particular, it must not be confused with `BSDFT.total_spin_projection`, which
-        stores the doubled total spin projection **2M_S** of a broken-symmetry reference.
         """,
     )
 
