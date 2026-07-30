@@ -198,15 +198,13 @@ class ElectronicDensityOfStates(DOSProfile):
     def resolve_energies_origin(
         self,
         energies_points: pint.Quantity,
-        fermi_level: pint.Quantity | None,
         logger: 'BoundLogger',
     ) -> pint.Quantity | None:
         """
-        Resolve the origin of reference for the energies from the sibling `ElectronicEigenvalues` section and its
-        `highest_occupied` level, or if this does not exist, from the `fermi_level` value as extracted from the sibling property, `FermiLevel`.
+        Resolve the origin of reference for the energies from the sibling `ElectronicEigenvalues`
+        section and its `highest_occupied` level.
 
         Args:
-            fermi_level (Optional[pint.Quantity]): The resolved Fermi level.
             energies_points (pint.Quantity): The grid points of the `Energy` variable.
             logger (BoundLogger): The logger to log messages.
 
@@ -215,7 +213,6 @@ class ElectronicDensityOfStates(DOSProfile):
         """
 
         # Extract the `ElectronicEigenvalues` section to get the `highest_occupied` and `lowest_unoccupied` energies
-        # TODO implement once `ElectronicEigenvalues` is in the schema
         eigenvalues = get_sibling_section(
             section=self, sibling_section_name='electronic_eigenvalues', logger=logger
         )  # we consider `index_sibling` to be 0
@@ -233,7 +230,7 @@ class ElectronicDensityOfStates(DOSProfile):
 
         # Check that the closest `energies` to the energy reference is not too far away.
         # If it is very far away, normalization may be very inaccurate and we do not report it.
-        eref = highest_occupied_energy if fermi_level is None else fermi_level
+        eref = highest_occupied_energy
         if eref is None:
             return None
         dos_values = self.value.magnitude
@@ -302,11 +299,8 @@ class ElectronicDensityOfStates(DOSProfile):
                         break
                     idx += 1
 
-        # Return the `highest_occupied_energy` as the `energies_origin`, or the `fermi_level` if it is not None
-        energies_origin = self.m_cache.get('highest_occupied_energy')
-        if energies_origin is None:
-            energies_origin = fermi_level
-        return energies_origin
+        # Return the `highest_occupied_energy` as the `energies_origin`
+        return self.m_cache.get('highest_occupied_energy')
 
     @log
     def resolve_normalization_factor(self) -> float | None:
@@ -461,16 +455,9 @@ class ElectronicDensityOfStates(DOSProfile):
         if self.energies is None:
             return
 
-        # Resolve `fermi_level` from a sibling section with respect to `ElectronicDensityOfStates`
-        # Optional sibling lookups use cached results and log at debug level (warn_if_missing=False default).
-        fermi_level = get_sibling_section(
-            section=self, sibling_section_name='fermi_level', logger=logger
-        )  # * we consider `index_sibling` to be 0
-        if fermi_level is not None:
-            fermi_level = fermi_level.value
-        # and the `energies_origin` from the sibling `ElectronicEigenvalues` section
+        # Resolve the `energies_origin` from the sibling `ElectronicEigenvalues` section
         self.energies_origin = self.resolve_energies_origin(
-            self.energies.points, fermi_level, logger
+            self.energies.points, logger
         )
         if self.energies_origin is None:
             logger.info('Could not resolve the `energies_origin` for the DOS')
