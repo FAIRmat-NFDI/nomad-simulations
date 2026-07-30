@@ -1141,9 +1141,7 @@ class AtomsState(ParticleState):
 
     # TODO: legacy quantity, retained temporarily for compatibility. Remove or migrate it
     # once atomic spin states are represented consistently through
-    # `AtomsState.electronic_state.spin_orbit_state`. Its current representation is not
-    # fully defined: the integer type cannot directly represent a general half-integer S,
-    # and the default `0` does not distinguish an unknown value from a known S = 0.
+    # `AtomsState.electronic_state.spin_orbit_state`.
     spin = Quantity(
         type=np.int32,
         default=0,
