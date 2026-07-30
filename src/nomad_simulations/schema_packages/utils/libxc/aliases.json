@@ -5,6 +5,7 @@
     "SVWN": ["XC_LDA_X", "XC_LDA_C_VWN"],
     "SVWN5": ["XC_LDA_X", "XC_LDA_C_VWN"],
     "VWN": ["XC_LDA_X", "XC_LDA_C_VWN"],
+    "VWN-RPA": ["XC_LDA_X", "XC_LDA_C_VWN_RPA"],
     "PW92": ["XC_LDA_C_PW"],
     "PZ81": ["XC_LDA_X", "XC_LDA_C_PZ"],
     "PBE": ["XC_GGA_X_PBE", "XC_GGA_C_PBE"],
