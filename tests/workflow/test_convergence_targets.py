@@ -697,15 +697,20 @@ class TestFallbackPaths:
         assert is_reached is True
 
     def test_energy_delta_computed_from_scf_energies_total(self, archive, logger):
-        """Test that SCF energy deltas are computed from SCF step energies."""
+        """Test that SCF deltas are computed from SCF energies, not total energies."""
         energy_target = EnergyConvergenceTarget()
         energy_target.threshold = 1e-6 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
-        scf_steps = SCFSteps(
-            energies_total=np.array([1.0, 1.0000001, 1.0000002]) * ureg.joule
+        outputs = Outputs(
+            total_energies=[
+                TotalEnergy(value=1000.0 * ureg.joule),
+                TotalEnergy(value=2500.0 * ureg.joule),
+            ],
+            scf_steps=SCFSteps(
+                energies_total=np.array([10.0, 10.0000002, 10.0000007]) * ureg.joule
+            ),
         )
-        outputs = Outputs(scf_steps=scf_steps)
         archive.data.outputs = [outputs]
 
         # Normalize outputs to compute delta_energies_total
@@ -714,31 +719,17 @@ class TestFallbackPaths:
         # Verify delta_energies_total was computed
         assert outputs.scf_steps.delta_energies_total is not None
         assert len(outputs.scf_steps.delta_energies_total) == 2  # n-1 deltas
+        assert list(outputs.scf_steps.delta_energies_total.magnitude) == pytest.approx(
+            [2e-7, 5e-7]
+        )
+        assert list(outputs.scf_steps.delta_energies_total.magnitude) != pytest.approx(
+            [1500.0]
+        )
 
         # Check convergence using computed values
         is_reached = energy_target.normalize(archive, logger)
-        # Last delta is 1e-7 < 1e-6
+        # Last SCF delta is 5e-7 < 1e-6
         assert is_reached is True
-
-    def test_energy_delta_ignores_output_total_energies(self, archive, logger):
-        """Test that generic total_energies are not treated as SCF iterations."""
-        outputs = Outputs(
-            total_energies=[
-                TotalEnergy(value=1.0 * ureg.joule),
-                TotalEnergy(value=2.0 * ureg.joule),
-            ],
-            scf_steps=SCFSteps(
-                energies_total=np.array([10.0, 10.1, 10.3]) * ureg.joule
-            ),
-        )
-        archive.data.outputs = [outputs]
-
-        outputs.normalize(archive, logger)
-
-        assert outputs.scf_steps.delta_energies_total is not None
-        assert list(outputs.scf_steps.delta_energies_total.magnitude) == pytest.approx(
-            [0.1, 0.2]
-        )
 
 
 class TestThresholdTypeValidation:

@@ -44,6 +44,10 @@ from .common import SimulationTime
 class SCFSteps(ArchiveSection):
     """
     Data recorded at each step of a self-consistent DFT calculation.
+
+    The SCF quantities describe the iterative convergence process for one
+    system configuration, i.e. within one `Outputs` section. They do not
+    describe a sequence of configurations such as geometry-optimization steps.
     """
 
     energies_total = Quantity(
@@ -51,7 +55,8 @@ class SCFSteps(ArchiveSection):
         type=float,
         unit='joule',
         description="""
-        Total energy at each SCF step.
+        Ordered sequence of total energies from the SCF iterations within one
+        system configuration.
         """,
     )
 
@@ -61,8 +66,8 @@ class SCFSteps(ArchiveSection):
         unit='joule',
         description="""
         Absolute change of total energy between consecutive SCF steps. When
-        derived from `energies_total`, `delta_energies_total[i] =
-        abs(energies_total[i + 1] - energies_total[i])`, so N SCF energies
+        derived from `energies_total`, the values follow
+        $\\Delta E_i = \\lvert E_{i+1} - E_i \\rvert$, so N SCF energies
         produce N - 1 energy deltas.
         """,
     )
@@ -124,11 +129,17 @@ class SCFSteps(ArchiveSection):
 # TODO: Outputs should not be of type time, but the workflow should be instead?
 class Outputs(SimulationTime):
     """
-    Output properties of a simulation. This base class can be used for inheritance in any of the output properties
-    defined in this schema.
+    Output properties of one system configuration.
 
-    It contains references to the specific sections used to obtain the output properties, as well as
-    information if the output `is_derived` from another output section or directly parsed from the simulation output files.
+    One `Outputs` section holds the calculated properties for the
+    configuration identified through `model_system_ref`. A sequence of
+    configurations, such as a geometry optimization, is represented using
+    multiple output sections, normally `WorkflowOutputs`, ordered by
+    `WorkflowOutputs.step`.
+
+    It contains references to the specific sections used to obtain the output
+    properties, as well as information if the output `is_derived` from another
+    output section or directly parsed from the simulation output files.
     """
 
     normalizer_level = 2
@@ -287,8 +298,9 @@ class Outputs(SimulationTime):
         Compute absolute energy differences between consecutive energies.
 
         Given a sequence of `energies`, returns an array of the absolute
-        differences between consecutive entries, i.e. `deltas[i] =
-        abs(energies[i + 1] - energies[i])`, so N energies produce N - 1 deltas.
+        differences between consecutive entries, i.e.
+        $\\Delta E_i = \\lvert E_{i+1} - E_i \\rvert$, so N energies produce
+        N - 1 deltas.
         Accepting the energies as an argument keeps this decoupled from the
         section, so deltas can be computed from various sources (e.g. SCF
         `energies_total` or any other energy sequence). Returns None if fewer
@@ -358,22 +370,17 @@ class Outputs(SimulationTime):
 
         # Populate missing SCF delta quantities from available data
         if self.scf_steps is not None:
-            # Define delta computations: (delta_field, compute_function)
-            delta_computations = [
-                (
-                    'delta_energies_total',
-                    lambda logger: self._compute_energy_deltas(
-                        self.scf_steps.energies_total, logger
-                    ),
-                ),
-                ('delta_force_abs', self._compute_force_norms),
-            ]
+            if self.scf_steps.delta_energies_total is None:
+                delta_energies_total = self._compute_energy_deltas(
+                    self.scf_steps.energies_total, logger
+                )
+                if delta_energies_total is not None:
+                    self.scf_steps.delta_energies_total = delta_energies_total
 
-            for delta_field, compute_func in delta_computations:
-                if getattr(self.scf_steps, delta_field, None) is None:
-                    computed_value = compute_func(logger)
-                    if computed_value is not None:
-                        setattr(self.scf_steps, delta_field, computed_value)
+            if self.scf_steps.delta_force_abs is None:
+                delta_force_abs = self._compute_force_norms(logger)
+                if delta_force_abs is not None:
+                    self.scf_steps.delta_force_abs = delta_force_abs
 
 
 class WorkflowOutputs(Outputs):

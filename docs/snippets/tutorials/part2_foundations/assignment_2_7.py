@@ -30,7 +30,7 @@ method = DFT(
 simulation.model_method.append(method)
 
 outputs = Outputs(
-    scf_steps=SCFSteps(energies_total=np.array([1.0, 1.5, 2.0, 2.1, 2.101]) * ureg.eV)
+    scf_steps=SCFSteps(energies_total=[1.0, 1.5, 2.0, 2.1, 2.101] * ureg.eV)
 )
 simulation.outputs.append(outputs)
 

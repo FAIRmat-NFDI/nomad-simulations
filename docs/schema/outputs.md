@@ -2,6 +2,37 @@
 
 **Purpose:** Base output structure and common property definitions
 
+## Notes
+
+One `Outputs` section represents the calculated properties of one system
+configuration, identified through `model_system_ref`. A sequence of
+configurations, such as geometry-optimization steps, is represented using
+multiple output sections, normally `WorkflowOutputs`, ordered by
+`WorkflowOutputs.step`.
+
+One `TotalEnergy` represents the converged total energy of that configuration.
+Energy components belong inside that `TotalEnergy` through its `contributions`
+subsections. The listed contributions do not have to be exhaustive, so the total
+energy is not necessarily equal to their sum. Although `Outputs.total_energies`
+has `repeats=True`, the schema currently defines neither an ordering nor a
+sequence meaning for repeated entries.
+
+`SCFSteps.energies_total` is the ordered sequence of total energies from the SCF
+iterations within one configuration. `SCFSteps.delta_energies_total` contains
+differences between consecutive values from that SCF sequence.
+
+Conceptual geometry-optimization layout:
+
+```text
+WorkflowOutputs(step=0)
+    TotalEnergy for configuration 0
+    SCFSteps.energies_total for the SCF iterations of configuration 0
+
+WorkflowOutputs(step=1)
+    TotalEnergy for configuration 1
+    SCFSteps.energies_total for the SCF iterations of configuration 1
+```
+
 
 ## Relationship map
 
@@ -74,7 +105,7 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `Outputs` | Output properties of a simulation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.outputs.Outputs){:target="_blank"} |
+| `Outputs` | Output properties of one system configuration. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.outputs.Outputs){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
@@ -89,8 +120,8 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `energies_total` | m_float64(float) (shape: ['*']) | Total energy at each SCF step. |
-| `delta_energies_total` | m_float64(float) (shape: ['*']) | <details><summary>Absolute change of total energy between consecutive SCF steps.</summary>Absolute change of total energy between consecutive SCF steps. When<br>derived from `energies_total`, `delta_energies_total[i] =<br>abs(energies_total[i + 1] - energies_total[i])`, so N SCF energies<br>produce N - 1 energy deltas.</details> |
+| `energies_total` | m_float64(float) (shape: ['*']) | Ordered sequence of total energies from the SCF iterations within one system configuration. |
+| `delta_energies_total` | m_float64(float) (shape: ['*']) | <details><summary>Absolute change of total energy between consecutive SCF steps.</summary>Absolute change of total energy between consecutive SCF steps. When<br>derived from `energies_total`, the values follow<br>$\Delta E_i = \lvert E_{i+1} - E_i \rvert$, so N SCF energies<br>produce N - 1 energy deltas.</details> |
 | `delta_potential_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of potential energy at each SCF step. |
 | `delta_density_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of potential energy at each SCF step. |
 | `delta_wavefunction_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of wavefunction coefficients at each SCF step. Dimensionless quantity representing convergence of orbital coefficients. |
