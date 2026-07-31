@@ -144,6 +144,20 @@ class TestElectronicDensityOfStates:
         )
         assert energies_origin is None
 
+    def test_resolve_energies_origin_reference_outside_window(self):
+        """
+        When the `highest_occupied` reference lies farther than `dos_energy_tolerance` from
+        every DOS grid point (i.e. outside the sampled window), no origin is reported.
+        """
+        energies_points = np.linspace(-0.5, 0.5, 101) * ureg.eV
+        electronic_dos = self._dos_with_reference(np.ones(101), 10.0 * ureg.eV)
+
+        energies_origin = electronic_dos.resolve_energies_origin(
+            energies_points=energies_points,
+            logger=logger,
+        )
+        assert energies_origin is None
+
     def test_resolve_normalization_factor(self, simulation_electronic_dos: Simulation):
         """
         Test the `resolve_normalization_factor` method.

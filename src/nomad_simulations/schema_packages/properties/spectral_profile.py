@@ -237,67 +237,72 @@ class ElectronicDensityOfStates(DOSProfile):
         fermi_idx = (np.abs(energies_points - eref)).argmin()
         fermi_energy_closest = energies_points[fermi_idx]
         distance = np.abs(fermi_energy_closest - eref)
+        # If the reference is farther than `dos_energy_tolerance` from every DOS grid point,
+        # the DOS does not cover it and aligning to it would be inaccurate, so do not report
+        # an origin.
+        if distance > configuration.dos_energy_tolerance:
+            return None
+
         single_peak_fermi = False
-        if distance <= configuration.dos_energy_tolerance:
-            # See if there are zero values close below the energy reference.
-            idx = fermi_idx
-            idx_descend = fermi_idx
-            while True:
-                try:
-                    value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies_points[idx])
-                except IndexError:
-                    break
-                if energy_distance > configuration.dos_energy_tolerance:
-                    break
-                if value <= configuration.dos_intensities_threshold:
-                    idx_descend = idx
+        # See if there are zero values close below the energy reference.
+        idx = fermi_idx
+        idx_descend = fermi_idx
+        while True:
+            try:
+                value = dos_values[idx]
+                energy_distance = np.abs(eref - energies_points[idx])
+            except IndexError:
+                break
+            if energy_distance > configuration.dos_energy_tolerance:
+                break
+            if value <= configuration.dos_intensities_threshold:
+                idx_descend = idx
+                break
+            idx -= 1
+
+        # See if there are zero values close above the fermi energy.
+        idx = fermi_idx
+        idx_ascend = fermi_idx
+        while True:
+            try:
+                value = dos_values[idx]
+                energy_distance = np.abs(eref - energies_points[idx])
+            except IndexError:
+                break
+            if energy_distance > configuration.dos_energy_tolerance:
+                break
+            if value <= configuration.dos_intensities_threshold:
+                idx_ascend = idx
+                break
+            idx += 1
+
+        # If there is a single peak at fermi energy, no
+        # search needs to be performed.
+        if idx_ascend != fermi_idx and idx_descend != fermi_idx:
+            self.m_cache['highest_occupied_energy'] = fermi_energy_closest
+            self.m_cache['lowest_unoccupied_energy'] = fermi_energy_closest
+            single_peak_fermi = True
+
+        if not single_peak_fermi:
+            # Look for highest occupied energy below the descend index
+            idx = idx_descend
+            while idx >= 0:
+                value = dos_values[idx]
+                if value > configuration.dos_intensities_threshold:
+                    self.m_cache['highest_occupied_energy'] = energies_points[idx]
                     break
                 idx -= 1
-
-            # See if there are zero values close above the fermi energy.
-            idx = fermi_idx
-            idx_ascend = fermi_idx
+            # Look for lowest unoccupied energy above idx_ascend
+            idx = idx_ascend
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies_points[idx])
                 except IndexError:
                     break
-                if energy_distance > configuration.dos_energy_tolerance:
-                    break
-                if value <= configuration.dos_intensities_threshold:
-                    idx_ascend = idx
+                if value > configuration.dos_intensities_threshold:
+                    self.m_cache['lowest_unoccupied_energy'] = energies_points[idx]
                     break
                 idx += 1
-
-            # If there is a single peak at fermi energy, no
-            # search needs to be performed.
-            if idx_ascend != fermi_idx and idx_descend != fermi_idx:
-                self.m_cache['highest_occupied_energy'] = fermi_energy_closest
-                self.m_cache['lowest_unoccupied_energy'] = fermi_energy_closest
-                single_peak_fermi = True
-
-            if not single_peak_fermi:
-                # Look for highest occupied energy below the descend index
-                idx = idx_descend
-                while idx >= 0:
-                    value = dos_values[idx]
-                    if value > configuration.dos_intensities_threshold:
-                        self.m_cache['highest_occupied_energy'] = energies_points[idx]
-                        break
-                    idx -= 1
-                # Look for lowest unoccupied energy above idx_ascend
-                idx = idx_ascend
-                while True:
-                    try:
-                        value = dos_values[idx]
-                    except IndexError:
-                        break
-                    if value > configuration.dos_intensities_threshold:
-                        self.m_cache['lowest_unoccupied_energy'] = energies_points[idx]
-                        break
-                    idx += 1
 
         # Return the `highest_occupied_energy` as the `energies_origin`
         return self.m_cache.get('highest_occupied_energy')
