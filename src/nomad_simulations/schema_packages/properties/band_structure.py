@@ -69,7 +69,7 @@ class ElectronicBandStructure(ElectronicEigenvalues):
         logger = self.extract_fermi_surface.__annotations__['logger']
         # Check if the system has a finite band gap
         homo, lumo = self.resolve_homo_lumo_eigenvalues()
-        if (homo and lumo) and (lumo - homo).magnitude > 0:
+        if (homo is not None and lumo is not None) and (lumo - homo).magnitude > 0:
             return None
 
         # Use the highest occupied eigenvalue as the Fermi-level reference
