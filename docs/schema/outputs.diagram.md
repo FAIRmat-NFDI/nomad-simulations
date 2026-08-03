@@ -13,11 +13,9 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class AbsorptionSpectrum {
-    }
     class ChemicalPotential {
     }
-    class CrystalFieldSplitting {
+    class ElectronicBandGap {
     }
     class ElectronicBandStructure {
     }
@@ -25,32 +23,34 @@ classDiagram
     }
     class ElectronicSelfEnergy {
     }
-    class FermiSurface {
-    }
     class Occupancy {
     }
     class Outputs {
+    }
+    class Permittivity {
     }
     class PhysicalProperty {
     }
     class PotentialEnergy {
     }
-    class QuasiparticleWeight {
+    class RadiusOfGyration {
+    }
+    class Temperature {
     }
     class TotalForce {
     }
     class XASSpectrum {
     }
-    Outputs *-- AbsorptionSpectrum : absorption_spectra
     Outputs *-- ChemicalPotential
-    Outputs *-- CrystalFieldSplitting
+    Outputs *-- ElectronicBandGap
     Outputs *-- ElectronicBandStructure
     Outputs *-- ElectronicDensityOfStates : electronic_dos
     Outputs *-- ElectronicSelfEnergy : electronic_self_energies
-    Outputs *-- FermiSurface
     Outputs *-- Occupancy : occupancies
+    Outputs *-- Permittivity : permittivities
     Outputs *-- PotentialEnergy : potential_energies
-    Outputs *-- QuasiparticleWeight
+    Outputs *-- RadiusOfGyration : radii_of_gyration
+    Outputs *-- Temperature
     Outputs *-- TotalForce
     Outputs *-- XASSpectrum : xas_spectra
 ```
@@ -67,11 +67,15 @@ _Diagram 2 of 2 (split due to large number of children)_
 
 ```mermaid
 classDiagram
-    class ElectronicBandGap {
+    class AbsorptionSpectrum {
+    }
+    class CrystalFieldSplitting {
     }
     class ElectronicEigenvalues {
     }
     class ElectronicGreensFunction {
+    }
+    class FermiSurface {
     }
     class HoppingMatrix {
     }
@@ -81,28 +85,24 @@ classDiagram
     }
     class Outputs {
     }
-    class Permittivity {
-    }
     class PhysicalProperty {
     }
-    class RadiusOfGyration {
+    class QuasiparticleWeight {
     }
     class SCFSteps {
     }
-    class Temperature {
-    }
     class TotalEnergy {
     }
-    Outputs *-- ElectronicBandGap
+    Outputs *-- AbsorptionSpectrum : absorption_spectra
+    Outputs *-- CrystalFieldSplitting
     Outputs *-- ElectronicEigenvalues
     Outputs *-- ElectronicGreensFunction
+    Outputs *-- FermiSurface
     Outputs *-- HoppingMatrix : hopping_matrices
     Outputs *-- HybridizationFunction
     Outputs *-- KineticEnergy : kinetic_energies
-    Outputs *-- Permittivity : permittivities
-    Outputs *-- RadiusOfGyration : radii_of_gyration
+    Outputs *-- QuasiparticleWeight
     Outputs *-- SCFSteps
-    Outputs *-- Temperature
     Outputs *-- TotalEnergy : total_energies
 ```
 
