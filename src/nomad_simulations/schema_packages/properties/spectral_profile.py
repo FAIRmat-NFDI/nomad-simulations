@@ -145,6 +145,9 @@ class ElectronicDensityOfStates(DOSProfile):
         """,
     )
 
+    # NOTE (DRY): specialized copy of the `ElectronicEigenvalues.highest_occupied` reference,
+    # seeded from it and then refined against the DOS grid (band edges). Duplicated on purpose
+    # so the DOS has its own origin for axis derivation and plotting/visualization alignment.
     energies_origin = Quantity(
         type=np.float64,
         unit='joule',

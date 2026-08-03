@@ -30,6 +30,9 @@ class ElectronicBandStructure(ElectronicEigenvalues):
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandStructure'
 
+    # NOTE (DRY): the energy reference (`highest_occupied`, inherited from `ElectronicEigenvalues`,
+    # and used for Fermi-surface extraction) is the same concept specialized as
+    # `ElectronicDensityOfStates.energies_origin`. Intentional duplication for derivation/plotting.
     k_path = SubSection(sub_section=KLinePath.m_def)
 
     reciprocal_cell = Quantity(
