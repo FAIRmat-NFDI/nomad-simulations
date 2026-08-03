@@ -145,13 +145,15 @@ class ElectronicDensityOfStates(DOSProfile):
         """,
     )
 
-    # TODO clarify the role of `energies_origin` once `ElectronicEigenvalues` is implemented
     energies_origin = Quantity(
         type=np.float64,
         unit='joule',
         description="""
-        Energy level denoting the origin along the energy axis, used for comparison and visualization. It is
-        defined as the `ElectronicEigenvalues.highest_occupied_energy`.
+        Energy level denoting the origin along the energy axis, used for comparison and visualization.
+        This value is fully derived during normalization from the sibling
+        `ElectronicEigenvalues.highest_occupied` (when a resolvable reference is available), so parsers
+        are recommended NOT to populate it directly: any manually set value is recomputed and overwritten
+        on normalization without any logging. Provide `ElectronicEigenvalues.highest_occupied` instead.
         """,
     )
 
