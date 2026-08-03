@@ -59,25 +59,27 @@ class TestElectronicDensityOfStates:
             # gapped DOS: valence <= -0.20 eV, conduction >= 0.30 eV, reference in the gap
             pytest.param(
                 np.concatenate([np.ones(31), np.zeros(49), np.ones(21)]),
-                0.0,
+                0.0 * ureg.eV,
                 -0.20,
                 -0.20,
                 0.30,
                 id='gapped',
             ),
             # metallic DOS: finite across the reference -> HOMO == LUMO == reference
-            pytest.param(np.ones(101), 0.0, 0.0, 0.0, 0.0, id='metallic'),
+            pytest.param(np.ones(101), 0.0 * ureg.eV, 0.0, 0.0, 0.0, id='metallic'),
             # only unoccupied states: HOMO stays at the reference, LUMO at the band edge
             pytest.param(
                 np.concatenate([np.zeros(80), np.ones(21)]),
-                0.0,
+                0.0 * ureg.eV,
                 0.0,
                 0.0,
                 0.30,
                 id='without_occupied',
             ),
             # reference farther than `dos_energy_tolerance` from the grid -> no origin
-            pytest.param(np.ones(101), 10.0, None, 10.0, None, id='outside_window'),
+            pytest.param(
+                np.ones(101), 10.0 * ureg.eV, None, 10.0, None, id='outside_window'
+            ),
             # no resolvable reference on the sibling -> no origin
             pytest.param(np.ones(101), None, None, None, None, id='no_reference'),
         ],
@@ -97,8 +99,7 @@ class TestElectronicDensityOfStates:
         resolved. `highest_occupied=None` means the sibling exposes no reference.
         """
         energies_points = np.linspace(-0.5, 0.5, 101) * ureg.eV
-        reference = None if highest_occupied is None else highest_occupied * ureg.eV
-        electronic_dos = self._dos_with_reference(dos_values, reference)
+        electronic_dos = self._dos_with_reference(dos_values, highest_occupied)
 
         energies_origin = electronic_dos.resolve_energies_origin(
             energies_points=energies_points,
@@ -125,12 +126,12 @@ class TestElectronicDensityOfStates:
         [
             pytest.param(
                 np.concatenate([np.ones(31), np.zeros(49), np.ones(21)]),
-                0.0,
+                0.0 * ureg.eV,
                 0.50,
                 id='gapped',
             ),
             # regression: a gap of exactly 0 eV must not be discarded by `extract_band_gap`
-            pytest.param(np.ones(101), 0.0, 0.0, id='metallic'),
+            pytest.param(np.ones(101), 0.0 * ureg.eV, 0.0, id='metallic'),
         ],
     )
     def test_resolve_energies_origin_band_gap(
@@ -140,9 +141,7 @@ class TestElectronicDensityOfStates:
         The DOS-derived band gap from the cached HOMO/LUMO after resolving the energy origin.
         """
         energies_points = np.linspace(-0.5, 0.5, 101) * ureg.eV
-        electronic_dos = self._dos_with_reference(
-            dos_values, highest_occupied * ureg.eV
-        )
+        electronic_dos = self._dos_with_reference(dos_values, highest_occupied)
         electronic_dos.resolve_energies_origin(
             energies_points=energies_points,
             logger=logger,
