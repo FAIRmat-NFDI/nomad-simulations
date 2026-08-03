@@ -11,6 +11,10 @@ from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 from nomad_simulations.schema_packages.data_types import strictly_positive_int
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
+# Occupation below this threshold is treated as an unoccupied orbital when
+# resolving frontier (HOMO/LUMO) orbitals.
+_OCCUPATION_TOL = 1e-6
+
 
 class MolecularOrbitals(PhysicalProperty):
     """
@@ -36,7 +40,7 @@ class MolecularOrbitals(PhysicalProperty):
         shape=['n_mo'],
         description="""
         Orbital energies for each molecular orbital.
-        Defined only for `kind=canonical`, may be absent for natural/localized/hybrid.
+        Defined only for `kind=canonical`, may be absent for natural/localized.
         """,
     )
 
@@ -119,14 +123,46 @@ class MolecularOrbitals(PhysicalProperty):
 
     # Whole-set classification
     kind = Quantity(
-        type=MEnum('canonical', 'natural', 'localized', 'hybrid'),
+        type=MEnum('canonical', 'natural', 'localized'),
         description="""
-        Classification of the orbital set:
+        Classification of the orbital set by the transformation that defines it:
 
-        * canonical  : standard SCF eigenfunctions
+        * canonical  : standard SCF eigenfunctions (Fock/Kohn-Sham diagonal)
         * natural    : eigenfunctions of the 1-RDM
         * localized  : after a localization transform (Boys, Pipek-Mezey, …)
-        * hybrid     : post-HF orbitals, e.g. CASSCF
+
+        For MCSCF/CASSCF outputs, tag the reported set as `canonical` or `natural`
+        (whichever it is); the active-space partition is captured by `role`.
+        """,
+    )
+
+    # Derived frontier-orbital quantities (canonical orbitals only)
+    homo = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Highest occupied molecular orbital (HOMO) energy. Resolved from `energies`
+        and `occupations` for `kind=canonical`; left unset for other kinds or when
+        the set has no occupied/unoccupied boundary. Not overwritten if already set.
+        """,
+    )
+
+    lumo = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Lowest unoccupied molecular orbital (LUMO) energy. Resolved from `energies`
+        and `occupations` for `kind=canonical`; left unset otherwise. Not overwritten
+        if already set.
+        """,
+    )
+
+    homo_lumo_gap = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        HOMO-LUMO gap, defined as `lumo - homo`. Resolved for `kind=canonical` when
+        both HOMO and LUMO are available. Not overwritten if already set.
         """,
     )
 
@@ -189,9 +225,34 @@ class MolecularOrbitals(PhysicalProperty):
                 )
 
         if self.n_mo is not None and self.n_ao is not None and self.n_mo > self.n_ao:
-            logger.warning(
+            logger.error(
                 '`n_mo` exceeds `n_ao`, which is physically inconsistent: the MO space cannot be larger than the AO basis it is expanded in.'
             )
+
+        self._resolve_homo_lumo()
+
+    def _resolve_homo_lumo(self) -> None:
+        # Frontier orbitals are well defined only for canonical orbitals with
+        # both energies and occupations present and consistent in length.
+        if self.kind not in (None, 'canonical'):
+            return
+        if self.energies is None or self.occupations is None:
+            return
+        occupations = np.asarray(self.occupations)
+        if len(occupations) != len(self.energies):
+            return
+        occupied = occupations > _OCCUPATION_TOL
+        # Need at least one occupied and one unoccupied orbital to define a boundary.
+        if not occupied.any() or occupied.all():
+            return
+        homo = self.energies[occupied].max()
+        lumo = self.energies[~occupied].min()
+        if self.homo is None:
+            self.homo = homo
+        if self.lumo is None:
+            self.lumo = lumo
+        if self.homo_lumo_gap is None:
+            self.homo_lumo_gap = lumo - homo
 
     def _validate_per_orbital_lengths(self, logger: 'BoundLogger') -> None:
         if self.n_mo is None:
