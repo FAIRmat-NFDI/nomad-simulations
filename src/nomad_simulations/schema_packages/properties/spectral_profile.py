@@ -496,6 +496,20 @@ class ElectronicDensityOfStates(DOSProfile):
 class AbsorptionSpectrum(SpectralProfile):
     """ """
 
+    sp_type = Quantity(
+        type=str,
+        description="""
+        Type of spectrum (e.g. Polarizability, EELS).
+        """,
+    )
+
+    n_energies = Quantity(
+        type=int,
+        description="""
+        Number of energy points in the spectrum.
+        """,
+    )
+
     axis = Quantity(
         type=MEnum('xx', 'yy', 'zz'),
         description="""
