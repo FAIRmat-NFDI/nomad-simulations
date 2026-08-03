@@ -398,11 +398,12 @@ VERTICALS = {
     },
     'electronic_properties': {
         'title': 'Electronic Structure Properties',
-        'purpose': 'Electronic eigenvalues, band structures, DOS, band gaps, occupancies, and Fermi surfaces',
+        'purpose': 'Electronic eigenvalues, band structures, DOS, band gaps, molecular orbitals, occupancies, and Fermi surfaces',
         'sections': [
             'BaseElectronicEigenvalues',
             'ElectronicEigenvalues',
             'ElectronicBandStructure',
+            'MolecularOrbitals',
             'ElectronicBandGap',
             'DOSProfile',
             'ElectronicDensityOfStates',
