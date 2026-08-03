@@ -879,7 +879,7 @@ class CoreHole(ElectronicState):
                 self.occupation = self.resolve_occupation(logger=logger)
 
 
-class HubbardInteractions(ElectronicState):
+class HubbardInteractions(Entity):
     """
     A base section to define the Hubbard interactions of the system.
     """

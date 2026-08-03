@@ -351,6 +351,16 @@ class TestHubbardInteractions:
     Test the `HubbardInteractions` class defined in atoms_state.py.
     """
 
+    def test_not_electronic_state(self):
+        """
+        `HubbardInteractions` is a container of interaction parameters, not an electronic state:
+        it must not inherit from `ElectronicState` nor expose its state-specific quantities.
+        """
+        assert not issubclass(HubbardInteractions, ElectronicState)
+        quantities = HubbardInteractions.m_def.all_quantities
+        for state_only in ('occupation', 'degeneracy', 'symmetry_label', 'point_group'):
+            assert state_only not in quantities
+
     @pytest.mark.parametrize(
         'slater_integrals, results',
         [
