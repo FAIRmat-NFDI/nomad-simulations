@@ -1512,3 +1512,26 @@ def test_validate_array_lengths():
         )
     finally:
         logger.warning = original_warning
+
+
+@pytest.mark.parametrize(
+    'multiplicity, is_valid',
+    [
+        (1, True),  # singlet
+        (2, True),  # doublet
+        (3, True),  # triplet
+        (0, False),  # multiplicity is 2S+1, so it is never zero
+        (-1, False),  # nor negative
+    ],
+)
+def test_total_multiplicity_bounds(multiplicity: int, is_valid: bool):
+    """
+    Test that `ModelSystem.total_multiplicity` only accepts strictly positive integers.
+    """
+    model_system = ModelSystem()
+    if is_valid:
+        model_system.total_multiplicity = multiplicity
+        assert model_system.total_multiplicity == multiplicity
+    else:
+        with pytest.raises(ValueError):
+            model_system.total_multiplicity = multiplicity

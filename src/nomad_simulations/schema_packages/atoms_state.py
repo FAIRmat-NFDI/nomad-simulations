@@ -1139,6 +1139,9 @@ class AtomsState(ParticleState):
         """,
     )
 
+    # TODO: legacy quantity, retained temporarily for compatibility. Remove or migrate it
+    # once atomic spin states are represented consistently through
+    # `AtomsState.electronic_state.spin_orbit_state`.
     spin = Quantity(
         type=np.int32,
         default=0,
