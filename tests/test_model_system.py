@@ -1199,7 +1199,8 @@ def test_wyckoff_sites_property():
 
     wyckoff_sites = local_sym.wyckoff_sites
     assert wyckoff_sites is not None
-    assert wyckoff_sites == ['a1', 'b2', 'b2', 'c4', 'c4', 'c4', 'c4']
+    # International Tables notation: multiplicity first, then letter
+    assert wyckoff_sites == ['1a', '2b', '2b', '4c', '4c', '4c', '4c']
 
     # Test with missing wyckoff_letters
     local_sym2 = LocalCrystalSymmetry()
@@ -1216,6 +1217,41 @@ def test_wyckoff_sites_property():
     local_sym4.wyckoff_letters = ['a', 'b']
     local_sym4.site_multiplicities = [1]  # Length mismatch
     assert local_sym4.wyckoff_sites is None
+
+
+@pytest.mark.parametrize('cell_kind', ['primitive', 'conventional', 'supercell'])
+def test_site_multiplicities_are_intrinsic(cell_kind):
+    """
+    `site_multiplicities` is the intrinsic (conventional-cell) Wyckoff multiplicity and must be
+    invariant under the choice of input cell (regression for #428). fcc Cu (space group 225) has a
+    single Wyckoff site of multiplicity 4, so every atom reports 4 -- and `wyckoff_sites` renders
+    `4a` -- whether the input is the primitive (1 atom), conventional (4 atoms), or a 2x2x2
+    supercell (32 atoms).
+    """
+    from ase.build import bulk
+
+    from nomad_simulations.schema_packages.model_system import ModelSystem, Symmetry
+
+    from . import logger
+
+    conventional = bulk('Cu', 'fcc', a=3.6, cubic=True)
+    cells = {
+        'primitive': bulk('Cu', 'fcc', a=3.6),
+        'conventional': conventional,
+        'supercell': conventional * (2, 2, 2),
+    }
+    ase_atoms = cells[cell_kind]
+
+    sys = ModelSystem.from_ase_atoms(ase_atoms, logger=logger)
+    sys.type = 'bulk'
+    Symmetry().resolve_bulk_symmetry(sys, logger)
+
+    local = sys.local_symmetry
+    assert local is not None
+    assert local.site_multiplicities is not None
+    assert len(local.site_multiplicities) == len(ase_atoms)
+    assert all(int(mult) == 4 for mult in local.site_multiplicities)
+    assert set(local.wyckoff_sites) == {'4a'}
 
 
 @pytest.mark.parametrize(

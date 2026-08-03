@@ -457,7 +457,7 @@ class LocalCrystalSymmetry(LocalSymmetry):
         if they occupy geometrically equivalent positions.
         For complete crystallographic uniqueness, combine `wyckoff_letters` with chemical information.
 
-        Use the `wyckoff_sites` property to get the combined letter+multiplicity format (e.g., "a1", "b2").
+        Use the `wyckoff_sites` property to get the combined multiplicity+letter format (e.g., "1a", "2b").
 
         References:
         - International Tables for Crystallography, Volume A: Space-group symmetry
@@ -489,7 +489,8 @@ class LocalCrystalSymmetry(LocalSymmetry):
     @property
     def wyckoff_sites(self) -> list[str] | None:
         """
-        Wyckoff site designation formatted as `<letter><multiplicity>` (e.g., `a1`, `b2`).
+        Wyckoff site designation formatted as `<multiplicity><letter>` (e.g., `1a`, `2b`),
+        following International Tables for Crystallography notation.
 
         This property combines `wyckoff_letters` and `site_multiplicities` into a convenient
         single format matching the notation commonly used in crystallography literature.
@@ -499,7 +500,7 @@ class LocalCrystalSymmetry(LocalSymmetry):
             or None if either wyckoff_letters or site_multiplicities is not set.
 
         Examples:
-            - ['a1', 'b2', 'b2', 'c4', 'c4', 'c4', 'c4'] indicates:
+            - ['1a', '2b', '2b', '4c', '4c', '4c', '4c'] indicates:
               • 1 atom at Wyckoff position 'a' (special position, multiplicity 1)
               • 2 symmetrically equivalent atoms at Wyckoff position 'b' (multiplicity 2)
               • 4 symmetrically equivalent atoms at Wyckoff position 'c' (multiplicity 4)
@@ -509,7 +510,7 @@ class LocalCrystalSymmetry(LocalSymmetry):
         if len(self.wyckoff_letters) != len(self.site_multiplicities):
             return None
         return [
-            f'{letter}{mult}'
+            f'{mult}{letter}'
             for letter, mult in zip(self.wyckoff_letters, self.site_multiplicities)
         ]
 
@@ -890,6 +891,45 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         # For each atom, count how many atoms share its equivalent_atoms index
         return [equiv_list.count(equiv_list[i]) for i in range(len(equiv_list))]
 
+    @staticmethod
+    def _intrinsic_site_multiplicities(
+        symmetry_analyzer: 'SymmetryAnalyzer',
+        wyckoff_letters: 'np.ndarray | list | None',
+    ) -> list[int] | None:
+        """
+        Intrinsic Wyckoff multiplicity for each atom, i.e. the orbit size in the **conventional
+        cell**. Unlike `_compute_site_multiplicities` (which counts the orbit in whatever cell it
+        is given), this value is invariant under the choice of input cell (primitive, conventional
+        or supercell), because a Wyckoff letter has a single multiplicity within a space group.
+
+        The conventional-cell orbit sizes are computed once and mapped onto `wyckoff_letters` by
+        letter.
+
+        Args:
+            symmetry_analyzer: The `SymmetryAnalyzer` used to access the conventional cell.
+            wyckoff_letters: The Wyckoff letters of the representation to annotate.
+
+        Returns:
+            List of intrinsic multiplicities (one per atom), or None if the conventional-cell
+            Wyckoff data is unavailable (e.g. non-bulk systems).
+        """
+        if wyckoff_letters is None:
+            return None
+        conventional_wyckoff = symmetry_analyzer.get_wyckoff_letters_conventional()
+        conventional_equivalent = symmetry_analyzer.get_equivalent_atoms_conventional()
+        if conventional_wyckoff is None or conventional_equivalent is None:
+            return None
+        conventional_multiplicities = (
+            GlobalCrystalSymmetry._compute_site_multiplicities(conventional_equivalent)
+        )
+        letter_to_multiplicity = {
+            letter: multiplicity
+            for letter, multiplicity in zip(
+                conventional_wyckoff, conventional_multiplicities
+            )
+        }
+        return [letter_to_multiplicity.get(letter) for letter in wyckoff_letters]
+
     def resolve_analyzed_cell(
         self,
         symmetry_analyzer: 'SymmetryAnalyzer',
@@ -960,9 +1000,12 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
                 if wyckoff is not None:
                     cell_section.local_symmetry.wyckoff_letters = wyckoff
 
-                    # Compute site_multiplicities from equivalent_atoms grouping
-                    if equivalent is not None:
-                        site_mults = self._compute_site_multiplicities(equivalent)
+                    # Site multiplicities are the intrinsic (conventional-cell) Wyckoff
+                    # multiplicities, so they are invariant under the choice of input cell.
+                    site_mults = self._intrinsic_site_multiplicities(
+                        symmetry_analyzer, wyckoff
+                    )
+                    if site_mults is not None:
                         cell_section.local_symmetry.site_multiplicities = site_mults
 
                 if equivalent is not None:
@@ -1057,9 +1100,12 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         model_system.local_symmetry.wyckoff_letters = original_wyckoff
         model_system.local_symmetry.equivalent_atoms = original_equivalent_atoms
 
-        # Compute site_multiplicities from equivalent_atoms grouping
-        if original_equivalent_atoms is not None:
-            site_mults = self._compute_site_multiplicities(original_equivalent_atoms)
+        # Site multiplicities are the intrinsic (conventional-cell) Wyckoff multiplicities,
+        # mapped from the wyckoff letters, so they are invariant under the choice of input cell.
+        site_mults = self._intrinsic_site_multiplicities(
+            symmetry_analyzer, original_wyckoff
+        )
+        if site_mults is not None:
             model_system.local_symmetry.site_multiplicities = site_mults
 
         # Populate site_symmetries (point group symbols) from symmetry dataset
