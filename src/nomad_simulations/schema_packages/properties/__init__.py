@@ -59,6 +59,7 @@ __all__ = [
     'QuasiparticleWeight',
     'CrystalFieldSplitting',
     'HoppingMatrix',
+    'MolecularOrbitals',
     'Permittivity',
     'AbsorptionSpectrum',
     'DOSProfile',
