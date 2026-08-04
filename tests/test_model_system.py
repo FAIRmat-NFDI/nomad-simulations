@@ -1524,14 +1524,15 @@ def test_validate_array_lengths():
         (-1, False),  # nor negative
     ],
 )
-def test_total_multiplicity_bounds(multiplicity: int, is_valid: bool):
+def test_total_spin_multiplicity_bounds(multiplicity: int, is_valid: bool):
     """
-    Test that `ModelSystem.total_multiplicity` only accepts strictly positive integers.
+    Test that `ModelSystem.total_spin_multiplicity` only accepts strictly positive
+    integers.
     """
     model_system = ModelSystem()
     if is_valid:
-        model_system.total_multiplicity = multiplicity
-        assert model_system.total_multiplicity == multiplicity
+        model_system.total_spin_multiplicity = multiplicity
+        assert model_system.total_spin_multiplicity == multiplicity
     else:
         with pytest.raises(ValueError):
-            model_system.total_multiplicity = multiplicity
+            model_system.total_spin_multiplicity = multiplicity

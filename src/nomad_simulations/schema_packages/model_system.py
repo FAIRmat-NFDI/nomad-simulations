@@ -1479,7 +1479,7 @@ class ModelSystem(System, Representation):
         """,
     )
 
-    total_multiplicity = Quantity(
+    total_spin_multiplicity = Quantity(
         type=strictly_positive_int(),
         description="""
         Spin multiplicity **2S+1** of the total system.
