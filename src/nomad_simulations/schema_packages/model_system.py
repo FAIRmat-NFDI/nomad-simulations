@@ -461,6 +461,7 @@ class LocalCrystalSymmetry(LocalSymmetry):
 
         References:
         - International Tables for Crystallography, Volume A: Space-group symmetry
+          (https://it.iucr.org/)
         - Aroyo, M.I. et al. (2006). "Bilbao Crystallographic Server." Z. Kristallogr. 221, 15-27
         - Aroyo, M.I. et al. (2011). "Crystallography online: Bilbao Crystallographic Server."
           Bulg. Chem. Commun. 43, 183-197
@@ -490,7 +491,8 @@ class LocalCrystalSymmetry(LocalSymmetry):
     def wyckoff_sites(self) -> list[str] | None:
         """
         Wyckoff site designation formatted as `<multiplicity><letter>` (e.g., `1a`, `2b`),
-        following International Tables for Crystallography notation.
+        following International Tables for Crystallography notation
+        (https://it.iucr.org/).
 
         This property combines `wyckoff_letters` and `site_multiplicities` into a convenient
         single format matching the notation commonly used in crystallography literature.
