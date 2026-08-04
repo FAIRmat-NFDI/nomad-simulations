@@ -857,84 +857,67 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         )
 
     @staticmethod
-    def _compute_site_multiplicities(
-        equivalent_atoms: 'np.ndarray | list',
-    ) -> list[int]:
-        """
-        Compute site multiplicities from equivalent_atoms grouping.
-
-        For each atom, the multiplicity is the number of atoms that share the same
-        equivalent_atoms index (i.e., atoms related by space group symmetry operations).
-
-        This method correctly handles parametric Wyckoff positions where the same
-        Wyckoff letter can appear at different coordinate parameters, creating
-        distinct non-equivalent sites.
-
-        Args:
-            equivalent_atoms: Array mapping each atom to its independent atom index.
-                Atoms with the same index are symmetrically equivalent.
-
-        Returns:
-            List of site multiplicities, one per atom.
-
-        Examples:
-            >>> _compute_site_multiplicities([0, 0, 2, 2])
-            [2, 2, 2, 2]  # Two pairs of equivalent atoms
-
-            >>> _compute_site_multiplicities([0, 0, 0, 0, 4, 4])
-            [4, 4, 4, 4, 2, 2]  # Four equivalent + two equivalent
-        """
-        # Convert to list for consistent counting behavior
-        equiv_list = (
-            list(equivalent_atoms)
-            if hasattr(equivalent_atoms, '__iter__')
-            else [equivalent_atoms]
-        )
-        # For each atom, count how many atoms share its equivalent_atoms index
-        return [equiv_list.count(equiv_list[i]) for i in range(len(equiv_list))]
-
-    @staticmethod
-    def _intrinsic_site_multiplicities(
+    def _conventional_multiplicity_map(
         symmetry_analyzer: 'SymmetryAnalyzer',
-        wyckoff_letters: 'np.ndarray | list | None',
-    ) -> list[int] | None:
+    ) -> 'dict[str, int] | None':
         """
-        Intrinsic Wyckoff multiplicity for each atom, i.e. the orbit size in the **conventional
-        cell**. Unlike `_compute_site_multiplicities` (which counts the orbit in whatever cell it
-        is given), this value is invariant under the choice of input cell (primitive, conventional
-        or supercell), because a Wyckoff letter has a single multiplicity within a space group.
+        Map each Wyckoff letter to its intrinsic multiplicity, i.e. the orbit size in the
+        **conventional cell** (the multiplicity as defined in the International Tables for
+        Crystallography, https://it.iucr.org/).
 
-        The conventional-cell orbit sizes are computed once and mapped onto `wyckoff_letters` by
-        letter.
+        The map is built from MatID's conventional Wyckoff sets, each of which reports its
+        `wyckoff_letter` and `multiplicity` directly. Within a space group a Wyckoff letter has a
+        single multiplicity, so the mapping is well-defined even for parametric positions (where
+        several sets may share a letter, all with the same multiplicity).
 
         Args:
             symmetry_analyzer: The `SymmetryAnalyzer` used to access the conventional cell.
+
+        Returns:
+            A ``{wyckoff_letter: multiplicity}`` map, or None if the conventional Wyckoff data is
+            unavailable (e.g. non-bulk systems or a failed analysis).
+        """
+        try:
+            wyckoff_sets = symmetry_analyzer.get_wyckoff_sets_conventional()
+        except Exception:
+            return None
+        if not wyckoff_sets:
+            return None
+        return {
+            str(wyckoff_set.wyckoff_letter): int(wyckoff_set.multiplicity)
+            for wyckoff_set in wyckoff_sets
+            if wyckoff_set.wyckoff_letter is not None
+            and wyckoff_set.multiplicity is not None
+        }
+
+    @staticmethod
+    def _intrinsic_site_multiplicities(
+        multiplicity_map: 'dict[str, int] | None',
+        wyckoff_letters: 'np.ndarray | list | None',
+    ) -> list[int] | None:
+        """
+        Intrinsic (conventional-cell) Wyckoff multiplicity for each atom, obtained by mapping
+        ``wyckoff_letters`` through ``multiplicity_map`` (see `_conventional_multiplicity_map`).
+
+        The result is invariant under the choice of input cell (primitive, conventional or
+        supercell): it depends only on the Wyckoff letter -- which MatID assigns consistently
+        across representations -- and not on the input cell's atom count. Letters are cast to
+        ``str`` so that lookups work regardless of the array's string dtype.
+
+        Args:
+            multiplicity_map: ``{wyckoff_letter: multiplicity}`` from the conventional cell.
             wyckoff_letters: The Wyckoff letters of the representation to annotate.
 
         Returns:
-            List of intrinsic multiplicities (one per atom), or None if the conventional-cell
-            Wyckoff data is unavailable (e.g. non-bulk systems).
+            List of intrinsic multiplicities (one per atom), or None if either input is missing or
+            any letter is unmapped -- so a partial / ``None``-holed list is never assigned to the
+            int32 ``site_multiplicities`` quantity.
         """
-        if wyckoff_letters is None:
+        if multiplicity_map is None or wyckoff_letters is None:
             return None
-        conventional_wyckoff = symmetry_analyzer.get_wyckoff_letters_conventional()
-        conventional_equivalent = symmetry_analyzer.get_equivalent_atoms_conventional()
-        if conventional_wyckoff is None or conventional_equivalent is None:
-            return None
-        conventional_multiplicities = (
-            GlobalCrystalSymmetry._compute_site_multiplicities(conventional_equivalent)
-        )
-        letter_to_multiplicity = {
-            letter: multiplicity
-            for letter, multiplicity in zip(
-                conventional_wyckoff, conventional_multiplicities
-            )
-        }
         multiplicities = [
-            letter_to_multiplicity.get(letter) for letter in wyckoff_letters
+            multiplicity_map.get(str(letter)) for letter in wyckoff_letters
         ]
-        # If any letter has no conventional-cell counterpart, do not report partial data
-        # (a None entry would violate the int32 `site_multiplicities` quantity).
         if any(multiplicity is None for multiplicity in multiplicities):
             return None
         return multiplicities
@@ -944,6 +927,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         symmetry_analyzer: 'SymmetryAnalyzer',
         cell_type: str,
         logger: 'BoundLogger',
+        multiplicity_map: 'dict[str, int] | None' = None,
     ) -> 'Representation | None':
         """
         Resolves the `Representation` section from the `SymmetryAnalyzer` object and the cell_type
@@ -953,11 +937,17 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             symmetry_analyzer (SymmetryAnalyzer): The `SymmetryAnalyzer` object used to resolve.
             cell_type (str): The type of cell to resolve, either 'primitive' or 'conventional'.
             logger (BoundLogger): The logger to log messages.
+            multiplicity_map (dict[str, int] | None): Precomputed conventional-cell
+                `{wyckoff_letter: multiplicity}` map (see `_conventional_multiplicity_map`). When
+                None it is computed on demand; callers resolving several cells should pass a shared
+                map to avoid recomputing it.
 
         Returns:
             (Optional[Representation]): The resolved `Representation` section or None if the cell_type
             is not recognized.
         """
+        if multiplicity_map is None:
+            multiplicity_map = self._conventional_multiplicity_map(symmetry_analyzer)
         # Define a mapping for each supported cell type
         cell_type_map = {
             'primitive': {
@@ -1012,7 +1002,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
                     # Site multiplicities are the intrinsic (conventional-cell) Wyckoff
                     # multiplicities, so they are invariant under the choice of input cell.
                     site_mults = self._intrinsic_site_multiplicities(
-                        symmetry_analyzer, wyckoff
+                        multiplicity_map, wyckoff
                     )
                     if site_mults is not None:
                         cell_section.local_symmetry.site_multiplicities = site_mults
@@ -1100,6 +1090,10 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             )
 
         # Populating the ModelSystem local_symmetry information
+        # Conventional-cell Wyckoff multiplicity map, computed once and reused for the original
+        # cell as well as the primitive/conventional representations below.
+        multiplicity_map = self._conventional_multiplicity_map(symmetry_analyzer)
+
         original_wyckoff = symmetry_analyzer.get_wyckoff_letters_original()
         original_equivalent_atoms = symmetry_analyzer.get_equivalent_atoms_original()
 
@@ -1112,7 +1106,7 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         # Site multiplicities are the intrinsic (conventional-cell) Wyckoff multiplicities,
         # mapped from the wyckoff letters, so they are invariant under the choice of input cell.
         site_mults = self._intrinsic_site_multiplicities(
-            symmetry_analyzer, original_wyckoff
+            multiplicity_map, original_wyckoff
         )
         if site_mults is not None:
             model_system.local_symmetry.site_multiplicities = site_mults
@@ -1139,12 +1133,18 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
 
         # Populating the primitive Cell information
         primitive_cell = self.resolve_analyzed_cell(
-            symmetry_analyzer=symmetry_analyzer, cell_type='primitive', logger=logger
+            symmetry_analyzer=symmetry_analyzer,
+            cell_type='primitive',
+            logger=logger,
+            multiplicity_map=multiplicity_map,
         )
 
         # Populating the conventional Cell information
         conventional_cell = self.resolve_analyzed_cell(
-            symmetry_analyzer=symmetry_analyzer, cell_type='conventional', logger=logger
+            symmetry_analyzer=symmetry_analyzer,
+            cell_type='conventional',
+            logger=logger,
+            multiplicity_map=multiplicity_map,
         )
 
         # Getting prototype_formula, prototype_aflow_id, and strukturbericht designation from

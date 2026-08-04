@@ -1383,34 +1383,6 @@ def test_local_symmetry_array_length_validation(caplog):
 
 
 @pytest.mark.parametrize(
-    'equivalent_atoms, expected_multiplicities',
-    [
-        # Two pairs of equivalent atoms
-        ([0, 0, 2, 2], [2, 2, 2, 2]),
-        # All atoms are unique (no equivalence)
-        ([0, 1, 2, 3], [1, 1, 1, 1]),
-        # All atoms are equivalent
-        ([0, 0, 0, 0], [4, 4, 4, 4]),
-        # Complex: 4 equivalent + 2 equivalent (models ZnS wurtzite)
-        ([0, 0, 0, 0, 4, 4], [4, 4, 4, 4, 2, 2]),
-        # Single atom
-        ([0], [1]),
-        # Three groups: 3, 2, 1
-        ([0, 0, 0, 3, 3, 5], [3, 3, 3, 2, 2, 1]),
-    ],
-)
-def test_compute_site_multiplicities(equivalent_atoms, expected_multiplicities):
-    """
-    Test the _compute_site_multiplicities() static method.
-
-    This method computes how many atoms share the same equivalent_atoms index,
-    which is critical for correctly determining Wyckoff position multiplicities.
-    """
-    result = Symmetry._compute_site_multiplicities(equivalent_atoms)
-    assert result == expected_multiplicities
-
-
-@pytest.mark.parametrize(
     'pearson, expected_type, expected_centering',
     [
         # 3D single-character family codes
