@@ -496,7 +496,7 @@ class LocalCrystalSymmetry(LocalSymmetry):
         single format matching the notation commonly used in crystallography literature.
 
         Returns:
-            list[str] | None: List of Wyckoff site annotations in format "letter+multiplicity",
+            list[str] | None: List of Wyckoff site annotations in format "multiplicity+letter",
             or None if either wyckoff_letters or site_multiplicities is not set.
 
         Examples:
@@ -928,7 +928,14 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
                 conventional_wyckoff, conventional_multiplicities
             )
         }
-        return [letter_to_multiplicity.get(letter) for letter in wyckoff_letters]
+        multiplicities = [
+            letter_to_multiplicity.get(letter) for letter in wyckoff_letters
+        ]
+        # If any letter has no conventional-cell counterpart, do not report partial data
+        # (a None entry would violate the int32 `site_multiplicities` quantity).
+        if any(multiplicity is None for multiplicity in multiplicities):
+            return None
+        return multiplicities
 
     def resolve_analyzed_cell(
         self,
