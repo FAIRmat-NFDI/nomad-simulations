@@ -864,11 +864,14 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         `{wyckoff_letter: multiplicity}` read from MatID's conventional Wyckoff sets, where the
         multiplicity is the conventional-cell orbit size per the International Tables for
         Crystallography (https://it.iucr.org/). A thin adapter over `symmetry_analyzer`, which
-        already guarantees a representable conventional cell.
+        already guarantees a representable conventional cell. `return_parameters=False` skips the
+        slow free-parameter fitting, as only the letters and multiplicities are needed here.
         """
         return {
             str(wyckoff_set.wyckoff_letter): int(wyckoff_set.multiplicity)
-            for wyckoff_set in symmetry_analyzer.get_wyckoff_sets_conventional()
+            for wyckoff_set in symmetry_analyzer.get_wyckoff_sets_conventional(
+                return_parameters=False
+            )
         }
 
     @staticmethod
@@ -888,7 +891,6 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         symmetry_analyzer: 'SymmetryAnalyzer',
         cell_type: str,
         logger: 'BoundLogger',
-        multiplicity_map: 'dict[str, int] | None' = None,
     ) -> 'Representation | None':
         """
         Resolves the `Representation` section from the `SymmetryAnalyzer` object and the cell_type
@@ -898,17 +900,12 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             symmetry_analyzer (SymmetryAnalyzer): The `SymmetryAnalyzer` object used to resolve.
             cell_type (str): The type of cell to resolve, either 'primitive' or 'conventional'.
             logger (BoundLogger): The logger to log messages.
-            multiplicity_map (dict[str, int] | None): Precomputed conventional-cell
-                `{wyckoff_letter: multiplicity}` map (see `_conventional_multiplicity_map`). When
-                None it is computed on demand; callers resolving several cells should pass a shared
-                map to avoid recomputing it.
 
         Returns:
             (Optional[Representation]): The resolved `Representation` section or None if the cell_type
             is not recognized.
         """
-        if multiplicity_map is None:
-            multiplicity_map = self._conventional_multiplicity_map(symmetry_analyzer)
+        multiplicity_map = self._conventional_multiplicity_map(symmetry_analyzer)
         # Define a mapping for each supported cell type
         cell_type_map = {
             'primitive': {
@@ -1049,8 +1046,8 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             )
 
         # Populating the ModelSystem local_symmetry information
-        # Conventional-cell Wyckoff multiplicity map, computed once and reused for the original
-        # cell as well as the primitive/conventional representations below.
+        # Conventional-cell Wyckoff multiplicity map for the original cell's site multiplicities;
+        # the primitive/conventional representations below self-compute their own.
         multiplicity_map = self._conventional_multiplicity_map(symmetry_analyzer)
 
         original_wyckoff = symmetry_analyzer.get_wyckoff_letters_original()
@@ -1093,7 +1090,6 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             symmetry_analyzer=symmetry_analyzer,
             cell_type='primitive',
             logger=logger,
-            multiplicity_map=multiplicity_map,
         )
 
         # Populating the conventional Cell information
@@ -1101,7 +1097,6 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             symmetry_analyzer=symmetry_analyzer,
             cell_type='conventional',
             logger=logger,
-            multiplicity_map=multiplicity_map,
         )
 
         # Getting prototype_formula, prototype_aflow_id, and strukturbericht designation from
