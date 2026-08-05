@@ -163,7 +163,7 @@ A vertical is a curated documentation page that focuses on a specific domain or 
    - Each vertical represents ONE inheritance hierarchy
    - Parent class and ALL child classes on the same page
    - Child classes' subsections also included on the same page
-   - Example: `particle_states` contains ParticleState → AtomsState (with OrbitalsState, CoreHole, HubbardInteractions) + CGBeadState
+   - Example: `particle_states` contains ParticleState → AtomsState (with OrbitalsState, CoreHole) + CGBeadState
 
 2. **Complete Hierarchy Per Page**:
    - Include parent class
@@ -228,7 +228,6 @@ Each vertical in `verticals.py` includes:
         'CGBeadState',          # Child 2
         'OrbitalsState',        # Subsection of AtomsState
         'CoreHole',             # Subsection of AtomsState
-        'HubbardInteractions',  # Subsection of AtomsState
     ],
 }
 ```
@@ -239,7 +238,7 @@ Each vertical in `verticals.py` includes:
     'sections': ['ParticleState', 'AtomsState', 'CGBeadState'],
 }
 'atomic_properties': {  # DON'T DO THIS
-    'sections': ['OrbitalsState', 'CoreHole', 'HubbardInteractions'],
+    'sections': ['OrbitalsState', 'CoreHole'],
 }
 ```
 
