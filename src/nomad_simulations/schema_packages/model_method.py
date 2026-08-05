@@ -399,14 +399,10 @@ class HubbardInteractions(BaseModelMethod):
 
     # TODO (@JosePizarro3 note): we need to have checks for when a `ModelSystem` is spin rotational invariant (then we only need to pass `u_interaction` and `j_hunds_coupling` and resolve the other quantities)
 
-    name = Quantity(
-        type=str,
-        default='Hubbard',
-        description="""
-        Name of this Hamiltonian term. The composite method name (e.g. 'DFT+U') is
-        carried by the containing `ModelMethod`.
-        """,
-    )
+    # Extend the inherited `name` definition with a term-level default; the composite
+    # method name (e.g. 'DFT+U') is carried by the containing `ModelMethod`.
+    name = BaseModelMethod.name.m_copy()
+    name.default = 'Hubbard'
 
     n_orbitals = Quantity(
         type=np.int32,
