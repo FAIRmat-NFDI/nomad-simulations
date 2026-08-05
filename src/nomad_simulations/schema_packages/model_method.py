@@ -399,6 +399,15 @@ class HubbardInteractions(BaseModelMethod):
 
     # TODO (@JosePizarro3 note): we need to have checks for when a `ModelSystem` is spin rotational invariant (then we only need to pass `u_interaction` and `j_hunds_coupling` and resolve the other quantities)
 
+    name = Quantity(
+        type=str,
+        default='Hubbard',
+        description="""
+        Name of this Hamiltonian term. The composite method name (e.g. 'DFT+U') is
+        carried by the containing `ModelMethod`.
+        """,
+    )
+
     n_orbitals = Quantity(
         type=np.int32,
         description="""
@@ -547,10 +556,6 @@ class HubbardInteractions(BaseModelMethod):
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
-
-        # Term-level name; the composite method name (e.g. 'DFT+U') is the parent's concern
-        if self.name is None:
-            self.name = 'Hubbard'
 
         # Obtain (u, up, j_hunds_coupling) from slater_integrals
         if (
