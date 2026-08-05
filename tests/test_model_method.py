@@ -1543,6 +1543,7 @@ class TestHubbardInteractions:
             j_local_exchange_interaction=2.0 * ureg.eV,
         )
         hubbard_interactions.normalize(EntryArchive(), logger)
+        assert hubbard_interactions.name == 'Hubbard'
         assert np.isclose(hubbard_interactions.u_effective.to('eV').magnitude, 1.0)
         assert np.isclose(hubbard_interactions.u_interaction.to('eV').magnitude, 3.0)
 
@@ -1561,7 +1562,6 @@ class TestHubbardInteractions:
         atoms_state.electronic_state = orbital
 
         hubbard_interactions = HubbardInteractions(
-            name='DFT+U',
             n_orbitals=1,
             orbitals_ref=[orbital],
         )

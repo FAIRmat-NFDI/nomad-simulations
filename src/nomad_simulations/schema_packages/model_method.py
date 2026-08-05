@@ -548,6 +548,10 @@ class HubbardInteractions(BaseModelMethod):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
+        # Term-level name; the composite method name (e.g. 'DFT+U') is the parent's concern
+        if self.name is None:
+            self.name = 'Hubbard'
+
         # Obtain (u, up, j_hunds_coupling) from slater_integrals
         if (
             self.u_interaction is None
