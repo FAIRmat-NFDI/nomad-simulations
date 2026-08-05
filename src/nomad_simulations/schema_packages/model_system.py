@@ -866,6 +866,10 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         Crystallography (https://it.iucr.org/). A thin adapter over `symmetry_analyzer`, which
         already guarantees a representable conventional cell. `return_parameters=False` skips the
         slow free-parameter fitting, as only the letters and multiplicities are needed here.
+
+        Cheap to call at each site rather than threading the result around: MatID memoizes the
+        expensive intermediates (spglib dataset, conventional system, Wyckoff letters, equivalent
+        atoms) on the `symmetry_analyzer` instance, so only the light Wyckoff-set assembly repeats.
         """
         return {
             str(wyckoff_set.wyckoff_letter): int(wyckoff_set.multiplicity)
@@ -905,6 +909,8 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             (Optional[Representation]): The resolved `Representation` section or None if the cell_type
             is not recognized.
         """
+        # Self-computed here rather than threaded in: MatID's per-instance memoization makes
+        # recomputation across cells cheap (see `_conventional_multiplicity_map`).
         multiplicity_map = self._conventional_multiplicity_map(symmetry_analyzer)
         # Define a mapping for each supported cell type
         cell_type_map = {
