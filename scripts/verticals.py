@@ -288,7 +288,6 @@ VERTICALS = {
             'CGBeadState',
             'AtomicOrbitals',
             'CoreHole',
-            'HubbardInteractions',
         ],
     },
     'symmetry': {

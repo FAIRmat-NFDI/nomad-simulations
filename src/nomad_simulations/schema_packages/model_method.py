@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pint
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import (
     URL,
@@ -11,6 +12,7 @@ from nomad.metainfo import (
     SectionProxy,
     SubSection,
 )
+from nomad.units import ureg
 
 if TYPE_CHECKING:
     from nomad.datamodel.context import Context
@@ -31,6 +33,7 @@ from nomad_simulations.schema_packages.data_types import (
 )
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
+from nomad_simulations.schema_packages.utils import log
 from nomad_simulations.schema_packages.utils.libxc.build import (
     spec_from_id,
     spec_from_label,
@@ -384,6 +387,196 @@ class SelfInteractionCorrection(BaseModelMethod):
             logger.warning(
                 'SelfInteractionCorrection.method is EXPLICIT_ORBITALS but no corrected orbitals were provided.'
             )
+
+
+class HubbardInteractions(BaseModelMethod):
+    """
+    Hubbard interaction correction to the total Hamiltonian (e.g. the +U term of DFT+U),
+    defined by on-site interaction parameters acting on the orbitals referenced in
+    `orbitals_ref`. As a Hamiltonian correction term, this section is stored under
+    `ModelMethod.contributions`.
+    """
+
+    # TODO (@JosePizarro3 note): we need to have checks for when a `ModelSystem` is spin rotational invariant (then we only need to pass `u_interaction` and `j_hunds_coupling` and resolve the other quantities)
+
+    # Extend the inherited `name` definition with a term-level default; the composite
+    # method name (e.g. 'DFT+U') is carried by the containing `ModelMethod`.
+    name = BaseModelMethod.name.m_copy()
+    name.default = 'Hubbard'
+
+    n_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of orbitals used to define the Hubbard interactions.
+        """,
+    )
+
+    orbitals_ref = Quantity(
+        type=ElectronicState,
+        shape=['n_orbitals'],
+        description="""
+        References to the `ElectronicState` sections that define the orbitals involved in
+        Hubbard interactions. The ordering matches the rows/columns of `u_matrix`.
+        Each reference can be a simple orbital (SphericalSymmetryState) or a more complex
+        multi-orbital state, depending on the level of decomposition needed.
+        """,
+    )
+
+    u_matrix = Quantity(
+        type=np.float64,
+        shape=['n_orbitals', 'n_orbitals'],
+        unit='joule',
+        description="""
+        Value of the local Hubbard interaction matrix.
+        The order of the rows and columns coincide with the elements in `orbitals_ref`.
+        """,
+    )
+
+    u_interaction = Quantity(
+        type=positive_float(),
+        unit='joule',
+        description="""
+        Value of the (intra-orbital) Hubbard interaction
+        """,
+    )
+
+    j_hunds_coupling = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the (interorbital) Hund's coupling.
+        """,
+    )
+
+    u_interorbital_interaction = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the (interorbital) Coulomb interaction. In rotational invariant systems,
+        u_interorbital_interaction = u_interaction - 2 * j_hunds_coupling.
+        """,
+    )
+
+    j_local_exchange_interaction = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the exchange interaction. In rotational invariant systems, j_local_exchange_interaction = j_hunds_coupling.
+        """,
+    )
+
+    u_effective = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the effective U parameter (u_interaction - j_local_exchange_interaction).
+        """,
+    )
+
+    slater_integrals = Quantity(
+        type=np.float64,
+        shape=[3],
+        unit='joule',
+        description="""
+        Value of the Slater integrals [F0, F2, F4] in spherical harmonics used to derive
+        the local Hubbard interactions:
+
+            u_interaction = ((2.0 / 7.0) ** 2) * (F0 + 5.0 * F2 + 9.0 * F4) / (4.0*np.pi)
+
+            u_interorbital_interaction = ((2.0 / 7.0) ** 2) * (F0 - 5.0 * F2 + 3.0 * 0.5 * F4) / (4.0*np.pi)
+
+            j_hunds_coupling = ((2.0 / 7.0) ** 2) * (5.0 * F2 + 15.0 * 0.25 * F4) / (4.0*np.pi)
+
+        See e.g., Elbio Dagotto, Nanoscale Phase Separation and Colossal Magnetoresistance,
+        Chapter 4, Springer Berlin (2003).
+        """,
+    )
+
+    double_counting_correction = Quantity(
+        type=str,
+        description="""
+        Name of the double counting correction algorithm applied.
+        """,
+    )
+
+    @log
+    def resolve_u_interactions(self) -> tuple | None:
+        """
+        Resolves the Hubbard interactions (u_interaction, u_interorbital_interaction, j_hunds_coupling)
+        from the Slater integrals (F0, F2, F4) in the units defined for the Quantity.
+
+        Args:
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            (Optional[tuple]): The Hubbard interactions (u_interaction, u_interorbital_interaction, j_hunds_coupling).
+        """
+        logger = self.resolve_u_interactions.__annotations__['logger']
+        if self.slater_integrals is None or len(self.slater_integrals) != 3:
+            logger.warning(
+                'Could not find `slater_integrals` or the length is not three.'
+            )  # TODO: move shape-check to schema
+            return None, None, None
+        f0 = self.slater_integrals[0]
+        f2 = self.slater_integrals[1]
+        f4 = self.slater_integrals[2]
+        u_interaction = ((2.0 / 7.0) ** 2) * (f0 + 5.0 * f2 + 9.0 * f4) / (4.0 * np.pi)
+        u_interorbital_interaction = (
+            ((2.0 / 7.0) ** 2) * (f0 - 5.0 * f2 + 3.0 * f4 / 2.0) / (4.0 * np.pi)
+        )
+        j_hunds_coupling = (
+            ((2.0 / 7.0) ** 2) * (5.0 * f2 + 15.0 * f4 / 4.0) / (4.0 * np.pi)
+        )
+        return u_interaction, u_interorbital_interaction, j_hunds_coupling
+
+    @log
+    def resolve_u_effective(self) -> pint.Quantity | None:
+        """
+        Resolves the effective U parameter (u_interaction - j_local_exchange_interaction).
+
+        Args:
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            (Optional[pint.Quantity]): The effective U parameter.
+        """
+        logger = self.resolve_u_effective.__annotations__['logger']
+        if self.u_interaction is None:
+            logger.warning('Could not find `HubbardInteractions.u_interaction`.')
+            return None
+
+        if self.j_local_exchange_interaction is None:
+            self.j_local_exchange_interaction = 0.0 * ureg.eV
+
+        return self.u_interaction - self.j_local_exchange_interaction
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Obtain (u, up, j_hunds_coupling) from slater_integrals
+        if (
+            self.u_interaction is None
+            and self.u_interorbital_interaction is None
+            and self.j_hunds_coupling is None
+        ):
+            (
+                self.u_interaction,
+                self.u_interorbital_interaction,
+                self.j_hunds_coupling,
+            ) = self.resolve_u_interactions(logger=logger)
+
+        # If u_effective is not available, calculate it
+        if self.u_effective is None:
+            self.u_effective = self.resolve_u_effective(logger=logger)
+
+        # Check if length of `orbitals_ref` is the same as the length of `u_matrix`:
+        if self.u_matrix is not None and self.orbitals_ref is not None:
+            if len(self.u_matrix) != len(
+                self.orbitals_ref
+            ):  # TODO: move shape-check to schema
+                logger.error(
+                    'The length of `HubbardInteractions.u_matrix` does not coincide with length of `HubbardInteractions.orbitals_ref`.'
+                )
 
 
 class RelativityModel(BaseModelMethod):

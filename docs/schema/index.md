@@ -32,7 +32,7 @@ Chemical formulas in different formats: descriptive, reduced, IUPAC, Hill, anony
 
 Complete particle state hierarchy: ParticleState base class, AtomsState with detailed atomic properties, and CGBeadState
 
-**Key sections:** ParticleState, AtomsState, CGBeadState, AtomicOrbitals, CoreHole, HubbardInteractions
+**Key sections:** ParticleState, AtomsState, CGBeadState, AtomicOrbitals, CoreHole
 
 ## [Symmetry](symmetry.md)
 

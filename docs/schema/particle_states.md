@@ -15,12 +15,10 @@ classDiagram
     class CGBeadState
     class CoreHole
     class ElectronicState
-    class HubbardInteractions
     class ParticleState
     ParticleState <|-- AtomsState
     ParticleState <|-- CGBeadState
     AtomsState *-- ElectronicState : electronic_state
-    HubbardInteractions *-- ElectronicState : orbitals_ref
 ```
 
 <p class="uml-legend__title">Legend</p>
@@ -95,24 +93,6 @@ classDiagram
 |---|---|---|
 | `n_excited_electrons` | m_float_bounded(float) | The electron charge excited for modelling purposes. This is a number between 0 and 1 (Janak state). If `dscf_state` is set to 'initial', then this quantity is set to None (but assumed as excited state). |
 | `dscf_state` | Enum | Tag used to identify the role in the workflow of the same name. Allowed values are 'initial' (not to be confused with the _initial-state approximation_) and 'final'. If 'initial' is used, then `n_excited_electrons` is set to 0 and the degeneracy is set to 1. |
-
-### `HubbardInteractions`
-
-| Section | Description | MetaInfo |
-|---|---|---|
-| `HubbardInteractions` | A base section to define the Hubbard interactions of the system. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.atoms_state.HubbardInteractions){:target="_blank"} |
-
-| Quantity | Type | Description |
-|---|---|---|
-| `n_orbitals` | m_int32(int32) | Number of orbitals used to define the Hubbard interactions. |
-| `u_matrix` | m_float64(float64) (shape: ['n_orbitals', 'n_orbitals']) | Value of the local Hubbard interaction matrix. The order of the rows and columns coincide with the elements in `orbitals_ref`. |
-| `u_interaction` | m_float_bounded(float) | Value of the (intra-orbital) Hubbard interaction |
-| `j_hunds_coupling` | m_float64(float64) | Value of the (interorbital) Hund's coupling. |
-| `u_interorbital_interaction` | m_float64(float64) | Value of the (interorbital) Coulomb interaction. In rotational invariant systems, u_interorbital_interaction = u_interaction - 2 * j_hunds_coupling. |
-| `j_local_exchange_interaction` | m_float64(float64) | Value of the exchange interaction. In rotational invariant systems, j_local_exchange_interaction = j_hunds_coupling. |
-| `u_effective` | m_float64(float64) | Value of the effective U parameter (u_interaction - j_local_exchange_interaction). |
-| `slater_integrals` | m_float64(float64) (shape: [3]) | <details><summary>Value of the Slater integrals [F0, F2, F4] in spherical harmonics used to derive</summary>Value of the Slater integrals [F0, F2, F4] in spherical harmonics used to derive<br>the local Hubbard interactions:<br>u_interaction = ((2.0 / 7.0) ** 2) * (F0 + 5.0 * F2 + 9.0 * F4) / (4.0*np.pi)<br>u_interorbital_interaction = ((2.0 / 7.0) ** 2) * (F0 - 5.0 * F2 + 3.0 * 0.5 * F4) / (4.0*np.pi)<br>j_hunds_coupling = ((2.0 / 7.0) ** 2) * (5.0 * F2 + 15.0 * 0.25 * F4) / (4.0*np.pi)<br>See e.g., Elbio Dagotto, Nanoscale Phase Separation and Colossal Magnetoresistance,<br>Chapter 4, Springer Berlin (2003).</details> |
-| `double_counting_correction` | m_str(str) | Name of the double counting correction algorithm applied. |
 
 
 ## Related Pages
