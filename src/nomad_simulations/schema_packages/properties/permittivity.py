@@ -1,12 +1,10 @@
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from nomad.metainfo import MEnum, Quantity, SubSection
 from nomad.metainfo.data_type import m_complex128
 
 if TYPE_CHECKING:
-    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
@@ -97,4 +95,4 @@ class Permittivity(PhysicalProperty):
         # `AbsorptionSpectrum` extraction
         absorption_spectra = self.extract_absorption_spectra(logger)
         if absorption_spectra is not None:
-            self.m_parent.absorption_spectrum = absorption_spectra
+            self.m_parent.m_append('absorption_spectra', absorption_spectra)

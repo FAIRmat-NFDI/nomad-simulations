@@ -13,18 +13,30 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BaseGreensFunction
-    class CrystalFieldSplitting
-    class ElectronicGreensFunction
-    class ElectronicSelfEnergy
-    class Frequency
-    class HoppingMatrix
-    class HybridizationFunction
-    class ImaginaryTime
-    class MatsubaraFrequency
-    class QuasiparticleWeight
-    class Time
-    class WignerSeitz
+    class BaseGreensFunction {
+    }
+    class CrystalFieldSplitting {
+    }
+    class ElectronicGreensFunction {
+    }
+    class ElectronicSelfEnergy {
+    }
+    class Frequency {
+    }
+    class HoppingMatrix {
+    }
+    class HybridizationFunction {
+    }
+    class ImaginaryTime {
+    }
+    class MatsubaraFrequency {
+    }
+    class QuasiparticleWeight {
+    }
+    class Time {
+    }
+    class WignerSeitz {
+    }
     BaseGreensFunction <|-- ElectronicGreensFunction
     BaseGreensFunction <|-- ElectronicSelfEnergy
     BaseGreensFunction <|-- HybridizationFunction

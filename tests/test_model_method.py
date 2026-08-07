@@ -17,7 +17,6 @@ from nomad_simulations.schema_packages.model_method import (
     ImplicitSolvationModel,
     LocalCorrelation,
     LocalCorrelationSpace,
-    MultireferencePT,
     MultireferenceSCF,
     NonlocalCorrelation,
     PerturbationMethod,
@@ -1333,3 +1332,110 @@ def test_dft_expands_widely_used_functionals_to_expected_labels(
     if expected_family.startswith('hybrid'):
         # Schema must not infer α from names
         assert dft.xc.global_exact_exchange is None
+
+
+@pytest.mark.parametrize(
+    'component_kwargs, expected_labels, expected_family',
+    [
+        # free-form label input is canonicalized (case / missing 'XC_' prefix)
+        (
+            [{'canonical_label': 'gga_x_pbe'}, {'canonical_label': 'XC_GGA_C_PBE'}],
+            {'XC_GGA_X_PBE', 'XC_GGA_C_PBE'},
+            'GGA',
+        ),
+        # arbitrary composition with no shorthand name still resolves per-component
+        (
+            [
+                {'canonical_label': 'XC_MGGA_X_SCAN'},
+                {'canonical_label': 'XC_GGA_C_PBE'},
+            ],
+            {'XC_MGGA_X_SCAN', 'XC_GGA_C_PBE'},
+            'meta-GGA',
+        ),
+        (
+            [{'canonical_label': 'XC_LDA_X'}, {'canonical_label': 'XC_LDA_C_PZ'}],
+            {'XC_LDA_X', 'XC_LDA_C_PZ'},
+            'LDA',
+        ),
+        # a component carrying only a LibXC id (abinit's negative-ixc path)
+        ([{'libxc_id': 101}], {'XC_GGA_X_PBE'}, 'GGA'),
+        # an unresolvable label falls back to the id
+        (
+            [{'canonical_label': 'XC_NOT_A_REAL_LABEL', 'libxc_id': 101}],
+            {'XC_GGA_X_PBE'},
+            'GGA',
+        ),
+    ],
+)
+def test_dft_resolves_free_form_components(
+    component_kwargs, expected_labels, expected_family
+):
+    """Components supplied directly (no `functional_key`) complete their LibXC
+    taxonomy from the registry in `XCComponent.normalize`, keyed by either
+    `canonical_label` or `libxc_id`, so arbitrary compositions still yield
+    family/kind and a Jacob's ladder rung."""
+    dft = DFT()
+    dft.xc = XCFunctional(
+        components=[XCComponent(**kwargs) for kwargs in component_kwargs]
+    )
+    dft.normalize(EntryArchive(), logger=logger)
+
+    assert {c.canonical_label for c in dft.xc.components} == expected_labels
+    assert all(c.family is not None and c.kind is not None for c in dft.xc.components)
+    assert dft.jacobs_ladder == expected_family
+    # `weight` is a composition fraction the parser owns, not registry data;
+    # the taxonomy fill must leave it untouched.
+    assert all(c.weight is None for c in dft.xc.components)
+    # resolved components are not flagged unidentified
+    assert all(not c.unidentified for c in dft.xc.components)
+
+
+def test_dft_clears_unidentified_when_component_later_resolves():
+    """A component marked `unidentified` that also carries a resolvable identity
+    is completed and the flag is cleared, not left inconsistent."""
+    dft = DFT()
+    dft.xc = XCFunctional(
+        components=[XCComponent(unidentified=True, canonical_label='XC_GGA_X_PBE')]
+    )
+    dft.normalize(EntryArchive(), logger=logger)
+
+    comp = dft.xc.components[0]
+    assert comp.family == 'GGA' and comp.kind == 'exchange'
+    assert not comp.unidentified
+
+
+def test_dft_keeps_unidentified_placeholder_component():
+    """A parser may report a component it cannot name (e.g. abinit's `?` slot).
+    The placeholder (no label, `unidentified=True`) is retained so the number of
+    components is not misrepresented, and it survives normalization untouched."""
+    dft = DFT()
+    dft.xc = XCFunctional(
+        components=[
+            XCComponent(canonical_label='XC_GGA_X_PBE'),
+            XCComponent(unidentified=True),
+        ]
+    )
+    dft.normalize(EntryArchive(), logger=logger)
+
+    assert len(dft.xc.components) == 2
+    named, placeholder = dft.xc.components
+    assert named.canonical_label == 'XC_GGA_X_PBE' and named.family == 'GGA'
+    assert placeholder.unidentified is True
+    assert placeholder.canonical_label is None and placeholder.family is None
+
+
+@pytest.mark.parametrize(
+    'component_kwargs',
+    [{'canonical_label': 'XC_NOT_A_REAL_LABEL'}, {'libxc_id': 999999}],
+)
+def test_dft_marks_unresolvable_component_unidentified(component_kwargs):
+    """A component whose label or id the registry cannot resolve is kept as an
+    unidentified placeholder, without taxonomy, and must not crash normalization."""
+    dft = DFT()
+    dft.xc = XCFunctional(components=[XCComponent(**component_kwargs)])
+    dft.normalize(EntryArchive(), logger=logger)
+
+    comp = dft.xc.components[0]
+    assert comp.unidentified is True
+    assert comp.family is None and comp.kind is None
+    assert dft.jacobs_ladder == 'unavailable'

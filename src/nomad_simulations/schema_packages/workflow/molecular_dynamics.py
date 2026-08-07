@@ -1,17 +1,11 @@
 from __future__ import annotations
 
-from array import array
-from collections import namedtuple
-from itertools import chain
 from typing import TYPE_CHECKING, Any
 
-import networkx
 import numpy as np
-from scipy import sparse
-from scipy.stats import linregress
 
 try:
-    import MDAnalysis
+    import MDAnalysis  # noqa: F401
 
     _HAS_MDA = True
 except ImportError:
@@ -20,13 +14,9 @@ except ImportError:
 if TYPE_CHECKING:
     from MDAnalysis.core.universe import Universe
 
-from nomad import atomutils
 from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.datamodel import EntryArchive
-from nomad.datamodel.hdf5 import HDF5Dataset
-from nomad.datamodel.metainfo.workflow import Link
-from nomad.metainfo import MEnum, MSection, Quantity, Reference, Section, SubSection
-from nomad.units import ureg
+from nomad.metainfo import MEnum, Quantity, Reference, Section, SubSection
 
 from nomad_simulations.schema_packages.errors import ErrorEstimate
 from nomad_simulations.schema_packages.model_system import ModelSystem
@@ -48,16 +38,10 @@ from .general import (
     SerialWorkflow,
     SerialWorkflowResults,
     SimulationWorkflowMethod,
-    SimulationWorkflowResults,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Generator
-
-    import pint
-    from nomad.datamodel.context import Context
     from nomad.metainfo import Section
-    from structlog.stdlib import BoundLogger
 
 
 class MDSettings(NumericalSettings):

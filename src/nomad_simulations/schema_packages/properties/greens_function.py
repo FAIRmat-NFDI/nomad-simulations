@@ -1,15 +1,14 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
+from nomad.datamodel.hdf5 import HDF5Dataset
 from nomad.metainfo import MEnum, Quantity, SubSection
 
 if TYPE_CHECKING:
-    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState, ElectronicState
+from nomad_simulations.schema_packages.atoms_state import ElectronicState
 from nomad_simulations.schema_packages.data_types import unit_float
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.variables import (
@@ -170,10 +169,14 @@ class ElectronicGreensFunction(BaseGreensFunction):
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicGreensFunction'
 
     value = Quantity(
-        type=np.complex128,
+        type=HDF5Dataset,
+        shape=[],
         unit='1/joule',
         description="""
-        Value of the electronic Green's function matrix.
+        Value of the electronic Green's function matrix stored as an HDF5 dataset.
+        The conventional dataset layout is [n_kpoints, n_frequencies, n_orbitals, n_orbitals]
+        for k- and frequency-resolved Green's functions, but the actual dimensions depend on
+        the represented spaces set via the `space_id` field.
         """,
     )
 
@@ -186,10 +189,14 @@ class ElectronicSelfEnergy(BaseGreensFunction):
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicSelfEnergy'
 
     value = Quantity(
-        type=np.complex128,
+        type=HDF5Dataset,
+        shape=[],
         unit='joule',
         description="""
-        Value of the electronic self-energy matrix.
+        Value of the electronic self-energy matrix stored as an HDF5 dataset.
+        The conventional dataset layout is [n_kpoints, n_frequencies, n_orbitals, n_orbitals]
+        for k- and frequency-resolved self-energies, but the actual dimensions depend on
+        the represented spaces set via the `space_id` field.
         """,
     )
 
@@ -202,10 +209,14 @@ class HybridizationFunction(BaseGreensFunction):
     iri = 'http://fairmat-nfdi.eu/taxonomy/HybridizationFunction'
 
     value = Quantity(
-        type=np.complex128,
+        type=HDF5Dataset,
+        shape=[],
         unit='joule',
         description="""
-        Value of the electronic hybridization function.
+        Value of the electronic hybridization function stored as an HDF5 dataset.
+        The conventional dataset layout is [n_kpoints, n_frequencies, n_orbitals, n_orbitals]
+        for k- and frequency-resolved hybridization functions, but the actual dimensions depend on
+        the represented spaces set via the `space_id` field.
         """,
     )
 

@@ -4,13 +4,15 @@ from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.general import Simulation
-from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
 from nomad_simulations.schema_packages.outputs import Outputs
 from nomad_simulations.schema_packages.properties import (
     AbsorptionSpectrum,
     DOSProfile,
     ElectronicDensityOfStates,
     XASSpectrum,
+)
+from nomad_simulations.schema_packages.properties.electronic_eigenvalues import (
+    ElectronicEigenvalues,
 )
 from nomad_simulations.schema_packages.variables import Energy2 as Energy
 
@@ -33,12 +35,121 @@ class TestElectronicDensityOfStates:
             == 'http://fairmat-nfdi.eu/taxonomy/ElectronicDensityOfStates'
         )
 
-    def test_resolve_energies_origin(self):
+    def _dos_with_reference(self, dos_values, highest_occupied):
         """
-        Test the `resolve_energies_origin` method.
+        Build an `ElectronicDensityOfStates` attached to an `Outputs` parent that also holds an
+        `ElectronicEigenvalues` sibling. When `highest_occupied` is None the sibling exposes no
+        reference, so `resolve_energies_origin` returns None; otherwise it sets `highest_occupied`.
+        This mirrors production, where the origin is resolved internally (no parsed Fermi-level
+        fallback).
         """
-        # ! add test when `ElectronicEigenvalues` is implemented
-        pass
+        outputs = Outputs()
+        electronic_dos = ElectronicDensityOfStates()
+        electronic_dos.value = dos_values * ureg('1/joule')
+        outputs.electronic_dos.append(electronic_dos)
+        eigenvalues = ElectronicEigenvalues()
+        if highest_occupied is not None:
+            eigenvalues.highest_occupied = highest_occupied
+        outputs.electronic_eigenvalues.append(eigenvalues)
+        return electronic_dos
+
+    @pytest.mark.parametrize(
+        'dos_values, highest_occupied, expected_origin, expected_homo, expected_lumo',
+        [
+            # gapped DOS: valence <= -0.20 eV, conduction >= 0.30 eV, reference in the gap
+            pytest.param(
+                np.concatenate([np.ones(31), np.zeros(49), np.ones(21)]),
+                0.0 * ureg.eV,
+                -0.20,
+                -0.20,
+                0.30,
+                id='gapped',
+            ),
+            # metallic DOS: finite across the reference -> HOMO == LUMO == reference
+            pytest.param(np.ones(101), 0.0 * ureg.eV, 0.0, 0.0, 0.0, id='metallic'),
+            # only unoccupied states: HOMO stays at the reference, LUMO at the band edge
+            pytest.param(
+                np.concatenate([np.zeros(80), np.ones(21)]),
+                0.0 * ureg.eV,
+                0.0,
+                0.0,
+                0.30,
+                id='without_occupied',
+            ),
+            # reference farther than `dos_energy_tolerance` from the grid -> no origin
+            pytest.param(
+                np.ones(101), 10.0 * ureg.eV, None, 10.0, None, id='outside_window'
+            ),
+            # no resolvable reference on the sibling -> no origin
+            pytest.param(np.ones(101), None, None, None, None, id='no_reference'),
+        ],
+    )
+    def test_resolve_energies_origin(
+        self,
+        dos_values,
+        highest_occupied,
+        expected_origin,
+        expected_homo,
+        expected_lumo,
+    ):
+        """
+        Resolve the DOS energy origin from the sibling `ElectronicEigenvalues.highest_occupied`.
+
+        The DOS grid runs from -0.5 to 0.5 eV. Expected values are in eV, or None when nothing is
+        resolved. `highest_occupied=None` means the sibling exposes no reference.
+        """
+        energies_points = np.linspace(-0.5, 0.5, 101) * ureg.eV
+        electronic_dos = self._dos_with_reference(dos_values, highest_occupied)
+
+        energies_origin = electronic_dos.resolve_energies_origin(
+            energies_points=energies_points,
+            logger=logger,
+        )
+
+        def _matches(actual, expected):
+            if expected is None:
+                return actual is None
+            return actual is not None and np.isclose(
+                actual.to('eV').magnitude, expected, atol=1e-9
+            )
+
+        assert _matches(energies_origin, expected_origin)
+        assert _matches(
+            electronic_dos.m_cache.get('highest_occupied_energy'), expected_homo
+        )
+        assert _matches(
+            electronic_dos.m_cache.get('lowest_unoccupied_energy'), expected_lumo
+        )
+
+    @pytest.mark.parametrize(
+        'dos_values, highest_occupied, expected_gap',
+        [
+            pytest.param(
+                np.concatenate([np.ones(31), np.zeros(49), np.ones(21)]),
+                0.0 * ureg.eV,
+                0.50,
+                id='gapped',
+            ),
+            # regression: a gap of exactly 0 eV must not be discarded by `extract_band_gap`
+            pytest.param(np.ones(101), 0.0 * ureg.eV, 0.0, id='metallic'),
+        ],
+    )
+    def test_resolve_energies_origin_band_gap(
+        self, dos_values, highest_occupied, expected_gap
+    ):
+        """
+        The DOS-derived band gap from the cached HOMO/LUMO after resolving the energy origin.
+        """
+        energies_points = np.linspace(-0.5, 0.5, 101) * ureg.eV
+        electronic_dos = self._dos_with_reference(dos_values, highest_occupied)
+        electronic_dos.resolve_energies_origin(
+            energies_points=energies_points,
+            logger=logger,
+        )
+
+        band_gap = electronic_dos.extract_band_gap()
+        assert band_gap is not None
+        assert np.isclose(band_gap.value.to('eV').magnitude, expected_gap, atol=1e-9)
 
     def test_resolve_normalization_factor(self, simulation_electronic_dos: Simulation):
         """
@@ -83,12 +194,41 @@ class TestElectronicDensityOfStates:
         model_system.particle_states = original_particles
         electronic_dos.spin_channel = original_spin
 
-    def test_extract_band_gap(self):
+    @pytest.mark.parametrize(
+        'homo, lumo, result',
+        [
+            # gapped system
+            (1.0, 2.0, 1.0),
+            # overlapping bands: negative difference is clamped to 0
+            (2.0, 1.0, 0.0),
+            # HOMO exactly at 0 eV must not be skipped (regression for truthiness check)
+            (0.0, 1.0, 1.0),
+            # missing either energy reference means no derived band gap
+            (None, 1.0, None),
+            (1.0, None, None),
+            (None, None, None),
+        ],
+    )
+    def test_extract_band_gap(
+        self, homo: float | None, lumo: float | None, result: float | None
+    ):
         """
-        Test the `extract_band_gap` method.
+        Test the `extract_band_gap` method from the `highest_occupied_energy` and
+        `lowest_unoccupied_energy` values stored in `m_cache`.
         """
-        # ! add test when `ElectronicEigenvalues` is implemented
-        pass
+        electronic_dos = ElectronicDensityOfStates()
+        if homo is not None:
+            electronic_dos.m_cache['highest_occupied_energy'] = homo * ureg.eV
+        if lumo is not None:
+            electronic_dos.m_cache['lowest_unoccupied_energy'] = lumo * ureg.eV
+
+        band_gap = electronic_dos.extract_band_gap()
+        if result is None:
+            assert band_gap is None
+        else:
+            assert band_gap.is_derived
+            assert band_gap.physical_property_ref == electronic_dos
+            assert np.isclose(band_gap.value.to('eV').magnitude, result)
 
     def test_resolve_pdos_name(self, simulation_electronic_dos: Simulation):
         """

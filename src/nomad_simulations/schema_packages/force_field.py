@@ -1,10 +1,7 @@
 import re
-import typing
 
 # from structlog.stdlib import BoundLogger
 import numpy as np
-from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
-from nomad.datamodel.context import Context
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import (
     URL,

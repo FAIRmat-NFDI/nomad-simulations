@@ -1,12 +1,9 @@
-from typing import Optional, Union
-
 import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.properties import ElectronicBandGap
-from nomad_simulations.schema_packages.variables import Temperature
 
 from . import logger
 

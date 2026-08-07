@@ -21,6 +21,7 @@ from hashlib import sha1
 from typing import TYPE_CHECKING
 
 import ase
+import ase.units
 import numpy as np
 from ase.symbols import symbols2numbers
 from matid import Classifier, SymmetryAnalyzer  # pylint: disable=import-error
@@ -48,7 +49,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Any
 
-    import pint
     from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
     from nomad.metainfo import Section
@@ -56,7 +56,6 @@ if TYPE_CHECKING:
 
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
-    CGBeadState,
     ElectronicState,
     ParticleState,
 )
@@ -312,18 +311,25 @@ class LocalSymmetry(ArchiveSection):
 
     Provides polymorphic interface for different types of local symmetry data.
     Each representation can have its own LocalSymmetry since particle counts differ.
+    Some quantities in this section, such as `equivalent_atoms`, are intentionally
+    atom-specific because they originate from crystallographic analysis of atomic
+    structures.
     """
 
     equivalent_atoms = Quantity(
         type=np.int32,
         shape=['*'],
         description="""
-        Equivalence grouping of atoms by symmetry operations.
-        Atoms with the same index value are symmetrically equivalent.
+        Equivalence grouping of atomic sites by symmetry operations.
+        Atomic sites with the same index value are symmetrically equivalent.
+
+        This quantity is intentionally atom-specific. It reflects crystallographic
+        symmetry analysis on atomic structures and should not be interpreted as a
+        generic particle-equivalence relation for arbitrary `ParticleState` subclasses.
 
         Examples:
-            - [0, 1, 2, 3]: all four atoms are non-equivalent
-            - [0, 0, 0, 3]: first three atoms are equivalent, fourth is unique
+            - [0, 1, 2, 3]: all four atomic sites are non-equivalent
+            - [0, 0, 0, 3]: first three atomic sites are equivalent, fourth is unique
         """,
     )
 
@@ -451,10 +457,11 @@ class LocalCrystalSymmetry(LocalSymmetry):
         if they occupy geometrically equivalent positions.
         For complete crystallographic uniqueness, combine `wyckoff_letters` with chemical information.
 
-        Use the `wyckoff_sites` property to get the combined letter+multiplicity format (e.g., "a1", "b2").
+        Use the `wyckoff_sites` property to get the combined multiplicity+letter format (e.g., "1a", "2b").
 
         References:
         - International Tables for Crystallography, Volume A: Space-group symmetry
+          (https://it.iucr.org/)
         - Aroyo, M.I. et al. (2006). "Bilbao Crystallographic Server." Z. Kristallogr. 221, 15-27
         - Aroyo, M.I. et al. (2011). "Crystallography online: Bilbao Crystallographic Server."
           Bulg. Chem. Commun. 43, 183-197
@@ -483,17 +490,19 @@ class LocalCrystalSymmetry(LocalSymmetry):
     @property
     def wyckoff_sites(self) -> list[str] | None:
         """
-        Wyckoff site designation formatted as `<letter><multiplicity>` (e.g., `a1`, `b2`).
+        Wyckoff site designation formatted as `<multiplicity><letter>` (e.g., `1a`, `2b`),
+        following International Tables for Crystallography notation
+        (https://it.iucr.org/).
 
         This property combines `wyckoff_letters` and `site_multiplicities` into a convenient
         single format matching the notation commonly used in crystallography literature.
 
         Returns:
-            list[str] | None: List of Wyckoff site annotations in format "letter+multiplicity",
+            list[str] | None: List of Wyckoff site annotations in format "multiplicity+letter",
             or None if either wyckoff_letters or site_multiplicities is not set.
 
         Examples:
-            - ['a1', 'b2', 'b2', 'c4', 'c4', 'c4', 'c4'] indicates:
+            - ['1a', '2b', '2b', '4c', '4c', '4c', '4c'] indicates:
               • 1 atom at Wyckoff position 'a' (special position, multiplicity 1)
               • 2 symmetrically equivalent atoms at Wyckoff position 'b' (multiplicity 2)
               • 4 symmetrically equivalent atoms at Wyckoff position 'c' (multiplicity 4)
@@ -503,7 +512,7 @@ class LocalCrystalSymmetry(LocalSymmetry):
         if len(self.wyckoff_letters) != len(self.site_multiplicities):
             return None
         return [
-            f'{letter}{mult}'
+            f'{mult}{letter}'
             for letter, mult in zip(self.wyckoff_letters, self.site_multiplicities)
         ]
 
@@ -848,41 +857,38 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         )
 
     @staticmethod
-    def _compute_site_multiplicities(
-        equivalent_atoms: 'np.ndarray | list',
+    def _conventional_multiplicity_map(
+        symmetry_analyzer: 'SymmetryAnalyzer',
+    ) -> 'dict[str, int]':
+        """
+        `{wyckoff_letter: multiplicity}` read from MatID's conventional Wyckoff sets, where the
+        multiplicity is the conventional-cell orbit size per the International Tables for
+        Crystallography (https://it.iucr.org/). A thin adapter over `symmetry_analyzer`, which
+        already guarantees a representable conventional cell. `return_parameters=False` skips the
+        slow free-parameter fitting, as only the letters and multiplicities are needed here.
+
+        Cheap to call at each site rather than threading the result around: MatID memoizes the
+        expensive intermediates (spglib dataset, conventional system, Wyckoff letters, equivalent
+        atoms) on the `symmetry_analyzer` instance, so only the light Wyckoff-set assembly repeats.
+        """
+        return {
+            str(wyckoff_set.wyckoff_letter): int(wyckoff_set.multiplicity)
+            for wyckoff_set in symmetry_analyzer.get_wyckoff_sets_conventional(
+                return_parameters=False
+            )
+        }
+
+    @staticmethod
+    def _intrinsic_site_multiplicities(
+        multiplicity_map: 'dict[str, int]',
+        wyckoff_letters: 'np.ndarray | list',
     ) -> list[int]:
         """
-        Compute site multiplicities from equivalent_atoms grouping.
-
-        For each atom, the multiplicity is the number of atoms that share the same
-        equivalent_atoms index (i.e., atoms related by space group symmetry operations).
-
-        This method correctly handles parametric Wyckoff positions where the same
-        Wyckoff letter can appear at different coordinate parameters, creating
-        distinct non-equivalent sites.
-
-        Args:
-            equivalent_atoms: Array mapping each atom to its independent atom index.
-                Atoms with the same index are symmetrically equivalent.
-
-        Returns:
-            List of site multiplicities, one per atom.
-
-        Examples:
-            >>> _compute_site_multiplicities([0, 0, 2, 2])
-            [2, 2, 2, 2]  # Two pairs of equivalent atoms
-
-            >>> _compute_site_multiplicities([0, 0, 0, 0, 4, 4])
-            [4, 4, 4, 4, 2, 2]  # Four equivalent + two equivalent
+        Intrinsic (conventional-cell) Wyckoff multiplicity per atom, mapping `wyckoff_letters`
+        through `multiplicity_map`. Cell-invariant: it depends only on the (MatID-invariant)
+        Wyckoff letter, not on the input cell's atom count.
         """
-        # Convert to list for consistent counting behavior
-        equiv_list = (
-            list(equivalent_atoms)
-            if hasattr(equivalent_atoms, '__iter__')
-            else [equivalent_atoms]
-        )
-        # For each atom, count how many atoms share its equivalent_atoms index
-        return [equiv_list.count(equiv_list[i]) for i in range(len(equiv_list))]
+        return [multiplicity_map[str(letter)] for letter in wyckoff_letters]
 
     def resolve_analyzed_cell(
         self,
@@ -903,6 +909,9 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             (Optional[Representation]): The resolved `Representation` section or None if the cell_type
             is not recognized.
         """
+        # Self-computed here rather than threaded in: MatID's per-instance memoization makes
+        # recomputation across cells cheap (see `_conventional_multiplicity_map`).
+        multiplicity_map = self._conventional_multiplicity_map(symmetry_analyzer)
         # Define a mapping for each supported cell type
         cell_type_map = {
             'primitive': {
@@ -954,10 +963,11 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
                 if wyckoff is not None:
                     cell_section.local_symmetry.wyckoff_letters = wyckoff
 
-                    # Compute site_multiplicities from equivalent_atoms grouping
-                    if equivalent is not None:
-                        site_mults = self._compute_site_multiplicities(equivalent)
-                        cell_section.local_symmetry.site_multiplicities = site_mults
+                    # Site multiplicities are the intrinsic (conventional-cell) Wyckoff
+                    # multiplicities, so they are invariant under the choice of input cell.
+                    cell_section.local_symmetry.site_multiplicities = (
+                        self._intrinsic_site_multiplicities(multiplicity_map, wyckoff)
+                    )
 
                 if equivalent is not None:
                     cell_section.local_symmetry.equivalent_atoms = equivalent
@@ -1042,6 +1052,10 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
             )
 
         # Populating the ModelSystem local_symmetry information
+        # Conventional-cell Wyckoff multiplicity map for the original cell's site multiplicities;
+        # the primitive/conventional representations below self-compute their own.
+        multiplicity_map = self._conventional_multiplicity_map(symmetry_analyzer)
+
         original_wyckoff = symmetry_analyzer.get_wyckoff_letters_original()
         original_equivalent_atoms = symmetry_analyzer.get_equivalent_atoms_original()
 
@@ -1051,10 +1065,11 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
         model_system.local_symmetry.wyckoff_letters = original_wyckoff
         model_system.local_symmetry.equivalent_atoms = original_equivalent_atoms
 
-        # Compute site_multiplicities from equivalent_atoms grouping
-        if original_equivalent_atoms is not None:
-            site_mults = self._compute_site_multiplicities(original_equivalent_atoms)
-            model_system.local_symmetry.site_multiplicities = site_mults
+        # Site multiplicities are the intrinsic (conventional-cell) Wyckoff multiplicities,
+        # mapped from the wyckoff letters, so they are invariant under the choice of input cell.
+        model_system.local_symmetry.site_multiplicities = (
+            self._intrinsic_site_multiplicities(multiplicity_map, original_wyckoff)
+        )
 
         # Populate site_symmetries (point group symbols) from symmetry dataset
         try:
@@ -1078,12 +1093,16 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
 
         # Populating the primitive Cell information
         primitive_cell = self.resolve_analyzed_cell(
-            symmetry_analyzer=symmetry_analyzer, cell_type='primitive', logger=logger
+            symmetry_analyzer=symmetry_analyzer,
+            cell_type='primitive',
+            logger=logger,
         )
 
         # Populating the conventional Cell information
         conventional_cell = self.resolve_analyzed_cell(
-            symmetry_analyzer=symmetry_analyzer, cell_type='conventional', logger=logger
+            symmetry_analyzer=symmetry_analyzer,
+            cell_type='conventional',
+            logger=logger,
         )
 
         # Getting prototype_formula, prototype_aflow_id, and strukturbericht designation from
@@ -1241,7 +1260,7 @@ class ModelSystem(System, Representation):
     `ParticleState` entries or specialized subclasses such as `AtomsState` and
     `CGBeadState`. ModelSystem normalization does not reassign between these types.
 
-    Downstream subsystems refer to atoms via particle_indices.
+    Downstream subsystems refer to particles via `particle_indices`.
 
     Definitions:
         - `name` refers to all the verbose and user-dependent naming in ModelSystem,
@@ -1398,20 +1417,20 @@ class ModelSystem(System, Representation):
     n_particles = Quantity(
         type=np.int32,
         description="""
-        Number of particles/atoms in the simulation.
+        Number of particles in the simulation.
         """,
     )
 
     # positions is defined in ModelSystem (not Representation) because it represents the fixed
-    # Cartesian positions of atoms in the top-level system. Alternative representations can have
-    # different lattice_vectors and fractional_coordinates, but they all describe the same atoms
-    # at the same Cartesian positions. Subsystems reference these positions via particle_indices.
+    # Cartesian positions of the top-level particles. Alternative representations can have
+    # different lattice_vectors and fractional_coordinates, but they all describe the same
+    # top-level particle positions. Subsystems reference these positions via particle_indices.
     positions = Quantity(
         type=np.float64,
         shape=['*', 3],
         unit='meter',
         description="""
-        Cartesian coordinates of all atoms in the system. Values are expressed in an implicit
+        Cartesian coordinates of all particles in the system. Values are expressed in an implicit
         Cartesian coordinate system with axes ordered as (x, y, z). The orientation of this
         frame is determined by the simulation code or parser that generates the data.
         All subsystems reference these positions via particle_indices.
@@ -1433,8 +1452,11 @@ class ModelSystem(System, Representation):
         type=np.int32,
         shape=['*', 2],
         description="""
-        List of pairs of atom indices corresponding to bonds (e.g., as defined by a force field)
-        within this atoms_group.
+        List of pairs of particle indices corresponding to bonded or connected sites
+        (for example as defined by a force field) within this subsystem.
+
+        For atomistic systems these indices typically refer to atoms. For other particle
+        models they may refer to coarse-grained beads or other particle-like sites.
         """,
     )
 
@@ -1444,7 +1466,7 @@ class ModelSystem(System, Representation):
         The overall composition of the system with respect to its subsystems.
         The syntax for a system composed of X and Y with x and y components of each,
         respectively, is X(x)Y(y). At the deepest branch in the hierarchy, the
-        composition_formula is expressed in terms of the atomic labels.
+        composition_formula is expressed in terms of the resolved particle labels.
 
         Example: A system composed of 3 water molecules with the following hierarchy
 
@@ -1483,7 +1505,7 @@ class ModelSystem(System, Representation):
         section_def=ElectronicState.m_def,
         description="""
         Electronic state of the system, e.g., the electronic structure information.
-        This is an starting point for navigating the electronic hierarchy.
+        This is a starting point for navigating the electronic hierarchy.
         """,
     )
 
@@ -1491,7 +1513,7 @@ class ModelSystem(System, Representation):
         section_def=ParticleState.m_def,
         repeats=True,
         description="""
-        Particle state of each of the particles conforming the ModelSystem.
+        Particle state for each particle comprising the `ModelSystem`.
         This is a list of `n_particles` elements and the order matches that of `positions`.
 
             Example
@@ -1601,11 +1623,9 @@ class ModelSystem(System, Representation):
           - For subsystems, "relevant" means the root-system particle states
             referenced by `particle_indices`.
 
-        Example Usages:
-          - Decide whether to use AtomState. `is_atomic` must return True for all downstream functionalities to work properly.
-
-        Args:
-            logger (BoundLogger): The logger to log messages.
+        Example usages:
+          - Gate downstream atom-specific functionality such as ASE conversion,
+            MatID classification, and symmetry analysis.
         Returns:
             bool: True if all relevant particle states are `AtomsState`, False otherwise.
         """
@@ -1682,12 +1702,39 @@ class ModelSystem(System, Representation):
         except KeyError:
             return False
 
+    def to_structure_tuple(
+        self, representation_index: int | None = None
+    ) -> tuple[list, list, list] | None:
+        """
+        Build the ``(cell, scaled_positions, atomic_numbers)`` tuple consumed by
+        spglib and SeeKpath directly from the schema, without an ASE round-trip.
+
+        The cell (in angstrom) is taken from ``representations[representation_index]``
+        when an index is given, otherwise from the top-level ``lattice_vectors``.
+        Positions are the top-level Cartesian ``positions`` expressed in fractional
+        coordinates of that cell. Returns ``None`` if the labels are not all valid
+        chemical symbols, or the cell or positions are missing.
+        """
+        symbols = self.get_symbols()
+        if not self._all_labels_are_elements(symbols):
+            return None
+        if representation_index is None:
+            lattice_vectors = self.lattice_vectors
+        else:
+            lattice_vectors = self.representations[representation_index].lattice_vectors
+        if lattice_vectors is None or self.positions is None:
+            return None
+        cell = np.asarray(lattice_vectors.to('angstrom').magnitude)
+        cartesian = self.positions.to('angstrom').magnitude
+        scaled_positions = cartesian @ np.linalg.inv(cell)
+        return cell.tolist(), scaled_positions.tolist(), list(symbols2numbers(symbols))
+
     @log
     def to_ase_atoms(
         self, representation_index: int | None = None
     ) -> 'ase.Atoms | None':
         """
-        Generates an ASE Atoms object from ModelSystem data.
+        Generate an ASE `Atoms` object from atomistic `ModelSystem` data.
 
         Args:
             representation_index: Index of the alternative representation to use for cell geometry.
@@ -1696,6 +1743,10 @@ class ModelSystem(System, Representation):
                                  - int: Uses the alternative representation at ModelSystem.representations[index]
                                    This allows conversion of primitive cells, conventional cells, or other
                                    geometric views to ASE format while keeping the same atomic positions.
+
+        This method is intentionally atom-specific. It requires resolved particle labels
+        to be valid chemical symbols and is therefore only suitable for `AtomsState`-based
+        systems.
 
         Uses:
           - particle_states to obtain chemical symbols for ASE conversion; all resolved
@@ -2227,7 +2278,11 @@ class ModelSystem(System, Representation):
             try:
                 velocities = ase_atoms.get_velocities()
                 if velocities is not None and len(velocities) == len(positions):
-                    model_system.velocities = velocities * ureg('angstrom/second')
+                    # get_velocities() returns ASE internal units
+                    # (Å per Å·sqrt(amu/eV)); ase.units.fs converts to Å/fs
+                    model_system.velocities = (
+                        velocities * ase.units.fs * ureg('angstrom/fs')
+                    )
             except Exception as e:
                 logger.debug(f'Could not map velocities: {e}')
 

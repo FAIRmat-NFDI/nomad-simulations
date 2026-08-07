@@ -145,13 +145,18 @@ class ElectronicDensityOfStates(DOSProfile):
         """,
     )
 
-    # TODO clarify the role of `energies_origin` once `ElectronicEigenvalues` is implemented
+    # NOTE (DRY): specialized copy of the `ElectronicEigenvalues.highest_occupied` reference,
+    # seeded from it and then refined against the DOS grid (band edges). Duplicated on purpose
+    # so the DOS has its own origin for axis derivation and plotting/visualization alignment.
     energies_origin = Quantity(
         type=np.float64,
         unit='joule',
         description="""
-        Energy level denoting the origin along the energy axis, used for comparison and visualization. It is
-        defined as the `ElectronicEigenvalues.highest_occupied_energy`.
+        Energy level denoting the origin along the energy axis, used for comparison and visualization.
+        This value is fully derived during normalization from the sibling
+        `ElectronicEigenvalues.highest_occupied` (when a resolvable reference is available), so parsers
+        are recommended NOT to populate it directly: any manually set value is recomputed and overwritten
+        on normalization without any logging. Provide `ElectronicEigenvalues.highest_occupied` instead.
         """,
     )
 
@@ -198,15 +203,13 @@ class ElectronicDensityOfStates(DOSProfile):
     def resolve_energies_origin(
         self,
         energies_points: pint.Quantity,
-        fermi_level: pint.Quantity | None,
         logger: 'BoundLogger',
     ) -> pint.Quantity | None:
         """
-        Resolve the origin of reference for the energies from the sibling `ElectronicEigenvalues` section and its
-        `highest_occupied` level, or if this does not exist, from the `fermi_level` value as extracted from the sibling property, `FermiLevel`.
+        Resolve the origin of reference for the energies from the sibling `ElectronicEigenvalues`
+        section and its `highest_occupied` level.
 
         Args:
-            fermi_level (Optional[pint.Quantity]): The resolved Fermi level.
             energies_points (pint.Quantity): The grid points of the `Energy` variable.
             logger (BoundLogger): The logger to log messages.
 
@@ -215,7 +218,6 @@ class ElectronicDensityOfStates(DOSProfile):
         """
 
         # Extract the `ElectronicEigenvalues` section to get the `highest_occupied` and `lowest_unoccupied` energies
-        # TODO implement once `ElectronicEigenvalues` is in the schema
         eigenvalues = get_sibling_section(
             section=self, sibling_section_name='electronic_eigenvalues', logger=logger
         )  # we consider `index_sibling` to be 0
@@ -233,85 +235,82 @@ class ElectronicDensityOfStates(DOSProfile):
 
         # Check that the closest `energies` to the energy reference is not too far away.
         # If it is very far away, normalization may be very inaccurate and we do not report it.
-        eref = highest_occupied_energy if fermi_level is None else fermi_level
+        eref = highest_occupied_energy
         if eref is None:
             return None
         dos_values = self.value.magnitude
         fermi_idx = (np.abs(energies_points - eref)).argmin()
         fermi_energy_closest = energies_points[fermi_idx]
         distance = np.abs(fermi_energy_closest - eref)
+        # If the reference is farther than `dos_energy_tolerance` from every DOS grid point,
+        # the DOS does not cover it and aligning to it would be inaccurate, so do not report
+        # an origin.
+        if distance > configuration.dos_energy_tolerance:
+            return None
+
         single_peak_fermi = False
-        if distance <= configuration.dos_energy_tolerance:
-            # See if there are zero values close below the energy reference.
-            idx = fermi_idx
-            idx_descend = fermi_idx
-            while True:
-                try:
-                    value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies_points[idx])
-                except IndexError:
-                    break
-                if energy_distance > configuration.dos_energy_tolerance:
-                    break
-                if value <= configuration.dos_intensities_threshold:
-                    idx_descend = idx
+        # See if there are zero values close below the energy reference.
+        idx = fermi_idx
+        idx_descend = fermi_idx
+        while True:
+            try:
+                value = dos_values[idx]
+                energy_distance = np.abs(eref - energies_points[idx])
+            except IndexError:
+                break
+            if energy_distance > configuration.dos_energy_tolerance:
+                break
+            if value <= configuration.dos_intensities_threshold:
+                idx_descend = idx
+                break
+            idx -= 1
+
+        # See if there are zero values close above the fermi energy.
+        idx = fermi_idx
+        idx_ascend = fermi_idx
+        while True:
+            try:
+                value = dos_values[idx]
+                energy_distance = np.abs(eref - energies_points[idx])
+            except IndexError:
+                break
+            if energy_distance > configuration.dos_energy_tolerance:
+                break
+            if value <= configuration.dos_intensities_threshold:
+                idx_ascend = idx
+                break
+            idx += 1
+
+        # If there is a single peak at fermi energy, no
+        # search needs to be performed.
+        if idx_ascend != fermi_idx and idx_descend != fermi_idx:
+            self.m_cache['highest_occupied_energy'] = fermi_energy_closest
+            self.m_cache['lowest_unoccupied_energy'] = fermi_energy_closest
+            single_peak_fermi = True
+
+        if not single_peak_fermi:
+            # Look for highest occupied energy below the descend index
+            idx = idx_descend
+            while idx >= 0:
+                value = dos_values[idx]
+                if value > configuration.dos_intensities_threshold:
+                    self.m_cache['highest_occupied_energy'] = energies_points[idx]
                     break
                 idx -= 1
-
-            # See if there are zero values close above the fermi energy.
-            idx = fermi_idx
-            idx_ascend = fermi_idx
+            # Look for lowest unoccupied energy above idx_ascend
+            idx = idx_ascend
             while True:
                 try:
                     value = dos_values[idx]
-                    energy_distance = np.abs(eref - energies_points[idx])
                 except IndexError:
                     break
-                if energy_distance > configuration.dos_energy_tolerance:
-                    break
-                if value <= configuration.dos_intensities_threshold:
-                    idx_ascend = idx
+                if value > configuration.dos_intensities_threshold:
+                    self.m_cache['lowest_unoccupied_energy'] = energies_points[idx]
                     break
                 idx += 1
 
-            # If there is a single peak at fermi energy, no
-            # search needs to be performed.
-            if idx_ascend != fermi_idx and idx_descend != fermi_idx:
-                self.m_cache['highest_occupied_energy'] = fermi_energy_closest
-                self.m_cache['lowest_unoccupied_energy'] = fermi_energy_closest
-                single_peak_fermi = True
-
-            if not single_peak_fermi:
-                # Look for highest occupied energy below the descend index
-                idx = idx_descend
-                while True:
-                    try:
-                        value = dos_values[idx]
-                    except IndexError:
-                        break
-                    if value > configuration.dos_intensities_threshold:
-                        idx = idx if idx == idx_descend else idx + 1
-                        self.m_cache['highest_occupied_energy'] = energies_points[idx]
-                        break
-                    idx -= 1
-                # Look for lowest unoccupied energy above idx_ascend
-                idx = idx_ascend
-                while True:
-                    try:
-                        value = dos_values[idx]
-                    except IndexError:
-                        break
-                    if value > configuration.dos_intensities_threshold:
-                        idx = idx if idx == idx_ascend else idx - 1
-                        self.m_cache['highest_occupied_energy'] = energies_points[idx]
-                        break
-                    idx += 1
-
-        # Return the `highest_occupied_energy` as the `energies_origin`, or the `fermi_level` if it is not None
-        energies_origin = self.m_cache.get('highest_occupied_energy')
-        if energies_origin is None:
-            energies_origin = fermi_level
-        return energies_origin
+        # Return the `highest_occupied_energy` as the `energies_origin`
+        return self.m_cache.get('highest_occupied_energy')
 
     @log
     def resolve_normalization_factor(self) -> float | None:
@@ -356,8 +355,8 @@ class ElectronicDensityOfStates(DOSProfile):
     def extract_band_gap(self) -> ElectronicBandGap | None:
         """
         Extract the electronic band gap from the `highest_occupied_energy` and `lowest_unoccupied_energy` stored
-        in `m_cache` from `resolve_energies_origin()`. If the difference of `highest_occupied_energy` and
-        `lowest_unoccupied_energy` is negative, the band gap `value` is set to 0.0.
+        in `m_cache` from `resolve_energies_origin()`. If the difference of `lowest_unoccupied_energy` and
+        `highest_occupied_energy` is negative, the band gap `value` is set to 0.0.
 
         Returns:
             (Optional[ElectronicBandGap]): The extracted electronic band gap section to be stored in `Outputs`.
@@ -365,15 +364,15 @@ class ElectronicDensityOfStates(DOSProfile):
         band_gap = None
         homo = self.m_cache.get('highest_occupied_energy')
         lumo = self.m_cache.get('lowest_unoccupied_energy')
-        if homo and lumo:
+        if homo is not None and lumo is not None:
             band_gap = ElectronicBandGap()
             band_gap.is_derived = True
             band_gap.physical_property_ref = self
 
-            if (homo - lumo).magnitude < 0:
+            if (lumo - homo).magnitude < 0:
                 band_gap.value = 0.0
             else:
-                band_gap.value = homo - lumo
+                band_gap.value = lumo - homo
         return band_gap
 
     def extract_projected_dos(
@@ -466,16 +465,9 @@ class ElectronicDensityOfStates(DOSProfile):
         if self.energies is None:
             return
 
-        # Resolve `fermi_level` from a sibling section with respect to `ElectronicDensityOfStates`
-        # Optional sibling lookups use cached results and log at debug level (warn_if_missing=False default).
-        fermi_level = get_sibling_section(
-            section=self, sibling_section_name='fermi_level', logger=logger
-        )  # * we consider `index_sibling` to be 0
-        if fermi_level is not None:
-            fermi_level = fermi_level.value
-        # and the `energies_origin` from the sibling `ElectronicEigenvalues` section
+        # Resolve the `energies_origin` from the sibling `ElectronicEigenvalues` section
         self.energies_origin = self.resolve_energies_origin(
-            self.energies.points, fermi_level, logger
+            self.energies.points, logger
         )
         if self.energies_origin is None:
             logger.info('Could not resolve the `energies_origin` for the DOS')
@@ -487,7 +479,7 @@ class ElectronicDensityOfStates(DOSProfile):
         # `ElectronicBandGap` extraction
         band_gap = self.extract_band_gap()
         if band_gap is not None:
-            self.m_parent.electronic_band_gap.append(band_gap)
+            self.m_parent.m_append('electronic_band_gaps', band_gap)
 
         # Total `value` extraction from `projected_dos`
         value_from_pdos = self.generate_from_projected_dos(logger)

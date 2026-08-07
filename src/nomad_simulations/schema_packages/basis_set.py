@@ -101,8 +101,8 @@ class PlaneWaveBasisSet(BasisSetComponent, KMesh):
         type=np.float64,
         unit='1/meter',
         description="""
-        Cutoff radius for the plane-wave basis set.
-        Is the less frequently used dual to `cutoff_energy`.
+        Cutoff radius of the plane-wave basis set; the reciprocal-space dual to `cutoff_energy`.
+        Uses the 2*pi-inclusive convention of `KSpace.reciprocal_lattice_vectors`.
         """,
     )
 
@@ -110,13 +110,19 @@ class PlaneWaveBasisSet(BasisSetComponent, KMesh):
         self, cutoff_energy: pint.Quantity | None
     ) -> pint.Quantity | None:
         """
-        Compute the cutoff radius for the plane-wave basis set, expressed in reciprocal coordinates.
+        Compute the cutoff radius for the plane-wave basis set, expressed in reciprocal
+        coordinates.
+
+        The cutoff radius is the wavevector magnitude `k_cut` of a plane wave
+        `e^{i k·r}`, obtained from the cutoff energy as
+        `k_cut = sqrt(2 * m_e * E_cut) / hbar`. It follows the same
+        2*pi-inclusive convention as `KSpace.reciprocal_lattice_vectors`.
         """
         if cutoff_energy is None:
             return None
         m_e = const.m_e * ureg(const.unit('electron mass'))
-        h = const.h * ureg(const.unit('Planck constant'))
-        return np.sqrt(2 * m_e * cutoff_energy) / h
+        hbar = const.hbar * ureg(const.unit('reduced Planck constant'))
+        return np.sqrt(2 * m_e * cutoff_energy) / hbar
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)

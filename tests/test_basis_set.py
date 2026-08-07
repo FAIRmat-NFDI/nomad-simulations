@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import pint
@@ -35,7 +35,7 @@ from . import logger
     'ref_cutoff_radius, cutoff_energy',
     [
         (None, None),
-        (1.823 / ureg.angstrom, 500 * ureg.eV),  # reference computed by ChatGPT 4o
+        (11.456 / ureg.angstrom, 500 * ureg.eV),
     ],
 )
 def test_cutoff(
@@ -94,7 +94,7 @@ def test_mt_r_min(mts: list[MuffinTinRegion | None], ref_mt_r_min: float) -> Non
         (None, None, None),
         (None, 500.0 * ureg.eV, None),
         (None, None, 1.0),
-        (1.823, 500.0 * ureg.eV, 1.0 * ureg.angstrom),
+        (11.456, 500.0 * ureg.eV, 1.0 * ureg.angstrom),
     ],
 )
 def test_cutoff_failure(

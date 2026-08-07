@@ -12,11 +12,43 @@ from nomad_simulations.schema_packages.numerical_settings import (
     KMesh,
     KSpaceFunctionalities,
     LocalCorrelationThreshold,
-    Pseudopotential,
 )
 
 from . import logger
 from .conftest import generate_k_line_path, generate_k_space_simulation
+from .data_kpoint_structures import KPOINT_STRUCTURES
+
+
+def make_kpoint_model_system(
+    atoms, bravais_lattice=None, representation_names=('primitive',)
+):
+    """
+    SimpleNamespace stand-in for a normalized `ModelSystem`, exposing only what
+    `resolve_high_symmetry_points` consumes. `to_structure_tuple` asserts it is
+    queried with the index of the `primitive` representation, and returns the
+    `(cell, scaled_positions, numbers)` tuple derived from the given ASE atoms.
+    """
+    prim_index = representation_names.index('primitive')
+    structure = (
+        atoms.get_cell().tolist(),
+        atoms.get_scaled_positions().tolist(),
+        atoms.get_atomic_numbers().tolist(),
+    )
+
+    def to_structure_tuple(representation_index):
+        assert representation_index == prim_index
+        return structure
+
+    return SimpleNamespace(
+        is_representative=True,
+        symmetry=(
+            SimpleNamespace(bravais_lattice=bravais_lattice)
+            if bravais_lattice is not None
+            else None
+        ),
+        representations=[SimpleNamespace(name=name) for name in representation_names],
+        to_structure_tuple=to_structure_tuple,
+    )
 
 
 class TestLocalCorrelationThreshold:
@@ -140,25 +172,25 @@ class TestKSpaceFunctionalities:
         assert check == result
 
     @pytest.mark.parametrize(
-        'model_systems_input, expected_result',
+        'model_systems_input, expected_keys',
         [
             # Valid case: model_systems with proper symmetry
-            (
-                'valid',
-                {
-                    'Gamma': [0, 0, 0],
-                    'M': [0.5, 0.5, 0],
-                    'R': [0.5, 0.5, 0.5],
-                    'X': [0, 0.5, 0],
-                },
-            ),
-            # None case: model_systems is None
+            # SeeKpath may return more detailed k-point labels than ASE
+            ('valid', ['Gamma', 'M', 'R', 'X']),
+            # Degenerate inputs must return None instead of raising
             (None, None),
+            ('empty', None),
+            ('non_representative', None),
         ],
     )
-    def test_resolve_high_symmetry_points(self, model_systems_input, expected_result):
+    def test_resolve_high_symmetry_points(self, model_systems_input, expected_keys):
         """
-        Test the `resolve_high_symmetry_points` method with valid and None model_systems.
+        Test the `resolve_high_symmetry_points` method with valid and degenerate
+        `model_systems` inputs.
+
+        Note: SeeKpath (HPKOT standard) may return more detailed labels than ASE,
+        e.g., distinguishing X_1, X_2 for different X-type points in the same structure.
+        We test that the essential keys are present.
         """
         if model_systems_input == 'valid':
             # `ModelSystem.normalize()` need to extract `bulk` as a type.
@@ -168,6 +200,10 @@ class TestKSpaceFunctionalities:
             model_systems = simulation.model_system
             # normalize to extract symmetry
             simulation.model_system[0].normalize(EntryArchive(), logger)
+        elif model_systems_input == 'empty':
+            model_systems = []
+        elif model_systems_input == 'non_representative':
+            model_systems = [SimpleNamespace(is_representative=False)]
         else:
             model_systems = model_systems_input
 
@@ -176,48 +212,314 @@ class TestKSpaceFunctionalities:
             model_systems=model_systems, logger=logger
         )
 
-        if expected_result is None:
+        if expected_keys is None:
             assert high_symmetry_points is None
         else:
-            assert len(high_symmetry_points) == 4
-            assert high_symmetry_points == expected_result
+            # Check that essential k-point labels are present
+            for key in expected_keys:
+                assert key in high_symmetry_points or any(
+                    k.startswith(key) for k in high_symmetry_points.keys()
+                ), (
+                    f"Expected key '{key}' not found in {list(high_symmetry_points.keys())}"
+                )
 
-    def test_resolve_high_symmetry_points_monoclinic_convention_fallback(self):
+    @pytest.mark.parametrize(
+        'bravais_lattice, cell_vectors, positions, expected_labels',
+        [
+            pytest.param(
+                'tP',
+                [[4.0, 0, 0], [0, 4.001, 0], [0, 0, 6.0]],
+                [[0, 0, 0], [1.0, 1.0, 1.0]],
+                [
+                    'A',
+                    'F',
+                    'F_2',
+                    'F_4',
+                    'G',
+                    'G_2',
+                    'G_4',
+                    'G_6',
+                    'Gamma',
+                    'H',
+                    'H_2',
+                    'H_4',
+                    'L_2',
+                    'M',
+                    'V_2',
+                    'Y',
+                ],  # noqa: E501
+                id='tetragonal_near_cubic_base',
+            ),
+            pytest.param(
+                'hP',
+                [[3.0, 0, 0], [-1.5, 2.598, 0], [0, 0, 5.0]],
+                [[0, 0, 0], [1.0, 1.0, 1.0]],
+                ['Gamma', 'R_2', 'T_2', 'U_2', 'V_2', 'X', 'Y', 'Y_2', 'Z'],
+                id='hexagonal_cell_symmetry_broken_by_basis',
+            ),
+            pytest.param(
+                'oS',
+                [[3.0, 0, 0], [0, 4.0, 0], [0, 0, 5.0]],
+                [[0, 0, 0], [1.0, 1.0, 1.0]],
+                ['Gamma', 'R', 'T', 'U', 'V', 'X', 'Y', 'Z'],
+                id='bug_1_non_canonical_pearson',
+            ),
+            pytest.param(
+                'mP',
+                [[3.0, 0, 0], [0, 4.0, 0.2], [0, 0, 5.0]],
+                [[0, 0, 0], [1.0, 1.0, 1.0]],
+                ['Gamma', 'R_2', 'T_2', 'U_2', 'V_2', 'X', 'Y', 'Y_2', 'Z'],
+                id='bug_2_monoclinic_alpha_90',
+            ),
+            pytest.param(
+                'oP',
+                [[4.0, 0, 0], [0, 4.001, 0], [0, 0, 4.002]],
+                [[0, 0, 0], [1.0, 1.0, 1.0]],
+                [
+                    'F',
+                    'F_2',
+                    'Gamma',
+                    'H_0',
+                    'H_2',
+                    'H_4',
+                    'H_6',
+                    'L',
+                    'L_2',
+                    'L_4',
+                    'M_0',
+                    'M_2',
+                    'M_4',
+                    'M_6',
+                    'M_8',
+                    'S_0',
+                    'S_2',
+                    'S_4',
+                    'S_6',
+                    'T',
+                ],  # noqa: E501
+                id='bug_3_metrically_cubic',
+            ),
+            pytest.param(
+                'oP',
+                [[2.0, 0, 0], [0, 1.0, 0], [0, 0, 3.0]],
+                [[0, 0, 0], [1.0, 0.5, 1.5]],
+                [
+                    'F_2',
+                    'Gamma',
+                    'J_0',
+                    'L_0',
+                    'M_0',
+                    'R',
+                    'S',
+                    'SIGMA_0',
+                    'T',
+                    'U_0',
+                    'W',
+                    'X',
+                    'Y_0',
+                ],  # noqa: E501
+                id='orthorhombic_body_centered_basis',
+            ),
+            pytest.param(
+                'oP',
+                [[5.0, 0, 0], [0, 5.001, 0], [0, 0, 5.002]],
+                [[0, 0, 0], [2.5, 2.5, 2.5]],
+                ['Gamma', 'H', 'N', 'P'],
+                id='near_cubic_cell_bcc_basis',
+            ),
+            pytest.param(
+                'cP',
+                [[5.0, 0, 0], [0, 5.0, 0], [0, 0, 5.0]],
+                [[0, 0, 0], [2.5, 2.5, 2.5]],
+                ['Gamma', 'H', 'N', 'P'],
+                id='cubic_cell_bcc_basis',
+            ),
+        ],
+    )
+    def test_resolve_high_symmetry_points_seekpath(
+        self, bravais_lattice, cell_vectors, positions, expected_labels
+    ):
         """
-        Invalid monoclinic ordering should fall back to None instead of raising.
+        SeeKpath-based resolution across lattice types, including the three bug
+        scenarios from #403 and cells whose metrics suggest a different symmetry
+        than the atomic basis supports. SeeKpath determines the space group from
+        the full structure via spglib, so the resolved label sets reflect the
+        actual crystal symmetry (HPKOT naming, including suffixed variants) and
+        are locked in exactly.
         """
+        from ase import Atoms
 
-        class FakeLattice:
-            a = 2.0
-            b = 3.0
-            c = 1.0
-            alpha = 80.0
-            beta = 90.0
-            gamma = 90.0
+        atoms = Atoms('Si2', positions=positions, cell=cell_vectors, pbc=True)
+        model_system = make_kpoint_model_system(atoms, bravais_lattice=bravais_lattice)
 
-            def get_special_points(self):
-                return {'G': [0, 0, 0]}
+        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
+            model_systems=[model_system], logger=logger
+        )
 
-        class FakeCell:
-            def get_bravais_lattice(self, eps=3e-3):
-                return FakeLattice()
+        assert high_symmetry_points is not None
+        assert sorted(high_symmetry_points) == expected_labels
 
-        class FakeAtoms:
-            def get_cell(self):
-                return FakeCell()
+    def test_resolve_high_symmetry_points_symmetry_detection_failure(self, monkeypatch):
+        """
+        When spglib cannot detect the symmetry, `seekpath.get_path` raises
+        `SymmetryDetectionError` (which does not derive from `ValueError`). The
+        resolver must not crash normalization: it returns `None` with a warning.
+        """
+        from ase import Atoms
 
-        model_system = SimpleNamespace(
-            is_representative=True,
-            symmetry=SimpleNamespace(bravais_lattice='mP'),
-            representations=[SimpleNamespace(name='primitive')],
-            to_ase_atoms=lambda representation_index, logger: FakeAtoms(),
+        from nomad_simulations.schema_packages import numerical_settings
+
+        atoms = Atoms(
+            'Si2', positions=[[0, 0, 0], [2.5, 2.5, 2.5]], cell=[5.0] * 3, pbc=True
+        )
+        # Forcing spglib to report no symmetry makes seekpath raise.
+        monkeypatch.setattr(
+            numerical_settings.spglib, 'get_symmetry_dataset', lambda *a, **k: None
+        )
+
+        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
+            model_systems=[make_kpoint_model_system(atoms)], logger=logger
+        )
+
+        assert high_symmetry_points is None
+
+    @pytest.mark.parametrize(
+        'symbols, cell_vectors, scaled_positions, expected_points',
+        [
+            # SeeKpath standardizes the conventional BCC cell to its primitive
+            # cell; the returned coordinates must be re-expressed in the input
+            # (conventional) reciprocal basis, e.g. H = (0, 1, 0).
+            pytest.param(
+                'Fe2',
+                [[2.87, 0, 0], [0, 2.87, 0], [0, 0, 2.87]],
+                [[0, 0, 0], [0.5, 0.5, 0.5]],
+                {
+                    'Gamma': [0.0, 0.0, 0.0],
+                    'H': [0.0, 1.0, 0.0],
+                    'P': [0.5, 0.5, 0.5],
+                },
+                id='bcc_conventional_cell',
+            ),
+            # Valid FCC primitive cell with permuted lattice vectors: SeeKpath
+            # re-standardizes the vector order, so the coordinates only match
+            # the input basis after transformation.
+            pytest.param(
+                'Cu',
+                [[2.03, 2.03, 0], [0, 2.03, 2.03], [2.03, 0, 2.03]],
+                [[0, 0, 0]],
+                {
+                    'Gamma': [0.0, 0.0, 0.0],
+                    'X': [0.5, 0.5, 0.0],
+                    'L': [0.5, 0.5, 0.5],
+                },
+                id='fcc_primitive_permuted_axes',
+            ),
+            # BCC primitive cell rigidly rotated by 30 degrees about z: spglib
+            # idealization rotates the standardized frame back to axis-aligned,
+            # so the rotation must be undone via `std_rotation_matrix`.
+            pytest.param(
+                'Fe',
+                [
+                    [-1.960246, 0.525246, 1.435],
+                    [1.960246, -0.525246, 1.435],
+                    [0.525246, 1.960246, -1.435],
+                ],
+                [[0, 0, 0]],
+                {
+                    'Gamma': [0.0, 0.0, 0.0],
+                    'H': [0.5, -0.5, 0.5],
+                    'P': [0.25, 0.25, 0.25],
+                },
+                id='bcc_primitive_rotated_frame',
+            ),
+        ],
+    )
+    def test_resolve_high_symmetry_points_input_basis(
+        self, symbols, cell_vectors, scaled_positions, expected_points
+    ):
+        """
+        Regression test: `high_symmetry_points` must be fractional coordinates of
+        the input cell's reciprocal basis (the `KSpace.reciprocal_lattice_vectors`
+        contract), not of SeeKpath's standardized primitive cell.
+        """
+        from ase import Atoms
+
+        atoms = Atoms(
+            symbols,
+            scaled_positions=scaled_positions,
+            cell=cell_vectors,
+            pbc=True,
+        )
+
+        # `primitive` deliberately not first: locks in that the resolver queries
+        # the representation it searched for, not index 0.
+        model_system = make_kpoint_model_system(
+            atoms, representation_names=('original', 'primitive')
         )
 
         high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
             model_systems=[model_system], logger=logger
         )
 
-        assert high_symmetry_points is None
+        assert high_symmetry_points is not None
+        for label, expected_coords in expected_points.items():
+            assert label in high_symmetry_points
+            assert np.allclose(
+                high_symmetry_points[label], expected_coords, atol=1e-6
+            ), (
+                f'{label}: expected {expected_coords} in the input reciprocal basis, '
+                f'got {high_symmetry_points[label]}'
+            )
+
+    @pytest.mark.parametrize(
+        'structure_id',
+        [pytest.param(key, id=key) for key in KPOINT_STRUCTURES],
+    )
+    def test_resolve_high_symmetry_points_reference_structures(self, structure_id):
+        """
+        Regression test against distilled reference structures (MagRes DB primitive
+        cells) whose cell metrics suggest a higher symmetry than their actual space
+        group - the failure modes reported in PR #403. Verifies that the space-group
+        detection is stable and that the resolved points keep their locked-in
+        fractional coordinates in the input reciprocal basis.
+        """
+        import spglib
+        from ase import Atoms
+
+        from nomad_simulations.schema_packages.numerical_settings import configuration
+
+        fixture = KPOINT_STRUCTURES[structure_id]
+        atoms = Atoms(
+            numbers=fixture['atomic_numbers'],
+            scaled_positions=fixture['scaled_positions'],
+            cell=fixture['cell'],
+            pbc=True,
+        )
+
+        # Guard against silent classification drift of the fixture itself, at the
+        # same tolerance the resolver uses.
+        dataset = spglib.get_symmetry_dataset(
+            (fixture['cell'], fixture['scaled_positions'], fixture['atomic_numbers']),
+            symprec=configuration.symmetry_tolerance,
+        )
+        assert dataset.number == fixture['spacegroup_number']
+
+        model_system = make_kpoint_model_system(atoms)
+
+        high_symmetry_points = KSpaceFunctionalities().resolve_high_symmetry_points(
+            model_systems=[model_system], logger=logger
+        )
+
+        assert high_symmetry_points is not None
+        assert len(high_symmetry_points) == fixture['n_high_symmetry_points']
+        for label, expected_coords in fixture['expected_points'].items():
+            assert label in high_symmetry_points
+            assert np.allclose(
+                high_symmetry_points[label], expected_coords, atol=1e-6
+            ), (
+                f'{structure_id}/{label}: expected {expected_coords}, '
+                f'got {high_symmetry_points[label]}'
+            )
 
 
 @pytest.mark.parametrize(
@@ -231,7 +533,11 @@ class TestKSpaceFunctionalities:
         ),
         pytest.param(
             {
-                'high_symmetry_path_names': ['Gamma', 'X', 'R'],
+                'high_symmetry_path_names': [
+                    'Gamma',
+                    'T',
+                    'L',
+                ],  # HPKOT naming for the rhombohedral (R3m) fixture structure
                 'high_symmetry_path_values': None,
             },
             lambda k_space: k_space.k_line_path,
@@ -279,9 +585,11 @@ def test_kspace_subsection_normalization_order(
     # Verify that subsection successfully accessed them during normalization
     for attr in expected_attrs:
         assert getattr(subsection, attr) is not None
-    # Special check for KLinePath length
+    # Special check for KLinePath length: every requested path name must resolve
     if 'high_symmetry_path_values' in expected_attrs:
-        assert len(subsection.high_symmetry_path_values) == 3
+        assert len(subsection.high_symmetry_path_values) == len(
+            subsection.high_symmetry_path_names
+        )
 
 
 class TestKMesh:

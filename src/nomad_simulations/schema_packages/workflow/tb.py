@@ -5,7 +5,6 @@ from structlog.stdlib import BoundLogger
 from nomad_simulations.schema_packages.utils import log
 
 from .beyond_dft import BeyondDFTMethod, BeyondDFTResults, BeyondDFTWorkflow
-from .general import INCORRECT_N_TASKS
 
 m_package = SchemaPackage()
 

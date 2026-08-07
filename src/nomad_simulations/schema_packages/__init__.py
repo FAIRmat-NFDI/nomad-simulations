@@ -23,7 +23,10 @@ class NOMADSimulationsEntryPoint(SchemaPackageEntryPoint):
         description='Tolerance (in joules) for energies to be close to the Fermi level and hence define the Fermi surface of a material.',
     )
     symmetry_tolerance: float = Field(
-        0.1, description='Tolerance for the symmetry analyzer used from MatID.'
+        0.01,
+        description='Symmetry precision (spglib `symprec`, in angstrom) shared by the MatID symmetry '
+        'analysis of `ModelSystem` and by the SeeKpath high-symmetry k-point resolution, so both '
+        'derive the symmetry with the same tolerance.',
     )
     cluster_threshold: float = Field(
         2.5,

@@ -31,6 +31,8 @@ license = { file = "LICENSE" }
 dependencies = [
     "nomad-lab[infrastructure]>=1.3.15",
     "matid>=2.0.0.dev2",
+    "seekpath>=2.1.0",  # Crystallographic k-point path generation
+    "spglib",  # Direct import; version left to matid and seekpath constraints
 ]
 
 [project.urls]
@@ -69,6 +71,8 @@ docs = [
 build-constraint-dependencies = ["wheel<0.46"]
 
 [tool.ruff]
+include = ["*.py"]
+
 # Exclude a variety of commonly ignored directories.
 exclude = [
     ".bzr",
@@ -109,7 +113,6 @@ select = [
 ]
 
 ignore = [
-    "F401", # Module imported but unused
     "E501", # Line too long ({width} > {limit} characters)
     "E701", # Multiple statements on one line (colon)
     "E731", # Do not assign a lambda expression, use a def
@@ -118,6 +121,7 @@ ignore = [
     "PLR0912", # Too many branches
     "PLR0913", # Too many arguments in function definition
     "PLR0915", # Too many statements
+    "PLR0917", # Too many positional arguments
     "PLR2004", # Magic value used instead of constant
     "PLW0603", # Using the global statement
     "PLW2901", # redefined-loop-name

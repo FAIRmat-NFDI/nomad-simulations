@@ -1,4 +1,3 @@
-import os
 import shutil
 
 from nomad import datamodel, utils

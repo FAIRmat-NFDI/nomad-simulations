@@ -1,4 +1,3 @@
-import re
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -33,6 +32,7 @@ from nomad_simulations.schema_packages.data_types import (
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 from nomad_simulations.schema_packages.utils.libxc.build import (
+    spec_from_id,
     spec_from_label,
 )
 from nomad_simulations.schema_packages.utils.libxc.expand import (
@@ -617,6 +617,55 @@ class XCComponent(ArchiveSection):
          """,
     )
 
+    unidentified = Quantity(
+        type=bool,
+        description="""
+        `True` when the code reports an XC component at this position that cannot
+        be resolved to a LibXC label (family/kind therefore stay unset). The
+        component is retained as a placeholder so the functional's composition
+        (the number of parts) is not misrepresented as complete.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Complete a free-form component from the LibXC registry, keyed by either
+        # the `canonical_label` or the `libxc_id` the code reports. `weight` is a
+        # composition fraction the parser owns, not registry data, so it is
+        # intentionally left untouched.
+        if self.family is not None:
+            return
+
+        spec = None
+        if self.canonical_label:
+            spec = spec_from_label(self.canonical_label)
+        if spec is None and self.libxc_id is not None:
+            spec = spec_from_id(int(self.libxc_id))
+
+        if spec is None:
+            # The code reported a component (a label or a LibXC id) the registry
+            # cannot resolve: keep it as a placeholder so it is not silently
+            # dropped, and mark it unidentified.
+            if self.canonical_label or self.libxc_id is not None:
+                logger.debug(
+                    'Unresolvable LibXC component.',
+                    label=self.canonical_label,
+                    libxc_id=self.libxc_id,
+                )
+                self.unidentified = True
+            return
+        self.libxc_id = spec['libxc_id']
+        self.display_name = spec['display_name']
+        self.family = spec['family']
+        self.kind = spec['kind']
+        # canonicalize to the registry spelling (e.g. 'gga_x_pbe' -> 'XC_GGA_X_PBE')
+        self.canonical_label = spec['canonical_label']
+        # a component that was marked as a placeholder but now resolves is no
+        # longer unidentified
+        if self.unidentified:
+            self.unidentified = False
+
 
 class XCFunctional(ArchiveSection):
     """
@@ -681,6 +730,12 @@ class XCFunctional(ArchiveSection):
                     )
         except Exception:
             logger.warning('LibXC expansion failed.')
+
+        # Free-form composition: components supplied directly by a parser (raw
+        # LibXC labels the code reports) complete their own taxonomy. Components
+        # created by the name expansion above already carry it and no-op.
+        for comp in self.components or []:
+            comp.normalize(archive, logger)
 
         if self.global_exact_exchange is None:
             alphas = [
@@ -1404,10 +1459,12 @@ class Screening(ExcitedStateMethodology):
     """
 
     dielectric_infinity = Quantity(
-        type=np.int32,
+        type=positive_float(),
         description="""
-        Value of the static dielectric constant at infinite q. For metals, this is infinite
-        (or a very large value), while for insulators is finite.
+        Scalar macroscopic electronic dielectric constant in the static,
+        long-wavelength limit (ω → 0, q → 0), commonly denoted ε_∞.
+        Finite for insulators and semiconductors; for metals, the static long-wavelength
+        response diverges and may be represented by a large finite value.
         """,
     )
 
@@ -2356,7 +2413,7 @@ class ActiveSpace(ArchiveSection):
                     )
 
 
-class BaseMultireferenceMethod(BaseModelMethod):
+class BaseMultireferenceMethod(ModelMethod):
     """
     Shared multireference parameters (active space, state-averaging, symmetry).
     """
