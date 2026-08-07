@@ -1,3 +1,5 @@
+from functools import cache
+
 import numpy as np
 import pint
 from nomad.datamodel import ArchiveSection, EntryArchive
@@ -93,6 +95,44 @@ The mode used affects both convergence behavior and computational efficiency. Di
             else np.isscalar(value)
         )
 
+    def _convergence_paths(self) -> list[str]:
+        """
+        Ordered path(s) to the measured residual, tried in order (fallback).
+
+        Default: read the class-level `convergence` annotation on the `threshold`
+        Quantity. Child classes may override to source the path(s) elsewhere,
+        e.g. from an instance-level `metric` selector.
+        """
+        threshold_quantity = self.m_def.all_quantities.get('threshold')
+        annotation = (
+            threshold_quantity.m_get_annotation('convergence')
+            if threshold_quantity
+            else None
+        )
+        if not annotation:
+            return []
+        if 'paths' in annotation:
+            return (
+                list(annotation['paths'])
+                if isinstance(annotation['paths'], list)
+                else [annotation['paths']]
+            )
+        return [annotation['path']] if 'path' in annotation else []
+
+    def _expected_unit(self) -> str | None:
+        """
+        The unit the `threshold` is expected to carry, used for validation only.
+
+        Default: read the class-level `expected_unit` annotation. Child classes
+        may override to resolve it dynamically, e.g. from a `metric` selector.
+        """
+        threshold_quantity = self.m_def.all_quantities.get('threshold')
+        return (
+            threshold_quantity.m_get_annotation('expected_unit')
+            if threshold_quantity
+            else None
+        )
+
     def _get_convergence_value(self, archive: EntryArchive, logger: BoundLogger):
         """
         Extract the value to check for convergence from the archive.
@@ -117,36 +157,10 @@ The mode used affects both convergence behavior and computational efficiency. Di
             The value to check as a Pint Quantity (with units),
             or None if the value cannot be determined.
         """
-        # Access annotation from the threshold Quantity definition
-        threshold_quantity = self.m_def.all_quantities.get('threshold')
-        if not threshold_quantity:
+        paths = self._convergence_paths()
+        if not paths:
             logger.warning(
-                f'No threshold quantity found for {self.__class__.__name__}',
-                data={'class': self.__class__.__name__},
-            )
-            return None
-
-        annotation = threshold_quantity.m_get_annotation('convergence')
-        if not annotation:
-            logger.warning(
-                f'No convergence annotation on threshold for {self.__class__.__name__}',
-                data={'class': self.__class__.__name__},
-            )
-            return None
-
-        # Support both 'path' (single) and 'paths' (fallback list)
-        paths = []
-        if 'paths' in annotation:
-            paths = (
-                annotation['paths']
-                if isinstance(annotation['paths'], list)
-                else [annotation['paths']]
-            )
-        elif 'path' in annotation:
-            paths = [annotation['path']]
-        else:
-            logger.warning(
-                f'No path or paths in convergence annotation for {self.__class__.__name__}',
+                f'No convergence path for {self.__class__.__name__}',
                 data={'class': self.__class__.__name__},
             )
             return None
@@ -245,12 +259,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
             True if validation passes, False otherwise
         """
         units_required: bool = self.threshold_type != 'relative'
-        threshold_quantity = type(self).m_def.all_quantities.get('threshold')
-        expected_unit = (
-            threshold_quantity.m_get_annotation('expected_unit')
-            if threshold_quantity
-            else None
-        )
+        expected_unit = self._expected_unit()
         has_units: bool = hasattr(self.threshold, 'units') and (
             not self.threshold.dimensionless or expected_unit == 'dimensionless'
         )
@@ -506,12 +515,63 @@ class PotentialConvergenceTarget(WorkflowConvergenceTarget):
     threshold.m_annotations['convergence'] = {'path': '@.scf_steps.delta_potential_rms'}
 
 
-class ChargeConvergenceTarget(WorkflowConvergenceTarget):
-    """Convergence target for electron density/charge differences."""
+# The SCF electron-density residual is reported in physically incommensurable ways
+# across codes (integrated charge, charge density, per-electron fraction, density-matrix
+# element norm; see issue #452), so a single fixed-unit quantity cannot represent it.
+# `DensityConvergenceTarget.type` names which one; each value maps 1:1 to a static
+# `SCFSteps.delta_<type>` quantity, from which the path and expected unit are derived
+# (so `SCFSteps` stays the single source of truth for units).
+DENSITY_CONVERGENCE_TYPES = (
+    'charge_abs',
+    'charge_density_rms',
+    'charge_relative',
+    'density_matrix_rms',
+    'density_matrix_max',
+)
 
-    threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
-    threshold.m_annotations['expected_unit'] = 'coulomb'
-    threshold.m_annotations['convergence'] = {'path': '@.scf_steps.delta_density_rms'}
+
+@cache
+def _density_scf_quantity(type_name: str):
+    """
+    The static `SCFSteps.delta_<type>` quantity a density convergence `type` refers to.
+    Cached: the mapping is a fixed handful of type names, and this is hit once per
+    `DensityConvergenceTarget.normalize`.
+    """
+    from nomad_simulations.schema_packages.outputs import SCFSteps
+
+    return SCFSteps.m_def.all_quantities[f'delta_{type_name}']
+
+
+class DensityConvergenceTarget(WorkflowConvergenceTarget):
+    """
+    Convergence target for the SCF electron-density residual.
+
+    Codes report this residual in incommensurable ways, so `type` selects which
+    `scf_steps` field is read; its expected unit is read off that field. The norm
+    rides on `threshold_type` and the threshold unit on the `flexible_unit`
+    `threshold`.
+    """
+
+    type = Quantity(
+        type=MEnum(*DENSITY_CONVERGENCE_TYPES),
+        description="""
+        Which density-convergence residual this target tracks. Selects the
+        `scf_steps.delta_<type>` quantity read for the check (and thereby its
+        expected unit).
+        """,
+    )
+
+    def _scf_quantity(self):
+        # The static `SCFSteps` quantity this target references (cached module-level);
+        # its definition is the single source of truth for the expected unit.
+        return _density_scf_quantity(self.type) if self.type else None
+
+    def _expected_unit(self) -> str | None:
+        quantity = self._scf_quantity()
+        return str(quantity.unit) if quantity is not None else None
+
+    def _convergence_paths(self) -> list[str]:
+        return [f'@.scf_steps.delta_{self.type}'] if self.type else []
 
 
 class WavefunctionConvergenceTarget(WorkflowConvergenceTarget):

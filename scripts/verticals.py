@@ -70,7 +70,7 @@ VERTICALS = {
             'EnergyConvergenceTarget',
             'ForceConvergenceTarget',
             'PotentialConvergenceTarget',
-            'ChargeConvergenceTarget',
+            'DensityConvergenceTarget',
             'WavefunctionConvergenceTarget',
             'WorkflowConvergenceResults',
             'SimulationWorkflowModel',
