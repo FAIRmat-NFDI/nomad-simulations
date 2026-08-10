@@ -101,7 +101,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
         Default: read the class-level `convergence` annotation on the `threshold`
         Quantity. Child classes may override to source the path(s) elsewhere,
-        e.g. from an instance-level `metric` selector.
+        e.g. from an instance-level selector such as `DensityConvergenceTarget.type`.
         """
         threshold_quantity = self.m_def.all_quantities.get('threshold')
         annotation = (
@@ -124,7 +124,8 @@ The mode used affects both convergence behavior and computational efficiency. Di
         The unit the `threshold` is expected to carry, used for validation only.
 
         Default: read the class-level `expected_unit` annotation. Child classes
-        may override to resolve it dynamically, e.g. from a `metric` selector.
+        may override to resolve it dynamically, e.g. from an instance-level selector
+        such as `DensityConvergenceTarget.type`.
         """
         threshold_quantity = self.m_def.all_quantities.get('threshold')
         return (
