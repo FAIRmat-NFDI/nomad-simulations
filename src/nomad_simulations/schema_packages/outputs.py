@@ -384,8 +384,8 @@ class Outputs(SimulationTime):
         # The other SCF residuals are deliberately NOT synthesized here. In particular
         # `delta_force_abs` (the change of forces between successive SCF iterations) cannot
         # be derived from the archive: `Outputs.total_forces` holds the final/labeled forces,
-        # not a per-SCF-iteration series, so norming them would file the final force
-        # magnitudes under an SCF-convergence field -- a physically different quantity (#453).
+        # not a per-SCF-iteration series, so norming them would fill an SCF-convergence
+        # field with the final force magnitudes -- a physically different quantity (#453).
         # `delta_force_abs` and the density/potential residuals are therefore set only by
         # parsers that genuinely report them per SCF step.
         if self.scf_steps is not None and self.scf_steps.delta_energies_total is None:
