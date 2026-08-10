@@ -92,6 +92,7 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
+| `threshold` | m_float_bounded(float) | <details><summary>Convergence threshold.</summary>Convergence threshold. Must be non-negative.<br>When threshold_type is 'relative', must be dimensionless.<br>When threshold_type is 'absolute', 'maximum', or 'rms', must have physical units.<br>Child classes override this to add convergence path annotations.</details> |
 | `type` | Enum | Which density-convergence residual this target tracks. Selects the `scf_steps.delta_<type>` quantity read for the check (and thereby its expected unit). |
 
 ### `WavefunctionConvergenceTarget`

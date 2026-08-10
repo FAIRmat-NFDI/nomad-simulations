@@ -552,6 +552,11 @@ class DensityConvergenceTarget(WorkflowConvergenceTarget):
     `threshold`.
     """
 
+    # Re-declare `threshold` (no annotations) so it stays visible in the generated
+    # docs/metainfo table for this target, matching the sibling targets. The expected
+    # unit and convergence path are resolved via `_expected_unit`/`_convergence_paths`.
+    threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+
     type = Quantity(
         type=MEnum(*DENSITY_CONVERGENCE_TYPES),
         description="""
