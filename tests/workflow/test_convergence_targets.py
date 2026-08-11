@@ -13,9 +13,9 @@ import pytest
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.outputs import Outputs, SCFSteps
-from nomad_simulations.schema_packages.properties import TotalEnergy, TotalForce
+from nomad_simulations.schema_packages.properties import TotalForce
 from nomad_simulations.schema_packages.workflow.general import (
-    ChargeConvergenceTarget,
+    DensityConvergenceTarget,
     EnergyConvergenceTarget,
     ForceConvergenceTarget,
     PotentialConvergenceTarget,
@@ -158,14 +158,12 @@ class TestForceConvergenceTarget:
         force_target.threshold = threshold
         force_target.threshold_type = threshold_type
 
-        # Create outputs with forces and scf_steps
-        forces = TotalForce(value=force_values * ureg.newton)
-        scf_steps = SCFSteps()  # Empty scf_steps for normalization to populate
-        outputs = Outputs(total_forces=[forces], scf_steps=scf_steps)
-        archive.data.outputs = [outputs]
-
-        # Normalize outputs to compute delta_force_abs from total_forces
-        outputs.normalize(archive, logger)
+        # `delta_force_abs` holds the per-atom force-change magnitudes reported by
+        # the parser (the schema no longer derives it from `total_forces`).
+        force_norms = np.linalg.norm(force_values, axis=1)
+        scf_step = SCFSteps()
+        scf_step.delta_force_abs = force_norms * ureg.newton
+        archive.data.outputs = [Outputs(scf_steps=scf_step)]
 
         # Check convergence
         is_reached = force_target.normalize(archive, logger)
@@ -237,8 +235,8 @@ class TestPotentialConvergenceTarget:
         assert is_reached == expected_reached
 
 
-class TestChargeConvergenceTarget:
-    """Test the ChargeConvergenceTarget class."""
+class TestDensityConvergenceTarget:
+    """Test the DensityConvergenceTarget class and its `type` selector."""
 
     @pytest.mark.parametrize(
         'threshold, threshold_type, charge_values, expected_reached',
@@ -253,7 +251,7 @@ class TestChargeConvergenceTarget:
             (1e-7 * ureg.coulomb, 'rms', np.array([1e-5, 1e-5, 1e-5, 1e-5]), False),
         ],
     )
-    def test_charge_convergence(
+    def test_charge_abs_convergence(
         self,
         threshold: float,
         threshold_type: str,
@@ -263,27 +261,53 @@ class TestChargeConvergenceTarget:
         logger,
     ):
         """
-        Test charge convergence with absolute and RMS types.
+        Test the `charge_abs` type with absolute and RMS threshold types.
 
         Args:
-            threshold: Convergence threshold (dimensionless).
+            threshold: Convergence threshold in coulomb.
             threshold_type: Type of convergence check ('absolute' or 'rms').
             charge_values: Array of charge difference values.
             expected_reached: Expected value of is_reached flag.
         """
-        charge_target = ChargeConvergenceTarget()
-        charge_target.threshold = threshold
-        charge_target.threshold_type = threshold_type
+        density_target = DensityConvergenceTarget(type='charge_abs')
+        density_target.threshold = threshold
+        density_target.threshold_type = threshold_type
 
-        # Create SCF steps with density RMS values (charge convergence)
+        # Create SCF steps with integrated-charge residuals.
         scf_step = SCFSteps()
-        scf_step.delta_density_rms = charge_values * ureg.coulomb
+        scf_step.delta_charge_abs = charge_values * ureg.coulomb
 
         archive.data.outputs = [Outputs(scf_steps=scf_step)]
 
         # Normalize and check
-        is_reached = charge_target.normalize(archive, logger)
+        is_reached = density_target.normalize(archive, logger)
         assert is_reached == expected_reached
+
+    @pytest.mark.parametrize(
+        'conv_type, field, unit',
+        [
+            ('charge_abs', 'delta_charge_abs', ureg.coulomb),
+            (
+                'charge_density_rms',
+                'delta_charge_density_rms',
+                ureg.coulomb / ureg.meter**3,
+            ),
+            ('charge_relative', 'delta_charge_relative', ureg.dimensionless),
+            ('density_matrix_rms', 'delta_density_matrix_rms', ureg.dimensionless),
+            ('density_matrix_max', 'delta_density_matrix_max', ureg.dimensionless),
+        ],
+    )
+    def test_type_selects_field_and_unit(self, conv_type, field, unit, archive, logger):
+        """Each `type` resolves to its own scf_steps field with the matching unit."""
+        density_target = DensityConvergenceTarget(type=conv_type)
+        density_target.threshold = 1e-7 * unit
+        density_target.threshold_type = 'absolute'
+
+        scf_step = SCFSteps()
+        setattr(scf_step, field, np.array([1e-10]) * unit)
+        archive.data.outputs = [Outputs(scf_steps=scf_step)]
+
+        assert density_target.normalize(archive, logger) is True
 
 
 class TestWavefunctionConvergenceTarget:
@@ -362,21 +386,21 @@ class TestMissingDataHandling:
     """Test that all convergence targets handle missing data correctly."""
 
     @pytest.mark.parametrize(
-        'target_class, threshold, threshold_unit',
+        'target_class, threshold, threshold_unit, kwargs',
         [
-            (EnergyConvergenceTarget, 1e-6, ureg.joule),
-            (ForceConvergenceTarget, 1e-8, ureg.newton),
-            (PotentialConvergenceTarget, 1e-5, ureg.joule),
-            (ChargeConvergenceTarget, 1e-7, ureg.coulomb),
-            (WavefunctionConvergenceTarget, 1e-8, ureg.dimensionless),
+            (EnergyConvergenceTarget, 1e-6, ureg.joule, {}),
+            (ForceConvergenceTarget, 1e-8, ureg.newton, {}),
+            (PotentialConvergenceTarget, 1e-5, ureg.joule, {}),
+            (DensityConvergenceTarget, 1e-7, ureg.coulomb, {'type': 'charge_abs'}),
+            (WavefunctionConvergenceTarget, 1e-8, ureg.dimensionless, {}),
         ],
-        ids=['Energy', 'Force', 'Potential', 'Charge', 'Wavefunction'],
+        ids=['Energy', 'Force', 'Potential', 'Density', 'Wavefunction'],
     )
     def test_missing_data_returns_none(
-        self, target_class, threshold, threshold_unit, archive, logger
+        self, target_class, threshold, threshold_unit, kwargs, archive, logger
     ):
         """Test convergence targets return None when data is missing."""
-        target = target_class()
+        target = target_class(**kwargs)
         target.threshold = threshold * threshold_unit
         target.threshold_type = 'absolute'
 
@@ -548,25 +572,22 @@ class TestConvergenceInWorkflow:
             ForceConvergenceTarget(
                 threshold=1e-8 * ureg.newton, threshold_type='maximum'
             ),
-            ChargeConvergenceTarget(
-                threshold=1e-7 * ureg.coulomb, threshold_type='rms'
+            DensityConvergenceTarget(
+                type='charge_abs',
+                threshold=1e-7 * ureg.coulomb,
+                threshold_type='rms',
             ),
         ]
 
-        # Create test data
+        # Create test data. Residuals are set as the parser would report them;
+        # the schema no longer derives delta_force_abs from total_forces.
         scf_step = SCFSteps()
         scf_step.delta_energies_total = np.array([5e-7]) * ureg.joule
-        scf_step.delta_density_rms = np.array([1e-8]) * ureg.coulomb
+        scf_step.delta_charge_abs = np.array([1e-8]) * ureg.coulomb
+        scf_step.delta_force_abs = np.array([1e-9, 1e-9]) * ureg.newton
 
-        forces = TotalForce(
-            value=np.array([[1e-9, 1e-9, 1e-9], [1e-9, 1e-9, 1e-9]]) * ureg.newton
-        )
-
-        outputs = Outputs(scf_steps=scf_step, total_forces=[forces])
+        outputs = Outputs(scf_steps=scf_step)
         archive.data.outputs = [outputs]
-
-        # Normalize outputs to compute delta_force_abs
-        outputs.normalize(archive, logger)
 
         # Normalize workflow
         workflow.normalize(archive, logger)
@@ -613,19 +634,13 @@ class TestConvergenceInWorkflow:
             ),  # Won't converge
         ]
 
-        # Create test data
+        # Create test data. delta_force_abs is set directly (no derivation).
         scf_step = SCFSteps()
         scf_step.delta_energies_total = np.array([5e-7]) * ureg.joule  # Converges
+        scf_step.delta_force_abs = np.array([1e-5]) * ureg.newton  # Doesn't converge
 
-        forces = TotalForce(
-            value=np.array([[1e-5, 1e-5, 1e-5]]) * ureg.newton
-        )  # Doesn't converge
-
-        outputs = Outputs(scf_steps=scf_step, total_forces=[forces])
+        outputs = Outputs(scf_steps=scf_step)
         archive.data.outputs = [outputs]
-
-        # Normalize outputs to compute delta_force_abs
-        outputs.normalize(archive, logger)
 
         # Normalize targets and capture results
         convergence_results = []
@@ -656,30 +671,19 @@ class TestFallbackPaths:
         is_reached = force_target.normalize(archive, logger)
         assert is_reached is True  # max([1e-9, 2e-9, 1.5e-9]) < 1e-8
 
-    def test_force_fallback_to_computed(self, archive, logger):
-        """Test that delta_force_abs is computed from total_forces during normalization."""
-        force_target = ForceConvergenceTarget()
-        force_target.threshold = 1e-8 * ureg.newton
-        force_target.threshold_type = 'maximum'
-
-        # Only provide total_forces (no workflow2, no delta_force_abs)
+    def test_force_abs_not_auto_populated(self, archive, logger):
+        """`delta_force_abs` is a per-SCF quantity and must not be derived from the
+        final `total_forces`; normalization leaves it untouched (issue #453)."""
         forces = TotalForce(
             value=np.array([[1e-9, 1e-9, 1e-9], [2e-9, 2e-9, 2e-9]]) * ureg.newton
         )
-        scf_steps = SCFSteps()  # Empty scf_steps for normalization to populate
+        scf_steps = SCFSteps()
         outputs = Outputs(total_forces=[forces], scf_steps=scf_steps)
         archive.data.outputs = [outputs]
 
-        # Normalize outputs to compute delta_force_abs from total_forces
         outputs.normalize(archive, logger)
 
-        # Verify delta_force_abs was computed
-        assert outputs.scf_steps.delta_force_abs is not None
-
-        # Check convergence using computed values
-        is_reached = force_target.normalize(archive, logger)
-        # max norm ≈ 3.46e-9 < 1e-8
-        assert is_reached is True
+        assert outputs.scf_steps.delta_force_abs is None
 
     def test_single_path_backwards_compatible(self, archive, logger):
         """Test that single 'path' annotation still works."""
@@ -696,20 +700,19 @@ class TestFallbackPaths:
         is_reached = energy_target.normalize(archive, logger)
         assert is_reached is True
 
-    def test_energy_delta_computed_from_total_energies(self, archive, logger):
-        """Test that delta_energies_total is computed from total_energies during normalization."""
+    def test_energy_delta_computed_from_scf_energies(self, archive, logger):
+        """`delta_energies_total` is derived from the per-SCF `energies_total`
+        series (issue #454), not from the labeled `Outputs.total_energies`."""
         energy_target = EnergyConvergenceTarget()
         energy_target.threshold = 1e-6 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
-        # Provide total_energies but not delta_energies_total
-        energies = [
-            TotalEnergy(value=1.0 * ureg.joule),
-            TotalEnergy(value=1.0000001 * ureg.joule),  # Delta: 1e-7
-            TotalEnergy(value=1.0000002 * ureg.joule),  # Delta: 1e-7
-        ]
-        scf_steps = SCFSteps()  # Empty scf_steps for normalization to populate
-        outputs = Outputs(total_energies=energies, scf_steps=scf_steps)
+        # Provide the per-SCF energy series but not delta_energies_total.
+        scf_steps = SCFSteps()
+        scf_steps.energies_total = (
+            np.array([1.0, 1.0000001, 1.0000002]) * ureg.joule  # deltas: 1e-7, 1e-7
+        )
+        outputs = Outputs(scf_steps=scf_steps)
         archive.data.outputs = [outputs]
 
         # Normalize outputs to compute delta_energies_total
