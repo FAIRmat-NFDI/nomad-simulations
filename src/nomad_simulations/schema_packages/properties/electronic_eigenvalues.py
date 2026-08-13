@@ -14,6 +14,7 @@ from nomad_simulations.schema_packages.atoms_state import (
 )
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
+from nomad_simulations.schema_packages.variables import KMesh
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -67,7 +68,17 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         that the state is fully occupied; if `spin_channel` is not set, then this number is between 0 and 2. The shape of
         this quantity is defined as `[K.n_points, K.dimensionality, n_levels]`, where `K` is a `variable` which can
         be `KMesh` or `KLinePath`, depending whether the simulation mapped the whole Brillouin zone or just a specific
-        path.
+        path. The mesh case is stored under `k_mesh`; the path case is handled by
+        `ElectronicBandStructure.k_path`.
+        """,
+    )
+
+    k_mesh = SubSection(
+        sub_section=KMesh.m_def,
+        description="""
+        Reciprocal-space mesh over which these eigenvalues are sampled, whose `points` reference the
+        `KMesh` numerical settings. Populated when the eigenvalues span a Brillouin-zone mesh; for
+        eigenvalues sampled along a high-symmetry path use `ElectronicBandStructure.k_path` instead.
         """,
     )
 
