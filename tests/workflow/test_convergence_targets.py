@@ -732,9 +732,6 @@ class TestFallbackPaths:
         assert list(outputs.scf_steps.delta_energies_total.magnitude) == pytest.approx(
             [1e-7, 1e-7]
         )
-        assert list(outputs.scf_steps.delta_energies_total.magnitude) != pytest.approx(
-            [1500.0]
-        )
 
         # Check convergence using computed values
         is_reached = energy_target.normalize(archive, logger)
