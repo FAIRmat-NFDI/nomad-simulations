@@ -32,8 +32,11 @@ class BaseEnergy(PhysicalProperty):
 #! since kinetic energy lives separately, but I think maybe this is ok?
 class TotalEnergy(BaseEnergy):
     """
-    The total energy of a system. `contributions` specify individual energetic
-    contributions to the `TotalEnergy`.
+    The converged total energy of one system configuration.
+
+    Individual energetic components belong inside this section through its
+    `contributions` subsections. The listed contributions do not have to be
+    exhaustive, so the total energy is not necessarily equal to their sum.
     """
 
     # ? add a generic contributions quantity to PhysicalProperty

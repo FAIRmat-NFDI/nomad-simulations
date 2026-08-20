@@ -13,7 +13,7 @@ import pytest
 from nomad.units import ureg
 
 from nomad_simulations.schema_packages.outputs import Outputs, SCFSteps
-from nomad_simulations.schema_packages.properties import TotalForce
+from nomad_simulations.schema_packages.properties import TotalEnergy, TotalForce
 from nomad_simulations.schema_packages.workflow.general import (
     DensityConvergenceTarget,
     EnergyConvergenceTarget,
@@ -707,20 +707,31 @@ class TestFallbackPaths:
         energy_target.threshold = 1e-6 * ureg.joule
         energy_target.threshold_type = 'absolute'
 
-        # Provide the per-SCF energy series but not delta_energies_total.
+        # Provide the per-SCF energy series but not delta_energies_total. The decoy
+        # `total_energies` is on a wildly different scale, so the assertions below
+        # prove the deltas come from the SCF series and not from `total_energies`.
         scf_steps = SCFSteps()
         scf_steps.energies_total = (
             np.array([1.0, 1.0000001, 1.0000002]) * ureg.joule  # deltas: 1e-7, 1e-7
         )
-        outputs = Outputs(scf_steps=scf_steps)
+        outputs = Outputs(
+            total_energies=[
+                TotalEnergy(value=1000.0 * ureg.joule),
+                TotalEnergy(value=2500.0 * ureg.joule),  # decoy delta: 1500
+            ],
+            scf_steps=scf_steps,
+        )
         archive.data.outputs = [outputs]
 
         # Normalize outputs to compute delta_energies_total
         outputs.normalize(archive, logger)
 
-        # Verify delta_energies_total was computed
+        # Verify delta_energies_total was computed from the SCF series, not total_energies
         assert outputs.scf_steps.delta_energies_total is not None
         assert len(outputs.scf_steps.delta_energies_total) == 2  # n-1 deltas
+        assert list(outputs.scf_steps.delta_energies_total.magnitude) == pytest.approx(
+            [1e-7, 1e-7]
+        )
 
         # Check convergence using computed values
         is_reached = energy_target.normalize(archive, logger)
