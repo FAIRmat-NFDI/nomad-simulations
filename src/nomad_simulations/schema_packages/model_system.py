@@ -43,6 +43,7 @@ from nomad.metainfo import MEnum, Quantity, SectionProxy, SubSection
 from nomad.metainfo.metainfo import Section
 from nomad.units import ureg
 
+from nomad_simulations.schema_packages.data_types import strictly_positive_int
 from nomad_simulations.schema_packages.utils import log
 
 if TYPE_CHECKING:
@@ -1491,13 +1492,15 @@ class ModelSystem(System, Representation):
         """,
     )
 
-    total_spin = Quantity(
-        type=np.int32,
+    total_spin_multiplicity = Quantity(
+        type=strictly_positive_int(),
         description="""
-        Total spin quantum number **S** of the system (so Ŝ² ψ = S(S+1) ħ² ψ).
-        Stored as an integer or half-integer represented in doubled form
-        (e.g. singlet → 0, doublet → 1, triplet → 2).
-        Not to be confused with the spin multiplicity 2S+1.
+        Spin multiplicity **2S+1** of the total system.
+
+        Here S is the total spin quantum number, so the value describes the system-level
+        total electronic state and is always a strictly positive integer:
+
+            singlet → 1, doublet → 2, triplet → 3
         """,
     )
 
