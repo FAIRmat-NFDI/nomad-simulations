@@ -158,15 +158,6 @@ class ChemicalPotential(BaseEnergy):
         """,
     )
 
-    fermi_energy = Quantity(
-        type=np.float64,
-        unit='joule',
-        description="""
-        Fermi energy at T=0K, used as reference for finite-temperature chemical potential.
-        At T=0, the chemical potential equals the Fermi energy.
-        """,
-    )
-
     type = Quantity(
         type=str,
         description="""

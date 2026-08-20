@@ -70,7 +70,7 @@ VERTICALS = {
             'EnergyConvergenceTarget',
             'ForceConvergenceTarget',
             'PotentialConvergenceTarget',
-            'ChargeConvergenceTarget',
+            'DensityConvergenceTarget',
             'WavefunctionConvergenceTarget',
             'WorkflowConvergenceResults',
             'SimulationWorkflowModel',
@@ -288,7 +288,6 @@ VERTICALS = {
             'CGBeadState',
             'AtomicOrbitals',
             'CoreHole',
-            'HubbardInteractions',
         ],
     },
     'symmetry': {

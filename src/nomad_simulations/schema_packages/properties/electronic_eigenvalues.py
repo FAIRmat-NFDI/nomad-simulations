@@ -71,6 +71,10 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         """,
     )
 
+    # NOTE (DRY): this highest-/lowest-occupied reference is intentionally mirrored in
+    # specialized form elsewhere -- `ElectronicDensityOfStates.energies_origin` (DOS-refined)
+    # and consumed by `ElectronicBandStructure`. The duplication is deliberate: each property
+    # keeps a source specialized for its own derivation and plotting/visualization alignment.
     highest_occupied = Quantity(
         type=np.float64,
         unit='joule',

@@ -91,7 +91,7 @@ class GeometryOptimizationModel(SimulationWorkflowMethod):
         Common SCF convergence targets:
         - EnergyConvergenceTarget: SCF total energy convergence
         - PotentialConvergenceTarget: Effective potential convergence
-        - ChargeConvergenceTarget: Charge density convergence
+        - DensityConvergenceTarget: Electron-density convergence (metric-selected)
 
         Note: This field should conceptually be available on SimulationWorkflowMethod base class
         for any workflow with SCF subtasks, but is currently only implemented here. This is

@@ -16,7 +16,7 @@ from nomad_simulations.schema_packages.properties.electronic_eigenvalues import 
     ElectronicEigenvalues,
 )
 from nomad_simulations.schema_packages.properties.fermi_surface import FermiSurface
-from nomad_simulations.schema_packages.utils import get_sibling_section, log
+from nomad_simulations.schema_packages.utils import log
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -30,6 +30,9 @@ class ElectronicBandStructure(ElectronicEigenvalues):
 
     iri = 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandStructure'
 
+    # NOTE (DRY): the energy reference (`highest_occupied`, inherited from `ElectronicEigenvalues`,
+    # and used for Fermi-surface extraction) is the same concept specialized as
+    # `ElectronicDensityOfStates.energies_origin`. Intentional duplication for derivation/plotting.
     k_path = SubSection(sub_section=KLinePath.m_def)
 
     reciprocal_cell = Quantity(
@@ -63,26 +66,24 @@ class ElectronicBandStructure(ElectronicEigenvalues):
     @log
     def extract_fermi_surface(self) -> FermiSurface | None:
         """
-        Extract the Fermi surface for metallic systems using `FermiLevel.value`.
+        Extract the Fermi surface for metallic systems, referenced to the highest occupied
+        eigenvalue (`highest_occupied`), which coincides with the Fermi level for gapless systems.
         """
         logger = self.extract_fermi_surface.__annotations__['logger']
         # Check if the system has a finite band gap
         homo, lumo = self.resolve_homo_lumo_eigenvalues()
-        if (homo and lumo) and (lumo - homo).magnitude > 0:
+        if (homo is not None and lumo is not None) and (lumo - homo).magnitude > 0:
             return None
 
-        # Get the `fermi_level.value`
-        fermi_level = get_sibling_section(
-            section=self, sibling_section_name='fermi_level', logger=logger
-        )
-        if fermi_level is None:
+        # Use the highest occupied eigenvalue as the Fermi-level reference
+        if homo is None:
             logger.warning(
-                'Could not extract the `FermiSurface`, because `FermiLevel` is not stored.'
+                'Could not extract the `FermiSurface`: no `highest_occupied` eigenvalue available.'
             )
             return None
-        fermi_level_value = fermi_level.value.magnitude
+        fermi_level_value = homo.magnitude
 
-        # Extract eigenvalues close to the `fermi_level.value`
+        # Extract eigenvalues close to the Fermi-level reference
         fermi_indices = np.logical_and(
             self.value.magnitude
             >= (fermi_level_value - configuration.fermi_surface_tolerance),
