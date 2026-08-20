@@ -44,6 +44,10 @@ from .common import SimulationTime
 class SCFSteps(ArchiveSection):
     """
     Data recorded at each step of a self-consistent DFT calculation.
+
+    The SCF quantities describe the iterative convergence process for one
+    system configuration, i.e. within one `Outputs` section. They do not
+    describe a sequence of configurations such as geometry-optimization steps.
     """
 
     energies_total = Quantity(
@@ -51,7 +55,8 @@ class SCFSteps(ArchiveSection):
         type=float,
         unit='joule',
         description="""
-        Total energy at each SCF step.
+        Ordered sequence of total energies from the SCF iterations within one
+        system configuration.
         """,
     )
 
@@ -60,7 +65,10 @@ class SCFSteps(ArchiveSection):
         type=float,
         unit='joule',
         description="""
-        Absolute change of total energy at each SCF step.
+        Absolute change of total energy between consecutive SCF steps. When
+        derived from `energies_total`, the values follow
+        $\\Delta E_i = \\lvert E_{i+1} - E_i \\rvert$, so N SCF energies
+        produce N - 1 energy deltas.
         """,
     )
 

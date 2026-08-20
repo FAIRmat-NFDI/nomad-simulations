@@ -106,7 +106,7 @@ without parser-plugin complexity. The page ends with a short normalization-metho
 ## Assignment 2.7: `Outputs`, references, and SCF deltas
 
 !!! abstract "Assignment 2.7"
-    Create an `Outputs` section with `SCFSteps` and `TotalEnergy` values across steps,
+    Create an `Outputs` section with `SCFSteps.energies_total` values across steps,
     normalize, and verify automatic `model_system_ref`, `model_method_ref`, and
     `delta_energies_total` population.
 
@@ -157,11 +157,11 @@ The following exercises focus on practical normalization behavior from current t
     --8<-- "snippets/tutorials/part2_foundations/normalization_exercise_1.py"
     ```
 
-### Exercise N2: `Outputs` SCF deltas from total energies
+### Exercise N2: `Outputs` SCF deltas from SCF total energies
 
 !!! abstract "Exercise N2"
-    Populate only `total_energies` and run `Outputs.normalize(...)` to confirm
-    that `scf_steps.delta_energies_total` is computed automatically.
+    Populate `scf_steps.energies_total` and run `Outputs.normalize(...)` to
+    confirm that `scf_steps.delta_energies_total` is computed automatically.
 
 ??? success "Solution N2"
     ```python

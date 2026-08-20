@@ -376,6 +376,36 @@ VERTICALS = {
     'outputs': {
         'title': 'Outputs',
         'purpose': 'Base output structure and common property definitions',
+        'notes': """
+One `Outputs` section represents the calculated properties of one system
+configuration, identified through `model_system_ref`. A sequence of
+configurations, such as geometry-optimization steps, is represented using
+multiple output sections, normally `WorkflowOutputs`, ordered by
+`WorkflowOutputs.step`.
+
+One `TotalEnergy` represents the converged total energy of that configuration.
+Energy components belong inside that `TotalEnergy` through its `contributions`
+subsections. The listed contributions do not have to be exhaustive, so the total
+energy is not necessarily equal to their sum. Although `Outputs.total_energies`
+has `repeats=True`, the schema currently defines neither an ordering nor a
+sequence meaning for repeated entries.
+
+`SCFSteps.energies_total` is the ordered sequence of total energies from the SCF
+iterations within one configuration. `SCFSteps.delta_energies_total` contains
+differences between consecutive values from that SCF sequence.
+
+Conceptual geometry-optimization layout:
+
+```text
+WorkflowOutputs(step=0)
+    TotalEnergy for configuration 0
+    SCFSteps.energies_total for the SCF iterations of configuration 0
+
+WorkflowOutputs(step=1)
+    TotalEnergy for configuration 1
+    SCFSteps.energies_total for the SCF iterations of configuration 1
+```
+""",
         'sections': [
             'Outputs',
             'SCFSteps',
