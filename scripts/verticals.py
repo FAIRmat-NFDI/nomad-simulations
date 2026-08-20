@@ -377,33 +377,44 @@ VERTICALS = {
         'title': 'Outputs',
         'purpose': 'Base output structure and common property definitions',
         'notes': """
-One `Outputs` section represents the calculated properties of one system
-configuration, identified through `model_system_ref`. A sequence of
-configurations, such as geometry-optimization steps, is represented using
-multiple output sections, normally `WorkflowOutputs`, ordered by
-`WorkflowOutputs.step`.
+One `Outputs` section holds the calculated properties of a single system
+configuration, identified through `model_system_ref`; on its own it describes a
+single-point calculation. `WorkflowOutputs` extends `Outputs` with a `step`
+index, for when that configuration is one point in an ordered sequence: a
+geometry optimization is then a series of `WorkflowOutputs`, each carrying the
+full `Outputs` content for its configuration and ordered by `step`.
 
-One `TotalEnergy` represents the converged total energy of that configuration.
-Energy components belong inside that `TotalEnergy` through its `contributions`
-subsections. The listed contributions do not have to be exhaustive, so the total
-energy is not necessarily equal to their sum. Although `Outputs.total_energies`
-has `repeats=True`, the schema currently defines neither an ordering nor a
-sequence meaning for repeated entries.
+These sections live under `archive.data.outputs`. This is distinct from the
+workflow graph `archive.workflow2`, which only references them through `Link`s
+(`workflow2.outputs`) and summarizes them in `workflow2.results`; it does not
+hold the properties itself.
 
-`SCFSteps.energies_total` is the ordered sequence of total energies from the SCF
-iterations within one configuration. `SCFSteps.delta_energies_total` contains
-differences between consecutive values from that SCF sequence.
+Within one `Outputs` section, the converged result and the SCF iteration history
+that produced it sit in separate subsections:
+
+- `Outputs.total_energies` (`repeats=True`) holds one or more `TotalEnergy`
+  sections, each the converged total energy of the configuration. Energy
+  components belong inside a `TotalEnergy` through its `contributions`
+  subsections; these need not be exhaustive, so the total is not necessarily
+  their sum. The schema currently defines neither an ordering nor a sequence
+  meaning for the repeated entries.
+- `Outputs.scf_steps` (`repeats=False`) holds a single `SCFSteps` with the
+  self-consistent iteration history for that same configuration.
+  `SCFSteps.energies_total` is the ordered sequence of total energies across SCF
+  iterations, converging to the configuration's total energy in `TotalEnergy`;
+  `SCFSteps.delta_energies_total` holds the differences between consecutive
+  values of that sequence.
 
 Conceptual geometry-optimization layout:
 
 ```text
-WorkflowOutputs(step=0)
-    TotalEnergy for configuration 0
-    SCFSteps.energies_total for the SCF iterations of configuration 0
+WorkflowOutputs(step=0)                        # one configuration
+    total_energies -> TotalEnergy              # converged total energy
+    scf_steps      -> SCFSteps.energies_total  # SCF iteration history for it
 
 WorkflowOutputs(step=1)
-    TotalEnergy for configuration 1
-    SCFSteps.energies_total for the SCF iterations of configuration 1
+    total_energies -> TotalEnergy
+    scf_steps      -> SCFSteps.energies_total
 ```
 """,
         'sections': [
