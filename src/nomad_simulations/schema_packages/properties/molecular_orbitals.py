@@ -11,8 +11,9 @@ from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 from nomad_simulations.schema_packages.data_types import strictly_positive_int
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
-# Occupation below this threshold is treated as an unoccupied orbital when
-# resolving frontier (HOMO/LUMO) orbitals.
+# Tolerance on occupation numbers: an orbital with occupation below this
+# threshold is treated as unoccupied when resolving frontier (HOMO/LUMO)
+# orbitals, and it is the slack allowed when validating occupation bounds.
 _OCCUPATION_TOL = 1e-6
 
 
@@ -207,17 +208,16 @@ class MolecularOrbitals(PhysicalProperty):
                 'The real and imaginary coefficient matrices have different shapes and cannot be combined.'
             )
 
-        _TOL = 1e-6
         if self.spin_channel is not None and self.spin_channel not in (0, 1):
             logger.error('`spin_channel` must be 0 (alpha) or 1 (beta) when set.')
         if self.occupations is not None:
             occ = np.asarray(self.occupations)
             upper = 1.0 if self.spin_channel is not None else 2.0
-            if np.nanmin(occ) < -_TOL:
+            if np.nanmin(occ) < -_OCCUPATION_TOL:
                 logger.error(
                     'Occupations must be non-negative, but negative values were found.'
                 )
-            if np.nanmax(occ) > upper + _TOL:
+            if np.nanmax(occ) > upper + _OCCUPATION_TOL:
                 logger.error(
                     '`occupations` exceed the maximum allowed value for this spin representation.'
                     ' For spin orbitals (`spin_channel` set) the maximum is 1;'
