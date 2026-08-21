@@ -253,3 +253,73 @@ class TestMolecularOrbitals:
         assert not rec.errors
         assert mo.n_mo == 3
         assert mo.n_ao == 4
+
+    # Frontier-orbital resolution: parsed vs standardized
+    def test_frontier_orbitals_derived_from_data(self):
+        mo = MolecularOrbitals(
+            energies=np.array([-2.0, -1.0, 0.5, 1.5]),
+            occupations=np.array([2.0, 2.0, 0.0, 0.0]),
+        )
+        mo.normalize(archive=EntryArchive(), logger=logger)
+
+        assert mo.homo.magnitude == pytest.approx(-1.0)
+        assert mo.lumo.magnitude == pytest.approx(0.5)
+        assert mo.homo_lumo_gap.magnitude == pytest.approx(1.5)
+
+    def test_gap_consistent_with_preset_lumo(self):
+        """The gap derives from the stored HOMO/LUMO pair, not recomputed locals.
+
+        Regression: a pre-set `lumo` must not yield a gap computed from the
+        data-derived lumo while the stored lumo differs.
+        """
+        mo = MolecularOrbitals(
+            energies=np.array([-2.0, -1.0, 0.5, 1.5]),
+            occupations=np.array([2.0, 2.0, 0.0, 0.0]),
+            lumo=3.0,
+        )
+        mo.normalize(archive=EntryArchive(), logger=logger)
+
+        assert mo.homo.magnitude == pytest.approx(-1.0)  # derived
+        assert mo.lumo.magnitude == pytest.approx(3.0)  # preserved
+        assert mo.homo_lumo_gap.magnitude == pytest.approx(4.0)  # 3.0 - (-1.0)
+
+    def test_frontier_pair_falls_back_to_parsed(self):
+        """Without an occupied/unoccupied boundary, HOMO/LUMO use the parsed values."""
+        mo = MolecularOrbitals(
+            energies=np.array([-2.0, -1.0]),
+            occupations=np.array([2.0, 2.0]),  # all occupied: no boundary
+            homo_parsed=-1.0,
+            lumo_parsed=0.5,
+        )
+        mo.normalize(archive=EntryArchive(), logger=logger)
+
+        assert mo.homo.magnitude == pytest.approx(-1.0)
+        assert mo.lumo.magnitude == pytest.approx(0.5)
+        assert mo.homo_lumo_gap.magnitude == pytest.approx(1.5)
+
+    def test_gap_falls_back_to_parsed_when_pair_unavailable(self):
+        """With neither a derivable nor a parsed pair, the gap uses the parsed gap."""
+        mo = MolecularOrbitals(
+            energies=np.array([-2.0, -1.0]),
+            occupations=np.array([2.0, 2.0]),  # all occupied: no boundary
+            homo_lumo_gap_parsed=2.0,
+        )
+        mo.normalize(archive=EntryArchive(), logger=logger)
+
+        assert mo.homo is None
+        assert mo.lumo is None
+        assert mo.homo_lumo_gap.magnitude == pytest.approx(2.0)
+
+    def test_parsed_frontier_orbitals_not_overwritten(self):
+        mo = MolecularOrbitals(
+            energies=np.array([-2.0, -1.0, 0.5, 1.5]),
+            occupations=np.array([2.0, 2.0, 0.0, 0.0]),
+            homo_parsed=-0.9,
+            lumo_parsed=0.4,
+        )
+        mo.normalize(archive=EntryArchive(), logger=logger)
+
+        assert mo.homo_parsed.magnitude == pytest.approx(-0.9)
+        assert mo.lumo_parsed.magnitude == pytest.approx(0.4)
+        assert mo.homo.magnitude == pytest.approx(-1.0)
+        assert mo.lumo.magnitude == pytest.approx(0.5)
