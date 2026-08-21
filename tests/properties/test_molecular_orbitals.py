@@ -122,7 +122,7 @@ class TestMolecularOrbitals:
     @pytest.mark.parametrize(
         'quantity_name, values',
         [
-            ('energies', np.array([-1.0, -0.5, 0.2])),
+            ('value', np.array([-1.0, -0.5, 0.2])),
             ('occupations', np.array([2.0, 2.0, 0.0, 0.0])),
         ],
     )
@@ -144,7 +144,7 @@ class TestMolecularOrbitals:
         molecular_orbitals.n_ao = 2
         molecular_orbitals.coefficients = np.ones((3, 4), dtype=np.float64)
         molecular_orbitals.coefficients_im = np.ones((5, 6), dtype=np.float64)
-        molecular_orbitals.energies = np.array([-1.0, 0.5, 1.0])
+        molecular_orbitals.value = np.array([-1.0, 0.5, 1.0])
         molecular_orbitals.normalize(archive=EntryArchive(), logger=rec)
 
         assert (
@@ -158,7 +158,7 @@ class TestMolecularOrbitals:
             in rec.errors
         )
         assert (
-            'Length of a per-orbital quantity does not match `n_mo`; all of `energies`, `occupations`, `role`, and `symmetry` must have exactly `n_mo` entries.'
+            'Length of a per-orbital quantity does not match `n_mo`; all of `value`, `occupations`, `role`, and `symmetry` must have exactly `n_mo` entries.'
             in rec.errors
         )
 
@@ -173,7 +173,7 @@ class TestMolecularOrbitals:
 
     def test_does_not_derive_eigenvalue_properties(self):
         molecular_orbitals = MolecularOrbitals(
-            energies=np.array([-1.0, 0.5]),
+            value=np.array([-1.0, 0.5]),
             occupations=np.array([2.0, 0.0]),
         )
 
@@ -182,9 +182,9 @@ class TestMolecularOrbitals:
         for quantity_name in ('highest_occupied', 'lowest_unoccupied', 'band_gap'):
             assert quantity_name not in molecular_orbitals.m_def.all_quantities
 
-    # T4: energies unit
-    def test_energies_unit_is_joule(self):
-        assert str(MolecularOrbitals.energies.unit) == 'joule'
+    # T4: value (orbital energies) unit
+    def test_value_unit_is_joule(self):
+        assert str(MolecularOrbitals.value.unit) == 'joule'
 
     # T1 normalize: occupation validation — spatial (spin-summed) orbitals
     def test_spatial_occupations_pass(self):
@@ -246,7 +246,7 @@ class TestMolecularOrbitals:
         mo.kind = 'natural'
         mo.occupations = np.array([1.0, 0.5, 0.0])
         mo.coefficients = np.ones((3, 4), dtype=np.float64)
-        # energies intentionally absent
+        # value (energies) intentionally absent
 
         mo.normalize(archive=EntryArchive(), logger=rec)
 
@@ -258,7 +258,7 @@ class TestMolecularOrbitals:
     def test_frontier_orbitals_derived_from_data(self):
         mo = MolecularOrbitals(
             kind='canonical',
-            energies=np.array([-2.0, -1.0, 0.5, 1.5]),
+            value=np.array([-2.0, -1.0, 0.5, 1.5]),
             occupations=np.array([2.0, 2.0, 0.0, 0.0]),
         )
         mo.normalize(archive=EntryArchive(), logger=logger)
@@ -270,7 +270,7 @@ class TestMolecularOrbitals:
     def test_no_derivation_without_canonical_kind(self):
         """An unset `kind` is not assumed canonical, so nothing is derived."""
         mo = MolecularOrbitals(
-            energies=np.array([-2.0, -1.0, 0.5, 1.5]),
+            value=np.array([-2.0, -1.0, 0.5, 1.5]),
             occupations=np.array([2.0, 2.0, 0.0, 0.0]),
         )
         mo.normalize(archive=EntryArchive(), logger=logger)
@@ -287,7 +287,7 @@ class TestMolecularOrbitals:
         """
         mo = MolecularOrbitals(
             kind='canonical',
-            energies=np.array([-2.0, -1.0, 0.5, 1.5]),
+            value=np.array([-2.0, -1.0, 0.5, 1.5]),
             occupations=np.array([2.0, 2.0, 0.0, 0.0]),
             lumo=3.0,
         )
@@ -301,7 +301,7 @@ class TestMolecularOrbitals:
         """Without an occupied/unoccupied boundary, HOMO/LUMO use the parsed values."""
         mo = MolecularOrbitals(
             kind='canonical',
-            energies=np.array([-2.0, -1.0]),
+            value=np.array([-2.0, -1.0]),
             occupations=np.array([2.0, 2.0]),  # all occupied: no boundary
             homo_parsed=-1.0,
             lumo_parsed=0.5,
@@ -316,7 +316,7 @@ class TestMolecularOrbitals:
         """With neither a derivable nor a parsed pair, the gap uses the parsed gap."""
         mo = MolecularOrbitals(
             kind='canonical',
-            energies=np.array([-2.0, -1.0]),
+            value=np.array([-2.0, -1.0]),
             occupations=np.array([2.0, 2.0]),  # all occupied: no boundary
             homo_lumo_gap_parsed=2.0,
         )
@@ -329,7 +329,7 @@ class TestMolecularOrbitals:
     def test_parsed_frontier_orbitals_not_overwritten(self):
         mo = MolecularOrbitals(
             kind='canonical',
-            energies=np.array([-2.0, -1.0, 0.5, 1.5]),
+            value=np.array([-2.0, -1.0, 0.5, 1.5]),
             occupations=np.array([2.0, 2.0, 0.0, 0.0]),
             homo_parsed=-0.9,
             lumo_parsed=0.4,

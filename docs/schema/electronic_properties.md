@@ -83,7 +83,7 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `n_mo` | m_int_bounded(int) | Number of molecular orbitals. |
-| `energies` | m_float64(float64) (shape: ['n_mo']) | Orbital energies for each molecular orbital. Defined only for `kind=canonical`, may be absent for natural/localized. |
+| `value` | m_float64(float64) (shape: ['n_mo']) | Orbital energies (eigenvalues) for each molecular orbital, mirroring `ElectronicEigenvalues.value`. Defined only for `kind=canonical`; may be absent for natural/localized orbitals. |
 | `occupations` | m_float64(float64) (shape: ['n_mo']) | Occupation number for each molecular orbital. |
 | `spin_channel` | m_int32(int32) | Spin channel of the molecular orbitals: 0 for α-spin, 1 for β-spin. |
 | `n_ao` | m_int_bounded(int) | Number of atomic orbitals (size of the AO basis). |
@@ -96,8 +96,8 @@ classDiagram
 | `homo_parsed` | m_float64(float64) | Highest occupied molecular orbital (HOMO) energy as reported by the code. |
 | `lumo_parsed` | m_float64(float64) | Lowest unoccupied molecular orbital (LUMO) energy as reported by the code. |
 | `homo_lumo_gap_parsed` | m_float64(float64) | HOMO-LUMO gap as reported by the code. |
-| `homo` | m_float64(float64) | <details><summary>Standardized highest occupied molecular orbital (HOMO) energy.</summary>Standardized highest occupied molecular orbital (HOMO) energy. Derived from<br>`energies` and `occupations` for `kind=canonical`; falls back to `homo_parsed`<br>when the occupied/unoccupied boundary cannot be resolved. Not overwritten if<br>already set.</details> |
-| `lumo` | m_float64(float64) | Standardized lowest unoccupied molecular orbital (LUMO) energy. Derived from `energies` and `occupations` for `kind=canonical`; falls back to `lumo_parsed` otherwise. Not overwritten if already set. |
+| `homo` | m_float64(float64) | <details><summary>Standardized highest occupied molecular orbital (HOMO) energy.</summary>Standardized highest occupied molecular orbital (HOMO) energy. Derived from<br>`value` and `occupations` for `kind=canonical`; falls back to `homo_parsed`<br>when the occupied/unoccupied boundary cannot be resolved. Not overwritten if<br>already set.</details> |
+| `lumo` | m_float64(float64) | Standardized lowest unoccupied molecular orbital (LUMO) energy. Derived from `value` and `occupations` for `kind=canonical`; falls back to `lumo_parsed` otherwise. Not overwritten if already set. |
 | `homo_lumo_gap` | m_float64(float64) | <details><summary>Standardized HOMO-LUMO gap, taken as `lumo - homo` of the standardized</summary>Standardized HOMO-LUMO gap, taken as `lumo - homo` of the standardized<br>HOMO/LUMO pair so it stays consistent with them; falls back to<br>`homo_lumo_gap_parsed` when that pair is unavailable. Not overwritten if<br>already set.</details> |
 
 ### `ElectronicBandGap`

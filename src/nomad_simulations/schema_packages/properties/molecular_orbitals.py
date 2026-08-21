@@ -24,11 +24,10 @@ class MolecularOrbitals(PhysicalProperty):
 
     `spin_channel` selects the representation: set (0=alpha, 1=beta) gives spin
     orbitals with occupations in [0,1]; unset gives spin-summed spatial orbitals
-    with occupations in [0,2]. `coefficients`, `energies`, `occupations`, `role`,
-    `symmetry` describe the same `n_mo` orbitals. `energies` defined only for
-    `kind=canonical`. `n_mo` is at most `n_ao`.
-
-    PhysicalProperty.value is intentionally unused here; pending refactor to a shared base class.
+    with occupations in [0,2]. `coefficients`, `value`, `occupations`, `role`,
+    `symmetry` describe the same `n_mo` orbitals. `value` holds the orbital
+    energies (eigenvalues), defined only for `kind=canonical`. `n_mo` is at most
+    `n_ao`.
     """
 
     n_mo = Quantity(
@@ -36,13 +35,14 @@ class MolecularOrbitals(PhysicalProperty):
         description="""Number of molecular orbitals.""",
     )
 
-    energies = Quantity(
+    value = Quantity(
         type=np.float64,
         unit='joule',
         shape=['n_mo'],
         description="""
-        Orbital energies for each molecular orbital.
-        Defined only for `kind=canonical`, may be absent for natural/localized.
+        Orbital energies (eigenvalues) for each molecular orbital, mirroring
+        `ElectronicEigenvalues.value`. Defined only for `kind=canonical`; may be
+        absent for natural/localized orbitals.
         """,
     )
 
@@ -167,14 +167,14 @@ class MolecularOrbitals(PhysicalProperty):
     )
 
     # Standardized frontier-orbital energies (canonical orbitals only). Derived
-    # from `energies` and `occupations` during normalization; fall back to the
-    # parsed counterparts when the occupied/unoccupied boundary cannot be resolved.
+    # from `value` and `occupations` during normalization; fall back to the parsed
+    # counterparts when the occupied/unoccupied boundary cannot be resolved.
     homo = Quantity(
         type=np.float64,
         unit='joule',
         description="""
         Standardized highest occupied molecular orbital (HOMO) energy. Derived from
-        `energies` and `occupations` for `kind=canonical`; falls back to `homo_parsed`
+        `value` and `occupations` for `kind=canonical`; falls back to `homo_parsed`
         when the occupied/unoccupied boundary cannot be resolved. Not overwritten if
         already set.
         """,
@@ -185,7 +185,7 @@ class MolecularOrbitals(PhysicalProperty):
         unit='joule',
         description="""
         Standardized lowest unoccupied molecular orbital (LUMO) energy. Derived from
-        `energies` and `occupations` for `kind=canonical`; falls back to `lumo_parsed`
+        `value` and `occupations` for `kind=canonical`; falls back to `lumo_parsed`
         otherwise. Not overwritten if already set.
         """,
     )
@@ -220,7 +220,7 @@ class MolecularOrbitals(PhysicalProperty):
                     self.occupations,
                     self.role,
                     self.symmetry,
-                    self.energies,
+                    self.value,
                 ):
                     if values is not None:
                         self.n_mo = len(values)
@@ -289,31 +289,31 @@ class MolecularOrbitals(PhysicalProperty):
         self,
     ) -> tuple[pint.Quantity | None, pint.Quantity | None]:
         # Frontier orbitals are well defined only for canonical orbitals with both
-        # energies and occupations present and consistent in length. `kind` must be
-        # explicitly `canonical`: an unset `kind` is not assumed canonical, so a
-        # non-canonical set is never silently mis-resolved into HOMO/LUMO.
+        # value (energies) and occupations present and consistent in length. `kind`
+        # must be explicitly `canonical`: an unset `kind` is not assumed canonical, so
+        # a non-canonical set is never silently mis-resolved into HOMO/LUMO.
         if self.kind != 'canonical':
             return None, None
-        if self.energies is None or self.occupations is None:
+        if self.value is None or self.occupations is None:
             return None, None
         occupations = np.asarray(self.occupations)
-        if len(occupations) != len(self.energies):
+        if len(occupations) != len(self.value):
             return None, None
         occupied = occupations > _OCCUPATION_TOL
         # Need at least one occupied and one unoccupied orbital to define a boundary.
         if not occupied.any() or occupied.all():
             return None, None
-        return self.energies[occupied].max(), self.energies[~occupied].min()
+        return self.value[occupied].max(), self.value[~occupied].min()
 
     def _validate_per_orbital_lengths(self, logger: 'BoundLogger') -> None:
         if self.n_mo is None:
             return
-        for values in (self.energies, self.occupations, self.role, self.symmetry):
+        for values in (self.value, self.occupations, self.role, self.symmetry):
             if values is None:
                 continue
             if len(values) != self.n_mo:
                 logger.error(
-                    'Length of a per-orbital quantity does not match `n_mo`; all of `energies`, `occupations`, `role`, and `symmetry` must have exactly `n_mo` entries.'
+                    'Length of a per-orbital quantity does not match `n_mo`; all of `value`, `occupations`, `role`, and `symmetry` must have exactly `n_mo` entries.'
                 )
 
     def _validate_coefficient_shape(
