@@ -213,16 +213,17 @@ class MolecularOrbitals(PhysicalProperty):
         if self.occupations is not None:
             occ = np.asarray(self.occupations)
             upper = 1.0 if self.spin_channel is not None else 2.0
-            if np.nanmin(occ) < -_OCCUPATION_TOL:
-                logger.error(
-                    'Occupations must be non-negative, but negative values were found.'
-                )
-            if np.nanmax(occ) > upper + _OCCUPATION_TOL:
-                logger.error(
-                    '`occupations` exceed the maximum allowed value for this spin representation.'
-                    ' For spin orbitals (`spin_channel` set) the maximum is 1;'
-                    ' for spin-summed spatial orbitals it is 2.'
-                )
+            if occ.size:
+                if np.nanmin(occ) < -_OCCUPATION_TOL:
+                    logger.error(
+                        'Occupations must be non-negative, but negative values were found.'
+                    )
+                if np.nanmax(occ) > upper + _OCCUPATION_TOL:
+                    logger.error(
+                        '`occupations` exceed the maximum allowed value for this spin representation.'
+                        ' For spin orbitals (`spin_channel` set) the maximum is 1;'
+                        ' for spin-summed spatial orbitals it is 2.'
+                    )
 
         if self.n_mo is not None and self.n_ao is not None and self.n_mo > self.n_ao:
             logger.error(
