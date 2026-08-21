@@ -66,6 +66,7 @@ nav:
         - Documentation Writing Guide: contributor_guides/documentation_writing_guide.md
         - Documentation Automation Guide: contributor_guides/documentation_automation_guide.md
       - Populating Simulation and Program: schema_development/simulation_entry_population.md
+      - Property value and Variables: schema_development/value_and_variables.md
       - ModelMethod vs NumericalSettings: schema_development/model_method_vs_numerical_settings.md
       - Bounded Data Types: schema_development/data_types.md
       - Normalization: schema_development/normalize.md

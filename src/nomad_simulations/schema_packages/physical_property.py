@@ -24,6 +24,15 @@ class PhysicalProperty(PlotSection):
       possible subsections), enabling representation of properties that are composed of multiple
       parts or sources.
     - Inherits from `PlotSection`, enabling direct integration with plotting and visualization tools.
+
+    `value` holds the dependent quantity that the property represents, in its natural unit:
+    the energy for a `TotalEnergy`, the force for `Forces`, the eigenvalues for
+    `ElectronicEigenvalues`. The independent variables the property varies over are not stored
+    in `value`; they are modeled as `Variables` subsections (`Energy`, `Frequency`, `KMesh`,
+    `Temperature`, ...), whose discretized `points` set the `shape` of `value`. A given physical
+    dimension can play either role depending on the property: an energy is an independent axis
+    for an `ElectronicDensityOfStates` (a prescribed grid, hence a `Variables` subsection) but a
+    dependent result for `ElectronicEigenvalues` (a computed eigenvalue, hence `value`).
     """
 
     name = Quantity(
