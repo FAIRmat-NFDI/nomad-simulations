@@ -27,8 +27,10 @@ class PhysicalProperty(PlotSection):
 
     `value` holds the dependent quantity that the property represents, in its natural unit:
     the energy for a `TotalEnergy`, the force for `Forces`, the eigenvalues for
-    `ElectronicEigenvalues`. The independent variables the property varies over are not stored
-    in `value`; they are modeled as `Variables` subsections (`Energy`, `Frequency`, `KMesh`,
+    `ElectronicEigenvalues`. The base leaves `value` abstract; each concrete property overrides
+    it with a `Quantity` whose type, unit, and shape are specific to that property, so its
+    definition co-varies with the class. The independent variables the property varies over are
+    not stored in `value`; they are modeled as `Variables` subsections (`Energy`, `Frequency`, `KMesh`,
     `Temperature`, ...), whose discretized `points` set the `shape` of `value`. A given physical
     dimension can play either role depending on the property: an energy is an independent axis
     for an `ElectronicDensityOfStates` (a prescribed grid, hence a `Variables` subsection) but a
