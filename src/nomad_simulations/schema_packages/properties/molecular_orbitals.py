@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from structlog.stdlib import BoundLogger
 
 import numpy as np
+import pint
 from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Wrapper
 from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 
@@ -137,14 +138,45 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
-    # Derived frontier-orbital quantities (canonical orbitals only)
+    # Frontier-orbital energies as reported by the code (provenance-preserving).
+    # Set by parsers; never overwritten during normalization. The standardized
+    # counterparts below are derived from the orbital data where possible and fall
+    # back to these parsed values otherwise.
+    homo_parsed = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Highest occupied molecular orbital (HOMO) energy as reported by the code.
+        """,
+    )
+
+    lumo_parsed = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Lowest unoccupied molecular orbital (LUMO) energy as reported by the code.
+        """,
+    )
+
+    homo_lumo_gap_parsed = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        HOMO-LUMO gap as reported by the code.
+        """,
+    )
+
+    # Standardized frontier-orbital energies (canonical orbitals only). Derived
+    # from `energies` and `occupations` during normalization; fall back to the
+    # parsed counterparts when the occupied/unoccupied boundary cannot be resolved.
     homo = Quantity(
         type=np.float64,
         unit='joule',
         description="""
-        Highest occupied molecular orbital (HOMO) energy. Resolved from `energies`
-        and `occupations` for `kind=canonical`; left unset for other kinds or when
-        the set has no occupied/unoccupied boundary. Not overwritten if already set.
+        Standardized highest occupied molecular orbital (HOMO) energy. Derived from
+        `energies` and `occupations` for `kind=canonical`; falls back to `homo_parsed`
+        when the occupied/unoccupied boundary cannot be resolved. Not overwritten if
+        already set.
         """,
     )
 
@@ -152,9 +184,9 @@ class MolecularOrbitals(PhysicalProperty):
         type=np.float64,
         unit='joule',
         description="""
-        Lowest unoccupied molecular orbital (LUMO) energy. Resolved from `energies`
-        and `occupations` for `kind=canonical`; left unset otherwise. Not overwritten
-        if already set.
+        Standardized lowest unoccupied molecular orbital (LUMO) energy. Derived from
+        `energies` and `occupations` for `kind=canonical`; falls back to `lumo_parsed`
+        otherwise. Not overwritten if already set.
         """,
     )
 
@@ -162,8 +194,10 @@ class MolecularOrbitals(PhysicalProperty):
         type=np.float64,
         unit='joule',
         description="""
-        HOMO-LUMO gap, defined as `lumo - homo`. Resolved for `kind=canonical` when
-        both HOMO and LUMO are available. Not overwritten if already set.
+        Standardized HOMO-LUMO gap, taken as `lumo - homo` of the standardized
+        HOMO/LUMO pair so it stays consistent with them; falls back to
+        `homo_lumo_gap_parsed` when that pair is unavailable. Not overwritten if
+        already set.
         """,
     )
 
@@ -233,27 +267,42 @@ class MolecularOrbitals(PhysicalProperty):
         self._resolve_homo_lumo()
 
     def _resolve_homo_lumo(self) -> None:
-        # Frontier orbitals are well defined only for canonical orbitals with
-        # both energies and occupations present and consistent in length.
-        if self.kind not in (None, 'canonical'):
-            return
-        if self.energies is None or self.occupations is None:
-            return
-        occupations = np.asarray(self.occupations)
-        if len(occupations) != len(self.energies):
-            return
-        occupied = occupations > _OCCUPATION_TOL
-        # Need at least one occupied and one unoccupied orbital to define a boundary.
-        if not occupied.any() or occupied.all():
-            return
-        homo = self.energies[occupied].max()
-        lumo = self.energies[~occupied].min()
+        # Standardized frontier orbitals: prefer values derived from the orbital
+        # data, fall back to the parsed values, and keep the gap consistent with
+        # whichever HOMO/LUMO pair is finally stored.
+        homo, lumo = self._derive_frontier_orbitals()
+        if homo is None:
+            homo = self.homo_parsed
+        if lumo is None:
+            lumo = self.lumo_parsed
         if self.homo is None:
             self.homo = homo
         if self.lumo is None:
             self.lumo = lumo
         if self.homo_lumo_gap is None:
-            self.homo_lumo_gap = lumo - homo
+            if self.homo is not None and self.lumo is not None:
+                self.homo_lumo_gap = self.lumo - self.homo
+            else:
+                self.homo_lumo_gap = self.homo_lumo_gap_parsed
+
+    def _derive_frontier_orbitals(
+        self,
+    ) -> tuple[pint.Quantity | None, pint.Quantity | None]:
+        # Frontier orbitals are well defined only for canonical orbitals with both
+        # energies and occupations present and consistent in length. An unset `kind`
+        # is treated as canonical, since `energies` is only meaningful there.
+        if self.kind not in (None, 'canonical'):
+            return None, None
+        if self.energies is None or self.occupations is None:
+            return None, None
+        occupations = np.asarray(self.occupations)
+        if len(occupations) != len(self.energies):
+            return None, None
+        occupied = occupations > _OCCUPATION_TOL
+        # Need at least one occupied and one unoccupied orbital to define a boundary.
+        if not occupied.any() or occupied.all():
+            return None, None
+        return self.energies[occupied].max(), self.energies[~occupied].min()
 
     def _validate_per_orbital_lengths(self, logger: 'BoundLogger') -> None:
         if self.n_mo is None:
