@@ -158,11 +158,16 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
+    # TODO(#467): the parsed-vs-derived provenance of the gap is better expressed
+    # via `is_derived` on a dedicated `ElectronicBandGap` PhysicalProperty than via
+    # a strictly-parsed quantity here.
     homo_lumo_gap_parsed = Quantity(
         type=np.float64,
         unit='joule',
         description="""
-        HOMO-LUMO gap as reported by the code.
+        HOMO-LUMO gap as directly reported by the code. Strictly a parsed value: it is
+        not derived from `homo_parsed`/`lumo_parsed` (that computation lives on the
+        resolved `homo_lumo_gap`). Leave unset if the code reports no gap directly.
         """,
     )
 
