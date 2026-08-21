@@ -139,9 +139,9 @@ class MolecularOrbitals(PhysicalProperty):
     )
 
     # Frontier-orbital energies as reported by the code (provenance-preserving).
-    # Set by parsers; never overwritten during normalization. The standardized
-    # counterparts below are derived from the orbital data where possible and fall
-    # back to these parsed values otherwise.
+    # Set by parsers and never touched during normalization. The `_normalized`
+    # counterparts below are derived independently from the orbital data; they do
+    # not fall back to these parsed values.
     homo_parsed = Quantity(
         type=np.float64,
         unit='joule',
@@ -167,42 +167,42 @@ class MolecularOrbitals(PhysicalProperty):
         description="""
         HOMO-LUMO gap as directly reported by the code. Strictly a parsed value: it is
         not derived from `homo_parsed`/`lumo_parsed` (that computation lives on the
-        resolved `homo_lumo_gap`). Leave unset if the code reports no gap directly.
+        derived `homo_lumo_gap_normalized`). Leave unset if the code reports no gap
+        directly.
         """,
     )
 
-    # Standardized frontier-orbital energies (canonical orbitals only). Derived
-    # from `value` and `occupations` during normalization; fall back to the parsed
-    # counterparts when the occupied/unoccupied boundary cannot be resolved.
-    homo = Quantity(
+    # Derived frontier-orbital energies (canonical orbitals only). Resolved purely
+    # from `value` and `occupations` during normalization; left unset when the
+    # occupied/unoccupied boundary cannot be resolved, with no fallback to the
+    # parsed counterparts.
+    homo_normalized = Quantity(
         type=np.float64,
         unit='joule',
         description="""
-        Standardized highest occupied molecular orbital (HOMO) energy. Derived from
-        `value` and `occupations` for `kind=canonical`; falls back to `homo_parsed`
-        when the occupied/unoccupied boundary cannot be resolved. Not overwritten if
-        already set.
+        Highest occupied molecular orbital (HOMO) energy, derived purely from `value`
+        and `occupations` for `kind=canonical`. Left unset when the occupied/unoccupied
+        boundary cannot be resolved; does not fall back to `homo_parsed`.
         """,
     )
 
-    lumo = Quantity(
+    lumo_normalized = Quantity(
         type=np.float64,
         unit='joule',
         description="""
-        Standardized lowest unoccupied molecular orbital (LUMO) energy. Derived from
-        `value` and `occupations` for `kind=canonical`; falls back to `lumo_parsed`
-        otherwise. Not overwritten if already set.
+        Lowest unoccupied molecular orbital (LUMO) energy, derived purely from `value`
+        and `occupations` for `kind=canonical`. Left unset when the occupied/unoccupied
+        boundary cannot be resolved; does not fall back to `lumo_parsed`.
         """,
     )
 
-    homo_lumo_gap = Quantity(
+    homo_lumo_gap_normalized = Quantity(
         type=np.float64,
         unit='joule',
         description="""
-        Standardized HOMO-LUMO gap, taken as `lumo - homo` of the standardized
-        HOMO/LUMO pair so it stays consistent with them; falls back to
-        `homo_lumo_gap_parsed` when that pair is unavailable. Not overwritten if
-        already set.
+        HOMO-LUMO gap of the derived frontier pair, taken as
+        `lumo_normalized - homo_normalized`. Left unset when that pair is unavailable;
+        does not fall back to `homo_lumo_gap_parsed`.
         """,
     )
 
@@ -272,23 +272,16 @@ class MolecularOrbitals(PhysicalProperty):
         self._resolve_homo_lumo()
 
     def _resolve_homo_lumo(self) -> None:
-        # Standardized frontier orbitals: prefer values derived from the orbital
-        # data, fall back to the parsed values, and keep the gap consistent with
-        # whichever HOMO/LUMO pair is finally stored.
+        # Frontier orbitals are derived purely from `value` and `occupations`; they
+        # never fall back to the parsed values. The gap follows from the derived pair
+        # and is therefore always consistent with it.
         homo, lumo = self._derive_frontier_orbitals()
-        if homo is None:
-            homo = self.homo_parsed
-        if lumo is None:
-            lumo = self.lumo_parsed
-        if self.homo is None:
-            self.homo = homo
-        if self.lumo is None:
-            self.lumo = lumo
-        if self.homo_lumo_gap is None:
-            if self.homo is not None and self.lumo is not None:
-                self.homo_lumo_gap = self.lumo - self.homo
-            else:
-                self.homo_lumo_gap = self.homo_lumo_gap_parsed
+        if homo is not None:
+            self.homo_normalized = homo
+        if lumo is not None:
+            self.lumo_normalized = lumo
+        if homo is not None and lumo is not None:
+            self.homo_lumo_gap_normalized = lumo - homo
 
     def _derive_frontier_orbitals(
         self,

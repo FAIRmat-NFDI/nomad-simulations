@@ -254,7 +254,7 @@ class TestMolecularOrbitals:
         assert mo.n_mo == 3
         assert mo.n_ao == 4
 
-    # Frontier-orbital resolution: parsed vs standardized
+    # Frontier-orbital resolution: parsed vs normalized (derived)
     def test_frontier_orbitals_derived_from_data(self):
         mo = MolecularOrbitals(
             kind='canonical',
@@ -263,9 +263,13 @@ class TestMolecularOrbitals:
         )
         mo.normalize(archive=EntryArchive(), logger=logger)
 
-        assert mo.homo.magnitude == pytest.approx(-1.0)
-        assert mo.lumo.magnitude == pytest.approx(0.5)
-        assert mo.homo_lumo_gap.magnitude == pytest.approx(1.5)
+        assert mo.homo_normalized.magnitude == pytest.approx(-1.0)
+        assert mo.lumo_normalized.magnitude == pytest.approx(0.5)
+        assert mo.homo_lumo_gap_normalized.magnitude == pytest.approx(1.5)
+        # the gap is always the derived pair, so it stays consistent with them
+        assert mo.homo_lumo_gap_normalized.magnitude == pytest.approx(
+            (mo.lumo_normalized - mo.homo_normalized).magnitude
+        )
 
     def test_no_derivation_without_canonical_kind(self):
         """An unset `kind` is not assumed canonical, so nothing is derived."""
@@ -275,30 +279,13 @@ class TestMolecularOrbitals:
         )
         mo.normalize(archive=EntryArchive(), logger=logger)
 
-        assert mo.homo is None
-        assert mo.lumo is None
-        assert mo.homo_lumo_gap is None
+        assert mo.homo_normalized is None
+        assert mo.lumo_normalized is None
+        assert mo.homo_lumo_gap_normalized is None
 
-    def test_gap_consistent_with_preset_lumo(self):
-        """The gap derives from the stored HOMO/LUMO pair, not recomputed locals.
-
-        Regression: a pre-set `lumo` must not yield a gap computed from the
-        data-derived lumo while the stored lumo differs.
-        """
-        mo = MolecularOrbitals(
-            kind='canonical',
-            value=np.array([-2.0, -1.0, 0.5, 1.5]),
-            occupations=np.array([2.0, 2.0, 0.0, 0.0]),
-            lumo=3.0,
-        )
-        mo.normalize(archive=EntryArchive(), logger=logger)
-
-        assert mo.homo.magnitude == pytest.approx(-1.0)  # derived
-        assert mo.lumo.magnitude == pytest.approx(3.0)  # preserved
-        assert mo.homo_lumo_gap.magnitude == pytest.approx(4.0)  # 3.0 - (-1.0)
-
-    def test_frontier_pair_falls_back_to_parsed(self):
-        """Without an occupied/unoccupied boundary, HOMO/LUMO use the parsed values."""
+    def test_frontier_pair_not_derived_without_boundary(self):
+        """Without an occupied/unoccupied boundary, nothing is derived; the derived
+        fields stay unset and do not fall back to the parsed values."""
         mo = MolecularOrbitals(
             kind='canonical',
             value=np.array([-2.0, -1.0]),
@@ -308,12 +295,16 @@ class TestMolecularOrbitals:
         )
         mo.normalize(archive=EntryArchive(), logger=logger)
 
-        assert mo.homo.magnitude == pytest.approx(-1.0)
-        assert mo.lumo.magnitude == pytest.approx(0.5)
-        assert mo.homo_lumo_gap.magnitude == pytest.approx(1.5)
+        assert mo.homo_normalized is None
+        assert mo.lumo_normalized is None
+        assert mo.homo_lumo_gap_normalized is None
+        # parsed provenance is untouched
+        assert mo.homo_parsed.magnitude == pytest.approx(-1.0)
+        assert mo.lumo_parsed.magnitude == pytest.approx(0.5)
 
-    def test_gap_falls_back_to_parsed_when_pair_unavailable(self):
-        """With neither a derivable nor a parsed pair, the gap uses the parsed gap."""
+    def test_gap_not_derived_without_pair(self):
+        """The derived gap stays unset when the pair is unavailable; it does not fall
+        back to the parsed gap."""
         mo = MolecularOrbitals(
             kind='canonical',
             value=np.array([-2.0, -1.0]),
@@ -322,9 +313,8 @@ class TestMolecularOrbitals:
         )
         mo.normalize(archive=EntryArchive(), logger=logger)
 
-        assert mo.homo is None
-        assert mo.lumo is None
-        assert mo.homo_lumo_gap.magnitude == pytest.approx(2.0)
+        assert mo.homo_lumo_gap_normalized is None
+        assert mo.homo_lumo_gap_parsed.magnitude == pytest.approx(2.0)
 
     def test_parsed_frontier_orbitals_not_overwritten(self):
         mo = MolecularOrbitals(
@@ -338,5 +328,5 @@ class TestMolecularOrbitals:
 
         assert mo.homo_parsed.magnitude == pytest.approx(-0.9)
         assert mo.lumo_parsed.magnitude == pytest.approx(0.4)
-        assert mo.homo.magnitude == pytest.approx(-1.0)
-        assert mo.lumo.magnitude == pytest.approx(0.5)
+        assert mo.homo_normalized.magnitude == pytest.approx(-1.0)
+        assert mo.lumo_normalized.magnitude == pytest.approx(0.5)
