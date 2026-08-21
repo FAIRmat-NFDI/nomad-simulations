@@ -257,6 +257,7 @@ class TestMolecularOrbitals:
     # Frontier-orbital resolution: parsed vs standardized
     def test_frontier_orbitals_derived_from_data(self):
         mo = MolecularOrbitals(
+            kind='canonical',
             energies=np.array([-2.0, -1.0, 0.5, 1.5]),
             occupations=np.array([2.0, 2.0, 0.0, 0.0]),
         )
@@ -266,6 +267,18 @@ class TestMolecularOrbitals:
         assert mo.lumo.magnitude == pytest.approx(0.5)
         assert mo.homo_lumo_gap.magnitude == pytest.approx(1.5)
 
+    def test_no_derivation_without_canonical_kind(self):
+        """An unset `kind` is not assumed canonical, so nothing is derived."""
+        mo = MolecularOrbitals(
+            energies=np.array([-2.0, -1.0, 0.5, 1.5]),
+            occupations=np.array([2.0, 2.0, 0.0, 0.0]),
+        )
+        mo.normalize(archive=EntryArchive(), logger=logger)
+
+        assert mo.homo is None
+        assert mo.lumo is None
+        assert mo.homo_lumo_gap is None
+
     def test_gap_consistent_with_preset_lumo(self):
         """The gap derives from the stored HOMO/LUMO pair, not recomputed locals.
 
@@ -273,6 +286,7 @@ class TestMolecularOrbitals:
         data-derived lumo while the stored lumo differs.
         """
         mo = MolecularOrbitals(
+            kind='canonical',
             energies=np.array([-2.0, -1.0, 0.5, 1.5]),
             occupations=np.array([2.0, 2.0, 0.0, 0.0]),
             lumo=3.0,
@@ -286,6 +300,7 @@ class TestMolecularOrbitals:
     def test_frontier_pair_falls_back_to_parsed(self):
         """Without an occupied/unoccupied boundary, HOMO/LUMO use the parsed values."""
         mo = MolecularOrbitals(
+            kind='canonical',
             energies=np.array([-2.0, -1.0]),
             occupations=np.array([2.0, 2.0]),  # all occupied: no boundary
             homo_parsed=-1.0,
@@ -300,6 +315,7 @@ class TestMolecularOrbitals:
     def test_gap_falls_back_to_parsed_when_pair_unavailable(self):
         """With neither a derivable nor a parsed pair, the gap uses the parsed gap."""
         mo = MolecularOrbitals(
+            kind='canonical',
             energies=np.array([-2.0, -1.0]),
             occupations=np.array([2.0, 2.0]),  # all occupied: no boundary
             homo_lumo_gap_parsed=2.0,
@@ -312,6 +328,7 @@ class TestMolecularOrbitals:
 
     def test_parsed_frontier_orbitals_not_overwritten(self):
         mo = MolecularOrbitals(
+            kind='canonical',
             energies=np.array([-2.0, -1.0, 0.5, 1.5]),
             occupations=np.array([2.0, 2.0, 0.0, 0.0]),
             homo_parsed=-0.9,

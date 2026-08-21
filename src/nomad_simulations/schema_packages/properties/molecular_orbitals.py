@@ -289,9 +289,10 @@ class MolecularOrbitals(PhysicalProperty):
         self,
     ) -> tuple[pint.Quantity | None, pint.Quantity | None]:
         # Frontier orbitals are well defined only for canonical orbitals with both
-        # energies and occupations present and consistent in length. An unset `kind`
-        # is treated as canonical, since `energies` is only meaningful there.
-        if self.kind not in (None, 'canonical'):
+        # energies and occupations present and consistent in length. `kind` must be
+        # explicitly `canonical`: an unset `kind` is not assumed canonical, so a
+        # non-canonical set is never silently mis-resolved into HOMO/LUMO.
+        if self.kind != 'canonical':
             return None, None
         if self.energies is None or self.occupations is None:
             return None, None
