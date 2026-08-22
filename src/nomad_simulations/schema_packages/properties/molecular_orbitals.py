@@ -12,9 +12,10 @@ from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 from nomad_simulations.schema_packages.data_types import strictly_positive_int
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
-# Tolerance on occupation numbers: an orbital with occupation below this
-# threshold is treated as unoccupied when resolving frontier (HOMO/LUMO)
-# orbitals, and it is the slack allowed when validating occupation bounds.
+# Tolerance on occupation numbers, used in two places: an orbital with occupation
+# below this threshold counts as unoccupied when resolving frontier (HOMO/LUMO)
+# orbitals; and it is the margin by which occupations may fall outside [0, max]
+# (floating-point noise) before normalization flags them as invalid.
 _OCCUPATION_TOL = 1e-6
 
 
@@ -165,10 +166,9 @@ class MolecularOrbitals(PhysicalProperty):
         type=np.float64,
         unit='joule',
         description="""
-        HOMO-LUMO gap as directly reported by the code. Strictly a parsed value: it is
-        not derived from `homo_parsed`/`lumo_parsed` (that computation lives on the
-        derived `homo_lumo_gap_normalized`). Leave unset if the code reports no gap
-        directly.
+        HOMO-LUMO gap as directly reported by the code. Strictly a parsed value, not
+        derived from `homo_parsed`/`lumo_parsed`. Leave unset if the code reports no
+        gap directly.
         """,
     )
 
