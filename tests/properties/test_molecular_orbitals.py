@@ -186,49 +186,34 @@ class TestMolecularOrbitals:
     def test_value_unit_is_joule(self):
         assert str(MolecularOrbitals.value.unit) == 'joule'
 
-    # T1 normalize: occupation validation — spatial (spin-summed) orbitals
-    def test_spatial_occupations_pass(self):
-        rec = RecordingLogger()
-        mo = MolecularOrbitals(occupations=np.array([2.0, 2.0, 0.0, 0.0]))
-        mo.normalize(archive=EntryArchive(), logger=rec)
+    # Occupation bounds are enforced by the `occupations` interval datatype
+    # (interval [0, 2] widened by a small slack); out-of-interval values raise.
+    @pytest.mark.parametrize(
+        'spin_channel, occ',
+        [
+            (None, [2.0, 2.0, 0.0, 0.0]),  # spin-summed, within [0, 2]
+            (0, [1.0, 1.0, 0.0]),  # spin orbitals, within [0, 2]
+            (None, [2.0 + 5e-7, -5e-7, 1.0]),  # small float noise within the slack
+        ],
+    )
+    def test_valid_occupations_accepted(self, spin_channel, occ):
+        mo = MolecularOrbitals(spin_channel=spin_channel, occupations=np.array(occ))
+        assert mo.occupations is not None
 
-        assert not rec.errors
-
-    def test_spatial_occupation_exceeds_two_errors(self):
-        rec = RecordingLogger()
-        mo = MolecularOrbitals(occupations=np.array([2.5, 1.0]))
-        mo.normalize(archive=EntryArchive(), logger=rec)
-
-        assert any(
-            '`occupations` exceed the maximum allowed value' in e for e in rec.errors
-        )
-
-    # T1 normalize: occupation validation — spin orbitals
-    def test_spin_channel_occupations_pass(self):
-        rec = RecordingLogger()
-        mo = MolecularOrbitals(spin_channel=0, occupations=np.array([1.0, 1.0, 0.0]))
-        mo.normalize(archive=EntryArchive(), logger=rec)
-
-        assert not any('occupations exceed' in e for e in rec.errors)
-
-    def test_spin_channel_occupation_exceeds_one_errors(self):
-        rec = RecordingLogger()
-        mo = MolecularOrbitals(spin_channel=0, occupations=np.array([1.5, 0.0]))
-        mo.normalize(archive=EntryArchive(), logger=rec)
-
-        assert any(
-            '`occupations` exceed the maximum allowed value' in e for e in rec.errors
-        )
-
-    def test_negative_occupation_errors(self):
-        rec = RecordingLogger()
-        mo = MolecularOrbitals(occupations=np.array([-0.5, 1.0]))
-        mo.normalize(archive=EntryArchive(), logger=rec)
-
-        assert (
-            'Occupations must be non-negative, but negative values were found.'
-            in rec.errors
-        )
+    @pytest.mark.parametrize(
+        'occ',
+        [
+            [2.5, 1.0],  # above the spin-summed maximum
+            [-0.5, 1.0],  # negative
+            [2.0 + 2e-6, 0.0],  # just beyond the upper slack
+        ],
+    )
+    def test_out_of_interval_occupations_raise(self, occ):
+        # NOTE(#468): the spin-resolved maximum (1 for spin orbitals) and a soft-log
+        # failure mode are deferred, so a spin-orbital occupation between 1 and 2 is
+        # currently accepted rather than flagged.
+        with pytest.raises(ValueError):
+            MolecularOrbitals(occupations=np.array(occ))
 
     # T1 normalize: spin_channel validation
     def test_spin_channel_invalid_value_errors(self):

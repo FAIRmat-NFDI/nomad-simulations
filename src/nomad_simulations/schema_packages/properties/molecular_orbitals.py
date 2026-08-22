@@ -9,13 +9,17 @@ import pint
 from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Wrapper
 from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
 
-from nomad_simulations.schema_packages.data_types import strictly_positive_int
+from nomad_simulations.schema_packages.data_types import (
+    Bound,
+    m_float_bounded,
+    strictly_positive_int,
+)
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 
 # Tolerance on occupation numbers, used in two places: an orbital with occupation
 # below this threshold counts as unoccupied when resolving frontier (HOMO/LUMO)
-# orbitals; and it is the margin by which occupations may fall outside [0, max]
-# (floating-point noise) before normalization flags them as invalid.
+# orbitals; and it widens the accepted interval of the `occupations` datatype so
+# floating-point noise just outside [0, 2] is not rejected.
 _OCCUPATION_TOL = 1e-6
 
 
@@ -47,10 +51,21 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
+    # Interval [0, 2] (spin-summed maximum) widened by `_OCCUPATION_TOL` slack, so
+    # small floating-point noise is accepted while gross violations raise a type
+    # error. The spin-resolved maximum (1 for spin orbitals) and a soft-log failure
+    # mode are deferred to the interval-datatype work (see TODO in `normalize`).
     occupations = Quantity(
-        type=np.float64,
+        type=m_float_bounded(
+            dtype=np.float64,
+            bound=Bound(f'[{-_OCCUPATION_TOL:.7f},{2.0 + _OCCUPATION_TOL:.7f}]'),
+        ),
         shape=['n_mo'],
-        description="""Occupation number for each molecular orbital.""",
+        description="""
+        Occupation number for each molecular orbital. Constrained to the interval
+        [0, 2] (spin-summed maximum) with a small slack for numerical noise; values
+        outside raise a type error.
+        """,
     )
 
     spin_channel = Quantity(
@@ -249,20 +264,11 @@ class MolecularOrbitals(PhysicalProperty):
 
         if self.spin_channel is not None and self.spin_channel not in (0, 1):
             logger.error('`spin_channel` must be 0 (alpha) or 1 (beta) when set.')
-        if self.occupations is not None:
-            occ = np.asarray(self.occupations)
-            upper = 1.0 if self.spin_channel is not None else 2.0
-            if occ.size:
-                if np.nanmin(occ) < -_OCCUPATION_TOL:
-                    logger.error(
-                        'Occupations must be non-negative, but negative values were found.'
-                    )
-                if np.nanmax(occ) > upper + _OCCUPATION_TOL:
-                    logger.error(
-                        '`occupations` exceed the maximum allowed value for this spin representation.'
-                        ' For spin orbitals (`spin_channel` set) the maximum is 1;'
-                        ' for spin-summed spatial orbitals it is 2.'
-                    )
+        # TODO(#468): occupation bounds are now enforced by the `occupations` interval
+        # datatype, which raises a hard type-error on violation. Reapply soft logging
+        # (a `logger.error` instead of raising) and the spin-resolved upper bound
+        # (1 for spin orbitals, 2 for spin-summed) once the interval datatype supports
+        # a configurable log failure mode and per-instance bounds.
 
         if self.n_mo is not None and self.n_ao is not None and self.n_mo > self.n_ao:
             logger.error(

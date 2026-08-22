@@ -84,7 +84,7 @@ classDiagram
 |---|---|---|
 | `n_mo` | m_int_bounded(int) | Number of molecular orbitals. |
 | `value` | m_float64(float64) (shape: ['n_mo']) | Orbital energies (eigenvalues) for each molecular orbital, mirroring `ElectronicEigenvalues.value`. Defined only for `kind=canonical`; may be absent for natural/localized orbitals. |
-| `occupations` | m_float64(float64) (shape: ['n_mo']) | Occupation number for each molecular orbital. |
+| `occupations` | m_float_bounded(float64) (shape: ['n_mo']) | Occupation number for each molecular orbital. Constrained to the interval [0, 2] (spin-summed maximum) with a small slack for numerical noise; values outside raise a type error. |
 | `spin_channel` | m_int32(int32) | Spin channel of the molecular orbitals: 0 for α-spin, 1 for β-spin. |
 | `n_ao` | m_int_bounded(int) | Number of atomic orbitals (size of the AO basis). |
 | `basis_set_ref` | Reference | Reference to the atom-centered basis set used to expand these orbitals. |
