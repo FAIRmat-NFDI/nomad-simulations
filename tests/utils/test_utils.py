@@ -8,8 +8,6 @@ from nomad_simulations.schema_packages.model_system import (
     Symmetry,
 )
 from nomad_simulations.schema_packages.utils import get_sibling_section, log
-from nomad_simulations.schema_packages.variables import Energy2 as Energy
-from nomad_simulations.schema_packages.variables import Temperature
 
 from . import logger
 

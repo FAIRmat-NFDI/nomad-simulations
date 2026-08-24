@@ -6,8 +6,6 @@ from collections import Counter
 from math import factorial
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
-from nomad.config import config
 from nomad.datamodel.data import ArchiveSection
 from nomad.utils import get_logger
 

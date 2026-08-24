@@ -11,7 +11,7 @@ from nomad_simulations.schema_packages.utils import log
 logger = utils.get_logger(__name__)
 
 if TYPE_CHECKING:
-    from nomad.datamodel.metainfo import BoundLogger
+    pass
 
 
 class PhysicalProperty(PlotSection):

@@ -2,6 +2,48 @@
 
 **Purpose:** Base output structure and common property definitions
 
+## Notes
+
+One `Outputs` section holds the calculated properties of a single system
+configuration, identified through `model_system_ref`; on its own it describes a
+single-point calculation. `WorkflowOutputs` extends `Outputs` with a `step`
+index, for when that configuration is one point in an ordered sequence: a
+geometry optimization is then a series of `WorkflowOutputs`, each carrying the
+full `Outputs` content for its configuration and ordered by `step`.
+
+These sections live under `archive.data.outputs`. This is distinct from the
+workflow graph `archive.workflow2`, which only references them through `Link`s
+(`workflow2.outputs`) and summarizes them in `workflow2.results`; it does not
+hold the properties itself.
+
+Within one `Outputs` section, the converged result and the SCF iteration history
+that produced it sit in separate subsections:
+
+- `Outputs.total_energies` (`repeats=True`) holds one or more `TotalEnergy`
+  sections, each the converged total energy of the configuration. Energy
+  components belong inside a `TotalEnergy` through its `contributions`
+  subsections; these need not be exhaustive, so the total is not necessarily
+  their sum. The schema currently defines neither an ordering nor a sequence
+  meaning for the repeated entries.
+- `Outputs.scf_steps` (`repeats=False`) holds a single `SCFSteps` with the
+  self-consistent iteration history for that same configuration.
+  `SCFSteps.energies_total` is the ordered sequence of total energies across SCF
+  iterations, converging to the configuration's total energy in `TotalEnergy`;
+  `SCFSteps.delta_energies_total` holds the differences between consecutive
+  values of that sequence.
+
+Conceptual geometry-optimization layout:
+
+```text
+WorkflowOutputs(step=0)                        # one configuration
+    total_energies -> TotalEnergy              # converged total energy
+    scf_steps      -> SCFSteps.energies_total  # SCF iteration history for it
+
+WorkflowOutputs(step=1)
+    total_energies -> TotalEnergy
+    scf_steps      -> SCFSteps.energies_total
+```
+
 
 ## Relationship map
 
@@ -91,10 +133,15 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `energies_total` | m_float64(float) (shape: ['*']) | Total energy at each SCF step. |
-| `delta_energies_total` | m_float64(float) (shape: ['*']) | Absolute change of total energy at each SCF step. |
+| `energies_total` | m_float64(float) (shape: ['*']) | Ordered sequence of total energies from the SCF iterations within one system configuration. |
+| `delta_energies_total` | m_float64(float) (shape: ['*']) | <details><summary>Absolute change of total energy between consecutive SCF steps.</summary>Absolute change of total energy between consecutive SCF steps. When<br>derived from `energies_total`, the values follow<br>$\Delta E_i = \lvert E_{i+1} - E_i \rvert$, so N SCF energies<br>produce N - 1 energy deltas.</details> |
+| `energy_error_estimate` | m_float64(float) (shape: ['*']) | <details><summary>Estimate of the remaining error in the total energy at each SCF step,</summary>Estimate of the remaining error in the total energy at each SCF step,<br>derived from the density residual rather than from the change of the<br>total energy itself. For example, Quantum ESPRESSO's "estimated scf<br>accuracy" is the Hartree self-energy of the density residual. Distinct<br>from `delta_energies_total`, which is the change of the total energy<br>between consecutive steps.</details> |
 | `delta_potential_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of potential energy at each SCF step. |
-| `delta_density_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of potential energy at each SCF step. |
+| `delta_charge_abs` | m_float64(float) (shape: ['*']) | <details><summary>Volume-integrated absolute change of the electron density between</summary>Volume-integrated absolute change of the electron density between<br>consecutive SCF steps, `integral \|rho_n(r) - rho_(n-1)(r)\| d^3r`,<br>expressed as a charge (equivalently a number of electrons). Reported by<br>all-electron codes such as WIEN2k (`:DIS`). The exact norm and any<br>normalization are a code-reported convention that the schema does not<br>enforce.</details> |
+| `delta_charge_density_rms` | m_float64(float) (shape: ['*']) | <details><summary>Root mean square, over real-space grid points, of the change of the</summary>Root mean square, over real-space grid points, of the change of the<br>electron density between consecutive SCF steps. Unlike `delta_charge_abs`<br>the volume is retained, so this is a charge density. Reported by<br>plane-wave codes such as VASP (`rms(c)`).</details> |
+| `delta_charge_relative` | m_float64(float) (shape: ['*']) | Integrated absolute density change normalized by the electron count, `integral \|rho_n - rho_(n-1)\| d^3r / N`, hence dimensionless. Reported by exciting ("charge distance") and GPAW (per valence electron). |
+| `delta_density_matrix_rms` | m_float64(float) (shape: ['*']) | <details><summary>Root mean square of the change of the density-matrix elements `P_munu`</summary>Root mean square of the change of the density-matrix elements `P_munu`<br>(in the non-orthonormal atomic-orbital basis) between consecutive SCF<br>steps. The elements are dimensionless, so is this residual. Reported by<br>Gaussian-basis codes such as CRYSTAL (`tst`) and ORCA (`RMS-DP`).</details> |
+| `delta_density_matrix_max` | m_float64(float) (shape: ['*']) | <details><summary>Maximum absolute change of the density-matrix elements `P_munu` between</summary>Maximum absolute change of the density-matrix elements `P_munu` between<br>consecutive SCF steps; the max-norm counterpart of<br>`delta_density_matrix_rms`. Reported by Gaussian-basis codes such as<br>CP2K, CRYSTAL (`PX`), and ORCA (`Max-DP`).</details> |
 | `delta_wavefunction_rms` | m_float64(float) (shape: ['*']) | Root mean square of change of wavefunction coefficients at each SCF step. Dimensionless quantity representing convergence of orbital coefficients. |
 | `delta_force_abs` | m_float64(float) (shape: ['*']) | Absolute change of forces at each SCF step. |
 | `durations` | m_float64(float) (shape: ['*']) | Time spent at each SCF step. |

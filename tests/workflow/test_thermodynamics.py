@@ -1,4 +1,3 @@
-from nomad_simulations.schema_packages.workflow.single_point import SinglePoint
 from nomad_simulations.schema_packages.workflow.thermodynamics import (
     Thermodynamics,
     ThermodynamicsMethod,

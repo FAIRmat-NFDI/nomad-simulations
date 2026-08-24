@@ -24,8 +24,6 @@ from nomad_simulations.schema_packages.utils.molecular_dynamics import (
     archive_to_universe,
 )
 
-from . import logger
-
 # ---------------------------------------------------------------------------
 # getattr guard — regression tests for AttributeError: effective_masses
 # ---------------------------------------------------------------------------

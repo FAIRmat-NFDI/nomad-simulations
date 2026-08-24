@@ -6,7 +6,7 @@ import inspect
 import pkgutil
 import sys
 from collections.abc import Iterable
-from typing import Any, Optional, get_args, get_origin
+from typing import Any, get_args, get_origin
 
 from nomad.metainfo import MSection
 

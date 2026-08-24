@@ -1,7 +1,7 @@
-import re
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pint
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import (
     URL,
@@ -12,6 +12,7 @@ from nomad.metainfo import (
     SectionProxy,
     SubSection,
 )
+from nomad.units import ureg
 
 if TYPE_CHECKING:
     from nomad.datamodel.context import Context
@@ -32,7 +33,9 @@ from nomad_simulations.schema_packages.data_types import (
 )
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
+from nomad_simulations.schema_packages.utils import log
 from nomad_simulations.schema_packages.utils.libxc.build import (
+    spec_from_id,
     spec_from_label,
 )
 from nomad_simulations.schema_packages.utils.libxc.expand import (
@@ -124,8 +127,9 @@ class ImplicitSolvationModel(BaseModelMethod):
     References
     ----------
     •  J. Tomasi, B. Mennucci, R. Cammi, *Chem. Rev.* **105**, 2999 (2005) - PCM overview
-    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) - COSMO
-    •  A. V. Marenich *et al.*, *J. Chem. Phys. B* **113**, 6378 (2009) - SMD
+    •  A. Klamt, G. Schüürmann, *J. Chem. Soc., Perkin Trans. 2*, 799 (1993) - COSMO
+    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) - COSMO-RS
+    •  A. V. Marenich *et al.*, *J. Phys. Chem. B* **113**, 6378 (2009) - SMD
     """
 
     model = Quantity(
@@ -245,12 +249,12 @@ class EmpiricalDispersionModel(BaseModelMethod):
 
     References
     ----------
-    • S. Grimme, J. Comp. Chem. 27, 1787 (2006) - DFT-D2
+    • S. Grimme, J. Comput. Chem. 27, 1787 (2006) - DFT-D2
     • S. Grimme et al., J. Chem. Phys. 132, 154104 (2010) - DFT-D3
-    • S. Grimme et al., J. Chem. Phys. 136, 154105 (2012) - DFT-D3(BJ)
+    • S. Grimme, S. Ehrlich, L. Goerigk, J. Comput. Chem. 32, 1456 (2011) - DFT-D3(BJ)
     • A. Tkatchenko, M. Scheffler, Phys. Rev. Lett. 102, 073005 (2009) - TS
     • A. Tkatchenko et al., Phys. Rev. Lett. 108, 236402 (2012) - MBD
-    • C. Steinmann, WIREs Comput. Mol. Sci. 10, e1438 (2020) - overview
+    • S. Grimme, A. Hansen, J. G. Brandenburg, C. Bannwarth, Chem. Rev. 116, 5105 (2016) - overview
     """
 
     model = Quantity(
@@ -386,6 +390,196 @@ class SelfInteractionCorrection(BaseModelMethod):
             )
 
 
+class HubbardInteractions(BaseModelMethod):
+    """
+    Hubbard interaction correction to the total Hamiltonian (e.g. the +U term of DFT+U),
+    defined by on-site interaction parameters acting on the orbitals referenced in
+    `orbitals_ref`. As a Hamiltonian correction term, this section is stored under
+    `ModelMethod.contributions`.
+    """
+
+    # TODO (@JosePizarro3 note): we need to have checks for when a `ModelSystem` is spin rotational invariant (then we only need to pass `u_interaction` and `j_hunds_coupling` and resolve the other quantities)
+
+    # Extend the inherited `name` definition with a term-level default; the composite
+    # method name (e.g. 'DFT+U') is carried by the containing `ModelMethod`.
+    name = BaseModelMethod.name.m_copy()
+    name.default = 'Hubbard'
+
+    n_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of orbitals used to define the Hubbard interactions.
+        """,
+    )
+
+    orbitals_ref = Quantity(
+        type=ElectronicState,
+        shape=['n_orbitals'],
+        description="""
+        References to the `ElectronicState` sections that define the orbitals involved in
+        Hubbard interactions. The ordering matches the rows/columns of `u_matrix`.
+        Each reference can be a simple orbital (SphericalSymmetryState) or a more complex
+        multi-orbital state, depending on the level of decomposition needed.
+        """,
+    )
+
+    u_matrix = Quantity(
+        type=np.float64,
+        shape=['n_orbitals', 'n_orbitals'],
+        unit='joule',
+        description="""
+        Value of the local Hubbard interaction matrix.
+        The order of the rows and columns coincide with the elements in `orbitals_ref`.
+        """,
+    )
+
+    u_interaction = Quantity(
+        type=positive_float(),
+        unit='joule',
+        description="""
+        Value of the (intra-orbital) Hubbard interaction
+        """,
+    )
+
+    j_hunds_coupling = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the (interorbital) Hund's coupling.
+        """,
+    )
+
+    u_interorbital_interaction = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the (interorbital) Coulomb interaction. In rotational invariant systems,
+        u_interorbital_interaction = u_interaction - 2 * j_hunds_coupling.
+        """,
+    )
+
+    j_local_exchange_interaction = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the exchange interaction. In rotational invariant systems, j_local_exchange_interaction = j_hunds_coupling.
+        """,
+    )
+
+    u_effective = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the effective U parameter (u_interaction - j_local_exchange_interaction).
+        """,
+    )
+
+    slater_integrals = Quantity(
+        type=np.float64,
+        shape=[3],
+        unit='joule',
+        description="""
+        Value of the Slater integrals [F0, F2, F4] in spherical harmonics used to derive
+        the local Hubbard interactions:
+
+            u_interaction = ((2.0 / 7.0) ** 2) * (F0 + 5.0 * F2 + 9.0 * F4) / (4.0*np.pi)
+
+            u_interorbital_interaction = ((2.0 / 7.0) ** 2) * (F0 - 5.0 * F2 + 3.0 * 0.5 * F4) / (4.0*np.pi)
+
+            j_hunds_coupling = ((2.0 / 7.0) ** 2) * (5.0 * F2 + 15.0 * 0.25 * F4) / (4.0*np.pi)
+
+        See e.g., Elbio Dagotto, Nanoscale Phase Separation and Colossal Magnetoresistance,
+        Chapter 4, Springer Berlin (2003).
+        """,
+    )
+
+    double_counting_correction = Quantity(
+        type=str,
+        description="""
+        Name of the double counting correction algorithm applied.
+        """,
+    )
+
+    @log
+    def resolve_u_interactions(self) -> tuple | None:
+        """
+        Resolves the Hubbard interactions (u_interaction, u_interorbital_interaction, j_hunds_coupling)
+        from the Slater integrals (F0, F2, F4) in the units defined for the Quantity.
+
+        Args:
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            (Optional[tuple]): The Hubbard interactions (u_interaction, u_interorbital_interaction, j_hunds_coupling).
+        """
+        logger = self.resolve_u_interactions.__annotations__['logger']
+        if self.slater_integrals is None or len(self.slater_integrals) != 3:
+            logger.warning(
+                'Could not find `slater_integrals` or the length is not three.'
+            )  # TODO: move shape-check to schema
+            return None, None, None
+        f0 = self.slater_integrals[0]
+        f2 = self.slater_integrals[1]
+        f4 = self.slater_integrals[2]
+        u_interaction = ((2.0 / 7.0) ** 2) * (f0 + 5.0 * f2 + 9.0 * f4) / (4.0 * np.pi)
+        u_interorbital_interaction = (
+            ((2.0 / 7.0) ** 2) * (f0 - 5.0 * f2 + 3.0 * f4 / 2.0) / (4.0 * np.pi)
+        )
+        j_hunds_coupling = (
+            ((2.0 / 7.0) ** 2) * (5.0 * f2 + 15.0 * f4 / 4.0) / (4.0 * np.pi)
+        )
+        return u_interaction, u_interorbital_interaction, j_hunds_coupling
+
+    @log
+    def resolve_u_effective(self) -> pint.Quantity | None:
+        """
+        Resolves the effective U parameter (u_interaction - j_local_exchange_interaction).
+
+        Args:
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            (Optional[pint.Quantity]): The effective U parameter.
+        """
+        logger = self.resolve_u_effective.__annotations__['logger']
+        if self.u_interaction is None:
+            logger.warning('Could not find `HubbardInteractions.u_interaction`.')
+            return None
+
+        if self.j_local_exchange_interaction is None:
+            self.j_local_exchange_interaction = 0.0 * ureg.eV
+
+        return self.u_interaction - self.j_local_exchange_interaction
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Obtain (u, up, j_hunds_coupling) from slater_integrals
+        if (
+            self.u_interaction is None
+            and self.u_interorbital_interaction is None
+            and self.j_hunds_coupling is None
+        ):
+            (
+                self.u_interaction,
+                self.u_interorbital_interaction,
+                self.j_hunds_coupling,
+            ) = self.resolve_u_interactions(logger=logger)
+
+        # If u_effective is not available, calculate it
+        if self.u_effective is None:
+            self.u_effective = self.resolve_u_effective(logger=logger)
+
+        # Check if length of `orbitals_ref` is the same as the length of `u_matrix`:
+        if self.u_matrix is not None and self.orbitals_ref is not None:
+            if len(self.u_matrix) != len(
+                self.orbitals_ref
+            ):  # TODO: move shape-check to schema
+                logger.error(
+                    'The length of `HubbardInteractions.u_matrix` does not coincide with length of `HubbardInteractions.orbitals_ref`.'
+                )
+
+
 class RelativityModel(BaseModelMethod):
     """
     Relativistic treatment of the valence Hamiltonian.
@@ -407,8 +601,8 @@ class RelativityModel(BaseModelMethod):
         ),
         default='non-relativistic',
         description="""
-        Non-relativistic (Schrödinger), scalar (spin-free),
-        two-component (spin-orbit couple removed variationally, e.g. X2C),
+        Non-relativistic (Schrödinger), scalar (spin-free, spin-orbit coupling omitted),
+        two-component (spin-orbit coupling included variationally, e.g. X2C),
         or four-component Dirac treatment.
         """,
     )
@@ -597,9 +791,9 @@ class XCComponent(ArchiveSection):
         Functional form of the range-separation kernel used to partition the Coulomb operator.
 
         Common choices:
-        • erf     — error function (used in LC-ωPBE, CAM-B3LYP)
-        • erfc    — complementary error function (equivalent to erf split)
-        • Yukawa  — exponential screening, e.g. HSE-style
+        • erf     — error function (long-range split, e.g. LC-ωPBE, CAM-B3LYP)
+        • erfc    — complementary error function (short-range split; e.g. the screened exchange in HSE03/HSE06)
+        • Yukawa  — exponential (Yukawa) screening, e.g. Yukawa-range-separated hybrids
         • exp     — simple exponential decay
         • Gaussian — Gaussian screening form
         • Slater  — Slater-type exponential
@@ -616,6 +810,55 @@ class XCComponent(ArchiveSection):
             All components' fractions should sum up to one.
          """,
     )
+
+    unidentified = Quantity(
+        type=bool,
+        description="""
+        `True` when the code reports an XC component at this position that cannot
+        be resolved to a LibXC label (family/kind therefore stay unset). The
+        component is retained as a placeholder so the functional's composition
+        (the number of parts) is not misrepresented as complete.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Complete a free-form component from the LibXC registry, keyed by either
+        # the `canonical_label` or the `libxc_id` the code reports. `weight` is a
+        # composition fraction the parser owns, not registry data, so it is
+        # intentionally left untouched.
+        if self.family is not None:
+            return
+
+        spec = None
+        if self.canonical_label:
+            spec = spec_from_label(self.canonical_label)
+        if spec is None and self.libxc_id is not None:
+            spec = spec_from_id(int(self.libxc_id))
+
+        if spec is None:
+            # The code reported a component (a label or a LibXC id) the registry
+            # cannot resolve: keep it as a placeholder so it is not silently
+            # dropped, and mark it unidentified.
+            if self.canonical_label or self.libxc_id is not None:
+                logger.debug(
+                    'Unresolvable LibXC component.',
+                    label=self.canonical_label,
+                    libxc_id=self.libxc_id,
+                )
+                self.unidentified = True
+            return
+        self.libxc_id = spec['libxc_id']
+        self.display_name = spec['display_name']
+        self.family = spec['family']
+        self.kind = spec['kind']
+        # canonicalize to the registry spelling (e.g. 'gga_x_pbe' -> 'XC_GGA_X_PBE')
+        self.canonical_label = spec['canonical_label']
+        # a component that was marked as a placeholder but now resolves is no
+        # longer unidentified
+        if self.unidentified:
+            self.unidentified = False
 
 
 class XCFunctional(ArchiveSection):
@@ -682,6 +925,12 @@ class XCFunctional(ArchiveSection):
         except Exception:
             logger.warning('LibXC expansion failed.')
 
+        # Free-form composition: components supplied directly by a parser (raw
+        # LibXC labels the code reports) complete their own taxonomy. Components
+        # created by the name expansion above already carry it and no-op.
+        for comp in self.components or []:
+            comp.normalize(archive, logger)
+
         if self.global_exact_exchange is None:
             alphas = [
                 c.fraction_exact_exchange
@@ -707,7 +956,6 @@ class DFT(ModelMethodElectronic):
         See:
             - https://doi.org/10.1063/1.1390175 (original paper)
             - https://doi.org/10.1103/PhysRevLett.91.146401 (meta-GGA)
-            - https://doi.org/10.1063/1.1904565 (hyper-GGA)
         """,
     )
 
@@ -1404,10 +1652,12 @@ class Screening(ExcitedStateMethodology):
     """
 
     dielectric_infinity = Quantity(
-        type=np.int32,
+        type=positive_float(),
         description="""
-        Value of the static dielectric constant at infinite q. For metals, this is infinite
-        (or a very large value), while for insulators is finite.
+        Scalar macroscopic electronic dielectric constant in the static,
+        long-wavelength limit (ω → 0, q → 0), commonly denoted ε_∞.
+        Finite for insulators and semiconductors; for metals, the static long-wavelength
+        response diverges and may be represented by a large finite value.
         """,
     )
 
@@ -2034,7 +2284,7 @@ class LocalCorrelation(ArchiveSection):
     Representative references
     -------------------------
     - M. Schütz, J. Chem. Phys. 113, 9986 (2000).
-    - E. Riplinger and F. Neese, J. Chem. Phys. 138, 034106 (2013).
+    - C. Riplinger and F. Neese, J. Chem. Phys. 138, 034106 (2013).
     """
 
     type = Quantity(
@@ -2233,7 +2483,7 @@ class ActiveSpace(ArchiveSection):
     Captures just the counts and labeling needed to identify the orbital/electron
     subspace used by CASSCF/CASPT2-style calculations.
 
-    - CAS: complete active space (Roos et al., Chem. Phys. Lett. 48, 157, 1980)
+    - CAS: complete active space (Roos et al., Chem. Phys. 48, 157, 1980)
     - RAS: restricted active space (Olsen et al., J. Chem. Phys. 89, 2185, 1988)
 
     CAS vs RAS

@@ -132,7 +132,7 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic DOS. It can take values of 0 or 1. |
-| `energies_origin` | m_float64(float64) | Energy level denoting the origin along the energy axis, used for comparison and visualization. It is defined as the `ElectronicEigenvalues.highest_occupied_energy`. |
+| `energies_origin` | m_float64(float64) | <details><summary>Energy level denoting the origin along the energy axis, used for comparison and visualization.</summary>Energy level denoting the origin along the energy axis, used for comparison and visualization.<br>This value is fully derived during normalization from the sibling<br>`ElectronicEigenvalues.highest_occupied` (when a resolvable reference is available), so parsers<br>are recommended NOT to populate it directly: any manually set value is recomputed and overwritten<br>on normalization without any logging. Provide `ElectronicEigenvalues.highest_occupied` instead.</details> |
 | `normalization_factor` | m_float64(float64) | Normalization factor for electronic DOS to get a cell-independent intensive DOS. The cell-independent intensive DOS is as the integral from the lowest (most negative) energy to the Fermi level for a neutrally charged system (i.e., the sum of `AtomsState.charge` is zero). |
 
 ### `Occupancy`

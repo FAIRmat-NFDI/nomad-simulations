@@ -2,9 +2,9 @@ import os
 
 import pytest
 from nomad import infrastructure
-from nomad.datamodel import EntryArchive, EntryMetadata
+from nomad.datamodel import EntryArchive
 from nomad.datamodel.context import ServerContext
-from nomad.utils import create_uuid, get_logger
+from nomad.utils import get_logger
 from nomad.utils.exampledata import ExampleData
 from structlog.stdlib import BoundLogger
 

@@ -45,6 +45,10 @@ from .common import SimulationTime
 class SCFSteps(ArchiveSection):
     """
     Data recorded at each step of a self-consistent DFT calculation.
+
+    The SCF quantities describe the iterative convergence process for one
+    system configuration, i.e. within one `Outputs` section. They do not
+    describe a sequence of configurations such as geometry-optimization steps.
     """
 
     energies_total = Quantity(
@@ -52,7 +56,8 @@ class SCFSteps(ArchiveSection):
         type=float,
         unit='joule',
         description="""
-        Total energy at each SCF step.
+        Ordered sequence of total energies from the SCF iterations within one
+        system configuration.
         """,
     )
 
@@ -61,7 +66,24 @@ class SCFSteps(ArchiveSection):
         type=float,
         unit='joule',
         description="""
-        Absolute change of total energy at each SCF step.
+        Absolute change of total energy between consecutive SCF steps. When
+        derived from `energies_total`, the values follow
+        $\\Delta E_i = \\lvert E_{i+1} - E_i \\rvert$, so N SCF energies
+        produce N - 1 energy deltas.
+        """,
+    )
+
+    energy_error_estimate = Quantity(
+        shape=['*'],
+        type=float,
+        unit='joule',
+        description="""
+        Estimate of the remaining error in the total energy at each SCF step,
+        derived from the density residual rather than from the change of the
+        total energy itself. For example, Quantum ESPRESSO's "estimated scf
+        accuracy" is the Hartree self-energy of the density residual. Distinct
+        from `delta_energies_total`, which is the change of the total energy
+        between consecutive steps.
         """,
     )
 
@@ -74,12 +96,64 @@ class SCFSteps(ArchiveSection):
         """,
     )
 
-    delta_density_rms = Quantity(
+    delta_charge_abs = Quantity(
         shape=['*'],
         type=float,
         unit='coulomb',
         description="""
-        Root mean square of change of potential energy at each SCF step.
+        Volume-integrated absolute change of the electron density between
+        consecutive SCF steps, `integral |rho_n(r) - rho_(n-1)(r)| d^3r`,
+        expressed as a charge (equivalently a number of electrons). Reported by
+        all-electron codes such as WIEN2k (`:DIS`). The exact norm and any
+        normalization are a code-reported convention that the schema does not
+        enforce.
+        """,
+    )
+
+    delta_charge_density_rms = Quantity(
+        shape=['*'],
+        type=float,
+        unit='coulomb / meter ** 3',
+        description="""
+        Root mean square, over real-space grid points, of the change of the
+        electron density between consecutive SCF steps. Unlike `delta_charge_abs`
+        the volume is retained, so this is a charge density. Reported by
+        plane-wave codes such as VASP (`rms(c)`).
+        """,
+    )
+
+    delta_charge_relative = Quantity(
+        shape=['*'],
+        type=float,
+        unit='dimensionless',
+        description="""
+        Integrated absolute density change normalized by the electron count,
+        `integral |rho_n - rho_(n-1)| d^3r / N`, hence dimensionless. Reported by
+        exciting ("charge distance") and GPAW (per valence electron).
+        """,
+    )
+
+    delta_density_matrix_rms = Quantity(
+        shape=['*'],
+        type=float,
+        unit='dimensionless',
+        description="""
+        Root mean square of the change of the density-matrix elements `P_munu`
+        (in the non-orthonormal atomic-orbital basis) between consecutive SCF
+        steps. The elements are dimensionless, so is this residual. Reported by
+        Gaussian-basis codes such as CRYSTAL (`tst`) and ORCA (`RMS-DP`).
+        """,
+    )
+
+    delta_density_matrix_max = Quantity(
+        shape=['*'],
+        type=float,
+        unit='dimensionless',
+        description="""
+        Maximum absolute change of the density-matrix elements `P_munu` between
+        consecutive SCF steps; the max-norm counterpart of
+        `delta_density_matrix_rms`. Reported by Gaussian-basis codes such as
+        CP2K, CRYSTAL (`PX`), and ORCA (`Max-DP`).
         """,
     )
 
@@ -283,55 +357,18 @@ class Outputs(SimulationTime):
 
     def _compute_energy_deltas(self, logger: 'BoundLogger'):
         """
-        Compute delta_energies_total from consecutive total_energies values.
-
-        Returns array of absolute energy differences between consecutive steps.
+        Compute `delta_energies_total` as the absolute change between consecutive
+        `scf_steps.energies_total` values, i.e. the per-SCF-iteration total-energy
+        series. This is the correct source for an SCF convergence measure; the
+        repeating `Outputs.total_energies` holds labeled generic total energies
+        (e.g. "DFT" vs "DFT + dispersion"), whose differences are not SCF deltas.
         """
-        try:
-            if self.total_energies is None or len(self.total_energies) < 2:
-                return None
-
-            # Extract energy values from each step
-            energy_values = [e.value for e in self.total_energies]
-
-            # Compute differences manually to preserve Pint units
-            deltas = []
-            for i in range(1, len(energy_values)):
-                delta = np.abs(energy_values[i] - energy_values[i - 1])
-                deltas.append(delta)
-
-            # Convert list to array-like structure
-            if len(deltas) > 0 and hasattr(deltas[0], 'magnitude'):
-                # Pint quantities - stack magnitudes and add units
-                magnitudes = [d.magnitude for d in deltas]
-                return np.array(magnitudes) * deltas[0].units
-            else:
-                return np.array(deltas)
-
-        except (AttributeError, IndexError, TypeError, ValueError) as e:
-            logger.debug(f'Could not compute delta_energies_total: {e}')
+        if self.scf_steps is None or self.scf_steps.energies_total is None:
             return None
-
-    def _compute_force_norms(self, logger: 'BoundLogger'):
-        """
-        Compute delta_force_abs from total_forces as force norms.
-
-        Returns array of force norms (L2 norm of 3D force vectors).
-        """
-        try:
-            if self.total_forces is None or len(self.total_forces) == 0:
-                return None
-
-            # Get force values (Pint Quantity with shape [n_atoms, 3])
-            force_values = self.total_forces[-1].value
-
-            # Compute force norms (preserves Pint units)
-            force_norms = ((force_values**2).sum(axis=1)) ** 0.5
-
-            return force_norms
-        except (AttributeError, IndexError, TypeError) as e:
-            logger.debug(f'Could not compute delta_force_abs: {e}')
+        energies = self.scf_steps.energies_total
+        if len(energies) < 2:
             return None
+        return np.abs(np.diff(energies.magnitude)) * energies.units
 
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
@@ -352,19 +389,20 @@ class Outputs(SimulationTime):
         except Exception as e:
             logger.debug(f'Could not set model_method_ref: {e}')
 
-        # Populate missing SCF delta quantities from available data
-        if self.scf_steps is not None:
-            # Define delta computations: (delta_field, compute_function)
-            delta_computations = [
-                ('delta_energies_total', self._compute_energy_deltas),
-                ('delta_force_abs', self._compute_force_norms),
-            ]
-
-            for delta_field, compute_func in delta_computations:
-                if getattr(self.scf_steps, delta_field, None) is None:
-                    computed_value = compute_func(logger)
-                    if computed_value is not None:
-                        setattr(self.scf_steps, delta_field, computed_value)
+        # Derive `delta_energies_total` from the per-SCF `energies_total` series when the
+        # parser did not provide it directly (#454).
+        #
+        # The other SCF residuals are deliberately NOT synthesized here. In particular
+        # `delta_force_abs` (the change of forces between successive SCF iterations) cannot
+        # be derived from the archive: `Outputs.total_forces` holds the final/labeled forces,
+        # not a per-SCF-iteration series, so norming them would fill an SCF-convergence
+        # field with the final force magnitudes -- a physically different quantity (#453).
+        # `delta_force_abs` and the density/potential residuals are therefore set only by
+        # parsers that genuinely report them per SCF step.
+        if self.scf_steps is not None and self.scf_steps.delta_energies_total is None:
+            deltas = self._compute_energy_deltas(logger)
+            if deltas is not None:
+                self.scf_steps.delta_energies_total = deltas
 
 
 class WorkflowOutputs(Outputs):

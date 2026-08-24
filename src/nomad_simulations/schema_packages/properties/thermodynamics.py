@@ -4,9 +4,7 @@ import numpy as np
 from nomad.metainfo import MEnum, Quantity
 
 if TYPE_CHECKING:
-    from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.data_types import positive_int
@@ -157,15 +155,6 @@ class ChemicalPotential(BaseEnergy):
         description="""
         Number of particles (or particle density) for which the chemical potential applies.
         Can represent electron number, atom number, or other relevant particle count.
-        """,
-    )
-
-    fermi_energy = Quantity(
-        type=np.float64,
-        unit='joule',
-        description="""
-        Fermi energy at T=0K, used as reference for finite-temperature chemical potential.
-        At T=0, the chemical potential equals the Fermi energy.
         """,
     )
 

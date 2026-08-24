@@ -32,7 +32,7 @@ Chemical formulas in different formats: descriptive, reduced, IUPAC, Hill, anony
 
 Complete particle state hierarchy: ParticleState base class, AtomsState with detailed atomic properties, and CGBeadState
 
-**Key sections:** ParticleState, AtomsState, CGBeadState, AtomicOrbitals, CoreHole, HubbardInteractions
+**Key sections:** ParticleState, AtomsState, CGBeadState, AtomicOrbitals, CoreHole
 
 ## [Symmetry](symmetry.md)
 
@@ -170,7 +170,7 @@ Thermodynamics workflow for free-energy and thermodynamic property calculations
 
 Convergence target classes and workflow-level convergence result structures
 
-**Key sections:** WorkflowConvergenceTarget, EnergyConvergenceTarget, ForceConvergenceTarget, PotentialConvergenceTarget, ChargeConvergenceTarget, WavefunctionConvergenceTarget, WorkflowConvergenceResults, SimulationWorkflowModel, SimulationWorkflowResults, GeometryOptimizationModel, GeometryOptimizationResults
+**Key sections:** WorkflowConvergenceTarget, EnergyConvergenceTarget, ForceConvergenceTarget, PotentialConvergenceTarget, DensityConvergenceTarget, WavefunctionConvergenceTarget, WorkflowConvergenceResults, SimulationWorkflowModel, SimulationWorkflowResults, GeometryOptimizationModel, GeometryOptimizationResults
 
 ## [Workflow Trajectory Properties](workflow_trajectory.md)
 

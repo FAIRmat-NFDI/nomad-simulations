@@ -12,7 +12,6 @@ from nomad_simulations.schema_packages.numerical_settings import (
     KMesh,
     KSpaceFunctionalities,
     LocalCorrelationThreshold,
-    Pseudopotential,
 )
 
 from . import logger
