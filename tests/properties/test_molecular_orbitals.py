@@ -186,22 +186,11 @@ class TestMolecularOrbitals:
     def test_value_unit_is_joule(self):
         assert str(MolecularOrbitals.value.unit) == 'joule'
 
-    # Occupation bounds are enforced by the `occupations` interval datatype
-    # (interval [0, 2] widened by a small slack); out-of-interval values raise.
-    @pytest.mark.parametrize(
-        'occ',
-        [
-            [2.5, 1.0],  # above the spin-summed maximum
-            [-0.5, 1.0],  # negative
-            [2.0 + 2e-6, 0.0],  # just beyond the upper slack
-        ],
-    )
-    def test_out_of_interval_occupations_raise(self, occ):
-        # NOTE(#468): the spin-resolved maximum (1 for spin orbitals) and a soft-log
-        # failure mode are deferred, so a spin-orbital occupation between 1 and 2 is
-        # currently accepted rather than flagged.
-        with pytest.raises(ValueError):
-            MolecularOrbitals(occupations=np.array(occ))
+    # Occupation bounds are enforced by the `occupations` interval datatype, so they
+    # are covered where the datatype lives rather than here.
+    # NOTE(#468): the spin-resolved maximum (1 for spin orbitals) and a soft-log
+    # failure mode are deferred, so a spin-orbital occupation between 1 and 2 is
+    # currently accepted rather than flagged.
 
     # T1 normalize: spin_channel validation
     def test_spin_channel_invalid_value_errors(self):
@@ -227,79 +216,86 @@ class TestMolecularOrbitals:
         assert mo.n_mo == 3
         assert mo.n_ao == 4
 
-    # Frontier-orbital resolution: parsed vs normalized (derived)
-    def test_frontier_orbitals_derived_from_data(self):
+    # Frontier-orbital resolution: `_normalized` is derived purely from `value` and
+    # `occupations`, only for canonical orbitals with an occupied/unoccupied boundary.
+    @pytest.mark.parametrize(
+        'kind, value, occ, expected',
+        [
+            # canonical with a boundary: HOMO/LUMO/gap derived
+            (
+                'canonical',
+                [-2.0, -1.0, 0.5, 1.5],
+                [2.0, 2.0, 0.0, 0.0],
+                (-1.0, 0.5, 1.5),
+            ),
+            # unset kind is not assumed canonical
+            (None, [-2.0, -1.0, 0.5, 1.5], [2.0, 2.0, 0.0, 0.0], (None, None, None)),
+            # explicitly non-canonical
+            (
+                'natural',
+                [-2.0, -1.0, 0.5, 1.5],
+                [2.0, 2.0, 0.0, 0.0],
+                (None, None, None),
+            ),
+            # canonical but no occupied/unoccupied boundary
+            ('canonical', [-2.0, -1.0], [2.0, 2.0], (None, None, None)),
+        ],
+    )
+    def test_frontier_derivation(self, kind, value, occ, expected):
         mo = MolecularOrbitals(
-            kind='canonical',
-            value=np.array([-2.0, -1.0, 0.5, 1.5]),
-            occupations=np.array([2.0, 2.0, 0.0, 0.0]),
+            kind=kind, value=np.array(value), occupations=np.array(occ)
         )
         mo.normalize(archive=EntryArchive(), logger=logger)
 
-        assert mo.homo_normalized.magnitude == pytest.approx(-1.0)
-        assert mo.lumo_normalized.magnitude == pytest.approx(0.5)
-        assert mo.homo_lumo_gap_normalized.magnitude == pytest.approx(1.5)
-        # the gap is always the derived pair, so it stays consistent with them
-        assert mo.homo_lumo_gap_normalized.magnitude == pytest.approx(
-            (mo.lumo_normalized - mo.homo_normalized).magnitude
-        )
+        e_homo, e_lumo, e_gap = expected
+        for name, exp in (
+            ('homo_normalized', e_homo),
+            ('lumo_normalized', e_lumo),
+            ('homo_lumo_gap_normalized', e_gap),
+        ):
+            actual = getattr(mo, name)
+            if exp is None:
+                assert actual is None
+            else:
+                assert actual.magnitude == pytest.approx(exp)
+        # when derived, the gap is exactly the stored pair, so it stays consistent
+        if e_gap is not None:
+            assert mo.homo_lumo_gap_normalized.magnitude == pytest.approx(
+                (mo.lumo_normalized - mo.homo_normalized).magnitude
+            )
 
-    def test_no_derivation_without_canonical_kind(self):
-        """An unset `kind` is not assumed canonical, so nothing is derived."""
-        mo = MolecularOrbitals(
-            value=np.array([-2.0, -1.0, 0.5, 1.5]),
-            occupations=np.array([2.0, 2.0, 0.0, 0.0]),
-        )
-        mo.normalize(archive=EntryArchive(), logger=logger)
-
-        assert mo.homo_normalized is None
-        assert mo.lumo_normalized is None
-        assert mo.homo_lumo_gap_normalized is None
-
-    def test_frontier_pair_not_derived_without_boundary(self):
-        """Without an occupied/unoccupied boundary, nothing is derived; the derived
-        fields stay unset and do not fall back to the parsed values."""
-        mo = MolecularOrbitals(
-            kind='canonical',
-            value=np.array([-2.0, -1.0]),
-            occupations=np.array([2.0, 2.0]),  # all occupied: no boundary
-            homo_parsed=-1.0,
-            lumo_parsed=0.5,
-        )
-        mo.normalize(archive=EntryArchive(), logger=logger)
-
-        assert mo.homo_normalized is None
-        assert mo.lumo_normalized is None
-        assert mo.homo_lumo_gap_normalized is None
-        # parsed provenance is untouched
-        assert mo.homo_parsed.magnitude == pytest.approx(-1.0)
-        assert mo.lumo_parsed.magnitude == pytest.approx(0.5)
-
-    def test_gap_not_derived_without_pair(self):
-        """The derived gap stays unset when the pair is unavailable; it does not fall
-        back to the parsed gap."""
+    # The parsed fields are provenance-only: `_normalized` never falls back to them,
+    # and they are never overwritten by normalization.
+    @pytest.mark.parametrize(
+        'value, occ, derived',
+        [
+            ([-2.0, -1.0, 0.5, 1.5], [2.0, 2.0, 0.0, 0.0], True),  # boundary -> derived
+            ([-2.0, -1.0], [2.0, 2.0], False),  # no boundary -> not derived
+        ],
+    )
+    def test_parsed_provenance_independent_of_normalized(self, value, occ, derived):
         mo = MolecularOrbitals(
             kind='canonical',
-            value=np.array([-2.0, -1.0]),
-            occupations=np.array([2.0, 2.0]),  # all occupied: no boundary
+            value=np.array(value),
+            occupations=np.array(occ),
+            homo_parsed=-0.9,
+            lumo_parsed=0.4,
             homo_lumo_gap_parsed=2.0,
         )
         mo.normalize(archive=EntryArchive(), logger=logger)
 
-        assert mo.homo_lumo_gap_normalized is None
-        assert mo.homo_lumo_gap_parsed.magnitude == pytest.approx(2.0)
-
-    def test_parsed_frontier_orbitals_not_overwritten(self):
-        mo = MolecularOrbitals(
-            kind='canonical',
-            value=np.array([-2.0, -1.0, 0.5, 1.5]),
-            occupations=np.array([2.0, 2.0, 0.0, 0.0]),
-            homo_parsed=-0.9,
-            lumo_parsed=0.4,
-        )
-        mo.normalize(archive=EntryArchive(), logger=logger)
-
+        # parsed provenance is untouched
         assert mo.homo_parsed.magnitude == pytest.approx(-0.9)
         assert mo.lumo_parsed.magnitude == pytest.approx(0.4)
-        assert mo.homo_normalized.magnitude == pytest.approx(-1.0)
-        assert mo.lumo_normalized.magnitude == pytest.approx(0.5)
+        assert mo.homo_lumo_gap_parsed.magnitude == pytest.approx(2.0)
+
+        if derived:
+            # derived from the data, independent of the parsed values
+            assert mo.homo_normalized.magnitude == pytest.approx(-1.0)
+            assert mo.lumo_normalized.magnitude == pytest.approx(0.5)
+            assert mo.homo_lumo_gap_normalized.magnitude == pytest.approx(1.5)
+        else:
+            # no fallback to the parsed values
+            assert mo.homo_normalized is None
+            assert mo.lumo_normalized is None
+            assert mo.homo_lumo_gap_normalized is None
