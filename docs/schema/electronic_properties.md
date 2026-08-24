@@ -1,6 +1,6 @@
 # Electronic Structure Properties
 
-**Purpose:** Electronic eigenvalues, band structures, DOS, band gaps, occupancies, and Fermi surfaces
+**Purpose:** Electronic eigenvalues, band structures, DOS, band gaps, molecular orbitals, occupancies, and Fermi surfaces
 
 
 ## Relationship map
@@ -18,6 +18,7 @@ classDiagram
     class ElectronicEigenvalues
     class Energy2
     class FermiSurface
+    class MolecularOrbitals
     class Occupancy
     ElectronicEigenvalues <|-- ElectronicBandStructure
     DOSProfile <|-- ElectronicDensityOfStates
@@ -72,6 +73,32 @@ classDiagram
 | Quantity | Type | Description |
 |---|---|---|
 | `reciprocal_cell` | QuantityReference | Reciprocal lattice vectors associated with the k-space sampling used for these eigenvalues, taken from the corresponding `KSpace` numerical settings. |
+
+### `MolecularOrbitals`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `MolecularOrbitals` | Molecular-orbital eigenstates in an atom-centered AO basis. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.molecular_orbitals.MolecularOrbitals){:target="_blank"} |
+
+| Quantity | Type | Description |
+|---|---|---|
+| `n_mo` | m_int_bounded(int) | Number of molecular orbitals. |
+| `value` | m_float64(float64) (shape: ['n_mo']) | Orbital energies (eigenvalues) for each molecular orbital, mirroring `ElectronicEigenvalues.value`. Defined only for `kind=canonical`; may be absent for natural/localized orbitals. |
+| `occupations` | m_float_bounded(float64) (shape: ['n_mo']) | Occupation number for each molecular orbital. Constrained to the interval [0, 2] (spin-summed maximum) with a small slack for numerical noise; values outside raise a type error. |
+| `spin_channel` | m_int32(int32) | Spin channel of the molecular orbitals: 0 for α-spin, 1 for β-spin. |
+| `n_ao` | m_int_bounded(int) | Number of atomic orbitals (size of the AO basis). |
+| `basis_set_ref` | Reference | Reference to the atom-centered basis set used to expand these orbitals. |
+| `coefficients` | HDF5Dataset | <details><summary>The AO→MO coefficient matrix **C**, such that</summary>The AO→MO coefficient matrix **C**, such that<br>ψ_i(r) = ∑_μ C[i,μ] φ_μ(r).<br>Row index i runs over MOs (`n_mo`), column index μ runs over AOs (`n_ao`).<br>Expected dataset shape: [`n_mo`, `n_ao`].</details> |
+| `coefficients_im` | HDF5Dataset | <details><summary>Imaginary component of the AO→MO coefficient matrix.</summary>Imaginary component of the AO→MO coefficient matrix.<br>Combine with `coefficients` to obtain the full complex matrix:<br>C_complex = coefficients + 1j * coefficients_im<br>Omit for strictly real wave functions (non-relativistic calculations<br>without complex basis functions).<br>Expected dataset shape: [`n_mo`, `n_ao`].</details> |
+| `role` | Enum (shape: ['n_mo']) | <details><summary>Role of each MO within a correlated calculation or active-space protocol:</summary>Role of each MO within a correlated calculation or active-space protocol:<br>* core: fully occupied, energy-frozen, excluded from correlation.<br>* inactive: fully occupied, variationally optimized, outside the active space.<br>* active: in the active space.<br>* virtual: unoccupied correlated orbital.<br>* deleted: pruned for technical reasons (e.g. linear dependence).<br>`role` is the active-space/correlation classification, orthogonal to `occupations`.</details> |
+| `symmetry` | m_str(str) (shape: ['n_mo']) | Symmetry label of each MO in the molecule's point group (e.g. a₁, b₂u, π_g). Leave empty for systems with no detected symmetry. |
+| `kind` | Enum | <details><summary>Classification of the orbital set by the transformation that defines it:</summary>Classification of the orbital set by the transformation that defines it:<br>* canonical  : standard SCF eigenfunctions (Fock/Kohn-Sham diagonal)<br>* natural    : eigenfunctions of the 1-RDM<br>* localized  : after a localization transform (Boys, Pipek-Mezey, …)<br>For MCSCF/CASSCF outputs, tag the reported set as `canonical` or `natural`<br>(whichever it is); the active-space partition is captured by `role`.</details> |
+| `homo_parsed` | m_float64(float64) | Highest occupied molecular orbital (HOMO) energy as reported by the code. |
+| `lumo_parsed` | m_float64(float64) | Lowest unoccupied molecular orbital (LUMO) energy as reported by the code. |
+| `homo_lumo_gap_parsed` | m_float64(float64) | HOMO-LUMO gap as directly reported by the code. Strictly a parsed value, **not** derived from `homo_parsed`/`lumo_parsed`. Leave unset if the code reports no gap directly. |
+| `homo_normalized` | m_float64(float64) | Highest occupied molecular orbital (HOMO) energy, derived purely from `value` and `occupations` for `kind=canonical`. Left unset when the occupied/unoccupied boundary cannot be resolved; does **not** fall back to `homo_parsed`. |
+| `lumo_normalized` | m_float64(float64) | Lowest unoccupied molecular orbital (LUMO) energy, derived purely from `value` and `occupations` for `kind=canonical`. Left unset when the occupied/unoccupied boundary cannot be resolved; does **not** fall back to `lumo_parsed`. |
+| `homo_lumo_gap_normalized` | m_float64(float64) | HOMO-LUMO gap of the derived frontier pair, taken as `lumo_normalized - homo_normalized`. Left unset when that pair is unavailable; does **not** fall back to `homo_lumo_gap_parsed`. |
 
 ### `ElectronicBandGap`
 
