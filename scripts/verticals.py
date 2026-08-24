@@ -444,6 +444,8 @@ WorkflowOutputs(step=1)
             'ElectronicEigenvalues',
             'ElectronicBandStructure',
             'MolecularOrbitals',
+            'FrontierLevels',
+            'MOGap',
             'ElectronicBandGap',
             'DOSProfile',
             'ElectronicDensityOfStates',

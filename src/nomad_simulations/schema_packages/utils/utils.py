@@ -6,6 +6,7 @@ from collections import Counter
 from math import factorial
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
 from nomad.datamodel.data import ArchiveSection
 from nomad.utils import get_logger
 
@@ -219,6 +220,50 @@ def get_composition(children_names: list[str]) -> str | None:
         for name in sorted(counts, key=lambda s: (s.casefold(), s))
     ]
     return ''.join(parts) if parts else None
+
+
+def resolve_frontier_levels(values, occupations, occupation_tol):
+    """
+    Resolve the frontier one-particle levels (HOMO, LUMO) from a 1D set of level
+    energies and their occupations.
+
+    HOMO is the highest-energy occupied level and LUMO the lowest-energy unoccupied
+    level; a level counts as occupied when its occupation exceeds ``occupation_tol``.
+
+    Pure: reads no section state and writes nothing, so it can be shared across
+    properties that each own their storage, provenance, and tolerance. Returns
+    ``(None, None)`` when the occupied/unoccupied boundary cannot be resolved:
+    missing or length-mismatched inputs, or an all-occupied / all-unoccupied set.
+
+    Parameters
+    ----------
+    values : pint.Quantity | None
+        1D level energies.
+    occupations : numpy.ndarray | None
+        1D occupations aligned with ``values``.
+    occupation_tol : float
+        Occupation above which a level is considered occupied.
+
+    Returns
+    -------
+    tuple[pint.Quantity | None, pint.Quantity | None]
+        The ``(homo, lumo)`` energies, or ``(None, None)`` if unresolvable.
+    """
+    if values is None or occupations is None:
+        return None, None
+    occupations = np.asarray(occupations)
+    if len(occupations) != len(values):
+        return None, None
+    occupied = occupations > occupation_tol
+    # Need at least one occupied and one unoccupied level to define a boundary.
+    if not occupied.any() or occupied.all():
+        return None, None
+    homo, lumo = values[occupied].max(), values[~occupied].min()
+    # A non-finite frontier (e.g. a NaN energy) would propagate into a NaN gap that the
+    # positive-bounded gap type silently accepts; treat it as unresolvable instead.
+    if not (np.isfinite(homo.magnitude) and np.isfinite(lumo.magnitude)):
+        return None, None
+    return homo, lumo
 
 
 def catch_not_implemented(func: Callable) -> Callable:
