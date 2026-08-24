@@ -217,7 +217,9 @@ class TestMolecularOrbitals:
         assert mo.n_ao == 4
 
     # Frontier-orbital resolution: `_normalized` is derived purely from `value` and
-    # `occupations`, only for canonical orbitals with an occupied/unoccupied boundary.
+    # `occupations` (canonical orbitals with an occupied/unoccupied boundary),
+    # independent of the `_parsed` provenance fields, which are never used as a
+    # fallback nor overwritten.
     @pytest.mark.parametrize(
         'kind, value, occ, expected',
         [
@@ -242,11 +244,19 @@ class TestMolecularOrbitals:
         ],
     )
     def test_frontier_derivation(self, kind, value, occ, expected):
+        # parsed fields are set to values distinct from the derived ones, so the
+        # assertions prove `_normalized` ignores them and they survive intact.
         mo = MolecularOrbitals(
-            kind=kind, value=np.array(value), occupations=np.array(occ)
+            kind=kind,
+            value=np.array(value),
+            occupations=np.array(occ),
+            homo_parsed=-0.9,
+            lumo_parsed=0.4,
+            homo_lumo_gap_parsed=2.0,
         )
         mo.normalize(archive=EntryArchive(), logger=logger)
 
+        # `_normalized` reflects the derivation (or is unset), never the parsed values
         e_homo, e_lumo, e_gap = expected
         for name, exp in (
             ('homo_normalized', e_homo),
@@ -264,38 +274,7 @@ class TestMolecularOrbitals:
                 (mo.lumo_normalized - mo.homo_normalized).magnitude
             )
 
-    # The parsed fields are provenance-only: `_normalized` never falls back to them,
-    # and they are never overwritten by normalization.
-    @pytest.mark.parametrize(
-        'value, occ, derived',
-        [
-            ([-2.0, -1.0, 0.5, 1.5], [2.0, 2.0, 0.0, 0.0], True),  # boundary -> derived
-            ([-2.0, -1.0], [2.0, 2.0], False),  # no boundary -> not derived
-        ],
-    )
-    def test_parsed_provenance_independent_of_normalized(self, value, occ, derived):
-        mo = MolecularOrbitals(
-            kind='canonical',
-            value=np.array(value),
-            occupations=np.array(occ),
-            homo_parsed=-0.9,
-            lumo_parsed=0.4,
-            homo_lumo_gap_parsed=2.0,
-        )
-        mo.normalize(archive=EntryArchive(), logger=logger)
-
-        # parsed provenance is untouched
+        # `_parsed` provenance is untouched regardless of derivation
         assert mo.homo_parsed.magnitude == pytest.approx(-0.9)
         assert mo.lumo_parsed.magnitude == pytest.approx(0.4)
         assert mo.homo_lumo_gap_parsed.magnitude == pytest.approx(2.0)
-
-        if derived:
-            # derived from the data, independent of the parsed values
-            assert mo.homo_normalized.magnitude == pytest.approx(-1.0)
-            assert mo.lumo_normalized.magnitude == pytest.approx(0.5)
-            assert mo.homo_lumo_gap_normalized.magnitude == pytest.approx(1.5)
-        else:
-            # no fallback to the parsed values
-            assert mo.homo_normalized is None
-            assert mo.lumo_normalized is None
-            assert mo.homo_lumo_gap_normalized is None
