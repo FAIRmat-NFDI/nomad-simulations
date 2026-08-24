@@ -1,3 +1,5 @@
+import numpy as np
+import pint
 import pytest
 import structlog
 from nomad.utils import get_logger
@@ -7,9 +9,15 @@ from nomad_simulations.schema_packages.model_system import (
     Representation,
     Symmetry,
 )
-from nomad_simulations.schema_packages.utils import get_sibling_section, log
+from nomad_simulations.schema_packages.utils import (
+    get_sibling_section,
+    log,
+    resolve_frontier_levels,
+)
 
 from . import logger
+
+ureg = pint.get_application_registry()
 
 LOGGER = get_logger('TestLogger')
 
@@ -204,3 +212,61 @@ def test_get_sibling_section_cache_key_uniqueness():
 
 
 # ! Missing test for RusselSandersState (but this class will probably be deprecated)
+
+
+# `resolve_frontier_levels`: pure HOMO/LUMO resolution from level energies and
+# occupations. HOMO = highest occupied, LUMO = lowest unoccupied; occupied means
+# occupation > tol. Returns (None, None) when the boundary is unresolvable.
+@pytest.mark.parametrize(
+    'values, occupations, tol, expected',
+    [
+        # insulator: clean occupied/unoccupied split
+        ([-2.0, -1.0, 0.5, 1.5], [2.0, 2.0, 0.0, 0.0], 1e-6, (-1.0, 0.5)),
+        # HOMO/LUMO are the extremes of each subset, not necessarily adjacent
+        ([1.5, -1.0, -2.0, 0.5], [0.0, 2.0, 2.0, 0.0], 1e-6, (-1.0, 0.5)),
+        # all occupied -> no boundary
+        ([-2.0, -1.0], [2.0, 2.0], 1e-6, (None, None)),
+        # all unoccupied -> no boundary
+        ([0.5, 1.5], [0.0, 0.0], 1e-6, (None, None)),
+        # length mismatch -> unresolvable
+        ([-1.0, 0.5, 1.5], [2.0, 0.0], 1e-6, (None, None)),
+        # tolerance boundary: occupation just above tol counts as occupied
+        ([-1.0, 0.5], [1e-3, 0.0], 1e-6, (-1.0, 0.5)),
+        # tolerance boundary: occupation just below tol counts as unoccupied
+        ([-1.0, 0.5], [1e-9, 1e-9], 1e-6, (None, None)),
+    ],
+)
+def test_resolve_frontier_levels(values, occupations, tol, expected):
+    vals = np.array(values) * ureg.joule
+    occ = np.array(occupations)
+    homo, lumo = resolve_frontier_levels(vals, occ, tol)
+    e_homo, e_lumo = expected
+    if e_homo is None:
+        assert homo is None and lumo is None
+    else:
+        assert homo.magnitude == pytest.approx(e_homo)
+        assert lumo.magnitude == pytest.approx(e_lumo)
+
+
+@pytest.mark.parametrize(
+    'values, occupations',
+    [(None, np.array([2.0, 0.0])), (np.array([-1.0, 0.5]) * ureg.joule, None)],
+)
+def test_resolve_frontier_levels_none_inputs(values, occupations):
+    assert resolve_frontier_levels(values, occupations, 1e-6) == (None, None)
+
+
+def test_resolve_frontier_levels_rejects_nan_energy():
+    # a NaN energy would propagate into a NaN frontier/gap; treat it as unresolvable
+    vals = np.array([-1.0, np.nan, 1.5]) * ureg.joule
+    occ = np.array([2.0, 2.0, 0.0])
+    assert resolve_frontier_levels(vals, occ, 1e-6) == (None, None)
+
+
+def test_resolve_frontier_levels_does_not_mutate_inputs():
+    vals = np.array([-1.0, 0.5, 1.5]) * ureg.joule
+    occ = np.array([2.0, 0.0, 0.0])
+    vals_copy, occ_copy = vals.magnitude.copy(), occ.copy()
+    resolve_frontier_levels(vals, occ, 1e-6)
+    assert np.array_equal(vals.magnitude, vals_copy)
+    assert np.array_equal(occ, occ_copy)

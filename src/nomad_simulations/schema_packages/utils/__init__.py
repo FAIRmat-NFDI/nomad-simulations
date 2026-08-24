@@ -4,6 +4,7 @@ from .utils import (
     get_composition,
     get_sibling_section,
     log,
+    resolve_frontier_levels,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     'get_composition',
     'get_sibling_section',
     'log',
+    'resolve_frontier_levels',
 ]
