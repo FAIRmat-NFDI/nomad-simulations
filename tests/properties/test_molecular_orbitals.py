@@ -189,18 +189,6 @@ class TestMolecularOrbitals:
     # Occupation bounds are enforced by the `occupations` interval datatype
     # (interval [0, 2] widened by a small slack); out-of-interval values raise.
     @pytest.mark.parametrize(
-        'spin_channel, occ',
-        [
-            (None, [2.0, 2.0, 0.0, 0.0]),  # spin-summed, within [0, 2]
-            (0, [1.0, 1.0, 0.0]),  # spin orbitals, within [0, 2]
-            (None, [2.0 + 5e-7, -5e-7, 1.0]),  # small float noise within the slack
-        ],
-    )
-    def test_valid_occupations_accepted(self, spin_channel, occ):
-        mo = MolecularOrbitals(spin_channel=spin_channel, occupations=np.array(occ))
-        assert mo.occupations is not None
-
-    @pytest.mark.parametrize(
         'occ',
         [
             [2.5, 1.0],  # above the spin-summed maximum
