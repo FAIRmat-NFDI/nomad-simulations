@@ -181,7 +181,7 @@ class MolecularOrbitals(PhysicalProperty):
         type=np.float64,
         unit='joule',
         description="""
-        HOMO-LUMO gap as directly reported by the code. Strictly a parsed value, not
+        HOMO-LUMO gap as directly reported by the code. Strictly a parsed value, **not**
         derived from `homo_parsed`/`lumo_parsed`. Leave unset if the code reports no
         gap directly.
         """,
@@ -197,7 +197,7 @@ class MolecularOrbitals(PhysicalProperty):
         description="""
         Highest occupied molecular orbital (HOMO) energy, derived purely from `value`
         and `occupations` for `kind=canonical`. Left unset when the occupied/unoccupied
-        boundary cannot be resolved; does not fall back to `homo_parsed`.
+        boundary cannot be resolved; does **not** fall back to `homo_parsed`.
         """,
     )
 
@@ -207,7 +207,7 @@ class MolecularOrbitals(PhysicalProperty):
         description="""
         Lowest unoccupied molecular orbital (LUMO) energy, derived purely from `value`
         and `occupations` for `kind=canonical`. Left unset when the occupied/unoccupied
-        boundary cannot be resolved; does not fall back to `lumo_parsed`.
+        boundary cannot be resolved; does **not** fall back to `lumo_parsed`.
         """,
     )
 
@@ -217,7 +217,7 @@ class MolecularOrbitals(PhysicalProperty):
         description="""
         HOMO-LUMO gap of the derived frontier pair, taken as
         `lumo_normalized - homo_normalized`. Left unset when that pair is unavailable;
-        does not fall back to `homo_lumo_gap_parsed`.
+        does **not** fall back to `homo_lumo_gap_parsed`.
         """,
     )
 
