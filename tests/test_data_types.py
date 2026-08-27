@@ -40,6 +40,10 @@ class TestUnitSerializationSection(Section):
     )
 
 
+# Importable path nomad's `type_kind='custom'` reconstruction resolves for a bounded type.
+_M_FLOAT_BOUNDED_PATH = f'{m_float_bounded.__module__}.{m_float_bounded.__name__}'
+
+
 def setup_datatype_for_testing(datatype_instance, shape=None):
     """Helper function to set up a datatype instance for testing."""
     mock_definition = Mock()
@@ -521,6 +525,48 @@ class TestBoundedTypes:
         assert test_datatype.normalize(0.5) == 0.5
         with pytest.raises(ValueError):
             test_datatype.normalize(1.5)
+
+    # Each case is a self-contained snapshot of a serialized shape the schema has emitted
+    # for a plain `[0,1]` bound. `_deserialize_bounded_type` fills defaults for absent
+    # keys, so every one must reconstruct to the same type with default knobs. Add a case
+    # on every serialization bump (see `_deserialize_bounded_type`) to keep older shapes
+    # readable.
+    @pytest.mark.parametrize(
+        'serialized',
+        [
+            pytest.param(
+                {
+                    'type_kind': 'custom',
+                    'type_data': _M_FLOAT_BOUNDED_PATH,
+                    'type_dtype': 'float',
+                    'type_bound': '[0,1]',
+                    'type_bound_slack': 0.0,
+                    'type_bound_on_violation': 'raise',
+                    'type_bound_clamp': False,
+                },
+                id='explicit-default-knobs',
+            ),
+            pytest.param(
+                {
+                    'type_kind': 'custom',
+                    'type_data': _M_FLOAT_BOUNDED_PATH,
+                    'type_dtype': 'float',
+                    'type_bound': '[0,1]',
+                },
+                id='omitted-default-knobs',
+            ),
+        ],
+    )
+    def test_deserialize_tolerates_serialization_variants(self, serialized):
+        """Every serialized variant of a plain `[0,1]` bound reconstructs to the same
+        `m_float_bounded` with default knobs, since absent keys fall back to defaults."""
+        reconstructed = normalize_type(dict(serialized))
+        assert isinstance(reconstructed, m_float_bounded)
+        assert reconstructed._dtype is float
+        assert str(reconstructed.bound) == '[0,1]'
+        assert reconstructed.bound.slack == 0.0
+        assert reconstructed.bound.on_violation == 'raise'
+        assert reconstructed.bound.clamp is False
 
     def test_basic_functionality(self):
         """Test basic functionality of bounded types."""

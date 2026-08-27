@@ -362,6 +362,56 @@ class Bound:
         return f'{left}{min_str},{max_str}{right}'
 
 
+def _serialize_bounded_type(cls: type, dtype: type, bound: Bound, flags: dict) -> dict:
+    """Serialize the bounded type as `type_kind='custom'` so `normalize_type` reloads this
+    exact class (with its bound) rather than the plain base numeric type; `dtype` goes in
+    `type_dtype`. Inverse of `_deserialize_bounded_type`."""
+    # `type_kind='custom'` is the discriminator that reloads this class, not a plain dtype.
+    return {
+        'type_kind': 'custom',
+        'type_data': f'{cls.__module__}.{cls.__name__}',
+        'type_dtype': dtype.__name__,
+        'type_bound': str(bound),
+        'type_bound_slack': bound.slack,
+        'type_bound_on_violation': bound.on_violation,
+        'type_bound_clamp': bound.clamp,
+    } | flags
+
+
+def _deserialize_bounded_type(flags: dict) -> tuple[type | None, Bound]:
+    """Reconstruct `(dtype, bound)` from serialized `flags`, the inverse of
+    `_serialize_bounded_type`; `dtype` is `None` when absent, keeping the constructor
+    default. Every field is read via `flags.get(key, <default>)`, so missing keys fall
+    back to defaults -- a deliberate leniency: production should conditionally extend the
+    payload (dropping default-valued `type_bound_*` knobs to avoid archive churn), and
+    default-filling keeps that backward-safe. Confirm the direction with the schema
+    maintainers first. On every serialization bump, add the new emitted shape as a case to
+    `test_deserialize_tolerates_serialization_variants` so older archives stay readable."""
+    dtype: type | None = None
+    if (dtype_name := flags.get('type_dtype')) is not None:
+        dtype = getattr(builtins, dtype_name, None) or getattr(np, dtype_name)
+    bound = Bound(
+        flags.get('type_bound', ''),
+        slack=flags.get('type_bound_slack', 0.0),
+        on_violation=flags.get('type_bound_on_violation', 'raise'),
+        clamp=flags.get('type_bound_clamp', False),
+    )
+    return dtype, bound
+
+
+def _reject_scale_dependent_flexible_unit(flexible_unit: bool, bound: Bound) -> None:
+    """Raise if a scale-dependent `bound` is used on a `flexible_unit` quantity. Called
+    from `normalize` on first assignment, the earliest point `flexible_unit` is resolved
+    on the definition (it is not yet set when the datatype is attached)."""
+    if flexible_unit and not bound.is_scale_invariant():
+        raise ValueError(
+            f'A scale-dependent bound ({bound}, slack={bound.slack}) is '
+            'ill-defined on a flexible_unit quantity, whose values are checked in '
+            'their assigned unit without conversion. Use a sign-only bound (e.g. '
+            'positive_float / strictly_positive_float) or drop flexible_unit.'
+        )
+
+
 class m_int_bounded(ExactNumber):
     """
     Bounded integer data type.
@@ -397,55 +447,21 @@ class m_int_bounded(ExactNumber):
             return False
 
     def serialize_self(self) -> dict:
-        """Serialize as a *custom* datatype (`type_kind='custom'`, with the fully
-        qualified class as `type_data`) so deserialization reloads this exact class via
-        nomad's `normalize_type` custom path, instead of the `python`/`numpy` kind of
-        the base numeric type -- which would collapse to a plain bound-less type and
-        silently drop the interval. The declared dtype is carried in `type_dtype` (the
-        custom path reconstructs from a no-argument constructor, so the dtype is not
-        otherwise preserved). Every field is always emitted,
-        for a fixed, deterministic serialization shape."""
-        return {
-            'type_kind': 'custom',
-            'type_data': f'{self.__class__.__module__}.{self.__class__.__name__}',
-            'type_dtype': self._dtype.__name__,
-            'type_bound': str(self.bound),
-            'type_bound_slack': self.bound.slack,
-            'type_bound_on_violation': self.bound.on_violation,
-            'type_bound_clamp': self.bound.clamp,
-        } | self.flags
+        return _serialize_bounded_type(
+            self.__class__, self._dtype, self.bound, self.flags
+        )
 
     def normalize_flags(self, flags: dict):
-        """Reconstruct the dtype and bound from a serialized definition. nomad's custom
-        path calls this on a freshly default-constructed instance
-        (`class_type().normalize_flags(...)`), so the declared dtype is restored here
-        too, not only the bound."""
-        if (dtype_name := flags.get('type_dtype')) is not None:
+        dtype, self.bound = _deserialize_bounded_type(flags)
+        if dtype is not None:
             # `_dtype` is an inherited slot from `Primitive`; mypy cannot see it across
             # the silently-followed nomad import, hence the scoped ignore.
-            self._dtype = getattr(builtins, dtype_name, None) or getattr(np, dtype_name)  # type: ignore[misc]
-        self.bound = Bound(
-            flags.get('type_bound', ''),
-            slack=flags.get('type_bound_slack', 0.0),
-            on_violation=flags.get('type_bound_on_violation', 'raise'),
-            clamp=flags.get('type_bound_clamp', False),
-        )
-        # Apply any remaining flags to the base datatype
+            self._dtype = dtype  # type: ignore[misc]
         super().normalize_flags(flags)
         return self
 
     def normalize(self, value, **kwargs):
-        """Normalize value and validate bounds. A scale-dependent bound on a
-        `flexible_unit` quantity is rejected here, on first assignment: this is the
-        earliest point `flexible_unit` is resolved on the definition (it is not yet set
-        when the datatype is attached)."""
-        if self.flexible_unit and not self.bound.is_scale_invariant():
-            raise ValueError(
-                f'A scale-dependent bound ({self.bound}, slack={self.bound.slack}) is '
-                'ill-defined on a flexible_unit quantity, whose values are checked in '
-                'their assigned unit without conversion. Use a sign-only bound (e.g. '
-                'positive_float / strictly_positive_float) or drop flexible_unit.'
-            )
+        _reject_scale_dependent_flexible_unit(self.flexible_unit, self.bound)
         normalized_value = super().normalize(value, **kwargs)
         return self.bound.check(normalized_value, **kwargs)
 
@@ -487,55 +503,21 @@ class m_float_bounded(InexactNumber):
             return False
 
     def serialize_self(self) -> dict:
-        """Serialize as a *custom* datatype (`type_kind='custom'`, with the fully
-        qualified class as `type_data`) so deserialization reloads this exact class via
-        nomad's `normalize_type` custom path, instead of the `python`/`numpy` kind of
-        the base numeric type -- which would collapse to a plain bound-less type and
-        silently drop the interval. The declared dtype is carried in `type_dtype` (the
-        custom path reconstructs from a no-argument constructor, so the dtype is not
-        otherwise preserved). Every field is always emitted,
-        for a fixed, deterministic serialization shape."""
-        return {
-            'type_kind': 'custom',
-            'type_data': f'{self.__class__.__module__}.{self.__class__.__name__}',
-            'type_dtype': self._dtype.__name__,
-            'type_bound': str(self.bound),
-            'type_bound_slack': self.bound.slack,
-            'type_bound_on_violation': self.bound.on_violation,
-            'type_bound_clamp': self.bound.clamp,
-        } | self.flags
+        return _serialize_bounded_type(
+            self.__class__, self._dtype, self.bound, self.flags
+        )
 
     def normalize_flags(self, flags: dict):
-        """Reconstruct the dtype and bound from a serialized definition. nomad's custom
-        path calls this on a freshly default-constructed instance
-        (`class_type().normalize_flags(...)`), so the declared dtype is restored here
-        too, not only the bound."""
-        if (dtype_name := flags.get('type_dtype')) is not None:
+        dtype, self.bound = _deserialize_bounded_type(flags)
+        if dtype is not None:
             # `_dtype` is an inherited slot from `Primitive`; mypy cannot see it across
             # the silently-followed nomad import, hence the scoped ignore.
-            self._dtype = getattr(builtins, dtype_name, None) or getattr(np, dtype_name)  # type: ignore[misc]
-        self.bound = Bound(
-            flags.get('type_bound', ''),
-            slack=flags.get('type_bound_slack', 0.0),
-            on_violation=flags.get('type_bound_on_violation', 'raise'),
-            clamp=flags.get('type_bound_clamp', False),
-        )
-        # Apply any remaining flags to the base datatype
+            self._dtype = dtype  # type: ignore[misc]
         super().normalize_flags(flags)
         return self
 
     def normalize(self, value, **kwargs):
-        """Normalize value and validate bounds. A scale-dependent bound on a
-        `flexible_unit` quantity is rejected here, on first assignment: this is the
-        earliest point `flexible_unit` is resolved on the definition (it is not yet set
-        when the datatype is attached)."""
-        if self.flexible_unit and not self.bound.is_scale_invariant():
-            raise ValueError(
-                f'A scale-dependent bound ({self.bound}, slack={self.bound.slack}) is '
-                'ill-defined on a flexible_unit quantity, whose values are checked in '
-                'their assigned unit without conversion. Use a sign-only bound (e.g. '
-                'positive_float / strictly_positive_float) or drop flexible_unit.'
-            )
+        _reject_scale_dependent_flexible_unit(self.flexible_unit, self.bound)
         normalized_value = super().normalize(value, **kwargs)
         return self.bound.check(normalized_value, **kwargs)
 
