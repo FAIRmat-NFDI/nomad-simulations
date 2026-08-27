@@ -17,6 +17,7 @@ from nomad_simulations.schema_packages.data_types import (
     Bound,
     m_float_bounded,
     m_int_bounded,
+    positive_float,
 )
 
 
@@ -389,6 +390,24 @@ class TestScaleInvariance:
         section = Fine()
         section.x = 0.5 * ureg.joule
         assert section.x.magnitude == 0.5
+
+    @pytest.mark.xfail(
+        strict=True,
+        reason='Offset units are silently mis-checked: nomad strips the unit in '
+        'Quantity.__set__ before the datatype normalizes, so the offset magnitude is '
+        'tested as-is. -10 degC == 263.15 K is a valid positive temperature but is '
+        'rejected as -10. A proper fix needs a nomad-core hook at the metainfo layer.',
+    )
+    def test_offset_unit_on_flexible_unit_is_scale_shifted(self):
+        """Regression tracker for the offset-unit gap (see
+        `_reject_scale_dependent_flexible_unit`). Currently rejects a valid value; will
+        xpass (and this xfail should be removed) once nomad handles offset units."""
+
+        class S(Section):
+            x = Quantity(type=positive_float(), flexible_unit=True)
+
+        section = S()
+        section.x = ureg.Quantity(-10.0, 'degC')  # 263.15 K, physically valid
 
 
 class TestBoundedTypes:

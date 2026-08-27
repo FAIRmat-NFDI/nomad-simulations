@@ -402,7 +402,15 @@ def _deserialize_bounded_type(flags: dict) -> tuple[type | None, Bound]:
 def _reject_scale_dependent_flexible_unit(flexible_unit: bool, bound: Bound) -> None:
     """Raise if a scale-dependent `bound` is used on a `flexible_unit` quantity. Called
     from `normalize` on first assignment, the earliest point `flexible_unit` is resolved
-    on the definition (it is not yet set when the datatype is attached)."""
+    on the definition (it is not yet set when the datatype is attached).
+
+    Limitation: this catches *multiplicative* scale-dependence only. Offset (affine) units
+    -- Celsius, Fahrenheit, Reaumur -- slip through and cannot be caught here, because
+    nomad strips the unit (`value.m`) in `Quantity.__set__` before `normalize` runs, so the
+    datatype only ever sees the bare magnitude. Thus `-10 degC` (a valid 263 K) is tested
+    as `-10` and wrongly fails a positivity bound; a proper fix needs a nomad-core hook at
+    the metainfo layer. Tracked by the xfail
+    `test_offset_unit_on_flexible_unit_is_scale_shifted`."""
     if flexible_unit and not bound.is_scale_invariant():
         raise ValueError(
             f'A scale-dependent bound ({bound}, slack={bound.slack}) is '
