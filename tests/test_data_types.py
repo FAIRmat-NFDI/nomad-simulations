@@ -12,10 +12,12 @@ from nomad.metainfo.data_type import (
 )
 from nomad.units import ureg
 
+import nomad_simulations.schema_packages.data_types as dt_module
 from nomad_simulations.schema_packages.data_types import (
     Bound,
     m_float_bounded,
     m_int_bounded,
+    positive_float,
 )
 
 
@@ -37,6 +39,10 @@ class TestUnitSerializationSection(Section):
     bounded_quantity = Quantity(
         type=m_float_bounded(dtype=float, bound=Bound('[0,10]')), unit='joule'
     )
+
+
+# Importable path nomad's `type_kind='custom'` reconstruction resolves for a bounded type.
+_M_FLOAT_BOUNDED_PATH = f'{m_float_bounded.__module__}.{m_float_bounded.__name__}'
 
 
 def setup_datatype_for_testing(datatype_instance, shape=None):
@@ -151,6 +157,260 @@ class TestBound:
             Bound(invalid_range)  # Should not raise
 
 
+class TestBoundSlackModeClamp:
+    """Slack tolerance, configurable failure mode, and clamping on `Bound`."""
+
+    @pytest.mark.parametrize(
+        'value,accepted',
+        [
+            (1.0, True),  # inside the core interval
+            (2.0 + 5e-7, True),  # just above upper, within slack
+            (-5e-7, True),  # just below lower, within slack
+            (2.1, False),  # beyond the slack band
+            (-0.1, False),  # beyond the slack band
+        ],
+    )
+    def test_slack_widens_acceptance(self, value, accepted):
+        bound = Bound('[0,2]', slack=1e-6)
+        if accepted:
+            assert bound.check(value) == value
+        else:
+            with pytest.raises(ValueError):
+                bound.check(value)
+
+    @pytest.mark.parametrize('value', [0.0, 1.0])
+    def test_slack_zero_preserves_open_interval(self, value):
+        """slack=0 keeps exact inclusivity: open bounds still reject the endpoints."""
+        with pytest.raises(ValueError):
+            Bound('(0,1)').check(value)
+
+    def test_slack_message_notes_tolerance(self):
+        with pytest.raises(ValueError, match=r'must be in \[0,2\] \(±0.001\)'):
+            Bound('[0,2]', slack=1e-3).check(3.0)
+
+    @pytest.mark.parametrize(
+        'value,expected',
+        [
+            (2.0004, 2.0),  # upper slack region -> snapped to max
+            (-0.0004, 0.0),  # lower slack region -> snapped to min
+            (1.0, 1.0),  # core value untouched
+        ],
+    )
+    def test_clamp_scalar(self, value, expected):
+        bound = Bound('[0,2]', slack=1e-3, clamp=True)
+        assert bound.check(value) == pytest.approx(expected)
+
+    def test_clamp_array_snaps_out_of_core(self):
+        bound = Bound('[0,2]', slack=1e-3, clamp=True)
+        result = bound.check(np.array([-0.0005, 1.0, 2.0004]))
+        assert np.allclose(result, [0.0, 1.0, 2.0])
+
+    def test_log_mode_keeps_value_and_warns(self, monkeypatch):
+        monkeypatch.setattr(dt_module, 'LOGGER', Mock())
+        bound = Bound('[0,2]', slack=1e-6, on_violation='log')
+        # beyond the slack band: kept (not raised), warning emitted with disposition 'kept'
+        assert bound.check(2.5) == 2.5
+        _, kwargs = dt_module.LOGGER.warning.call_args
+        assert kwargs['disposition'] == 'kept'
+
+    @pytest.mark.parametrize(
+        'value,expected',
+        [
+            (2.5, 2.0),  # beyond upper band -> coerced to max, not kept
+            (-5.0, 0.0),  # beyond lower band -> coerced to min
+        ],
+    )
+    def test_log_clamp_coerces_beyond_band(self, value, expected, monkeypatch):
+        monkeypatch.setattr(dt_module, 'LOGGER', Mock())
+        bound = Bound('[0,2]', slack=1e-3, on_violation='log', clamp=True)
+        assert bound.check(value) == pytest.approx(expected)
+        _, kwargs = dt_module.LOGGER.warning.call_args
+        assert kwargs['disposition'] == 'clamped'
+
+    def test_log_mode_array_keeps_values(self, monkeypatch):
+        monkeypatch.setattr(dt_module, 'LOGGER', Mock())
+        bound = Bound('[0,2]', on_violation='log')
+        result = bound.check(np.array([1.0, 2.5, -1.0]))
+        assert np.allclose(result, [1.0, 2.5, -1.0])
+        dt_module.LOGGER.warning.assert_called_once()
+
+    def test_log_mode_uses_section_context(self, monkeypatch):
+        monkeypatch.setattr(dt_module, 'LOGGER', Mock())
+        section = Mock()
+        section.m_def.name = 'MySection'
+        section.m_path.return_value = '/data/outputs/0'
+        Bound('[0,2]', on_violation='log').check(5.0, section=section)
+        _, kwargs = dt_module.LOGGER.warning.call_args
+        assert kwargs['section'] == 'MySection'
+        assert kwargs['path'] == '/data/outputs/0'
+
+    @pytest.mark.parametrize('kwargs', [{'on_violation': 'boom'}, {'slack': -1.0}])
+    def test_invalid_configuration_rejected(self, kwargs):
+        with pytest.raises(ValueError):
+            Bound('[0,1]', **kwargs)
+
+    def test_knobs_survive_serialization_roundtrip(self):
+        original = m_float_bounded(
+            dtype=float,
+            bound=Bound('[0,2]', slack=1e-3, on_violation='log', clamp=True),
+        )
+        serialized = original.serialize_self()
+        assert serialized['type_bound_slack'] == pytest.approx(1e-3)
+        assert serialized['type_bound_on_violation'] == 'log'
+        assert serialized['type_bound_clamp'] is True
+
+        reconstructed = m_float_bounded()
+        reconstructed.normalize_flags(serialized)
+        assert reconstructed.bound.slack == pytest.approx(1e-3)
+        assert reconstructed.bound.on_violation == 'log'
+        assert reconstructed.bound.clamp is True
+
+    def test_defaults_unchanged_when_unused(self):
+        bound = Bound('[0,2]')
+        assert bound.slack == 0.0
+        assert bound.on_violation == 'raise'
+        assert bound.clamp is False
+
+    @pytest.mark.parametrize('spec', ['(0,1)', '(0,10]', '[0,1)'])
+    def test_clamp_rejected_on_open_finite_bound(self, spec):
+        # clamp would snap to an excluded endpoint; refuse at construction
+        with pytest.raises(
+            ValueError,
+            match='clamp=True requires every finite endpoint to be inclusive',
+        ):
+            Bound(spec, clamp=True)
+
+    @pytest.mark.parametrize('spec', ['[0,1]', '[0,)', '(,0]', ''])
+    def test_clamp_allowed_on_closed_or_infinite_bounds(self, spec):
+        Bound(spec, clamp=True)  # closed finite, or infinite sides -> fine
+
+    def test_clamp_int_array_stays_in_range(self, monkeypatch):
+        # a fractional bound must not truncate an int array back below the bound
+        monkeypatch.setattr(dt_module, 'LOGGER', Mock())
+        bound = Bound('[2.5,10]', clamp=True, on_violation='log')
+        result = bound.check(np.array([0, 5, 20], dtype=np.int64))
+        assert np.all(result >= 2.5) and np.all(result <= 10)
+        assert np.allclose(result, [2.5, 5.0, 10.0])
+
+    def test_log_value_range_excludes_nan(self, monkeypatch):
+        monkeypatch.setattr(dt_module, 'LOGGER', Mock())
+        # NaN passes the check, so it must not poison the reported offending range
+        Bound('[0,2]', on_violation='log').check([np.nan, 5.0])
+        _, kwargs = dt_module.LOGGER.warning.call_args
+        assert kwargs['value_range'] == [5.0, 5.0]
+
+    def test_int_bounded_slack_and_clamp(self):
+        # the knobs work through m_int_bounded, not only the raw Bound
+        datatype = setup_datatype_for_testing(
+            m_int_bounded(dtype=int, bound=Bound('[0,10]', slack=2, clamp=True))
+        )
+        assert datatype.normalize(11) == 10  # within slack, clamped to max
+        assert datatype.normalize(5) == 5
+
+    def test_log_mode_end_to_end_through_section(self, monkeypatch):
+        # drive on_violation='log' through a real Section assignment (section context)
+        monkeypatch.setattr(dt_module, 'LOGGER', Mock())
+
+        class S(Section):
+            x = Quantity(
+                type=m_float_bounded(
+                    dtype=float, bound=Bound('[0,2]', on_violation='log')
+                ),
+                unit='joule',
+            )
+
+        section = S()
+        section.x = 5.0 * ureg.joule  # out of bounds, but logged and kept, not raised
+        assert section.x.magnitude == 5.0
+        _, kwargs = dt_module.LOGGER.warning.call_args
+        assert kwargs['disposition'] == 'kept'
+        assert kwargs['section'] == 'S'
+
+
+class TestScaleInvariance:
+    """`is_scale_invariant` and the `flexible_unit` guard on first assignment."""
+
+    @pytest.mark.parametrize(
+        'kwargs,invariant',
+        [
+            ({}, True),  # unbounded
+            ({'range_str': '[0,)'}, True),  # non-negative (positive_float)
+            ({'range_str': '(0,)'}, True),  # strictly positive
+            ({'range_str': '(,0]'}, True),  # non-positive
+            ({'range_str': '[0,1]'}, False),  # nonzero upper endpoint
+            ({'range_str': '[1,)'}, False),  # nonzero lower endpoint
+            ({'range_str': '[0,)', 'slack': 1e-3}, False),  # slack is absolute
+        ],
+    )
+    def test_is_scale_invariant(self, kwargs, invariant):
+        range_str = kwargs.pop('range_str', '')
+        assert Bound(range_str, **kwargs).is_scale_invariant() is invariant
+
+    def test_flexible_unit_allows_scale_invariant_bound(self):
+        # non-negativity holds under any positive unit rescale
+        class Ok(Section):
+            x = Quantity(
+                type=m_float_bounded(dtype=float, bound=Bound('[0,)')),
+                unit='joule',
+                flexible_unit=True,
+            )
+
+        section = Ok()
+        section.x = 5.0 * ureg.eV  # different unit, still >= 0
+        assert section.x.magnitude > 0
+
+    @pytest.mark.parametrize(
+        'bounded_cls,dtype,bound',
+        [
+            (m_float_bounded, float, Bound('[0,1]')),  # nonzero finite endpoint
+            (m_float_bounded, float, Bound('[0,)', slack=1e-3)),  # absolute slack
+            (m_int_bounded, int, Bound('[1,10]')),  # int guard, nonzero endpoint
+        ],
+    )
+    def test_flexible_unit_rejects_scale_dependent_bound(
+        self, bounded_cls, dtype, bound
+    ):
+        # the guard lives in both bounded types' normalize; cover int and float
+        class Bad(Section):
+            x = Quantity(
+                type=bounded_cls(dtype=dtype, bound=bound),
+                unit='joule',
+                flexible_unit=True,
+            )
+
+        with pytest.raises(ValueError, match='ill-defined on a flexible_unit'):
+            Bad().x = 5 * ureg.joule
+
+    def test_scale_dependent_bound_fine_without_flexible_unit(self):
+        class Fine(Section):
+            x = Quantity(
+                type=m_float_bounded(dtype=float, bound=Bound('[0,1]')),
+                unit='joule',
+            )
+
+        section = Fine()
+        section.x = 0.5 * ureg.joule
+        assert section.x.magnitude == 0.5
+
+    @pytest.mark.xfail(
+        strict=True,
+        reason='Offset units are silently mis-checked: nomad strips the unit in '
+        'Quantity.__set__ before the datatype normalizes, so the offset magnitude is '
+        'tested as-is. -10 degC == 263.15 K is a valid positive temperature but is '
+        'rejected as -10. A proper fix needs a nomad-core hook at the metainfo layer.',
+    )
+    def test_offset_unit_on_flexible_unit_is_scale_shifted(self):
+        """Regression tracker for the offset-unit gap (see
+        `_reject_scale_dependent_flexible_unit`). Currently rejects a valid value; will
+        xpass (and this xfail should be removed) once nomad handles offset units."""
+
+        class S(Section):
+            x = Quantity(type=positive_float(), flexible_unit=True)
+
+        section = S()
+        section.x = ureg.Quantity(-10.0, 'degC')  # 263.15 K, physically valid
+
+
 class TestBoundedTypes:
     """Test the m_int_bounded and m_float_bounded class functionality."""
 
@@ -262,18 +522,91 @@ class TestBoundedTypes:
         assert datatype.standard_type() == expected_type
 
     def test_serialization_and_reconstruction(self):
-        """Test that bounded types can be serialized and reconstructed."""
+        """A bounded type serializes as a custom datatype so `normalize_type` reloads the
+        exact class and the bound survives, rather than collapsing to a plain base type
+        that drops the interval."""
         original = m_float_bounded(dtype=float, bound=Bound('[0,1]'))
         serialized = original.serialize_self()
 
-        assert serialized['type_kind'] == 'python'
+        assert serialized['type_kind'] == 'custom'
+        assert (
+            serialized['type_data']
+            == 'nomad_simulations.schema_packages.data_types.m_float_bounded'
+        )
+        assert serialized['type_dtype'] == 'float'
         assert serialized['type_bound'] == '[0,1]'
 
         reconstructed = normalize_type(serialized)
+        assert isinstance(reconstructed, m_float_bounded)
+        assert reconstructed._dtype is float
         test_datatype = setup_datatype_for_testing(reconstructed, shape=None)
 
+        # the reconstructed type still enforces the bound
         assert test_datatype.normalize(0.5) == 0.5
-        assert test_datatype.normalize(1.5) == 1.5
+        with pytest.raises(ValueError):
+            test_datatype.normalize(1.5)
+
+    # Each case is a self-contained snapshot of a serialized shape the schema has emitted
+    # for a plain `[0,1]` bound. `_deserialize_bounded_type` fills defaults for absent
+    # keys, so every one must reconstruct to the same type with default knobs. Add a case
+    # on every serialization bump (see `_deserialize_bounded_type`) to keep older shapes
+    # readable.
+    @pytest.mark.parametrize(
+        'serialized',
+        [
+            pytest.param(
+                {
+                    'type_kind': 'custom',
+                    'type_data': _M_FLOAT_BOUNDED_PATH,
+                    'type_dtype': 'float',
+                    'type_bound': '[0,1]',
+                    'type_bound_slack': 0.0,
+                    'type_bound_on_violation': 'raise',
+                    'type_bound_clamp': False,
+                },
+                id='explicit-default-knobs',
+            ),
+            pytest.param(
+                {
+                    'type_kind': 'custom',
+                    'type_data': _M_FLOAT_BOUNDED_PATH,
+                    'type_dtype': 'float',
+                    'type_bound': '[0,1]',
+                },
+                id='omitted-default-knobs',
+            ),
+        ],
+    )
+    def test_deserialize_tolerates_serialization_variants(self, serialized):
+        """Every serialized variant of a plain `[0,1]` bound reconstructs to the same
+        `m_float_bounded` with default knobs, since absent keys fall back to defaults."""
+        reconstructed = normalize_type(dict(serialized))
+        assert isinstance(reconstructed, m_float_bounded)
+        assert reconstructed._dtype is float
+        assert str(reconstructed.bound) == '[0,1]'
+        assert reconstructed.bound.slack == 0.0
+        assert reconstructed.bound.on_violation == 'raise'
+        assert reconstructed.bound.clamp is False
+
+    @pytest.mark.parametrize(
+        'bad_dtype',
+        [
+            'bogus',  # resolves to nothing on builtins or numpy
+            'array',  # resolves to a numpy function, not a type
+            'sum',  # resolves to a builtin function, not a type
+        ],
+    )
+    def test_deserialize_rejects_unresolvable_dtype(self, bad_dtype):
+        """A corrupted/alien `type_dtype` fails actionably with a `ValueError` here,
+        rather than an opaque `AttributeError` or a silently mis-typed datatype."""
+        serialized = {
+            'type_kind': 'custom',
+            'type_data': _M_FLOAT_BOUNDED_PATH,
+            'type_dtype': bad_dtype,
+            'type_bound': '[0,1]',
+        }
+        with pytest.raises(ValueError, match='unknown dtype'):
+            normalize_type(dict(serialized))
 
     def test_basic_functionality(self):
         """Test basic functionality of bounded types."""
@@ -310,6 +643,45 @@ class TestNOMADIntegration:
         assert test_instance.normalize(0.5) == 0.5
         with pytest.raises(ValueError):
             test_instance.normalize(1.5)
+
+    def test_schema_definition_roundtrip_preserves_bound(self):
+        """Serialize a whole quantity *definition* to a dict (as a YAML schema does) and
+        rebuild it. The custom serialization lets `normalize_type` reload the exact
+        bounded class, so the reconstructed definition keeps its bound and enforces it --
+        the case the plain `python` kind broke."""
+        from nomad.metainfo import Package
+
+        pkg = Package(name='bound_roundtrip_pkg')
+        section = Section(name='BoundRoundtripSec')
+        pkg.m_add_sub_section(Package.section_definitions, section)
+        section.m_add_sub_section(
+            Section.quantities,
+            Quantity(
+                name='occ',
+                type=m_float_bounded(dtype=float, bound=Bound('[0,2]', slack=1e-3)),
+                shape=[],
+            ),
+        )
+        pkg.init_metainfo()
+
+        as_dict = pkg.m_to_dict(with_meta=True)
+        serialized_type = as_dict['section_definitions'][0]['quantities'][0]['type']
+        assert serialized_type['type_kind'] == 'custom'
+        assert serialized_type['type_bound'] == '[0,2]'
+
+        # rebuild the definition under a fresh name to avoid the metainfo registry clash
+        as_dict['name'] = 'bound_roundtrip_pkg_rebuilt'
+        rebuilt = Package.m_from_dict(as_dict)
+        rebuilt.init_metainfo()
+        rebuilt_type = rebuilt.section_definitions[0].quantities[0].type
+        assert isinstance(rebuilt_type, m_float_bounded)
+        assert rebuilt_type.bound.slack == pytest.approx(1e-3)
+
+        instance = rebuilt.section_definitions[0].section_cls()
+        instance.occ = 1.5  # within [0,2]
+        assert instance.occ == 1.5
+        with pytest.raises(ValueError):
+            instance.occ = 3.0  # beyond [0,2] + slack
 
     @pytest.mark.parametrize(
         'section_data,should_pass',
@@ -470,7 +842,8 @@ class TestEdgeCases:
         ],
     )
     def test_reconstruct_with_complex_bounds(self, bounds_str, valid_val, invalid_val):
-        """Test reconstruction with various bound types."""
+        """The bound survives reconstruction, so the reconstructed type accepts valid
+        values and still rejects out-of-bound ones."""
         original = m_float_bounded(dtype=float, bound=Bound(bounds_str))
         serialized = original.serialize_self()
         reconstructed = normalize_type(serialized)
@@ -480,9 +853,10 @@ class TestEdgeCases:
         # Valid value should work
         assert test_instance.normalize(valid_val) == valid_val
 
-        # Note: bounds are lost during reconstruction, so invalid values should also pass
+        # The reconstructed bound still enforces the interval
         if invalid_val is not None:
-            assert test_instance.normalize(invalid_val) == invalid_val
+            with pytest.raises(ValueError):
+                test_instance.normalize(invalid_val)
 
 
 class TestUnitHandling:
