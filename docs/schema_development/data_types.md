@@ -75,22 +75,11 @@ When bounded types are defined in schema quantities, serialization preserves the
 
 #### Standalone Type Serialization
 
-When serializing bounded types directly (without schema context), bounds information may be lost.
-This means that manipulating the variable (`reconstructed`), the bound checks no longer apply.
-
-It is therefore recommended to **limit standalone deserialization** to cases where the original data may be considered immutable, e.g. data science pipelines.
-When producing code that uses this approach, make sure to **test serialization roundtrips**, add comment properly, or use _custom serialization_.
+Serializing a bounded type directly (without schema context) also preserves the bound.
+The type serializes as a *custom* datatype -- recording its fully qualified class alongside the interval -- so `normalize_type` reloads the exact bounded class on reconstruction and the checks continue to apply.
 
 ```python
 --8<-- "snippets/explanation/data_types/block_06.py"
-```
-
-### Custom Serialization (Advanced)
-
-If you need to preserve bounds in standalone serialization, you can implement custom serialization:
-
-```python
---8<-- "snippets/explanation/data_types/block_07.py"
 ```
 
 ## Error Handling

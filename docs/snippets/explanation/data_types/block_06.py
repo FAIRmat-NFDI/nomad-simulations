@@ -2,7 +2,7 @@
 original = m_float_bounded(dtype=float, bound=Bound('[0,1]'))
 serialized = original.serialize_self()
 
-# Reconstruction loses bounds information
+# Reconstruction reloads the exact bounded class, keeping its bound
 from nomad.metainfo.data_type import normalize_type
 reconstructed = normalize_type(serialized)
-# Returns basic m_float64 without bounds!
+# reconstructed is an m_float_bounded with bound [0,1]; the interval is still enforced

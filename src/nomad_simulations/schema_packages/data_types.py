@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+import builtins
 import re
 from typing import Any
 
@@ -395,29 +396,41 @@ class m_int_bounded(ExactNumber):
         else:
             return False
 
-    def serialize_self(self):
-        """Serialize the datatype configuration. The extra bound knobs are emitted only
-        when non-default, so a plain bounded type serializes exactly as before. Like the
-        pre-existing `type_bound`, they are restored only via the `custom` reconstruction
-        path (`normalize_flags`), not the default `python` one."""
-        extra: dict = {'type_bound': str(self.bound)}
-        if self.bound.slack > 0:
-            extra['type_bound_slack'] = self.bound.slack
-        if self.bound.on_violation != 'raise':
-            extra['type_bound_on_violation'] = self.bound.on_violation
-        if self.bound.clamp:
-            extra['type_bound_clamp'] = self.bound.clamp
-        return super().serialize_self() | extra
+    def serialize_self(self) -> dict:
+        """Serialize as a *custom* datatype (`type_kind='custom'`, with the fully
+        qualified class as `type_data`) so deserialization reloads this exact class via
+        nomad's `normalize_type` custom path, instead of the `python`/`numpy` kind of
+        the base numeric type -- which would collapse to a plain bound-less type and
+        silently drop the interval. The declared dtype is carried in `type_dtype` (the
+        custom path reconstructs from a no-argument constructor, so the dtype is not
+        otherwise preserved). Every field is always emitted,
+        for a fixed, deterministic serialization shape."""
+        return {
+            'type_kind': 'custom',
+            'type_data': f'{self.__class__.__module__}.{self.__class__.__name__}',
+            'type_dtype': self._dtype.__name__,
+            'type_bound': str(self.bound),
+            'type_bound_slack': self.bound.slack,
+            'type_bound_on_violation': self.bound.on_violation,
+            'type_bound_clamp': self.bound.clamp,
+        } | self.flags
 
     def normalize_flags(self, flags: dict):
-        """Reconstruct from serialized data."""
+        """Reconstruct the dtype and bound from a serialized definition. nomad's custom
+        path calls this on a freshly default-constructed instance
+        (`class_type().normalize_flags(...)`), so the declared dtype is restored here
+        too, not only the bound."""
+        if (dtype_name := flags.get('type_dtype')) is not None:
+            # `_dtype` is an inherited slot from `Primitive`; mypy cannot see it across
+            # the silently-followed nomad import, hence the scoped ignore.
+            self._dtype = getattr(builtins, dtype_name, None) or getattr(np, dtype_name)  # type: ignore[misc]
         self.bound = Bound(
             flags.get('type_bound', ''),
             slack=flags.get('type_bound_slack', 0.0),
             on_violation=flags.get('type_bound_on_violation', 'raise'),
             clamp=flags.get('type_bound_clamp', False),
         )
-        # Apply any flags to base datatype
+        # Apply any remaining flags to the base datatype
         super().normalize_flags(flags)
         return self
 
@@ -473,29 +486,41 @@ class m_float_bounded(InexactNumber):
         else:
             return False
 
-    def serialize_self(self):
-        """Serialize the datatype configuration. The extra bound knobs are emitted only
-        when non-default, so a plain bounded type serializes exactly as before. Like the
-        pre-existing `type_bound`, they are restored only via the `custom` reconstruction
-        path (`normalize_flags`), not the default `python` one."""
-        extra: dict = {'type_bound': str(self.bound)}
-        if self.bound.slack > 0:
-            extra['type_bound_slack'] = self.bound.slack
-        if self.bound.on_violation != 'raise':
-            extra['type_bound_on_violation'] = self.bound.on_violation
-        if self.bound.clamp:
-            extra['type_bound_clamp'] = self.bound.clamp
-        return super().serialize_self() | extra
+    def serialize_self(self) -> dict:
+        """Serialize as a *custom* datatype (`type_kind='custom'`, with the fully
+        qualified class as `type_data`) so deserialization reloads this exact class via
+        nomad's `normalize_type` custom path, instead of the `python`/`numpy` kind of
+        the base numeric type -- which would collapse to a plain bound-less type and
+        silently drop the interval. The declared dtype is carried in `type_dtype` (the
+        custom path reconstructs from a no-argument constructor, so the dtype is not
+        otherwise preserved). Every field is always emitted,
+        for a fixed, deterministic serialization shape."""
+        return {
+            'type_kind': 'custom',
+            'type_data': f'{self.__class__.__module__}.{self.__class__.__name__}',
+            'type_dtype': self._dtype.__name__,
+            'type_bound': str(self.bound),
+            'type_bound_slack': self.bound.slack,
+            'type_bound_on_violation': self.bound.on_violation,
+            'type_bound_clamp': self.bound.clamp,
+        } | self.flags
 
     def normalize_flags(self, flags: dict):
-        """Reconstruct from serialized data."""
+        """Reconstruct the dtype and bound from a serialized definition. nomad's custom
+        path calls this on a freshly default-constructed instance
+        (`class_type().normalize_flags(...)`), so the declared dtype is restored here
+        too, not only the bound."""
+        if (dtype_name := flags.get('type_dtype')) is not None:
+            # `_dtype` is an inherited slot from `Primitive`; mypy cannot see it across
+            # the silently-followed nomad import, hence the scoped ignore.
+            self._dtype = getattr(builtins, dtype_name, None) or getattr(np, dtype_name)  # type: ignore[misc]
         self.bound = Bound(
             flags.get('type_bound', ''),
             slack=flags.get('type_bound_slack', 0.0),
             on_violation=flags.get('type_bound_on_violation', 'raise'),
             clamp=flags.get('type_bound_clamp', False),
         )
-        # Apply any flags to base datatype
+        # Apply any remaining flags to the base datatype
         super().normalize_flags(flags)
         return self
 

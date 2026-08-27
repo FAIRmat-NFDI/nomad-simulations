@@ -498,18 +498,29 @@ class TestBoundedTypes:
         assert datatype.standard_type() == expected_type
 
     def test_serialization_and_reconstruction(self):
-        """Test that bounded types can be serialized and reconstructed."""
+        """A bounded type serializes as a custom datatype so `normalize_type` reloads the
+        exact class and the bound survives, rather than collapsing to a plain base type
+        that drops the interval."""
         original = m_float_bounded(dtype=float, bound=Bound('[0,1]'))
         serialized = original.serialize_self()
 
-        assert serialized['type_kind'] == 'python'
+        assert serialized['type_kind'] == 'custom'
+        assert (
+            serialized['type_data']
+            == 'nomad_simulations.schema_packages.data_types.m_float_bounded'
+        )
+        assert serialized['type_dtype'] == 'float'
         assert serialized['type_bound'] == '[0,1]'
 
         reconstructed = normalize_type(serialized)
+        assert isinstance(reconstructed, m_float_bounded)
+        assert reconstructed._dtype is float
         test_datatype = setup_datatype_for_testing(reconstructed, shape=None)
 
+        # the reconstructed type still enforces the bound
         assert test_datatype.normalize(0.5) == 0.5
-        assert test_datatype.normalize(1.5) == 1.5
+        with pytest.raises(ValueError):
+            test_datatype.normalize(1.5)
 
     def test_basic_functionality(self):
         """Test basic functionality of bounded types."""
@@ -546,6 +557,45 @@ class TestNOMADIntegration:
         assert test_instance.normalize(0.5) == 0.5
         with pytest.raises(ValueError):
             test_instance.normalize(1.5)
+
+    def test_schema_definition_roundtrip_preserves_bound(self):
+        """Serialize a whole quantity *definition* to a dict (as a YAML schema does) and
+        rebuild it. The custom serialization lets `normalize_type` reload the exact
+        bounded class, so the reconstructed definition keeps its bound and enforces it --
+        the case the plain `python` kind broke."""
+        from nomad.metainfo import Package
+
+        pkg = Package(name='bound_roundtrip_pkg')
+        section = Section(name='BoundRoundtripSec')
+        pkg.m_add_sub_section(Package.section_definitions, section)
+        section.m_add_sub_section(
+            Section.quantities,
+            Quantity(
+                name='occ',
+                type=m_float_bounded(dtype=float, bound=Bound('[0,2]', slack=1e-3)),
+                shape=[],
+            ),
+        )
+        pkg.init_metainfo()
+
+        as_dict = pkg.m_to_dict(with_meta=True)
+        serialized_type = as_dict['section_definitions'][0]['quantities'][0]['type']
+        assert serialized_type['type_kind'] == 'custom'
+        assert serialized_type['type_bound'] == '[0,2]'
+
+        # rebuild the definition under a fresh name to avoid the metainfo registry clash
+        as_dict['name'] = 'bound_roundtrip_pkg_rebuilt'
+        rebuilt = Package.m_from_dict(as_dict)
+        rebuilt.init_metainfo()
+        rebuilt_type = rebuilt.section_definitions[0].quantities[0].type
+        assert isinstance(rebuilt_type, m_float_bounded)
+        assert rebuilt_type.bound.slack == pytest.approx(1e-3)
+
+        instance = rebuilt.section_definitions[0].section_cls()
+        instance.occ = 1.5  # within [0,2]
+        assert instance.occ == 1.5
+        with pytest.raises(ValueError):
+            instance.occ = 3.0  # beyond [0,2] + slack
 
     @pytest.mark.parametrize(
         'section_data,should_pass',
@@ -706,7 +756,8 @@ class TestEdgeCases:
         ],
     )
     def test_reconstruct_with_complex_bounds(self, bounds_str, valid_val, invalid_val):
-        """Test reconstruction with various bound types."""
+        """The bound survives reconstruction, so the reconstructed type accepts valid
+        values and still rejects out-of-bound ones."""
         original = m_float_bounded(dtype=float, bound=Bound(bounds_str))
         serialized = original.serialize_self()
         reconstructed = normalize_type(serialized)
@@ -716,9 +767,10 @@ class TestEdgeCases:
         # Valid value should work
         assert test_instance.normalize(valid_val) == valid_val
 
-        # Note: bounds are lost during reconstruction, so invalid values should also pass
+        # The reconstructed bound still enforces the interval
         if invalid_val is not None:
-            assert test_instance.normalize(invalid_val) == invalid_val
+            with pytest.raises(ValueError):
+                test_instance.normalize(invalid_val)
 
 
 class TestUnitHandling:
