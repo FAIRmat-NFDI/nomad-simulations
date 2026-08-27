@@ -275,7 +275,8 @@ class TestBoundSlackModeClamp:
     def test_clamp_rejected_on_open_finite_bound(self, spec):
         # clamp would snap to an excluded endpoint; refuse at construction
         with pytest.raises(
-            ValueError, match='clamp=True requires closed finite bounds'
+            ValueError,
+            match='clamp=True requires every finite endpoint to be inclusive',
         ):
             Bound(spec, clamp=True)
 
@@ -586,6 +587,26 @@ class TestBoundedTypes:
         assert reconstructed.bound.slack == 0.0
         assert reconstructed.bound.on_violation == 'raise'
         assert reconstructed.bound.clamp is False
+
+    @pytest.mark.parametrize(
+        'bad_dtype',
+        [
+            'bogus',  # resolves to nothing on builtins or numpy
+            'array',  # resolves to a numpy function, not a type
+            'sum',  # resolves to a builtin function, not a type
+        ],
+    )
+    def test_deserialize_rejects_unresolvable_dtype(self, bad_dtype):
+        """A corrupted/alien `type_dtype` fails actionably with a `ValueError` here,
+        rather than an opaque `AttributeError` or a silently mis-typed datatype."""
+        serialized = {
+            'type_kind': 'custom',
+            'type_data': _M_FLOAT_BOUNDED_PATH,
+            'type_dtype': bad_dtype,
+            'type_bound': '[0,1]',
+        }
+        with pytest.raises(ValueError, match='unknown dtype'):
+            normalize_type(dict(serialized))
 
     def test_basic_functionality(self):
         """Test basic functionality of bounded types."""

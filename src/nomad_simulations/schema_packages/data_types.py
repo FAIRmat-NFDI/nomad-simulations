@@ -102,12 +102,15 @@ class Bound:
           (default: raise `ValueError`, the historical behavior) or `'log'` (emit a
           warning and keep the value -- unless `clamp` also coerces it -- so a negligible
           excursion does not abort processing).
-        - `clamp`: when `True`, any out-of-core value is snapped into `[lower, upper]`.
-          `slack` still governs only whether a value is a *violation*; `clamp` governs
-          coercion, and only takes effect for values that are not raised on -- i.e.
-          slack-accepted values, or (in `'log'` mode) beyond-band values that are
-          clamped rather than kept. Requires closed finite bounds (validated in
-          `__init__`), so it never snaps to an excluded open endpoint.
+        - `clamp`: when `True`, any value *outside the core interval* is snapped onto the
+          nearest endpoint of `[lower, upper]`; core values pass through untouched. `slack`
+          and `clamp` are orthogonal: `slack` decides only whether a value is a *violation*,
+          `clamp` decides what happens to out-of-core values that are **not raised** -- so
+          under the default `'raise'` only slack-accepted values are ever clamped (anything
+          beyond the band raises first), while under `'log'` beyond-band values are clamped
+          too rather than kept. Every *finite* endpoint must therefore be inclusive
+          (infinite sides are allowed; validated in `__init__`), so clamp never snaps onto
+          an excluded open endpoint.
     """
 
     __slots__ = (
@@ -159,14 +162,15 @@ class Bound:
         self.on_violation = on_violation
         self.clamp = bool(clamp)
         # Clamp snaps to the raw endpoints, so an exclusive finite bound would be
-        # coerced to a value the interval itself rejects. Require closed finite bounds.
+        # coerced to a value the interval itself rejects. Require every finite endpoint
+        # to be inclusive (infinite sides are fine -- clamp never snaps to +/-inf).
         if self.clamp and (
             (np.isfinite(min_val) and not min_inc)
             or (np.isfinite(max_val) and not max_inc)
         ):
             raise ValueError(
-                f'clamp=True requires closed finite bounds; {self} has an exclusive '
-                'finite endpoint it could snap to.'
+                f'clamp=True requires every finite endpoint to be inclusive (infinite '
+                f'sides allowed); {self} has an exclusive finite endpoint it could snap to.'
             )
 
     def _parse_range(self, range_str: str) -> tuple[float, float, bool, bool, str, str]:
@@ -378,6 +382,23 @@ def _serialize_bounded_type(cls: type, dtype: type, bound: Bound, flags: dict) -
     } | flags
 
 
+def _resolve_dtype_name(dtype_name: str) -> type:
+    """Resolve a serialized `type_dtype` name (`'int'`, `'float64'`, ...) to its numeric
+    type, checking `builtins` then `numpy`. Raise `ValueError` with context if the name is
+    unknown or resolves to a non-type object (e.g. `'array'`, `'sum'` -> a numpy function),
+    so a corrupted or alien archive fails actionably here instead of silently mis-typing
+    downstream."""
+    resolved = getattr(builtins, dtype_name, None)
+    if resolved is None:
+        resolved = getattr(np, dtype_name, None)
+    if not isinstance(resolved, type):
+        raise ValueError(
+            f'unknown dtype {dtype_name!r} in serialized bounded type: not a numeric type '
+            'on builtins or numpy'
+        )
+    return resolved
+
+
 def _deserialize_bounded_type(flags: dict) -> tuple[type | None, Bound]:
     """Reconstruct `(dtype, bound)` from serialized `flags`, the inverse of
     `_serialize_bounded_type`; `dtype` is `None` when absent, keeping the constructor
@@ -389,7 +410,7 @@ def _deserialize_bounded_type(flags: dict) -> tuple[type | None, Bound]:
     `test_deserialize_tolerates_serialization_variants` so older archives stay readable."""
     dtype: type | None = None
     if (dtype_name := flags.get('type_dtype')) is not None:
-        dtype = getattr(builtins, dtype_name, None) or getattr(np, dtype_name)
+        dtype = _resolve_dtype_name(dtype_name)
     bound = Bound(
         flags.get('type_bound', ''),
         slack=flags.get('type_bound_slack', 0.0),
