@@ -126,7 +126,7 @@ class Mesh(ArchiveSection):
     )  # ? @JosePizzaro3: should the mesh also contain its boundary information
 
     points = Quantity(
-        type=np.complex128,
+        type=np.float64,
         shape=['n_points', 'dimensionality'],
         description="""
         List of all the points in the mesh.
