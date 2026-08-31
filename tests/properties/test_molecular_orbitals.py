@@ -186,12 +186,6 @@ class TestMolecularOrbitals:
     def test_value_unit_is_joule(self):
         assert str(MolecularOrbitals.value.unit) == 'joule'
 
-    # Occupation bounds are enforced by the `occupations` interval datatype, so they
-    # are covered where the datatype lives rather than here.
-    # NOTE(#468): the spin-resolved maximum (1 for spin orbitals) and a soft-log
-    # failure mode are deferred, so a spin-orbital occupation between 1 and 2 is
-    # currently accepted rather than flagged.
-
     # T1 normalize: spin_channel validation
     def test_spin_channel_invalid_value_errors(self):
         rec = RecordingLogger()
