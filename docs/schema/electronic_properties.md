@@ -18,6 +18,8 @@ classDiagram
     class ElectronicEigenvalues
     class Energy2
     class FermiSurface
+    class FrontierLevels
+    class MOGap
     class MolecularOrbitals
     class Occupancy
     ElectronicEigenvalues <|-- ElectronicBandStructure
@@ -27,6 +29,7 @@ classDiagram
     ElectronicDensityOfStates *-- DOSProfile : projected_dos
     ElectronicDensityOfStates *-- Energy2 : energies
     ElectronicEigenvalues *-- BaseElectronicEigenvalues : contributions
+    MolecularOrbitals *-- FrontierLevels : frontier_levels
 ```
 
 <p class="uml-legend__title">Legend</p>
@@ -93,12 +96,30 @@ classDiagram
 | `role` | Enum (shape: ['n_mo']) | <details><summary>Role of each MO within a correlated calculation or active-space protocol:</summary>Role of each MO within a correlated calculation or active-space protocol:<br>* core: fully occupied, energy-frozen, excluded from correlation.<br>* inactive: fully occupied, variationally optimized, outside the active space.<br>* active: in the active space.<br>* virtual: unoccupied correlated orbital.<br>* deleted: pruned for technical reasons (e.g. linear dependence).<br>`role` is the active-space/correlation classification, orthogonal to `occupations`.</details> |
 | `symmetry` | m_str(str) (shape: ['n_mo']) | Symmetry label of each MO in the molecule's point group (e.g. a₁, b₂u, π_g). Leave empty for systems with no detected symmetry. |
 | `kind` | Enum | <details><summary>Classification of the orbital set by the transformation that defines it:</summary>Classification of the orbital set by the transformation that defines it:<br>* canonical  : standard SCF eigenfunctions (Fock/Kohn-Sham diagonal)<br>* natural    : eigenfunctions of the 1-RDM<br>* localized  : after a localization transform (Boys, Pipek-Mezey, …)<br>For MCSCF/CASSCF outputs, tag the reported set as `canonical` or `natural`<br>(whichever it is); the active-space partition is captured by `role`.</details> |
-| `homo_parsed` | m_float64(float64) | Highest occupied molecular orbital (HOMO) energy as reported by the code. |
-| `lumo_parsed` | m_float64(float64) | Lowest unoccupied molecular orbital (LUMO) energy as reported by the code. |
-| `homo_lumo_gap_parsed` | m_float64(float64) | HOMO-LUMO gap as directly reported by the code. Strictly a parsed value, **not** derived from `homo_parsed`/`lumo_parsed`. Leave unset if the code reports no gap directly. |
-| `homo_normalized` | m_float64(float64) | Highest occupied molecular orbital (HOMO) energy, derived purely from `value` and `occupations` for `kind=canonical`. Left unset when the occupied/unoccupied boundary cannot be resolved; does **not** fall back to `homo_parsed`. |
-| `lumo_normalized` | m_float64(float64) | Lowest unoccupied molecular orbital (LUMO) energy, derived purely from `value` and `occupations` for `kind=canonical`. Left unset when the occupied/unoccupied boundary cannot be resolved; does **not** fall back to `lumo_parsed`. |
-| `homo_lumo_gap_normalized` | m_float64(float64) | HOMO-LUMO gap of the derived frontier pair, taken as `lumo_normalized - homo_normalized`. Left unset when that pair is unavailable; does **not** fall back to `homo_lumo_gap_parsed`. |
+
+### `FrontierLevels`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `FrontierLevels` | HOMO/LUMO pair of a molecular-orbital set, further refining its parent `MolecularOrbitals` by singling out the frontier (highest-occupied / lowest-unoccupied) levels from the full orbital set. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.molecular_orbitals.FrontierLevels){:target="_blank"} |
+
+| Quantity | Type | Description |
+|---|---|---|
+| `homo` | m_float64(float64) | Highest occupied molecular orbital (HOMO) energy. |
+| `lumo` | m_float64(float64) | Lowest unoccupied molecular orbital (LUMO) energy. |
+| `is_derived` | m_bool(bool) | `False` if the pair is directly reported by the code; `True` if resolved from `MolecularOrbitals.value` and `MolecularOrbitals.occupations`. |
+
+### `MOGap`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `MOGap` | HOMO-LUMO gap of a molecular-orbital set. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.molecular_orbitals.MOGap){:target="_blank"} |
+
+| Quantity | Type | Description |
+|---|---|---|
+| `spin_channel` | m_int32(int32) | Spin channel of the gap: 0 for alpha, 1 for beta, when set. |
+| `value` | m_float_bounded(float) | The HOMO-LUMO gap. Non-negative; a crossed frontier pair yields 0. |
+| `derived_from` | Reference | Back-reference to the `FrontierLevels` pair this gap was computed from. Unset for a code-reported (parsed) gap. The referenced pair's `is_derived` distinguishes a gap derived from the parsed frontier from one derived from the resolved frontier. |
 
 ### `ElectronicBandGap`
 

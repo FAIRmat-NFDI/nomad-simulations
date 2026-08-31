@@ -4,23 +4,95 @@ if TYPE_CHECKING:
     from nomad.datamodel.datamodel import EntryArchive
     from structlog.stdlib import BoundLogger
 
+    from nomad_simulations.schema_packages.outputs import Outputs
+
 import numpy as np
 import pint
+from nomad.datamodel.data import ArchiveSection
 from nomad.datamodel.hdf5 import HDF5Dataset, HDF5Wrapper
-from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy
+from nomad.metainfo import MEnum, Quantity, Reference, SectionProxy, SubSection
 
 from nomad_simulations.schema_packages.data_types import (
     Bound,
     m_float_bounded,
+    positive_float,
     strictly_positive_int,
 )
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
+from nomad_simulations.schema_packages.utils import resolve_frontier_levels
 
 # Tolerance on occupation numbers, used in two places: an orbital with occupation
 # below this threshold counts as unoccupied when resolving frontier (HOMO/LUMO)
 # orbitals; and it widens the accepted interval of the `occupations` datatype so
 # floating-point noise just outside [0, 2] is not rejected.
 _OCCUPATION_TOL = 1e-6
+
+
+class FrontierLevels(ArchiveSection):
+    """
+    HOMO/LUMO pair of a molecular-orbital set, further refining its parent
+    `MolecularOrbitals` by singling out the frontier (highest-occupied / lowest-unoccupied)
+    levels from the full orbital set. Packaged under `MolecularOrbitals` because the
+    frontier levels are derived from the MOs and used in their visualization, rather than
+    being searchable in their own right. `is_derived` is `False` for a code-reported pair
+    and `True` for one resolved from the orbital data.
+    """
+
+    homo = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""Highest occupied molecular orbital (HOMO) energy.""",
+    )
+
+    lumo = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""Lowest unoccupied molecular orbital (LUMO) energy.""",
+    )
+
+    is_derived = Quantity(
+        type=bool,
+        default=False,
+        description="""
+        `False` if the pair is directly reported by the code; `True` if resolved from
+        `MolecularOrbitals.value` and `MolecularOrbitals.occupations`.
+        """,
+    )
+
+
+class MOGap(PhysicalProperty):
+    """
+    HOMO-LUMO gap of a molecular-orbital set.
+
+    Provenance flows gap -> source: `derived_from` back-references the `FrontierLevels`
+    pair the gap was computed from. A code-reported (parsed) gap leaves it unset; the
+    referenced pair's own `is_derived` then distinguishes a gap derived from the parsed
+    frontier from one derived from the resolved frontier.
+    """
+
+    spin_channel = Quantity(
+        type=np.int32,
+        description="""Spin channel of the gap: 0 for alpha, 1 for beta, when set.""",
+    )
+
+    value = Quantity(
+        type=positive_float(),
+        unit='joule',
+        description="""The HOMO-LUMO gap. Non-negative; a crossed frontier pair yields 0.""",
+    )
+
+    derived_from = Quantity(
+        type=Reference(FrontierLevels.m_def),
+        description="""
+        Back-reference to the `FrontierLevels` pair this gap was computed from. Unset for a
+        code-reported (parsed) gap. The referenced pair's `is_derived` distinguishes a gap
+        derived from the parsed frontier from one derived from the resolved frontier.
+        """,
+    )
+
+    def _is_derived(self) -> bool:
+        # A gap with a `derived_from` source is by definition derived; parsed gaps leave it unset.
+        return self.derived_from is not None or super()._is_derived()
 
 
 class MolecularOrbitals(PhysicalProperty):
@@ -154,70 +226,14 @@ class MolecularOrbitals(PhysicalProperty):
         """,
     )
 
-    # Frontier-orbital energies as reported by the code (provenance-preserving).
-    # Set by parsers and never touched during normalization. The `_normalized`
-    # counterparts below are derived independently from the orbital data; they do
-    # not fall back to these parsed values.
-    homo_parsed = Quantity(
-        type=np.float64,
-        unit='joule',
+    frontier_levels = SubSection(
+        sub_section=FrontierLevels.m_def,
+        repeats=True,
         description="""
-        Highest occupied molecular orbital (HOMO) energy as reported by the code.
-        """,
-    )
-
-    lumo_parsed = Quantity(
-        type=np.float64,
-        unit='joule',
-        description="""
-        Lowest unoccupied molecular orbital (LUMO) energy as reported by the code.
-        """,
-    )
-
-    # TODO(#467): the parsed-vs-derived provenance of the gap is better expressed
-    # via `is_derived` on a dedicated `ElectronicBandGap` PhysicalProperty than via
-    # a strictly-parsed quantity here.
-    homo_lumo_gap_parsed = Quantity(
-        type=np.float64,
-        unit='joule',
-        description="""
-        HOMO-LUMO gap as directly reported by the code. Strictly a parsed value, **not**
-        derived from `homo_parsed`/`lumo_parsed`. Leave unset if the code reports no
-        gap directly.
-        """,
-    )
-
-    # Derived frontier-orbital energies (canonical orbitals only). Resolved purely
-    # from `value` and `occupations` during normalization; left unset when the
-    # occupied/unoccupied boundary cannot be resolved, with no fallback to the
-    # parsed counterparts.
-    homo_normalized = Quantity(
-        type=np.float64,
-        unit='joule',
-        description="""
-        Highest occupied molecular orbital (HOMO) energy, derived purely from `value`
-        and `occupations` for `kind=canonical`. Left unset when the occupied/unoccupied
-        boundary cannot be resolved; does **not** fall back to `homo_parsed`.
-        """,
-    )
-
-    lumo_normalized = Quantity(
-        type=np.float64,
-        unit='joule',
-        description="""
-        Lowest unoccupied molecular orbital (LUMO) energy, derived purely from `value`
-        and `occupations` for `kind=canonical`. Left unset when the occupied/unoccupied
-        boundary cannot be resolved; does **not** fall back to `lumo_parsed`.
-        """,
-    )
-
-    homo_lumo_gap_normalized = Quantity(
-        type=np.float64,
-        unit='joule',
-        description="""
-        HOMO-LUMO gap of the derived frontier pair, taken as
-        `lumo_normalized - homo_normalized`. Left unset when that pair is unavailable;
-        does **not** fall back to `homo_lumo_gap_parsed`.
+        HOMO/LUMO frontier pairs for this orbital set: at most one code-reported pair
+        (`is_derived=False`, set by the parser) and one resolved pair (`is_derived=True`,
+        set during normalization). The derived gap(s) in `Outputs.molecular_orbital_gaps`
+        back-reference the pair they were computed from.
         """,
     )
 
@@ -278,36 +294,78 @@ class MolecularOrbitals(PhysicalProperty):
         self._resolve_homo_lumo()
 
     def _resolve_homo_lumo(self) -> None:
-        # Frontier orbitals are derived purely from `value` and `occupations`; they
-        # never fall back to the parsed values. The gap follows from the derived pair
-        # and is therefore always consistent with it.
-        homo, lumo = self._derive_frontier_orbitals()
-        if homo is not None:
-            self.homo_normalized = homo
-        if lumo is not None:
-            self.lumo_normalized = lumo
-        if homo is not None and lumo is not None:
-            self.homo_lumo_gap_normalized = lumo - homo
+        """Derive this set's frontier pair and gap(s) and store them in `Outputs`.
 
-    def _derive_frontier_orbitals(
-        self,
-    ) -> tuple[pint.Quantity | None, pint.Quantity | None]:
-        # Frontier orbitals are well defined only for canonical orbitals with both
-        # value (energies) and occupations present and consistent in length. `kind`
-        # must be explicitly `canonical`: an unset `kind` is not assumed canonical, so
-        # a non-canonical set is never silently mis-resolved into HOMO/LUMO.
-        if self.kind != 'canonical':
-            return None, None
-        if self.value is None or self.occupations is None:
-            return None, None
-        occupations = np.asarray(self.occupations)
-        if len(occupations) != len(self.value):
-            return None, None
-        occupied = occupations > _OCCUPATION_TOL
-        # Need at least one occupied and one unoccupied orbital to define a boundary.
-        if not occupied.any() or occupied.all():
-            return None, None
-        return self.value[occupied].max(), self.value[~occupied].min()
+        For canonical orbitals the frontier pair is resolved from `value`+`occupations`
+        into a resolved `FrontierLevels` and its normalized `MOGap`; a `MOGap` is also
+        emitted from any parser-provided (parsed) pair. The parsed pair and the directly
+        reported gap, when present, are written by the parser -- this only derives.
+        """
+        outputs = self.m_parent
+        if outputs is None:
+            return
+
+        if self.kind == 'canonical':
+            homo, lumo = resolve_frontier_levels(
+                self.value, self.occupations, _OCCUPATION_TOL
+            )
+            if homo is not None and lumo is not None:
+                resolved = self._ensure_frontier(homo, lumo)
+                self._emit_gap(outputs, resolved)
+
+        parsed = self._parsed_frontier()
+        if parsed is not None and None not in (parsed.homo, parsed.lumo):
+            self._emit_gap(outputs, parsed)
+
+    def _ensure_frontier(
+        self, homo: pint.Quantity, lumo: pint.Quantity
+    ) -> FrontierLevels:
+        """Get-or-create this set's resolved (`is_derived=True`) `FrontierLevels`. Returns
+        the existing resolved pair if one is already present -- so re-normalization never
+        duplicates it -- otherwise creates one from `homo`/`lumo`, appends it, and returns
+        it. Coexists with any parser-provided parsed pair (`is_derived=False`).
+        """
+        for frontier in self.frontier_levels:
+            if frontier.is_derived:
+                return frontier
+        resolved = FrontierLevels(homo=homo, lumo=lumo, is_derived=True)
+        self.frontier_levels.append(resolved)
+        return resolved
+
+    def _parsed_frontier(self) -> 'FrontierLevels | None':
+        """Look up this set's parser-provided (`is_derived=False`) `FrontierLevels`, or
+        `None` if the code reported no frontier pair. Pure lookup: unlike `_ensure_frontier`
+        it never creates a pair -- parsed pairs come only from the parser.
+        """
+        return next((f for f in self.frontier_levels if not f.is_derived), None)
+
+    def _emit_gap(self, outputs: 'Outputs', frontier: FrontierLevels) -> None:
+        """Emit into `Outputs.molecular_orbital_gaps` an `MOGap` derived from `frontier`,
+        at most once per source. The gap value is `lumo - homo`, clamped to 0 for a
+        crossed pair. `is_derived` is set explicitly because the emitted gap may never
+        have its own `normalize` (and thus the base auto-set from `derived_from`) invoked.
+
+        Idempotency is keyed on the source's `m_path` rather than object identity: on
+        reprocessing the archive is reloaded and `derived_from` resolves to a fresh
+        object, so an identity check would re-emit the gap on every pass.
+        """
+        frontier_path = frontier.m_path()
+        if any(
+            gap.derived_from is not None and gap.derived_from.m_path() == frontier_path
+            for gap in outputs.molecular_orbital_gaps
+        ):
+            return
+        gap_value = frontier.lumo - frontier.homo
+        if gap_value.magnitude < 0:
+            gap_value = 0.0 * frontier.lumo.u
+        outputs.molecular_orbital_gaps.append(
+            MOGap(
+                value=gap_value,
+                spin_channel=self.spin_channel,
+                derived_from=frontier,
+                is_derived=True,
+            )
+        )
 
     def _validate_per_orbital_lengths(self, logger: 'BoundLogger') -> None:
         if self.n_mo is None:

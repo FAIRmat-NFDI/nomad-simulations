@@ -14,6 +14,8 @@ from nomad_simulations.schema_packages.properties.electronic_eigenvalues import 
     ElectronicEigenvalues,
 )
 from nomad_simulations.schema_packages.properties.molecular_orbitals import (
+    FrontierLevels,
+    MOGap,
     MolecularOrbitals,
 )
 
@@ -216,10 +218,10 @@ class TestMolecularOrbitals:
         assert mo.n_mo == 3
         assert mo.n_ao == 4
 
-    # Frontier-orbital resolution: `_normalized` is derived purely from `value` and
-    # `occupations` (canonical orbitals with an occupied/unoccupied boundary),
-    # independent of the `_parsed` provenance fields, which are never used as a
-    # fallback nor overwritten.
+    # Frontier resolution: normalization resolves the HOMO/LUMO pair from `value` and
+    # `occupations` (canonical orbitals with an occupied/unoccupied boundary), stores it
+    # as a resolved `FrontierLevels` (is_derived=True) on the MO, and emits a derived
+    # `MOGap` into `Outputs.molecular_orbital_gaps` referencing that pair.
     @pytest.mark.parametrize(
         'kind, value, occ, expected',
         [
@@ -244,37 +246,165 @@ class TestMolecularOrbitals:
         ],
     )
     def test_frontier_derivation(self, kind, value, occ, expected):
-        # parsed fields are set to values distinct from the derived ones, so the
-        # assertions prove `_normalized` ignores them and they survive intact.
+        outputs = Outputs()
         mo = MolecularOrbitals(
             kind=kind,
             value=np.array(value),
             occupations=np.array(occ),
-            homo_parsed=-0.9,
-            lumo_parsed=0.4,
-            homo_lumo_gap_parsed=2.0,
         )
+        outputs.molecular_orbitals.append(mo)
         mo.normalize(archive=EntryArchive(), logger=logger)
 
-        # `_normalized` reflects the derivation (or is unset), never the parsed values
         e_homo, e_lumo, e_gap = expected
-        for name, exp in (
-            ('homo_normalized', e_homo),
-            ('lumo_normalized', e_lumo),
-            ('homo_lumo_gap_normalized', e_gap),
-        ):
-            actual = getattr(mo, name)
-            if exp is None:
-                assert actual is None
-            else:
-                assert actual.magnitude == pytest.approx(exp)
-        # when derived, the gap is exactly the stored pair, so it stays consistent
-        if e_gap is not None:
-            assert mo.homo_lumo_gap_normalized.magnitude == pytest.approx(
-                (mo.lumo_normalized - mo.homo_normalized).magnitude
-            )
+        resolved = [f for f in mo.frontier_levels if f.is_derived]
+        derived_gaps = [g for g in outputs.molecular_orbital_gaps if g.is_derived]
 
-        # `_parsed` provenance is untouched regardless of derivation
-        assert mo.homo_parsed.magnitude == pytest.approx(-0.9)
-        assert mo.lumo_parsed.magnitude == pytest.approx(0.4)
-        assert mo.homo_lumo_gap_parsed.magnitude == pytest.approx(2.0)
+        if e_gap is None:
+            # no boundary resolved: no resolved pair, no derived gap
+            assert not resolved
+            assert not derived_gaps
+            return
+
+        # exactly one resolved pair mirroring the derivation
+        assert len(resolved) == 1
+        pair = resolved[0]
+        assert pair.homo.magnitude == pytest.approx(e_homo)
+        assert pair.lumo.magnitude == pytest.approx(e_lumo)
+
+        # exactly one derived gap, referencing that pair, value = lumo - homo
+        assert len(derived_gaps) == 1
+        gap = derived_gaps[0]
+        assert gap.value.magnitude == pytest.approx(e_gap)
+        assert gap.derived_from is pair
+        assert gap.derived_from.is_derived is True
+
+    def test_parsed_normalized_gap(self):
+        # A parser-provided (code-reported) frontier pair yields a parsed-normalized
+        # gap: is_derived=True, but its source pair is is_derived=False.
+        outputs = Outputs()
+        mo = MolecularOrbitals(kind='natural')  # no resolvable frontier of its own
+        mo.frontier_levels.append(FrontierLevels(homo=-0.9, lumo=0.4, is_derived=False))
+        outputs.molecular_orbitals.append(mo)
+        mo.normalize(archive=EntryArchive(), logger=logger)
+
+        gaps = outputs.molecular_orbital_gaps
+        assert len(gaps) == 1
+        gap = gaps[0]
+        assert gap.value.magnitude == pytest.approx(1.3)
+        assert gap.is_derived is True
+        assert gap.derived_from.is_derived is False
+
+    def test_three_gaps_coexist(self):
+        # parsed (code-reported), normalized (from resolved frontier), and
+        # parsed-normalized (from the parsed frontier) gaps all coexist and are
+        # distinguishable via is_derived + derived_from(.is_derived).
+        outputs = Outputs()
+        mo = MolecularOrbitals(
+            kind='canonical',
+            value=np.array([-2.0, -1.0, 0.5, 1.5]),
+            occupations=np.array([2.0, 2.0, 0.0, 0.0]),
+        )
+        mo.frontier_levels.append(FrontierLevels(homo=-0.9, lumo=0.4, is_derived=False))
+        outputs.molecular_orbitals.append(mo)
+        # a code-reported gap, as the parser would emit it (no derivation source)
+        outputs.molecular_orbital_gaps.append(MOGap(value=1.1))
+
+        mo.normalize(archive=EntryArchive(), logger=logger)
+
+        gaps = outputs.molecular_orbital_gaps
+        assert len(gaps) == 3
+
+        parsed = [g for g in gaps if g.derived_from is None]
+        from_resolved = [
+            g for g in gaps if g.derived_from is not None and g.derived_from.is_derived
+        ]
+        from_parsed = [
+            g
+            for g in gaps
+            if g.derived_from is not None and not g.derived_from.is_derived
+        ]
+        assert len(parsed) == 1 and not parsed[0].is_derived
+        assert len(from_resolved) == 1 and from_resolved[0].is_derived
+        assert len(from_parsed) == 1 and from_parsed[0].is_derived
+        assert from_resolved[0].value.magnitude == pytest.approx(1.5)
+        assert from_parsed[0].value.magnitude == pytest.approx(1.3)
+
+    def test_crossed_frontier_gap_clamped_to_zero(self):
+        outputs = Outputs()
+        mo = MolecularOrbitals(kind='natural')
+        mo.frontier_levels.append(FrontierLevels(homo=2.0, lumo=1.0, is_derived=False))
+        outputs.molecular_orbitals.append(mo)
+        mo.normalize(archive=EntryArchive(), logger=logger)
+
+        assert outputs.molecular_orbital_gaps[0].value.magnitude == pytest.approx(0.0)
+
+    def test_normalize_is_idempotent(self):
+        outputs = Outputs()
+        mo = MolecularOrbitals(
+            kind='canonical',
+            value=np.array([-2.0, -1.0, 0.5, 1.5]),
+            occupations=np.array([2.0, 2.0, 0.0, 0.0]),
+        )
+        mo.frontier_levels.append(FrontierLevels(homo=-0.9, lumo=0.4, is_derived=False))
+        outputs.molecular_orbitals.append(mo)
+
+        mo.normalize(archive=EntryArchive(), logger=logger)
+        n_frontier = len(mo.frontier_levels)
+        n_gaps = len(outputs.molecular_orbital_gaps)
+
+        mo.normalize(archive=EntryArchive(), logger=logger)
+        assert len(mo.frontier_levels) == n_frontier
+        assert len(outputs.molecular_orbital_gaps) == n_gaps
+
+    def test_gaps_not_duplicated_across_reload(self):
+        # reprocessing (serialize -> reload -> normalize) must not re-emit gaps: the
+        # `_emit_gap` dedup keys on `m_path`, not object identity, so a reloaded
+        # `derived_from` (a fresh object) still matches the existing gap.
+        def build():
+            mo = MolecularOrbitals(
+                kind='canonical',
+                spin_channel=0,
+                value=np.array([-2.0, -1.0, 0.5, 1.5]),
+                occupations=np.array([2.0, 2.0, 0.0, 0.0]),
+            )
+            mo.frontier_levels.append(
+                FrontierLevels(homo=-0.9, lumo=0.4, is_derived=False)
+            )
+            outputs = Outputs(molecular_orbitals=[mo])
+            return EntryArchive(data=Simulation(outputs=[outputs]))
+
+        archive = build()
+        mo = archive.data.outputs[0].molecular_orbitals[0]
+        mo.normalize(archive=archive, logger=logger)
+        n_gaps = len(archive.data.outputs[0].molecular_orbital_gaps)
+        assert n_gaps == 2  # normalized (from resolved) + parsed-normalized
+
+        reloaded = EntryArchive.m_from_dict(archive.m_to_dict())
+        mo2 = reloaded.data.outputs[0].molecular_orbitals[0]
+        mo2.normalize(archive=reloaded, logger=logger)
+        assert len(reloaded.data.outputs[0].molecular_orbital_gaps) == n_gaps
+
+    def test_spin_channel_propagates_to_gap(self):
+        outputs = Outputs()
+        mo = MolecularOrbitals(
+            kind='canonical',
+            spin_channel=1,
+            value=np.array([-2.0, -1.0, 0.5, 1.5]),
+            occupations=np.array([2.0, 2.0, 0.0, 0.0]),
+        )
+        outputs.molecular_orbitals.append(mo)
+        mo.normalize(archive=EntryArchive(), logger=logger)
+        assert outputs.molecular_orbital_gaps[0].spin_channel == 1
+
+    def test_mogap_is_derived_set_from_reference_on_normalize(self):
+        # a derived gap that skips `_emit_gap` still resolves is_derived from
+        # `derived_from` when its own normalize runs (the `_is_derived` override)
+        pair = FrontierLevels(homo=-0.9, lumo=0.4, is_derived=True)
+        gap = MOGap(value=1.3, derived_from=pair)
+        assert gap.is_derived is False  # stored default before normalize
+        gap.normalize(archive=EntryArchive(), logger=logger)
+        assert gap.is_derived is True
+        # a code-reported gap (no derived_from) stays not-derived
+        parsed = MOGap(value=1.1)
+        parsed.normalize(archive=EntryArchive(), logger=logger)
+        assert parsed.is_derived is False
