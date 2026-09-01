@@ -186,11 +186,19 @@ class TestMolecularOrbitals:
     def test_value_unit_is_joule(self):
         assert str(MolecularOrbitals.value.unit) == 'joule'
 
-    # Occupation bounds are enforced by the `occupations` interval datatype, so they
-    # are covered where the datatype lives rather than here.
-    # NOTE(#468): the spin-resolved maximum (1 for spin orbitals) and a soft-log
-    # failure mode are deferred, so a spin-orbital occupation between 1 and 2 is
-    # currently accepted rather than flagged.
+    def test_frontier_cutoff_boundary(self):
+        # Occupations straddling the default cutoff (1e-6): 5e-6 counts as occupied,
+        # 5e-7 as unoccupied, so HOMO/LUMO fall between them. Exercises the cutoff
+        # itself, not just exact 0/2 occupations.
+        mo = MolecularOrbitals(
+            kind='canonical',
+            value=np.array([-2.0, -1.0, 0.5, 1.5]),
+            occupations=np.array([2.0, 5e-6, 5e-7, 0.0]),
+        )
+        mo.normalize(archive=EntryArchive(), logger=logger)
+
+        assert mo.homo_normalized.magnitude == pytest.approx(-1.0)  # from occ 5e-6
+        assert mo.lumo_normalized.magnitude == pytest.approx(0.5)  # from occ 5e-7
 
     # T1 normalize: spin_channel validation
     def test_spin_channel_invalid_value_errors(self):
