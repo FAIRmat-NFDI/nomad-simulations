@@ -1,5 +1,5 @@
 from itertools import accumulate, chain, tee
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pint
@@ -791,7 +791,7 @@ class KLinePath(ArchiveSection):
             lambda acc, value_pair: calc_norms(value_pair[0], value_pair[1]) + acc,
             initial=0.0 * reciprocal_lattice_vectors.u,
         )
-        return list(norms)
+        return cast('list[pint.Quantity]', list(norms))
 
     def resolve_points(
         self,
