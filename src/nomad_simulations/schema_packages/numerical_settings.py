@@ -8,7 +8,7 @@ import spglib
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.config import config
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
+from nomad.metainfo import JSON, MEnum, Quantity, Section, SectionProxy, SubSection
 from nomad.units import ureg
 from seekpath.hpkot import SymmetryDetectionError
 
@@ -1002,14 +1002,25 @@ class KSpace(NumericalSettings):
 
 class SelfConsistency(NumericalSettings):
     """
-    A base section used to define the convergence settings of self-consistent field (SCF) calculation.
-    It determines the conditions for `is_scf_converged` in `SCFOutputs` (see outputs.py). The convergence
-    criteria covered are:
+    Deprecated. The self-consistent field (SCF) convergence concept has been split across the
+    workflow schema: per-iteration measured data lives in `SCFSteps` (see outputs.py) and drives
+    `is_scf_converged`; the per-property convergence thresholds (`threshold_change`) are carried by
+    `WorkflowConvergenceTarget` and its subclasses (see workflow/general.py); and the SCF-loop input
+    settings (`n_max_iterations`, `scf_minimization_algorithm`) live on `SinglePointMethod`
+    (see workflow/single_point.py). See https://github.com/FAIRmat-NFDI/nomad-simulations/issues/488.
+
+    Historically a base section used to define the convergence settings of an SCF calculation,
+    determining the conditions for `is_scf_converged`:
 
         1. The number of iterations is smaller than or equal to `n_max_iterations`.
         2. The total change between two subsequent self-consistent iterations for an output property is below
         `threshold_change`.
     """
+
+    m_def = Section(
+        deprecated='Split across `SCFSteps`, `WorkflowConvergenceTarget`, and `SinglePointMethod`. '
+        'See https://github.com/FAIRmat-NFDI/nomad-simulations/issues/488.'
+    )
 
     # TODO add examples or MEnum?
     scf_minimization_algorithm = Quantity(

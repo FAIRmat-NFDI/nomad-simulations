@@ -79,7 +79,10 @@ classDiagram
 |---|---|---|
 | `SinglePointMethod` | Contains definitions for the input model of a single point workflow. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.single_point.SinglePointMethod){:target="_blank"} |
 
-*This section has no direct quantities.*
+| Quantity | Type | Description |
+|---|---|---|
+| `scf_minimization_algorithm` | m_str(str) | The algorithm used to minimize the energy in the self-consistent field (SCF) loop. Counterpart of `GeometryOptimizationMethod.optimization_method` for the SCF loop. |
+| `n_max_iterations` | m_int32(int) | <details><summary>Maximum number of allowed self-consistent field (SCF) iterations.</summary>Maximum number of allowed self-consistent field (SCF) iterations. Counterpart of<br>`GeometryOptimizationMethod.n_steps_maximum` for the SCF loop; the SCF is not<br>considered converged once this bound is reached. The per-property convergence<br>thresholds are carried by `convergence_targets`.</details> |
 
 ### `SinglePointResults`
 
