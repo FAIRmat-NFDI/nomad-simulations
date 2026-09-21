@@ -9,7 +9,10 @@ from nomad_simulations.schema_packages.workflow.geometry_optimization import (
     GeometryOptimization,
     GeometryOptimizationResults,
 )
-from nomad_simulations.schema_packages.workflow.single_point import SinglePoint
+from nomad_simulations.schema_packages.workflow.single_point import (
+    SinglePoint,
+    SinglePointResults,
+)
 
 
 class TestGeometryOptimization:
@@ -138,6 +141,10 @@ class TestGeometryOptimization:
         assert task.name == 'Step 0'
         assert len(task.outputs) == 1
         assert task.outputs[0].name == 'Outputs'
+        assert isinstance(task.results, SinglePointResults)
+        assert len(task.tasks) == 1
+        assert task.tasks[0].name == 'Calculation'
+        assert task.tasks[0].outputs[0].section == output
 
     def test_link_task_by_timing_no_timing_info(self, logger, archive):
         """Test that no linking occurs when timing info is missing."""
