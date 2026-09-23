@@ -791,7 +791,10 @@ class KLinePath(ArchiveSection):
             lambda acc, value_pair: calc_norms(value_pair[0], value_pair[1]) + acc,
             initial=0.0 * reciprocal_lattice_vectors.u,
         )
-        return list(norms)
+        # pint's newer stubs type the accumulate result as `PlainQuantity[float]`, so mypy
+        # sees `list(norms)` as `list[PlainQuantity[float]]` rather than the declared
+        # `list[pint.Quantity]`; a runtime-correct stub-variance mismatch.
+        return list(norms)  # type: ignore[arg-type]
 
     def resolve_points(
         self,
