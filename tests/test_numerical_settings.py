@@ -384,6 +384,74 @@ class TestKSpaceFunctionalities:
         assert high_symmetry_points is None
 
     @pytest.mark.parametrize(
+        'cell_vectors, expected_bravais, expected_chains',
+        [
+            pytest.param(
+                np.diag([4.0] * 3).tolist(),
+                'cP',
+                [['GAMMA', 'X', 'M', 'GAMMA', 'R', 'X'], ['R', 'M']],
+                id='cubic_canonical',
+            ),
+            # Non-canonical orthorhombic cell (b < a < c) from a phonopy upload:
+            # ASE's canonical-cell matcher rejects this ordering, while SeeKpath
+            # classifies it via spglib regardless of the lattice-vector order.
+            pytest.param(
+                np.diag([9.91421472, 4.39275307, 11.33757198]).tolist(),
+                'oP',
+                [
+                    ['GAMMA', 'X', 'S', 'Y', 'GAMMA', 'Z', 'U', 'R', 'T', 'Z'],
+                    ['X', 'U'],
+                    ['Y', 'T'],
+                    ['S', 'R'],
+                ],
+                id='orthorhombic_non_canonical',
+            ),
+        ],
+    )
+    def test_resolve_special_points_and_path(
+        self, cell_vectors, expected_bravais, expected_chains
+    ):
+        """
+        Test the structure-level `resolve_special_points_and_path` method: native
+        HPKOT labels, `(start, end)` path pairs chained into contiguous segments,
+        and points expressed in the input reciprocal basis.
+        """
+        structure = (cell_vectors, [[0.0, 0.0, 0.0]], [14])
+
+        result = KSpaceFunctionalities.resolve_special_points_and_path(
+            structure=structure, logger=logger
+        )
+
+        assert result is not None
+        assert result['bravais_lattice'] == expected_bravais
+        assert result['path'] == expected_chains
+        # Native HPKOT labels at this level (no `Gamma` remapping)
+        assert np.allclose(result['points']['GAMMA'], [0.0, 0.0, 0.0])
+        path_labels = {label for chain in result['path'] for label in chain}
+        assert path_labels <= set(result['points'])
+
+    def test_resolve_special_points_and_path_symmetry_detection_failure(
+        self, monkeypatch
+    ):
+        """
+        `resolve_special_points_and_path` returns `None` (with a warning) instead
+        of raising when spglib cannot detect the symmetry.
+        """
+        from nomad_simulations.schema_packages import numerical_settings
+
+        # Forcing spglib to report no symmetry makes seekpath raise.
+        monkeypatch.setattr(
+            numerical_settings.spglib, 'get_symmetry_dataset', lambda *a, **k: None
+        )
+
+        result = KSpaceFunctionalities.resolve_special_points_and_path(
+            structure=(np.diag([5.0] * 3).tolist(), [[0.0, 0.0, 0.0]], [14]),
+            logger=logger,
+        )
+
+        assert result is None
+
+    @pytest.mark.parametrize(
         'symbols, cell_vectors, scaled_positions, expected_points',
         [
             # SeeKpath standardizes the conventional BCC cell to its primitive

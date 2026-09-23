@@ -249,6 +249,80 @@ class KSpaceFunctionalities:
             for label, coords in seekpath_result['point_coords'].items()
         }
 
+    @staticmethod
+    def resolve_special_points_and_path(
+        structure: tuple,
+        logger: 'BoundLogger',
+        eps: float | None = None,
+    ) -> dict | None:
+        """
+        Resolves the high symmetry points and the standard band path for a structure
+        using SeeKpath (HPKOT recipe). The points are expressed in the input cell's
+        reciprocal basis (see `_to_input_reciprocal_basis`), and the path is returned
+        as contiguous label sequences, obtained by chaining SeeKpath's `(start, end)`
+        pairs until a discontinuity occurs. Labels are SeeKpath's native HPKOT ones.
+
+        Args:
+            structure (tuple): The `(cell, scaled_positions, numbers)` tuple in the
+                format SeeKpath and spglib consume.
+            logger (BoundLogger): The logger to log messages.
+            eps (float | None, optional): Symmetry precision (spglib `symprec`) passed
+                to SeeKpath/spglib. Defaults to `configuration.symmetry_tolerance`.
+
+        Returns:
+            (dict | None): `{'points': {label: coords}, 'path': [[label, ...], ...],
+            'bravais_lattice': str}`, or `None` if SeeKpath cannot resolve the structure.
+        """
+        if eps is None:
+            eps = configuration.symmetry_tolerance
+        try:
+            # symprec corresponds to spglib's symmetry precision tolerance
+            seekpath_result = seekpath.get_path(
+                structure,
+                with_time_reversal=True,
+                recipe='hpkot',  # Standard HPKOT recipe
+                symprec=eps,
+                angle_tolerance=-1.0,  # Auto-determine from symprec
+            )
+
+            if not seekpath_result['point_coords']:
+                logger.warning('SeeKpath returned empty special points dictionary.')
+                return None
+
+            # Express the points in units of `reciprocal_lattice_vectors`, as the
+            # `high_symmetry_points` quantity description defines them.
+            points = KSpaceFunctionalities._to_input_reciprocal_basis(
+                seekpath_result, structure, eps
+            )
+        except (
+            SymmetryDetectionError,
+            ValueError,
+            RuntimeError,
+            KeyError,
+            AttributeError,
+            TypeError,
+        ) as e:
+            # Recoverable: skip high-symmetry points rather than crash
+            # normalization. `SymmetryDetectionError` is raised by
+            # `seekpath.get_path` when spglib cannot detect the symmetry;
+            # AttributeError/TypeError guard against
+            # `spglib.get_symmetry_dataset` returning `None` in
+            # `_to_input_reciprocal_basis`.
+            logger.warning('Could not resolve k-points with SeeKpath: %s', e)
+            return None
+
+        path: list[list[str]] = []
+        for start, end in seekpath_result['path']:
+            if path and path[-1][-1] == start:
+                path[-1].append(end)
+            else:
+                path.append([start, end])
+        return {
+            'points': points,
+            'path': path,
+            'bravais_lattice': seekpath_result.get('bravais_lattice', ''),
+        }
+
     def resolve_high_symmetry_points(
         self,
         model_systems: list[ModelSystem],
@@ -320,54 +394,19 @@ class KSpaceFunctionalities:
 
             # Use SeeKpath for k-point generation - it uses spglib internally
             # and provides crystallographic standard k-point paths
-            try:
-                # Get k-point path from SeeKpath
-                # symprec corresponds to spglib's symmetry precision tolerance
-                seekpath_result = seekpath.get_path(
-                    structure,
-                    with_time_reversal=True,
-                    recipe='hpkot',  # Standard HPKOT recipe
-                    symprec=eps,
-                    angle_tolerance=-1.0,  # Auto-determine from symprec
-                )
-
-                if not seekpath_result['point_coords']:
-                    logger.warning('SeeKpath returned empty special points dictionary.')
-                    return None
-
-                # Express the points in units of `reciprocal_lattice_vectors`, as the
-                # `high_symmetry_points` quantity description defines them.
-                special_points = self._to_input_reciprocal_basis(
-                    seekpath_result, structure, eps
-                )
-
-                # Log informational message if SeeKpath's classification differs from stored
-                if bravais_lattice:
-                    seekpath_lattice = seekpath_result.get('bravais_lattice', '')
-                    if bravais_lattice != seekpath_lattice:
-                        logger.info(
-                            'Stored Bravais lattice %s differs from SeeKpath classification %s. '
-                            'Using SeeKpath k-points based on full structure analysis.',
-                            bravais_lattice,
-                            seekpath_lattice,
-                        )
-
-            except (
-                SymmetryDetectionError,
-                ValueError,
-                RuntimeError,
-                KeyError,
-                AttributeError,
-                TypeError,
-            ) as e:
-                # Recoverable: skip high-symmetry points rather than crash
-                # normalization. `SymmetryDetectionError` is raised by
-                # `seekpath.get_path` when spglib cannot detect the symmetry;
-                # AttributeError/TypeError guard against
-                # `spglib.get_symmetry_dataset` returning `None` in
-                # `_to_input_reciprocal_basis`.
-                logger.warning('Could not resolve k-points with SeeKpath: %s', e)
+            resolved = self.resolve_special_points_and_path(structure, logger, eps=eps)
+            if resolved is None:
                 return None
+            special_points = resolved['points']
+
+            # Log informational message if SeeKpath's classification differs from stored
+            if bravais_lattice and bravais_lattice != resolved['bravais_lattice']:
+                logger.info(
+                    'Stored Bravais lattice %s differs from SeeKpath classification %s. '
+                    'Using SeeKpath k-points based on full structure analysis.',
+                    bravais_lattice,
+                    resolved['bravais_lattice'],
+                )
 
             break  # only cover the first representative `ModelSystem`
 
