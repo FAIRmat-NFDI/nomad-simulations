@@ -27,11 +27,11 @@ above.
   method description and its practical setup remain connected without being
   merged into the same conceptual layer.
 - Additive Hamiltonian terms (dispersion corrections, solvation models, Hubbard
-  interactions, relativistic treatments, and DFT-specific corrections) are
-  stored in explicitly typed subsections on the appropriate subclass, such as
-  `ModelMethodElectronic.dispersion_correction` or `DFT.nonlocal_correlation`.
-  The generic `contributions` subsection is deprecated: recognized terms found
-  there are migrated to their typed subsections during normalization.
+  interactions, DFT-specific corrections, force-field potentials) are stored as
+  `HamiltonianTerm` sections under `contributions`. Full methods are not terms
+  and cannot be nested there. The relativistic treatment transforms the
+  Hamiltonian rather than adding a separable term to it, so it lives in the
+  typed `ModelMethodElectronic.relativity` subsection instead.
 - Composite multi-method schemes (for example ONIOM-style embedding) are not
   modeled by nesting methods inside each other; a dedicated container section
   with explicitly enumerated member subsections is planned for those.

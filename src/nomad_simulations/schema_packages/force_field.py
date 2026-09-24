@@ -14,7 +14,7 @@ from scipy.interpolate import UnivariateSpline
 
 from nomad_simulations.schema_packages.atoms_state import ParticleState
 from nomad_simulations.schema_packages.data_types import positive_float
-from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
+from nomad_simulations.schema_packages.model_method import HamiltonianTerm, ModelMethod
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
 
 MOL = 6.022140857e23
@@ -135,7 +135,7 @@ class ForceCalculations(NumericalSettings):
     )
 
 
-class Potential(BaseModelMethod):
+class Potential(HamiltonianTerm):
     """
     Section containing information about an interaction potential.
 
@@ -1366,7 +1366,7 @@ class ForceField(ModelMethod):
     Additionally, a published model can be referenced with `reference`.
     """
 
-    # name and external reference already defined in BaseModelMethod
+    # name and external reference already defined in HamiltonianTerm
     # name = Quantity(
     #     type=str,
     #     shape=[],
