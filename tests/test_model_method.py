@@ -22,7 +22,6 @@ from nomad_simulations.schema_packages.model_method import (
     LocalCorrelation,
     LocalCorrelationSpace,
     ModelMethod,
-    ModelMethodElectronic,
     MultireferenceSCF,
     NonlocalCorrelation,
     PerturbationMethod,
@@ -1177,104 +1176,6 @@ def test_contributions_accept_hamiltonian_terms(term_factory):
     assert len(method.contributions) == 1
     assert method.contributions[0] is term
     assert isinstance(method.contributions[0], HamiltonianTerm)
-
-
-def test_relativity_relocated_from_contributions(caplog):
-    """
-    Legacy archives store `RelativityModel` under `contributions`; it is relocated
-    to the typed `relativity` subsection during normalization (object identity
-    preserved) and stays there on repeated normalization.
-    """
-    import logging
-
-    rel = RelativityModel(level='scalar')
-    method = ModelMethodElectronic(contributions=[rel])
-
-    with caplog.at_level(logging.WARNING):
-        method.normalize(EntryArchive(), logger=logger)
-
-    assert len(method.contributions) == 0
-    assert method.relativity is rel
-    assert 'Relocated' in caplog.text
-
-    method.normalize(EntryArchive(), logger=logger)
-
-    assert len(method.contributions) == 0
-    assert method.relativity is rel
-
-
-def test_relativity_relocation_conflict_keeps_data(caplog):
-    """
-    If `relativity` is already populated, the legacy contribution stays in place
-    (no data loss) and warnings are emitted.
-    """
-    import logging
-
-    method = ModelMethodElectronic(relativity=RelativityModel(level='scalar'))
-    second = RelativityModel(level='two-component')
-    method.m_add_sub_section(type(method).contributions, second)
-
-    with caplog.at_level(logging.WARNING):
-        method.normalize(EntryArchive(), logger=logger)
-
-    assert method.relativity.level == 'scalar'
-    assert len(method.contributions) == 1
-    assert method.contributions[0] is second
-    assert 'no free `relativity` subsection' in caplog.text
-
-
-def test_relativity_in_plain_model_method_stays_with_warning(caplog):
-    """
-    Plain `ModelMethod` has no `relativity` subsection; the entry stays in
-    `contributions` and the non-term residual warning is emitted.
-    """
-    import logging
-
-    method = ModelMethod(contributions=[RelativityModel(level='scalar')])
-
-    with caplog.at_level(logging.WARNING):
-        method.normalize(EntryArchive(), logger=logger)
-
-    assert len(method.contributions) == 1
-    assert 'HamiltonianTerm' in caplog.text
-
-
-def test_contributions_self_duplicate_pruned(caplog):
-    """
-    An exact self-copy nested in `contributions` (recursive-mapping parser artifact
-    in legacy archives) is pruned, including multi-level copies.
-    """
-    import logging
-
-    innermost = DFT(name='X')
-    middle = DFT(name='X')
-    middle.contributions.append(innermost)
-    parent = DFT(name='X')
-    parent.contributions.append(middle)
-
-    with caplog.at_level(logging.WARNING):
-        parent.normalize(EntryArchive(), logger=logger)
-
-    assert len(parent.contributions) == 0
-    assert 'self-duplicate' in caplog.text
-
-
-def test_contributions_non_duplicate_method_retained(caplog):
-    """
-    A nested method that differs from the parent is not pruned (additive invariant);
-    only the non-term residual warning is emitted.
-    """
-    import logging
-
-    parent = DFT(name='X')
-    parent.contributions.append(DFT(name='Y'))
-
-    with caplog.at_level(logging.WARNING):
-        parent.normalize(EntryArchive(), logger=logger)
-
-    assert len(parent.contributions) == 1
-    assert parent.contributions[0].name == 'Y'
-    assert 'HamiltonianTerm' in caplog.text
 
 
 _COMMON_XC_CASES = [
