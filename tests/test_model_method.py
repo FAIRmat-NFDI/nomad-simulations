@@ -16,6 +16,7 @@ from nomad_simulations.schema_packages.model_method import (
     ActiveSpace,
     BrokenSymmetryCenter,
     EmpiricalDispersionModel,
+    HamiltonianTerm,
     HubbardInteractions,
     ImplicitSolvationModel,
     LocalCorrelation,
@@ -1063,64 +1064,37 @@ def _dft_hamiltonian_terms():
     return ism, edm, rel, sic
 
 
-def _assert_dft_term_subsections(dft: DFT) -> None:
+def test_dft_contributions_and_relativity_normalize():
+    ism, edm, rel, sic = _dft_hamiltonian_terms()
+    dft = DFT(contributions=[ism, edm, sic], relativity=rel)
+
+    for term in (ism, edm, rel, sic):
+        term.normalize(EntryArchive(), logger=logger)
+
+    assert len(dft.contributions) == 3
+    assert all(isinstance(c, HamiltonianTerm) for c in dft.contributions)
+
     # Solvation
-    assert (
-        pytest.approx(dft.implicit_solvation.dielectric_constant_optical, rel=1e-12)
-        == 1.33**2
-    )
-    assert dft.implicit_solvation.dielectric_constant == 78.4
-    assert dft.implicit_solvation.solvent == 'water'
+    assert pytest.approx(ism.dielectric_constant_optical, rel=1e-12) == 1.33**2
+    assert ism.dielectric_constant == 78.4
+    assert ism.solvent == 'water'
 
     # Dispersion (method identity only in model_method.py tests)
-    assert dft.dispersion_correction.model == 'D3BJ'
-    assert dft.dispersion_correction.damping_function == 'BJ'
+    assert edm.model == 'D3BJ'
+    assert edm.damping_function == 'BJ'
 
-    # Relativity
+    # Relativity (typed subsection, not a `HamiltonianTerm`)
+    assert dft.relativity is rel
     assert dft.relativity.level == 'two-component'
     assert dft.relativity.approximation == 'X2C'
     assert dft.relativity.dkh_order is None
 
     # Self-interaction correction
-    assert dft.self_interaction_correction.name == 'SIC'
-    assert dft.self_interaction_correction.method == 'EXPLICIT_ORBITALS'
-    assert dft.self_interaction_correction.correction_target == 'selected_orbitals'
-    assert dft.self_interaction_correction.scaling_factor == pytest.approx(0.5)
-    assert dft.self_interaction_correction.n_corrected_orbitals == 2
-
-
-def test_dft_term_subsections_solvation_dispersion_relativity_normalize():
-    ism, edm, rel, sic = _dft_hamiltonian_terms()
-    dft = DFT(
-        implicit_solvation=ism,
-        dispersion_correction=edm,
-        relativity=rel,
-        self_interaction_correction=sic,
-    )
-
-    for term in (ism, edm, rel, sic):
-        term.normalize(EntryArchive(), logger=logger)
-
-    _assert_dft_term_subsections(dft)
-
-
-def test_dft_contributions_migrate_to_term_subsections():
-    ism, edm, rel, sic = _dft_hamiltonian_terms()
-    dft = DFT()
-    for term in (ism, edm, rel, sic):
-        dft.m_add_sub_section(type(dft).contributions, term)
-
-    dft.normalize(EntryArchive(), logger=logger)
-    for term in (ism, edm, rel, sic):
-        term.normalize(EntryArchive(), logger=logger)
-
-    assert len(dft.contributions) == 0
-    # migration re-parents the very same objects
-    assert dft.implicit_solvation is ism
-    assert dft.dispersion_correction is edm
-    assert dft.relativity is rel
-    assert dft.self_interaction_correction is sic
-    _assert_dft_term_subsections(dft)
+    assert sic.name == 'SIC'
+    assert sic.method == 'EXPLICIT_ORBITALS'
+    assert sic.correction_target == 'selected_orbitals'
+    assert sic.scaling_factor == pytest.approx(0.5)
+    assert sic.n_corrected_orbitals == 2
 
 
 @pytest.mark.parametrize(
@@ -1162,93 +1136,113 @@ def test_solvation_derives_optical_eps_if_only_n_given():
         model='GBSA', dielectric_constant=20.0, refractive_index=1.50
     )
 
-    dft.implicit_solvation = ism
+    dft.m_add_sub_section(type(dft).contributions, ism)
     ism.normalize(EntryArchive(), logger=logger)
 
     assert pytest.approx(ism.dielectric_constant_optical, rel=1e-12) == 1.50**2
 
 
-@pytest.mark.parametrize('legacy_placement', [False, True])
-def test_dft_sets_nonlocal_correlation_xc_partner_ref_when_missing(legacy_placement):
+def test_dft_sets_nonlocal_correlation_xc_partner_ref_when_missing():
     dft = DFT()
     dft.xc = XCFunctional(functional_key='PBE')
     nonlocal_corr = NonlocalCorrelation(type='VV10')
-    if legacy_placement:
-        dft.m_add_sub_section(type(dft).contributions, nonlocal_corr)
-    else:
-        dft.nonlocal_correlation = nonlocal_corr
+    dft.m_add_sub_section(type(dft).contributions, nonlocal_corr)
 
     dft.normalize(EntryArchive(), logger=logger)
 
     assert nonlocal_corr.xc_partner_ref is dft.xc
-    assert dft.nonlocal_correlation is nonlocal_corr
 
 
 @pytest.mark.parametrize(
-    'term_factory, host_cls, target_attr, repeats',
+    'term_factory',
     [
-        (
-            lambda: ImplicitSolvationModel(model='PCM', dielectric_constant=78.4),
-            ModelMethodElectronic,
-            'implicit_solvation',
-            False,
-        ),
-        (
-            lambda: EmpiricalDispersionModel(model='D3BJ'),
-            ModelMethodElectronic,
-            'dispersion_correction',
-            False,
-        ),
-        (
-            lambda: RelativityModel(level='scalar'),
-            ModelMethodElectronic,
-            'relativity',
-            False,
-        ),
-        (
-            HubbardInteractions,
-            ModelMethodElectronic,
-            'hubbard_interactions',
-            True,
-        ),
-        (
-            lambda: SelfInteractionCorrection(method='AD'),
-            DFT,
-            'self_interaction_correction',
-            False,
-        ),
-        (
-            lambda: NonlocalCorrelation(type='VV10'),
-            DFT,
-            'nonlocal_correlation',
-            False,
-        ),
+        lambda: ImplicitSolvationModel(model='PCM', dielectric_constant=78.4),
+        lambda: EmpiricalDispersionModel(model='D3BJ'),
+        HubbardInteractions,
+        lambda: SelfInteractionCorrection(method='AD'),
+        lambda: NonlocalCorrelation(type='VV10'),
+        lambda: HamiltonianTerm(name='kinetic'),
     ],
 )
-def test_contributions_term_migration(term_factory, host_cls, target_attr, repeats):
+def test_contributions_accept_hamiltonian_terms(term_factory):
     """
-    Terms stored in the deprecated `contributions` are relocated to their typed
-    subsections during normalization, preserving object identity.
+    All additive term classes (and the generic `HamiltonianTerm` itself) are valid
+    `contributions` entries and survive normalization in place.
     """
     term = term_factory()
-    host = host_cls()
-    host.m_add_sub_section(type(host).contributions, term)
+    method = ModelMethod(contributions=[term])
 
-    host.normalize(EntryArchive(), logger=logger)
+    method.normalize(EntryArchive(), logger=logger)
 
-    assert len(host.contributions) == 0
-    migrated = getattr(host, target_attr)
-    if repeats:
-        assert len(migrated) == 1
-        assert migrated[0] is term
-    else:
-        assert migrated is term
+    assert len(method.contributions) == 1
+    assert method.contributions[0] is term
+    assert isinstance(method.contributions[0], HamiltonianTerm)
+
+
+def test_relativity_relocated_from_contributions(caplog):
+    """
+    Legacy archives store `RelativityModel` under `contributions`; it is relocated
+    to the typed `relativity` subsection during normalization (object identity
+    preserved) and stays there on repeated normalization.
+    """
+    import logging
+
+    rel = RelativityModel(level='scalar')
+    method = ModelMethodElectronic(contributions=[rel])
+
+    with caplog.at_level(logging.WARNING):
+        method.normalize(EntryArchive(), logger=logger)
+
+    assert len(method.contributions) == 0
+    assert method.relativity is rel
+    assert 'Relocated' in caplog.text
+
+    method.normalize(EntryArchive(), logger=logger)
+
+    assert len(method.contributions) == 0
+    assert method.relativity is rel
+
+
+def test_relativity_relocation_conflict_keeps_data(caplog):
+    """
+    If `relativity` is already populated, the legacy contribution stays in place
+    (no data loss) and warnings are emitted.
+    """
+    import logging
+
+    method = ModelMethodElectronic(relativity=RelativityModel(level='scalar'))
+    second = RelativityModel(level='two-component')
+    method.m_add_sub_section(type(method).contributions, second)
+
+    with caplog.at_level(logging.WARNING):
+        method.normalize(EntryArchive(), logger=logger)
+
+    assert method.relativity.level == 'scalar'
+    assert len(method.contributions) == 1
+    assert method.contributions[0] is second
+    assert 'no free `relativity` subsection' in caplog.text
+
+
+def test_relativity_in_plain_model_method_stays_with_warning(caplog):
+    """
+    Plain `ModelMethod` has no `relativity` subsection; the entry stays in
+    `contributions` and the non-term residual warning is emitted.
+    """
+    import logging
+
+    method = ModelMethod(contributions=[RelativityModel(level='scalar')])
+
+    with caplog.at_level(logging.WARNING):
+        method.normalize(EntryArchive(), logger=logger)
+
+    assert len(method.contributions) == 1
+    assert 'HamiltonianTerm' in caplog.text
 
 
 def test_contributions_self_duplicate_pruned(caplog):
     """
-    An exact self-copy nested in `contributions` (recursive-mapping parser artifact)
-    is pruned, including multi-level copies.
+    An exact self-copy nested in `contributions` (recursive-mapping parser artifact
+    in legacy archives) is pruned, including multi-level copies.
     """
     import logging
 
@@ -1268,7 +1262,7 @@ def test_contributions_self_duplicate_pruned(caplog):
 def test_contributions_non_duplicate_method_retained(caplog):
     """
     A nested method that differs from the parent is not pruned (additive invariant);
-    only the deprecation warning is emitted.
+    only the non-term residual warning is emitted.
     """
     import logging
 
@@ -1280,59 +1274,7 @@ def test_contributions_non_duplicate_method_retained(caplog):
 
     assert len(parent.contributions) == 1
     assert parent.contributions[0].name == 'Y'
-    assert 'deprecated' in caplog.text
-
-
-def test_contributions_migration_idempotent():
-    host = ModelMethodElectronic()
-    host.m_add_sub_section(type(host).contributions, HubbardInteractions())
-
-    host.normalize(EntryArchive(), logger=logger)
-    host.normalize(EntryArchive(), logger=logger)
-
-    assert len(host.hubbard_interactions) == 1
-    assert len(host.contributions) == 0
-
-
-def test_contributions_migration_conflict_keeps_data(caplog):
-    """
-    If the typed target is already populated, the legacy contribution stays in place
-    (no data loss) and a conflict warning is emitted.
-    """
-    import logging
-
-    host = ModelMethodElectronic(implicit_solvation=ImplicitSolvationModel(model='PCM'))
-    second = ImplicitSolvationModel(model='COSMO')
-    host.m_add_sub_section(type(host).contributions, second)
-
-    with caplog.at_level(logging.WARNING):
-        host.normalize(EntryArchive(), logger=logger)
-
-    assert host.implicit_solvation.model == 'PCM'
-    assert len(host.contributions) == 1
-    assert host.contributions[0] is second
-    assert 'already populated' in caplog.text
-
-
-def test_contributions_unrecognized_term_stays_with_warning(caplog):
-    """
-    Plain `ModelMethod` defines no typed targets; the term stays in the deprecated
-    `contributions` and a deprecation warning is emitted.
-    """
-    import logging
-
-    method = ModelMethod(contributions=[HubbardInteractions()])
-
-    with caplog.at_level(logging.WARNING):
-        method.normalize(EntryArchive(), logger=logger)
-
-    assert len(method.contributions) == 1
-    assert 'deprecated' in caplog.text
-
-
-def test_contributions_deprecated_metadata():
-    assert isinstance(ModelMethod.contributions.deprecated, str)
-    assert ModelMethod.contributions.deprecated
+    assert 'HamiltonianTerm' in caplog.text
 
 
 _COMMON_XC_CASES = [
@@ -1727,9 +1669,8 @@ class TestHubbardInteractions:
 
     def test_hubbard_interactions_containment(self):
         """
-        Test that `HubbardInteractions` is stored as a Hamiltonian term under
-        `ModelMethodElectronic.hubbard_interactions` (with legacy `contributions`
-        entries migrated there) and that `orbitals_ref` holds references to
+        Test that `HubbardInteractions` is accepted as a `HamiltonianTerm` under
+        `ModelMethod.contributions` and that `orbitals_ref` holds references to
         `ElectronicState` sections defined under an `AtomsState`.
         """
         atoms_state = AtomsState(chemical_symbol='Ni')
@@ -1744,15 +1685,7 @@ class TestHubbardInteractions:
             n_orbitals=1,
             orbitals_ref=[orbital],
         )
-        method = ModelMethodElectronic(hubbard_interactions=[hubbard_interactions])
+        method = ModelMethod(contributions=[hubbard_interactions])
 
-        assert method.hubbard_interactions[0] == hubbard_interactions
-        assert method.hubbard_interactions[0].orbitals_ref[0] == orbital
-
-        # legacy placement in the deprecated `contributions` migrates on normalize
-        legacy_term = HubbardInteractions(n_orbitals=1, orbitals_ref=[orbital])
-        legacy = ModelMethodElectronic(contributions=[legacy_term])
-        legacy.normalize(EntryArchive(), logger)
-
-        assert len(legacy.contributions) == 0
-        assert legacy.hubbard_interactions[0] == legacy_term
+        assert method.contributions[0] == hubbard_interactions
+        assert method.contributions[0].orbitals_ref[0] == orbital
