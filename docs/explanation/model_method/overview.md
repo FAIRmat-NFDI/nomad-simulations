@@ -54,6 +54,19 @@ above.
   understood as links between archive components rather than duplicated method
   descriptions.
 
+## Legacy Archives
+
+Archives written before the `HamiltonianTerm` typing may hold self-duplicate nested
+methods under `contributions` (an artifact of recursive mapping-parser annotations)
+or `RelativityModel` entries that now belong in the typed `relativity` subsection.
+These are not touched at normalization time. The utility
+`nomad_simulations.schema_packages.utils.legacy_cleanup` prunes and relocates them,
+and is exposed to deployment operators as the `LegacyContributionsCleanupAction`
+(started per upload via the NOMAD actions API or GUI; dry-run by default, and
+published uploads are only rewritten on explicit opt-in). Note that reprocessing an
+upload with a parser that still emits the recursive pattern reintroduces it; the
+cleanup can simply be run again afterwards.
+
 ## Example
 
 ```python
