@@ -165,3 +165,4 @@ write_to = "src/nomad_simulations/_version.py"
 [project.entry-points.'nomad.plugin']
 
 nomad_simulations_plugin = "nomad_simulations.schema_packages:nomad_simulations_plugin"
+legacy_cleanup_action = "nomad_simulations.actions:legacy_cleanup_action_entry_point"
