@@ -16,6 +16,7 @@ from nomad_simulations.schema_packages.model_method import (
     ActiveSpace,
     BrokenSymmetryCenter,
     EmpiricalDispersionModel,
+    HamiltonianTerm,
     HubbardInteractions,
     ImplicitSolvationModel,
     LocalCorrelation,
@@ -1032,9 +1033,7 @@ class TestBSDFT:
         assert any(entry['event'] == expected_event for entry in log_output.entries)
 
 
-def test_dft_contributions_solvation_dispersion_relativity_normalize():
-    dft = DFT()
-
+def _dft_hamiltonian_terms():
     ism = ImplicitSolvationModel(
         model='PCM',
         solvent='water',
@@ -1061,44 +1060,40 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
             ElectronicState(name='orbital_2'),
         ],
     )
+    return ism, edm, rel, sic
 
-    dft.m_add_sub_section(type(dft).contributions, ism)
-    dft.m_add_sub_section(type(dft).contributions, edm)
-    dft.m_add_sub_section(type(dft).contributions, rel)
-    dft.m_add_sub_section(type(dft).contributions, sic)
 
-    for c in dft.contributions:
-        c.normalize(EntryArchive(), logger=logger)
+def test_dft_contributions_and_relativity_normalize():
+    ism, edm, rel, sic = _dft_hamiltonian_terms()
+    dft = DFT(contributions=[ism, edm, sic], relativity=rel)
 
-    assert len(dft.contributions) == 4
-    assert isinstance(dft.contributions[0], ImplicitSolvationModel)
-    assert isinstance(dft.contributions[1], EmpiricalDispersionModel)
-    assert isinstance(dft.contributions[2], RelativityModel)
-    assert isinstance(dft.contributions[3], SelfInteractionCorrection)
+    for term in (ism, edm, rel, sic):
+        term.normalize(EntryArchive(), logger=logger)
+
+    assert len(dft.contributions) == 3
+    assert all(isinstance(c, HamiltonianTerm) for c in dft.contributions)
 
     # Solvation
-    assert (
-        pytest.approx(dft.contributions[0].dielectric_constant_optical, rel=1e-12)
-        == 1.33**2
-    )
-    assert dft.contributions[0].dielectric_constant == 78.4
-    assert dft.contributions[0].solvent == 'water'
+    assert pytest.approx(ism.dielectric_constant_optical, rel=1e-12) == 1.33**2
+    assert ism.dielectric_constant == 78.4
+    assert ism.solvent == 'water'
 
     # Dispersion (method identity only in model_method.py tests)
-    assert dft.contributions[1].model == 'D3BJ'
-    assert dft.contributions[1].damping_function == 'BJ'
+    assert edm.model == 'D3BJ'
+    assert edm.damping_function == 'BJ'
 
-    # Relativity
-    assert dft.contributions[2].level == 'two-component'
-    assert dft.contributions[2].approximation == 'X2C'
-    assert dft.contributions[2].dkh_order is None
+    # Relativity (typed subsection, not a `HamiltonianTerm`)
+    assert dft.relativity is rel
+    assert dft.relativity.level == 'two-component'
+    assert dft.relativity.approximation == 'X2C'
+    assert dft.relativity.dkh_order is None
 
     # Self-interaction correction
-    assert dft.contributions[3].name == 'SIC'
-    assert dft.contributions[3].method == 'EXPLICIT_ORBITALS'
-    assert dft.contributions[3].correction_target == 'selected_orbitals'
-    assert dft.contributions[3].scaling_factor == pytest.approx(0.5)
-    assert dft.contributions[3].n_corrected_orbitals == 2
+    assert sic.name == 'SIC'
+    assert sic.method == 'EXPLICIT_ORBITALS'
+    assert sic.correction_target == 'selected_orbitals'
+    assert sic.scaling_factor == pytest.approx(0.5)
+    assert sic.n_corrected_orbitals == 2
 
 
 @pytest.mark.parametrize(
@@ -1155,6 +1150,32 @@ def test_dft_sets_nonlocal_correlation_xc_partner_ref_when_missing():
     dft.normalize(EntryArchive(), logger=logger)
 
     assert nonlocal_corr.xc_partner_ref is dft.xc
+
+
+@pytest.mark.parametrize(
+    'term_factory',
+    [
+        lambda: ImplicitSolvationModel(model='PCM', dielectric_constant=78.4),
+        lambda: EmpiricalDispersionModel(model='D3BJ'),
+        HubbardInteractions,
+        lambda: SelfInteractionCorrection(method='AD'),
+        lambda: NonlocalCorrelation(type='VV10'),
+        lambda: HamiltonianTerm(name='kinetic'),
+    ],
+)
+def test_contributions_accept_hamiltonian_terms(term_factory):
+    """
+    All additive term classes (and the generic `HamiltonianTerm` itself) are valid
+    `contributions` entries and survive normalization in place.
+    """
+    term = term_factory()
+    method = ModelMethod(contributions=[term])
+
+    method.normalize(EntryArchive(), logger=logger)
+
+    assert len(method.contributions) == 1
+    assert method.contributions[0] is term
+    assert isinstance(method.contributions[0], HamiltonianTerm)
 
 
 _COMMON_XC_CASES = [
@@ -1547,9 +1568,9 @@ class TestHubbardInteractions:
         assert np.isclose(hubbard_interactions.u_effective.to('eV').magnitude, 1.0)
         assert np.isclose(hubbard_interactions.u_interaction.to('eV').magnitude, 3.0)
 
-    def test_contributions_containment(self):
+    def test_hubbard_interactions_containment(self):
         """
-        Test that `HubbardInteractions` is accepted as a Hamiltonian term under
+        Test that `HubbardInteractions` is accepted as a `HamiltonianTerm` under
         `ModelMethod.contributions` and that `orbitals_ref` holds references to
         `ElectronicState` sections defined under an `AtomsState`.
         """

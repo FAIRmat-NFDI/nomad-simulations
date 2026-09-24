@@ -26,9 +26,15 @@ above.
 - Numerical realization remains attached through `numerical_settings`, so the
   method description and its practical setup remain connected without being
   merged into the same conceptual layer.
-- Additive terms are commonly represented through `contributions`, which keeps
-  composite methods readable as structured combinations rather than flattened
-  lists of unrelated quantities.
+- Additive Hamiltonian terms (dispersion corrections, solvation models, Hubbard
+  interactions, DFT-specific corrections, force-field potentials) are stored as
+  `HamiltonianTerm` sections under `contributions`. Full methods are not terms
+  and cannot be nested there. The relativistic treatment transforms the
+  Hamiltonian rather than adding a separable term to it, so it lives in the
+  typed `ModelMethodElectronic.relativity` subsection instead.
+- Composite multi-method schemes (for example ONIOM-style embedding) are not
+  modeled by nesting methods inside each other; a dedicated container section
+  with explicitly enumerated member subsections is planned for those.
 
 ## Hierarchy Snapshot
 
@@ -47,6 +53,19 @@ above.
 - References to related `ModelSystem` or `Outputs` sections are best
   understood as links between archive components rather than duplicated method
   descriptions.
+
+## Legacy Archives
+
+Archives written before the `HamiltonianTerm` typing may hold self-duplicate nested
+methods under `contributions` (an artifact of recursive mapping-parser annotations)
+or `RelativityModel` entries that now belong in the typed `relativity` subsection.
+These are not touched at normalization time. The utility
+`nomad_simulations.schema_packages.utils.legacy_cleanup` prunes and relocates them,
+and is exposed to deployment operators as the `LegacyContributionsCleanupAction`
+(started per upload via the NOMAD actions API or GUI; dry-run by default, and
+published uploads are only rewritten on explicit opt-in). Note that reprocessing an
+upload with a parser that still emits the recursive pattern reintroduces it; the
+cleanup can simply be run again afterwards.
 
 ## Example
 

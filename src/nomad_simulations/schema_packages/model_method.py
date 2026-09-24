@@ -49,21 +49,14 @@ class BaseModelMethod(ArchiveSection):
     A base section used to define the abstract class of a Hamiltonian section. This section is an
     abstraction of the `ModelMethod` section, which contains the parameters that define the
     mathematical model solved in a simulation. Numerical choices for how that model is evaluated
-    are stored separately under `numerical_settings`. This abstraction is needed in order to allow
-    `ModelMethod` to be divided into specific `terms`, so that the total Hamiltonian is specified in
-    `ModelMethod`, while its contributions are defined in `ModelMethod.terms`.
-
-    Example: a custom model Hamiltonian containing two terms:
-        $H = H_{V_{1}(r)}+H_{V_{2}(r)}$
-    where $H_{V_{1}(r)}$ and $H_{V_{2}(r)}$ are the contributions of two different potentials written in
-    real space coordinates $r$. These potentials could be defined in terms of a combination of parameters
-    $(a_{1}, b_{1}, c_{1}...)$ for $V_{1}(r)$ and $(a_{2}, b_{2}, c_{2}...)$ for $V_{2}(r)$. If we name the
-    total Hamiltonian as `'FF1'`:
-        `ModelMethod.name = 'FF1'`
-        `ModelMethod.contributions = [BaseModelMethod(name='V1', parameters=[a1, b1, c1]), BaseModelMethod(name='V2', parameters=[a2, b2, c2])]`
+    are stored separately under `numerical_settings`; these settings are scoped to the method
+    that owns them and may include any `NumericalSettings` specialization (e.g.
+    `SolvationSettings`, `EmpiricalDispersionSettings`). This abstraction is also the common
+    ancestor of `HamiltonianTerm`, the base class of individual additive Hamiltonian terms
+    stored under `ModelMethod.contributions`.
 
     Note: quantities such as `name`, `type`, `external_reference` should be descriptive enough so that the
-    total Hamiltonian model or each of the terms or contributions can be identified.
+    total Hamiltonian model or each of its terms can be identified.
     """
 
     normalizer_level = 1
@@ -95,6 +88,19 @@ class BaseModelMethod(ArchiveSection):
     numerical_settings = SubSection(sub_section=NumericalSettings.m_def, repeats=True)
 
 
+class HamiltonianTerm(BaseModelMethod):
+    """
+    An additive term of the total model Hamiltonian, $H = H_{0} + \\sum_{i} H_{i}$: a
+    separable, attributable contribution such as a dispersion correction, an
+    implicit-solvation reaction field, or a Hubbard +U interaction. Full methods
+    (`ModelMethod` subclasses) are not terms and cannot be nested as such.
+    Transformative treatments that replace the Hamiltonian rather than add to it
+    (e.g. relativistic treatments, see `RelativityModel`) are represented as typed
+    subsections of the method instead. Instantiate this class directly for generic,
+    code-specific Hamiltonian or energy decompositions.
+    """
+
+
 class ModelMethod(BaseModelMethod):
     """
     A base section for the method-defining choices of a simulation. Store here choices that change
@@ -102,20 +108,25 @@ class ModelMethod(BaseModelMethod):
     simulation. Numerical controls for discretization, convergence, basis representations, solver
     execution, or related implementation details belong in `numerical_settings`.
 
-    Optionally, this section can be decomposed in a series of contributions by storing them under
-    the `contributions` quantity.
+    Additive Hamiltonian terms (dispersion corrections, solvation models, Hubbard
+    interactions, ...) are stored as `HamiltonianTerm` sections under `contributions`.
+    Composite multi-method schemes (e.g. ONIOM) are not modeled by nesting methods; a
+    dedicated container section with explicitly enumerated member subsections is planned
+    for those.
     """
 
     contributions = SubSection(
-        sub_section=BaseModelMethod.m_def,
+        sub_section=HamiltonianTerm.m_def,
         repeats=True,
         description="""
-        Contribution or sub-term of the total model Hamiltonian.
+        Additive terms of the total model Hamiltonian. Only `HamiltonianTerm` sections
+        belong here; full methods cannot be nested. Legacy archives predating this
+        typing can be cleaned with `utils.legacy_cleanup`.
         """,
     )
 
 
-class ImplicitSolvationModel(BaseModelMethod):
+class ImplicitSolvationModel(HamiltonianTerm):
     """Implicit-solvent or polarizable continuum treatments.
 
     Examples include PCM and its variants (IEF-PCM, CPCM), COSMO, COSMO-RS,
@@ -239,7 +250,7 @@ class ImplicitSolvationModel(BaseModelMethod):
             )
 
 
-class EmpiricalDispersionModel(BaseModelMethod):
+class EmpiricalDispersionModel(HamiltonianTerm):
     """Empirical dispersion correction used together with an ab-initio method.
 
     Covers pairwise-additive (D2/D3/D3(BJ)/D4), density-dependent (TS/TS-SCS),
@@ -291,7 +302,7 @@ class EmpiricalDispersionModel(BaseModelMethod):
     )
 
 
-class SelfInteractionCorrection(BaseModelMethod):
+class SelfInteractionCorrection(HamiltonianTerm):
     """Self-interaction correction (SIC) add-on used together with DFT.
 
     This section replaces the legacy flat
@@ -390,7 +401,7 @@ class SelfInteractionCorrection(BaseModelMethod):
             )
 
 
-class HubbardInteractions(BaseModelMethod):
+class HubbardInteractions(HamiltonianTerm):
     """
     Hubbard interaction correction to the total Hamiltonian (e.g. the +U term of DFT+U),
     defined by on-site interaction parameters acting on the orbitals referenced in
@@ -639,7 +650,7 @@ class RelativityModel(BaseModelMethod):
     )
 
 
-class NonlocalCorrelation(BaseModelMethod):
+class NonlocalCorrelation(HamiltonianTerm):
     """Nonlocal correlation term used in DFT to capture dispersion-like interactions.
 
     This section represents kernel-based nonlocal correlation models that are
@@ -720,7 +731,10 @@ class OrbitalLocalization(ModelMethod):
 class ModelMethodElectronic(ModelMethod):
     """
     A base section used to define the parameters of a model Hamiltonian used in electronic structure
-    calculations (TB, DFT, GW, BSE, DMFT, etc).
+    calculations (TB, DFT, GW, BSE, DMFT, etc). Additive Hamiltonian terms (dispersion
+    corrections, solvation models, Hubbard interactions, ...) are stored under
+    `contributions`; the relativistic treatment, which transforms the Hamiltonian rather
+    than adding to it, is stored in the typed `relativity` subsection.
     """
 
     is_spin_polarized = Quantity(
@@ -728,6 +742,15 @@ class ModelMethodElectronic(ModelMethod):
         description="""
         If the simulation is done considering the spin degrees of freedom (then there are two spin
         channels, 'down' and 'up') or not.
+        """,
+    )
+
+    relativity = SubSection(
+        sub_section=RelativityModel.m_def,
+        description="""
+        Relativistic treatment applied to the electronic Hamiltonian (ZORA, X2C, DKH, ...).
+        Not a `HamiltonianTerm`: it transforms the Hamiltonian rather than adding a
+        separable term to it.
         """,
     )
 
@@ -944,6 +967,8 @@ class XCFunctional(ArchiveSection):
 class DFT(ModelMethodElectronic):
     """
     A base section used to define the parameters used in a density functional theory (DFT) calculation.
+    DFT-specific Hamiltonian terms (e.g. `SelfInteractionCorrection`,
+    `NonlocalCorrelation`) are stored under `contributions`.
     """
 
     # TODO : improve and rename this classification

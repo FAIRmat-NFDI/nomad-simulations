@@ -24,7 +24,7 @@ from nomad_simulations.schema_packages.basis_set import (
     generate_apw,
 )
 from nomad_simulations.schema_packages.general import Simulation
-from nomad_simulations.schema_packages.model_method import BaseModelMethod, ModelMethod
+from nomad_simulations.schema_packages.model_method import HamiltonianTerm, ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem, Representation
 from tests.conftest import refs_apw
 
@@ -376,9 +376,9 @@ def test_quick_step() -> None:
             model_method=[
                 ModelMethod(
                     contributions=[
-                        BaseModelMethod(name='kinetic'),
-                        BaseModelMethod(name='electron-ion'),
-                        BaseModelMethod(name='hartree'),
+                        HamiltonianTerm(name='kinetic'),
+                        HamiltonianTerm(name='electron-ion'),
+                        HamiltonianTerm(name='hartree'),
                     ],
                     numerical_settings=[],
                 )
@@ -769,9 +769,9 @@ def test_mixed_orbital_aux_ecp() -> None:
             model_method=[
                 ModelMethod(
                     contributions=[
-                        BaseModelMethod(name='kinetic'),
-                        BaseModelMethod(name='electron-ion'),
-                        BaseModelMethod(name='hartree'),
+                        HamiltonianTerm(name='kinetic'),
+                        HamiltonianTerm(name='electron-ion'),
+                        HamiltonianTerm(name='hartree'),
                     ],
                     numerical_settings=[],
                 )
