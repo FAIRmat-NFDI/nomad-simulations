@@ -1,5 +1,5 @@
 from itertools import accumulate, chain, tee
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pint
@@ -772,7 +772,11 @@ class KLinePath(ArchiveSection):
             value_rlv: np.ndarray, prev_value_rlv: np.ndarray
         ) -> pint.Quantity:
             value_tot_rlv = value_rlv - prev_value_rlv
-            return np.linalg.norm(value_tot_rlv) * reciprocal_lattice_vectors.u
+            # cast: pint >= 0.26 stubs type this product as the `PlainQuantity` base
+            return cast(
+                'pint.Quantity',
+                np.linalg.norm(value_tot_rlv) * reciprocal_lattice_vectors.u,
+            )
 
         # Compute `rlv` projections
         rlv_projections = list(
@@ -791,7 +795,8 @@ class KLinePath(ArchiveSection):
             lambda acc, value_pair: calc_norms(value_pair[0], value_pair[1]) + acc,
             initial=0.0 * reciprocal_lattice_vectors.u,
         )
-        return list(norms)
+        # cast: pint >= 0.26 stubs infer the `PlainQuantity` base for `accumulate`
+        return cast('list[pint.Quantity]', list(norms))
 
     def resolve_points(
         self,
