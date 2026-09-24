@@ -49,21 +49,15 @@ class BaseModelMethod(ArchiveSection):
     A base section used to define the abstract class of a Hamiltonian section. This section is an
     abstraction of the `ModelMethod` section, which contains the parameters that define the
     mathematical model solved in a simulation. Numerical choices for how that model is evaluated
-    are stored separately under `numerical_settings`. This abstraction is needed in order to allow
-    `ModelMethod` to be divided into specific `terms`, so that the total Hamiltonian is specified in
-    `ModelMethod`, while its contributions are defined in `ModelMethod.terms`.
-
-    Example: a custom model Hamiltonian containing two terms:
-        $H = H_{V_{1}(r)}+H_{V_{2}(r)}$
-    where $H_{V_{1}(r)}$ and $H_{V_{2}(r)}$ are the contributions of two different potentials written in
-    real space coordinates $r$. These potentials could be defined in terms of a combination of parameters
-    $(a_{1}, b_{1}, c_{1}...)$ for $V_{1}(r)$ and $(a_{2}, b_{2}, c_{2}...)$ for $V_{2}(r)$. If we name the
-    total Hamiltonian as `'FF1'`:
-        `ModelMethod.name = 'FF1'`
-        `ModelMethod.contributions = [BaseModelMethod(name='V1', parameters=[a1, b1, c1]), BaseModelMethod(name='V2', parameters=[a2, b2, c2])]`
+    are stored separately under `numerical_settings`; these settings are scoped to the method
+    that owns them and may include any `NumericalSettings` specialization (e.g.
+    `SolvationSettings`, `EmpiricalDispersionSettings`). This abstraction also serves as the base
+    class of individual Hamiltonian terms (dispersion corrections, solvation models, Hubbard
+    interactions, ...) that are stored in explicitly typed subsections of the `ModelMethod`
+    subclasses.
 
     Note: quantities such as `name`, `type`, `external_reference` should be descriptive enough so that the
-    total Hamiltonian model or each of the terms or contributions can be identified.
+    total Hamiltonian model or each of its terms can be identified.
     """
 
     normalizer_level = 1
@@ -102,17 +96,114 @@ class ModelMethod(BaseModelMethod):
     simulation. Numerical controls for discretization, convergence, basis representations, solver
     execution, or related implementation details belong in `numerical_settings`.
 
-    Optionally, this section can be decomposed in a series of contributions by storing them under
-    the `contributions` quantity.
+    Hamiltonian terms (dispersion corrections, solvation models, Hubbard interactions, ...) are
+    stored in explicitly typed subsections defined on the appropriate subclass, e.g.
+    `ModelMethodElectronic.dispersion_correction` or `DFT.nonlocal_correlation`. The generic
+    `contributions` subsection is deprecated. Composite multi-method schemes (e.g. ONIOM) are
+    not modeled by nesting methods; a dedicated container section with explicitly enumerated
+    member subsections is planned for those.
     """
 
     contributions = SubSection(
         sub_section=BaseModelMethod.m_def,
         repeats=True,
+        deprecated=(
+            'Store Hamiltonian terms in their typed subsections instead: '
+            '`implicit_solvation`, `relativity`, `dispersion_correction` and '
+            '`hubbard_interactions` on `ModelMethodElectronic`; '
+            '`self_interaction_correction` and `nonlocal_correlation` on `DFT`. '
+            'Recognized terms are migrated automatically during normalization; '
+            '`contributions` will be removed after the deprecation window.'
+        ),
         description="""
-        Contribution or sub-term of the total model Hamiltonian.
+        Deprecated. Contribution or sub-term of the total model Hamiltonian; use the typed
+        term subsections on the appropriate `ModelMethod` subclass instead.
         """,
     )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        self._migrate_contributions(logger)
+
+    def _is_self_duplicate(self, contribution: BaseModelMethod) -> bool:
+        """
+        Whether `contribution` is an exact copy of this method (an artifact of recursive
+        mapping-parser annotations), comparing serialized content with the nested
+        `contributions` key stripped on both sides.
+        """
+        if contribution.m_def is not self.m_def:
+            return False
+        # Reference quantities serialize as archive paths, so duplicates holding internal
+        # references may compare unequal and are then retained (errs on the additive side).
+        # The `m_def` key only appears on polymorphically nested sections; class identity
+        # is already checked above.
+        parent_dict = self.m_to_dict()
+        child_dict = contribution.m_to_dict()
+        for key in ('contributions', 'm_def'):
+            parent_dict.pop(key, None)
+            child_dict.pop(key, None)
+        return parent_dict == child_dict
+
+    def _migrate_contributions(self, logger: 'BoundLogger') -> None:
+        """
+        Resolve the deprecated `contributions` subsection: prune exact self-duplicates,
+        relocate recognized Hamiltonian terms into their typed subsections, and warn about
+        any residual entries.
+        """
+        if not self.contributions:
+            return
+
+        # `MSubSectionList.remove` is unsupported and `pop` shifts indices: iterate in reverse.
+        n_duplicates = 0
+        for index in reversed(range(len(self.contributions))):
+            if self._is_self_duplicate(self.contributions[index]):
+                self.contributions.pop(index)
+                n_duplicates += 1
+        if n_duplicates:
+            logger.warning(
+                'Removed self-duplicate entries from deprecated'
+                ' `ModelMethod.contributions` (recursive-mapping parser artifact).',
+                n_removed=n_duplicates,
+            )
+
+        available_targets = type(self).m_def.all_sub_sections
+        migrated: list[str] = []
+        for index in reversed(range(len(self.contributions))):
+            contribution = self.contributions[index]
+            target = next(
+                (
+                    attr
+                    for term_cls, attr in _CONTRIBUTION_TERM_TARGETS
+                    if isinstance(contribution, term_cls) and attr in available_targets
+                ),
+                None,
+            )
+            if target is None:
+                continue
+            sub_section_def = available_targets[target]
+            if not sub_section_def.repeats and getattr(self, target) is not None:
+                logger.warning(
+                    'Cannot migrate deprecated contribution: target subsection is'
+                    ' already populated.',
+                    target=target,
+                )
+                continue
+            self.contributions.pop(index)
+            self.m_add_sub_section(sub_section_def, contribution)
+            migrated.append(target)
+        if migrated:
+            logger.warning(
+                'Migrated Hamiltonian terms from deprecated `ModelMethod.contributions`'
+                ' to their typed subsections.',
+                targets=sorted(migrated),
+            )
+
+        if self.contributions:
+            logger.warning(
+                '`ModelMethod.contributions` is deprecated; remaining entries were left'
+                ' in place.',
+                section_types=[c.m_def.name for c in self.contributions],
+            )
 
 
 class ImplicitSolvationModel(BaseModelMethod):
@@ -395,7 +486,7 @@ class HubbardInteractions(BaseModelMethod):
     Hubbard interaction correction to the total Hamiltonian (e.g. the +U term of DFT+U),
     defined by on-site interaction parameters acting on the orbitals referenced in
     `orbitals_ref`. As a Hamiltonian correction term, this section is stored under
-    `ModelMethod.contributions`.
+    `ModelMethodElectronic.hubbard_interactions`.
     """
 
     # TODO (@JosePizarro3 note): we need to have checks for when a `ModelSystem` is spin rotational invariant (then we only need to pass `u_interaction` and `j_hunds_coupling` and resolve the other quantities)
@@ -682,6 +773,18 @@ class NonlocalCorrelation(BaseModelMethod):
     )
 
 
+# Deprecation-window migration targets of `ModelMethod.contributions`: term class ->
+# typed subsection attribute. Remove together with `contributions`.
+_CONTRIBUTION_TERM_TARGETS: tuple[tuple[type[BaseModelMethod], str], ...] = (
+    (ImplicitSolvationModel, 'implicit_solvation'),
+    (EmpiricalDispersionModel, 'dispersion_correction'),
+    (SelfInteractionCorrection, 'self_interaction_correction'),
+    (HubbardInteractions, 'hubbard_interactions'),
+    (RelativityModel, 'relativity'),
+    (NonlocalCorrelation, 'nonlocal_correlation'),
+)
+
+
 class OrbitalLocalization(ModelMethod):
     """Transforming canonical MOs into a localized representation.
 
@@ -720,7 +823,9 @@ class OrbitalLocalization(ModelMethod):
 class ModelMethodElectronic(ModelMethod):
     """
     A base section used to define the parameters of a model Hamiltonian used in electronic structure
-    calculations (TB, DFT, GW, BSE, DMFT, etc).
+    calculations (TB, DFT, GW, BSE, DMFT, etc). Hamiltonian terms applicable across these methods
+    are stored in the typed subsections `implicit_solvation`, `relativity`, `dispersion_correction`
+    and `hubbard_interactions`.
     """
 
     is_spin_polarized = Quantity(
@@ -728,6 +833,38 @@ class ModelMethodElectronic(ModelMethod):
         description="""
         If the simulation is done considering the spin degrees of freedom (then there are two spin
         channels, 'down' and 'up') or not.
+        """,
+    )
+
+    implicit_solvation = SubSection(
+        sub_section=ImplicitSolvationModel.m_def,
+        description="""
+        Implicit-solvent Hamiltonian term (PCM, COSMO, SMD, ...). Numerical solver choices
+        belong in `numerical_settings` (`SolvationSettings`).
+        """,
+    )
+
+    relativity = SubSection(
+        sub_section=RelativityModel.m_def,
+        description="""
+        Relativistic treatment applied to the electronic Hamiltonian (ZORA, X2C, DKH, ...).
+        """,
+    )
+
+    dispersion_correction = SubSection(
+        sub_section=EmpiricalDispersionModel.m_def,
+        description="""
+        Empirical dispersion correction term (D2, D3, D4, MBD, XDM, ...). Numerical
+        evaluation choices belong in `numerical_settings` (`EmpiricalDispersionSettings`).
+        """,
+    )
+
+    hubbard_interactions = SubSection(
+        sub_section=HubbardInteractions.m_def,
+        repeats=True,
+        description="""
+        Hubbard interaction terms (e.g. the +U term of DFT+U), one per correlated shell or
+        species.
         """,
     )
 
@@ -944,6 +1081,8 @@ class XCFunctional(ArchiveSection):
 class DFT(ModelMethodElectronic):
     """
     A base section used to define the parameters used in a density functional theory (DFT) calculation.
+    DFT-specific Hamiltonian terms are stored in the typed subsections
+    `self_interaction_correction` and `nonlocal_correlation`.
     """
 
     # TODO : improve and rename this classification
@@ -972,12 +1111,32 @@ class DFT(ModelMethodElectronic):
 
     xc = SubSection(sub_section=XCFunctional.m_def, repeats=False)
 
+    self_interaction_correction = SubSection(
+        sub_section=SelfInteractionCorrection.m_def,
+        description="""
+        Self-interaction correction applied on top of the XC baseline (PZ-SIC and variants).
+        """,
+    )
+
+    nonlocal_correlation = SubSection(
+        sub_section=NonlocalCorrelation.m_def,
+        description="""
+        Kernel-based nonlocal correlation term paired with the XC baseline (vdW-DF family,
+        VV10/rVV10).
+        """,
+    )
+
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
 
         if self.xc is None:
             self.xc = XCFunctional()
 
+        for term in (self.dispersion_correction, self.nonlocal_correlation):
+            if term is not None and term.xc_partner_ref is None:
+                term.xc_partner_ref = self.xc
+        # Deprecation-window fallback for terms stranded in `contributions` (e.g.
+        # occupied-target conflicts); remove together with `contributions`.
         for contribution in self.contributions:
             if (
                 isinstance(
