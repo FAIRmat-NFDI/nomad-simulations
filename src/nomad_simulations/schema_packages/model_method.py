@@ -120,85 +120,10 @@ class ModelMethod(BaseModelMethod):
         repeats=True,
         description="""
         Additive terms of the total model Hamiltonian. Only `HamiltonianTerm` sections
-        belong here; full methods cannot be nested.
+        belong here; full methods cannot be nested. Legacy archives predating this
+        typing can be cleaned with `utils.legacy_cleanup`.
         """,
     )
-
-    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
-        super().normalize(archive, logger)
-        self._resolve_legacy_contributions(logger)
-
-    def _is_self_duplicate(self, contribution: 'BaseModelMethod') -> bool:
-        """
-        Whether `contribution` is an exact copy of this method (an artifact of recursive
-        mapping-parser annotations in legacy archives), comparing serialized content with
-        the nested `contributions` key stripped on both sides.
-        """
-        if contribution.m_def is not self.m_def:
-            return False
-        # Reference quantities serialize as archive paths, so duplicates holding internal
-        # references may compare unequal and are then retained (errs on the additive side).
-        # The `m_def` key only appears on polymorphically nested sections; class identity
-        # is already checked above.
-        parent_dict = self.m_to_dict()
-        child_dict = contribution.m_to_dict()
-        for key in ('contributions', 'm_def'):
-            parent_dict.pop(key, None)
-            child_dict.pop(key, None)
-        return parent_dict == child_dict
-
-    def _resolve_legacy_contributions(self, logger: 'BoundLogger') -> None:
-        """
-        Clean up legacy `contributions` content that predates the `HamiltonianTerm`
-        typing: prune exact self-duplicates (recursive-mapping parser artifact),
-        relocate `RelativityModel` entries to the typed `relativity` subsection, and
-        warn about residual non-term entries.
-        """
-        if not self.contributions:
-            return
-
-        # `MSubSectionList.remove` is unsupported and `pop` shifts indices: iterate in reverse.
-        n_duplicates = 0
-        for index in reversed(range(len(self.contributions))):
-            if self._is_self_duplicate(self.contributions[index]):
-                self.contributions.pop(index)
-                n_duplicates += 1
-        if n_duplicates:
-            logger.warning(
-                'Removed self-duplicate entries from `ModelMethod.contributions`'
-                ' (recursive-mapping parser artifact).',
-                n_removed=n_duplicates,
-            )
-
-        relativity_def = type(self).m_def.all_sub_sections.get('relativity')
-        for index in reversed(range(len(self.contributions))):
-            contribution = self.contributions[index]
-            if not isinstance(contribution, RelativityModel):
-                continue
-            if relativity_def is None or self.relativity is not None:
-                logger.warning(
-                    'Cannot relocate `RelativityModel` out of'
-                    ' `ModelMethod.contributions`: no free `relativity` subsection.',
-                )
-                continue
-            self.contributions.pop(index)
-            self.m_add_sub_section(relativity_def, contribution)
-            logger.warning(
-                'Relocated `RelativityModel` from `ModelMethod.contributions` to the'
-                ' typed `relativity` subsection.',
-            )
-
-        residual = [
-            c.m_def.name
-            for c in self.contributions
-            if not isinstance(c, HamiltonianTerm)
-        ]
-        if residual:
-            logger.warning(
-                '`ModelMethod.contributions` holds sections that are not'
-                ' `HamiltonianTerm`s; entries were left in place.',
-                section_types=residual,
-            )
 
 
 class ImplicitSolvationModel(HamiltonianTerm):
