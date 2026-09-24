@@ -26,9 +26,15 @@ above.
 - Numerical realization remains attached through `numerical_settings`, so the
   method description and its practical setup remain connected without being
   merged into the same conceptual layer.
-- Additive terms are commonly represented through `contributions`, which keeps
-  composite methods readable as structured combinations rather than flattened
-  lists of unrelated quantities.
+- Additive Hamiltonian terms (dispersion corrections, solvation models, Hubbard
+  interactions, relativistic treatments, and DFT-specific corrections) are
+  stored in explicitly typed subsections on the appropriate subclass, such as
+  `ModelMethodElectronic.dispersion_correction` or `DFT.nonlocal_correlation`.
+  The generic `contributions` subsection is deprecated: recognized terms found
+  there are migrated to their typed subsections during normalization.
+- Composite multi-method schemes (for example ONIOM-style embedding) are not
+  modeled by nesting methods inside each other; a dedicated container section
+  with explicitly enumerated member subsections is planned for those.
 
 ## Hierarchy Snapshot
 
