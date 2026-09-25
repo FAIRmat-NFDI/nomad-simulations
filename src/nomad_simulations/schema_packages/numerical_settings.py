@@ -8,14 +8,13 @@ import spglib
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.config import config
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
+from nomad.metainfo import JSON, MEnum, Quantity, Section, SectionProxy, SubSection
 from nomad.units import ureg
 from seekpath.hpkot import SymmetryDetectionError
 
 if TYPE_CHECKING:
     from nomad.datamodel.context import Context
     from nomad.datamodel.datamodel import EntryArchive
-    from nomad.metainfo import Section
     from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
@@ -1002,18 +1001,26 @@ class KSpace(NumericalSettings):
 
 class SelfConsistency(NumericalSettings):
     """
-    A base section used to define the convergence settings of self-consistent field (SCF) calculation.
-    It determines the conditions for `is_scf_converged` in `SCFOutputs` (see outputs.py). The convergence
-    criteria covered are:
-
-        1. The number of iterations is smaller than or equal to `n_max_iterations`.
-        2. The total change between two subsequent self-consistent iterations for an output property is below
-        `threshold_change`.
+    Deprecated. Self-consistent field (SCF) settings are now split across the workflow and
+    outputs schema. Store the SCF input settings (`n_max_iterations`,
+    `scf_minimization_algorithm`) on `SinglePointMethod`, express the convergence criteria
+    as `WorkflowConvergenceTarget` entries in the workflow method's `convergence_targets`,
+    and record the per-iteration measured data in `SCFSteps` on the outputs.
     """
+
+    m_def = Section(
+        deprecated=(
+            'Use `SinglePointMethod.n_max_iterations` / '
+            '`SinglePointMethod.scf_minimization_algorithm` for SCF input settings, '
+            '`WorkflowConvergenceTarget` (via the workflow method `convergence_targets`) '
+            'for the convergence criteria, and `SCFSteps` for per-iteration data.'
+        ),
+    )
 
     # TODO add examples or MEnum?
     scf_minimization_algorithm = Quantity(
         type=str,
+        deprecated='Use `SinglePointMethod.scf_minimization_algorithm` instead.',
         description="""
         Specifies the algorithm used for self consistency minimization.
         """,
@@ -1021,6 +1028,7 @@ class SelfConsistency(NumericalSettings):
 
     n_max_iterations = Quantity(
         type=np.int32,
+        deprecated='Use `SinglePointMethod.n_max_iterations` instead.',
         description="""
         Specifies the maximum number of allowed self-consistent iterations. The simulation `is_scf_converged`
         if the number of iterations is not larger or equal than this quantity.
@@ -1030,6 +1038,7 @@ class SelfConsistency(NumericalSettings):
     threshold_change = Quantity(
         type=np.float64,
         flexible_unit=True,
+        deprecated='Use a `WorkflowConvergenceTarget` (e.g. `EnergyConvergenceTarget.threshold`) instead.',
         description="""
         Specifies the threshold for the change between two subsequent self-consistent iterations on
         a given output property. The simulation `is_scf_converged` if this total change is below

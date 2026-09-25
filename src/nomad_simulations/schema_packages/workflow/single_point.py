@@ -1,5 +1,5 @@
 from nomad.datamodel import EntryArchive
-from nomad.metainfo import SchemaPackage, SubSection
+from nomad.metainfo import Quantity, SchemaPackage, SubSection
 from structlog.stdlib import BoundLogger
 
 from nomad_simulations.schema_packages.utils import log
@@ -17,9 +17,32 @@ m_package = SchemaPackage()
 class SinglePointMethod(SimulationWorkflowMethod):
     """
     Contains definitions for the input model of a single point workflow.
+
+    This includes the input settings of the self-consistent field (SCF) loop. The SCF
+    convergence targets live in the inherited `convergence_targets` subsection (e.g.
+    `EnergyConvergenceTarget.threshold`), while the per-iteration measured data are
+    recorded in `SCFSteps` on the outputs.
     """
 
     _label = 'Single point model'
+
+    n_max_iterations = Quantity(
+        type=int,
+        shape=[],
+        description="""
+        Maximum number of allowed self-consistent field (SCF) iterations. The SCF loop
+        is considered converged when the convergence targets in `convergence_targets`
+        are reached within this number of iterations.
+        """,
+    )
+
+    scf_minimization_algorithm = Quantity(
+        type=str,
+        shape=[],
+        description="""
+        The algorithm used for self-consistent field (SCF) minimization.
+        """,
+    )
 
 
 class SinglePointResults(SimulationWorkflowResults):
