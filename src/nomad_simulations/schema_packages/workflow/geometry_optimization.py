@@ -281,7 +281,10 @@ class GeometryOptimization(SerialWorkflow):
         self, archive: EntryArchive, logger: BoundLogger
     ) -> None:
         """Create tasks from archive outputs with timing-based linking."""
-        outputs = sorted(archive.data.outputs, key=lambda x: x.wall_start or 0)
+        outputs = sorted(
+            archive.data.outputs,
+            key=lambda x: (x.wall_start is None, x.wall_start or 0),
+        )
         tasks = []
         parent_n = 0
         root_n = 0
@@ -349,7 +352,10 @@ class GeometryOptimization(SerialWorkflow):
         tstart = output.wall_start
         tend = outputs[parent_n].wall_end
 
-        if tstart is None and tend is None:
+        # An output with only one timestamp cannot be linked reliably, but it
+        # is still a valid task and must not prevent the remaining tasks
+        # from being added.
+        if tstart is None or tend is None:
             return parent_n, root_n
 
         if tstart >= tend:
