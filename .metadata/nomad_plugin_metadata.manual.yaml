@@ -1,0 +1,68 @@
+# Maintainer-owned metadata overrides and manual additions.
+# This file is never machine-overwritten after creation.
+# Use null/empty values as placeholders; only non-empty values override auto output.
+# list[str] domain/topic tags (e.g. "simulations", "spectroscopy")
+
+# enum {alpha, beta, stable, archived}
+maturity: beta
+# str, e.g. "main"
+repository_default_branch: develop
+
+# Deployment flags.
+deployment:
+  # boolean
+  on_central: true
+  # boolean
+  on_example_oasis: true
+  # boolean
+  on_pypi: true
+  # str (PyPI package name)
+  pypi_package: nomad-simulations
+
+# Suggested usages for registry filtering/discovery.
+suggested_usages:
+  - id: simulation-schema-foundation
+    title: Use FAIR simulation schemas in NOMAD plugins
+    user_intent: Reuse common simulation metainfo sections in plugin schema packages
+    domain_category: simulations
+    technique: simulation-schema
+    audience: plugin-developers
+    maturity: stable
+    tags:
+      - schema
+      - metainfo
+      - reuse
+
+  - id: harmonize-simulation-data-models
+    title: Harmonize simulation data models across parsers
+    user_intent: Standardize simulation outputs to shared semantic sections
+    domain_category: cross-domain
+    technique: ontology-and-schema-harmonization
+    audience: advanced
+    maturity: stable
+    tags:
+      - harmonization
+      - interoperability
+      - simulation
+
+# Optional file format metadata enrichments.
+file_format_support:
+  -
+    # str (stable ID), e.g. "csv"
+    id: null
+    # str display label, e.g. ".csv"
+    label: null
+    # str capability reference (links to capabilities[].id), e.g. "vasp_parser"
+    capability_id: null
+    # str producer/code family for ambiguous extensions, e.g. "vasp", "quantumespresso"
+    producer: null
+    # list[str] extensions including dot, e.g. [".csv", ".txt"]
+    extensions: []
+    # list[str], e.g. ["text/csv"]
+    mime_types: []
+    # str, e.g. "CIF", "NeXus"
+    standard: null
+    # str, instrument or context label
+    instrument_context: null
+    # str free text notes
+    notes: null
