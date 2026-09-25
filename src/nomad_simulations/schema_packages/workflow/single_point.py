@@ -16,36 +16,25 @@ m_package = SchemaPackage()
 
 class SinglePointMethod(SimulationWorkflowMethod):
     """
-    Contains definitions for the input model of a single point workflow.
-
-    The self-consistent field (SCF) loop that produces a single point is controlled by the
-    input settings below. They mirror `GeometryOptimizationMethod.optimization_method` and
-    `n_steps_maximum` for the SCF loop: `scf_minimization_algorithm` names the algorithm and
-    `n_max_iterations` bounds the iteration count. The per-property convergence thresholds
-    themselves (formerly `SelfConsistency.threshold_change`) are carried by
-    `convergence_targets` (see `WorkflowConvergenceTarget` and its subclasses). Together these
-    absorb the deprecated `SelfConsistency(NumericalSettings)` section.
+    Contains definitions for the input model of a single point workflow, including the
+    input settings that control the self-consistent field (SCF) loop. The per-property
+    convergence thresholds are carried by `convergence_targets` (see
+    `WorkflowConvergenceTarget` and its subclasses).
     """
 
     _label = 'Single point model'
 
     scf_minimization_algorithm = Quantity(
         type=str,
-        shape=[],
         description="""
         The algorithm used to minimize the energy in the self-consistent field (SCF) loop.
-        Counterpart of `GeometryOptimizationMethod.optimization_method` for the SCF loop.
         """,
     )
 
     n_max_iterations = Quantity(
         type=int,
-        shape=[],
         description="""
-        Maximum number of allowed self-consistent field (SCF) iterations. Counterpart of
-        `GeometryOptimizationMethod.n_steps_maximum` for the SCF loop; the SCF is not
-        considered converged once this bound is reached. The per-property convergence
-        thresholds are carried by `convergence_targets`.
+        Maximum number of allowed self-consistent field (SCF) iterations.
         """,
     )
 
