@@ -77,9 +77,12 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `SinglePointMethod` | Contains definitions for the input model of a single point workflow. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.single_point.SinglePointMethod){:target="_blank"} |
+| `SinglePointMethod` | Contains definitions for the input model of a single point workflow, including the input settings that control the self-consistent field (SCF) loop. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.single_point.SinglePointMethod){:target="_blank"} |
 
-*This section has no direct quantities.*
+| Quantity | Type | Description |
+|---|---|---|
+| `scf_minimization_algorithm` | m_str(str) | The algorithm used to minimize the energy in the self-consistent field (SCF) loop. |
+| `n_max_iterations` | m_int32(int) | Maximum number of allowed self-consistent field (SCF) iterations. |
 
 ### `SinglePointResults`
 
