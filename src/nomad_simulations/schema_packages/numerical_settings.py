@@ -1003,14 +1003,15 @@ class KSpace(NumericalSettings):
 class SelfConsistency(NumericalSettings):
     """
     Deprecated. The self-consistent field (SCF) convergence concept has been split across the
-    workflow schema: per-iteration measured data lives in `SCFSteps` (see outputs.py) and drives
-    `is_scf_converged`; the per-property convergence thresholds (`threshold_change`) are carried by
-    `WorkflowConvergenceTarget` and its subclasses (see workflow/general.py); and the SCF-loop input
+    workflow schema: per-iteration measured data lives in `SCFSteps` (see outputs.py); the
+    per-property convergence thresholds (`threshold_change`) are carried by
+    `WorkflowConvergenceTarget` and its subclasses, whose evaluation is reported as
+    `SimulationWorkflowResults.is_converged` (see workflow/general.py); and the SCF-loop input
     settings (`n_max_iterations`, `scf_minimization_algorithm`) live on `SinglePointMethod`
     (see workflow/single_point.py). See https://github.com/FAIRmat-NFDI/nomad-simulations/issues/488.
 
     Historically a base section used to define the convergence settings of an SCF calculation,
-    determining the conditions for `is_scf_converged`:
+    determining the conditions for reaching convergence:
 
         1. The number of iterations is smaller than or equal to `n_max_iterations`.
         2. The total change between two subsequent self-consistent iterations for an output property is below
@@ -1033,8 +1034,8 @@ class SelfConsistency(NumericalSettings):
     n_max_iterations = Quantity(
         type=np.int32,
         description="""
-        Specifies the maximum number of allowed self-consistent iterations. The simulation `is_scf_converged`
-        if the number of iterations is not larger or equal than this quantity.
+        Specifies the maximum number of allowed self-consistent iterations. Convergence is not
+        reached once the number of iterations exceeds this quantity.
         """,
     )
 
@@ -1043,8 +1044,8 @@ class SelfConsistency(NumericalSettings):
         flexible_unit=True,
         description="""
         Specifies the threshold for the change between two subsequent self-consistent iterations on
-        a given output property. The simulation `is_scf_converged` if this total change is below
-        this threshold. Supports flexible units (e.g., energy in eV/joule, density as dimensionless).
+        a given output property. Convergence is reached once this total change is below this
+        threshold. Supports flexible units (e.g., energy in eV/joule, density as dimensionless).
         """,
     )
 
