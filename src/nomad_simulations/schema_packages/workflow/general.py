@@ -842,7 +842,10 @@ class SimulationWorkflow(Workflow, SimulationTask):
             return
 
         outputs = list(archive.data.outputs)
-        outputs.sort(key=lambda x: x.wall_start or 0)
+        # Keep outputs without a start time at the end. Using ``0`` as the
+        # fallback makes Python compare an integer with a datetime when an
+        # archive contains both timed and untimed outputs.
+        outputs.sort(key=lambda x: (x.wall_start is None, x.wall_start or 0))
         tasks = []
         parent_n = 0
         root_n = 0
@@ -854,7 +857,10 @@ class SimulationWorkflow(Workflow, SimulationTask):
             tasks.append(task)
             tstart = output.wall_start
             tend = outputs[parent_n].wall_end
-            if tstart is None and tend is None:
+            # An output with only one timestamp cannot be linked reliably, but
+            # it is still a valid task and must not prevent the remaining tasks
+            # from being added below.
+            if tstart is None or tend is None:
                 continue
             if tstart >= tend:
                 task.inputs.extend(
