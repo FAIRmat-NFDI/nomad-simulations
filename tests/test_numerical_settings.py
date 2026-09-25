@@ -822,7 +822,7 @@ class TestKLinePath:
         )
         hs_points = [0, 0.5, 0.5 + 1 / np.sqrt(2), 1 + 1 / np.sqrt(2)]
         for i, val in enumerate(hs_points):
-            assert np.isclose(high_symmetry_path_norms[i].magnitude, val)
+            assert np.isclose(high_symmetry_path_norms[i], val)
 
     def test_resolve_points(self, k_line_path: KLinePath):
         """

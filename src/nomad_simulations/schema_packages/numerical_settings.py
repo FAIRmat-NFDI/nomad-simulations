@@ -745,7 +745,7 @@ class KLinePath(ArchiveSection):
         self,
         reciprocal_lattice_vectors: pint.Quantity | None,
         logger: 'BoundLogger',
-    ) -> list[pint.Quantity] | None:
+    ) -> list[float] | None:
         """
         Get the high symmetry path points norms from the list of dictionaries of vectors in units of the `reciprocal_lattice_vectors`.
         The norms are accummulated, such that the first high symmetry point in the path list has a norm of 0, while the others sum the
@@ -757,7 +757,7 @@ class KLinePath(ArchiveSection):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (list[pint.Quantity] | None): The high symmetry points norms list, e.g. in a cubic lattice:
+            (list[float] | None): The high symmetry points norms list, e.g. in a cubic lattice:
                 `high_symmetry_path_value_norms = [0, 0.5, 0.5 + 1 / np.sqrt(2), 1 + 1 / np.sqrt(2)]`
         """
         # Checking the high symmetry path quantities
@@ -768,11 +768,9 @@ class KLinePath(ArchiveSection):
             return None
         rlv = reciprocal_lattice_vectors.magnitude
 
-        def calc_norms(
-            value_rlv: np.ndarray, prev_value_rlv: np.ndarray
-        ) -> pint.Quantity:
+        def calc_norms(value_rlv: np.ndarray, prev_value_rlv: np.ndarray) -> float:
             value_tot_rlv = value_rlv - prev_value_rlv
-            return np.linalg.norm(value_tot_rlv) * reciprocal_lattice_vectors.u
+            return float(np.linalg.norm(value_tot_rlv))
 
         # Compute `rlv` projections
         rlv_projections = list(
@@ -785,11 +783,12 @@ class KLinePath(ArchiveSection):
         # Skip the first element in the second iterator
         next(rlv_projections_2, None)
 
-        # Calculate the norms using accumulate
+        # Calculate the norms using accumulate. The values are magnitudes in units of the
+        # `reciprocal_lattice_vectors`, matching the unitless `points`/`high_symmetry_path_values`.
         norms = accumulate(
             zip(rlv_projections_2, rlv_projections_1),
             lambda acc, value_pair: calc_norms(value_pair[0], value_pair[1]) + acc,
-            initial=0.0 * reciprocal_lattice_vectors.u,
+            initial=0.0,
         )
         return list(norms)
 
@@ -836,7 +835,7 @@ class KLinePath(ArchiveSection):
             return None
         closest_indices = list(
             map(
-                lambda norm: (np.abs(points_norm - norm.magnitude)).argmin(),
+                lambda norm: int((np.abs(points_norm - norm)).argmin()),
                 high_symmetry_path_value_norms,
             )
         )
