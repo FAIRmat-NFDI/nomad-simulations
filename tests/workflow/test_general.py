@@ -87,6 +87,16 @@ class TestSimulationWorklow:
                 inp.section for inp in workflow.tasks[target].inputs
             ]
 
+    def test_tasks_with_missing_timestamps(self, logger, archive, workflow):
+        archive.data.outputs = [
+            Outputs(wall_start=0.0, wall_end=1.0),
+            Outputs(wall_start=None, wall_end=None),
+        ]
+
+        workflow.normalize(archive, logger)
+
+        assert len(workflow.tasks) == 2
+
 
 class TestSerialWorkflow:
     n_outputs = 3
