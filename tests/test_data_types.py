@@ -742,8 +742,36 @@ class TestNOMADIntegration:
             ('elasticsearch', int, '[0,100]', 'long'),
             ('mongodb_float', float, '[0,1]', 'FloatField'),
             ('mongodb_int', int, '[0,100]', 'IntField'),
-            ('json_schema_float', float, '[0,1]', {'type': 'number'}),
-            ('json_schema_int', int, '[0,100]', {'type': 'integer'}),
+            (
+                'json_schema_float',
+                float,
+                '[0,1]',
+                {'type': 'number', 'minimum': 0.0, 'maximum': 1.0},
+            ),
+            (
+                'json_schema_int',
+                int,
+                '[0,100]',
+                {'type': 'integer', 'minimum': 0, 'maximum': 100},
+            ),
+            (
+                'json_schema_exclusive',
+                float,
+                '(0,)',
+                {'type': 'number', 'exclusiveMinimum': 0.0},
+            ),
+            (
+                'json_schema_half_open',
+                float,
+                '[0,1)',
+                {'type': 'number', 'minimum': 0.0, 'exclusiveMaximum': 1.0},
+            ),
+            (
+                'json_schema_unbounded',
+                float,
+                '',
+                {'type': 'number'},
+            ),
         ],
     )
     def test_external_system_compatibility(
