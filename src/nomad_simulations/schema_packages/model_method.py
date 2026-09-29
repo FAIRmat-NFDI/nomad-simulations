@@ -120,8 +120,7 @@ class ModelMethod(BaseModelMethod):
         repeats=True,
         description="""
         Additive terms of the total model Hamiltonian. Only `HamiltonianTerm` sections
-        belong here; full methods cannot be nested. Legacy archives predating this
-        typing can be cleaned with `utils.legacy_cleanup`.
+        belong here; full methods cannot be nested.
         """,
     )
 
