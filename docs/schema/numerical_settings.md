@@ -118,7 +118,8 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `name` | Enum | Smearing routine employed. |
+| `kind` | Enum | Smearing routine employed. |
+| `width` | m_float64(float) | Width of the smearing distribution. |
 
 ### `SelfConsistency`
 

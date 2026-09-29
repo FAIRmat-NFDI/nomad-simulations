@@ -54,10 +54,17 @@ class Smearing(NumericalSettings):
     either simulate temperature effects or improve SCF convergence.
     """
 
-    name = Quantity(
+    kind = Quantity(
         type=MEnum('Fermi-Dirac', 'Gaussian', 'Methfessel-Paxton'),
         description="""
         Smearing routine employed.
+        """,
+    )
+    width = Quantity(
+        type=float,
+        unit='joule',
+        description="""
+        Width of the smearing distribution.
         """,
     )
 
