@@ -316,14 +316,14 @@ class GeometryOptimization(SerialWorkflow):
                 tasks=[calculation_task],
                 results=SinglePointResults(),
             )
-            self._add_convergence_to_task(task, archive, logger)
+            self._add_convergence_to_task(task, output, archive, logger)
             return task
 
         # Otherwise create generic task
         return Task(name=task_name, outputs=[output_link])
 
     def _add_convergence_to_task(
-        self, task: SinglePoint, archive: EntryArchive, logger: BoundLogger
+        self, task: SinglePoint, output, archive: EntryArchive, logger: BoundLogger
     ) -> None:
         """Add convergence analysis to a SinglePoint task."""
         single_point_convergence = jmespath.search(
@@ -331,7 +331,7 @@ class GeometryOptimization(SerialWorkflow):
         )
         if single_point_convergence is not None:
             convergence_result = task._resolve_convergence(
-                archive, single_point_convergence, logger
+                archive, single_point_convergence, logger, output=output
             )
             task.results.convergence = convergence_result
 

@@ -134,7 +134,12 @@ The mode used affects both convergence behavior and computational efficiency. Di
             else None
         )
 
-    def _get_convergence_value(self, archive: EntryArchive, logger: BoundLogger):
+    def _get_convergence_value(
+        self,
+        archive: EntryArchive,
+        logger: BoundLogger,
+        output: ArchiveSection | None = None,
+    ):
         """
         Extract the value to check for convergence from the archive.
 
@@ -147,7 +152,8 @@ The mode used affects both convergence behavior and computational efficiency. Di
         - Fallback paths: `a_convergence={'paths': ['workflow2.results.X', '@.scf_steps.X']}`
 
         Path notation (JMESPath-inspired, uses `getattr()` for navigation):
-        - `@.scf_steps.delta_energies_total` - Relative to `archive.data.outputs[-1]` (current output)
+        - `@.scf_steps.delta_energies_total` - Relative to `output`, or to
+          `archive.data.outputs[-1]` when no output context is supplied
         - `workflow2.results.X` or `archive.X` - Absolute from archive root
 
         The `@` prefix follows JMESPath convention where `@` represents the current node.
@@ -168,7 +174,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
         # Try each path in order (fallback logic)
         for path in paths:
-            value = self._resolve_path(archive, path, logger)
+            value = self._resolve_path(archive, path, logger, output=output)
             if value is not None:
                 # Handle arrays: for 'absolute' threshold_type, extract last iteration value
                 # For 'rms' and 'maximum', keep full array for aggregation
@@ -187,12 +193,19 @@ The mode used affects both convergence behavior and computational efficiency. Di
         )
         return None
 
-    def _resolve_path(self, archive: EntryArchive, path: str, logger: BoundLogger):
+    def _resolve_path(
+        self,
+        archive: EntryArchive,
+        path: str,
+        logger: BoundLogger,
+        output: ArchiveSection | None = None,
+    ):
         """
         Resolve a single path in the archive.
 
         Paths are dot-notation strings with required prefixes (JMESPath-inspired):
-        - `@.scf_steps.X` - Relative to `archive.data.outputs[-1]` (current output)
+        - `@.scf_steps.X` - Relative to `output`, or to
+          `archive.data.outputs[-1]` when no output context is supplied
         - `workflow2.X` or `archive.X` - Absolute from archive root
 
         The `@` prefix follows JMESPath convention where `@` represents the current node.
@@ -209,10 +222,13 @@ The mode used affects both convergence behavior and computational efficiency. Di
         try:
             # Determine starting point based on path prefix
             if path.startswith('@.'):
-                # Explicit relative path (JMESPath-inspired current node)
-                if not archive.data or not archive.data.outputs:
+                # Explicit relative path (JMESPath-inspired current node).
+                if output is not None:
+                    root = output
+                elif archive.data and archive.data.outputs:
+                    root = archive.data.outputs[-1]
+                else:
                     return None
-                root = archive.data.outputs[-1]
                 path_parts = path[2:].split('.')  # Strip '@.' prefix
             elif path.startswith('workflow2.') or path.startswith('archive.'):
                 # Absolute path from archive root
@@ -395,7 +411,12 @@ The mode used affects both convergence behavior and computational efficiency. Di
         """
         return value
 
-    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> bool | None:
+    def normalize(
+        self,
+        archive: EntryArchive,
+        logger: BoundLogger,
+        output: ArchiveSection | None = None,
+    ) -> bool | None:
         """
         Check if convergence criterion is met.
 
@@ -408,7 +429,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
         self._convert_to_pint()
 
         try:
-            value = self._get_convergence_value(archive, logger)
+            value = self._get_convergence_value(archive, logger, output=output)
             if value is None:
                 return None
 
@@ -972,14 +993,16 @@ class SimulationWorkflow(Workflow, SimulationTask):
         archive: EntryArchive,
         convergence_targets: list[WorkflowConvergenceTarget],
         logger: BoundLogger,
+        output: ArchiveSection | None = None,
     ) -> list[WorkflowConvergenceResults]:
         """
         Helper method to resolve convergence targets for outputs.
         Used primarily for multi-step workflows like geometry optimization.
 
         Creates temporary copies of convergence targets, normalizes them, and returns
-        WorkflowConvergenceResults with the convergence status.
-        Note: Currently checks convergence against the last output only.
+        WorkflowConvergenceResults with the convergence status. Relative (`@.`)
+        convergence paths resolve against `output` when it is supplied; otherwise,
+        they retain the fallback behavior of resolving against the last output.
         """
         convergence_results = []
 
@@ -987,9 +1010,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
             # Create a copy of the target to avoid modifying the original
             target_copy = target.m_copy(deep=True)
 
-            # For multi-output scenarios, we may need to adjust the archive context
-            # This is a simplified approach - child classes can override for more complex logic
-            is_reached = target_copy.normalize(archive, logger)
+            is_reached = target_copy.normalize(archive, logger, output=output)
 
             # Create a result object that holds both the target and the convergence status
             result = WorkflowConvergenceResults()
