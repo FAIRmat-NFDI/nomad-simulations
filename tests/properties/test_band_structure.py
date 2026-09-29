@@ -2,9 +2,13 @@ import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
 
-from nomad_simulations.schema_packages.properties import ElectronicBandStructure
+from nomad_simulations.schema_packages.properties import (
+    ElectronicBandStructure,
+    ElectronicEigenvalues,
+)
+from nomad_simulations.schema_packages.variables import KLinePath, KPoints
 
-from ..conftest import generate_electronic_band_structure
+from ..conftest import K_SAMPLING_POINTS, generate_electronic_band_structure
 from . import logger
 
 
@@ -23,7 +27,7 @@ class TestElectronicBandStructure:
     )
     def test_default_quantities(self, n_levels: int | None):
         """
-        Test the default quantities assigned when creating an instance of the `HoppingMatrix` class.
+        Test the default quantities assigned when creating an instance of the `ElectronicBandStructure` class.
         """
         electronic_band_structure = ElectronicBandStructure(n_levels=n_levels)
         assert (
@@ -31,306 +35,52 @@ class TestElectronicBandStructure:
             == 'http://fairmat-nfdi.eu/taxonomy/ElectronicBandStructure'
         )
 
-    # @pytest.mark.parametrize(
-    #     'occupation, result',
-    #     [
-    #         (None, False),
-    #         ([], False),
-    #         ([[2, 2], [0, 0]], False),  # `value` and `occupation` must have same shape
-    #         (
-    #             [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-    #             True,
-    #         ),
-    #     ],
-    # )
-    # def test_validate_occupation(self, occupation: Optional[list], result: bool):
-    #     """
-    #     Test the `validate_occupation` method.
-    #     """
-    #     electronic_band_structure = generate_electronic_band_structure(
-    #         value=[[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-    #         occupation=occupation,
-    #     )
-    #     assert electronic_band_structure.validate_occupation(logger) == result
-    @pytest.mark.parametrize(
-        'occupation, value, result_validation, result',
-        [
-            (
-                None,
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                (),
-                (None, None),
-            ),
-            (
-                [[2, 2], [0, 0]],
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                (),
-                (None, None),
-            ),  # `value` and `occupation` must have same shape
-            (
-                [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-                None,
-                (),
-                (None, None),
-            ),
-            (
-                [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                True,
-                (
-                    [
-                        -3,
-                        -2,
-                        -2,
-                        -1,
-                        0,
-                        0,
-                        1,
-                        1,
-                        2,
-                        2,
-                        3,
-                        3,
-                        4,
-                        4,
-                        4,
-                        5,
-                    ],
-                    [
-                        2.0,
-                        2.0,
-                        2.0,
-                        2.0,
-                        1.5,
-                        1.5,
-                        1.0,
-                        1.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                    ],
-                ),
-            ),
-        ],
-    )
-    def test_order_eigenvalues(
-        self,
-        occupation: list | None,
-        value: list | None,
-        result_validation: bool,
-        result: tuple[list, list],
-    ):
+    def test_sibling_hierarchy(self):
         """
-        Test the `order_eigenvalues` method.
+        Test that `ElectronicBandStructure` is a sibling of `ElectronicEigenvalues`, not a
+        subclass: it carries neither the `k_points` axis nor the band-gap derivation, which
+        require a full Brillouin-zone sampling.
+        """
+        assert not issubclass(ElectronicBandStructure, ElectronicEigenvalues)
+        assert 'k_points' not in ElectronicBandStructure.m_def.all_sub_sections
+        for derivation in (
+            'order_eigenvalues',
+            'resolve_homo_lumo_eigenvalues',
+            'extract_band_gap',
+            'emit_band_gap',
+            'is_metallic',
+            'extract_fermi_surface',
+        ):
+            assert not hasattr(ElectronicBandStructure, derivation)
+
+    def test_k_path_axis(self):
+        """
+        Test that the `k_path` axis stores the sampled coordinates directly, with the
+        high-symmetry points providing the segment structure.
+        """
+        electronic_band_structure = generate_electronic_band_structure()
+        k_path = electronic_band_structure.k_path
+        assert isinstance(k_path, KLinePath)
+        assert isinstance(k_path, KPoints)
+        assert np.asarray(k_path.points).shape == (8, 3)
+        assert list(k_path.high_symmetry_labels) == ['Γ', 'R']
+        assert list(k_path.high_symmetry_indices) == [0, 7]
+        assert k_path.settings_ref is not None
+        assert np.allclose(k_path.settings_ref.points, K_SAMPLING_POINTS)
+
+    def test_normalize_does_not_derive_gap(self):
+        """
+        Test that normalizing a band structure derives neither the reference levels nor a band
+        gap: path eigenvalues are not the reference-level producer.
         """
         electronic_band_structure = generate_electronic_band_structure(
-            value=value,
-            occupation=occupation,
+            occupation=[[0, 2]] * 8,
         )
-        order_result = electronic_band_structure.order_eigenvalues()
-        if not order_result:
-            assert result_validation == ()  # Empty tuple means validation failed
-        else:
-            sorted_value, sorted_occupation = order_result
-            assert electronic_band_structure.m_cache['sorted_eigenvalues']
-            assert (sorted_value.magnitude == result[0]).all()
-            assert (sorted_occupation == result[1]).all()
-
-    @pytest.mark.parametrize(
-        'occupation, value, highest_occupied, lowest_unoccupied, result',
-        [
-            # Not possible to resolve `highest_occupied` and `lowest_unoccupied`
-            (
-                None,
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                None,
-                None,
-                (None, None),
-            ),
-            (
-                [[2, 2], [0, 0]],
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                None,
-                None,
-                (None, None),
-            ),  # `value` and `occupation` must have same shape
-            (
-                [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-                None,
-                None,
-                None,
-                (None, None),
-            ),
-            # `highest_occupied` and `lowest_unoccupied` are passed to the class
-            (
-                None,
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                1.0,
-                2.0,
-                (1.0, 2.0),
-            ),
-            (
-                [[2, 2], [0, 0]],
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                1.0,
-                2.0,
-                (1.0, 2.0),
-            ),
-            (
-                [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-                None,
-                1.0,
-                2.0,
-                (1.0, 2.0),
-            ),
-            # Resolving `highest_occupied` and `lowest_unoccupied` from `value` and `occupation`
-            (
-                [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                None,
-                None,
-                (1.0, 2.0),
-            ),
-            # Overwritting stored `highest_occupied` and `lowest_unoccupied` from `value` and `occupation`
-            (
-                [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                -3.0,
-                4.0,
-                (1.0, 2.0),
-            ),
-        ],
-    )
-    def test_homo_lumo_eigenvalues(
-        self,
-        occupation: list | None,
-        value: list | None,
-        highest_occupied: float | None,
-        lowest_unoccupied: float | None,
-        result: tuple[float | None, float | None],
-    ):
-        """
-        Test the `resolve_homo_lumo_eigenvalues` method.
-        """
-        electronic_band_structure = generate_electronic_band_structure(
-            value=value,
-            occupation=occupation,
-            highest_occupied=highest_occupied,
-            lowest_unoccupied=lowest_unoccupied,
-        )
-        homo, lumo = electronic_band_structure.resolve_homo_lumo_eigenvalues()
-        if homo is not None and lumo is not None:
-            assert (homo.magnitude, lumo.magnitude) == result
-        else:
-            assert (homo, lumo) == result
-
-    @pytest.mark.parametrize(
-        'occupation, value, highest_occupied, lowest_unoccupied, band_gap_result',
-        [
-            # Not possible to resolve `highest_occupied` and `lowest_unoccupied`
-            (
-                None,
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                None,
-                None,
-                None,
-            ),
-            (
-                [[2, 2], [0, 0]],
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                None,
-                None,
-                None,
-            ),  # `value` and `occupation` must have same shape
-            (
-                [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-                None,
-                None,
-                None,
-                None,
-            ),
-            # `highest_occupied` and `lowest_unoccupied` are passed to the class
-            (
-                None,
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                1.0,
-                2.0,
-                1.0,
-            ),
-            (
-                [[2, 2], [0, 0]],
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                1.0,
-                2.0,
-                1.0,
-            ),
-            (
-                [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-                None,
-                1.0,
-                2.0,
-                1.0,
-            ),
-            # If (lumo - homo) is negative, band_gap_result is 0
-            (
-                [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-                None,
-                3.0,
-                2.0,
-                0.0,
-            ),
-            # Resolving `highest_occupied` and `lowest_unoccupied` from `value` and `occupation`
-            (
-                [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                None,
-                None,
-                1.0,
-            ),
-            # Overwritting stored `highest_occupied` and `lowest_unoccupied` from `value` and `occupation`
-            (
-                [[0, 2], [0, 1], [0, 2], [0, 2], [0, 1.5], [0, 1.5], [0, 1], [0, 2]],
-                [[3, -2], [3, 1], [4, -2], [5, -1], [4, 0], [2, 0], [2, 1], [4, -3]],
-                -3.0,
-                4.0,
-                1.0,
-            ),
-        ],
-    )
-    def test_extract_band_gap(
-        self,
-        occupation: list | None,
-        value: list | None,
-        highest_occupied: float | None,
-        lowest_unoccupied: float | None,
-        band_gap_result: float | None,
-    ):
-        """
-        Test the `extract_band_gap` method.
-        """
-        electronic_band_structure = generate_electronic_band_structure(
-            value=value,
-            occupation=occupation,
-            highest_occupied=highest_occupied,
-            lowest_unoccupied=lowest_unoccupied,
-        )
-        band_gap = electronic_band_structure.extract_band_gap()
-        if band_gap is not None:
-            assert np.isclose(band_gap.value.magnitude, band_gap_result)
-        else:
-            assert band_gap == band_gap_result
-
-    def test_extract_fermi_surface(self):
-        """
-        Test the `extract_band_gap` method.
-        """
-        # ! add test when `FermiSurface` is implemented
-        pass
+        outputs = electronic_band_structure.m_parent
+        electronic_band_structure.normalize(EntryArchive(), logger)
+        assert electronic_band_structure.highest_occupied is None
+        assert electronic_band_structure.lowest_unoccupied is None
+        assert len(outputs.electronic_band_gaps) == 0
 
     @pytest.mark.parametrize(
         'reciprocal_lattice_vectors, result',
@@ -353,7 +103,6 @@ class TestElectronicBandStructure:
             reciprocal_lattice_vectors=reciprocal_lattice_vectors
         )
         # `normalize()` instead of `resolve_reciprocal_cell()` in order for refs to work
-        # reciprocal_cell = electronic_band_structure.resolve_reciprocal_cell()
         electronic_band_structure.normalize(EntryArchive(), logger)
         reciprocal_cell = electronic_band_structure.reciprocal_cell
         if reciprocal_cell is not None:
