@@ -5,8 +5,10 @@ from nomad.units import ureg
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs, SCFSteps
 from nomad_simulations.schema_packages.properties.energies import TotalEnergy
+from nomad_simulations.schema_packages.workflow.general import EnergyConvergenceTarget
 from nomad_simulations.schema_packages.workflow.geometry_optimization import (
     GeometryOptimization,
+    GeometryOptimizationMethod,
     GeometryOptimizationResults,
 )
 from nomad_simulations.schema_packages.workflow.single_point import (
@@ -16,6 +18,27 @@ from nomad_simulations.schema_packages.workflow.single_point import (
 
 
 class TestGeometryOptimization:
+    def test_task_convergence_uses_its_linked_output(self, logger, archive):
+        target = EnergyConvergenceTarget()
+        target.threshold = 1e-6 * ureg.joule
+        target.threshold_type = 'absolute'
+        workflow = GeometryOptimization(
+            method=GeometryOptimizationMethod(single_point_convergence_targets=[target])
+        )
+        archive.workflow2 = workflow
+        archive.data.outputs = [
+            Outputs(scf_steps=SCFSteps(delta_energies_total=[1e-8] * ureg.joule)),
+            Outputs(scf_steps=SCFSteps(delta_energies_total=[1e-4] * ureg.joule)),
+        ]
+
+        workflow.normalize(archive, logger)
+
+        assert [task.results.convergence[0].is_reached for task in workflow.tasks] == [
+            True,
+            False,
+        ]
+        assert workflow.results.is_single_point_converged is False
+
     @pytest.mark.parametrize(
         'energies, ref_energy, ref_energy_diff',
         [
