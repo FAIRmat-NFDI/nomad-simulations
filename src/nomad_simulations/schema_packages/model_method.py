@@ -733,8 +733,9 @@ class ModelMethodElectronic(ModelMethod):
     A base section used to define the parameters of a model Hamiltonian used in electronic structure
     calculations (TB, DFT, GW, BSE, DMFT, etc). Additive Hamiltonian terms (dispersion
     corrections, solvation models, Hubbard interactions, ...) are stored under
-    `contributions`; the relativistic treatment, which transforms the Hamiltonian rather
-    than adding to it, is stored in the typed `relativity` subsection.
+    `contributions` as `HamiltonianTerm`s. Modifications that transform the Hamiltonian
+    itself rather than adding a separable term get their own typed subsections instead;
+    the relativistic treatment (`relativity`) is the current example.
     """
 
     is_spin_polarized = Quantity(

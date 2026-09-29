@@ -29,9 +29,10 @@ above.
 - Additive Hamiltonian terms (dispersion corrections, solvation models, Hubbard
   interactions, DFT-specific corrections, force-field potentials) are stored as
   `HamiltonianTerm` sections under `contributions`. Full methods are not terms
-  and cannot be nested there. The relativistic treatment transforms the
-  Hamiltonian rather than adding a separable term to it, so it lives in the
-  typed `ModelMethodElectronic.relativity` subsection instead.
+  and cannot be nested there. Modifications that transform the Hamiltonian itself
+  rather than adding a separable term are kept in their own typed subsections
+  instead; the relativistic treatment (`ModelMethodElectronic.relativity`) is the
+  current example.
 - Composite multi-method schemes (for example ONIOM-style embedding) are not
   modeled by nesting methods inside each other; a dedicated container section
   with explicitly enumerated member subsections is planned for those.
