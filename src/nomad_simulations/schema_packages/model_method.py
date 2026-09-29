@@ -731,11 +731,12 @@ class OrbitalLocalization(ModelMethod):
 class ModelMethodElectronic(ModelMethod):
     """
     A base section used to define the parameters of a model Hamiltonian used in electronic structure
-    calculations (TB, DFT, GW, BSE, DMFT, etc). Additive Hamiltonian terms (dispersion
-    corrections, solvation models, Hubbard interactions, ...) are stored under
-    `contributions` as `HamiltonianTerm`s. Modifications that transform the Hamiltonian
-    itself rather than adding a separable term get their own typed subsections instead;
-    the relativistic treatment (`relativity`) is the current example.
+    calculations (TB, DFT, GW, BSE, DMFT, etc). Writing the Hamiltonian as
+    $H = H_{0} + \\sum_{i} H_{i}$, the additive terms $H_{i}$ (dispersion corrections,
+    solvation models, Hubbard interactions, ...) are stored under `contributions` as
+    `HamiltonianTerm`s. Modifications that reshape $H_{0}$ itself rather than adding a
+    separable term get their own typed subsections instead; the relativistic treatment
+    (`relativity`) is the current example.
     """
 
     is_spin_polarized = Quantity(
