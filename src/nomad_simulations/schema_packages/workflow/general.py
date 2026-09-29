@@ -841,11 +841,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
             logger.warning('Tasks are predefined and will not generate from outputs.')
             return
 
-        outputs = list(archive.data.outputs)
-        # Keep outputs without a start time at the end. Using ``0`` as the
-        # fallback makes Python compare an integer with a datetime when an
-        # archive contains both timed and untimed outputs.
-        outputs.sort(key=lambda x: (x.wall_start is None, x.wall_start or 0))
+        outputs = self._sort_outputs_by_wall_start(archive.data.outputs)
         tasks = []
         parent_n = 0
         root_n = 0
@@ -855,28 +851,56 @@ class SimulationWorkflow(Workflow, SimulationTask):
                 outputs=[Link(name='Outputs', section=output)],
             )
             tasks.append(task)
-            tstart = output.wall_start
-            tend = outputs[parent_n].wall_end
-            # An output with only one timestamp cannot be linked reliably, but
-            # it is still a valid task and must not prevent the remaining tasks
-            # from being added below.
-            if tstart is None or tend is None:
-                continue
-            if tstart >= tend:
-                task.inputs.extend(
-                    [Link(name='Linked task', section=t) for t in tasks[parent_n:n]]
-                )
-                root_n = parent_n
-                parent_n = n
-            elif n != parent_n:
-                task.inputs.extend(
-                    [
-                        Link(name='Linked task', section=t)
-                        for t in tasks[root_n:parent_n]
-                    ]
-                )
+            parent_n, root_n = self._link_task_by_timing(
+                task, output, outputs, tasks, n, parent_n, root_n
+            )
 
         self.tasks.extend(tasks)
+
+    @staticmethod
+    def _sort_outputs_by_wall_start(outputs) -> list:
+        """
+        Order outputs by start time, keeping untimed outputs at the end.
+
+        Using ``0`` as the fallback for a missing ``wall_start`` would make Python
+        compare an integer with a datetime when an archive contains both timed and
+        untimed outputs; the leading ``x.wall_start is None`` key avoids that by
+        grouping the untimed outputs together at the end.
+        """
+        return sorted(outputs, key=lambda x: (x.wall_start is None, x.wall_start or 0))
+
+    def _link_task_by_timing(
+        self,
+        task: SimulationTask,
+        output,
+        outputs: list,
+        tasks: list['SimulationTask'],
+        n: int,
+        parent_n: int,
+        root_n: int,
+    ) -> tuple[int, int]:
+        """
+        Link a task to previous tasks based on execution timing.
+
+        Returns the updated ``(parent_n, root_n)`` indices.
+        """
+        tstart = output.wall_start
+        tend = outputs[parent_n].wall_end
+        # An output with only one timestamp cannot be linked reliably, but it is
+        # still a valid task and must not prevent the remaining tasks from being
+        # added.
+        if tstart is None or tend is None:
+            return parent_n, root_n
+        if tstart >= tend:
+            task.inputs.extend(
+                [Link(name='Linked task', section=t) for t in tasks[parent_n:n]]
+            )
+            return n, parent_n
+        if n != parent_n:
+            task.inputs.extend(
+                [Link(name='Linked task', section=t) for t in tasks[root_n:parent_n]]
+            )
+        return parent_n, root_n
 
     @log
     def map_convergence(self, archive: EntryArchive) -> None:

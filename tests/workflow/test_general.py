@@ -73,6 +73,11 @@ class TestSimulationWorklow:
                 [(4, 5), (0, 1), (2, 3), (1, 2), (2, 4)],
                 [(0, 1), (1, 2), (1, 3), (2, 4), (3, 4)],
             ),
+            pytest.param(
+                [(0.0, 1.0), (None, 1.0)],
+                [],
+                id='untimed-output-kept-but-unlinked',
+            ),
         ],
     )
     def test_tasks(self, logger, archive, workflow, times, linked):
@@ -86,18 +91,6 @@ class TestSimulationWorklow:
             assert workflow.tasks[source] in [
                 inp.section for inp in workflow.tasks[target].inputs
             ]
-
-    def test_tasks_with_missing_timestamps(self, logger, archive, workflow):
-        archive.data.outputs = [
-            Outputs(wall_start=0.0, wall_end=1.0),
-            Outputs(wall_start=None, wall_end=1.0),
-        ]
-
-        workflow.normalize(archive, logger)
-
-        assert len(workflow.tasks) == 2
-        assert workflow.tasks[1].outputs[0].section == archive.data.outputs[1]
-        assert workflow.tasks[1].inputs == []
 
 
 class TestSerialWorkflow:
