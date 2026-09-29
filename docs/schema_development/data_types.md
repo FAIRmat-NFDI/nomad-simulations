@@ -58,6 +58,48 @@ Bounded types automatically validate values during assignment:
 --8<-- "snippets/explanation/data_types/block_04.py"
 ```
 
+### Slack Tolerance and Soft Failure
+
+By default a value outside the interval raises immediately. Three optional `Bound`
+parameters relax that for quantities whose values are produced by approximate or
+numerically noisy procedures, where a small excursion past a physical bound is an artifact
+rather than a real error.
+
+`slack` widens the accepted region into a *slack band* around the interval. It is a
+**relative** fraction of the data's own peak magnitude: the effective tolerance for a given
+check is `slack * max(|values|)`. Because it scales with the data, the same fraction is
+meaningful across systems whose magnitudes differ by orders of magnitude, and it remains
+usable when the bound sits at zero (e.g. a non-negative density of states, where an absolute
+tolerance would be either negligible or physically distinct). Keep `slack` a small fraction,
+sized to absorb numerical noise, never large enough to admit a physically distinct value.
+
+`on_violation` selects what happens to values *beyond* the slack band: `'raise'` (the
+default) aborts, while `'log'` emits a single structured warning and keeps processing.
+`clamp` (when `True`) additionally snaps every out-of-interval value onto the nearest
+endpoint; it requires every finite endpoint to be inclusive, so it cannot be combined with
+an open finite bound.
+
+```python
+# Occupation numbers in [0, 2] that drift slightly out (e.g. MP2/CC natural orbitals):
+# tolerate a small relative excursion, log it, and clamp back into range.
+occupations = Quantity(
+    type=m_float_bounded(
+        dtype=np.float64,
+        bound=Bound('[0,2]', slack=0.05, on_violation='log', clamp=True),
+    ),
+    shape=['*'],
+)
+
+# A non-negative spectral intensity: keep small negative lobes visible, only warn.
+intensity = Quantity(
+    type=m_float_bounded(
+        dtype=np.float64,
+        bound=Bound('[0,)', slack=0.01, on_violation='log', clamp=False),
+    ),
+    shape=['*'],
+)
+```
+
 ## Serialization and Deserialization
 
 ### Understanding the Behavior
