@@ -85,6 +85,8 @@ class BaseModelMethod(ArchiveSection):
         """,
     )
 
+    # Kept on the shared base (not on `ModelMethod`) so individual `HamiltonianTerm`s can
+    # carry their own numerical settings — e.g. a per-`Potential` van der Waals cutoff.
     numerical_settings = SubSection(sub_section=NumericalSettings.m_def, repeats=True)
 
 
