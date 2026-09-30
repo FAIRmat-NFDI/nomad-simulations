@@ -55,13 +55,13 @@ class Smearing(NumericalSettings):
     """
 
     kind = Quantity(
-        type=MEnum('Fermi-Dirac', 'Gaussian', 'Methfessel-Paxton'),
+        type=MEnum('Fermi-Dirac', 'Gaussian', 'Methfessel-Paxton 1', 'Methfessel-Paxton 2', 'Tetrahedra-extended', 'Square-wave impulse'),
         description="""
         Smearing routine employed.
         """,
     )
     width = Quantity(
-        type=float,
+        type=np.float64,
         unit='joule',
         description="""
         Width of the smearing distribution.
