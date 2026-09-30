@@ -17,7 +17,7 @@ from nomad_simulations.schema_packages.physical_property import PhysicalProperty
 from nomad_simulations.schema_packages.properties.band_gap import ElectronicBandGap
 from nomad_simulations.schema_packages.properties.fermi_surface import FermiSurface
 from nomad_simulations.schema_packages.utils import log
-from nomad_simulations.schema_packages.variables import KPoints
+from nomad_simulations.schema_packages.variables import KLinePath, KPoints
 
 configuration = config.get_plugin_entry_point(
     'nomad_simulations.schema_packages:nomad_simulations_plugin'
@@ -354,6 +354,10 @@ class ElectronicEigenvalues(BaseElectronicEigenvalues):
         super().normalize(archive, logger)
 
         if self.k_points is None or self.k_points.points is None:
+            return
+        if isinstance(self.k_points, KLinePath):
+            # Mis-filed band structure: no reference levels from a path sampling.
+            # `Outputs.normalize` promotes it to `ElectronicBandStructure`.
             return
         if self.is_metallic():
             return
