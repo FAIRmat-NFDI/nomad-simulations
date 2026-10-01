@@ -43,9 +43,7 @@ def log(
                 'exc_msg', exc_msg or f'Exception raised in {func.__name__}:'
             )
             _exc_raise = kwargs.get('exc_raise', exc_raise)
-            # Decorated methods access their logger through the wrapper. Python
-            # 3.14 no longer shares ``__annotations__`` between a wrapped
-            # function and its wrapper, so storing it on ``func`` loses it.
+            # PEP 649/749: runtime annotations belong on the decorated wrapper.
             wrapper.__annotations__['logger'] = _logger
             try:
                 return func(
