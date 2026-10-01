@@ -43,7 +43,8 @@ def log(
                 'exc_msg', exc_msg or f'Exception raised in {func.__name__}:'
             )
             _exc_raise = kwargs.get('exc_raise', exc_raise)
-            func.__annotations__['logger'] = _logger
+            # PEP 649/749: runtime annotations belong on the decorated wrapper.
+            wrapper.__annotations__['logger'] = _logger
             try:
                 return func(
                     *args,
