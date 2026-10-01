@@ -10,14 +10,14 @@
 
 ```mermaid
 classDiagram
-    class BaseModelMethod
     class ForceField
+    class HamiltonianTerm
     class ModelMethod
     class ParameterEntry
     class Potential
     ModelMethod <|-- ForceField
     ForceField *-- Potential : contributions
-    ModelMethod *-- BaseModelMethod : contributions
+    ModelMethod *-- HamiltonianTerm : contributions
     Potential *-- ParameterEntry : parameters
 ```
 
