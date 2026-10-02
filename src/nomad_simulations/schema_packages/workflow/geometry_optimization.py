@@ -14,7 +14,7 @@ from .general import (
     SimulationWorkflowResults,
     WorkflowConvergenceTarget,
 )
-from .single_point import SinglePoint
+from .single_point import SinglePoint, SinglePointResults
 
 m_package = SchemaPackage()
 
@@ -306,10 +306,15 @@ class GeometryOptimization(SerialWorkflow):
 
         # Create SinglePoint task with convergence analysis if SCF steps present
         if output.get('scf_steps') is not None:
+            calculation_task = Task(
+                name='Calculation',
+                outputs=[Link(name='Outputs', section=output)],
+            )
             task = SinglePoint(
                 name=task_name,
                 outputs=[output_link],
-                results=SimulationWorkflowResults(),
+                tasks=[calculation_task],
+                results=SinglePointResults(),
             )
             self._add_convergence_to_task(task, archive, logger)
             return task
