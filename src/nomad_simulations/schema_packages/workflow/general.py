@@ -178,11 +178,8 @@ The mode used affects both convergence behavior and computational efficiency. Di
                 # Handle arrays: for 'absolute' threshold_type, extract last iteration value
                 # For 'rms' and 'maximum', keep full array for aggregation
                 conv_type = self.threshold_type or 'absolute'
-                if hasattr(value, '__getitem__') and not isinstance(value, str):
-                    if conv_type in ('rms', 'maximum'):
-                        return value  # Keep full array
-                    else:
-                        return value[-1]  # Extract last iteration value
+                if not self._is_scalar_pint(value):
+                    return value if conv_type in ('rms', 'maximum') else value[-1]
                 return value
 
         # All paths failed
@@ -231,7 +228,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
             # Determine starting point based on path prefix
             if path.startswith('@.'):
                 # Explicit relative path (JMESPath-inspired current node)
-                if (root:=self._resolve_relative_root(archive_or_task)) is None:
+                if (root := self._resolve_relative_root(archive_or_task)) is None:
                     return None
                 path_parts = path[2:].split('.')  # Strip '@.' prefix
             elif path.startswith('workflow2.') or path.startswith('archive.'):
