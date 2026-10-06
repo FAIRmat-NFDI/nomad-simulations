@@ -167,18 +167,15 @@ class SCFSteps(ArchiveSection):
         """,
     )
 
+    # TODO: define which force contributions, reduction over atoms and SCF
+    # iterations this covers; the semantics differ between codes, see
+    # https://github.com/FAIRmat-NFDI/nomad-distro-dev-areaC/issues/4
     delta_force_abs = Quantity(
         shape=['*'],
         type=float,
         unit='newton',
         description="""
-        Change of the atomic forces between consecutive SCF iterations, one value
-        per iteration, as reported by codes that check force self-consistency.
-        Which force contributions are included, how the change is reduced over
-        atoms, and in which iterations it is evaluated are code-specific (e.g.
-        exciting `Abs. change in max-nonIBS-force`), so the series can be shorter
-        than the other SCF series. This is not the residual force of a geometry
-        optimization step.
+        Absolute change of forces at each SCF step.
         """,
     )
 

@@ -468,8 +468,7 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
     Convergence target for the residual atomic forces of a geometry optimization.
 
     Checks the largest atomic force magnitude in the final optimization step
-    (`GeometryOptimizationResults.final_force_maximum`). For the change of forces
-    between SCF iterations, use `SCFForceConvergenceTarget`.
+    (`GeometryOptimizationResults.final_force_maximum`).
     """
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
@@ -477,21 +476,6 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
     threshold.m_annotations['convergence'] = {
         'path': 'workflow2.results.final_force_maximum'
     }
-
-
-class SCFForceConvergenceTarget(WorkflowConvergenceTarget):
-    """
-    Convergence target for the change of atomic forces between SCF iterations.
-
-    Checks `SCFSteps.delta_force_abs`, the code-reported force change per SCF
-    iteration (e.g. exciting `epsforcescf`). Use `threshold_type='absolute'` to
-    compare the last iteration's value. For the residual force of a geometry
-    optimization, use `ForceConvergenceTarget`.
-    """
-
-    threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
-    threshold.m_annotations['expected_unit'] = 'newton'
-    threshold.m_annotations['convergence'] = {'path': '@.scf_steps.delta_force_abs'}
 
 
 class PotentialConvergenceTarget(WorkflowConvergenceTarget):

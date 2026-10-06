@@ -19,7 +19,6 @@ from nomad_simulations.schema_packages.workflow.general import (
     EnergyConvergenceTarget,
     ForceConvergenceTarget,
     PotentialConvergenceTarget,
-    SCFForceConvergenceTarget,
     SimulationWorkflow,
     SimulationWorkflowMethod,
     WavefunctionConvergenceTarget,
@@ -141,54 +140,6 @@ class TestForceConvergenceTarget:
         ]
 
         assert force_target.normalize(archive, logger) is None
-
-
-class TestSCFForceConvergenceTarget:
-    """Test the SCFForceConvergenceTarget class."""
-
-    @pytest.mark.parametrize(
-        'threshold_type, delta_forces, expected_reached',
-        [
-            ('absolute', [1e-5, 1e-10], True),
-            ('absolute', [1e-10, 1e-5], False),
-            ('absolute', [1e-10], True),
-            ('maximum', [1e-9, 5e-10, 2e-10], True),
-            ('rms', [1e-9, 5e-10, 2e-10], True),
-        ],
-        ids=[
-            'last_converged',
-            'last_not_converged',
-            'single_iteration',
-            'maximum',
-            'rms',
-        ],
-    )
-    def test_scf_force_convergence(
-        self, threshold_type, delta_forces, expected_reached, archive, logger
-    ):
-        """`absolute` compares the last SCF iteration's force change."""
-        target = SCFForceConvergenceTarget(
-            threshold=1e-8 * ureg.newton, threshold_type=threshold_type
-        )
-        archive.data.outputs = [
-            Outputs(
-                scf_steps=SCFSteps(delta_force_abs=np.array(delta_forces) * ureg.newton)
-            )
-        ]
-
-        assert target.normalize(archive, logger) == expected_reached
-
-    def test_ignores_final_force_maximum(self, archive, logger):
-        """The residual force of the geometry must not satisfy the SCF target."""
-        target = SCFForceConvergenceTarget(
-            threshold=1e-8 * ureg.newton, threshold_type='absolute'
-        )
-        archive.workflow2 = GeometryOptimization(
-            results=GeometryOptimizationResults(final_force_maximum=1e-10 * ureg.newton)
-        )
-        archive.data.outputs = [Outputs()]
-
-        assert target.normalize(archive, logger) is None
 
 
 class TestPotentialConvergenceTarget:
@@ -395,12 +346,11 @@ class TestMissingDataHandling:
         [
             (EnergyConvergenceTarget, 1e-6, ureg.joule, {}),
             (ForceConvergenceTarget, 1e-8, ureg.newton, {}),
-            (SCFForceConvergenceTarget, 1e-8, ureg.newton, {}),
             (PotentialConvergenceTarget, 1e-5, ureg.joule, {}),
             (DensityConvergenceTarget, 1e-7, ureg.coulomb, {'type': 'charge_abs'}),
             (WavefunctionConvergenceTarget, 1e-8, ureg.dimensionless, {}),
         ],
-        ids=['Energy', 'Force', 'SCFForce', 'Potential', 'Density', 'Wavefunction'],
+        ids=['Energy', 'Force', 'Potential', 'Density', 'Wavefunction'],
     )
     def test_missing_data_returns_none(
         self, target_class, threshold, threshold_unit, kwargs, archive, logger
@@ -575,9 +525,6 @@ class TestConvergenceInWorkflow:
             EnergyConvergenceTarget(
                 threshold=1e-6 * ureg.joule, threshold_type='absolute'
             ),
-            SCFForceConvergenceTarget(
-                threshold=1e-8 * ureg.newton, threshold_type='maximum'
-            ),
             DensityConvergenceTarget(
                 type='charge_abs',
                 threshold=1e-7 * ureg.coulomb,
@@ -585,12 +532,10 @@ class TestConvergenceInWorkflow:
             ),
         ]
 
-        # Create test data. Residuals are set as the parser would report them;
-        # the schema no longer derives delta_force_abs from total_forces.
+        # Create test data. Residuals are set as the parser would report them.
         scf_step = SCFSteps()
         scf_step.delta_energies_total = np.array([5e-7]) * ureg.joule
         scf_step.delta_charge_abs = np.array([1e-8]) * ureg.coulomb
-        scf_step.delta_force_abs = np.array([1e-9, 1e-9]) * ureg.newton
 
         outputs = Outputs(scf_steps=scf_step)
         archive.data.outputs = [outputs]
@@ -600,7 +545,7 @@ class TestConvergenceInWorkflow:
 
         # Check that convergence targets were normalized
         assert workflow.method.convergence_targets is not None
-        assert len(workflow.method.convergence_targets) == 3
+        assert len(workflow.method.convergence_targets) == 2
 
         # Normalize individual targets to check convergence status
         convergence_results = []
@@ -610,8 +555,7 @@ class TestConvergenceInWorkflow:
 
         # Check individual convergence
         assert convergence_results[0] is True  # Energy
-        assert convergence_results[1] is True  # Force
-        assert convergence_results[2] is True  # Charge
+        assert convergence_results[1] is True  # Charge
 
     def test_convergence_targets_empty(self, archive, logger):
         """Test workflow with no convergence targets."""
@@ -635,15 +579,16 @@ class TestConvergenceInWorkflow:
             EnergyConvergenceTarget(
                 threshold=1e-6 * ureg.joule, threshold_type='absolute'
             ),  # Will converge
-            SCFForceConvergenceTarget(
-                threshold=1e-20 * ureg.newton, threshold_type='maximum'
+            DensityConvergenceTarget(
+                type='charge_abs',
+                threshold=1e-20 * ureg.coulomb,
+                threshold_type='absolute',
             ),  # Won't converge
         ]
 
-        # Create test data. delta_force_abs is set directly (no derivation).
         scf_step = SCFSteps()
         scf_step.delta_energies_total = np.array([5e-7]) * ureg.joule  # Converges
-        scf_step.delta_force_abs = np.array([1e-5]) * ureg.newton  # Doesn't converge
+        scf_step.delta_charge_abs = np.array([1e-5]) * ureg.coulomb  # Doesn't converge
 
         outputs = Outputs(scf_steps=scf_step)
         archive.data.outputs = [outputs]
@@ -664,19 +609,19 @@ class TestFallbackPaths:
     def test_fallback_to_next_path(self, archive, logger, monkeypatch):
         """Paths are tried in order; an unresolvable path falls through to the next."""
         monkeypatch.setattr(
-            SCFForceConvergenceTarget,
+            EnergyConvergenceTarget,
             '_convergence_paths',
             lambda self: [
-                'workflow2.results.final_force_maximum',
-                '@.scf_steps.delta_force_abs',
+                'workflow2.results.final_energy_difference',
+                '@.scf_steps.delta_energies_total',
             ],
         )
-        target = SCFForceConvergenceTarget(
-            threshold=1e-8 * ureg.newton, threshold_type='absolute'
+        target = EnergyConvergenceTarget(
+            threshold=1e-6 * ureg.joule, threshold_type='absolute'
         )
         # No workflow2, so the first path does not resolve.
         archive.data.outputs = [
-            Outputs(scf_steps=SCFSteps(delta_force_abs=[1e-9] * ureg.newton))
+            Outputs(scf_steps=SCFSteps(delta_energies_total=[1e-9] * ureg.joule))
         ]
 
         assert target.normalize(archive, logger) is True
@@ -844,32 +789,32 @@ class TestThresholdTypeValidation:
 
     def test_maximum_with_units_succeeds(self, archive, logger):
         """Test that maximum convergence works with dimensional units."""
-        force_target = SCFForceConvergenceTarget()
-        force_target.threshold = 1e-8 * ureg.newton  # Has units - valid for maximum
-        force_target.threshold_type = 'maximum'
+        target = EnergyConvergenceTarget()
+        target.threshold = 1e-8 * ureg.joule  # Has units - valid for maximum
+        target.threshold_type = 'maximum'
 
         scf_steps = SCFSteps(
-            delta_force_abs=[1e-9, 5e-10, 2e-10] * ureg.newton  # Array for maximum
+            delta_energies_total=[1e-9, 5e-10, 2e-10] * ureg.joule  # Array for maximum
         )
         outputs = Outputs(scf_steps=scf_steps)
         archive.data.outputs = [outputs]
 
         # Should validate and check convergence
-        is_reached = force_target.normalize(archive, logger)
+        is_reached = target.normalize(archive, logger)
         assert is_reached is True
 
     def test_rms_with_units_succeeds(self, archive, logger):
         """Test that rms convergence works with dimensional units."""
-        force_target = SCFForceConvergenceTarget()
-        force_target.threshold = 1e-8 * ureg.newton  # Has units - valid for rms
-        force_target.threshold_type = 'rms'
+        target = EnergyConvergenceTarget()
+        target.threshold = 1e-8 * ureg.joule  # Has units - valid for rms
+        target.threshold_type = 'rms'
 
         scf_steps = SCFSteps(
-            delta_force_abs=[1e-9, 5e-10, 2e-10] * ureg.newton  # Array for rms
+            delta_energies_total=[1e-9, 5e-10, 2e-10] * ureg.joule  # Array for rms
         )
         outputs = Outputs(scf_steps=scf_steps)
         archive.data.outputs = [outputs]
 
         # Should validate and check convergence
-        is_reached = force_target.normalize(archive, logger)
+        is_reached = target.normalize(archive, logger)
         assert is_reached is True
