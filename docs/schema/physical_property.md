@@ -93,12 +93,17 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `BaseElectronicEigenvalues` | A base section used to define basic quantities for the `ElectronicEigenvalues`  and `ElectronicBandStructure` properties. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.electronic_eigenvalues.BaseElectronicEigenvalues){:target="_blank"} |
+| `BaseElectronicEigenvalues` | A base section defining the quantities shared by the `ElectronicEigenvalues` and `ElectronicBandStructure` sibling properties. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.electronic_eigenvalues.BaseElectronicEigenvalues){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
 | `n_levels` | m_int32(int32) | <details><summary>Number of energy levels per sampling point.</summary>Number of energy levels per sampling point.<br>In periodic systems these correspond to electronic bands; in molecular<br>calculations they correspond to (spin-resolved) molecular orbitals or<br>similar one-particle states.</details> |
 | `value` | m_float64(float64) (shape: ['*', '*']) | Value of the electronic eigenvalues. |
+| `spin_channel` | m_int32(int32) | Spin channel of the corresponding electronic eigenvalues. It can take values of 0 or 1. |
+| `occupation` | m_float64(float64) (shape: ['*', 'n_levels']) | <details><summary>Occupation of the electronic eigenvalues.</summary>Occupation of the electronic eigenvalues. This is a number depending whether the `spin_channel` has been set or not.<br>If `spin_channel` is set, then this number is between 0 and 1, where 0 means that the state is unoccupied and 1 means<br>that the state is fully occupied; if `spin_channel` is not set, then this number is between 0 and 2. The shape of<br>this quantity is defined as `[K.n_points, n_levels]`, where `K` is the reciprocal-space axis of the concrete<br>sibling: `k_points` (`KPoints`) on `ElectronicEigenvalues` for a full Brillouin-zone sampling, or `k_path`<br>(`KLinePath`) on `ElectronicBandStructure` for a high-symmetry path.</details> |
+| `highest_occupied` | m_float64(float64) | Highest occupied electronic eigenvalue. Together with `lowest_unoccupied`, it defines the electronic band gap. |
+| `lowest_unoccupied` | m_float64(float64) | Lowest unoccupied electronic eigenvalue. Together with `highest_occupied`, it defines the electronic band gap. |
+| `reciprocal_cell` | QuantityReference | Reciprocal lattice vectors associated with the k-space sampling used for these eigenvalues, taken from the corresponding `KSpace` numerical settings. |
 
 ### `BaseGreensFunction`
 
