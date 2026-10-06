@@ -8,6 +8,8 @@ This module tests the refactored class-based convergence target system including
 - Unit handling and is_reached flag calculation
 """
 
+import logging
+
 import numpy as np
 import pytest
 from nomad.units import ureg
@@ -25,6 +27,7 @@ from nomad_simulations.schema_packages.workflow.general import (
 )
 from nomad_simulations.schema_packages.workflow.geometry_optimization import (
     GeometryOptimization,
+    GeometryOptimizationMethod,
     GeometryOptimizationResults,
 )
 
@@ -140,6 +143,29 @@ class TestForceConvergenceTarget:
         ]
 
         assert force_target.normalize(archive, logger) is None
+
+
+class TestTargetLevels:
+    """Test that targets are placed at the level they can be evaluated at."""
+
+    @pytest.mark.parametrize(
+        'target, warns',
+        [
+            (EnergyConvergenceTarget(threshold=1e-6 * ureg.joule), False),
+            (ForceConvergenceTarget(threshold=1e-3 * ureg.newton), True),
+        ],
+        ids=['scf_target', 'misplaced_geometry_target'],
+    )
+    def test_warns_on_workflow_level_single_point_target(
+        self, archive, logger, caplog, target, warns
+    ):
+        """Single-point targets with absolute paths cannot be evaluated per step."""
+        method = GeometryOptimizationMethod(single_point_convergence_targets=[target])
+
+        with caplog.at_level(logging.WARNING):
+            method.normalize(archive, logger)
+
+        assert ('cannot be evaluated per SCF step' in caplog.text) is warns
 
 
 class TestPotentialConvergenceTarget:

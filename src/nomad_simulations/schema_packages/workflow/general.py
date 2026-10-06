@@ -474,7 +474,7 @@ class ForceConvergenceTarget(WorkflowConvergenceTarget):
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
     threshold.m_annotations['expected_unit'] = 'newton'
     threshold.m_annotations['convergence'] = {
-        'path': 'workflow2.results.final_force_maximum'
+        'paths': ['workflow2.results.final_force_maximum']
     }
 
 

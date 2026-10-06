@@ -103,6 +103,20 @@ class GeometryOptimizationModel(SimulationWorkflowMethod):
         """,
     )
 
+    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> None:
+        super().normalize(archive, logger)
+
+        # Single-point targets are evaluated against each step's own output, so only
+        # relative `@.` paths can resolve; an absolute path marks a workflow-level
+        # target placed at the wrong level.
+        for target in self.single_point_convergence_targets:
+            if any(not path.startswith('@.') for path in target._convergence_paths()):
+                logger.warning(
+                    'Convergence target %s reads workflow-level data and cannot be '
+                    'evaluated per SCF step',
+                    target.m_def.name,
+                )
+
 
 # Backwards-compatible alias used across parser/tests.
 class GeometryOptimizationMethod(GeometryOptimizationModel):
