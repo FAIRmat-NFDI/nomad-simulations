@@ -18,26 +18,40 @@ from nomad_simulations.schema_packages.workflow.single_point import (
 
 
 class TestGeometryOptimization:
-    def test_task_convergence_uses_its_linked_output(self, logger, archive):
+    @pytest.mark.parametrize(
+        'threshold, threshold_type, delta_energies, converged',
+        [
+            (
+                1e-6 * ureg.joule,
+                'absolute',
+                [[1e-8 * ureg.joule], [1e-4 * ureg.joule]],
+                [True, False],
+            ),
+            (1e-6 * ureg.joule, 'absolute', [[1e-8 * ureg.joule], []], [True, None]),
+        ],
+    )
+    def test_task_convergence_uses_its_linked_output(
+        self, logger, archive, threshold, threshold_type, delta_energies, converged
+    ):
         target = EnergyConvergenceTarget()
-        target.threshold = 1e-6 * ureg.joule
-        target.threshold_type = 'absolute'
+        target.threshold = threshold
+        target.threshold_type = threshold_type
         workflow = GeometryOptimization(
             method=GeometryOptimizationMethod(single_point_convergence_targets=[target])
         )
         archive.workflow2 = workflow
         archive.data.outputs = [
-            Outputs(scf_steps=SCFSteps(delta_energies_total=[1e-8] * ureg.joule)),
-            Outputs(scf_steps=SCFSteps(delta_energies_total=[1e-4] * ureg.joule)),
+            Outputs(scf_steps=SCFSteps(delta_energies_total=de))
+            for de in delta_energies
         ]
-
         workflow.normalize(archive, logger)
 
-        assert [task.results.convergence[0].is_reached for task in workflow.tasks] == [
-            True,
-            False,
-        ]
-        assert workflow.results.is_single_point_converged is False
+        assert [
+            task.results.convergence[0].is_reached for task in workflow.tasks
+        ] == converged
+        assert workflow.results.is_single_point_converged is (
+            all(converged) if None not in converged else None
+        )
 
     @pytest.mark.parametrize(
         'energies, ref_energy, ref_energy_diff',
