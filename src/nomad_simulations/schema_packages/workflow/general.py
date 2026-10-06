@@ -483,9 +483,10 @@ class SCFForceConvergenceTarget(WorkflowConvergenceTarget):
     """
     Convergence target for the change of atomic forces between SCF iterations.
 
-    Checks `SCFSteps.delta_force_abs`, which codes report as one value per SCF
-    iteration, already reduced over atoms (e.g. FHI-aims `sc_accuracy_forces`).
-    Use `threshold_type='absolute'` to compare the last iteration's value.
+    Checks `SCFSteps.delta_force_abs`, the code-reported force change per SCF
+    iteration (e.g. exciting `epsforcescf`). Use `threshold_type='absolute'` to
+    compare the last iteration's value. For the residual force of a geometry
+    optimization, use `ForceConvergenceTarget`.
     """
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
