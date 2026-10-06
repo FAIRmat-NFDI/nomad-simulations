@@ -172,7 +172,12 @@ class SCFSteps(ArchiveSection):
         type=float,
         unit='newton',
         description="""
-        Absolute change of forces at each SCF step.
+        Maximum change of the atomic forces between consecutive SCF iterations,
+        one value per iteration, as reported by codes that check force
+        self-consistency (e.g. FHI-aims `Change of forces`, exciting
+        `Abs. change in max-nonIBS-force`). Codes typically evaluate it only once
+        the electronic criteria are met, so the series can be shorter than the
+        other SCF series.
         """,
     )
 

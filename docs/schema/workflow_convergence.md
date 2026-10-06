@@ -16,6 +16,7 @@ classDiagram
     class GeometryOptimizationModel
     class GeometryOptimizationResults
     class PotentialConvergenceTarget
+    class SCFForceConvergenceTarget
     class SimulationWorkflowModel
     class SimulationWorkflowResults
     class WavefunctionConvergenceTarget
@@ -26,6 +27,7 @@ classDiagram
     WorkflowConvergenceTarget <|-- ForceConvergenceTarget
     SimulationWorkflowResults <|-- GeometryOptimizationResults
     WorkflowConvergenceTarget <|-- PotentialConvergenceTarget
+    WorkflowConvergenceTarget <|-- SCFForceConvergenceTarget
     WorkflowConvergenceTarget <|-- WavefunctionConvergenceTarget
     GeometryOptimizationModel *-- WorkflowConvergenceTarget : single_point_convergence_targets
     SimulationWorkflowModel *-- WorkflowConvergenceTarget : convergence_targets
@@ -68,7 +70,17 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `ForceConvergenceTarget` | Convergence target for atomic forces. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ForceConvergenceTarget){:target="_blank"} |
+| `ForceConvergenceTarget` | Convergence target for the residual atomic forces of a geometry optimization. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ForceConvergenceTarget){:target="_blank"} |
+
+| Quantity | Type | Description |
+|---|---|---|
+| `threshold` | m_float_bounded(float) | <details><summary>Convergence threshold.</summary>Convergence threshold. Must be non-negative.<br>When threshold_type is 'relative', must be dimensionless.<br>When threshold_type is 'absolute', 'maximum', or 'rms', must have physical units.<br>Child classes override this to add convergence path annotations.</details> |
+
+### `SCFForceConvergenceTarget`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `SCFForceConvergenceTarget` | Convergence target for the change of atomic forces between SCF iterations. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SCFForceConvergenceTarget){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|

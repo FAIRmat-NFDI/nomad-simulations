@@ -173,11 +173,8 @@ The mode used affects both convergence behavior and computational efficiency. Di
                 # Handle arrays: for 'absolute' threshold_type, extract last iteration value
                 # For 'rms' and 'maximum', keep full array for aggregation
                 conv_type = self.threshold_type or 'absolute'
-                if hasattr(value, '__getitem__') and not isinstance(value, str):
-                    if conv_type in ('rms', 'maximum'):
-                        return value  # Keep full array
-                    else:
-                        return value[-1]  # Extract last iteration value
+                if not self._is_scalar_pint(value):
+                    return value if conv_type in ('rms', 'maximum') else value[-1]
                 return value
 
         # All paths failed
@@ -468,44 +465,32 @@ class EnergyConvergenceTarget(WorkflowConvergenceTarget):
 
 class ForceConvergenceTarget(WorkflowConvergenceTarget):
     """
-    Convergence target for atomic forces.
+    Convergence target for the residual atomic forces of a geometry optimization.
 
-    Note: Force convergence uses vector norms. If force data has shape [n_atoms, 3],
-    the L2 norm is computed per atom before applying the threshold comparison.
+    Checks the largest atomic force magnitude in the final optimization step
+    (`GeometryOptimizationResults.final_force_maximum`). For the change of forces
+    between SCF iterations, use `SCFForceConvergenceTarget`.
     """
 
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
     threshold.m_annotations['expected_unit'] = 'newton'
     threshold.m_annotations['convergence'] = {
-        'paths': [
-            'workflow2.results.final_force_maximum',
-            '@.scf_steps.delta_force_abs',
-        ]
+        'path': 'workflow2.results.final_force_maximum'
     }
 
-    def _preprocess_convergence_value(
-        self, value, logger: BoundLogger
-    ) -> np.ndarray | pint.Quantity | None:
-        """
-        Compute force norms from force vectors.
 
-        Transforms [n_atoms, 3] force vectors to [n_atoms] force magnitudes
-        using L2 norm: ||F_i|| = sqrt(F_x^2 + F_y^2 + F_z^2).
+class SCFForceConvergenceTarget(WorkflowConvergenceTarget):
+    """
+    Convergence target for the change of atomic forces between SCF iterations.
 
-        Args:
-            value: Force data, either scalar or array with shape [n_atoms, 3]
-            logger: Logger for reporting issues
+    Checks `SCFSteps.delta_force_abs`, which codes report as one value per SCF
+    iteration, already reduced over atoms (e.g. FHI-aims `sc_accuracy_forces`).
+    Use `threshold_type='absolute'` to compare the last iteration's value.
+    """
 
-        Returns:
-            Scalar or [n_atoms] array of force magnitudes
-        """
-        if value is None:
-            return None
-
-        if hasattr(value, 'shape') and len(value.shape) == 2 and value.shape[1] == 3:
-            return np.sqrt((value**2).sum(axis=1))
-
-        return value
+    threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
+    threshold.m_annotations['expected_unit'] = 'newton'
+    threshold.m_annotations['convergence'] = {'path': '@.scf_steps.delta_force_abs'}
 
 
 class PotentialConvergenceTarget(WorkflowConvergenceTarget):
