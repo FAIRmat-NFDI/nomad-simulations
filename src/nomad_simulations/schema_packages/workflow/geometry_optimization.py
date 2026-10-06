@@ -307,11 +307,11 @@ class GeometryOptimization(SerialWorkflow):
         # Create SinglePoint task with convergence analysis if SCF steps present
         if output.get('scf_steps') is not None:
             calculation_task = Task(
-                name='Calculation',
+                name=task_name,
                 outputs=[Link(name='Outputs', section=output)],
             )
             task = SinglePoint(
-                name=task_name,
+                name=SinglePoint._task_label,
                 outputs=[output_link],
                 tasks=[calculation_task],
                 results=SinglePointResults(),
