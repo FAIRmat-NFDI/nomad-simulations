@@ -192,11 +192,11 @@ The mode used affects both convergence behavior and computational efficiency. Di
     def _resolve_relative_root(self, archive_or_task: EntryArchive | SimulationTask):
         if isinstance(archive_or_task, EntryArchive):
             archive = archive_or_task
-            if archive.data and archive.data.outputs and len(archive.data.outputs):
+            if archive.data and archive.data.outputs:
                 return archive.data.outputs[-1]
         elif isinstance(archive_or_task, SimulationTask):
             task = archive_or_task
-            if task.outputs and len(task.outputs):
+            if task.outputs:
                 return task.outputs[-1].section
         return None
 
