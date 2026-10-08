@@ -360,8 +360,8 @@ class GeometryOptimization(SerialWorkflow):
         single_point_convergence_results = jmespath.search(
             'workflow2.tasks[*].results.convergence[*].is_reached', archive
         )
-        if single_point_convergence_results is None:
-            return
+        if not single_point_convergence_results:
+            return None
 
         if len(single_point_convergence_results) < len(self.tasks):
             all_scf_converged = None
