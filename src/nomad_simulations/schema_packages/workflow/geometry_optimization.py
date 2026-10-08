@@ -371,7 +371,9 @@ class GeometryOptimization(SerialWorkflow):
                     'workflow2.method.single_point_convergence_targets', archive
                 )
             )
-            if any(len(x) < n_targets for x in single_point_convergence_results):
+            if not n_targets:
+                all_scf_converged = None
+            elif any(len(x) < n_targets for x in single_point_convergence_results):
                 all_scf_converged = None
             else:
                 all_scf_converged = all(

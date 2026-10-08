@@ -28,6 +28,12 @@ class TestGeometryOptimization:
                 [True, False],
             ),
             (1e-6 * ureg.joule, 'absolute', [[1e-8 * ureg.joule], []], [True, None]),
+            (1e-6 * ureg.joule, 'absolute', [[1e-4 * ureg.joule], []], [False, None]),
+        ],
+        ids=[
+            'converged_and_failed',
+            'converged_and_undetermined',
+            'failed_and_undetermined',
         ],
     )
     def test_task_convergence_uses_its_linked_output(
@@ -54,23 +60,28 @@ class TestGeometryOptimization:
         )
 
     @pytest.mark.parametrize(
-        'targets',
-        [None, [EnergyConvergenceTarget(threshold=1e-6 * ureg.joule)]],
-        ids=['no_targets', 'targets_set'],
+        'targets, delta_energies',
+        [
+            (None, []),
+            ([EnergyConvergenceTarget(threshold=1e-6 * ureg.joule)], []),
+            ([], [[1e-8 * ureg.joule]]),
+        ],
+        ids=['no_tasks_no_targets', 'no_tasks_targets_set', 'empty_target_list'],
     )
-    def test_no_tasks_leaves_scf_convergence_undetermined(
-        self, archive, logger, targets
+    def test_nothing_checked_leaves_scf_convergence_undetermined(
+        self, archive, logger, targets, delta_energies
     ):
-        """A GO without outputs has no tasks: nothing is checked, so nothing converged."""
-        archive.data.outputs = []
+        """Without tasks or without targets nothing is checked, so nothing converged."""
+        archive.data.outputs = [
+            Outputs(scf_steps=SCFSteps(delta_energies_total=de))
+            for de in delta_energies
+        ]
         method = GeometryOptimizationMethod()
         if targets is not None:
             method.single_point_convergence_targets = targets
         workflow = GeometryOptimization(method=method)
         archive.workflow2 = workflow
-
         workflow.normalize(archive, logger)
-
         assert workflow.results.is_single_point_converged is None
 
     @pytest.mark.parametrize(
