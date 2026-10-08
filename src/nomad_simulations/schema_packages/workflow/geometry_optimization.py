@@ -329,9 +329,10 @@ class GeometryOptimization(SerialWorkflow):
         single_point_convergence = jmespath.search(
             'workflow2.method.single_point_convergence_targets', archive
         )
+
         if single_point_convergence is not None:
             convergence_result = task._resolve_convergence(
-                archive, single_point_convergence, logger
+                task, single_point_convergence, logger
             )
             task.results.convergence = convergence_result
 
@@ -359,9 +360,25 @@ class GeometryOptimization(SerialWorkflow):
         single_point_convergence_results = jmespath.search(
             'workflow2.tasks[*].results.convergence[*].is_reached', archive
         )
-        if single_point_convergence_results is None:
-            return
-        all_scf_converged = all(all(x) for x in single_point_convergence_results)
+        if not single_point_convergence_results:
+            return None
+
+        if len(single_point_convergence_results) < len(self.tasks):
+            all_scf_converged = None
+        else:
+            n_targets = len(
+                jmespath.search(
+                    'workflow2.method.single_point_convergence_targets', archive
+                )
+            )
+            if not n_targets:
+                all_scf_converged = None
+            elif any(len(x) < n_targets for x in single_point_convergence_results):
+                all_scf_converged = None
+            else:
+                all_scf_converged = all(
+                    all(x) for x in single_point_convergence_results
+                )
         self.results.is_single_point_converged = all_scf_converged
 
 

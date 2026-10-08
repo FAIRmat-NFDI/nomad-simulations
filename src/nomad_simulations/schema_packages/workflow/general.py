@@ -134,9 +134,13 @@ The mode used affects both convergence behavior and computational efficiency. Di
             else None
         )
 
-    def _get_convergence_value(self, archive: EntryArchive, logger: BoundLogger):
+    def _get_convergence_value(
+        self,
+        archive_or_task: EntryArchive | SimulationTask,
+        logger: BoundLogger,
+    ):
         """
-        Extract the value to check for convergence from the archive.
+        Extract the value to check for convergence from the archive / task.
 
         Uses the path(s) defined in the `a_convergence` annotation on the threshold
         Quantity to locate convergence data. Supports fallback paths - if the first
@@ -147,7 +151,8 @@ The mode used affects both convergence behavior and computational efficiency. Di
         - Fallback paths: `a_convergence={'paths': ['workflow2.results.X', '@.scf_steps.X']}`
 
         Path notation (JMESPath-inspired, uses `getattr()` for navigation):
-        - `@.scf_steps.delta_energies_total` - Relative to `archive.data.outputs[-1]` (current output)
+        - `@.scf_steps.delta_energies_total` - Relative to `archive.data.outputs[-1]` (last output)
+                                               or `task.outputs[-1].section`
         - `workflow2.results.X` or `archive.X` - Absolute from archive root
 
         The `@` prefix follows JMESPath convention where `@` represents the current node.
@@ -168,16 +173,13 @@ The mode used affects both convergence behavior and computational efficiency. Di
 
         # Try each path in order (fallback logic)
         for path in paths:
-            value = self._resolve_path(archive, path, logger)
+            value = self._resolve_path(archive_or_task, path, logger)
             if value is not None:
                 # Handle arrays: for 'absolute' threshold_type, extract last iteration value
                 # For 'rms' and 'maximum', keep full array for aggregation
                 conv_type = self.threshold_type or 'absolute'
-                if hasattr(value, '__getitem__') and not isinstance(value, str):
-                    if conv_type in ('rms', 'maximum'):
-                        return value  # Keep full array
-                    else:
-                        return value[-1]  # Extract last iteration value
+                if not self._is_scalar_pint(value):
+                    return value if conv_type in ('rms', 'maximum') else value[-1]
                 return value
 
         # All paths failed
@@ -187,19 +189,49 @@ The mode used affects both convergence behavior and computational efficiency. Di
         )
         return None
 
-    def _resolve_path(self, archive: EntryArchive, path: str, logger: BoundLogger):
+    def _resolve_relative_root(
+        self, archive_or_task: EntryArchive | SimulationTask
+    ) -> ArchiveSection | None:
         """
-        Resolve a single path in the archive.
+        Return the root section for relative paths (those starting with '@.').
+
+        For archives, this is the last output in `archive.data.outputs`.
+        For tasks, this is the last linked output.
+
+        Args:
+            archive_or_task: The archive or task to resolve
+
+        Returns:
+            The root section for relative paths, or None
+        """
+        if isinstance(archive_or_task, EntryArchive):
+            archive = archive_or_task
+            if archive.data and archive.data.outputs:
+                return archive.data.outputs[-1]
+        elif isinstance(archive_or_task, SimulationTask):
+            task = archive_or_task
+            if task.outputs:
+                return task.outputs[-1].section
+        return None
+
+    def _resolve_path(
+        self,
+        archive_or_task: EntryArchive | SimulationTask,
+        path: str,
+        logger: BoundLogger,
+    ):
+        """
+        Resolve a single path in the archive/task.
 
         Paths are dot-notation strings with required prefixes (JMESPath-inspired):
-        - `@.scf_steps.X` - Relative to `archive.data.outputs[-1]` (current output)
+        - `@.scf_steps.X` - Relative to `archive.data.outputs[-1]` or `task.outputs[-1].section`
         - `workflow2.X` or `archive.X` - Absolute from archive root
 
         The `@` prefix follows JMESPath convention where `@` represents the current node.
         All paths must have an explicit prefix.
 
         Args:
-            archive: The archive to search
+            archive_or_task: The archive or task to search
             path: Dot-notation path string with required prefix
             logger: Logger instance
 
@@ -210,13 +242,12 @@ The mode used affects both convergence behavior and computational efficiency. Di
             # Determine starting point based on path prefix
             if path.startswith('@.'):
                 # Explicit relative path (JMESPath-inspired current node)
-                if not archive.data or not archive.data.outputs:
+                if (root := self._resolve_relative_root(archive_or_task)) is None:
                     return None
-                root = archive.data.outputs[-1]
                 path_parts = path[2:].split('.')  # Strip '@.' prefix
             elif path.startswith('workflow2.') or path.startswith('archive.'):
                 # Absolute path from archive root
-                root = archive
+                root = archive_or_task
                 path_parts = path.split('.')
             else:
                 # No valid prefix - path must be explicit
@@ -395,20 +426,24 @@ The mode used affects both convergence behavior and computational efficiency. Di
         """
         return value
 
-    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> bool | None:
+    def normalize(
+        self,
+        archive_or_task: EntryArchive | SimulationTask,
+        logger: BoundLogger,
+    ) -> bool | None:
         """
         Check if convergence criterion is met.
 
         Returns:
             True if converged, False if not, None if cannot be determined.
         """
-        if not archive.data:
+        if isinstance(archive_or_task, EntryArchive) and not archive_or_task.data:
             return None
 
         self._convert_to_pint()
 
         try:
-            value = self._get_convergence_value(archive, logger)
+            value = self._get_convergence_value(archive_or_task, logger)
             if value is None:
                 return None
 
@@ -969,7 +1004,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     def _resolve_convergence(
         self,
-        archive: EntryArchive,
+        archive_or_task: EntryArchive | SimulationTask,
         convergence_targets: list[WorkflowConvergenceTarget],
         logger: BoundLogger,
     ) -> list[WorkflowConvergenceResults]:
@@ -979,7 +1014,8 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
         Creates temporary copies of convergence targets, normalizes them, and returns
         WorkflowConvergenceResults with the convergence status.
-        Note: Currently checks convergence against the last output only.
+        Note: Currently checks convergence against the last output
+        in either the whole archive or the specific task depending on the context.
         """
         convergence_results = []
 
@@ -989,7 +1025,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
             # For multi-output scenarios, we may need to adjust the archive context
             # This is a simplified approach - child classes can override for more complex logic
-            is_reached = target_copy.normalize(archive, logger)
+            is_reached = target_copy.normalize(archive_or_task, logger)
 
             # Create a result object that holds both the target and the convergence status
             result = WorkflowConvergenceResults()
