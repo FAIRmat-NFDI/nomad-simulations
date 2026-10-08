@@ -189,7 +189,21 @@ The mode used affects both convergence behavior and computational efficiency. Di
         )
         return None
 
-    def _resolve_relative_root(self, archive_or_task: EntryArchive | SimulationTask):
+    def _resolve_relative_root(
+        self, archive_or_task: EntryArchive | SimulationTask
+    ) -> ArchiveSection | None:
+        """
+        Return the root section for relative paths (those starting with '@.').
+
+        For archives, this is the last output in `archive.data.outputs`.
+        For tasks, this is the last linked output.
+
+        Args:
+            archive_or_task: The archive or task to resolve
+
+        Returns:
+            The root section for relative paths, or None
+        """
         if isinstance(archive_or_task, EntryArchive):
             archive = archive_or_task
             if archive.data and archive.data.outputs:
