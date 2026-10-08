@@ -434,6 +434,8 @@ The mode used affects both convergence behavior and computational efficiency. Di
         """
         Check if convergence criterion is met.
 
+        Mutation: convert threshold to Pint Quantity (idempotent).
+
         Returns:
             True if converged, False if not, None if cannot be determined.
         """
@@ -1020,17 +1022,12 @@ class SimulationWorkflow(Workflow, SimulationTask):
         convergence_results = []
 
         for target in convergence_targets:
-            # Create a copy of the target to avoid modifying the original
-            target_copy = target.m_copy(deep=True)
-
             # For multi-output scenarios, we may need to adjust the archive context
             # This is a simplified approach - child classes can override for more complex logic
-            is_reached = target_copy.normalize(archive_or_task, logger)
+            is_reached = target.normalize(archive_or_task, logger)
 
             # Create a result object that holds both the target and the convergence status
             result = WorkflowConvergenceResults()
-            # Reference the original target (which is in the archive hierarchy),
-            # not the copy (which would be orphaned and cause serialization errors)
             result.convergence_target_ref = target
             result.is_reached = is_reached
             convergence_results.append(result)
