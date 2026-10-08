@@ -167,6 +167,9 @@ class SCFSteps(ArchiveSection):
         """,
     )
 
+    # TODO: define which force contributions, reduction over atoms and SCF
+    # iterations this covers; the semantics differ between codes, see
+    # https://github.com/FAIRmat-NFDI/nomad-distro-dev-areaC/issues/4
     delta_force_abs = Quantity(
         shape=['*'],
         type=float,
