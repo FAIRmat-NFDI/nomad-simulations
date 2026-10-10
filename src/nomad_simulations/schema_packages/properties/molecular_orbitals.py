@@ -55,7 +55,7 @@ class MolecularOrbitals(PhysicalProperty):
             dtype=np.float64,
             bound=Bound(
                 '[0,2]',
-                slack=configuration.mo_occupation_slack,
+                slack=configuration.occupation_bound_slack,
                 on_violation='log',
                 clamp=True,
             ),
@@ -65,7 +65,7 @@ class MolecularOrbitals(PhysicalProperty):
         Occupation number for each molecular orbital. Expected in [0, 2] (spin-summed;
         [0, 1] for spin orbitals). Occupation numbers from approximate methods (e.g.
         MP2/CC natural orbitals) can fall slightly outside; values beyond the
-        `mo_occupation_slack` tolerance are logged, and out-of-[0, 2] values are clamped
+        `occupation_bound_slack` tolerance are logged, and out-of-[0, 2] values are clamped
         into [0, 2].
         """,
     )
