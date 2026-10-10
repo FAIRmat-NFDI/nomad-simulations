@@ -441,6 +441,23 @@ def _reject_scale_dependent_flexible_unit(flexible_unit: bool, bound: Bound) -> 
         )
 
 
+def _bound_json_schema(bound: Bound) -> dict:
+    """Express a `Bound`'s core interval as JSON Schema numeric constraints.
+
+    Draft 2020-12 is targeted, so `exclusiveMinimum`/`exclusiveMaximum` carry the
+    numeric endpoint. `slack` is a numerical-noise tolerance, not part of the declared
+    range, so it is deliberately not encoded; infinite endpoints are omitted.
+    """
+    extra: dict = {}
+    if np.isfinite(bound._min_value):
+        key = 'minimum' if bound._min_inclusive else 'exclusiveMinimum'
+        extra[key] = bound._min_value
+    if np.isfinite(bound._max_value):
+        key = 'maximum' if bound._max_inclusive else 'exclusiveMaximum'
+        extra[key] = bound._max_value
+    return extra
+
+
 class m_int_bounded(ExactNumber):
     """
     Bounded integer data type.
@@ -498,6 +515,10 @@ class m_int_bounded(ExactNumber):
         """Return the equivalent python type for indexing."""
         return 'int'
 
+    def json_schema_extra(self) -> dict:
+        # integer quantity: emit integral bounds
+        return {k: int(v) for k, v in _bound_json_schema(self.bound).items()}
+
 
 class m_float_bounded(InexactNumber):
     """
@@ -553,6 +574,9 @@ class m_float_bounded(InexactNumber):
     def standard_type(self):
         """Return the equivalent python type for indexing."""
         return 'float'
+
+    def json_schema_extra(self) -> dict:
+        return _bound_json_schema(self.bound)
 
 
 # Convenience factory functions for common use cases
