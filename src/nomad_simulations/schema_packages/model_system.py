@@ -1962,6 +1962,11 @@ class ModelSystem(System, Representation):
         if not self.is_representative:
             return
 
+        # Multi-frame sequences store per-particle identity on the topology frame
+        # only; resolve it here so that formula and type can be derived.
+        if not self.particle_states:
+            self._resolve_identity_from_topology(logger)
+
         ## ATOMIC NORMALIZATION
         if not self.is_atomic():
             return
@@ -1998,6 +2003,36 @@ class ModelSystem(System, Representation):
             sec_chemical_formula.resolve_chemical_formulas(
                 Formula(formula=''.join(atom_labels))
             )
+
+    def _resolve_identity_from_topology(self, logger: 'BoundLogger') -> None:
+        """
+        Copy `particle_states` from the first sibling frame that carries them.
+
+        Multi-frame parsers (trajectories, optimization steps) attach the frame-independent
+        per-particle identity to the first (topology) frame only, to keep the archive and
+        the search index small. The representative frame is usually the last one, so it
+        would otherwise have no identity to derive `chemical_formula` and `type` from.
+        Nothing is copied when no sibling carries identity, or when the topology particle
+        count does not match this frame's positions.
+        """
+        frames = getattr(self.m_parent, 'model_system', None)
+        if not frames:
+            return
+        topology = next((frame for frame in frames if frame.particle_states), None)
+        if topology is None:
+            return
+        n_states = len(topology.particle_states)
+        if self.positions is not None and len(self.positions) != n_states:
+            logger.warning(
+                'Topology frame particle count does not match the positions of the '
+                'representative frame; identity not resolved.',
+                n_particle_states=n_states,
+                n_positions=len(self.positions),
+            )
+            return
+        self.particle_states = [
+            state.m_copy(deep=True) for state in topology.particle_states
+        ]
 
     def _generate_comparer(self):
         if self.positions is None:
