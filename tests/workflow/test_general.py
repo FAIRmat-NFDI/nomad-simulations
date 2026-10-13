@@ -73,6 +73,11 @@ class TestSimulationWorklow:
                 [(4, 5), (0, 1), (2, 3), (1, 2), (2, 4)],
                 [(0, 1), (1, 2), (1, 3), (2, 4), (3, 4)],
             ),
+            pytest.param(
+                [(0.0, 1.0), (None, 1.0)],
+                [],
+                id='untimed-output-kept-but-unlinked',
+            ),
         ],
     )
     def test_tasks(self, logger, archive, workflow, times, linked):

@@ -281,7 +281,7 @@ class GeometryOptimization(SerialWorkflow):
         self, archive: EntryArchive, logger: BoundLogger
     ) -> None:
         """Create tasks from archive outputs with timing-based linking."""
-        outputs = sorted(archive.data.outputs, key=lambda x: x.wall_start or 0)
+        outputs = self._sort_outputs_by_wall_start(archive.data.outputs)
         tasks = []
         parent_n = 0
         root_n = 0
@@ -329,42 +329,6 @@ class GeometryOptimization(SerialWorkflow):
                 archive, single_point_convergence, logger
             )
             task.results.convergence = convergence_result
-
-    def _link_task_by_timing(
-        self,
-        task: Task,
-        output,
-        outputs: list,
-        tasks: list[Task],
-        n: int,
-        parent_n: int,
-        root_n: int,
-    ) -> tuple[int, int]:
-        """
-        Link task to previous tasks based on execution timing.
-
-        Returns:
-            tuple[int, int]: Updated (parent_n, root_n) indices.
-        """
-        tstart = output.wall_start
-        tend = outputs[parent_n].wall_end
-
-        if tstart is None and tend is None:
-            return parent_n, root_n
-
-        if tstart >= tend:
-            # Link to all tasks from parent to current (exclusive)
-            task.inputs.extend(
-                [Link(name='Linked task', section=t) for t in tasks[parent_n:n]]
-            )
-            return n, parent_n  # Update parent_n to current, root_n to old parent
-        elif n != parent_n:
-            # Link to all tasks from root to parent (exclusive)
-            task.inputs.extend(
-                [Link(name='Linked task', section=t) for t in tasks[root_n:parent_n]]
-            )
-
-        return parent_n, root_n
 
     def _map_tasks_from_model_system(
         self, archive: EntryArchive, logger: BoundLogger

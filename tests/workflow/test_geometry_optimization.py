@@ -90,6 +90,19 @@ class TestGeometryOptimization:
             assert task.inputs[0].section == previous_task
         assert workflow.results.final_energy_difference.magnitude == 1
 
+    def test_map_tasks_with_missing_timestamps(self, logger, archive):
+        archive.data.outputs = [
+            Outputs(wall_start=0.0, wall_end=1.0),
+            Outputs(wall_start=None, wall_end=1.0),
+        ]
+
+        workflow = GeometryOptimization()
+        workflow.normalize(archive, logger)
+
+        assert len(workflow.tasks) == 2
+        assert workflow.tasks[1].outputs[0].section == archive.data.outputs[1]
+        assert workflow.tasks[1].inputs[0].section == workflow.tasks[0]
+
     def test_map_tasks_fallback_to_model_system_when_outputs_missing(
         self, logger, archive
     ):
