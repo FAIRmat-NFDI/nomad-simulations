@@ -13,6 +13,7 @@ print(sys.modules.get({module!r}) is not None)
 """
 
 
+@pytest.mark.integration
 @pytest.mark.parametrize(
     'module, expected',
     [
