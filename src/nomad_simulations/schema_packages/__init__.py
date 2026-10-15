@@ -56,6 +56,8 @@ class NOMADSimulationsEntryPoint(SchemaPackageEntryPoint):
     )
 
     def load(self):
+        # Eager import so the GUI metainfo includes the `basis_set` package (#331)
+        import nomad_simulations.schema_packages.basis_set  # noqa: F401
         from nomad_simulations.schema_packages.general import m_package
 
         return m_package
