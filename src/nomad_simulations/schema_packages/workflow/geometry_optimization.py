@@ -316,25 +316,18 @@ class GeometryOptimization(SerialWorkflow):
                 tasks=[calculation_task],
                 results=SinglePointResults(),
             )
-            self._add_convergence_to_task(task, archive, logger)
+            self._add_convergence_to_task(task, logger)
             return task
 
         # Otherwise create generic task
         return Task(name=task_name, outputs=[output_link])
 
-    def _add_convergence_to_task(
-        self, task: SinglePoint, archive: EntryArchive, logger: BoundLogger
-    ) -> None:
+    def _add_convergence_to_task(self, task: SinglePoint, logger: BoundLogger) -> None:
         """Add convergence analysis to a SinglePoint task."""
-        single_point_convergence = jmespath.search(
-            'workflow2.method.single_point_convergence_targets', archive
-        )
-
-        if single_point_convergence is not None:
-            convergence_result = task._resolve_convergence(
-                task, single_point_convergence, logger
+        if self.method and self.method.single_point_convergence_targets:
+            task.results.convergence = task._resolve_convergence(
+                task, self.method.single_point_convergence_targets, logger
             )
-            task.results.convergence = convergence_result
 
     def _map_tasks_from_model_system(
         self, archive: EntryArchive, logger: BoundLogger
@@ -360,25 +353,16 @@ class GeometryOptimization(SerialWorkflow):
         single_point_convergence_results = jmespath.search(
             'workflow2.tasks[*].results.convergence[*].is_reached', archive
         )
-        if not single_point_convergence_results:
-            return None
-
-        if len(single_point_convergence_results) < len(self.tasks):
-            all_scf_converged = None
+        targets = self.method.single_point_convergence_targets if self.method else None
+        if (
+            single_point_convergence_results
+            and len(single_point_convergence_results) == len(self.tasks)
+            and (targets)
+            and all(len(x) == len(targets) for x in single_point_convergence_results)
+        ):
+            all_scf_converged = all(all(x) for x in single_point_convergence_results)
         else:
-            n_targets = len(
-                jmespath.search(
-                    'workflow2.method.single_point_convergence_targets', archive
-                )
-            )
-            if not n_targets:
-                all_scf_converged = None
-            elif any(len(x) < n_targets for x in single_point_convergence_results):
-                all_scf_converged = None
-            else:
-                all_scf_converged = all(
-                    all(x) for x in single_point_convergence_results
-                )
+            all_scf_converged = None
         self.results.is_single_point_converged = all_scf_converged
 
 
