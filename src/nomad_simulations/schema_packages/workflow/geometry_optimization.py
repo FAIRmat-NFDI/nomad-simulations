@@ -226,7 +226,9 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
                             denergies[nonzero_indices[-1]] * BaseEnergy.value.unit
                         )
         if self.final_force_maximum is None:
-            final_forces = archive.m_xpath('data.outputs[-1].total_forces[-1]')
+            final_forces = archive.m_xpath(
+                'data.outputs[-1].total_forces[-1]', dict=False
+            )
             if final_forces is not None:
                 force_abs = np.linalg.norm(final_forces.value, axis=1)
                 self.final_force_maximum = max(force_abs)
