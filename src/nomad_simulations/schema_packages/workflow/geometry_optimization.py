@@ -1,4 +1,3 @@
-import jmespath
 import numpy as np
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task
@@ -227,7 +226,7 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
                             denergies[nonzero_indices[-1]] * BaseEnergy.value.unit
                         )
         if self.final_force_maximum is None:
-            final_forces = jmespath.search('data.outputs[-1].total_forces[-1]', archive)
+            final_forces = archive.m_xpath('data.outputs[-1].total_forces[-1]')
             if final_forces is not None:
                 force_abs = np.linalg.norm(final_forces.value, axis=1)
                 self.final_force_maximum = max(force_abs)
@@ -350,8 +349,8 @@ class GeometryOptimization(SerialWorkflow):
         # TODO: When is_single_point_converged becomes an array, this should store
         # per-step convergence: [all(step_results) for step_results in single_point_convergence_results]
         # Currently aggregates across all steps into single boolean.
-        single_point_convergence_results = jmespath.search(
-            'workflow2.tasks[*].results.convergence[*].is_reached', archive
+        single_point_convergence_results = archive.m_xpath(
+            'workflow2.tasks[*].results.convergence[*].is_reached'
         )
         targets = self.method.single_point_convergence_targets if self.method else None
         if (
