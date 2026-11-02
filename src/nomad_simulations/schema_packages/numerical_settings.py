@@ -55,18 +55,58 @@ class Smearing(NumericalSettings):
     """
 
     kind = Quantity(
-        type=MEnum('Fermi-Dirac', 'Gaussian', 'Methfessel-Paxton'),
+        type=MEnum(
+            'Fermi-Dirac',
+            'Gaussian',
+            'Methfessel-Paxton',
+            'Methfessel-Paxton 1',
+            'Methfessel-Paxton 2',
+            'Marzari-Vanderbilt',
+            'Square-wave',
+            'Tetrahedra',
+            'Tetrahedra linear',
+            'Tetrahedra Bloechl',
+            'Tetrahedra optimized',
+        ),
         description="""
-        Smearing routine employed.
+        Routine used to assign occupation numbers around the Fermi level.
+
+        | Kind                     | Description                                                   |
+        | ------------------------ | ------------------------------------------------------------- |
+        | `'Fermi-Dirac'`          | Fermi-Dirac distribution at the temperature set by `width`.   |
+        | `'Gaussian'`             | Gaussian broadening of the occupations.                       |
+        | `'Methfessel-Paxton'`    | Methfessel-Paxton broadening of unreported order.             |
+        | `'Methfessel-Paxton 1'`  | Methfessel-Paxton broadening, first-order Hermite expansion.  |
+        | `'Methfessel-Paxton 2'`  | Methfessel-Paxton broadening, second-order Hermite expansion. |
+        | `'Marzari-Vanderbilt'`   | Marzari-Vanderbilt cold smearing.                             |
+        | `'Square-wave'`          | Square-wave (box) impulse broadening.                         |
+        | `'Tetrahedra'`           | Tetrahedron integration of unreported variant, no broadening. |
+        | `'Tetrahedra linear'`    | Linear tetrahedron integration, no broadening.                |
+        | `'Tetrahedra Bloechl'`   | Linear tetrahedron integration with Blöchl corrections.       |
+        | `'Tetrahedra optimized'` | Optimized tetrahedron integration (Kawamura et al.).          |
         """,
     )
     width = Quantity(
         type=float,
         unit='joule',
         description="""
-        Width of the smearing distribution.
+        Width of the smearing distribution. Not applicable when `kind` is one of the
+        `'Tetrahedra'` kinds, which have no broadening; the normalizer warns if both are set.
         """,
     )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        if (
+            self.kind is not None
+            and self.kind.startswith('Tetrahedra')
+            and self.width is not None
+        ):
+            logger.warning(
+                '`Smearing.width` is set to %s, but `kind` %s has no broadening.',
+                self.width,
+                self.kind,
+            )
 
 
 class Mesh(ArchiveSection):
