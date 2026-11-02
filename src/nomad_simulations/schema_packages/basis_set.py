@@ -95,6 +95,7 @@ class PlaneWaveBasisSet(BasisSetComponent, KMesh):
         Cutoff energy for the plane-wave basis set.
         The simulation uses plane waves with energies below this cutoff.
         """,
+        
     )
 
     cutoff_radius = Quantity(
@@ -962,7 +963,7 @@ class APWLChannel(BasisSetComponent):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         # call order: parent of `BasisSetComponent``, then `self`
         super(BasisSetComponent, self).normalize(archive, logger)
-        self.n_orbitals = len(self.orbitals)
+        self.n_orbitals = self.name*2 +1
 
 
 class MuffinTinRegion(BasisSetComponent, Mesh):
