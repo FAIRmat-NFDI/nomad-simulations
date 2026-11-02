@@ -2,6 +2,8 @@ import numpy as np
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import MEnum, Quantity
 
+from nomad_simulations.schema_packages.utils.log_rules import log_when
+
 
 # TODO This entire module is a prototype, to be tested and refined
 class ErrorEstimate(ArchiveSection):
@@ -130,35 +132,44 @@ class ErrorEstimate(ArchiveSection):
         type=str, description='Free-text provenance or remarks about the estimate.'
     )
 
+    @log_when(
+        'warning',
+        on=('metric', 'interval_type'),
+        condition=lambda self: (
+            self.metric in ('ci', 'pi') and self.interval_type is None
+        ),
+        message='Interval-type metric is used without specifying an interval type.',
+    )
+    @log_when(
+        'warning',
+        on=('interval_type', 'metric'),
+        condition=lambda self: (
+            self.interval_type is not None and self.metric not in ('ci', 'pi', 'other')
+        ),
+        message='Interval type is set but the metric is not an interval metric.',
+    )
+    @log_when(
+        'warning',
+        on=('level',),
+        condition=lambda self: self.level is not None and not 0.0 < self.level < 1.0,
+        message='Interval level is outside the typical open interval (0, 1).',
+    )
+    @log_when(
+        'warning',
+        on=('lower', 'upper'),
+        condition=lambda self: (self.lower is None) ^ (self.upper is None),
+        message=(
+            'Only one interval bound is provided; both lower and upper are recommended.'
+        ),
+        samples={'lower': [np.array([0.1])], 'upper': [np.array([0.9])]},
+    )
+    @log_when(
+        'info',
+        on=('scope',),
+        condition=lambda self: self.scope is None,
+        message=(
+            'No scope specified for the error estimate; default interpretation may apply.'
+        ),
+    )
     def normalize(self, archive, logger):
-        # Basic metric/interval consistency checks (generic, variable-free messages)
-        if self.metric in ('ci', 'pi') and self.interval_type is None:
-            logger.warning(
-                'Interval-type metric is used without specifying an interval type.'
-            )
-
-        if self.interval_type is not None and self.metric not in ('ci', 'pi', 'other'):
-            logger.warning(
-                'Interval type is set but the metric is not an interval metric.'
-            )
-
-        # Level sanity (if provided)
-        if self.level is not None and not (0.0 < self.level < 1.0):
-            logger.warning(
-                'Interval level is outside the typical open interval (0, 1).'
-            )
-
-        # Interval completeness
-        if (self.lower is None) ^ (self.upper is None):
-            logger.warning(
-                'Only one interval bound is provided; both lower and upper are recommended.'
-            )
-
-        # Scope hints
-        if self.scope is None:
-            logger.info(
-                'No scope specified for the error estimate; default interpretation may apply.'
-            )
-
-        # Shape alignment warnings are intentionally generic (no values in logs)
-        # You may later add property-aware checks in PhysicalProperty.normalize if needed.
+        super().normalize(archive, logger)
