@@ -55,7 +55,6 @@ VERTICALS = {
             'ParallelWorkflow',
             'SimulationWorkflowModel',
             'SimulationWorkflowMethod',
-            'WorkflowTime',
             'SimulationWorkflowResults',
             'SerialWorkflowResults',
             'WorkflowConvergenceTarget',

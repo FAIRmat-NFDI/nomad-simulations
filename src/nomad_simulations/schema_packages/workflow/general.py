@@ -4,7 +4,7 @@ import numpy as np
 import pint
 from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflow
-from nomad.metainfo import Datetime, MEnum, Quantity, SchemaPackage, SubSection
+from nomad.metainfo import MEnum, Quantity, SchemaPackage, SubSection
 from nomad.units import ureg
 from structlog.stdlib import BoundLogger
 
@@ -668,52 +668,6 @@ class SimulationWorkflowMethod(SimulationWorkflowModel):
     pass
 
 
-# TODO: Is this nomad_simulations.common.SimulationTime ?
-class WorkflowTime(ArchiveSection):
-    """
-    Contains time-related quantities.
-    """
-
-    datetime_end = Quantity(
-        type=Datetime,
-        description="""
-        The date and time when the workflow ended.
-        """,
-    )
-
-    cpu1_start = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The starting time of the workflow on the (first) CPU 1.
-        """,
-    )
-
-    cpu1_end = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The end time of the workflow on the (first) CPU 1.
-        """,
-    )
-
-    wall_start = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The internal wall-clock time from the starting of the workflow.
-        """,
-    )
-
-    wall_end = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The internal wall-clock time from the end of the workflow.
-        """,
-    )
-
-
 class WorkflowConvergenceResults(ArchiveSection):
     """
     Results of workflow convergence checks.
@@ -742,7 +696,7 @@ class WorkflowConvergenceResults(ArchiveSection):
     )
 
 
-class SimulationWorkflowResults(WorkflowTime):
+class SimulationWorkflowResults(ArchiveSection):
     """
     Base class for simulation workflow results sub-section definition.
     """
