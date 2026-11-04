@@ -68,7 +68,7 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `ForceConvergenceTarget` | Convergence target for atomic forces. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ForceConvergenceTarget){:target="_blank"} |
+| `ForceConvergenceTarget` | Convergence target for the residual atomic forces of a geometry optimization. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ForceConvergenceTarget){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
