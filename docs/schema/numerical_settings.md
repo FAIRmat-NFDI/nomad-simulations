@@ -118,8 +118,8 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `kind` | Enum | Smearing routine employed. |
-| `width` | m_float64(float) | Width of the smearing distribution. |
+| `kind` | Enum | <details><summary>Routine used to assign occupation numbers around the Fermi level.</summary>Routine used to assign occupation numbers around the Fermi level.<br>\| Kind                     \| Description                                                   \|<br>\| ------------------------ \| ------------------------------------------------------------- \|<br>\| `'Fermi-Dirac'`          \| Fermi-Dirac distribution at the temperature set by `width`.   \|<br>\| `'Gaussian'`             \| Gaussian broadening of the occupations.                       \|<br>\| `'Methfessel-Paxton'`    \| Methfessel-Paxton broadening of unreported order.             \|<br>\| `'Methfessel-Paxton 1'`  \| Methfessel-Paxton broadening, first-order Hermite expansion.  \|<br>\| `'Methfessel-Paxton 2'`  \| Methfessel-Paxton broadening, second-order Hermite expansion. \|<br>\| `'Marzari-Vanderbilt'`   \| Marzari-Vanderbilt cold smearing.                             \|<br>\| `'Square-wave'`          \| Square-wave (box) impulse broadening.                         \|<br>\| `'Tetrahedra'`           \| Tetrahedron integration of unreported variant, no broadening. \|<br>\| `'Tetrahedra linear'`    \| Linear tetrahedron integration, no broadening.                \|<br>\| `'Tetrahedra Bloechl'`   \| Linear tetrahedron integration with Blöchl corrections.       \|<br>\| `'Tetrahedra optimized'` \| Optimized tetrahedron integration (Kawamura et al.).          \|</details> |
+| `width` | m_float64(float) | Width of the smearing distribution. Not applicable when `kind` is one of the `'Tetrahedra'` kinds, which have no broadening; the normalizer warns if both are set. |
 
 ### `SelfConsistency`
 
