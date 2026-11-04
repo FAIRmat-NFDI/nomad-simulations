@@ -21,14 +21,12 @@ classDiagram
     class SimulationWorkflowResults
     class WorkflowConvergenceResults
     class WorkflowConvergenceTarget
-    class WorkflowTime
     SimulationWorkflow <|-- ParallelWorkflow
     SimulationWorkflow <|-- SerialWorkflow
     SimulationWorkflowResults <|-- SerialWorkflowResults
     SimulationTask <|-- SimulationTaskReference
     SimulationTask <|-- SimulationWorkflow
     SimulationWorkflowModel <|-- SimulationWorkflowMethod
-    WorkflowTime <|-- SimulationWorkflowResults
     SimulationWorkflow *-- SimulationWorkflowMethod : method
     SimulationWorkflow *-- SimulationWorkflowResults : results
     SimulationWorkflowModel *-- WorkflowConvergenceTarget : convergence_targets
@@ -104,20 +102,6 @@ classDiagram
 | `SimulationWorkflowMethod` |  | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.SimulationWorkflowMethod){:target="_blank"} |
 
 *This section has no direct quantities.*
-
-### `WorkflowTime`
-
-| Section | Description | MetaInfo |
-|---|---|---|
-| `WorkflowTime` | Contains time-related quantities. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.WorkflowTime){:target="_blank"} |
-
-| Quantity | Type | Description |
-|---|---|---|
-| `datetime_end` | Datetime | The date and time when the workflow ended. |
-| `cpu1_start` | m_float64(float64) | The starting time of the workflow on the (first) CPU 1. |
-| `cpu1_end` | m_float64(float64) | The end time of the workflow on the (first) CPU 1. |
-| `wall_start` | m_float64(float64) | The internal wall-clock time from the starting of the workflow. |
-| `wall_end` | m_float64(float64) | The internal wall-clock time from the end of the workflow. |
 
 ### `SimulationWorkflowResults`
 
