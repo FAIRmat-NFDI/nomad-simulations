@@ -287,6 +287,23 @@ class TestMolecularDynamicsMethod:
 class TestMolecularDynamics:
     n_outputs = 3
 
+    def test_method_only_results_skip_trajectory_analysis(
+        self, logger, archive, monkeypatch
+    ):
+        results = MolecularDynamicsResults(calculate_derived_properties=False)
+
+        def unexpected_universe(_archive):
+            pytest.fail('Method-only results must not construct an MDAnalysis universe')
+
+        monkeypatch.setattr(results, 'get_universe', unexpected_universe)
+        results.normalize(archive, logger)
+
+        assert results.calculate_derived_properties is False
+        assert results.m_to_dict()['calculate_derived_properties'] is False
+        assert not results.radial_distribution_functions
+        assert not results.mean_squared_displacements
+        assert MolecularDynamicsResults().calculate_derived_properties is True
+
     def test_inputs_outputs(self, logger, archive):
         archive.data.outputs = [Outputs() for _ in range(self.n_outputs)]
         workflow = MolecularDynamics()

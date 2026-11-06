@@ -1100,6 +1100,18 @@ class MolecularDynamicsResults(SerialWorkflowResults):
     _universe: Universe | None = None
     _bead_groups: dict[str, BeadGroup] | None = None
 
+    calculate_derived_properties = Quantity(
+        type=bool,
+        shape=[],
+        default=True,
+        description="""
+        Whether normalization should calculate RDF, MSD, diffusion, and radius of
+        gyration from the trajectory when these results were not provided.
+        Parsers can disable this when they only supply MD method metadata.
+        Parsed result sections and trajectory references remain available.
+        """,
+    )
+
     n_steps = Quantity(
         type=np.int32,
         shape=[],
@@ -1376,6 +1388,9 @@ class MolecularDynamicsResults(SerialWorkflowResults):
         if model_systems and self.n_steps is None:
             self.n_steps = len(model_systems)
             self.trajectory = model_systems
+
+        if not self.calculate_derived_properties:
+            return
 
         self._universe = self.get_universe(archive)
         if self._universe is None:
