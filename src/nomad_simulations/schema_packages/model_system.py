@@ -1368,7 +1368,10 @@ class ModelSystem(System, Representation):
         default=False,
         description="""
         If the model system section is the one representative of the computational simulation.
-        Defaults to False and set to True by the `Computation.normalize()`. If set to True,
+        Defaults to False. A parser chooses the representative system by flagging it. If
+        none are flagged, the representative system defaults to the last system; if several
+        are, it is corrected to the last flagged one. `Simulation.normalize()` enforces
+        this. If set to True,
         the `ModelSystem.normalize()` function is ran (otherwise, it is not).
         """,
     )  # TODO: remove, as main ModelSystem is now representative by default
