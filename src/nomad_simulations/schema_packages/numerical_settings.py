@@ -618,8 +618,13 @@ class KMesh(Mesh):
             'm_parent.m_parent.m_parent.model_system', dict=False
         )
         # Access reciprocal_lattice_vectors directly from parent to preserve units
-        reciprocal_lattice_vectors = (
-            self.m_parent.reciprocal_lattice_vectors if self.m_parent else None
+        #reciprocal_lattice_vectors = (
+        #    self.m_parent.reciprocal_lattice_vectors if self.m_parent else None
+        #)
+        reciprocal_lattice_vectors = getattr(
+           self.m_parent,
+            'reciprocal_lattice_vectors',
+            None,   
         )
         if self.k_line_density is None:
             self.k_line_density = self.resolve_k_line_density(

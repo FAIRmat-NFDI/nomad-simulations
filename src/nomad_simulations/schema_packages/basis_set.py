@@ -735,7 +735,7 @@ class APWBaseOrbital(ArchiveSection):
 
     energy_status = Quantity(
         type=MEnum('fixed', 'pre-optimization', 'post-optimization'),
-        default='post-optimization',
+        shape=['n_terms'],
         description="""
         Allow the code to optimize the initial energy parameter.
         """,
@@ -787,7 +787,7 @@ class APWBaseOrbital(ArchiveSection):
         """Check if all elements in the set are non-negative."""
         for quantity_name in quantity_names:
             if isinstance(quant := self.get(quantity_name), Iterable):
-                if np.any(np.array(quant) <= 0):
+                if np.any(np.array(quant) < 0):
                     return False
         return True
 
@@ -807,7 +807,7 @@ class APWBaseOrbital(ArchiveSection):
 
         # enforce differential order constraints
         for quantity_name in ('differential_order', 'energy_parameter_n'):
-            if self._check_non_negative({quantity_name}):
+            if not self._check_non_negative({quantity_name}):
                 self.m_set(self.m_def.all_quantities[quantity_name], None)
                 logger.error(
                     f'`{self.m_def}.{quantity_name}` must be completely non-negative. Resetting to `None`.'
@@ -963,7 +963,11 @@ class APWLChannel(BasisSetComponent):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         # call order: parent of `BasisSetComponent``, then `self`
         super(BasisSetComponent, self).normalize(archive, logger)
-        self.n_orbitals = self.name*2 +1
+        self.n_orbitals = (
+            len(self.orbitals) * (2 * self.name + 1)
+            if self.orbitals is not None and self.name is not None
+            else 0
+        )
 
 
 class MuffinTinRegion(BasisSetComponent, Mesh):
