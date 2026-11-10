@@ -55,7 +55,7 @@ class Smearing(NumericalSettings):
     """
 
     kind = Quantity(
-        type=MEnum('Fermi-Dirac', 'Gaussian', 'Methfessel-Paxton 1', 'Methfessel-Paxton 2', 'Tetrahedra-extended', 'Square-wave impulse'),
+        type=MEnum('Fermi-Dirac', 'Gaussian', 'Methfessel-Paxton'),
         description="""
         Smearing routine employed.
         """,
@@ -617,10 +617,7 @@ class KMesh(Mesh):
         model_systems = self.m_xpath(
             'm_parent.m_parent.m_parent.model_system', dict=False
         )
-        # Access reciprocal_lattice_vectors directly from parent to preserve units
-        #reciprocal_lattice_vectors = (
-        #    self.m_parent.reciprocal_lattice_vectors if self.m_parent else None
-        #)
+        # Access reciprocal_lattice_vectors directly from parent if present to preserve units
         reciprocal_lattice_vectors = getattr(
            self.m_parent,
             'reciprocal_lattice_vectors',
