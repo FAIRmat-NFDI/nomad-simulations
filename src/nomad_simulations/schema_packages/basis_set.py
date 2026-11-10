@@ -95,7 +95,6 @@ class PlaneWaveBasisSet(BasisSetComponent, KMesh):
         Cutoff energy for the plane-wave basis set.
         The simulation uses plane waves with energies below this cutoff.
         """,
-        
     )
 
     cutoff_radius = Quantity(
