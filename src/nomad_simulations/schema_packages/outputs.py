@@ -36,6 +36,7 @@ from nomad_simulations.schema_packages.properties import (
     TotalForce,
     XASSpectrum,
 )
+from nomad_simulations.schema_packages.variables import KLinePath
 
 from .common import SimulationTime
 
@@ -403,6 +404,62 @@ class Outputs(SimulationTime):
             deltas = self._compute_energy_deltas(logger)
             if deltas is not None:
                 self.scf_steps.delta_energies_total = deltas
+
+        # Fallback promotion of mis-filed band structures (parser assertion of
+        # `ElectronicBandStructure` is the primary path)
+        self._promote_path_eigenvalues(archive, logger)
+
+    def _promote_path_eigenvalues(
+        self, archive: 'EntryArchive', logger: 'BoundLogger'
+    ) -> None:
+        """
+        Promote `electronic_eigenvalues` entries whose axis is a `KLinePath` to
+        `electronic_band_structures`: path-sampled eigenvalues are a band structure, and
+        keeping them under `ElectronicEigenvalues` would misclassify them (and their
+        derivation is skipped there, see `ElectronicEigenvalues.normalize`). This is a
+        normalization fallback; parsers should assert `ElectronicBandStructure` directly
+        when the code emits a dedicated band-structure artifact.
+
+        Note: the promotion mutates the archive during normalization. For entries
+        rebuilt from a mainfile this is applied on every processing pass; for
+        archive-backed entries the persistence of normalize-time mutations is a known
+        nomad-core gap (nomad-lab/nomad-FAIR!2301).
+        """
+        promoted = [
+            eigenvalues
+            for eigenvalues in self.electronic_eigenvalues
+            if isinstance(eigenvalues.k_points, KLinePath)
+        ]
+        if not promoted:
+            return
+        logger.info(
+            'Promoting %s `ElectronicEigenvalues` with a `KLinePath` axis to '
+            '`ElectronicBandStructure`.',
+            len(promoted),
+        )
+        for eigenvalues in promoted:
+            band_structure = ElectronicBandStructure(
+                n_levels=eigenvalues.n_levels,
+                spin_channel=eigenvalues.spin_channel,
+                highest_occupied=eigenvalues.highest_occupied,
+                lowest_unoccupied=eigenvalues.lowest_unoccupied,
+            )
+            if eigenvalues.value is not None:
+                band_structure.value = eigenvalues.value
+            if eigenvalues.occupation is not None:
+                band_structure.occupation = eigenvalues.occupation
+            for contribution in eigenvalues.contributions:
+                band_structure.contributions.append(contribution.m_copy(deep=True))
+            band_structure.k_path = eigenvalues.k_points.m_copy(deep=True)
+            self.electronic_band_structures.append(band_structure)
+            # The promoted section joined the tree mid-normalization, so its own
+            # normalize is invoked here rather than left to the traversal.
+            band_structure.normalize(archive, logger)
+        self.electronic_eigenvalues = [
+            eigenvalues
+            for eigenvalues in self.electronic_eigenvalues
+            if not any(eigenvalues is p for p in promoted)
+        ]
 
 
 class WorkflowOutputs(Outputs):
