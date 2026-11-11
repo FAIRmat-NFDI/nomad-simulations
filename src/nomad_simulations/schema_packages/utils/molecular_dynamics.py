@@ -680,10 +680,9 @@ def archive_to_universe(
             method = archive.workflow2.method
             dt = method.integration_timestep
             freq = method.coordinate_save_frequency
-            if dt is not None:
-                system_timestep = dt * freq if freq is not None else dt
-            else:
-                raise ValueError('integration_timestep is None')
+            if dt is None or freq is None or freq <= 0:
+                raise ValueError('No valid integration timestep and save frequency')
+            system_timestep = dt * freq
         except Exception:
             LOGGER.warning(
                 'Could not determine a timestep from frame times or workflow '
