@@ -227,6 +227,7 @@ def test_archive_to_universe_one_timed_frame_has_no_interval_to_infer():
 
     assert universe is not None
     assert universe.trajectory.n_frames == 1
+    assert universe.trajectory.dt == pytest.approx(1.0)
 
 
 def test_archive_to_universe_one_timed_frame_uses_method_timestep():

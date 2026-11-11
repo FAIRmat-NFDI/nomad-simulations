@@ -686,8 +686,8 @@ def archive_to_universe(
                 raise ValueError('integration_timestep is None')
         except Exception:
             LOGGER.warning(
-                'Cannot infer a system timestep. MDA universe will contain '
-                'non-physical times and timestep.'
+                'Could not determine a timestep from frame times or workflow '
+                'method; using the default 1 ps for the MDAnalysis trajectory.'
             )
 
     if not hasattr(system_timestep, 'to'):
