@@ -19,9 +19,14 @@ from nomad_simulations.schema_packages.force_field import (
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
+from nomad_simulations.schema_packages.outputs import TrajectoryOutputs
 from nomad_simulations.schema_packages.utils.molecular_dynamics import (
     _get_molecular_bead_groups,
     archive_to_universe,
+)
+from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
+    MolecularDynamics,
+    MolecularDynamicsMethod,
 )
 
 # ---------------------------------------------------------------------------
@@ -208,6 +213,39 @@ def test_archive_to_universe_base_model_method_no_attribute_error():
         pytest.fail(
             f'archive_to_universe raised AttributeError with base ModelMethod: {exc}'
         )
+
+
+def test_archive_to_universe_one_timed_frame_has_no_interval_to_infer():
+    archive = _build_minimal_archive()
+    system = archive.data.model_system[0]
+    system.positions = np.zeros((3, 3)) * ureg.angstrom
+    system.lattice_vectors = np.eye(3) * 10 * ureg.angstrom
+    archive.data.model_system = [system]
+    archive.data.outputs = [TrajectoryOutputs(time=0 * ureg.picosecond)]
+
+    universe = archive_to_universe(archive)
+
+    assert universe is not None
+    assert universe.trajectory.n_frames == 1
+
+
+def test_archive_to_universe_one_timed_frame_uses_method_timestep():
+    archive = _build_minimal_archive()
+    system = archive.data.model_system[0]
+    system.positions = np.zeros((3, 3)) * ureg.angstrom
+    archive.data.model_system = [system]
+    archive.data.outputs = [TrajectoryOutputs(time=0 * ureg.picosecond)]
+    archive.workflow2 = MolecularDynamics(
+        method=MolecularDynamicsMethod(
+            integration_timestep=0.5 * ureg.picosecond,
+            coordinate_save_frequency=4,
+        )
+    )
+
+    universe = archive_to_universe(archive)
+
+    assert universe is not None
+    assert universe.trajectory.dt == pytest.approx(2.0)
 
 
 def test_get_molecular_bead_groups_handles_plain_moltype_tokens():

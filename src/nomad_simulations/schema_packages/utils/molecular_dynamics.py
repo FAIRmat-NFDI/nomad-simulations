@@ -658,7 +658,7 @@ def archive_to_universe(
     def approx(a, b, rel_tol=1e-09, abs_tol=0.0):
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
-    if system_times:
+    if len(system_times) > 1:
         time_steps = [
             system_times[i_time] - system_times[i_time - 1]
             for i_time in range(1, len(system_times))
@@ -686,8 +686,8 @@ def archive_to_universe(
                 raise ValueError('integration_timestep is None')
         except Exception:
             LOGGER.warning(
-                'Cannot find the system times. MDA universe will contain non-physical '
-                'times and timestep.'
+                'Cannot infer a system timestep. MDA universe will contain '
+                'non-physical times and timestep.'
             )
 
     if not hasattr(system_timestep, 'to'):
