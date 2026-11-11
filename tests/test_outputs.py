@@ -79,6 +79,32 @@ class TestOutputs:
             simulation.outputs[1].set_model_system_ref() is simulation.model_system[1]
         )
 
+    def test_trajectory_output_uses_source_step_before_position(self):
+        simulation = generate_simulation()
+        simulation.model_system = [
+            ModelSystem(name='frame_0', time_step=0),
+            ModelSystem(name='frame_10', time_step=10),
+        ]
+        simulation.outputs = [TrajectoryOutputs(step=10), TrajectoryOutputs(step=0)]
+
+        assert (
+            simulation.outputs[0].set_model_system_ref() is simulation.model_system[1]
+        )
+        assert (
+            simulation.outputs[1].set_model_system_ref() is simulation.model_system[0]
+        )
+
+    def test_trajectory_output_needs_unique_step_match(self):
+        simulation = generate_simulation()
+        simulation.model_system = [
+            ModelSystem(name='frame_a', time_step=10),
+            ModelSystem(name='frame_b', time_step=10),
+        ]
+        simulation.outputs = [TrajectoryOutputs(step=10), TrajectoryOutputs(step=20)]
+
+        assert simulation.outputs[0].set_model_system_ref() is None
+        assert simulation.outputs[1].set_model_system_ref() is None
+
     @pytest.mark.parametrize(
         'band_gaps, values, result_length, result',
         [

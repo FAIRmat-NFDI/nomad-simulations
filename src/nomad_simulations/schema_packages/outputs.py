@@ -458,15 +458,23 @@ class TrajectoryOutputs(WorkflowOutputs):
     )
 
     def set_model_system_ref(self) -> ModelSystem | None:
-        """Avoid assigning an unrelated system to unsampled trajectory output rows.
+        """Return the unique system at this step, or a positional 1:1 match.
 
-        The generic fallback is useful for single-configuration outputs. For
-        trajectories sampled at different output and frame frequencies, it
-        would attach the same representative system to unrelated steps.
-        Preserve the existing positional fallback only for 1:1 series.
+        Step matching takes precedence when systems have ``time_step`` values.
+        Without system steps, position is used only for equal-length series.
         """
         if self.m_parent is None:
             return None
-        if len(self.m_parent.model_system) != len(self.m_parent.outputs):
+        systems = self.m_parent.model_system
+        if not systems:
             return None
-        return super().set_model_system_ref()
+        if any(system.time_step is not None for system in systems):
+            matches = [
+                system
+                for system in systems
+                if self.step is not None and system.time_step == self.step
+            ]
+            return matches[0] if len(matches) == 1 else None
+        if len(systems) == len(self.m_parent.outputs):
+            return systems[self.m_parent_index]
+        return None
