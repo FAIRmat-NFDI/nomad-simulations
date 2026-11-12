@@ -5,8 +5,15 @@ from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import (
     Outputs,
+    TrajectoryOutputs,
 )
-from nomad_simulations.schema_packages.properties import ElectronicBandGap
+from nomad_simulations.schema_packages.properties import (
+    ElectronicBandGap,
+    Enthalpy,
+    MassDensity,
+    Pressure,
+    Volume,
+)
 
 from . import logger
 from .conftest import generate_simulation  # generate_scf_electronic_band_gap_template
@@ -16,6 +23,87 @@ class TestOutputs:
     """
     Test the `Outputs` class defined in `outputs.py`.
     """
+
+    def test_thermodynamic_properties_round_trip(self):
+        simulation = generate_simulation(
+            outputs=[
+                TrajectoryOutputs(
+                    step=5,
+                    pressures=[Pressure(value=101325)],
+                    volumes=[Volume(value=1e-27)],
+                    mass_densities=[MassDensity(value=1000)],
+                    enthalpies=[Enthalpy(value=2e-20)],
+                )
+            ]
+        )
+        restored = EntryArchive.m_from_dict(EntryArchive(data=simulation).m_to_dict())
+        output = restored.data.outputs[0]
+
+        assert output.pressures[0].value.to('pascal').magnitude == 101325
+        assert output.volumes[0].value.to('meter**3').magnitude == 1e-27
+        assert output.mass_densities[0].value.to('kg/meter**3').magnitude == 1000
+        assert output.enthalpies[0].value.to('joule').magnitude == 2e-20
+
+    def test_sparse_trajectory_outputs_do_not_fall_back_to_unrelated_system(self):
+        simulation = generate_simulation()
+        simulation.model_system = [
+            ModelSystem(name='frame_0'),
+            ModelSystem(name='frame_10'),
+        ]
+        simulation.outputs = [
+            TrajectoryOutputs(step=0),
+            TrajectoryOutputs(step=5),
+            TrajectoryOutputs(step=10),
+        ]
+        simulation.outputs[0].model_system_ref = simulation.model_system[0]
+        simulation.outputs[2].model_system_ref = simulation.model_system[1]
+
+        assert simulation.outputs[1].set_model_system_ref() is None
+        simulation.outputs[1].normalize(EntryArchive(), logger)
+        assert simulation.outputs[1].model_system_ref is None
+        assert simulation.outputs[0].model_system_ref is simulation.model_system[0]
+        assert simulation.outputs[2].model_system_ref is simulation.model_system[1]
+
+    def test_one_to_one_trajectory_output_fallback_is_preserved(self):
+        simulation = generate_simulation()
+        simulation.model_system = [
+            ModelSystem(name='frame_0'),
+            ModelSystem(name='frame_1'),
+        ]
+        simulation.outputs = [TrajectoryOutputs(step=0), TrajectoryOutputs(step=1)]
+
+        assert (
+            simulation.outputs[0].set_model_system_ref() is simulation.model_system[0]
+        )
+        assert (
+            simulation.outputs[1].set_model_system_ref() is simulation.model_system[1]
+        )
+
+    def test_trajectory_output_uses_source_step_before_position(self):
+        simulation = generate_simulation()
+        simulation.model_system = [
+            ModelSystem(name='frame_0', time_step=0),
+            ModelSystem(name='frame_10', time_step=10),
+        ]
+        simulation.outputs = [TrajectoryOutputs(step=10), TrajectoryOutputs(step=0)]
+
+        assert (
+            simulation.outputs[0].set_model_system_ref() is simulation.model_system[1]
+        )
+        assert (
+            simulation.outputs[1].set_model_system_ref() is simulation.model_system[0]
+        )
+
+    def test_trajectory_output_needs_unique_step_match(self):
+        simulation = generate_simulation()
+        simulation.model_system = [
+            ModelSystem(name='frame_a', time_step=10),
+            ModelSystem(name='frame_b', time_step=10),
+        ]
+        simulation.outputs = [TrajectoryOutputs(step=10), TrajectoryOutputs(step=20)]
+
+        assert simulation.outputs[0].set_model_system_ref() is None
+        assert simulation.outputs[1].set_model_system_ref() is None
 
     @pytest.mark.parametrize(
         'band_gaps, values, result_length, result',
