@@ -10,7 +10,7 @@ import pytest
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
-from nomad_simulations.schema_packages.atoms_state import AtomsState
+from nomad_simulations.schema_packages.atoms_state import AtomsState, CGBeadState
 from nomad_simulations.schema_packages.force_field import (
     ForceField,
     ParticleParameters,
@@ -213,6 +213,121 @@ def test_archive_to_universe_base_model_method_no_attribute_error():
         pytest.fail(
             f'archive_to_universe raised AttributeError with base ModelMethod: {exc}'
         )
+
+
+def _build_hierarchy_archive(n_atoms, molecules):
+    """Create a one-frame archive from molecule and optional monomer index lists."""
+    root = ModelSystem(
+        n_particles=n_atoms,
+        positions=np.zeros((n_atoms, 3)) * ureg.angstrom,
+    )
+    root.particle_states = [
+        AtomsState(chemical_symbol='H', label='H') for _ in range(n_atoms)
+    ]
+    group = ModelSystem(
+        name='group',
+        branch_label='molecule_group',
+        particle_indices=np.arange(n_atoms),
+    )
+    for molecule_index, (indices, monomers) in enumerate(molecules):
+        molecule = ModelSystem(
+            name=f'molecule_{molecule_index}',
+            branch_label='molecule',
+            particle_indices=np.array(indices),
+        )
+        if monomers:
+            monomer_group = ModelSystem(
+                name=f'monomer_group_{molecule_index}',
+                branch_label='monomer_group',
+                particle_indices=np.array(indices),
+            )
+            for monomer_index, monomer_indices in enumerate(monomers):
+                monomer_group.sub_systems.append(
+                    ModelSystem(
+                        name=f'monomer_{molecule_index}_{monomer_index}',
+                        branch_label='monomer',
+                        particle_indices=np.array(monomer_indices),
+                    )
+                )
+            molecule.sub_systems.append(monomer_group)
+        group.sub_systems.append(molecule)
+    root.sub_systems.append(group)
+    archive = EntryArchive()
+    archive.data = Simulation(model_system=[root], model_method=[ModelMethod()])
+    return archive
+
+
+def test_archive_to_universe_interleaved_molecules_keep_particle_membership():
+    archive = _build_hierarchy_archive(4, [([0, 2], None), ([1, 3], None)])
+    for molecule in archive.data.model_system[0].sub_systems[0].sub_systems:
+        molecule.name = 'same_type'
+    archive = EntryArchive.m_from_dict(archive.m_to_dict())
+
+    universe = archive_to_universe(archive)
+
+    assert universe is not None
+    assert universe.atoms.resindices.tolist() == [0, 1, 0, 1]
+    assert universe.atoms.molnums.tolist() == [0, 1, 0, 1]
+    assert universe.atoms.moltypes.tolist() == ['same_type'] * 4
+
+
+def test_archive_to_universe_interleaved_monomers_keep_parent_molecules():
+    archive = _build_hierarchy_archive(
+        8,
+        [
+            ([0, 2, 4, 6], [[0, 2], [4, 6]]),
+            ([1, 3, 5, 7], [[1, 3], [5, 7]]),
+        ],
+    )
+
+    universe = archive_to_universe(archive)
+
+    assert universe is not None
+    assert universe.atoms.resindices.tolist() == [0, 1, 0, 1, 2, 3, 2, 3]
+    assert universe.atoms.molnums.tolist() == [0, 1, 0, 1, 0, 1, 0, 1]
+    assert universe.residues.resnames.tolist() == [
+        'monomer_0_0',
+        'monomer_1_0',
+        'monomer_0_1',
+        'monomer_1_1',
+    ]
+
+
+def test_archive_to_universe_rejects_overlapping_molecules(caplog):
+    archive = _build_hierarchy_archive(4, [([0, 1], None), ([1, 2, 3], None)])
+
+    assert archive_to_universe(archive) is None
+    assert 'overlap' in caplog.text.lower()
+
+
+def test_archive_to_universe_rejects_uncovered_particles(caplog):
+    archive = _build_hierarchy_archive(4, [([0, 2], None), ([1], None)])
+
+    assert archive_to_universe(archive) is None
+    assert 'uncovered' in caplog.text.lower()
+
+
+def test_archive_to_universe_cg_single_site_molecules():
+    archive = _build_hierarchy_archive(3, [([0], None), ([1], None), ([2], None)])
+    archive.data.model_system[0].particle_states = [
+        CGBeadState(bead_symbol='B', label=f'B{index}') for index in range(3)
+    ]
+
+    universe = archive_to_universe(archive)
+
+    assert universe is not None
+    assert universe.atoms.types.tolist() == ['B'] * 3
+    assert universe.atoms.molnums.tolist() == [0, 1, 2]
+
+
+def test_archive_to_universe_without_hierarchy_keeps_one_residue():
+    archive = _build_hierarchy_archive(3, [([0, 1, 2], None)])
+    archive.data.model_system[0].sub_systems = []
+
+    universe = archive_to_universe(archive)
+
+    assert universe is not None
+    assert universe.atoms.resindices.tolist() == [0, 0, 0]
 
 
 def _build_timed_archive(frame_times, method_timestep=None, save_frequency=None):
