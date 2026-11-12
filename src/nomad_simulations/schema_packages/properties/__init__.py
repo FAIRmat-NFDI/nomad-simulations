@@ -15,7 +15,7 @@ from .greens_function import (
     QuasiparticleWeight,
 )
 from .hopping_matrix import CrystalFieldSplitting, HoppingMatrix
-from .molecular_orbitals import MolecularOrbitals
+from .molecular_orbitals import MOGap, MolecularOrbitals
 from .permittivity import Permittivity
 from .spectral_profile import (
     AbsorptionSpectrum,
@@ -59,6 +59,7 @@ __all__ = [
     'QuasiparticleWeight',
     'CrystalFieldSplitting',
     'HoppingMatrix',
+    'MOGap',
     'MolecularOrbitals',
     'Permittivity',
     'AbsorptionSpectrum',
