@@ -358,8 +358,6 @@ def archive_to_universe(
 
         atom_resindex (str, shape=(n_atoms)):
 
-        atom_segids (str, shape=(n_atoms)):
-
         n_segments (int): Segments correspond to a group of the same type of molecules.
 
         n_residues (int): The number of distinct residues (nb - individual molecules are also denoted as a residue).
@@ -422,6 +420,11 @@ def archive_to_universe(
     if not particle_states:
         LOGGER.warning(
             'No particle_states found in topology system. Cannot build MDA universe.'
+        )
+        return None
+    if len(particle_states) != n_atoms:
+        LOGGER.warning(
+            'Particle-state count does not match n_particles. Cannot build MDA universe.'
         )
         return None
     particle_names = [ps.label for ps in particle_states]
@@ -513,16 +516,8 @@ def archive_to_universe(
     ]
     n_frames = len(sec_system)
 
-    atom_resindex = np.arange(n_atoms)
-    atoms_segindices = np.empty(n_atoms)
-    atom_segids = np.array(range(n_atoms), dtype='object')
     molecule_groups = sec_particles_group or []
     n_segments = len(molecule_groups)
-
-    # TODO: Keep, or drop?
-    # Attribute accessors for archive.run / archive.data backward compatibility.
-    def _atom_idx(obj):
-        return obj.particle_indices
 
     def _label(obj):
         return obj.name if obj.name is not None else obj.branch_label
@@ -531,84 +526,119 @@ def archive_to_universe(
         subs = obj.sub_systems
         return subs if subs is not None else []
 
-    n_residues = 0
+    def _indices(section: ModelSystem) -> np.ndarray:
+        indices = section.particle_indices
+        if indices is None:
+            raise ValueError(f'{_label(section)} has no particle indices')
+        indices = np.asarray(indices)
+        if (
+            indices.ndim != 1
+            or len(indices) == 0
+            or not np.issubdtype(indices.dtype, np.integer)
+            or np.any(indices < 0)
+            or np.any(indices >= n_atoms)
+            or len(np.unique(indices)) != len(indices)
+        ):
+            raise ValueError(f'{_label(section)} has invalid particle indices')
+        return indices
+
+    # Keep each residue's actual global indices and its parent molecule together.
+    # Sorting residues by their first atom must not change either association.
+    residue_records: list[tuple[np.ndarray, int, int, str, str]] = []
+    assigned_residues = np.zeros(n_atoms, dtype=bool)
+    assigned_molecules = np.zeros(n_atoms, dtype=bool)
+    assigned_groups = np.zeros(n_atoms, dtype=bool)
     n_molecules = 0
-    residue_segindex = []
-    resnames = []
+    try:
+        for group_index, group in enumerate(molecule_groups):
+            group_indices = _indices(group)
+            if np.any(assigned_groups[group_indices]):
+                raise ValueError('molecule groups overlap')
+            assigned_groups[group_indices] = True
+            group_atoms = set(group_indices.tolist())
+            for molecule in _sub_objs(group):
+                molecule_indices = _indices(molecule)
+                molecule_atoms = set(molecule_indices.tolist())
+                if not molecule_atoms <= group_atoms:
+                    raise ValueError('molecule is outside its group')
+                if np.any(assigned_molecules[molecule_indices]):
+                    raise ValueError('molecules overlap')
+                assigned_molecules[molecule_indices] = True
+
+                monomer_groups = _sub_objs(molecule)
+                if monomer_groups:
+                    for monomer_group in monomer_groups:
+                        monomer_group_indices = _indices(monomer_group)
+                        monomer_group_atoms = set(monomer_group_indices.tolist())
+                        if not monomer_group_atoms <= molecule_atoms:
+                            raise ValueError('monomer group is outside its molecule')
+                        assigned_monomer_atoms: set[int] = set()
+                        for monomer in _sub_objs(monomer_group):
+                            monomer_indices = _indices(monomer)
+                            monomer_atoms = set(monomer_indices.tolist())
+                            if not monomer_atoms <= monomer_group_atoms:
+                                raise ValueError('monomer is outside its group')
+                            assigned_monomer_atoms.update(monomer_atoms)
+                            if np.any(assigned_residues[monomer_indices]):
+                                raise ValueError('monomers overlap')
+                            assigned_residues[monomer_indices] = True
+                            residue_records.append(
+                                (
+                                    monomer_indices,
+                                    group_index,
+                                    n_molecules,
+                                    _label(molecule),
+                                    _label(monomer),
+                                )
+                            )
+                        if assigned_monomer_atoms != monomer_group_atoms:
+                            raise ValueError('monomer group has uncovered particles')
+                else:
+                    if np.any(assigned_residues[molecule_indices]):
+                        raise ValueError('molecule residues overlap')
+                    assigned_residues[molecule_indices] = True
+                    residue_records.append(
+                        (
+                            molecule_indices,
+                            group_index,
+                            n_molecules,
+                            _label(molecule),
+                            _label(molecule),
+                        )
+                    )
+                if np.any(~assigned_residues[molecule_indices]):
+                    raise ValueError('molecule has uncovered particles')
+                n_molecules += 1
+            if np.any(~assigned_molecules[group_indices]):
+                raise ValueError('molecule group has uncovered particles')
+        if molecule_groups and np.any(~assigned_groups):
+            raise ValueError('molecule groups do not cover all particles')
+    except ValueError as error:
+        LOGGER.warning(
+            'Invalid molecular hierarchy. Cannot build MDA universe.',
+            reason=str(error),
+        )
+        return None
+
+    # A system without a molecular hierarchy retains the existing fallback.
+    if not molecule_groups:
+        residue_records = [(np.arange(n_atoms), 0, 0, 'System', 'System')]
+
+    residue_records.sort(key=lambda record: int(np.min(record[0])))
+    n_residues = len(residue_records)
+    atom_resindex = np.empty(n_atoms, dtype=int)
+    residue_segindex = np.empty(n_residues, dtype=int)
+    residue_molnums = np.empty(n_residues, dtype=int)
     residue_moltypes = []
-    residue_min_atom_index = []
-    residue_n_atoms = []
-    molecule_n_res = []
-    for mol_group_ind, mol_group in enumerate(molecule_groups):
-        atoms_segindices[_atom_idx(mol_group)] = mol_group_ind
-        atom_segids[_atom_idx(mol_group)] = _label(mol_group)
-        molecules = _sub_objs(mol_group)
-        for mol in molecules:
-            monomer_groups = _sub_objs(mol)
-            mol_res_counter = 0
-            if monomer_groups:
-                for mon_group in monomer_groups:
-                    monomers = _sub_objs(mon_group)
-                    for mon in monomers:
-                        resnames.append(_label(mon))
-                        residue_segindex.append(mol_group_ind)
-                        residue_moltypes.append(_label(mol))
-                        residue_min_atom_index.append(np.min(_atom_idx(mon)))
-                        residue_n_atoms.append(len(_atom_idx(mon)))
-                        n_residues += 1
-                        mol_res_counter += 1
-            else:  # no monomers => whole molecule is its own residue
-                resnames.append(_label(mol))
-                residue_segindex.append(mol_group_ind)
-                residue_moltypes.append(_label(mol))
-                residue_min_atom_index.append(np.min(_atom_idx(mol)))
-                residue_n_atoms.append(len(_atom_idx(mol)))
-                n_residues += 1
-                mol_res_counter += 1
-            molecule_n_res.append(mol_res_counter)
-            n_molecules += 1
-
-    # When no sub_systems hierarchy is present, treat all atoms as one residue/segment.
-    if not residue_min_atom_index:
-        residue_min_atom_index = [0]
-        residue_n_atoms = [n_atoms]
-        residue_segindex = [0]
-        residue_moltypes = ['System']
-        resnames = ['System']
-        atoms_segindices[:] = 0
-        atom_segids[:] = 'SYSTEM'
-        n_residues = 1
-        n_molecules = 1
-        molecule_n_res = [1]
-
-    # reorder the residues by atom_indices
-    residue_data = np.array(
-        [
-            [
-                residue_min_atom_index[i],
-                residue_n_atoms[i],
-                residue_segindex[i],
-                residue_moltypes[i],
-                resnames[i],
-            ]
-            for i in range(len(residue_min_atom_index))
-        ],
-        dtype=object,
-    )
-    residue_data = np.array(sorted(residue_data, key=lambda x: x[0], reverse=False)).T
-    residue_n_atoms = residue_data[1].astype(int)
-    residue_segindex = residue_data[2].astype(int)
-    residue_moltypes = residue_data[3]
-    resnames = residue_data[4]
-    res_index_counter = 0
-    for i_residue, res_n_atoms in enumerate(residue_n_atoms):
-        atom_resindex[res_index_counter : res_index_counter + res_n_atoms] = i_residue  # type: ignore
-        res_index_counter += res_n_atoms
-    residue_molnums = np.array(range(n_residues))
-    mol_index_counter = 0
-    for i_molecule, n_res in enumerate(molecule_n_res):
-        residue_molnums[mol_index_counter : mol_index_counter + n_res] = i_molecule
-        mol_index_counter += n_res
+    resnames = []
+    for residue_index, (indices, segment, molecule, moltype, resname) in enumerate(
+        residue_records
+    ):
+        atom_resindex[indices] = residue_index
+        residue_segindex[residue_index] = segment
+        residue_molnums[residue_index] = molecule
+        residue_moltypes.append(moltype)
+        resnames.append(resname)
 
     # get the atom positions, velocities, and box dimensions
     positions = np.zeros(shape=(n_frames, n_atoms, 3))
