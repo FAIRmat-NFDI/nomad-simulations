@@ -340,8 +340,8 @@ def test_apw_local_orbital(
         ),
         (
             'LAPW+lo',
-            [[0, 1, 0, 1, 0]],       # ref_mt_counts
-            [[[0, 1, 0, 1, 0]]],     # ref_l_counts
+            [[0, 1, 0, 1, 0]],  # ref_mt_counts
+            [[[0, 1, 0, 1, 0]]],  # ref_l_counts
             {
                 'C': {
                     'r': 1.45,

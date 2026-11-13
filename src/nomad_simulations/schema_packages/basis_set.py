@@ -1076,7 +1076,6 @@ class BasisSetContainer(NumericalSettings):
                 type_count = comp._determine_apw()
                 for key in type_count.keys():
                     type_sums[key] = type_sums.get(key, 0) + type_count[key]
-
         type_str = 'APW-like'
         for key in ('slapw', 'lapw', 'apw'):
             try:
