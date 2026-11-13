@@ -911,6 +911,7 @@ class APWLocalOrbital(APWBaseOrbital):
             else 'LO'
         )
 
+
 class APWLChannel(BasisSetComponent):
     """
     Collection of all (S)(L)APW and local orbital components that contribute
