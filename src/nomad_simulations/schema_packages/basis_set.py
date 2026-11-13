@@ -930,7 +930,8 @@ class APWLChannel(BasisSetComponent):
     n_orbitals = Quantity(
         type=np.int32,
         description="""
-        Number of wavefunctions in the l-channel, i.e. $(2l + 1) n_orbitals$.
+        Number of wavefunctions in the l-channel, i.e. $(2l + 1)$ times the number 
+        of radial orbitals. is thrre a better way?
         """,
     )
 
@@ -970,7 +971,8 @@ class APWLChannel(BasisSetComponent):
         # call order: parent of `BasisSetComponent``, then `self`
         super(BasisSetComponent, self).normalize(archive, logger)
         self.n_orbitals = (
-            len(self.orbitals) * (2 * self.name + 1) if self.name is not None else None
+            len(self.orbitals) * (2 * self.name + 1)
+            if self.name is not None else None
         )
 
 
