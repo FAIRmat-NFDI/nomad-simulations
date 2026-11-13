@@ -837,7 +837,7 @@ def _get_molecular_bead_groups(
         LOGGER.warning(_log_missing_dependency('universe', 'beads'))
         return {}
 
-    bead_groups = {}
+    bead_groups: dict[str, BeadGroup] = {}
     atoms_moltypes = np.asarray(getattr(universe.atoms, 'moltypes', []))
     atoms_molnums = np.asarray(getattr(universe.atoms, 'molnums', []))
     if atoms_moltypes.shape != (universe.atoms.n_atoms,) or atoms_molnums.shape != (
