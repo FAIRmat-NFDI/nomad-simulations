@@ -23,6 +23,8 @@ from nomad_simulations.schema_packages.outputs import TrajectoryOutputs
 from nomad_simulations.schema_packages.utils.molecular_dynamics import (
     _get_molecular_bead_groups,
     archive_to_universe,
+    calc_molecular_msd,
+    calc_molecular_rdf,
 )
 from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
     MolecularDynamics,
@@ -259,6 +261,11 @@ def _build_hierarchy_archive(n_atoms, molecules):
 
 def test_archive_to_universe_interleaved_molecules_keep_particle_membership():
     archive = _build_hierarchy_archive(4, [([0, 2], None), ([1, 3], None)])
+    archive.data.model_system[0].positions = (
+        np.array([[0, 0, 0], [10, 0, 0], [2, 0, 0], [12, 0, 0]]) * ureg.angstrom
+    )
+    archive.data.model_system[0].lattice_vectors = np.eye(3) * 50 * ureg.angstrom
+    archive.data.model_system[0].bond_list = np.array([[0, 2], [1, 3]])
     for molecule in archive.data.model_system[0].sub_systems[0].sub_systems:
         molecule.name = 'same_type'
     archive = EntryArchive.m_from_dict(archive.m_to_dict())
@@ -269,6 +276,9 @@ def test_archive_to_universe_interleaved_molecules_keep_particle_membership():
     assert universe.atoms.resindices.tolist() == [0, 1, 0, 1]
     assert universe.atoms.molnums.tolist() == [0, 1, 0, 1]
     assert universe.atoms.moltypes.tolist() == ['same_type'] * 4
+    groups = _get_molecular_bead_groups(universe)
+    assert len(groups['same_type']) == 2
+    np.testing.assert_allclose(groups['same_type'].positions[:, 0], [1, 11])
 
 
 def test_archive_to_universe_interleaved_monomers_keep_parent_molecules():
@@ -388,6 +398,7 @@ def test_get_molecular_bead_groups_handles_plain_moltype_tokens():
     Plain moltype labels must resolve via boolean indexing.
     """
     universe = MDAnalysis.Universe.empty(1)
+    universe.add_TopologyAttr('molnums', np.array([0]))
     universe.add_TopologyAttr('moltypes', np.array(['mol']))
     universe.add_TopologyAttr('masses', np.array([15.999]))
     universe.add_TopologyAttr('bonds', [])
@@ -402,6 +413,7 @@ def test_get_molecular_bead_groups_handles_reserved_keyword_moltypes():
     Regression: moltype labels like "water" must not trigger selection parser issues.
     """
     universe = MDAnalysis.Universe.empty(1)
+    universe.add_TopologyAttr('molnums', np.array([0]))
     universe.add_TopologyAttr('moltypes', np.array(['water']))
     universe.add_TopologyAttr('masses', np.array([15.999]))
     universe.add_TopologyAttr('bonds', [])
@@ -411,9 +423,10 @@ def test_get_molecular_bead_groups_handles_reserved_keyword_moltypes():
     assert 'water' in bead_groups
 
 
-def test_get_molecular_bead_groups_counts_fragments():
-    """BeadGroup counts bonded atoms as a single fragment."""
+def test_get_molecular_bead_groups_counts_molecules():
+    """Bonded atoms with one molecule ID form one analysis bead."""
     universe = MDAnalysis.Universe.empty(3, n_residues=3, atom_resindex=[0, 1, 2])
+    universe.add_TopologyAttr('molnums', np.array([0, 0, 0]))
     universe.add_TopologyAttr('moltypes', np.array(['mol', 'mol', 'mol']))
     universe.add_TopologyAttr('masses', np.array([15.999, 1.008, 1.008]))
     universe.add_TopologyAttr('bonds', [(0, 1), (1, 2)])
@@ -422,3 +435,145 @@ def test_get_molecular_bead_groups_counts_fragments():
 
     assert 'mol' in bead_groups
     assert len(bead_groups['mol']) == 1
+
+
+def _molecular_test_universe(molnums, moltypes, masses, bonds, coordinates, box=50.0):
+    """Build an MDAnalysis trajectory whose atom order need not follow molecule order."""
+    molecule_ids, atom_resindex = np.unique(molnums, return_inverse=True)
+    universe = MDAnalysis.Universe.empty(
+        len(molnums),
+        n_residues=len(molecule_ids),
+        atom_resindex=atom_resindex,
+    )
+    universe.add_TopologyAttr('molnums', molecule_ids)
+    universe.add_TopologyAttr(
+        'moltypes',
+        [
+            moltypes[np.flatnonzero(np.asarray(molnums) == molecule_id)[0]]
+            for molecule_id in molecule_ids
+        ],
+    )
+    universe.add_TopologyAttr('masses', masses)
+    if bonds is not None:
+        universe.add_TopologyAttr('bonds', bonds)
+    frames = np.asarray(coordinates, dtype=np.float32)
+    universe.load_new(
+        frames,
+        format=MDAnalysis.coordinates.memory.MemoryReader,
+        dimensions=np.tile([box, box, box, 90, 90, 90], (len(frames), 1)),
+        dt=1.0,
+    )
+    return universe
+
+
+def test_molecular_rdf_uses_interleaved_molecule_centers():
+    """The RDF peak matches the independently calculated COM separation."""
+    universe = _molecular_test_universe(
+        molnums=[0, 1, 0, 1],
+        moltypes=['pair'] * 4,
+        masses=[1, 1, 1, 1],
+        bonds=[(0, 2), (1, 3)],
+        coordinates=[[[0, 0, 0], [10, 0, 0], [2, 0, 0], [12, 0, 0]]],
+    )
+    groups = _get_molecular_bead_groups(universe)
+
+    assert len(groups['pair']) == 2
+    np.testing.assert_allclose(groups['pair'].positions[:, 0], [1, 11])
+    rdf = calc_molecular_rdf(universe, groups, n_traj_split=1)
+    assert rdf['types'] == ['pair-pair']
+    bins = rdf['bins'][0].to('angstrom').magnitude
+    assert bins[np.argmax(rdf['value'][0])] == pytest.approx(10, abs=0.2)
+
+
+def test_molecular_bead_groups_skip_disconnected_multisite_molecule(caplog):
+    """An incomplete bond graph cannot safely unwrap a multi-site molecule."""
+    universe = _molecular_test_universe(
+        molnums=[0, 0, 0, 0],
+        moltypes=['pair'] * 4,
+        masses=[1] * 4,
+        bonds=[(0, 1), (2, 3)],
+        coordinates=[[[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0]]],
+    )
+
+    assert _get_molecular_bead_groups(universe) == {}
+    assert 'disconnected' in caplog.text.lower()
+    assert calc_molecular_rdf(universe, {}) == {}
+
+
+def test_molecular_bead_groups_skip_multisite_molecule_without_bonds(caplog):
+    universe = _molecular_test_universe(
+        molnums=[0, 0],
+        moltypes=['pair', 'pair'],
+        masses=[1, 1],
+        bonds=None,
+        coordinates=[[[0, 0, 0], [1, 0, 0]]],
+    )
+
+    assert _get_molecular_bead_groups(universe) == {}
+    assert 'without bonds' in caplog.text.lower()
+
+
+def test_molecular_bead_groups_ignore_unbonded_massless_virtual_site():
+    """A virtual water site must not split an otherwise connected molecule."""
+    universe = _molecular_test_universe(
+        molnums=[0, 0, 0, 0],
+        moltypes=['water'] * 4,
+        masses=[16, 1, 1, 0],
+        bonds=[(0, 1), (0, 2)],
+        coordinates=[[[0, 0, 0], [1, 0, 0], [-1, 0, 0], [10, 0, 0]]],
+    )
+
+    groups = _get_molecular_bead_groups(universe)
+
+    assert len(groups['water']) == 1
+    np.testing.assert_allclose(groups['water'].positions, [[0, 0, 0]], atol=1e-6)
+
+
+def test_molecular_msd_uses_bondless_single_site_cg_molecules():
+    """Zero-mass CG sites need neither bonds nor mass-weighted COMs."""
+    times = np.arange(60, dtype=float)
+    coordinates = np.zeros((len(times), 2, 3))
+    coordinates[:, 0, 0] = 20.0 - 0.2 * times
+    coordinates[:, 1, 0] = 2.0 + 0.1 * times
+    universe = _molecular_test_universe(
+        molnums=[1, 0],
+        moltypes=['cg', 'cg'],
+        masses=[0, 0],
+        bonds=[],
+        coordinates=coordinates,
+    )
+    groups = _get_molecular_bead_groups(universe)
+
+    assert len(groups['cg']) == 2
+    np.testing.assert_allclose(groups['cg'].positions[:, 0], [2, 20])
+    msd = calc_molecular_msd(universe, groups)
+    assert msd['types'] == ['cg']
+    lag_times = msd['times'][0].to('picosecond').magnitude
+    observed = msd['value'][0].to('angstrom**2').magnitude
+    np.testing.assert_allclose(observed, 0.025 * lag_times**2, atol=1e-5)
+
+
+def test_molecular_msd_samples_complete_interleaved_molecules(monkeypatch):
+    """Limiting the MSD sample retains every atom of the selected molecule."""
+    times = np.arange(60, dtype=float)
+    coordinates = np.zeros((len(times), 4, 3))
+    coordinates[:, 0, 0] = 2.0 + 0.1 * times
+    coordinates[:, 1, 0] = 20.0 - 0.2 * times
+    coordinates[:, 2, 0] = 4.0 + 0.1 * times
+    coordinates[:, 3, 0] = 22.0 - 0.2 * times
+    universe = _molecular_test_universe(
+        molnums=[0, 1, 0, 1],
+        moltypes=['pair'] * 4,
+        masses=[1] * 4,
+        bonds=[(0, 2), (1, 3)],
+        coordinates=coordinates,
+    )
+    groups = _get_molecular_bead_groups(universe)
+    monkeypatch.setattr(np.random, 'choice', lambda ids, size, replace: ids[:size])
+
+    msd = calc_molecular_msd(universe, groups, max_mols=1)
+
+    assert len(groups['pair']) == 1
+    lag_times = msd['times'][0].to('picosecond').magnitude
+    observed = msd['value'][0].to('angstrom**2').magnitude
+    np.testing.assert_allclose(observed, 0.01 * lag_times**2, atol=1e-5)
