@@ -19,9 +19,14 @@ from nomad_simulations.schema_packages.force_field import (
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_method import ModelMethod
 from nomad_simulations.schema_packages.model_system import ModelSystem
+from nomad_simulations.schema_packages.outputs import TrajectoryOutputs
 from nomad_simulations.schema_packages.utils.molecular_dynamics import (
     _get_molecular_bead_groups,
     archive_to_universe,
+)
+from nomad_simulations.schema_packages.workflow.molecular_dynamics import (
+    MolecularDynamics,
+    MolecularDynamicsMethod,
 )
 
 # ---------------------------------------------------------------------------
@@ -208,6 +213,59 @@ def test_archive_to_universe_base_model_method_no_attribute_error():
         pytest.fail(
             f'archive_to_universe raised AttributeError with base ModelMethod: {exc}'
         )
+
+
+def _build_timed_archive(frame_times, method_timestep=None, save_frequency=None):
+    archive = _build_minimal_archive()
+    system = archive.data.model_system[0]
+    system.positions = np.zeros((3, 3)) * ureg.angstrom
+    system.lattice_vectors = np.eye(3) * 10 * ureg.angstrom
+    n_frames = max(len(frame_times), 1)
+    archive.data.model_system = [
+        system,
+        *[
+            ModelSystem(positions=np.zeros((3, 3)) * ureg.angstrom)
+            for _ in range(n_frames - 1)
+        ],
+    ]
+    archive.data.outputs = [
+        TrajectoryOutputs(time=time * ureg.picosecond) for time in frame_times
+    ]
+    if method_timestep is not None:
+        archive.workflow2 = MolecularDynamics(
+            method=MolecularDynamicsMethod(
+                integration_timestep=method_timestep * ureg.picosecond,
+                coordinate_save_frequency=save_frequency,
+            )
+        )
+    return archive
+
+
+@pytest.mark.parametrize(
+    ('frame_times', 'method_timestep', 'save_frequency', 'expected_dt', 'warns'),
+    [
+        pytest.param([0], None, None, 1.0, True, id='one-time-no-method'),
+        pytest.param([0], 0.5, 4, 2.0, False, id='one-time-method'),
+        pytest.param([], 0.5, 4, 2.0, False, id='no-times-method'),
+        pytest.param([0], 0.5, None, 1.0, True, id='one-time-no-frequency'),
+        pytest.param([0], 0.5, 0, 1.0, True, id='one-time-zero-frequency'),
+        pytest.param([0], 0.5, -1, 1.0, True, id='one-time-negative-frequency'),
+        pytest.param([0, 0.1], 0.5, 4, 0.1, False, id='two-times-beat-method'),
+    ],
+)
+def test_archive_to_universe_timestep_sources(
+    frame_times, method_timestep, save_frequency, expected_dt, warns, caplog
+):
+    archive = _build_timed_archive(frame_times, method_timestep, save_frequency)
+
+    universe = archive_to_universe(archive)
+
+    assert universe is not None
+    assert universe.trajectory.n_frames == max(len(frame_times), 1)
+    assert universe.trajectory.dt == pytest.approx(expected_dt)
+    assert (
+        'using the default 1 ps for the MDAnalysis trajectory' in caplog.text
+    ) == warns
 
 
 def test_get_molecular_bead_groups_handles_plain_moltype_tokens():

@@ -1,4 +1,3 @@
-import jmespath
 import numpy as np
 from nomad.datamodel import EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task
@@ -14,7 +13,7 @@ from .general import (
     SimulationWorkflowResults,
     WorkflowConvergenceTarget,
 )
-from .single_point import SinglePoint
+from .single_point import SinglePoint, SinglePointResults
 
 m_package = SchemaPackage()
 
@@ -227,7 +226,9 @@ class GeometryOptimizationResults(SimulationWorkflowResults):
                             denergies[nonzero_indices[-1]] * BaseEnergy.value.unit
                         )
         if self.final_force_maximum is None:
-            final_forces = jmespath.search('data.outputs[-1].total_forces[-1]', archive)
+            final_forces = archive.m_xpath(
+                'data.outputs[-1].total_forces[-1]', dict=False
+            )
             if final_forces is not None:
                 force_abs = np.linalg.norm(final_forces.value, axis=1)
                 self.final_force_maximum = max(force_abs)
@@ -306,29 +307,28 @@ class GeometryOptimization(SerialWorkflow):
 
         # Create SinglePoint task with convergence analysis if SCF steps present
         if output.get('scf_steps') is not None:
-            task = SinglePoint(
+            calculation_task = Task(
                 name=task_name,
-                outputs=[output_link],
-                results=SimulationWorkflowResults(),
+                outputs=[Link(name='Outputs', section=output)],
             )
-            self._add_convergence_to_task(task, archive, logger)
+            task = SinglePoint(
+                name=SinglePoint._task_label,
+                outputs=[output_link],
+                tasks=[calculation_task],
+                results=SinglePointResults(),
+            )
+            self._add_convergence_to_task(task, logger)
             return task
 
         # Otherwise create generic task
         return Task(name=task_name, outputs=[output_link])
 
-    def _add_convergence_to_task(
-        self, task: SinglePoint, archive: EntryArchive, logger: BoundLogger
-    ) -> None:
+    def _add_convergence_to_task(self, task: SinglePoint, logger: BoundLogger) -> None:
         """Add convergence analysis to a SinglePoint task."""
-        single_point_convergence = jmespath.search(
-            'workflow2.method.single_point_convergence_targets', archive
-        )
-        if single_point_convergence is not None:
-            convergence_result = task._resolve_convergence(
-                archive, single_point_convergence, logger
+        if self.method and self.method.single_point_convergence_targets:
+            task.results.convergence = task._resolve_convergence(
+                task, self.method.single_point_convergence_targets, logger
             )
-            task.results.convergence = convergence_result
 
     def _map_tasks_from_model_system(
         self, archive: EntryArchive, logger: BoundLogger
@@ -351,12 +351,19 @@ class GeometryOptimization(SerialWorkflow):
         # TODO: When is_single_point_converged becomes an array, this should store
         # per-step convergence: [all(step_results) for step_results in single_point_convergence_results]
         # Currently aggregates across all steps into single boolean.
-        single_point_convergence_results = jmespath.search(
-            'workflow2.tasks[*].results.convergence[*].is_reached', archive
+        single_point_convergence_results = archive.m_xpath(
+            'workflow2.tasks[*].results.convergence[*].is_reached'
         )
-        if single_point_convergence_results is None:
-            return
-        all_scf_converged = all(all(x) for x in single_point_convergence_results)
+        targets = self.method.single_point_convergence_targets if self.method else None
+        if (
+            single_point_convergence_results
+            and len(single_point_convergence_results) == len(self.tasks)
+            and (targets)
+            and all(len(x) == len(targets) for x in single_point_convergence_results)
+        ):
+            all_scf_converged = all(all(x) for x in single_point_convergence_results)
+        else:
+            all_scf_converged = None
         self.results.is_single_point_converged = all_scf_converged
 
 

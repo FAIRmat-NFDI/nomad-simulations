@@ -5,14 +5,85 @@ from nomad.units import ureg
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.outputs import Outputs, SCFSteps
 from nomad_simulations.schema_packages.properties.energies import TotalEnergy
+from nomad_simulations.schema_packages.workflow.general import EnergyConvergenceTarget
 from nomad_simulations.schema_packages.workflow.geometry_optimization import (
     GeometryOptimization,
+    GeometryOptimizationMethod,
     GeometryOptimizationResults,
 )
-from nomad_simulations.schema_packages.workflow.single_point import SinglePoint
+from nomad_simulations.schema_packages.workflow.single_point import (
+    SinglePoint,
+    SinglePointResults,
+)
 
 
 class TestGeometryOptimization:
+    @pytest.mark.parametrize(
+        'threshold, threshold_type, delta_energies, converged',
+        [
+            (
+                1e-6 * ureg.joule,
+                'absolute',
+                [[1e-8 * ureg.joule], [1e-4 * ureg.joule]],
+                [True, False],
+            ),
+            (1e-6 * ureg.joule, 'absolute', [[1e-8 * ureg.joule], []], [True, None]),
+            (1e-6 * ureg.joule, 'absolute', [[1e-4 * ureg.joule], []], [False, None]),
+        ],
+        ids=[
+            'converged_and_failed',
+            'converged_and_undetermined',
+            'failed_and_undetermined',
+        ],
+    )
+    def test_task_convergence_uses_its_linked_output(
+        self, logger, archive, threshold, threshold_type, delta_energies, converged
+    ):
+        target = EnergyConvergenceTarget()
+        target.threshold = threshold
+        target.threshold_type = threshold_type
+        workflow = GeometryOptimization(
+            method=GeometryOptimizationMethod(single_point_convergence_targets=[target])
+        )
+        archive.workflow2 = workflow
+        archive.data.outputs = [
+            Outputs(scf_steps=SCFSteps(delta_energies_total=de))
+            for de in delta_energies
+        ]
+        workflow.normalize(archive, logger)
+
+        assert [
+            task.results.convergence[0].is_reached for task in workflow.tasks
+        ] == converged
+        assert workflow.results.is_single_point_converged is (
+            all(converged) if None not in converged else None
+        )
+
+    @pytest.mark.parametrize(
+        'targets, delta_energies',
+        [
+            (None, []),
+            ([EnergyConvergenceTarget(threshold=1e-6 * ureg.joule)], []),
+            ([], [[1e-8 * ureg.joule]]),
+        ],
+        ids=['no_tasks_no_targets', 'no_tasks_targets_set', 'empty_target_list'],
+    )
+    def test_nothing_checked_leaves_scf_convergence_undetermined(
+        self, archive, logger, targets, delta_energies
+    ):
+        """Without tasks or without targets nothing is checked, so nothing converged."""
+        archive.data.outputs = [
+            Outputs(scf_steps=SCFSteps(delta_energies_total=de))
+            for de in delta_energies
+        ]
+        method = GeometryOptimizationMethod()
+        if targets is not None:
+            method.single_point_convergence_targets = targets
+        workflow = GeometryOptimization(method=method)
+        archive.workflow2 = workflow
+        workflow.normalize(archive, logger)
+        assert workflow.results.is_single_point_converged is None
+
     @pytest.mark.parametrize(
         'energies, ref_energy, ref_energy_diff',
         [
@@ -148,9 +219,13 @@ class TestGeometryOptimization:
         task = workflow._create_task_for_output(0, output, archive, logger)
 
         assert isinstance(task, SinglePoint)
-        assert task.name == 'Step 0'
+        assert task.name == 'Calculation'
         assert len(task.outputs) == 1
         assert task.outputs[0].name == 'Outputs'
+        assert isinstance(task.results, SinglePointResults)
+        assert len(task.tasks) == 1
+        assert task.tasks[0].name == 'Step 0'
+        assert task.tasks[0].outputs[0].section == output
 
     def test_link_task_by_timing_no_timing_info(self, logger, archive):
         """Test that no linking occurs when timing info is missing."""

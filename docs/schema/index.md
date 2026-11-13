@@ -104,7 +104,7 @@ Thermodynamic properties: energies, forces, pressure, temperature, and state fun
 
 Core workflow hierarchy and shared method/results structures
 
-**Key sections:** SimulationTask, SimulationTaskReference, SimulationWorkflow, SerialWorkflow, ParallelWorkflow, SimulationWorkflowModel, SimulationWorkflowMethod, WorkflowTime, SimulationWorkflowResults, SerialWorkflowResults, WorkflowConvergenceTarget, WorkflowConvergenceResults
+**Key sections:** SimulationTask, SimulationTaskReference, SimulationWorkflow, SerialWorkflow, ParallelWorkflow, SimulationWorkflowModel, SimulationWorkflowMethod, SimulationWorkflowResults, SerialWorkflowResults, WorkflowConvergenceTarget, WorkflowConvergenceResults
 
 ## [Beyond-DFT Workflow Family](workflow_beyond_dft.md)
 
