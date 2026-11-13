@@ -557,9 +557,9 @@ def test_molecular_msd_samples_complete_interleaved_molecules(monkeypatch):
     """Limiting the MSD sample retains every atom of the selected molecule."""
     times = np.arange(60, dtype=float)
     coordinates = np.zeros((len(times), 4, 3))
-    coordinates[:, 0, 0] = 2.0 + 0.1 * times
+    coordinates[:, 0, 0] = 2.0 + 0.05 * times
     coordinates[:, 1, 0] = 20.0 - 0.2 * times
-    coordinates[:, 2, 0] = 4.0 + 0.1 * times
+    coordinates[:, 2, 0] = 4.0 + 0.15 * times
     coordinates[:, 3, 0] = 22.0 - 0.2 * times
     universe = _molecular_test_universe(
         molnums=[0, 1, 0, 1],
@@ -574,6 +574,7 @@ def test_molecular_msd_samples_complete_interleaved_molecules(monkeypatch):
     msd = calc_molecular_msd(universe, groups, max_mols=1)
 
     assert len(groups['pair']) == 1
+    assert groups['pair']._atoms.indices.tolist() == [0, 2]
     lag_times = msd['times'][0].to('picosecond').magnitude
     observed = msd['value'][0].to('angstrom**2').magnitude
     np.testing.assert_allclose(observed, 0.01 * lag_times**2, atol=1e-5)
