@@ -736,7 +736,8 @@ class APWBaseOrbital(ArchiveSection):
         type=MEnum('fixed', 'pre-optimization', 'post-optimization'),
         shape=['n_terms'],
         description="""
-        Allow the code to optimize the initial energy parameter.
+        Optimization status of each radial orbital term, corresponding
+        to the energy parameters in the same order.
         """,
     )
 
@@ -969,9 +970,7 @@ class APWLChannel(BasisSetComponent):
         # call order: parent of `BasisSetComponent``, then `self`
         super(BasisSetComponent, self).normalize(archive, logger)
         self.n_orbitals = (
-            len(self.orbitals) * (2 * self.name + 1)
-            if self.orbitals is not None and self.name is not None
-            else 0
+            len(self.orbitals) * (2 * self.name + 1) if self.name is not None else None
         )
 
 
