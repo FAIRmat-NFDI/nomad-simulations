@@ -971,8 +971,7 @@ class APWLChannel(BasisSetComponent):
         # call order: parent of `BasisSetComponent``, then `self`
         super(BasisSetComponent, self).normalize(archive, logger)
         self.n_orbitals = (
-            len(self.orbitals) * (2 * self.name + 1)
-            if self.name is not None else None
+            len(self.orbitals) * (2 * self.name + 1) if self.name is not None else None
         )
 
 
