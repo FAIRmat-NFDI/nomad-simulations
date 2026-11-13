@@ -513,13 +513,14 @@ def test_molecular_bead_groups_skip_multisite_molecule_without_bonds(caplog):
     assert 'without bonds' in caplog.text.lower()
 
 
-def test_molecular_bead_groups_ignore_unbonded_massless_virtual_site():
+@pytest.mark.parametrize('virtual_bonded', [False, True])
+def test_molecular_bead_groups_ignore_massless_virtual_site(virtual_bonded):
     """A virtual water site must not split an otherwise connected molecule."""
     universe = _molecular_test_universe(
         molnums=[0, 0, 0, 0],
         moltypes=['water'] * 4,
         masses=[16, 1, 1, 0],
-        bonds=[(0, 1), (0, 2)],
+        bonds=[(0, 1), (0, 2), *([(0, 3)] if virtual_bonded else [])],
         coordinates=[[[0, 0, 0], [1, 0, 0], [-1, 0, 0], [10, 0, 0]]],
     )
 
