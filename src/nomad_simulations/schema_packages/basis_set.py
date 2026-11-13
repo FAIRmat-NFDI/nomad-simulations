@@ -904,12 +904,12 @@ class APWLocalOrbital(APWBaseOrbital):
     @check_normalized
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+        orders = self.differential_order
         self.name = (
-            f'LO: {sorted(self.differential_order)}'
-            if self.differential_order
+            f'LO: {sorted(orders.tolist())}'
+            if orders is not None and orders.size > 0
             else 'LO'
         )
-
 
 class APWLChannel(BasisSetComponent):
     """
@@ -944,14 +944,19 @@ class APWLChannel(BasisSetComponent):
 
         type_count = {'apw': 0, 'lapw': 0, 'slapw': 0, 'lo': 0, 'other': 0}
         for orb in self.orbitals:
-            if orb.type is None:
-                type_count['other'] += 1
-            elif isinstance(orb, APWOrbital) and orb.type.lower() in type_count.keys():
-                type_count[orb.type] += 1
-            elif isinstance(orb, APWLocalOrbital):
+            if isinstance(orb, APWLocalOrbital):
                 type_count['lo'] += 1
+
+            elif isinstance(orb, APWOrbital):
+                orbital_type = orb.type
+
+                if orbital_type is not None and orbital_type.lower() in type_count:
+                    type_count[orbital_type.lower()] += 1
+                else:
+                    type_count['other'] += 1
+
             else:
-                type_count['other'] += 1  # other de facto operates as a catch-all
+                type_count['other'] += 1
         return type_count
 
     @set_not_normalized
@@ -1010,7 +1015,10 @@ class MuffinTinRegion(BasisSetComponent, Mesh):
         if len(self.l_channels) > 0:
             # dynamically determine `type_count` structure
             for l_channel in self.l_channels:
-                type_count.update(l_channel._determine_apw())
+                channel_counts = l_channel._determine_apw()
+
+                for key, value in channel_counts.items():
+                    type_count[key] = type_count.get(key, 0) + value
         return type_count
 
     @set_not_normalized
