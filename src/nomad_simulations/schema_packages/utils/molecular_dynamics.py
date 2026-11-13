@@ -19,6 +19,7 @@ try:
     from MDAnalysis.core._get_readers import get_reader_for
     from MDAnalysis.core.topology import Topology
     from MDAnalysis.core.universe import Universe
+    from MDAnalysis.exceptions import NoDataError
 
     _HAS_MDA = True
 except ImportError:
@@ -143,28 +144,20 @@ def _check_package_dependency(
 
 
 class BeadGroup:
-    """A helper class for calculating properties of groups of atoms ("beads") with the MDAnalysis package.
-    See https://github.com/MDAnalysis/mdanalysis/issues/1891#issuecomment-387138110 by @richardjgowers with performance improvements.
+    """Expose molecular centers as positions for MDAnalysis RDF and MSD analyses."""
 
-    Args:
-        object (MDAnalysis.AtomGroup): complete set of atoms for consideration.
-
-    Returns:
-        bead_groups: returns  bead group object that links and subdivides the MDAnalysis.AtomGroup, when attributes are requested.
-    """
-
-    def __init__(self, atoms, compound='fragments'):
-        """Initialize with an AtomGroup instance.
-        Will split based on keyword 'compounds' (residues or fragments).
-
-        self._atoms: AtomGroup (total number of atoms)
-        self.compound: str (dictates type of grouping)
-        self._nbeads: int (total number of beads)
-        self.positions: list (total number of "compounds")
-        """
+    def __init__(self, atoms, compound='molecules'):
+        """Group atoms by the requested compound and cache centers per frame."""
         self._atoms = atoms
         self.compound = compound
-        self._nbeads = len(getattr(self._atoms, self.compound))
+        if compound == 'molecules':
+            molnums, counts = np.unique(self._atoms.molnums, return_counts=True)
+            self._nbeads = len(molnums)
+            self._single_site = np.all(counts == 1)
+            self._single_site_order = np.argsort(self._atoms.molnums, kind='stable')
+        else:
+            self._nbeads = len(getattr(self._atoms, self.compound))
+            self._single_site = False
         # for caching
         self._cache = {}
         self._cache['positions'] = None
@@ -177,11 +170,19 @@ class BeadGroup:
     def positions(self):
         # cache positions for current frame
         if self.universe.trajectory.frame != self.__last_frame:
-            self._cache['positions'] = (
-                self._atoms.center_of_mass(unwrap=True, compound=self.compound)
-                if self._nbeads != 0
-                else []
-            )
+            if self._nbeads == 0:
+                self._cache['positions'] = np.empty((0, 3))
+            elif self.compound == 'molecules' and self._single_site:
+                # A one-particle molecule needs neither a mass nor bonds to
+                # identify its center. MDAnalysis unwrap() requires bonds even
+                # for this case.
+                self._cache['positions'] = self._atoms.positions[
+                    self._single_site_order
+                ]
+            else:
+                self._cache['positions'] = self._atoms.center_of_mass(
+                    unwrap=True, compound=self.compound
+                )
             self.__last_frame = self.universe.trajectory.frame
         return self._cache['positions']
 
@@ -774,6 +775,53 @@ def archive_to_universe(
     return metainfo_universe
 
 
+def _molecule_bonds_are_connected(atoms) -> bool:
+    """Check that each multi-site molecule can be unwrapped on its own."""
+    molnums = np.asarray(atoms.molnums)
+    molecule_ids, counts = np.unique(molnums, return_counts=True)
+    if np.all(counts == 1):
+        return True
+
+    try:
+        bonds = atoms.universe.bonds.indices
+    except NoDataError:
+        LOGGER.warning('Skipping multi-site molecular analysis without bonds.')
+        return False
+
+    selected_indices = set(atoms.indices.tolist())
+    all_molnums = atoms.universe.atoms.molnums
+    neighbors: dict[int, set[int]] = {int(index): set() for index in atoms.indices}
+    for first, second in bonds:
+        first, second = int(first), int(second)
+        if first not in selected_indices and second not in selected_indices:
+            continue
+        if all_molnums[first] != all_molnums[second]:
+            LOGGER.warning('Skipping molecular analysis with cross-molecule bonds.')
+            return False
+        # Bonds to excluded massless virtual sites do not affect the COM.
+        if first not in selected_indices or second not in selected_indices:
+            continue
+        neighbors[first].add(second)
+        neighbors[second].add(first)
+
+    for molecule_id, count in zip(molecule_ids, counts):
+        if count == 1:
+            continue
+        members = set(atoms.indices[molnums == molecule_id].tolist())
+        start = next(iter(members))
+        visited = {start}
+        pending = [start]
+        while pending:
+            for neighbor in neighbors[pending.pop()]:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    pending.append(neighbor)
+        if visited != members:
+            LOGGER.warning('Skipping disconnected multi-site molecular analysis.')
+            return False
+    return True
+
+
 def _get_molecular_bead_groups(
     universe: MDAUniverse | None, moltypes: list[str] | None = None
 ) -> dict[str, BeadGroup]:
@@ -789,25 +837,61 @@ def _get_molecular_bead_groups(
         LOGGER.warning(_log_missing_dependency('universe', 'beads'))
         return {}
 
-    bead_groups = {}
+    bead_groups: dict[str, BeadGroup] = {}
     atoms_moltypes = np.asarray(getattr(universe.atoms, 'moltypes', []))
+    atoms_molnums = np.asarray(getattr(universe.atoms, 'molnums', []))
+    if atoms_moltypes.shape != (universe.atoms.n_atoms,) or atoms_molnums.shape != (
+        universe.atoms.n_atoms,
+    ):
+        LOGGER.warning('Skipping molecular analysis without molecule types and IDs.')
+        return bead_groups
+    all_ids, all_counts = np.unique(atoms_molnums, return_counts=True)
+    molecule_sizes = dict(zip(all_ids.tolist(), all_counts.tolist()))
     if not moltypes:
         moltypes = np.unique(atoms_moltypes).tolist()
     for moltype in moltypes:
-        if atoms_moltypes.shape[0] != universe.atoms.n_atoms:
-            ags_by_moltype = universe.atoms[:0]
-        else:
-            # Avoid text-based selection parsing (e.g., `moltype water`) which can
-            # fail for valid moltype values depending on tokenizer semantics.
-            ags_by_moltype = universe.atoms[atoms_moltypes == moltype]
+        # Avoid text-based selection parsing (e.g., `moltype water`) which can
+        # fail for valid moltype values depending on tokenizer semantics.
+        ags_by_moltype = universe.atoms[atoms_moltypes == moltype]
         if ags_by_moltype.n_atoms == 0:
             continue
 
-        if ags_by_moltype.masses is not None:
-            ags_by_moltype = ags_by_moltype[
-                ags_by_moltype.masses > abs(1e-2)
-            ]  # remove any virtual/massless sites (needed for, e.g., 4-bead water models)
-        bead_groups[moltype] = BeadGroup(ags_by_moltype, compound='fragments')
+        molecule_ids, inverse, counts = np.unique(
+            ags_by_moltype.molnums, return_inverse=True, return_counts=True
+        )
+        if any(
+            count != molecule_sizes[molecule_id]
+            for molecule_id, count in zip(molecule_ids, counts)
+        ):
+            LOGGER.warning('Skipping molecular type with incomplete molecule IDs.')
+            continue
+
+        if np.any(counts > 1):
+            try:
+                masses = np.asarray(ags_by_moltype.masses)
+            except NoDataError:
+                LOGGER.warning('Skipping multi-site molecules without masses.')
+                continue
+            if not np.all(np.isfinite(masses)) or np.any(masses < 0):
+                LOGGER.warning('Skipping multi-site molecules with invalid masses.')
+                continue
+            molecular_masses = np.bincount(
+                inverse, weights=masses, minlength=len(molecule_ids)
+            )
+            if np.any(molecular_masses <= 0):
+                LOGGER.warning('Skipping molecules without positive mass.')
+                continue
+            # Virtual sites contribute no mass to a COM and may not be bonded.
+            # Remove them only after verifying the complete molecule IDs.
+            physical_atoms = ags_by_moltype[masses > 0]
+            if len(np.unique(physical_atoms.molnums)) != len(molecule_ids):
+                LOGGER.warning('Skipping molecules without physical sites.')
+                continue
+            ags_by_moltype = physical_atoms
+            if not _molecule_bonds_are_connected(ags_by_moltype):
+                continue
+
+        bead_groups[moltype] = BeadGroup(ags_by_moltype, compound='molecules')
 
     return bead_groups
 
@@ -1262,21 +1346,16 @@ def calc_molecular_msd(
             has_large_groups = True
             try:
                 # select max_mols nr. of rnd molecules from this moltype
-                moltype_indices = np.array(
-                    [atom._ix for atom in bead_groups[moltype]._atoms]
-                )
+                moltype_indices = bead_groups[moltype]._atoms.indices
                 molnums = universe.atoms.molnums[moltype_indices]
                 molnum_types = np.unique(molnums)
                 molnum_types_rnd = np.sort(
-                    np.random.choice(molnum_types, size=max_mols)
+                    np.random.choice(molnum_types, size=max_mols, replace=False)
                 )
-                atom_indices_rnd = np.concatenate(
-                    [moltype_indices[molnums == molnum] for molnum in molnum_types_rnd]
-                )
-                selection = ' '.join([str(i) for i in atom_indices_rnd])
-                selection = f'index {selection}'
-                ags_moltype_rnd = universe.select_atoms(selection)
-                bead_groups[moltype] = BeadGroup(ags_moltype_rnd, compound='fragments')
+                ags_moltype_rnd = bead_groups[moltype]._atoms[
+                    np.isin(molnums, molnum_types_rnd)
+                ]
+                bead_groups[moltype] = BeadGroup(ags_moltype_rnd, compound='molecules')
             except Exception:
                 has_errors = True
                 del_list.append(i_moltype)
