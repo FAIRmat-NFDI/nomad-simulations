@@ -253,7 +253,7 @@ class Simulation(BaseSimulation, Schema):
             Simulation.set_composition_formula(system_parent=child)
 
     @log
-    def _validate_and_set_representative_system(self) -> None:
+    def _validate_and_set_representative_system(self) -> bool:
         """
         Ensure exactly one representative `ModelSystem` exists in `self.model_system`,
         and update `self.representative_system_index` to point to it.
@@ -287,14 +287,18 @@ class Simulation(BaseSimulation, Schema):
 
         Returns
         -------
-        None
+        bool
+            True when a system was promoted to representative here, i.e. none was
+            marked beforehand. Such a system has already been normalized as a
+            non-representative one by the framework (sub-sections are normalized
+            before their parent), so the caller must normalize it again.
         """
         # TODO consider adding programmatic enforcement of model_system natural ordering
         logger = self._validate_and_set_representative_system.__annotations__['logger']
 
         if not self.model_system:
             logger.error('No system information reported.')
-            return
+            return False
 
         # indices of representative systems
         rep_idx = [i for i, ms in enumerate(self.model_system) if ms.is_representative]
@@ -309,8 +313,9 @@ class Simulation(BaseSimulation, Schema):
                 self.representative_system_index = 0
             else:
                 self.representative_system_index = -1
+            return True
 
-        elif len(rep_idx) > 1:
+        if len(rep_idx) > 1:
             logger.warning(
                 'Multiple representative systems found, one allowed.'
                 ' Will use the last `ModelSystem` found.'
@@ -321,6 +326,7 @@ class Simulation(BaseSimulation, Schema):
             self.representative_system_index = rep_idx[-1]
         else:  ## len(rep_idx) == 1
             self.representative_system_index = rep_idx[0]
+        return False
 
     # TODO enumerate normalization steps relevant to rep system in docstring
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
@@ -338,8 +344,13 @@ class Simulation(BaseSimulation, Schema):
         """
         super(Schema, self).normalize(archive, logger)
 
-        # Validate that there is exactly one representative system and set the index
-        self._validate_and_set_representative_system()
+        # Validate that there is exactly one representative system and set the index.
+        # A system promoted here was normalized before this `Simulation` (sub-sections
+        # first) while it was not yet representative, so run its normalization now.
+        if self._validate_and_set_representative_system():
+            self.model_system[self.representative_system_index].normalize(
+                archive, logger
+            )
 
         # Setting up the `branch_depth` in the parent-child tree
         for system_parent in self.model_system:

@@ -1520,3 +1520,66 @@ def test_validate_array_lengths():
         )
     finally:
         logger.warning = original_warning
+
+
+class TestRepresentativeIdentity:
+    """
+    The representative frame of a multi-frame `Simulation` derives formula and type
+    from `particle_states` that parsers attach to the topology frame only.
+    """
+
+    H2O = ['H', 'H', 'O']
+    POSITIONS = [[0, 0, 0], [0.5, 0, 0.5], [1, 1, 1]]
+
+    @pytest.mark.parametrize(
+        'symbols_per_frame, representative, n_positions_last, '
+        'expected_states_per_frame, expected_formula',
+        [
+            ([H2O], None, 3, [3], 'H2O'),
+            ([H2O, None, None], None, 3, [3, 0, 3], 'H2O'),
+            ([None, None, H2O], 2, 3, [0, 0, 3], 'H2O'),
+            ([None, None, None], None, 3, [0, 0, 0], None),
+            ([H2O, None, None], None, 2, [3, 0, 0], None),
+        ],
+        ids=[
+            'single_frame',
+            'identity_on_topology_only',
+            'identity_already_on_representative',
+            'no_identity_anywhere',
+            'count_mismatch_not_copied',
+        ],
+    )
+    def test_representative_resolves_identity_from_topology(
+        self,
+        symbols_per_frame,
+        representative,
+        n_positions_last,
+        expected_states_per_frame,
+        expected_formula,
+    ):
+        simulation = Simulation()
+        for index, symbols in enumerate(symbols_per_frame):
+            is_last = index == len(symbols_per_frame) - 1
+            positions = self.POSITIONS[: n_positions_last if is_last else 3]
+            frame = generate_model_system(
+                positions=positions,
+                is_representative=(index == representative) or None,
+            )
+            frame.particle_states = [
+                AtomsState(chemical_symbol=symbol) for symbol in symbols or []
+            ]
+            simulation.model_system.append(frame)
+        archive = EntryArchive(data=simulation)
+
+        # Same order as `MetainfoNormalizer`: sub-sections first, then the parent.
+        for frame in simulation.model_system:
+            frame.normalize(archive, logger)
+        simulation.normalize(archive, logger)
+
+        states_per_frame = [
+            len(frame.particle_states) for frame in simulation.model_system
+        ]
+        rep = simulation.model_system[simulation.representative_system_index]
+        formula = rep.chemical_formula.hill if rep.chemical_formula else None
+        assert states_per_frame == expected_states_per_frame
+        assert formula == expected_formula
