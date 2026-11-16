@@ -930,8 +930,7 @@ class APWLChannel(BasisSetComponent):
     n_orbitals = Quantity(
         type=np.int32,
         description="""
-        Number of wavefunctions in the l-channel, i.e. $(2l + 1)$ times the number 
-        of radial orbitals. is thrre a better way?
+        Number of wavefunctions in the l-channel: the number of radial orbitals times the $2l + 1$ magnetic quantum numbers.
         """,
     )
 
