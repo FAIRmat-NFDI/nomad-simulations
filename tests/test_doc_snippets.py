@@ -155,8 +155,9 @@ def test_data_types_schema_context_roundtrip():
 def test_data_types_standalone_roundtrip_behavior():
     original_class, reconstructed_class = standalone_type_roundtrip()
     assert original_class == 'm_float_bounded'
-    # Current expected behavior: reconstructed type loses bound wrapper.
-    assert reconstructed_class != 'm_float_bounded'
+    # The custom serialization reloads the exact bounded class, so the type (and its
+    # bound) survive the round-trip.
+    assert reconstructed_class == 'm_float_bounded'
 
 
 def test_data_types_error_message():

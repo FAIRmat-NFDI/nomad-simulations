@@ -3,7 +3,7 @@ from .dmft import DFTTBDMFTWorkflow
 from .elastic import Elastic
 from .equation_of_state import EquationOfState
 from .general import (
-    ChargeConvergenceTarget,
+    DensityConvergenceTarget,
     EnergyConvergenceTarget,
     ForceConvergenceTarget,
     ParallelWorkflow,
@@ -30,7 +30,7 @@ __all__ = [
     'DFTTBDMFTWorkflow',
     'Elastic',
     'EquationOfState',
-    'ChargeConvergenceTarget',
+    'DensityConvergenceTarget',
     'EnergyConvergenceTarget',
     'ForceConvergenceTarget',
     'ParallelWorkflow',

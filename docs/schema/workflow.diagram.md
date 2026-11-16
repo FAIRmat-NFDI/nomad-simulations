@@ -35,15 +35,12 @@ classDiagram
     }
     class WorkflowConvergenceTarget {
     }
-    class WorkflowTime {
-    }
     SimulationWorkflow <|-- ParallelWorkflow
     SimulationWorkflow <|-- SerialWorkflow
     SimulationWorkflowResults <|-- SerialWorkflowResults
     SimulationTask <|-- SimulationTaskReference
     SimulationTask <|-- SimulationWorkflow
     SimulationWorkflowModel <|-- SimulationWorkflowMethod
-    WorkflowTime <|-- SimulationWorkflowResults
     SimulationWorkflow *-- SimulationWorkflowMethod : method
     SimulationWorkflow *-- SimulationWorkflowResults : results
     SimulationWorkflowModel *-- WorkflowConvergenceTarget : convergence_targets

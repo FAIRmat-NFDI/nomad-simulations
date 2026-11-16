@@ -10,7 +10,7 @@
 
 ```mermaid
 classDiagram
-    class ChargeConvergenceTarget
+    class DensityConvergenceTarget
     class EnergyConvergenceTarget
     class ForceConvergenceTarget
     class GeometryOptimizationModel
@@ -21,7 +21,7 @@ classDiagram
     class WavefunctionConvergenceTarget
     class WorkflowConvergenceResults
     class WorkflowConvergenceTarget
-    WorkflowConvergenceTarget <|-- ChargeConvergenceTarget
+    WorkflowConvergenceTarget <|-- DensityConvergenceTarget
     WorkflowConvergenceTarget <|-- EnergyConvergenceTarget
     WorkflowConvergenceTarget <|-- ForceConvergenceTarget
     SimulationWorkflowResults <|-- GeometryOptimizationResults
@@ -84,15 +84,16 @@ classDiagram
 |---|---|---|
 | `threshold` | m_float_bounded(float) | <details><summary>Convergence threshold.</summary>Convergence threshold. Must be non-negative.<br>When threshold_type is 'relative', must be dimensionless.<br>When threshold_type is 'absolute', 'maximum', or 'rms', must have physical units.<br>Child classes override this to add convergence path annotations.</details> |
 
-### `ChargeConvergenceTarget`
+### `DensityConvergenceTarget`
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `ChargeConvergenceTarget` | Convergence target for electron density/charge differences. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.ChargeConvergenceTarget){:target="_blank"} |
+| `DensityConvergenceTarget` | Convergence target for the SCF electron-density residual. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.general.DensityConvergenceTarget){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
 | `threshold` | m_float_bounded(float) | <details><summary>Convergence threshold.</summary>Convergence threshold. Must be non-negative.<br>When threshold_type is 'relative', must be dimensionless.<br>When threshold_type is 'absolute', 'maximum', or 'rms', must have physical units.<br>Child classes override this to add convergence path annotations.</details> |
+| `type` | Enum | Which density-convergence residual this target tracks. Selects the `scf_steps.delta_<type>` quantity read for the check (and thereby its expected unit). |
 
 ### `WavefunctionConvergenceTarget`
 

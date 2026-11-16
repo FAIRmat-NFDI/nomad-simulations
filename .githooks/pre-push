@@ -1,0 +1,4 @@
+#!/bin/sh
+
+uvx ruff check && uvx ruff format --check
+exit $?

@@ -13,7 +13,7 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class ChargeConvergenceTarget {
+    class DensityConvergenceTarget {
     }
     class EnergyConvergenceTarget {
     }
@@ -35,7 +35,7 @@ classDiagram
     }
     class WorkflowConvergenceTarget {
     }
-    WorkflowConvergenceTarget <|-- ChargeConvergenceTarget
+    WorkflowConvergenceTarget <|-- DensityConvergenceTarget
     WorkflowConvergenceTarget <|-- EnergyConvergenceTarget
     WorkflowConvergenceTarget <|-- ForceConvergenceTarget
     SimulationWorkflowResults <|-- GeometryOptimizationResults

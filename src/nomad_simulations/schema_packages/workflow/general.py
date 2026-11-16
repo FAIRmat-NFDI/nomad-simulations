@@ -1,8 +1,10 @@
+from functools import cache
+
 import numpy as np
 import pint
 from nomad.datamodel import ArchiveSection, EntryArchive
 from nomad.datamodel.metainfo.workflow import Link, Task, TaskReference, Workflow
-from nomad.metainfo import Datetime, MEnum, Quantity, SchemaPackage, SubSection
+from nomad.metainfo import MEnum, Quantity, SchemaPackage, SubSection
 from nomad.units import ureg
 from structlog.stdlib import BoundLogger
 
@@ -93,9 +95,52 @@ The mode used affects both convergence behavior and computational efficiency. Di
             else np.isscalar(value)
         )
 
-    def _get_convergence_value(self, archive: EntryArchive, logger: BoundLogger):
+    def _convergence_paths(self) -> list[str]:
         """
-        Extract the value to check for convergence from the archive.
+        Ordered path(s) to the measured residual, tried in order (fallback).
+
+        Default: read the class-level `convergence` annotation on the `threshold`
+        Quantity. Child classes may override to source the path(s) elsewhere,
+        e.g. from an instance-level selector such as `DensityConvergenceTarget.type`.
+        """
+        threshold_quantity = self.m_def.all_quantities.get('threshold')
+        annotation = (
+            threshold_quantity.m_get_annotation('convergence')
+            if threshold_quantity
+            else None
+        )
+        if not annotation:
+            return []
+        if 'paths' in annotation:
+            return (
+                list(annotation['paths'])
+                if isinstance(annotation['paths'], list)
+                else [annotation['paths']]
+            )
+        return [annotation['path']] if 'path' in annotation else []
+
+    def _expected_unit(self) -> str | None:
+        """
+        The unit the `threshold` is expected to carry, used for validation only.
+
+        Default: read the class-level `expected_unit` annotation. Child classes
+        may override to resolve it dynamically, e.g. from an instance-level selector
+        such as `DensityConvergenceTarget.type`.
+        """
+        threshold_quantity = self.m_def.all_quantities.get('threshold')
+        return (
+            threshold_quantity.m_get_annotation('expected_unit')
+            if threshold_quantity
+            else None
+        )
+
+    def _get_convergence_value(
+        self,
+        archive_or_task: EntryArchive | SimulationTask,
+        logger: BoundLogger,
+    ):
+        """
+        Extract the value to check for convergence from the archive / task.
 
         Uses the path(s) defined in the `a_convergence` annotation on the threshold
         Quantity to locate convergence data. Supports fallback paths - if the first
@@ -106,7 +151,8 @@ The mode used affects both convergence behavior and computational efficiency. Di
         - Fallback paths: `a_convergence={'paths': ['workflow2.results.X', '@.scf_steps.X']}`
 
         Path notation (JMESPath-inspired, uses `getattr()` for navigation):
-        - `@.scf_steps.delta_energies_total` - Relative to `archive.data.outputs[-1]` (current output)
+        - `@.scf_steps.delta_energies_total` - Relative to `archive.data.outputs[-1]` (last output)
+                                               or `task.outputs[-1].section`
         - `workflow2.results.X` or `archive.X` - Absolute from archive root
 
         The `@` prefix follows JMESPath convention where `@` represents the current node.
@@ -117,52 +163,23 @@ The mode used affects both convergence behavior and computational efficiency. Di
             The value to check as a Pint Quantity (with units),
             or None if the value cannot be determined.
         """
-        # Access annotation from the threshold Quantity definition
-        threshold_quantity = self.m_def.all_quantities.get('threshold')
-        if not threshold_quantity:
+        paths = self._convergence_paths()
+        if not paths:
             logger.warning(
-                f'No threshold quantity found for {self.__class__.__name__}',
-                data={'class': self.__class__.__name__},
-            )
-            return None
-
-        annotation = threshold_quantity.m_get_annotation('convergence')
-        if not annotation:
-            logger.warning(
-                f'No convergence annotation on threshold for {self.__class__.__name__}',
-                data={'class': self.__class__.__name__},
-            )
-            return None
-
-        # Support both 'path' (single) and 'paths' (fallback list)
-        paths = []
-        if 'paths' in annotation:
-            paths = (
-                annotation['paths']
-                if isinstance(annotation['paths'], list)
-                else [annotation['paths']]
-            )
-        elif 'path' in annotation:
-            paths = [annotation['path']]
-        else:
-            logger.warning(
-                f'No path or paths in convergence annotation for {self.__class__.__name__}',
+                f'No convergence path for {self.__class__.__name__}',
                 data={'class': self.__class__.__name__},
             )
             return None
 
         # Try each path in order (fallback logic)
         for path in paths:
-            value = self._resolve_path(archive, path, logger)
+            value = self._resolve_path(archive_or_task, path, logger)
             if value is not None:
                 # Handle arrays: for 'absolute' threshold_type, extract last iteration value
                 # For 'rms' and 'maximum', keep full array for aggregation
                 conv_type = self.threshold_type or 'absolute'
-                if hasattr(value, '__getitem__') and not isinstance(value, str):
-                    if conv_type in ('rms', 'maximum'):
-                        return value  # Keep full array
-                    else:
-                        return value[-1]  # Extract last iteration value
+                if not self._is_scalar_pint(value):
+                    return value if conv_type in ('rms', 'maximum') else value[-1]
                 return value
 
         # All paths failed
@@ -172,19 +189,49 @@ The mode used affects both convergence behavior and computational efficiency. Di
         )
         return None
 
-    def _resolve_path(self, archive: EntryArchive, path: str, logger: BoundLogger):
+    def _resolve_relative_root(
+        self, archive_or_task: EntryArchive | SimulationTask
+    ) -> ArchiveSection | None:
         """
-        Resolve a single path in the archive.
+        Return the root section for relative paths (those starting with '@.').
+
+        For archives, this is the last output in `archive.data.outputs`.
+        For tasks, this is the last linked output.
+
+        Args:
+            archive_or_task: The archive or task to resolve
+
+        Returns:
+            The root section for relative paths, or None
+        """
+        if isinstance(archive_or_task, EntryArchive):
+            archive = archive_or_task
+            if archive.data and archive.data.outputs:
+                return archive.data.outputs[-1]
+        elif isinstance(archive_or_task, SimulationTask):
+            task = archive_or_task
+            if task.outputs:
+                return task.outputs[-1].section
+        return None
+
+    def _resolve_path(
+        self,
+        archive_or_task: EntryArchive | SimulationTask,
+        path: str,
+        logger: BoundLogger,
+    ):
+        """
+        Resolve a single path in the archive/task.
 
         Paths are dot-notation strings with required prefixes (JMESPath-inspired):
-        - `@.scf_steps.X` - Relative to `archive.data.outputs[-1]` (current output)
+        - `@.scf_steps.X` - Relative to `archive.data.outputs[-1]` or `task.outputs[-1].section`
         - `workflow2.X` or `archive.X` - Absolute from archive root
 
         The `@` prefix follows JMESPath convention where `@` represents the current node.
         All paths must have an explicit prefix.
 
         Args:
-            archive: The archive to search
+            archive_or_task: The archive or task to search
             path: Dot-notation path string with required prefix
             logger: Logger instance
 
@@ -195,13 +242,12 @@ The mode used affects both convergence behavior and computational efficiency. Di
             # Determine starting point based on path prefix
             if path.startswith('@.'):
                 # Explicit relative path (JMESPath-inspired current node)
-                if not archive.data or not archive.data.outputs:
+                if (root := self._resolve_relative_root(archive_or_task)) is None:
                     return None
-                root = archive.data.outputs[-1]
                 path_parts = path[2:].split('.')  # Strip '@.' prefix
             elif path.startswith('workflow2.') or path.startswith('archive.'):
                 # Absolute path from archive root
-                root = archive
+                root = archive_or_task
                 path_parts = path.split('.')
             else:
                 # No valid prefix - path must be explicit
@@ -245,12 +291,7 @@ The mode used affects both convergence behavior and computational efficiency. Di
             True if validation passes, False otherwise
         """
         units_required: bool = self.threshold_type != 'relative'
-        threshold_quantity = type(self).m_def.all_quantities.get('threshold')
-        expected_unit = (
-            threshold_quantity.m_get_annotation('expected_unit')
-            if threshold_quantity
-            else None
-        )
+        expected_unit = self._expected_unit()
         has_units: bool = hasattr(self.threshold, 'units') and (
             not self.threshold.dimensionless or expected_unit == 'dimensionless'
         )
@@ -385,20 +426,26 @@ The mode used affects both convergence behavior and computational efficiency. Di
         """
         return value
 
-    def normalize(self, archive: EntryArchive, logger: BoundLogger) -> bool | None:
+    def normalize(
+        self,
+        archive_or_task: EntryArchive | SimulationTask,
+        logger: BoundLogger,
+    ) -> bool | None:
         """
         Check if convergence criterion is met.
+
+        Mutation: convert threshold to Pint Quantity (idempotent).
 
         Returns:
             True if converged, False if not, None if cannot be determined.
         """
-        if not archive.data:
+        if isinstance(archive_or_task, EntryArchive) and not archive_or_task.data:
             return None
 
         self._convert_to_pint()
 
         try:
-            value = self._get_convergence_value(archive, logger)
+            value = self._get_convergence_value(archive_or_task, logger)
             if value is None:
                 return None
 
@@ -506,12 +553,68 @@ class PotentialConvergenceTarget(WorkflowConvergenceTarget):
     threshold.m_annotations['convergence'] = {'path': '@.scf_steps.delta_potential_rms'}
 
 
-class ChargeConvergenceTarget(WorkflowConvergenceTarget):
-    """Convergence target for electron density/charge differences."""
+# The SCF electron-density residual is reported in physically incommensurable ways
+# across codes (integrated charge, charge density, per-electron fraction, density-matrix
+# element norm; see issue #452), so a single fixed-unit quantity cannot represent it.
+# `DensityConvergenceTarget.type` names which one; each value maps 1:1 to a static
+# `SCFSteps.delta_<type>` quantity, from which the path and expected unit are derived
+# (so `SCFSteps` stays the single source of truth for units).
+DENSITY_CONVERGENCE_TYPES = (
+    'charge_abs',
+    'charge_density_rms',
+    'charge_relative',
+    'density_matrix_rms',
+    'density_matrix_max',
+)
 
+
+@cache
+def _density_scf_quantity(type_name: str):
+    """
+    The static `SCFSteps.delta_<type>` quantity a density convergence `type` refers to.
+    Cached: the mapping is a fixed handful of type names, and this is hit once per
+    `DensityConvergenceTarget.normalize`.
+    """
+    from nomad_simulations.schema_packages.outputs import SCFSteps
+
+    return SCFSteps.m_def.all_quantities[f'delta_{type_name}']
+
+
+class DensityConvergenceTarget(WorkflowConvergenceTarget):
+    """
+    Convergence target for the SCF electron-density residual.
+
+    Codes report this residual in incommensurable ways, so `type` selects which
+    `scf_steps` field is read; its expected unit is read off that field. The norm
+    rides on `threshold_type` and the threshold unit on the `flexible_unit`
+    `threshold`.
+    """
+
+    # Re-declare `threshold` (no annotations) so it stays visible in the generated
+    # docs/metainfo table for this target, matching the sibling targets. The expected
+    # unit and convergence path are resolved via `_expected_unit`/`_convergence_paths`.
     threshold = WorkflowConvergenceTarget.threshold.m_copy(deep=True)
-    threshold.m_annotations['expected_unit'] = 'coulomb'
-    threshold.m_annotations['convergence'] = {'path': '@.scf_steps.delta_density_rms'}
+
+    type = Quantity(
+        type=MEnum(*DENSITY_CONVERGENCE_TYPES),
+        description="""
+        Which density-convergence residual this target tracks. Selects the
+        `scf_steps.delta_<type>` quantity read for the check (and thereby its
+        expected unit).
+        """,
+    )
+
+    def _scf_quantity(self):
+        # The static `SCFSteps` quantity this target references (cached module-level);
+        # its definition is the single source of truth for the expected unit.
+        return _density_scf_quantity(self.type) if self.type else None
+
+    def _expected_unit(self) -> str | None:
+        quantity = self._scf_quantity()
+        return str(quantity.unit) if quantity is not None else None
+
+    def _convergence_paths(self) -> list[str]:
+        return [f'@.scf_steps.delta_{self.type}'] if self.type else []
 
 
 class WavefunctionConvergenceTarget(WorkflowConvergenceTarget):
@@ -565,52 +668,6 @@ class SimulationWorkflowMethod(SimulationWorkflowModel):
     pass
 
 
-# TODO: Is this nomad_simulations.common.SimulationTime ?
-class WorkflowTime(ArchiveSection):
-    """
-    Contains time-related quantities.
-    """
-
-    datetime_end = Quantity(
-        type=Datetime,
-        description="""
-        The date and time when the workflow ended.
-        """,
-    )
-
-    cpu1_start = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The starting time of the workflow on the (first) CPU 1.
-        """,
-    )
-
-    cpu1_end = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The end time of the workflow on the (first) CPU 1.
-        """,
-    )
-
-    wall_start = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The internal wall-clock time from the starting of the workflow.
-        """,
-    )
-
-    wall_end = Quantity(
-        type=np.float64,
-        unit='second',
-        description="""
-        The internal wall-clock time from the end of the workflow.
-        """,
-    )
-
-
 class WorkflowConvergenceResults(ArchiveSection):
     """
     Results of workflow convergence checks.
@@ -639,7 +696,7 @@ class WorkflowConvergenceResults(ArchiveSection):
     )
 
 
-class SimulationWorkflowResults(WorkflowTime):
+class SimulationWorkflowResults(ArchiveSection):
     """
     Base class for simulation workflow results sub-section definition.
     """
@@ -775,8 +832,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
             logger.warning('Tasks are predefined and will not generate from outputs.')
             return
 
-        outputs = list(archive.data.outputs)
-        outputs.sort(key=lambda x: x.wall_start or 0)
+        outputs = self._sort_outputs_by_wall_start(archive.data.outputs)
         tasks = []
         parent_n = 0
         root_n = 0
@@ -786,25 +842,56 @@ class SimulationWorkflow(Workflow, SimulationTask):
                 outputs=[Link(name='Outputs', section=output)],
             )
             tasks.append(task)
-            tstart = output.wall_start
-            tend = outputs[parent_n].wall_end
-            if tstart is None and tend is None:
-                continue
-            if tstart >= tend:
-                task.inputs.extend(
-                    [Link(name='Linked task', section=t) for t in tasks[parent_n:n]]
-                )
-                root_n = parent_n
-                parent_n = n
-            elif n != parent_n:
-                task.inputs.extend(
-                    [
-                        Link(name='Linked task', section=t)
-                        for t in tasks[root_n:parent_n]
-                    ]
-                )
+            parent_n, root_n = self._link_task_by_timing(
+                task, output, outputs, tasks, n, parent_n, root_n
+            )
 
         self.tasks.extend(tasks)
+
+    @staticmethod
+    def _sort_outputs_by_wall_start(outputs) -> list:
+        """
+        Order outputs by start time, keeping untimed outputs at the end.
+
+        Using ``0`` as the fallback for a missing ``wall_start`` would make Python
+        compare an integer with a datetime when an archive contains both timed and
+        untimed outputs; the leading ``x.wall_start is None`` key avoids that by
+        grouping the untimed outputs together at the end.
+        """
+        return sorted(outputs, key=lambda x: (x.wall_start is None, x.wall_start or 0))
+
+    def _link_task_by_timing(
+        self,
+        task: SimulationTask,
+        output,
+        outputs: list,
+        tasks: list['SimulationTask'],
+        n: int,
+        parent_n: int,
+        root_n: int,
+    ) -> tuple[int, int]:
+        """
+        Link a task to previous tasks based on execution timing.
+
+        Returns the updated ``(parent_n, root_n)`` indices.
+        """
+        tstart = output.wall_start
+        tend = outputs[parent_n].wall_end
+        # An output with only one timestamp cannot be linked reliably, but it is
+        # still a valid task and must not prevent the remaining tasks from being
+        # added.
+        if tstart is None or tend is None:
+            return parent_n, root_n
+        if tstart >= tend:
+            task.inputs.extend(
+                [Link(name='Linked task', section=t) for t in tasks[parent_n:n]]
+            )
+            return n, parent_n
+        if n != parent_n:
+            task.inputs.extend(
+                [Link(name='Linked task', section=t) for t in tasks[root_n:parent_n]]
+            )
+        return parent_n, root_n
 
     @log
     def map_convergence(self, archive: EntryArchive) -> None:
@@ -873,7 +960,7 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
     def _resolve_convergence(
         self,
-        archive: EntryArchive,
+        archive_or_task: EntryArchive | SimulationTask,
         convergence_targets: list[WorkflowConvergenceTarget],
         logger: BoundLogger,
     ) -> list[WorkflowConvergenceResults]:
@@ -883,22 +970,18 @@ class SimulationWorkflow(Workflow, SimulationTask):
 
         Creates temporary copies of convergence targets, normalizes them, and returns
         WorkflowConvergenceResults with the convergence status.
-        Note: Currently checks convergence against the last output only.
+        Note: Currently checks convergence against the last output
+        in either the whole archive or the specific task depending on the context.
         """
         convergence_results = []
 
         for target in convergence_targets:
-            # Create a copy of the target to avoid modifying the original
-            target_copy = target.m_copy(deep=True)
-
             # For multi-output scenarios, we may need to adjust the archive context
             # This is a simplified approach - child classes can override for more complex logic
-            is_reached = target_copy.normalize(archive, logger)
+            is_reached = target.normalize(archive_or_task, logger)
 
             # Create a result object that holds both the target and the convergence status
             result = WorkflowConvergenceResults()
-            # Reference the original target (which is in the archive hierarchy),
-            # not the copy (which would be orphaned and cause serialization errors)
             result.convergence_target_ref = target
             result.is_reached = is_reached
             convergence_results.append(result)

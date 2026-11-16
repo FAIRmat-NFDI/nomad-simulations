@@ -32,7 +32,7 @@ Chemical formulas in different formats: descriptive, reduced, IUPAC, Hill, anony
 
 Complete particle state hierarchy: ParticleState base class, AtomsState with detailed atomic properties, and CGBeadState
 
-**Key sections:** ParticleState, AtomsState, CGBeadState, AtomicOrbitals, CoreHole, HubbardInteractions
+**Key sections:** ParticleState, AtomsState, CGBeadState, AtomicOrbitals, CoreHole
 
 ## [Symmetry](symmetry.md)
 
@@ -72,9 +72,9 @@ Base output structure and common property definitions
 
 ## [Electronic Structure Properties](electronic_properties.md)
 
-Electronic eigenvalues, band structures, DOS, band gaps, occupancies, and Fermi surfaces
+Electronic eigenvalues, band structures, DOS, band gaps, molecular orbitals, occupancies, and Fermi surfaces
 
-**Key sections:** BaseElectronicEigenvalues, ElectronicEigenvalues, ElectronicBandStructure, ElectronicBandGap, DOSProfile, ElectronicDensityOfStates, Occupancy, FermiSurface
+**Key sections:** BaseElectronicEigenvalues, ElectronicEigenvalues, ElectronicBandStructure, MolecularOrbitals, ElectronicBandGap, DOSProfile, ElectronicDensityOfStates, Occupancy, FermiSurface
 
 ## [Many-Body Properties](manybody_properties.md)
 
@@ -104,7 +104,7 @@ Thermodynamic properties: energies, forces, pressure, temperature, and state fun
 
 Core workflow hierarchy and shared method/results structures
 
-**Key sections:** SimulationTask, SimulationTaskReference, SimulationWorkflow, SerialWorkflow, ParallelWorkflow, SimulationWorkflowModel, SimulationWorkflowMethod, WorkflowTime, SimulationWorkflowResults, SerialWorkflowResults, WorkflowConvergenceTarget, WorkflowConvergenceResults
+**Key sections:** SimulationTask, SimulationTaskReference, SimulationWorkflow, SerialWorkflow, ParallelWorkflow, SimulationWorkflowModel, SimulationWorkflowMethod, SimulationWorkflowResults, SerialWorkflowResults, WorkflowConvergenceTarget, WorkflowConvergenceResults
 
 ## [Beyond-DFT Workflow Family](workflow_beyond_dft.md)
 
@@ -170,7 +170,7 @@ Thermodynamics workflow for free-energy and thermodynamic property calculations
 
 Convergence target classes and workflow-level convergence result structures
 
-**Key sections:** WorkflowConvergenceTarget, EnergyConvergenceTarget, ForceConvergenceTarget, PotentialConvergenceTarget, ChargeConvergenceTarget, WavefunctionConvergenceTarget, WorkflowConvergenceResults, SimulationWorkflowModel, SimulationWorkflowResults, GeometryOptimizationModel, GeometryOptimizationResults
+**Key sections:** WorkflowConvergenceTarget, EnergyConvergenceTarget, ForceConvergenceTarget, PotentialConvergenceTarget, DensityConvergenceTarget, WavefunctionConvergenceTarget, WorkflowConvergenceResults, SimulationWorkflowModel, SimulationWorkflowResults, GeometryOptimizationModel, GeometryOptimizationResults
 
 ## [Workflow Trajectory Properties](workflow_trajectory.md)
 

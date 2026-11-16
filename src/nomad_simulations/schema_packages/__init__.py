@@ -18,6 +18,20 @@ class NOMADSimulationsEntryPoint(SchemaPackageEntryPoint):
         1e-3,
         description='Tolerance for the occupation of a eigenstate to be non-occupied.',
     )
+    mo_occupation_cutoff: float = Field(
+        1e-6,
+        ge=0.0,
+        description='`MolecularOrbitals` frontier resolution: an orbital with occupation '
+        'above this counts as occupied when resolving HOMO/LUMO.',
+    )
+    mo_occupation_slack: float = Field(
+        0.1,
+        ge=0.0,
+        description='`MolecularOrbitals` occupations: slack on the [0, 2] bound. '
+        'Occupation numbers from approximate methods (e.g. MP2/CC natural orbitals) can '
+        'fall slightly outside [0, 2]; entries beyond [0 - slack, 2 + slack] are flagged '
+        'and clamped into [0, 2].',
+    )
     fermi_surface_tolerance: float = Field(
         1e-8,
         description='Tolerance (in joules) for energies to be close to the Fermi level and hence define the Fermi surface of a material.',
@@ -42,6 +56,8 @@ class NOMADSimulationsEntryPoint(SchemaPackageEntryPoint):
     )
 
     def load(self):
+        # Eager import so the GUI metainfo includes the `basis_set` package (#331)
+        import nomad_simulations.schema_packages.basis_set  # noqa: F401
         from nomad_simulations.schema_packages.general import m_package
 
         return m_package

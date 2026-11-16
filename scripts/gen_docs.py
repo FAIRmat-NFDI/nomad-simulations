@@ -381,11 +381,12 @@ def build_vertical(
         title = spec.get('title', vert_key.title())
         sections = list(spec.get('sections', []))
         purpose = spec.get('purpose', '')
+        notes = spec.get('notes', '').strip()
         in_scope = [clean_scope_item(item) for item in spec.get('in_scope', [])]
     else:
         title = vert_key.title()
         sections = list(spec)
-        purpose, in_scope = '', []
+        purpose, notes, in_scope = '', '', []
 
     # Diagram (already fenced and with blank lines)
     mermaid_block = mermaid_for_vertical(
@@ -455,6 +456,7 @@ def build_vertical(
         key=vert_key,
         title=title,
         purpose=purpose,
+        notes=notes,
         in_scope=in_scope,
         sections=sections,
         section_info=section_info,

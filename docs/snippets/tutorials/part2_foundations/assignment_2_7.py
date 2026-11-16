@@ -9,7 +9,6 @@ from nomad_simulations.schema_packages.model_method import DFT
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import SelfConsistency
 from nomad_simulations.schema_packages.outputs import Outputs, SCFSteps
-from nomad_simulations.schema_packages.properties import TotalEnergy
 
 logger = utils.get_logger(__name__)
 
@@ -30,9 +29,9 @@ method = DFT(
 )
 simulation.model_method.append(method)
 
-outputs = Outputs(scf_steps=SCFSteps())
-for value in [1.0, 1.5, 2.0, 2.1, 2.101]:
-    outputs.total_energies.append(TotalEnergy(value=value * ureg.eV))
+outputs = Outputs(
+    scf_steps=SCFSteps(energies_total=[1.0, 1.5, 2.0, 2.1, 2.101] * ureg.eV)
+)
 simulation.outputs.append(outputs)
 
 outputs.normalize(archive=EntryArchive(), logger=logger)

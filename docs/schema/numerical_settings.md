@@ -68,7 +68,7 @@ classDiagram
 | `n_points` | m_int32(int32) | Number of points in the mesh. |
 | `dimensionality` | m_int32(int32) | Dimensionality of the mesh: 1, 2, or 3. Defaults to 3. |
 | `grid` | m_int32(int32) (shape: ['dimensionality']) | Amount of mesh point sampling along each axis. See `type` for the axes definition. |
-| `points` | m_complex128(complex128) (shape: ['n_points', 'dimensionality']) | List of all the points in the mesh. |
+| `points` | m_float64(float64) (shape: ['n_points', 'dimensionality']) | List of all the points in the mesh. |
 | `multiplicities` | m_float64(float64) (shape: ['n_points']) | The amount of times the same point reappears. A value larger than 1, typically indicates a symmetry operation that was applied to the `Mesh`. This quantity is equivalent to `weights`: multiplicities = n_points * weights |
 | `weights` | m_float64(float64) (shape: ['n_points']) | Weight of each point. A value smaller than 1, typically indicates a symmetry operation that was applied to the mesh. This quantity is equivalent to `multiplicities`: weights = multiplicities / n_points |
 
@@ -118,19 +118,20 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `name` | Enum | Smearing routine employed. |
+| `kind` | Enum | <details><summary>Routine used to assign occupation numbers around the Fermi level.</summary>Routine used to assign occupation numbers around the Fermi level.<br>\| Kind                     \| Description                                                   \|<br>\| ------------------------ \| ------------------------------------------------------------- \|<br>\| `'Fermi-Dirac'`          \| Fermi-Dirac distribution at the temperature set by `width`.   \|<br>\| `'Gaussian'`             \| Gaussian broadening of the occupations.                       \|<br>\| `'Methfessel-Paxton'`    \| Methfessel-Paxton broadening of unreported order.             \|<br>\| `'Methfessel-Paxton 1'`  \| Methfessel-Paxton broadening, first-order Hermite expansion.  \|<br>\| `'Methfessel-Paxton 2'`  \| Methfessel-Paxton broadening, second-order Hermite expansion. \|<br>\| `'Marzari-Vanderbilt'`   \| Marzari-Vanderbilt cold smearing.                             \|<br>\| `'Square-wave'`          \| Square-wave (box) impulse broadening.                         \|<br>\| `'Tetrahedra'`           \| Tetrahedron integration of unreported variant, no broadening. \|<br>\| `'Tetrahedra linear'`    \| Linear tetrahedron integration, no broadening.                \|<br>\| `'Tetrahedra Bloechl'`   \| Linear tetrahedron integration with Blöchl corrections.       \|<br>\| `'Tetrahedra optimized'` \| Optimized tetrahedron integration (Kawamura et al.).          \|</details> |
+| `width` | m_float64(float) | Width of the smearing distribution. Not applicable when `kind` is one of the `'Tetrahedra'` kinds, which have no broadening; the normalizer warns if both are set. |
 
 ### `SelfConsistency`
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `SelfConsistency` | A base section used to define the convergence settings of self-consistent field (SCF) calculation. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.SelfConsistency){:target="_blank"} |
+| `SelfConsistency` | Deprecated. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.SelfConsistency){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
 | `scf_minimization_algorithm` | m_str(str) | Specifies the algorithm used for self consistency minimization. |
-| `n_max_iterations` | m_int32(int32) | Specifies the maximum number of allowed self-consistent iterations. The simulation `is_scf_converged` if the number of iterations is not larger or equal than this quantity. |
-| `threshold_change` | m_float64(float64) | Specifies the threshold for the change between two subsequent self-consistent iterations on a given output property. The simulation `is_scf_converged` if this total change is below this threshold. Supports flexible units (e.g., energy in eV/joule, density as dimensionless). |
+| `n_max_iterations` | m_int32(int32) | Specifies the maximum number of allowed self-consistent iterations. Convergence is not reached once the number of iterations exceeds this quantity. |
+| `threshold_change` | m_float64(float64) | Specifies the threshold for the change between two subsequent self-consistent iterations on a given output property. Convergence is reached once this total change is below this threshold. Supports flexible units (e.g., energy in eV/joule, density as dimensionless). |
 
 ### `ForceCalculations`
 

@@ -658,7 +658,7 @@ def archive_to_universe(
     def approx(a, b, rel_tol=1e-09, abs_tol=0.0):
         return abs(a - b) <= max(rel_tol * max(abs(a), abs(b)), abs_tol)
 
-    if system_times:
+    if len(system_times) > 1:
         time_steps = [
             system_times[i_time] - system_times[i_time - 1]
             for i_time in range(1, len(system_times))
@@ -680,14 +680,13 @@ def archive_to_universe(
             method = archive.workflow2.method
             dt = method.integration_timestep
             freq = method.coordinate_save_frequency
-            if dt is not None:
-                system_timestep = dt * freq if freq is not None else dt
-            else:
-                raise ValueError('integration_timestep is None')
+            if dt is None or freq is None or freq <= 0:
+                raise ValueError('No valid integration timestep and save frequency')
+            system_timestep = dt * freq
         except Exception:
             LOGGER.warning(
-                'Cannot find the system times. MDA universe will contain non-physical '
-                'times and timestep.'
+                'Could not determine a timestep from frame times or workflow '
+                'method; using the default 1 ps for the MDAnalysis trajectory.'
             )
 
     if not hasattr(system_timestep, 'to'):

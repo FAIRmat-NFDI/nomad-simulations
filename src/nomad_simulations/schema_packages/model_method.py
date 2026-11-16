@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pint
 from nomad.datamodel.data import ArchiveSection
 from nomad.metainfo import (
     URL,
@@ -11,6 +12,7 @@ from nomad.metainfo import (
     SectionProxy,
     SubSection,
 )
+from nomad.units import ureg
 
 if TYPE_CHECKING:
     from nomad.datamodel.context import Context
@@ -31,6 +33,7 @@ from nomad_simulations.schema_packages.data_types import (
 )
 from nomad_simulations.schema_packages.model_system import ModelSystem
 from nomad_simulations.schema_packages.numerical_settings import NumericalSettings
+from nomad_simulations.schema_packages.utils import log
 from nomad_simulations.schema_packages.utils.libxc.build import (
     spec_from_id,
     spec_from_label,
@@ -46,21 +49,14 @@ class BaseModelMethod(ArchiveSection):
     A base section used to define the abstract class of a Hamiltonian section. This section is an
     abstraction of the `ModelMethod` section, which contains the parameters that define the
     mathematical model solved in a simulation. Numerical choices for how that model is evaluated
-    are stored separately under `numerical_settings`. This abstraction is needed in order to allow
-    `ModelMethod` to be divided into specific `terms`, so that the total Hamiltonian is specified in
-    `ModelMethod`, while its contributions are defined in `ModelMethod.terms`.
-
-    Example: a custom model Hamiltonian containing two terms:
-        $H = H_{V_{1}(r)}+H_{V_{2}(r)}$
-    where $H_{V_{1}(r)}$ and $H_{V_{2}(r)}$ are the contributions of two different potentials written in
-    real space coordinates $r$. These potentials could be defined in terms of a combination of parameters
-    $(a_{1}, b_{1}, c_{1}...)$ for $V_{1}(r)$ and $(a_{2}, b_{2}, c_{2}...)$ for $V_{2}(r)$. If we name the
-    total Hamiltonian as `'FF1'`:
-        `ModelMethod.name = 'FF1'`
-        `ModelMethod.contributions = [BaseModelMethod(name='V1', parameters=[a1, b1, c1]), BaseModelMethod(name='V2', parameters=[a2, b2, c2])]`
+    are stored separately under `numerical_settings`; these settings are scoped to the method
+    that owns them and may include any `NumericalSettings` specialization (e.g.
+    `SolvationSettings`, `EmpiricalDispersionSettings`). This abstraction is also the common
+    ancestor of `HamiltonianTerm`, the base class of individual additive Hamiltonian terms
+    stored under `ModelMethod.contributions`.
 
     Note: quantities such as `name`, `type`, `external_reference` should be descriptive enough so that the
-    total Hamiltonian model or each of the terms or contributions can be identified.
+    total Hamiltonian model or each of its terms can be identified.
     """
 
     normalizer_level = 1
@@ -89,7 +85,22 @@ class BaseModelMethod(ArchiveSection):
         """,
     )
 
+    # Kept on the shared base (not on `ModelMethod`) so individual `HamiltonianTerm`s can
+    # carry their own numerical settings — e.g. a per-`Potential` van der Waals cutoff.
     numerical_settings = SubSection(sub_section=NumericalSettings.m_def, repeats=True)
+
+
+class HamiltonianTerm(BaseModelMethod):
+    """
+    An additive term of the total model Hamiltonian, $H = H_{0} + \\sum_{i} H_{i}$: a
+    separable, attributable contribution such as a dispersion correction, an
+    implicit-solvation reaction field, or a Hubbard +U interaction. Full methods
+    (`ModelMethod` subclasses) are not terms and cannot be nested as such.
+    Transformative treatments that replace the Hamiltonian rather than add to it
+    (e.g. relativistic treatments, see `RelativityModel`) are represented as typed
+    subsections of the method instead. Instantiate this class directly for generic,
+    code-specific Hamiltonian or energy decompositions.
+    """
 
 
 class ModelMethod(BaseModelMethod):
@@ -99,20 +110,24 @@ class ModelMethod(BaseModelMethod):
     simulation. Numerical controls for discretization, convergence, basis representations, solver
     execution, or related implementation details belong in `numerical_settings`.
 
-    Optionally, this section can be decomposed in a series of contributions by storing them under
-    the `contributions` quantity.
+    Additive Hamiltonian terms (dispersion corrections, solvation models, Hubbard
+    interactions, ...) are stored as `HamiltonianTerm` sections under `contributions`.
+    Composite multi-method schemes (e.g. ONIOM) are not modeled by nesting methods; a
+    dedicated container section with explicitly enumerated member subsections is planned
+    for those.
     """
 
     contributions = SubSection(
-        sub_section=BaseModelMethod.m_def,
+        sub_section=HamiltonianTerm.m_def,
         repeats=True,
         description="""
-        Contribution or sub-term of the total model Hamiltonian.
+        Additive terms of the total model Hamiltonian. Only `HamiltonianTerm` sections
+        belong here; full methods cannot be nested.
         """,
     )
 
 
-class ImplicitSolvationModel(BaseModelMethod):
+class ImplicitSolvationModel(HamiltonianTerm):
     """Implicit-solvent or polarizable continuum treatments.
 
     Examples include PCM and its variants (IEF-PCM, CPCM), COSMO, COSMO-RS,
@@ -124,8 +139,9 @@ class ImplicitSolvationModel(BaseModelMethod):
     References
     ----------
     •  J. Tomasi, B. Mennucci, R. Cammi, *Chem. Rev.* **105**, 2999 (2005) - PCM overview
-    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) - COSMO
-    •  A. V. Marenich *et al.*, *J. Chem. Phys. B* **113**, 6378 (2009) - SMD
+    •  A. Klamt, G. Schüürmann, *J. Chem. Soc., Perkin Trans. 2*, 799 (1993) - COSMO
+    •  A. Klamt, *J. Phys. Chem.* **99**, 2224 (1995) - COSMO-RS
+    •  A. V. Marenich *et al.*, *J. Phys. Chem. B* **113**, 6378 (2009) - SMD
     """
 
     model = Quantity(
@@ -235,7 +251,7 @@ class ImplicitSolvationModel(BaseModelMethod):
             )
 
 
-class EmpiricalDispersionModel(BaseModelMethod):
+class EmpiricalDispersionModel(HamiltonianTerm):
     """Empirical dispersion correction used together with an ab-initio method.
 
     Covers pairwise-additive (D2/D3/D3(BJ)/D4), density-dependent (TS/TS-SCS),
@@ -245,12 +261,12 @@ class EmpiricalDispersionModel(BaseModelMethod):
 
     References
     ----------
-    • S. Grimme, J. Comp. Chem. 27, 1787 (2006) - DFT-D2
+    • S. Grimme, J. Comput. Chem. 27, 1787 (2006) - DFT-D2
     • S. Grimme et al., J. Chem. Phys. 132, 154104 (2010) - DFT-D3
-    • S. Grimme et al., J. Chem. Phys. 136, 154105 (2012) - DFT-D3(BJ)
+    • S. Grimme, S. Ehrlich, L. Goerigk, J. Comput. Chem. 32, 1456 (2011) - DFT-D3(BJ)
     • A. Tkatchenko, M. Scheffler, Phys. Rev. Lett. 102, 073005 (2009) - TS
     • A. Tkatchenko et al., Phys. Rev. Lett. 108, 236402 (2012) - MBD
-    • C. Steinmann, WIREs Comput. Mol. Sci. 10, e1438 (2020) - overview
+    • S. Grimme, A. Hansen, J. G. Brandenburg, C. Bannwarth, Chem. Rev. 116, 5105 (2016) - overview
     """
 
     model = Quantity(
@@ -287,7 +303,7 @@ class EmpiricalDispersionModel(BaseModelMethod):
     )
 
 
-class SelfInteractionCorrection(BaseModelMethod):
+class SelfInteractionCorrection(HamiltonianTerm):
     """Self-interaction correction (SIC) add-on used together with DFT.
 
     This section replaces the legacy flat
@@ -386,6 +402,196 @@ class SelfInteractionCorrection(BaseModelMethod):
             )
 
 
+class HubbardInteractions(HamiltonianTerm):
+    """
+    Hubbard interaction correction to the total Hamiltonian (e.g. the +U term of DFT+U),
+    defined by on-site interaction parameters acting on the orbitals referenced in
+    `orbitals_ref`. As a Hamiltonian correction term, this section is stored under
+    `ModelMethod.contributions`.
+    """
+
+    # TODO (@JosePizarro3 note): we need to have checks for when a `ModelSystem` is spin rotational invariant (then we only need to pass `u_interaction` and `j_hunds_coupling` and resolve the other quantities)
+
+    # Extend the inherited `name` definition with a term-level default; the composite
+    # method name (e.g. 'DFT+U') is carried by the containing `ModelMethod`.
+    name = BaseModelMethod.name.m_copy()
+    name.default = 'Hubbard'
+
+    n_orbitals = Quantity(
+        type=np.int32,
+        description="""
+        Number of orbitals used to define the Hubbard interactions.
+        """,
+    )
+
+    orbitals_ref = Quantity(
+        type=ElectronicState,
+        shape=['n_orbitals'],
+        description="""
+        References to the `ElectronicState` sections that define the orbitals involved in
+        Hubbard interactions. The ordering matches the rows/columns of `u_matrix`.
+        Each reference can be a simple orbital (SphericalSymmetryState) or a more complex
+        multi-orbital state, depending on the level of decomposition needed.
+        """,
+    )
+
+    u_matrix = Quantity(
+        type=np.float64,
+        shape=['n_orbitals', 'n_orbitals'],
+        unit='joule',
+        description="""
+        Value of the local Hubbard interaction matrix.
+        The order of the rows and columns coincide with the elements in `orbitals_ref`.
+        """,
+    )
+
+    u_interaction = Quantity(
+        type=positive_float(),
+        unit='joule',
+        description="""
+        Value of the (intra-orbital) Hubbard interaction
+        """,
+    )
+
+    j_hunds_coupling = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the (interorbital) Hund's coupling.
+        """,
+    )
+
+    u_interorbital_interaction = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the (interorbital) Coulomb interaction. In rotational invariant systems,
+        u_interorbital_interaction = u_interaction - 2 * j_hunds_coupling.
+        """,
+    )
+
+    j_local_exchange_interaction = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the exchange interaction. In rotational invariant systems, j_local_exchange_interaction = j_hunds_coupling.
+        """,
+    )
+
+    u_effective = Quantity(
+        type=np.float64,
+        unit='joule',
+        description="""
+        Value of the effective U parameter (u_interaction - j_local_exchange_interaction).
+        """,
+    )
+
+    slater_integrals = Quantity(
+        type=np.float64,
+        shape=[3],
+        unit='joule',
+        description="""
+        Value of the Slater integrals [F0, F2, F4] in spherical harmonics used to derive
+        the local Hubbard interactions:
+
+            u_interaction = ((2.0 / 7.0) ** 2) * (F0 + 5.0 * F2 + 9.0 * F4) / (4.0*np.pi)
+
+            u_interorbital_interaction = ((2.0 / 7.0) ** 2) * (F0 - 5.0 * F2 + 3.0 * 0.5 * F4) / (4.0*np.pi)
+
+            j_hunds_coupling = ((2.0 / 7.0) ** 2) * (5.0 * F2 + 15.0 * 0.25 * F4) / (4.0*np.pi)
+
+        See e.g., Elbio Dagotto, Nanoscale Phase Separation and Colossal Magnetoresistance,
+        Chapter 4, Springer Berlin (2003).
+        """,
+    )
+
+    double_counting_correction = Quantity(
+        type=str,
+        description="""
+        Name of the double counting correction algorithm applied.
+        """,
+    )
+
+    @log
+    def resolve_u_interactions(self) -> tuple | None:
+        """
+        Resolves the Hubbard interactions (u_interaction, u_interorbital_interaction, j_hunds_coupling)
+        from the Slater integrals (F0, F2, F4) in the units defined for the Quantity.
+
+        Args:
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            (Optional[tuple]): The Hubbard interactions (u_interaction, u_interorbital_interaction, j_hunds_coupling).
+        """
+        logger = self.resolve_u_interactions.__annotations__['logger']
+        if self.slater_integrals is None or len(self.slater_integrals) != 3:
+            logger.warning(
+                'Could not find `slater_integrals` or the length is not three.'
+            )  # TODO: move shape-check to schema
+            return None, None, None
+        f0 = self.slater_integrals[0]
+        f2 = self.slater_integrals[1]
+        f4 = self.slater_integrals[2]
+        u_interaction = ((2.0 / 7.0) ** 2) * (f0 + 5.0 * f2 + 9.0 * f4) / (4.0 * np.pi)
+        u_interorbital_interaction = (
+            ((2.0 / 7.0) ** 2) * (f0 - 5.0 * f2 + 3.0 * f4 / 2.0) / (4.0 * np.pi)
+        )
+        j_hunds_coupling = (
+            ((2.0 / 7.0) ** 2) * (5.0 * f2 + 15.0 * f4 / 4.0) / (4.0 * np.pi)
+        )
+        return u_interaction, u_interorbital_interaction, j_hunds_coupling
+
+    @log
+    def resolve_u_effective(self) -> pint.Quantity | None:
+        """
+        Resolves the effective U parameter (u_interaction - j_local_exchange_interaction).
+
+        Args:
+            logger (BoundLogger): The logger to log messages.
+
+        Returns:
+            (Optional[pint.Quantity]): The effective U parameter.
+        """
+        logger = self.resolve_u_effective.__annotations__['logger']
+        if self.u_interaction is None:
+            logger.warning('Could not find `HubbardInteractions.u_interaction`.')
+            return None
+
+        if self.j_local_exchange_interaction is None:
+            self.j_local_exchange_interaction = 0.0 * ureg.eV
+
+        return self.u_interaction - self.j_local_exchange_interaction
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+
+        # Obtain (u, up, j_hunds_coupling) from slater_integrals
+        if (
+            self.u_interaction is None
+            and self.u_interorbital_interaction is None
+            and self.j_hunds_coupling is None
+        ):
+            (
+                self.u_interaction,
+                self.u_interorbital_interaction,
+                self.j_hunds_coupling,
+            ) = self.resolve_u_interactions(logger=logger)
+
+        # If u_effective is not available, calculate it
+        if self.u_effective is None:
+            self.u_effective = self.resolve_u_effective(logger=logger)
+
+        # Check if length of `orbitals_ref` is the same as the length of `u_matrix`:
+        if self.u_matrix is not None and self.orbitals_ref is not None:
+            if len(self.u_matrix) != len(
+                self.orbitals_ref
+            ):  # TODO: move shape-check to schema
+                logger.error(
+                    'The length of `HubbardInteractions.u_matrix` does not coincide with length of `HubbardInteractions.orbitals_ref`.'
+                )
+
+
 class RelativityModel(BaseModelMethod):
     """
     Relativistic treatment of the valence Hamiltonian.
@@ -407,8 +613,8 @@ class RelativityModel(BaseModelMethod):
         ),
         default='non-relativistic',
         description="""
-        Non-relativistic (Schrödinger), scalar (spin-free),
-        two-component (spin-orbit couple removed variationally, e.g. X2C),
+        Non-relativistic (Schrödinger), scalar (spin-free, spin-orbit coupling omitted),
+        two-component (spin-orbit coupling included variationally, e.g. X2C),
         or four-component Dirac treatment.
         """,
     )
@@ -445,7 +651,7 @@ class RelativityModel(BaseModelMethod):
     )
 
 
-class NonlocalCorrelation(BaseModelMethod):
+class NonlocalCorrelation(HamiltonianTerm):
     """Nonlocal correlation term used in DFT to capture dispersion-like interactions.
 
     This section represents kernel-based nonlocal correlation models that are
@@ -526,7 +732,12 @@ class OrbitalLocalization(ModelMethod):
 class ModelMethodElectronic(ModelMethod):
     """
     A base section used to define the parameters of a model Hamiltonian used in electronic structure
-    calculations (TB, DFT, GW, BSE, DMFT, etc).
+    calculations (TB, DFT, GW, BSE, DMFT, etc). Writing the Hamiltonian as
+    $H = H_{0} + \\sum_{i} H_{i}$, the additive terms $H_{i}$ (dispersion corrections,
+    solvation models, Hubbard interactions, ...) are stored under `contributions` as
+    `HamiltonianTerm`s. Modifications that reshape $H_{0}$ itself rather than adding a
+    separable term get their own typed subsections instead; the relativistic treatment
+    (`relativity`) is the current example.
     """
 
     is_spin_polarized = Quantity(
@@ -534,6 +745,15 @@ class ModelMethodElectronic(ModelMethod):
         description="""
         If the simulation is done considering the spin degrees of freedom (then there are two spin
         channels, 'down' and 'up') or not.
+        """,
+    )
+
+    relativity = SubSection(
+        sub_section=RelativityModel.m_def,
+        description="""
+        Relativistic treatment applied to the electronic Hamiltonian (ZORA, X2C, DKH, ...).
+        Not a `HamiltonianTerm`: it transforms the Hamiltonian rather than adding a
+        separable term to it.
         """,
     )
 
@@ -597,9 +817,9 @@ class XCComponent(ArchiveSection):
         Functional form of the range-separation kernel used to partition the Coulomb operator.
 
         Common choices:
-        • erf     — error function (used in LC-ωPBE, CAM-B3LYP)
-        • erfc    — complementary error function (equivalent to erf split)
-        • Yukawa  — exponential screening, e.g. HSE-style
+        • erf     — error function (long-range split, e.g. LC-ωPBE, CAM-B3LYP)
+        • erfc    — complementary error function (short-range split; e.g. the screened exchange in HSE03/HSE06)
+        • Yukawa  — exponential (Yukawa) screening, e.g. Yukawa-range-separated hybrids
         • exp     — simple exponential decay
         • Gaussian — Gaussian screening form
         • Slater  — Slater-type exponential
@@ -750,6 +970,8 @@ class XCFunctional(ArchiveSection):
 class DFT(ModelMethodElectronic):
     """
     A base section used to define the parameters used in a density functional theory (DFT) calculation.
+    DFT-specific Hamiltonian terms (e.g. `SelfInteractionCorrection`,
+    `NonlocalCorrelation`) are stored under `contributions`.
     """
 
     # TODO : improve and rename this classification
@@ -762,7 +984,6 @@ class DFT(ModelMethodElectronic):
         See:
             - https://doi.org/10.1063/1.1390175 (original paper)
             - https://doi.org/10.1103/PhysRevLett.91.146401 (meta-GGA)
-            - https://doi.org/10.1063/1.1904565 (hyper-GGA)
         """,
     )
 
@@ -2091,7 +2312,7 @@ class LocalCorrelation(ArchiveSection):
     Representative references
     -------------------------
     - M. Schütz, J. Chem. Phys. 113, 9986 (2000).
-    - E. Riplinger and F. Neese, J. Chem. Phys. 138, 034106 (2013).
+    - C. Riplinger and F. Neese, J. Chem. Phys. 138, 034106 (2013).
     """
 
     type = Quantity(
@@ -2290,7 +2511,7 @@ class ActiveSpace(ArchiveSection):
     Captures just the counts and labeling needed to identify the orbital/electron
     subspace used by CASSCF/CASPT2-style calculations.
 
-    - CAS: complete active space (Roos et al., Chem. Phys. Lett. 48, 157, 1980)
+    - CAS: complete active space (Roos et al., Chem. Phys. 48, 157, 1980)
     - RAS: restricted active space (Olsen et al., J. Chem. Phys. 89, 2185, 1988)
 
     CAS vs RAS
@@ -2413,7 +2634,7 @@ class ActiveSpace(ArchiveSection):
                     )
 
 
-class BaseMultireferenceMethod(ModelMethod):
+class BaseMultireferenceMethod(ModelMethodElectronic):
     """
     Shared multireference parameters (active space, state-averaging, symmetry).
     """

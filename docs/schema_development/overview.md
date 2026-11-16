@@ -7,6 +7,7 @@ Use this section for pages whose primary purpose is implementation: defining new
 ## Technical Development Pages
 
 - [Populating `Simulation` and `Program`](simulation_entry_population.md): parser-side population pattern for the top-level simulation entry.
+- [Property `value` and `Variables`](value_and_variables.md): what belongs in a `PhysicalProperty`'s `value` versus its independent `Variables` axes.
 - [ModelMethod vs NumericalSettings](model_method_vs_numerical_settings.md): deciding whether method-related information belongs in `ModelMethod` or `NumericalSettings`.
 - [Bounded Data Types](data_types.md): defining bounded quantities and using bounded data types in schema extensions.
 - [Normalization](normalize.md): implementing and reasoning about `normalize()` behavior in custom sections.

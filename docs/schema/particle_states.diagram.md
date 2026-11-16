@@ -23,14 +23,11 @@ classDiagram
     }
     class ElectronicState {
     }
-    class HubbardInteractions {
-    }
     class ParticleState {
     }
     ParticleState <|-- AtomsState
     ParticleState <|-- CGBeadState
     AtomsState *-- ElectronicState
-    HubbardInteractions *-- ElectronicState : orbitals_ref
 ```
 
 <p class="uml-legend__title">Legend</p>

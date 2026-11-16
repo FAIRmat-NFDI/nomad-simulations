@@ -72,7 +72,7 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `TotalEnergy` | The total energy of a system. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.energies.TotalEnergy){:target="_blank"} |
+| `TotalEnergy` | The converged total energy of one system configuration. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.properties.energies.TotalEnergy){:target="_blank"} |
 
 *This section has no direct quantities.*
 

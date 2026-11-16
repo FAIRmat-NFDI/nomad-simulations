@@ -8,7 +8,7 @@ import spglib
 from ase.dft.kpoints import get_monkhorst_pack_size_and_offset, monkhorst_pack
 from nomad.config import config
 from nomad.datamodel.data import ArchiveSection
-from nomad.metainfo import JSON, MEnum, Quantity, SectionProxy, SubSection
+from nomad.metainfo import JSON, MEnum, Quantity, Section, SectionProxy, SubSection
 from nomad.units import ureg
 from seekpath.hpkot import SymmetryDetectionError
 
@@ -54,12 +54,59 @@ class Smearing(NumericalSettings):
     either simulate temperature effects or improve SCF convergence.
     """
 
-    name = Quantity(
-        type=MEnum('Fermi-Dirac', 'Gaussian', 'Methfessel-Paxton'),
+    kind = Quantity(
+        type=MEnum(
+            'Fermi-Dirac',
+            'Gaussian',
+            'Methfessel-Paxton',
+            'Methfessel-Paxton 1',
+            'Methfessel-Paxton 2',
+            'Marzari-Vanderbilt',
+            'Square-wave',
+            'Tetrahedra',
+            'Tetrahedra linear',
+            'Tetrahedra Bloechl',
+            'Tetrahedra optimized',
+        ),
         description="""
-        Smearing routine employed.
+        Routine used to assign occupation numbers around the Fermi level.
+
+        | Kind                     | Description                                                   |
+        | ------------------------ | ------------------------------------------------------------- |
+        | `'Fermi-Dirac'`          | Fermi-Dirac distribution at the temperature set by `width`.   |
+        | `'Gaussian'`             | Gaussian broadening of the occupations.                       |
+        | `'Methfessel-Paxton'`    | Methfessel-Paxton broadening of unreported order.             |
+        | `'Methfessel-Paxton 1'`  | Methfessel-Paxton broadening, first-order Hermite expansion.  |
+        | `'Methfessel-Paxton 2'`  | Methfessel-Paxton broadening, second-order Hermite expansion. |
+        | `'Marzari-Vanderbilt'`   | Marzari-Vanderbilt cold smearing.                             |
+        | `'Square-wave'`          | Square-wave (box) impulse broadening.                         |
+        | `'Tetrahedra'`           | Tetrahedron integration of unreported variant, no broadening. |
+        | `'Tetrahedra linear'`    | Linear tetrahedron integration, no broadening.                |
+        | `'Tetrahedra Bloechl'`   | Linear tetrahedron integration with Blöchl corrections.       |
+        | `'Tetrahedra optimized'` | Optimized tetrahedron integration (Kawamura et al.).          |
         """,
     )
+    width = Quantity(
+        type=float,
+        unit='joule',
+        description="""
+        Width of the smearing distribution. Not applicable when `kind` is one of the
+        `'Tetrahedra'` kinds, which have no broadening; the normalizer warns if both are set.
+        """,
+    )
+
+    def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
+        super().normalize(archive, logger)
+        if (
+            self.kind is not None
+            and self.kind.startswith('Tetrahedra')
+            and self.width is not None
+        ):
+            logger.warning(
+                '`Smearing.width` is set to %s, but `kind` %s has no broadening.',
+                self.width,
+                self.kind,
+            )
 
 
 class Mesh(ArchiveSection):
@@ -126,7 +173,7 @@ class Mesh(ArchiveSection):
     )  # ? @JosePizzaro3: should the mesh also contain its boundary information
 
     points = Quantity(
-        type=np.complex128,
+        type=np.float64,
         shape=['n_points', 'dimensionality'],
         description="""
         List of all the points in the mesh.
@@ -249,6 +296,80 @@ class KSpaceFunctionalities:
             for label, coords in seekpath_result['point_coords'].items()
         }
 
+    @staticmethod
+    def resolve_special_points_and_path(
+        structure: tuple,
+        logger: 'BoundLogger',
+        eps: float | None = None,
+    ) -> dict | None:
+        """
+        Resolves the high symmetry points and the standard band path for a structure
+        using SeeKpath (HPKOT recipe). The points are expressed in the input cell's
+        reciprocal basis (see `_to_input_reciprocal_basis`), and the path is returned
+        as contiguous label sequences, obtained by chaining SeeKpath's `(start, end)`
+        pairs until a discontinuity occurs. Labels are SeeKpath's native HPKOT ones.
+
+        Args:
+            structure (tuple): The `(cell, scaled_positions, numbers)` tuple in the
+                format SeeKpath and spglib consume.
+            logger (BoundLogger): The logger to log messages.
+            eps (float | None, optional): Symmetry precision (spglib `symprec`) passed
+                to SeeKpath/spglib. Defaults to `configuration.symmetry_tolerance`.
+
+        Returns:
+            (dict | None): `{'points': {label: coords}, 'path': [[label, ...], ...],
+            'bravais_lattice': str}`, or `None` if SeeKpath cannot resolve the structure.
+        """
+        if eps is None:
+            eps = configuration.symmetry_tolerance
+        try:
+            # symprec corresponds to spglib's symmetry precision tolerance
+            seekpath_result = seekpath.get_path(
+                structure,
+                with_time_reversal=True,
+                recipe='hpkot',  # Standard HPKOT recipe
+                symprec=eps,
+                angle_tolerance=-1.0,  # Auto-determine from symprec
+            )
+
+            if not seekpath_result['point_coords']:
+                logger.warning('SeeKpath returned empty special points dictionary.')
+                return None
+
+            # Express the points in units of `reciprocal_lattice_vectors`, as the
+            # `high_symmetry_points` quantity description defines them.
+            points = KSpaceFunctionalities._to_input_reciprocal_basis(
+                seekpath_result, structure, eps
+            )
+        except (
+            SymmetryDetectionError,
+            ValueError,
+            RuntimeError,
+            KeyError,
+            AttributeError,
+            TypeError,
+        ) as e:
+            # Recoverable: skip high-symmetry points rather than crash
+            # normalization. `SymmetryDetectionError` is raised by
+            # `seekpath.get_path` when spglib cannot detect the symmetry;
+            # AttributeError/TypeError guard against
+            # `spglib.get_symmetry_dataset` returning `None` in
+            # `_to_input_reciprocal_basis`.
+            logger.warning('Could not resolve k-points with SeeKpath: %s', e)
+            return None
+
+        path: list[list[str]] = []
+        for start, end in seekpath_result['path']:
+            if path and path[-1][-1] == start:
+                path[-1].append(end)
+            else:
+                path.append([start, end])
+        return {
+            'points': points,
+            'path': path,
+            'bravais_lattice': seekpath_result.get('bravais_lattice', ''),
+        }
+
     def resolve_high_symmetry_points(
         self,
         model_systems: list[ModelSystem],
@@ -320,54 +441,19 @@ class KSpaceFunctionalities:
 
             # Use SeeKpath for k-point generation - it uses spglib internally
             # and provides crystallographic standard k-point paths
-            try:
-                # Get k-point path from SeeKpath
-                # symprec corresponds to spglib's symmetry precision tolerance
-                seekpath_result = seekpath.get_path(
-                    structure,
-                    with_time_reversal=True,
-                    recipe='hpkot',  # Standard HPKOT recipe
-                    symprec=eps,
-                    angle_tolerance=-1.0,  # Auto-determine from symprec
-                )
-
-                if not seekpath_result['point_coords']:
-                    logger.warning('SeeKpath returned empty special points dictionary.')
-                    return None
-
-                # Express the points in units of `reciprocal_lattice_vectors`, as the
-                # `high_symmetry_points` quantity description defines them.
-                special_points = self._to_input_reciprocal_basis(
-                    seekpath_result, structure, eps
-                )
-
-                # Log informational message if SeeKpath's classification differs from stored
-                if bravais_lattice:
-                    seekpath_lattice = seekpath_result.get('bravais_lattice', '')
-                    if bravais_lattice != seekpath_lattice:
-                        logger.info(
-                            'Stored Bravais lattice %s differs from SeeKpath classification %s. '
-                            'Using SeeKpath k-points based on full structure analysis.',
-                            bravais_lattice,
-                            seekpath_lattice,
-                        )
-
-            except (
-                SymmetryDetectionError,
-                ValueError,
-                RuntimeError,
-                KeyError,
-                AttributeError,
-                TypeError,
-            ) as e:
-                # Recoverable: skip high-symmetry points rather than crash
-                # normalization. `SymmetryDetectionError` is raised by
-                # `seekpath.get_path` when spglib cannot detect the symmetry;
-                # AttributeError/TypeError guard against
-                # `spglib.get_symmetry_dataset` returning `None` in
-                # `_to_input_reciprocal_basis`.
-                logger.warning('Could not resolve k-points with SeeKpath: %s', e)
+            resolved = self.resolve_special_points_and_path(structure, logger, eps=eps)
+            if resolved is None:
                 return None
+            special_points = resolved['points']
+
+            # Log informational message if SeeKpath's classification differs from stored
+            if bravais_lattice and bravais_lattice != resolved['bravais_lattice']:
+                logger.info(
+                    'Stored Bravais lattice %s differs from SeeKpath classification %s. '
+                    'Using SeeKpath k-points based on full structure analysis.',
+                    bravais_lattice,
+                    resolved['bravais_lattice'],
+                )
 
             break  # only cover the first representative `ModelSystem`
 
@@ -745,7 +831,7 @@ class KLinePath(ArchiveSection):
         self,
         reciprocal_lattice_vectors: pint.Quantity | None,
         logger: 'BoundLogger',
-    ) -> list[pint.Quantity] | None:
+    ) -> list[float] | None:
         """
         Get the high symmetry path points norms from the list of dictionaries of vectors in units of the `reciprocal_lattice_vectors`.
         The norms are accummulated, such that the first high symmetry point in the path list has a norm of 0, while the others sum the
@@ -757,7 +843,7 @@ class KLinePath(ArchiveSection):
             logger (BoundLogger): The logger to log messages.
 
         Returns:
-            (list[pint.Quantity] | None): The high symmetry points norms list, e.g. in a cubic lattice:
+            (list[float] | None): The high symmetry points norms list, e.g. in a cubic lattice:
                 `high_symmetry_path_value_norms = [0, 0.5, 0.5 + 1 / np.sqrt(2), 1 + 1 / np.sqrt(2)]`
         """
         # Checking the high symmetry path quantities
@@ -768,11 +854,9 @@ class KLinePath(ArchiveSection):
             return None
         rlv = reciprocal_lattice_vectors.magnitude
 
-        def calc_norms(
-            value_rlv: np.ndarray, prev_value_rlv: np.ndarray
-        ) -> pint.Quantity:
+        def calc_norms(value_rlv: np.ndarray, prev_value_rlv: np.ndarray) -> float:
             value_tot_rlv = value_rlv - prev_value_rlv
-            return np.linalg.norm(value_tot_rlv) * reciprocal_lattice_vectors.u
+            return float(np.linalg.norm(value_tot_rlv))
 
         # Compute `rlv` projections
         rlv_projections = list(
@@ -785,11 +869,12 @@ class KLinePath(ArchiveSection):
         # Skip the first element in the second iterator
         next(rlv_projections_2, None)
 
-        # Calculate the norms using accumulate
+        # Calculate the norms using accumulate. The values are magnitudes in units of the
+        # `reciprocal_lattice_vectors`, matching the unitless `points`/`high_symmetry_path_values`.
         norms = accumulate(
             zip(rlv_projections_2, rlv_projections_1),
             lambda acc, value_pair: calc_norms(value_pair[0], value_pair[1]) + acc,
-            initial=0.0 * reciprocal_lattice_vectors.u,
+            initial=0.0,
         )
         return list(norms)
 
@@ -836,7 +921,7 @@ class KLinePath(ArchiveSection):
             return None
         closest_indices = list(
             map(
-                lambda norm: (np.abs(points_norm - norm.magnitude)).argmin(),
+                lambda norm: int((np.abs(points_norm - norm)).argmin()),
                 high_symmetry_path_value_norms,
             )
         )
@@ -1002,14 +1087,26 @@ class KSpace(NumericalSettings):
 
 class SelfConsistency(NumericalSettings):
     """
-    A base section used to define the convergence settings of self-consistent field (SCF) calculation.
-    It determines the conditions for `is_scf_converged` in `SCFOutputs` (see outputs.py). The convergence
-    criteria covered are:
+    Deprecated. The self-consistent field (SCF) convergence concept has been split across the
+    workflow schema: per-iteration measured data lives in `SCFSteps` (see outputs.py); the
+    per-property convergence thresholds (`threshold_change`) are carried by
+    `WorkflowConvergenceTarget` and its subclasses, whose evaluation is reported as
+    `SimulationWorkflowResults.is_converged` (see workflow/general.py); and the SCF-loop input
+    settings (`n_max_iterations`, `scf_minimization_algorithm`) live on `SinglePointMethod`
+    (see workflow/single_point.py). See https://github.com/FAIRmat-NFDI/nomad-simulations/issues/488.
+
+    Historically a base section used to define the convergence settings of an SCF calculation,
+    determining the conditions for reaching convergence:
 
         1. The number of iterations is smaller than or equal to `n_max_iterations`.
         2. The total change between two subsequent self-consistent iterations for an output property is below
         `threshold_change`.
     """
+
+    m_def = Section(
+        deprecated='Split across `SCFSteps`, `WorkflowConvergenceTarget`, and `SinglePointMethod`. '
+        'See https://github.com/FAIRmat-NFDI/nomad-simulations/issues/488.'
+    )
 
     # TODO add examples or MEnum?
     scf_minimization_algorithm = Quantity(
@@ -1022,8 +1119,8 @@ class SelfConsistency(NumericalSettings):
     n_max_iterations = Quantity(
         type=np.int32,
         description="""
-        Specifies the maximum number of allowed self-consistent iterations. The simulation `is_scf_converged`
-        if the number of iterations is not larger or equal than this quantity.
+        Specifies the maximum number of allowed self-consistent iterations. Convergence is not
+        reached once the number of iterations exceeds this quantity.
         """,
     )
 
@@ -1032,8 +1129,8 @@ class SelfConsistency(NumericalSettings):
         flexible_unit=True,
         description="""
         Specifies the threshold for the change between two subsequent self-consistent iterations on
-        a given output property. The simulation `is_scf_converged` if this total change is below
-        this threshold. Supports flexible units (e.g., energy in eV/joule, density as dimensionless).
+        a given output property. Convergence is reached once this total change is below this
+        threshold. Supports flexible units (e.g., energy in eV/joule, density as dimensionless).
         """,
     )
 
@@ -1550,9 +1647,11 @@ class IntegralDecomposition(ArchiveSection):
       - F. Weigend, M. Häser, The RI-MP2 method: Algorithmic
         implementation of efficient, approximate MP2 theories,
         Theor. Chem. Acc. 97, 331-340 (1997).
-      - S. Hättig, F. Weigend, J. Chem. Phys. 113, 5154 (2000). (RI-J)
+      - K. Eichkorn, O. Treutler, H. Öhm, M. Häser, R. Ahlrichs,
+        Chem. Phys. Lett. 240, 283 (1995). (RI-J)
+      - C. Hättig, F. Weigend, J. Chem. Phys. 113, 5154 (2000). (RI-CC2)
       - Neese et al., "Chain-of-spheres algorithms for HF exchange,"
-        Chem. Phys. 356 (2008), 98-109.
+        Chem. Phys. 356 (2009), 98-109.
     """
 
     approximation_type = Quantity(

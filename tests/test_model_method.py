@@ -1,5 +1,7 @@
+import numpy as np
 import pytest
 from nomad.datamodel import EntryArchive
+from nomad.units import ureg
 
 from nomad_simulations.schema_packages.atoms_state import (
     AtomsState,
@@ -14,9 +16,12 @@ from nomad_simulations.schema_packages.model_method import (
     ActiveSpace,
     BrokenSymmetryCenter,
     EmpiricalDispersionModel,
+    HamiltonianTerm,
+    HubbardInteractions,
     ImplicitSolvationModel,
     LocalCorrelation,
     LocalCorrelationSpace,
+    ModelMethod,
     MultireferenceSCF,
     NonlocalCorrelation,
     PerturbationMethod,
@@ -1028,9 +1033,7 @@ class TestBSDFT:
         assert any(entry['event'] == expected_event for entry in log_output.entries)
 
 
-def test_dft_contributions_solvation_dispersion_relativity_normalize():
-    dft = DFT()
-
+def _dft_hamiltonian_terms():
     ism = ImplicitSolvationModel(
         model='PCM',
         solvent='water',
@@ -1057,44 +1060,40 @@ def test_dft_contributions_solvation_dispersion_relativity_normalize():
             ElectronicState(name='orbital_2'),
         ],
     )
+    return ism, edm, rel, sic
 
-    dft.m_add_sub_section(type(dft).contributions, ism)
-    dft.m_add_sub_section(type(dft).contributions, edm)
-    dft.m_add_sub_section(type(dft).contributions, rel)
-    dft.m_add_sub_section(type(dft).contributions, sic)
 
-    for c in dft.contributions:
-        c.normalize(EntryArchive(), logger=logger)
+def test_dft_contributions_and_relativity_normalize():
+    ism, edm, rel, sic = _dft_hamiltonian_terms()
+    dft = DFT(contributions=[ism, edm, sic], relativity=rel)
 
-    assert len(dft.contributions) == 4
-    assert isinstance(dft.contributions[0], ImplicitSolvationModel)
-    assert isinstance(dft.contributions[1], EmpiricalDispersionModel)
-    assert isinstance(dft.contributions[2], RelativityModel)
-    assert isinstance(dft.contributions[3], SelfInteractionCorrection)
+    for term in (ism, edm, rel, sic):
+        term.normalize(EntryArchive(), logger=logger)
+
+    assert len(dft.contributions) == 3
+    assert all(isinstance(c, HamiltonianTerm) for c in dft.contributions)
 
     # Solvation
-    assert (
-        pytest.approx(dft.contributions[0].dielectric_constant_optical, rel=1e-12)
-        == 1.33**2
-    )
-    assert dft.contributions[0].dielectric_constant == 78.4
-    assert dft.contributions[0].solvent == 'water'
+    assert pytest.approx(ism.dielectric_constant_optical, rel=1e-12) == 1.33**2
+    assert ism.dielectric_constant == 78.4
+    assert ism.solvent == 'water'
 
     # Dispersion (method identity only in model_method.py tests)
-    assert dft.contributions[1].model == 'D3BJ'
-    assert dft.contributions[1].damping_function == 'BJ'
+    assert edm.model == 'D3BJ'
+    assert edm.damping_function == 'BJ'
 
-    # Relativity
-    assert dft.contributions[2].level == 'two-component'
-    assert dft.contributions[2].approximation == 'X2C'
-    assert dft.contributions[2].dkh_order is None
+    # Relativity (typed subsection, not a `HamiltonianTerm`)
+    assert dft.relativity is rel
+    assert dft.relativity.level == 'two-component'
+    assert dft.relativity.approximation == 'X2C'
+    assert dft.relativity.dkh_order is None
 
     # Self-interaction correction
-    assert dft.contributions[3].name == 'SIC'
-    assert dft.contributions[3].method == 'EXPLICIT_ORBITALS'
-    assert dft.contributions[3].correction_target == 'selected_orbitals'
-    assert dft.contributions[3].scaling_factor == pytest.approx(0.5)
-    assert dft.contributions[3].n_corrected_orbitals == 2
+    assert sic.name == 'SIC'
+    assert sic.method == 'EXPLICIT_ORBITALS'
+    assert sic.correction_target == 'selected_orbitals'
+    assert sic.scaling_factor == pytest.approx(0.5)
+    assert sic.n_corrected_orbitals == 2
 
 
 @pytest.mark.parametrize(
@@ -1151,6 +1150,32 @@ def test_dft_sets_nonlocal_correlation_xc_partner_ref_when_missing():
     dft.normalize(EntryArchive(), logger=logger)
 
     assert nonlocal_corr.xc_partner_ref is dft.xc
+
+
+@pytest.mark.parametrize(
+    'term_factory',
+    [
+        lambda: ImplicitSolvationModel(model='PCM', dielectric_constant=78.4),
+        lambda: EmpiricalDispersionModel(model='D3BJ'),
+        HubbardInteractions,
+        lambda: SelfInteractionCorrection(method='AD'),
+        lambda: NonlocalCorrelation(type='VV10'),
+        lambda: HamiltonianTerm(name='kinetic'),
+    ],
+)
+def test_contributions_accept_hamiltonian_terms(term_factory):
+    """
+    All additive term classes (and the generic `HamiltonianTerm` itself) are valid
+    `contributions` entries and survive normalization in place.
+    """
+    term = term_factory()
+    method = ModelMethod(contributions=[term])
+
+    method.normalize(EntryArchive(), logger=logger)
+
+    assert len(method.contributions) == 1
+    assert method.contributions[0] is term
+    assert isinstance(method.contributions[0], HamiltonianTerm)
 
 
 _COMMON_XC_CASES = [
@@ -1439,3 +1464,129 @@ def test_dft_marks_unresolvable_component_unidentified(component_kwargs):
     assert comp.unidentified is True
     assert comp.family is None and comp.kind is None
     assert dft.jacobs_ladder == 'unavailable'
+
+
+class TestHubbardInteractions:
+    """
+    Test the `HubbardInteractions` class defined in model_method.py.
+    """
+
+    @pytest.mark.parametrize(
+        'slater_integrals, results',
+        [
+            ([3.0, 2.0, 1.0], (0.1429146, -0.0357286, 0.0893216)),
+            (None, (None, None, None)),
+            ([3.0, 2.0, 1.0, 0.5], (None, None, None)),
+        ],
+    )
+    def test_u_interactions(
+        self,
+        slater_integrals: list[float] | None,
+        results: tuple[float | None, float | None, float | None],
+    ):
+        """
+        Test the Hubbard interactions `U`, `U'`, and `J` for a given set of Slater integrals.
+
+        Args:
+            slater_integrals (Optional[list[float]]): The Slater integrals of the Hubbard interactions.
+            results (tuple[Optional[float], Optional[float], Optional[float]]): The expected results of the Hubbard interactions.
+        """
+        # Adding `slater_integrals` to the `HubbardInteractions` section
+        hubbard_interactions = HubbardInteractions()
+        if slater_integrals is not None:
+            hubbard_interactions.slater_integrals = slater_integrals * ureg.eV
+
+        # Resolving U, U', and J from class method
+        (
+            u_interaction,
+            u_interorbital_interaction,
+            j_hunds_coupling,
+        ) = hubbard_interactions.resolve_u_interactions(logger=logger)
+
+        if None not in (u_interaction, u_interorbital_interaction, j_hunds_coupling):
+            assert np.isclose(u_interaction.to('eV').magnitude, results[0])
+            assert np.isclose(u_interorbital_interaction.to('eV').magnitude, results[1])
+            assert np.isclose(j_hunds_coupling.to('eV').magnitude, results[2])
+        else:
+            assert (
+                u_interaction,
+                u_interorbital_interaction,
+                j_hunds_coupling,
+            ) == results
+
+    @pytest.mark.parametrize(
+        'u_interaction, j_local_exchange_interaction, u_effective',
+        [
+            (3.0, 1.0, 2.0),
+            (3.0, None, 3.0),  # Remove negative test case that causes validation error
+            (None, 1.0, None),
+        ],
+    )
+    def test_u_effective(
+        self,
+        u_interaction: float | None,
+        j_local_exchange_interaction: float | None,
+        u_effective: float | None,
+    ):
+        """
+        Test the effective Hubbard interaction `U_eff` for a given set of Hubbard interactions `U` and `J`.
+
+        Args:
+            u_interaction (Optional[float]): The Hubbard interaction `U`.
+            j_local_exchange_interaction (Optional[float]): The Hubbard interaction `J`.
+            u_effective (Optional[float]): The expected effective Hubbard interaction `U_eff`.
+        """
+        # Adding `u_interaction` and `j_local_exchange_interaction` to the `HubbardInteractions` section
+        hubbard_interactions = HubbardInteractions()
+        if u_interaction is not None:
+            hubbard_interactions.u_interaction = u_interaction * ureg.eV
+        if j_local_exchange_interaction is not None:
+            hubbard_interactions.j_local_exchange_interaction = (
+                j_local_exchange_interaction * ureg.eV
+            )
+
+        # Resolving Ueff from class method
+        resolved_u_effective = hubbard_interactions.resolve_u_effective(logger=logger)
+        if resolved_u_effective is not None:
+            assert np.isclose(resolved_u_effective.to('eV').magnitude, u_effective)
+        else:
+            assert resolved_u_effective == u_effective
+
+    def test_normalize(self):
+        """
+        Test the normalization of the `HubbardInteractions`. Inputs are defined as the quantities of the `HubbardInteractions` section.
+        """
+        # ? Is this enough for testing? Can we do more?
+        hubbard_interactions = HubbardInteractions(
+            u_interaction=3.0 * ureg.eV,
+            u_interorbital_interaction=1.0 * ureg.eV,
+            j_hunds_coupling=2.0 * ureg.eV,
+            j_local_exchange_interaction=2.0 * ureg.eV,
+        )
+        hubbard_interactions.normalize(EntryArchive(), logger)
+        assert hubbard_interactions.name == 'Hubbard'
+        assert np.isclose(hubbard_interactions.u_effective.to('eV').magnitude, 1.0)
+        assert np.isclose(hubbard_interactions.u_interaction.to('eV').magnitude, 3.0)
+
+    def test_hubbard_interactions_containment(self):
+        """
+        Test that `HubbardInteractions` is accepted as a `HamiltonianTerm` under
+        `ModelMethod.contributions` and that `orbitals_ref` holds references to
+        `ElectronicState` sections defined under an `AtomsState`.
+        """
+        atoms_state = AtomsState(chemical_symbol='Ni')
+        orbital = ElectronicState(
+            spin_orbit_state=SphericalSymmetryState(
+                n_quantum_number=3, l_quantum_number=2
+            )
+        )
+        atoms_state.electronic_state = orbital
+
+        hubbard_interactions = HubbardInteractions(
+            n_orbitals=1,
+            orbitals_ref=[orbital],
+        )
+        method = ModelMethod(contributions=[hubbard_interactions])
+
+        assert method.contributions[0] == hubbard_interactions
+        assert method.contributions[0].orbitals_ref[0] == orbital

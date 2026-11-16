@@ -5,6 +5,7 @@
 1. Exactly one representative system per simulation context.
 Do: set `is_representative=True` only on the primary system.
 Do not: mark derived/contextual systems representative by default.
+A parser chooses the representative system by flagging it. If none are flagged, the representative system defaults to the last system; if several are, it is corrected to the last flagged one. Normalization enforces this and logs a warning in case of correction.
 Reference: [Model System](../explanation/model_system/overview.md), [Normalization](normalize.md)
 
 2. Keep vertical and lateral structure separate.
