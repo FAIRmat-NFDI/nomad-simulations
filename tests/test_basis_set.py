@@ -29,7 +29,7 @@ from nomad_simulations.schema_packages.model_system import ModelSystem, Represen
 from tests.conftest import refs_apw
 
 from . import logger
-
+from structlog import get_logger
 
 @pytest.mark.parametrize(
     'ref_cutoff_radius, cutoff_energy',
@@ -384,6 +384,50 @@ def test_determine_apw(
                 pass
     assert bs._determine_apw() == ref_type
 
+@pytest.mark.parametrize(
+    'differential_order, ref_name',
+    [
+        ([], 'APW-like'),
+        ([0], 'APW'),
+        ([1, 0], 'LAPW'),
+        ([2, 0], 'SLAPW'),
+    ],
+)
+def test_apw_orbital_name(
+    differential_order: list[int],
+    ref_name: str,
+) -> None:
+    """Test the naming of APW-like orbitals."""
+    orbital = APWOrbital(
+        differential_order=np.array(differential_order, dtype=np.int32),
+    )
+    archive = EntryArchive()
+    logger = get_logger(__name__)
+    orbital.normalize(archive, logger)
+    assert orbital.name == ref_name
+
+@pytest.mark.parametrize(
+    'differential_order, ref_name',
+    [
+        ([], 'LO'),
+        ([0], 'LO: [0]'),
+        ([0, 1], 'LO: [0, 1]'),
+        ([1, 0], 'LO: [0, 1]'),
+        ([0, 2], 'LO: [0, 2]'),
+    ],
+)
+def test_apw_local_orbital_name(
+    differential_order: list[int],
+    ref_name: str,
+) -> None:
+    """Test the naming of APW local orbitals."""
+    orbital = APWLocalOrbital(
+        differential_order=np.array(differential_order, dtype=np.int32),
+    )
+    archive = EntryArchive()
+    logger = get_logger(__name__)
+    orbital.normalize(archive, logger)
+    assert orbital.name == ref_name
 
 def test_quick_step() -> None:
     """Test the feasibility of describing a QuickStep basis set."""

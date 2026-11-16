@@ -700,7 +700,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
         super().__init__(*args, **kwargs)
 
 
-class APWBaseOrbital(ArchiveSection):
+class APWBaseOrbital(BasisSetComponent,ArchiveSection):
     """
     Abstract base section for (S)(L)APW and local orbital component wavefunctions.
     It helps defining the interface with `APWLChannel`.
@@ -733,11 +733,16 @@ class APWBaseOrbital(ArchiveSection):
     )
 
     energy_status = Quantity(
-        type=MEnum('fixed', 'pre-optimization', 'post-optimization'),
+        type=MEnum('fixed', 'initial', 'optimized'),
         shape=['n_terms'],
         description="""
-        Optimization status of each radial orbital term, corresponding
-        to the energy parameters in the same order.
+        Status of each energy parameter.
+
+        - `fixed`: The energy parameter is not optimized.
+        - `initial`: The energy parameter can be optimized, but the
+        stored value is the initial value before optimization.
+        - `optimized`: The stored energy parameter is the result
+        of optimization.
         """,
     )
 
@@ -813,13 +818,6 @@ class APWBaseOrbital(ArchiveSection):
                     f'`{self.m_def}.{quantity_name}` must be completely non-negative. Resetting to `None`.'
                 )
 
-        # use the differential order as naming convention
-        self.name = (
-            'APW-like'
-            if self.differential_order is None or len(self.differential_order) == 0
-            else f'{sorted(self.differential_order)}'
-        )
-
     @set_not_normalized
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -883,12 +881,7 @@ class APWOrbital(APWBaseOrbital):
                 f'Inconsistent `APWOrbital` type: {self.type}. Setting back to `None`.'
             )
             self.type = None
-
-        self.name = (
-            f'{self.type.upper()}: {self.name}'
-            if self.type and len(self.differential_order) > 0
-            else self.name
-        )
+        self.name = self.type.upper() if self.type else 'APW-like'
 
 
 class APWLocalOrbital(APWBaseOrbital):
