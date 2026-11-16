@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 from nomad.datamodel.datamodel import EntryArchive
 from nomad.units import ureg
+from structlog import get_logger
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.basis_set import (
@@ -29,7 +30,7 @@ from nomad_simulations.schema_packages.model_system import ModelSystem, Represen
 from tests.conftest import refs_apw
 
 from . import logger
-from structlog import get_logger
+
 
 @pytest.mark.parametrize(
     'ref_cutoff_radius, cutoff_energy',
@@ -384,6 +385,7 @@ def test_determine_apw(
                 pass
     assert bs._determine_apw() == ref_type
 
+
 @pytest.mark.parametrize(
     'differential_order, ref_name',
     [
@@ -405,6 +407,7 @@ def test_apw_orbital_name(
     logger = get_logger(__name__)
     orbital.normalize(archive, logger)
     assert orbital.name == ref_name
+
 
 @pytest.mark.parametrize(
     'differential_order, ref_name',
@@ -428,6 +431,7 @@ def test_apw_local_orbital_name(
     logger = get_logger(__name__)
     orbital.normalize(archive, logger)
     assert orbital.name == ref_name
+
 
 @pytest.mark.parametrize(
     'differential_order, ref_order',
@@ -453,7 +457,7 @@ def test_apw_orbital_differential_order(
     else:
         assert orbital.differential_order.tolist() == ref_order
 
-        
+
 def test_quick_step() -> None:
     """Test the feasibility of describing a QuickStep basis set."""
     entry = EntryArchive(

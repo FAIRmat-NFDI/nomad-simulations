@@ -700,7 +700,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
         super().__init__(*args, **kwargs)
 
 
-class APWBaseOrbital(BasisSetComponent,ArchiveSection):
+class APWBaseOrbital(BasisSetComponent, ArchiveSection):
     """
     Abstract base section for (S)(L)APW and local orbital component wavefunctions.
     It helps defining the interface with `APWLChannel`.
