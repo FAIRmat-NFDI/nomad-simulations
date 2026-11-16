@@ -429,6 +429,31 @@ def test_apw_local_orbital_name(
     orbital.normalize(archive, logger)
     assert orbital.name == ref_name
 
+@pytest.mark.parametrize(
+    'differential_order, ref_order',
+    [
+        ([0], [0]),
+        ([0, 1], [0, 1]),
+        ([-1], None),
+        ([0, -1], None),
+    ],
+)
+def test_apw_orbital_differential_order(
+    differential_order: list[int],
+    ref_order: list[int] | None,
+) -> None:
+    """Test validation of APW orbital differential orders."""
+    archive = EntryArchive()
+    orbital = APWOrbital(differential_order=differential_order)
+
+    orbital.normalize(archive, logger)
+
+    if ref_order is None:
+        assert orbital.differential_order is None
+    else:
+        assert orbital.differential_order.tolist() == ref_order
+
+        
 def test_quick_step() -> None:
     """Test the feasibility of describing a QuickStep basis set."""
     entry = EntryArchive(
