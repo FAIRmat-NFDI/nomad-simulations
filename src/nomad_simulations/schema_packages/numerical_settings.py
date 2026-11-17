@@ -87,7 +87,7 @@ class Smearing(NumericalSettings):
         """,
     )
     width = Quantity(
-        type=float,
+        type=np.float64,
         unit='joule',
         description="""
         Width of the smearing distribution. Not applicable when `kind` is one of the
@@ -696,9 +696,11 @@ class KMesh(Mesh):
         model_systems = self.m_xpath(
             'm_parent.m_parent.m_parent.model_system', dict=False
         )
-        # Access reciprocal_lattice_vectors directly from parent to preserve units
-        reciprocal_lattice_vectors = (
-            self.m_parent.reciprocal_lattice_vectors if self.m_parent else None
+        # Access reciprocal_lattice_vectors directly from parent if present to preserve units
+        reciprocal_lattice_vectors = getattr(
+            self.m_parent,
+            'reciprocal_lattice_vectors',
+            None,
         )
         if self.k_line_density is None:
             self.k_line_density = self.resolve_k_line_density(

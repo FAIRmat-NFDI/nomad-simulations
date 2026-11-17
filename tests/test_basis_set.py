@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 from nomad.datamodel.datamodel import EntryArchive
 from nomad.units import ureg
+from structlog import get_logger
 
 from nomad_simulations.schema_packages.atoms_state import AtomsState
 from nomad_simulations.schema_packages.basis_set import (
@@ -276,7 +277,7 @@ def test_apw_local_orbital(
         ),
         (
             'APW',
-            [[1, 0, 0, 0, 0]],
+            [[2, 0, 0, 0, 0]],
             [[[1, 0, 0, 0, 0]]],
             {
                 'H': {
@@ -316,7 +317,7 @@ def test_apw_local_orbital(
         ),
         (
             'SLAPW',
-            [[1, 0, 0, 0, 0], [0, 1, 1, 0, 0]],
+            [[1, 0, 0, 0, 0], [0, 3, 3, 0, 0]],
             [[[1, 0, 0, 0, 0]], [[0, 1, 1, 0, 0]]],
             {
                 'H': {
@@ -335,6 +336,22 @@ def test_apw_local_orbital(
                     'lo_d_o': [],
                     'lo_param': [],
                 },
+            },
+            500.0,
+        ),
+        (
+            'LAPW+lo',
+            [[0, 1, 0, 1, 0]],  # ref_mt_counts
+            [[[0, 1, 0, 1, 0]]],  # ref_l_counts
+            {
+                'C': {
+                    'r': 1.45,
+                    'l_max': 0,
+                    'orb_d_o': [[0, 1]],
+                    'orb_param': [[0.0, 0.0]],
+                    'lo_d_o': [[0, 1]],
+                    'lo_param': [[0.0, 0.0]],
+                }
             },
             500.0,
         ),
@@ -367,6 +384,77 @@ def test_determine_apw(
             except IndexError:
                 pass
     assert bs._determine_apw() == ref_type
+
+
+@pytest.mark.parametrize(
+    'differential_order, ref_name',
+    [
+        ([], 'APW-like'),
+        ([0], 'APW'),
+        ([1, 0], 'LAPW'),
+        ([2, 0], 'SLAPW'),
+    ],
+)
+def test_apw_orbital_name(
+    differential_order: list[int],
+    ref_name: str,
+) -> None:
+    """Test the naming of APW-like orbitals."""
+    orbital = APWOrbital(
+        differential_order=np.array(differential_order, dtype=np.int32),
+    )
+    archive = EntryArchive()
+    orbital.normalize(archive, logger)
+    assert orbital.name == ref_name
+
+
+@pytest.mark.parametrize(
+    'differential_order, ref_name',
+    [
+        ([], 'LO'),
+        ([0], 'LO: [0]'),
+        ([0, 1], 'LO: [0, 1]'),
+        ([1, 0], 'LO: [0, 1]'),
+        ([0, 2], 'LO: [0, 2]'),
+    ],
+)
+def test_apw_local_orbital_name(
+    differential_order: list[int],
+    ref_name: str,
+) -> None:
+    """Test the naming of APW local orbitals."""
+    orbital = APWLocalOrbital(
+        differential_order=np.array(differential_order, dtype=np.int32),
+    )
+    archive = EntryArchive()
+    logger = get_logger(__name__)
+    orbital.normalize(archive, logger)
+    assert orbital.name == ref_name
+
+
+@pytest.mark.parametrize(
+    'differential_order, ref_order',
+    [
+        ([0], [0]),
+        ([0, 1], [0, 1]),
+        ([-1], None),
+        ([0, -1], None),
+    ],
+)
+def test_apw_orbital_differential_order(
+    differential_order: list[int],
+    ref_order: list[int] | None,
+) -> None:
+    """Test validation of APW orbital differential orders."""
+    archive = EntryArchive()
+    orbital = APWOrbital(differential_order=differential_order)
+
+    orbital.normalize(archive, logger)
+
+    if ref_order is None:
+        assert orbital.differential_order is None
+    else:
+        assert orbital.differential_order.tolist() == ref_order
 
 
 def test_quick_step() -> None:
