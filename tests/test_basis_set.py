@@ -404,7 +404,6 @@ def test_apw_orbital_name(
         differential_order=np.array(differential_order, dtype=np.int32),
     )
     archive = EntryArchive()
-    logger = get_logger(__name__)
     orbital.normalize(archive, logger)
     assert orbital.name == ref_name
 
