@@ -25,6 +25,7 @@ from nomad_simulations.schema_packages.properties import (
     HoppingMatrix,
     HybridizationFunction,
     KineticEnergy,
+    MOGap,
     MolecularOrbitals,
     Occupancy,
     Permittivity,
@@ -261,6 +262,8 @@ class Outputs(SimulationTime):
     kinetic_energies = SubSection(sub_section=KineticEnergy.m_def, repeats=True)
 
     molecular_orbitals = SubSection(sub_section=MolecularOrbitals.m_def, repeats=True)
+
+    molecular_orbital_gaps = SubSection(sub_section=MOGap.m_def, repeats=True)
 
     occupancies = SubSection(sub_section=Occupancy.m_def, repeats=True)
 

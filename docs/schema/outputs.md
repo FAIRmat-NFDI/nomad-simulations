@@ -65,6 +65,7 @@ classDiagram
     class HoppingMatrix
     class HybridizationFunction
     class KineticEnergy
+    class MOGap
     class MolecularOrbitals
     class Occupancy
     class Outputs
@@ -91,6 +92,7 @@ classDiagram
     Outputs *-- HoppingMatrix : hopping_matrices
     Outputs *-- HybridizationFunction : hybridization_functions
     Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- MOGap : molecular_orbital_gaps
     Outputs *-- MolecularOrbitals : molecular_orbitals
     Outputs *-- Occupancy : occupancies
     Outputs *-- Permittivity : permittivities
