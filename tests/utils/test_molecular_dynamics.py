@@ -283,14 +283,15 @@ def test_archive_to_universe_interleaved_monomers_keep_parent_molecules():
     universe = archive_to_universe(archive)
 
     assert universe is not None
-    assert universe.atoms.resindices.tolist() == [0, 1, 0, 1, 2, 3, 2, 3]
+    assert universe.atoms.resindices.tolist() == [0, 2, 0, 2, 1, 3, 1, 3]
     assert universe.atoms.molnums.tolist() == [0, 1, 0, 1, 0, 1, 0, 1]
     assert universe.residues.resnames.tolist() == [
         'monomer_0_0',
-        'monomer_1_0',
         'monomer_0_1',
+        'monomer_1_0',
         'monomer_1_1',
     ]
+    assert universe.residues.molnums.tolist() == [0, 0, 1, 1]
 
 
 def test_archive_to_universe_rejects_overlapping_molecules(caplog):

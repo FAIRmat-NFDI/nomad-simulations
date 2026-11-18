@@ -341,48 +341,52 @@ def archive_to_universe(
     archive,
     method_index: int = -1,
 ) -> MDAUniverse | None:
-    """Extract the topology from a provided data section of an archive entry
+    """Reconstruct an MDAnalysis universe for molecular trajectory analyses.
 
-    Input:
+    The archive must contain a ``ModelSystem`` with ``n_particles`` and one
+    ``particle_states`` entry per particle, plus at least one frame with positions.
+    Its optional subsystem hierarchy is interpreted as molecule groups, molecules,
+    monomer groups, and monomers. Each section in that hierarchy must provide a
+    one-dimensional ``particle_indices`` array of zero-based *global* particle
+    indices. Groups and their children must cover the same particles without
+    overlapping siblings. Invalid membership is logged and returns ``None``.
 
-        archive: EntryArchive
-    Variables:
+    Particles retain their global order in the universe. Each molecule group
+    becomes a segment; each monomer becomes a residue, or a molecule becomes one
+    residue if it has no monomers. Residues are numbered in hierarchy traversal
+    order, not sorted by particle index. Their ``molnums`` identify parent molecule
+    instances, so residue order does not determine molecule membership. Without a
+    hierarchy, all particles form one residue. The universe is an in-memory view
+    for analysis; this function does not modify the archive.
 
-        n_frames (int):
+    Parameters
+    ----------
+    archive : EntryArchive
+        Simulation archive containing the topology, frames, and optional method.
+    method_index : int, default -1
+        Index of the ``model_method`` used to resolve particle parameters and
+        fallback bonds; the last method is used by default.
 
-        n_atoms (int):
+    Returns
+    -------
+    MDAnalysis.Universe or None
+        Universe with trajectory frames, particle attributes, residue and molecule
+        membership, and available bonds; ``None`` if required data is missing or
+        the hierarchy is invalid.
 
-        particle_names (str, shape=(n_atoms)):
+    Notes
+    -----
+    ``resids`` and ``resnums`` are one-based residue ordinals, while ``molnums``
+    are zero-based molecule ordinals; none are source molecule identifiers.
+    Positions and velocities are converted to angstrom and angstrom/picosecond,
+    masses to amu, and charges to elementary charge. Box reconstruction currently
+    uses only the diagonal lattice-vector components and right angles.
 
-        particle_types (str, shape=(n_atoms)):
-
-        atom_resindex (str, shape=(n_atoms)):
-
-        n_segments (int): Segments correspond to a group of the same type of molecules.
-
-        n_residues (int): The number of distinct residues (nb - individual molecules are also denoted as a residue).
-
-        resnames (str, shape=(n_residues)): The name of each residue.
-
-        residue_segindex (int, shape=(n_residues)): The segment index that each residue belongs to.
-
-        residue_molnums (int, shape=(n_residues)): The molecule index that each residue belongs to.
-
-        residue_moltypes (int, shape=(n_residues)): The molecule type of each residue.
-
-        n_molecules (int):
-
-        masses (float, shape=(n_atoms)):  atom masses, units = amu
-
-        charges (float, shape=(n_atoms)): atom partial charges, units = e
-
-        positions (float, shape=(n_frames,n_atoms,3)): atom positions
-
-        velocities (float, shape=(n_frames,n_atoms,3)): atom velocities
-
-        dimensions (float, shape=(n_frames,6)): box dimensions (nb - currently assuming a cubic box!)
-
-        bonds (tuple, shape=([])): list of tuples with the atom indices of each bond
+    Examples
+    --------
+    >>> universe = archive_to_universe(archive)
+    >>> if universe is not None:
+    ...     molecule_ids = universe.atoms.molnums
     """
     if not _check_package_dependency('MDAnalysis', 'archive_to_universe', 'md'):
         return None
@@ -542,9 +546,25 @@ def archive_to_universe(
             raise ValueError(f'{_label(section)} has invalid particle indices')
         return indices
 
-    # Keep each residue's actual global indices and its parent molecule together.
-    # Sorting residues by their first atom must not change either association.
-    residue_records: list[tuple[np.ndarray, int, int, str, str]] = []
+    atom_resindex = np.empty(n_atoms, dtype=int)
+    residue_segindex: list[int] = []
+    residue_molnums: list[int] = []
+    residue_moltypes: list[str] = []
+    resnames: list[str] = []
+
+    def _append_residue(
+        indices: np.ndarray,
+        segment_index: int,
+        molecule_index: int,
+        moltype: str,
+        resname: str,
+    ) -> None:
+        atom_resindex[indices] = len(resnames)
+        residue_segindex.append(segment_index)
+        residue_molnums.append(molecule_index)
+        residue_moltypes.append(moltype)
+        resnames.append(resname)
+
     assigned_residues = np.zeros(n_atoms, dtype=bool)
     assigned_molecules = np.zeros(n_atoms, dtype=bool)
     assigned_groups = np.zeros(n_atoms, dtype=bool)
@@ -581,14 +601,12 @@ def archive_to_universe(
                         if np.any(assigned_residues[monomer_indices]):
                             raise ValueError('monomers overlap')
                         assigned_residues[monomer_indices] = True
-                        residue_records.append(
-                            (
-                                monomer_indices,
-                                group_index,
-                                n_molecules,
-                                _label(molecule),
-                                _label(monomer),
-                            )
+                        _append_residue(
+                            monomer_indices,
+                            group_index,
+                            n_molecules,
+                            _label(molecule),
+                            _label(monomer),
                         )
                     if assigned_monomer_atoms != monomer_group_atoms:
                         raise ValueError('monomer group has uncovered particles')
@@ -596,14 +614,12 @@ def archive_to_universe(
                     if np.any(assigned_residues[molecule_indices]):
                         raise ValueError('molecule residues overlap')
                     assigned_residues[molecule_indices] = True
-                    residue_records.append(
-                        (
-                            molecule_indices,
-                            group_index,
-                            n_molecules,
-                            _label(molecule),
-                            _label(molecule),
-                        )
+                    _append_residue(
+                        molecule_indices,
+                        group_index,
+                        n_molecules,
+                        _label(molecule),
+                        _label(molecule),
                     )
                 if np.any(~assigned_residues[molecule_indices]):
                     raise ValueError('molecule has uncovered particles')
@@ -621,23 +637,9 @@ def archive_to_universe(
 
     # A system without a molecular hierarchy retains the existing fallback.
     if not molecule_groups:
-        residue_records = [(np.arange(n_atoms), 0, 0, 'System', 'System')]
+        _append_residue(np.arange(n_atoms), 0, 0, 'System', 'System')
 
-    residue_records.sort(key=lambda record: int(np.min(record[0])))
-    n_residues = len(residue_records)
-    atom_resindex = np.empty(n_atoms, dtype=int)
-    residue_segindex = np.empty(n_residues, dtype=int)
-    residue_molnums = np.empty(n_residues, dtype=int)
-    residue_moltypes = []
-    resnames = []
-    for residue_index, (indices, segment, molecule, moltype, resname) in enumerate(
-        residue_records
-    ):
-        atom_resindex[indices] = residue_index
-        residue_segindex[residue_index] = segment
-        residue_molnums[residue_index] = molecule
-        residue_moltypes.append(moltype)
-        resnames.append(resname)
+    n_residues = len(resnames)
 
     # get the atom positions, velocities, and box dimensions
     positions = np.zeros(shape=(n_frames, n_atoms, 3))
