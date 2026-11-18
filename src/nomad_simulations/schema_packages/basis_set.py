@@ -700,7 +700,7 @@ class AtomCenteredBasisSet(BasisSetComponent):
         super().__init__(*args, **kwargs)
 
 
-class APWBaseOrbital(ArchiveSection):
+class APWBaseOrbital(BasisSetComponent, ArchiveSection):
     """
     Abstract base section for (S)(L)APW and local orbital component wavefunctions.
     It helps defining the interface with `APWLChannel`.
@@ -733,10 +733,16 @@ class APWBaseOrbital(ArchiveSection):
     )
 
     energy_status = Quantity(
-        type=MEnum('fixed', 'pre-optimization', 'post-optimization'),
-        default='post-optimization',
+        type=MEnum('fixed', 'initial', 'optimized'),
+        shape=['n_terms'],
         description="""
-        Allow the code to optimize the initial energy parameter.
+        Status of each energy parameter.
+
+        - `fixed`: The energy parameter is not optimized.
+        - `initial`: The energy parameter can be optimized, but the
+        stored value is the initial value before optimization.
+        - `optimized`: The stored energy parameter is the result
+        of optimization.
         """,
     )
 
@@ -786,7 +792,7 @@ class APWBaseOrbital(ArchiveSection):
         """Check if all elements in the set are non-negative."""
         for quantity_name in quantity_names:
             if isinstance(quant := self.get(quantity_name), Iterable):
-                if np.any(np.array(quant) <= 0):
+                if np.any(np.array(quant) < 0):
                     return False
         return True
 
@@ -806,18 +812,11 @@ class APWBaseOrbital(ArchiveSection):
 
         # enforce differential order constraints
         for quantity_name in ('differential_order', 'energy_parameter_n'):
-            if self._check_non_negative({quantity_name}):
+            if not self._check_non_negative({quantity_name}):
                 self.m_set(self.m_def.all_quantities[quantity_name], None)
                 logger.error(
                     f'`{self.m_def}.{quantity_name}` must be completely non-negative. Resetting to `None`.'
                 )
-
-        # use the differential order as naming convention
-        self.name = (
-            'APW-like'
-            if self.differential_order is None or len(self.differential_order) == 0
-            else f'{sorted(self.differential_order)}'
-        )
 
     @set_not_normalized
     def __init__(self, *args, **kwargs):
@@ -882,12 +881,7 @@ class APWOrbital(APWBaseOrbital):
                 f'Inconsistent `APWOrbital` type: {self.type}. Setting back to `None`.'
             )
             self.type = None
-
-        self.name = (
-            f'{self.type.upper()}: {self.name}'
-            if self.type and len(self.differential_order) > 0
-            else self.name
-        )
+        self.name = self.type.upper() if self.type else 'APW-like'
 
 
 class APWLocalOrbital(APWBaseOrbital):
@@ -904,9 +898,10 @@ class APWLocalOrbital(APWBaseOrbital):
     @check_normalized
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         super().normalize(archive, logger)
+        orders = self.differential_order
         self.name = (
-            f'LO: {sorted(self.differential_order)}'
-            if self.differential_order
+            f'LO: {sorted(orders.tolist())}'
+            if orders is not None and orders.size > 0
             else 'LO'
         )
 
@@ -928,7 +923,7 @@ class APWLChannel(BasisSetComponent):
     n_orbitals = Quantity(
         type=np.int32,
         description="""
-        Number of wavefunctions in the l-channel, i.e. $(2l + 1) n_orbitals$.
+        Number of wavefunctions in the l-channel: the number of radial orbitals times the $2l + 1$ magnetic quantum numbers.
         """,
     )
 
@@ -944,14 +939,19 @@ class APWLChannel(BasisSetComponent):
 
         type_count = {'apw': 0, 'lapw': 0, 'slapw': 0, 'lo': 0, 'other': 0}
         for orb in self.orbitals:
-            if orb.type is None:
-                type_count['other'] += 1
-            elif isinstance(orb, APWOrbital) and orb.type.lower() in type_count.keys():
-                type_count[orb.type] += 1
-            elif isinstance(orb, APWLocalOrbital):
+            if isinstance(orb, APWLocalOrbital):
                 type_count['lo'] += 1
+
+            elif isinstance(orb, APWOrbital):
+                orbital_type = orb.type
+
+                if orbital_type is not None and orbital_type.lower() in type_count:
+                    type_count[orbital_type.lower()] += 1
+                else:
+                    type_count['other'] += 1
+
             else:
-                type_count['other'] += 1  # other de facto operates as a catch-all
+                type_count['other'] += 1
         return type_count
 
     @set_not_normalized
@@ -962,7 +962,9 @@ class APWLChannel(BasisSetComponent):
     def normalize(self, archive: 'EntryArchive', logger: 'BoundLogger') -> None:
         # call order: parent of `BasisSetComponent``, then `self`
         super(BasisSetComponent, self).normalize(archive, logger)
-        self.n_orbitals = len(self.orbitals)
+        self.n_orbitals = (
+            len(self.orbitals) * (2 * self.name + 1) if self.name is not None else None
+        )
 
 
 class MuffinTinRegion(BasisSetComponent, Mesh):
@@ -1006,7 +1008,10 @@ class MuffinTinRegion(BasisSetComponent, Mesh):
         if len(self.l_channels) > 0:
             # dynamically determine `type_count` structure
             for l_channel in self.l_channels:
-                type_count.update(l_channel._determine_apw())
+                channel_counts = l_channel._determine_apw()
+
+                for key, value in channel_counts.items():
+                    type_count[key] = type_count.get(key, 0) + value
         return type_count
 
     @set_not_normalized
@@ -1063,7 +1068,6 @@ class BasisSetContainer(NumericalSettings):
                 type_count = comp._determine_apw()
                 for key in type_count.keys():
                     type_sums[key] = type_sums.get(key, 0) + type_count[key]
-
         type_str = 'APW-like'
         for key in ('slapw', 'lapw', 'apw'):
             try:
