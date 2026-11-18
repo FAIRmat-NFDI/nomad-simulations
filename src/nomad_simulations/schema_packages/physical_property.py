@@ -90,7 +90,7 @@ class PhysicalProperty(PlotSection):
               an `AtomsState`, a `CGBeadState`, another `ParticleState` subclass, or an
               `ElectronicState`, via `entity_ref`.
         """,
-    )  # TODO: only used for electronic states, remove
+    )
 
     is_derived = Quantity(
         type=bool,
@@ -116,7 +116,7 @@ class PhysicalProperty(PlotSection):
     is_converged = Quantity(
         type=bool,
         description="""
-        Flag indicating whether the calculation that yields this physical property is converged 
+        Flag indicating whether the calculation that yields this physical property is converged
         or not after a SCF or optimization process. This information is obtained from the workflow section.
         """,
     )

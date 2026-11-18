@@ -1,13 +1,16 @@
 from nomad.datamodel import ArchiveSection, EntryArchive
+from nomad.datamodel.metainfo.simulation.method import KMesh
 from nomad.datamodel.metainfo.workflow import Link, TaskReference
 from nomad.metainfo import MEnum, Quantity, SubSection
 from structlog.stdlib import BoundLogger
 
+from nomad_simulations.schema_packages.general import Program
 from nomad_simulations.schema_packages.model_method import ModelMethod
+from nomad_simulations.schema_packages.model_system import AlternativeRepresentation
 from nomad_simulations.schema_packages.properties.lattice_dynamics import (
     BornEffectiveCharges,
     DynamicalMatrix,
-    InfiniteFrequencyDielectricMatrix,
+    InfiniteFrequencyDielectricTensor,
     InteratomicForceConstants,
     PhononBandStructure,
     PhononDensityOfStates,
@@ -25,14 +28,6 @@ from .general import (
 
 
 class FiniteDifferenceMethod(ArchiveSection):
-    displacement_value = Quantity(
-        type=float,
-        shape=[1],
-        unit='meter',
-        description="""
-        Value of the displacements applied to each atom in the simulation cell.
-        """,
-    )
 
     n_displacements = Quantity(
         type=int,
@@ -51,13 +46,7 @@ class FiniteDifferenceMethod(ArchiveSection):
         """,
     )
 
-    supercell_size = Quantity(
-        type=int,
-        shape=[3],
-        description="""
-        Size of the supercell that is used in the calculation.
-        """,
-    )
+    supercell = SubSection(sub_section=AlternativeRepresentation.m_def, repeats=False)
 
     force_calculator = SubSection(sub_section=ModelMethod.m_def, repeats=False)
 
@@ -79,15 +68,6 @@ class FiniteDifferenceMethod(ArchiveSection):
         """,
     )
 
-    mesh_density = Quantity(
-        type=float,
-        shape=[3],
-        unit='1 / meter ** 3',
-        description="""
-        Density of the k-mesh for sampling.
-        """,
-    )
-
     # TODO need specification
     has_temperature_depended_force_constants = Quantity(
         type=bool,
@@ -98,12 +78,11 @@ class FiniteDifferenceMethod(ArchiveSection):
 
 
 class DFPTMethod(ArchiveSection):
-    q_mesh = Quantity(
-        type=int,
-        shape=[3],
-        unit='1 / meter ** 3',
+    q_mesh = SubSection(
+        sub_section=KMesh.m_def, 
+        repeats=False,
         description="""
-        Number of q-points in each direction in reciprocal space.
+        Mesh of q-points used for sampling the reciprocal space.
         """,
     )
     # The convergene threshold for the Sternheimer equation is represented by an EnergyConvergenceTarget in SimulationWorkflowMethod.
@@ -112,11 +91,11 @@ class DFPTMethod(ArchiveSection):
 class PhononMethod(SimulationWorkflowMethod):
     _label = 'Phonon calculation parameters'
 
-    program_name = Quantity(
-        type=str,
-        shape=[],
+    program = SubSection(
+        sub_section=Program.m_def,
+        repeats=False,
         description="""
-        Name of the program used to perform phonon calculation.
+        Program used to perform the phonon calculation or post-processing.
         """,
     )
 
@@ -181,9 +160,9 @@ class PhononResults(SimulationWorkflowResults):
 
     gauge = Quantity(
         type=float,
-        shape=[],
+        shape=["n_q_points", "n_eigenvectors"],
         description="""
-        Gauge that is applied to the eigenvectors, typically such that the first eigenvector is real.
+        Gauge that is applied to the eigenvectors for each q-point, typically such that the first eigenvector is real.
         """,
     )
 
@@ -220,15 +199,18 @@ class Phonon(SimulationWorkflow):
         """,
     )
 
+
+    # The BEC can be obtained both by derivatives of the forces w.r.t. the energy, or from the polarizability w.r.t. the displacement. 
+    # If the calculation is converged, both should be identical - this can be used as a measure of quality for the result.
     born_effective_charges = SubSection(
         sub_section=BornEffectiveCharges.m_def,
         repeats=True,
         description="""
-        The BEC can be obtained both by derivatives of the forces w.r.t. the energy, or from the polarizability w.r.t. the displacement. If the calculation is converged, both should be identical - this can be used as a measure of quality for the result.
+        Born effective charges for each atom of the system.
         """,
     )
-    infinite_frequency_dielectric_matrix = SubSection(
-        sub_section=InfiniteFrequencyDielectricMatrix.m_def
+    infinite_frequency_dielectric_tensor = SubSection(
+        sub_section=InfiniteFrequencyDielectricTensor.m_def
     )
 
     method = SubSection(sub_section=PhononMethod.m_def)

@@ -1,3 +1,4 @@
+import numpy as np
 from nomad.metainfo import MEnum, Quantity
 
 from nomad_simulations.schema_packages.physical_property import PhysicalProperty
@@ -8,39 +9,44 @@ from nomad_simulations.schema_packages.properties.spectral_profile import (
 
 class BornEffectiveCharges(PhysicalProperty):
     """
-    Born effective charges quantify how much the electronic cloud fails to follow an ion's displacement, thereby creating a macroscopic polarization dipole per unit displacement.
+    Born effective charges quantify how much the electronic cloud fails to follow an
+    ion's displacement, thereby creating a macroscopic polarization dipole
+    per unit displacement.
 
-    They contain one value for each atom and direction of displacement.
-
-    It's value is expected to be 0 for non-polar materials.
+    This quantity is defined as a tensor for each atom, describing the polariziability
+    in each direction following the displacemant in each direction.
     """
 
     value = Quantity(
         type=float,
-        unit='elementary_charge',
+        unit='C',
+        shape=[3, 3],
         description="""
         Value of Born effective charges.
         """,
     )
 
 
-class InfiniteFrequencyDielectricMatrix(PhysicalProperty):
+class InfiniteFrequencyDielectricTensor(PhysicalProperty):
     """
-    The high-frequency dielectric tensor measures how much the electronic cloud polarizes in response to an electric field before the ions have time to move.
+    The infinite-frequency dielectric tensor measures how much the electronic cloud polarizes 
+    in response to an electric field without including contribution from ionic displacement.
     """
 
     value = Quantity(
         type=float,
         unit='dimensionless',
+        shape=[3,3],
         description="""
-        Value of the high-frequency dielectric tensor.
+        Value of the infinite-frequency dielectric tensor.
         """,
     )
 
     system_dimensionality = Quantity(
         type=MEnum('3D', '2D'),
         description="""
-        Dimensionality used in the theoretical description.
+        Spatial dimensionality of the physical system (2D or 3D) for which the high-frequency dielectric tensor is reported. 
+        In either case. the dielectric responses differ in their macroscopic definitions and treatment of electrostatic screening.
         """,
     )
 
@@ -52,14 +58,14 @@ class InteratomicForceConstants(PhysicalProperty):
 
     value = Quantity(
         type=float,
-        unit='dimensionless',
-        shape=[],
+        unit='J/meter**2',
+        shape=[3,3],
         description="""
-        Value of the interatomic constants.
+        Value of the interatomic force constants.
         """,
     )
 
-    # TODO this nees specification
+    # TODO this needs specification
     real_space_decay = Quantity(
         type=float,
         shape=[],
@@ -70,6 +76,7 @@ class InteratomicForceConstants(PhysicalProperty):
 
     ewald_parameter = Quantity(
         type=float,
+        unit='1/meter',
         description="""
         Controls how the Coulombic (or dipolar) interaction is partitioned between long- and short-range contributions.
         """,
@@ -78,35 +85,42 @@ class InteratomicForceConstants(PhysicalProperty):
 
 class DynamicalMatrix(PhysicalProperty):
     """
-    Force-constant matrix that governs how the lattice responds to infinitesimal atomic displacements.
-
+    Dynamical matrix evaluated at specified phonon wave vectors (q_vector).
     Fourier-transform of the interatomic force constants.
     """
 
-    value = Quantity(
-        type=float,
-        unit='eV/angstrom**2',
-        shape=[],
+
+    n_degrees_of_freedom = Quantity(
+        type=int,
         description="""
-        Values of the dynamical matrix.
+        Number of Cartesian degrees of freedom, equal to three
+        times the number of atoms in the primitive cell.
         """,
     )
 
-
-class MassWeightedDynamicalMatrix(DynamicalMatrix):
-    """
-    Mass-weighted force-constant matrix that governs how the lattice responds to infinitesimal atomic displacements.
-
-    Fourier-transform of the interatomic force constants.
-    """
-
     value = Quantity(
-        type=float,
-        unit='eV/(angstrom**2*amu)',
-        shape=[],
+        type=np.complex64,
+        unit='J/m**2',
+        shape=['n_degrees_of_freedom', 'n_degrees_of_freedom'],
         description="""
-        Values of the dynamical matrix.
+        Complex dynamical matrix at a given phonon wave vector.
         """,
+    )
+
+    q_vector = Quantity(
+        type=float,
+        unit="1/meter",
+        shape=[3],
+        description="""
+        Phonon wave vector for which the dynamical matrix was calculated.
+        """
+    )
+
+    is_mass_weighted = Quantity(
+        type=bool,
+        description="""
+        Describes if the values of the matrix is mass-weighted or not.
+        """
     )
 
 
@@ -140,7 +154,7 @@ class PhononBandStructure(PhysicalProperty):
 
     value = Quantity(
         type=float,
-        unit='joule',
+        unit='1/s',
         shape=['*', '*'],
         description="""
         Value of the phonon bands.

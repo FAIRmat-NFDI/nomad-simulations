@@ -29,6 +29,8 @@ classDiagram
     }
     class FermiSurface {
     }
+    class MolecularOrbitals {
+    }
     class Occupancy {
     }
     ElectronicEigenvalues <|-- ElectronicBandStructure

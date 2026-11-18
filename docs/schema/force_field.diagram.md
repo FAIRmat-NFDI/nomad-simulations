@@ -13,9 +13,9 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
-    class BaseModelMethod {
-    }
     class ForceField {
+    }
+    class HamiltonianTerm {
     }
     class ModelMethod {
     }
@@ -25,7 +25,7 @@ classDiagram
     }
     ModelMethod <|-- ForceField
     ForceField *-- Potential : contributions
-    ModelMethod *-- BaseModelMethod : contributions
+    ModelMethod *-- HamiltonianTerm : contributions
     Potential *-- ParameterEntry : parameters
 ```
 

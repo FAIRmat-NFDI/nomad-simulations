@@ -13,7 +13,23 @@ This diagram shows the relationships between schema classes:
 
 ```mermaid
 classDiagram
+    class BornEffectiveCharges {
+    }
+    class DFPTMethod {
+    }
+    class DynamicalMatrix {
+    }
+    class FiniteDifferenceMethod {
+    }
+    class InfiniteFrequencyDielectricTensor {
+    }
+    class InteratomicForceConstants {
+    }
     class Phonon {
+    }
+    class PhononBandStructure {
+    }
+    class PhononDensityOfStates {
     }
     class PhononMethod {
     }
@@ -30,8 +46,16 @@ classDiagram
     SimulationWorkflow <|-- Phonon
     SimulationWorkflowMethod <|-- PhononMethod
     SimulationWorkflowResults <|-- PhononResults
+    Phonon *-- BornEffectiveCharges
+    Phonon *-- InfiniteFrequencyDielectricTensor
     Phonon *-- PhononMethod : method
     Phonon *-- PhononResults : results
+    PhononMethod *-- DFPTMethod
+    PhononMethod *-- FiniteDifferenceMethod : finite_differences_method
+    PhononResults *-- DynamicalMatrix
+    PhononResults *-- InteratomicForceConstants
+    PhononResults *-- PhononBandStructure : band_structure
+    PhononResults *-- PhononDensityOfStates : density_of_states
     SimulationWorkflow *-- SimulationWorkflowMethod : method
     SimulationWorkflow *-- SimulationWorkflowResults : results
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence

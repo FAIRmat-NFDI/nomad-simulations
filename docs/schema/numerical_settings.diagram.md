@@ -39,14 +39,11 @@ classDiagram
     }
     PlaneWaveBasisSet <|-- APWPlaneWaveBasisSet
     NumericalSettings <|-- ForceCalculations
-    Mesh <|-- KMesh
     NumericalSettings <|-- KSpace
     BasisSetComponent <|-- PlaneWaveBasisSet
-    KMesh <|-- PlaneWaveBasisSet
     NumericalSettings <|-- SelfConsistency
     NumericalSettings <|-- Smearing
     KSpace *-- KLinePath
-    KSpace *-- KMesh
 ```
 
 <p class="uml-legend__title">Legend</p>

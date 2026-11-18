@@ -24,14 +24,11 @@ classDiagram
     class Smearing
     PlaneWaveBasisSet <|-- APWPlaneWaveBasisSet
     NumericalSettings <|-- ForceCalculations
-    Mesh <|-- KMesh
     NumericalSettings <|-- KSpace
     BasisSetComponent <|-- PlaneWaveBasisSet
-    KMesh <|-- PlaneWaveBasisSet
     NumericalSettings <|-- SelfConsistency
     NumericalSettings <|-- Smearing
     KSpace *-- KLinePath : k_line_path
-    KSpace *-- KMesh : k_mesh
 ```
 
 <p class="uml-legend__title">Legend</p>
@@ -76,16 +73,13 @@ classDiagram
 
 | Section | Description | MetaInfo |
 |---|---|---|
-| `KMesh` | A base section used to specify the settings of a sampling mesh in reciprocal space. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.numerical_settings.KMesh){:target="_blank"} |
+| `KMesh` | Contains the settings for a sampling mesh in 3D reciprocal space. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad.datamodel.metainfo.simulation.method.KMesh){:target="_blank"} |
 
 | Quantity | Type | Description |
 |---|---|---|
-| `label` | Enum | <details><summary>Label used to identify the meaning of the reciprocal grid.</summary>Label used to identify the meaning of the reciprocal grid.<br>The actual meaning of `k` vs `g` vs `q` is context-dependent, though typically:<br>- `g` is used for the primitive vectors (typically within the Brillouin zone).<br>- `k` for a generic reciprocal vector.<br>- `q` for any momentum change imparted by a scattering event.</details> |
-| `center` | Enum | <details><summary>Identifier for the center of the Mesh:</summary>Identifier for the center of the Mesh:<br>\| Name      \| Description                      \|<br>\| --------- \| -------------------------------- \|<br>\| `'Gamma-centered'` \| Regular mesh is centered around Gamma. No offset. \|<br>\| `'Monkhorst-Pack'` \| Regular mesh with an offset of half the reciprocal lattice vector. \|<br>\| `'Gamma-offcenter'` \| Regular mesh with an offset that is neither `'Gamma-centered'`, nor `'Monkhorst-Pack'`. \|</details> |
-| `offset` | m_float64(float64) (shape: [3]) | Offset vector shifting the mesh with respect to a Gamma-centered case (where it is defined as [0, 0, 0]). |
-| `all_points` | m_float64(float64) (shape: ['*', 3]) | Full list of the mesh points without any symmetry operations in units of the `reciprocal_lattice_vectors`. In the presence of symmetry operations, this quantity is a larger list than `points` (as it will contain all the points in the Brillouin zone). |
-| `high_symmetry_points` | JSON | <details><summary>Dictionary containing the high-symmetry point labels and their values in units of `reciprocal_lattice_vectors`.</summary>Dictionary containing the high-symmetry point labels and their values in units of `reciprocal_lattice_vectors`.<br>E.g., in a cubic lattice:<br>high_symmetry_points = {<br>'Gamma': [0, 0, 0],<br>'X': [0.5, 0, 0],<br>'Y': [0, 0.5, 0],<br>...<br>}<br>**Symmetry source**: the points are generated with SeeKpath following the HPKOT recipe, which determines the<br>space group from the full crystal structure (lattice and atomic positions) via spglib, using the same<br>`symmetry_tolerance` (spglib `symprec`) that MatID uses for the `bravais_lattice` metadata stored under<br>`ModelSystem.symmetry`. Deriving both at the same tolerance keeps the k-points consistent with the stored<br>symmetry; any residual difference in classification is logged. Labels follow the HPKOT convention, which is more<br>detailed than the Setyawan-Curtarolo one and may include suffixed variants such as `X_1`. SeeKpath returns the<br>coordinates in the reciprocal basis of its standardized primitive cell; they are transformed into the reciprocal<br>basis of the input cell before storage.</details> |
-| `k_line_density` | m_float64(float64) | Amount of sampled k-points per unit reciprocal length along each axis. Contains the least precise density out of all axes. Should only be compared between calculations of similar dimensionality. |
+| `offset` | m_float64(float64) (shape: [3]) | Offset vector shifting the mesh with respect to a Gamma-centered case. |
+| `all_points` | m_float64(float64) (shape: ['*', 3]) | Full list of the mesh points without any symmetry operations. |
+| `high_symmetry_points` | m_str(str) (shape: ['*']) | Named high symmetry points in the mesh. |
 
 ### `KLinePath`
 
