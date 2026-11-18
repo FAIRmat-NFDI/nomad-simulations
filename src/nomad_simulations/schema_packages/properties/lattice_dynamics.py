@@ -29,7 +29,7 @@ class BornEffectiveCharges(PhysicalProperty):
 
 class InfiniteFrequencyDielectricTensor(PhysicalProperty):
     """
-    The infinite-frequency dielectric tensor measures how much the electronic cloud polarizes 
+    The infinite-frequency dielectric tensor measures how much the electronic cloud polarizes
     in response to an electric field without including contribution from ionic displacement.
     """
 
@@ -109,7 +109,7 @@ class DynamicalMatrix(PhysicalProperty):
 
     q_vector = Quantity(
         type=float,
-        unit="1/meter",
+        unit='1/meter',
         shape=[3],
         description="""
         Phonon wave vector for which the dynamical matrix was calculated.
