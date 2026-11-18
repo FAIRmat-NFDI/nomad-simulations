@@ -89,7 +89,6 @@ class DynamicalMatrix(PhysicalProperty):
     Fourier-transform of the interatomic force constants.
     """
 
-
     n_degrees_of_freedom = Quantity(
         type=int,
         description="""
