@@ -146,7 +146,7 @@ Molecular-dynamics workflow with thermostat/barostat/shear settings and ensemble
 
 Phonon workflow specialization with method/results classes
 
-**Key sections:** SimulationWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults, Phonon, PhononMethod, PhononResults
+**Key sections:** SimulationWorkflow, SimulationWorkflowMethod, SimulationWorkflowResults, Phonon, FiniteDifferenceMethod, DFPTMethod, PhononMethod, PhononResults
 
 ## [Photon Polarization Workflow](workflow_photon_polarization.md)
 

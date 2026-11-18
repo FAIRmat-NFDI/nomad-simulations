@@ -187,6 +187,8 @@ VERTICALS = {
             'SimulationWorkflowMethod',
             'SimulationWorkflowResults',
             'Phonon',
+            'FiniteDifferenceMethod',
+            'DFPTMethod',
             'PhononMethod',
             'PhononResults',
         ],

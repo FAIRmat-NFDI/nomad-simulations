@@ -10,7 +10,15 @@
 
 ```mermaid
 classDiagram
+    class BornEffectiveCharges
+    class DFPTMethod
+    class DynamicalMatrix
+    class FiniteDifferenceMethod
+    class InfiniteFrequencyDielectricTensor
+    class InteratomicForceConstants
     class Phonon
+    class PhononBandStructure
+    class PhononDensityOfStates
     class PhononMethod
     class PhononResults
     class SimulationWorkflow
@@ -20,8 +28,16 @@ classDiagram
     SimulationWorkflow <|-- Phonon
     SimulationWorkflowMethod <|-- PhononMethod
     SimulationWorkflowResults <|-- PhononResults
+    Phonon *-- BornEffectiveCharges : born_effective_charges
+    Phonon *-- InfiniteFrequencyDielectricTensor : infinite_frequency_dielectric_tensor
     Phonon *-- PhononMethod : method
     Phonon *-- PhononResults : results
+    PhononMethod *-- DFPTMethod : dfpt_method
+    PhononMethod *-- FiniteDifferenceMethod : finite_differences_method
+    PhononResults *-- DynamicalMatrix : dynamical_matrix
+    PhononResults *-- InteratomicForceConstants : interatomic_force_constants
+    PhononResults *-- PhononBandStructure : band_structure
+    PhononResults *-- PhononDensityOfStates : density_of_states
     SimulationWorkflow *-- SimulationWorkflowMethod : method
     SimulationWorkflow *-- SimulationWorkflowResults : results
     SimulationWorkflowResults *-- WorkflowConvergenceResults : convergence
@@ -71,6 +87,29 @@ classDiagram
 |---|---|---|
 | `Phonon` | Definitions for a phonon workflow. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.phonon.Phonon){:target="_blank"} |
 
+| Quantity | Type | Description |
+|---|---|---|
+| `approach` | Enum | <details><summary>Approach that was used to compute phonons.</summary>Approach that was used to compute phonons.<br>Options:<br>- 'finite_differences': Series of calculations with dislocated atoms in a supercell in real space.<br>- 'DFPT': Density-functional perturbation theory, solution of the Sternheimer equations in reciprocal space.</details> |
+
+### `FiniteDifferenceMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `FiniteDifferenceMethod` | Quantites specifically used to describe phonon calculations using the finite differences method. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.phonon.FiniteDifferenceMethod){:target="_blank"} |
+
+| Quantity | Type | Description |
+|---|---|---|
+| `n_displacements` | m_int32(int) (shape: [1]) | Number of independent displacements. |
+| `displacements` | m_float64(float) | Value of the displacements applied to each atom in the simulation cell. |
+| `random_displacements` | m_bool(bool) | Identifies if displacements are made randomly. |
+| `has_temperature_depended_force_constants` | m_bool(bool) | Temperature dependent force constants are considered in this calculation. |
+
+### `DFPTMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `DFPTMethod` | Quantites specifically used to describe phonon calculations using density functional perturbation theory (DFPT). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.phonon.DFPTMethod){:target="_blank"} |
+
 *This section has no direct quantities.*
 
 ### `PhononMethod`
@@ -81,12 +120,9 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `force_calculator` | m_str(str) | Name of the program used to calculate the forces. |
-| `phonon_calculator` | m_str(str) | Name of the program used to perform phonon calculation. |
-| `mesh_density` | m_float64(float) | Density of the k-mesh for sampling. |
-| `random_displacements` | m_bool(bool) | Identifies if displacements are made randomly. |
-| `with_non_analytic_correction` | m_bool(bool) | Identifies if non-analytical term corrections are applied to dynamical matrix. |
-| `with_grueneisen_parameters` | m_bool(bool) | Identifies if Grueneisen parameters are calculated. |
+| `atomic_masses` | m_float64(float) | Atomic masses used in the calculation. Depends on the used isotope of the elements. |
+| `n_qpoints` | m_int32(int) | Number of q points for which phonon properties are evaluated. |
+| `qpoints` | m_float64(float) (shape: ['n_qpoints', 3]) | Value of the qpoints. |
 
 ### `PhononResults`
 
@@ -96,14 +132,8 @@ classDiagram
 
 | Quantity | Type | Description |
 |---|---|---|
-| `n_imaginary_frequencies` | m_int32(int) | Number of modes with imaginary frequencies. |
-| `n_bands` | m_int32(int) | Number of phonon bands. |
-| `n_qpoints` | m_int32(int) | Number of q points for which phonon properties are evaluated. |
-| `qpoints` | m_float64(float) (shape: ['n_qpoints', 3]) | Value of the qpoints. |
 | `group_velocity` | m_float64(float) (shape: ['n_qpoints', 'n_bands', 3]) | Calculated value of the group velocity at each qpoint. |
-| `n_displacements` | m_int32(int) | Number of independent displacements. |
-| `n_atoms` | m_int32(int) | Number of atoms in the simulation cell. |
-| `displacements` | m_float64(float) (shape: ['n_displacements', 'n_atoms', 3]) | Value of the displacements applied to each atom in the simulation cell. |
+| `gauge` | m_float64(float) (shape: ['n_q_points', 'n_eigenvectors']) | Gauge that is applied to the eigenvectors for each q-point, typically such that the first eigenvector is real. |
 
 
 ## Related Pages
