@@ -19,11 +19,7 @@ classDiagram
     }
     class ElectronicBandStructure {
     }
-    class ElectronicSelfEnergy {
-    }
-    class HoppingMatrix {
-    }
-    class KineticEnergy {
+    class ElectronicEigenvalues {
     }
     class MolecularOrbitals {
     }
@@ -31,28 +27,32 @@ classDiagram
     }
     class Outputs {
     }
-    class Permittivity {
-    }
     class PhysicalProperty {
+    }
+    class QuasiparticleWeight {
+    }
+    class RadiusOfGyration {
+    }
+    class SCFSteps {
     }
     class Temperature {
     }
     class TotalEnergy {
     }
-    class XASSpectrum {
+    class TotalForce {
     }
     Outputs *-- CrystalFieldSplitting
     Outputs *-- ElectronicBandGap
     Outputs *-- ElectronicBandStructure
-    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
-    Outputs *-- HoppingMatrix : hopping_matrices
-    Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- ElectronicEigenvalues
     Outputs *-- MolecularOrbitals
     Outputs *-- Occupancy : occupancies
-    Outputs *-- Permittivity : permittivities
+    Outputs *-- QuasiparticleWeight
+    Outputs *-- RadiusOfGyration : radii_of_gyration
+    Outputs *-- SCFSteps
     Outputs *-- Temperature
     Outputs *-- TotalEnergy : total_energies
-    Outputs *-- XASSpectrum : xas_spectra
+    Outputs *-- TotalForce
 ```
 
 </div>
@@ -73,40 +73,40 @@ classDiagram
     }
     class ElectronicDensityOfStates {
     }
-    class ElectronicEigenvalues {
-    }
     class ElectronicGreensFunction {
+    }
+    class ElectronicSelfEnergy {
     }
     class FermiSurface {
     }
+    class HoppingMatrix {
+    }
     class HybridizationFunction {
     }
+    class KineticEnergy {
+    }
     class Outputs {
+    }
+    class Permittivity {
     }
     class PhysicalProperty {
     }
     class PotentialEnergy {
     }
-    class QuasiparticleWeight {
-    }
-    class RadiusOfGyration {
-    }
-    class SCFSteps {
-    }
-    class TotalForce {
+    class XASSpectrum {
     }
     Outputs *-- AbsorptionSpectrum : absorption_spectra
     Outputs *-- ChemicalPotential
     Outputs *-- ElectronicDensityOfStates : electronic_dos
-    Outputs *-- ElectronicEigenvalues
     Outputs *-- ElectronicGreensFunction
+    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
     Outputs *-- FermiSurface
+    Outputs *-- HoppingMatrix : hopping_matrices
     Outputs *-- HybridizationFunction
+    Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- Permittivity : permittivities
     Outputs *-- PotentialEnergy : potential_energies
-    Outputs *-- QuasiparticleWeight
-    Outputs *-- RadiusOfGyration : radii_of_gyration
-    Outputs *-- SCFSteps
-    Outputs *-- TotalForce
+    Outputs *-- XASSpectrum : xas_spectra
 ```
 
 <p class="uml-legend__title">Legend</p>
