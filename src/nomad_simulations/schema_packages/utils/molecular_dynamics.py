@@ -566,34 +566,33 @@ def archive_to_universe(
                 assigned_molecules[molecule_indices] = True
 
                 monomer_groups = _sub_objs(molecule)
-                if monomer_groups:
-                    for monomer_group in monomer_groups:
-                        monomer_group_indices = _indices(monomer_group)
-                        monomer_group_atoms = set(monomer_group_indices.tolist())
-                        if not monomer_group_atoms <= molecule_atoms:
-                            raise ValueError('monomer group is outside its molecule')
-                        assigned_monomer_atoms: set[int] = set()
-                        for monomer in _sub_objs(monomer_group):
-                            monomer_indices = _indices(monomer)
-                            monomer_atoms = set(monomer_indices.tolist())
-                            if not monomer_atoms <= monomer_group_atoms:
-                                raise ValueError('monomer is outside its group')
-                            assigned_monomer_atoms.update(monomer_atoms)
-                            if np.any(assigned_residues[monomer_indices]):
-                                raise ValueError('monomers overlap')
-                            assigned_residues[monomer_indices] = True
-                            residue_records.append(
-                                (
-                                    monomer_indices,
-                                    group_index,
-                                    n_molecules,
-                                    _label(molecule),
-                                    _label(monomer),
-                                )
+                for monomer_group in monomer_groups:
+                    monomer_group_indices = _indices(monomer_group)
+                    monomer_group_atoms = set(monomer_group_indices.tolist())
+                    if not monomer_group_atoms <= molecule_atoms:
+                        raise ValueError('monomer group is outside its molecule')
+                    assigned_monomer_atoms: set[int] = set()
+                    for monomer in _sub_objs(monomer_group):
+                        monomer_indices = _indices(monomer)
+                        monomer_atoms = set(monomer_indices.tolist())
+                        if not monomer_atoms <= monomer_group_atoms:
+                            raise ValueError('monomer is outside its group')
+                        assigned_monomer_atoms.update(monomer_atoms)
+                        if np.any(assigned_residues[monomer_indices]):
+                            raise ValueError('monomers overlap')
+                        assigned_residues[monomer_indices] = True
+                        residue_records.append(
+                            (
+                                monomer_indices,
+                                group_index,
+                                n_molecules,
+                                _label(molecule),
+                                _label(monomer),
                             )
-                        if assigned_monomer_atoms != monomer_group_atoms:
-                            raise ValueError('monomer group has uncovered particles')
-                else:
+                        )
+                    if assigned_monomer_atoms != monomer_group_atoms:
+                        raise ValueError('monomer group has uncovered particles')
+                if not monomer_groups:
                     if np.any(assigned_residues[molecule_indices]):
                         raise ValueError('molecule residues overlap')
                     assigned_residues[molecule_indices] = True
