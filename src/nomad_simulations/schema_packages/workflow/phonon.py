@@ -28,6 +28,9 @@ from .general import (
 
 
 class FiniteDifferenceMethod(ArchiveSection):
+    """
+    Quantites specifically used to describe phonon calculations using the finite differences method.
+    """
 
     n_displacements = Quantity(
         type=int,
@@ -78,8 +81,12 @@ class FiniteDifferenceMethod(ArchiveSection):
 
 
 class DFPTMethod(ArchiveSection):
+    """
+    Quantites specifically used to describe phonon calculations using density functional perturbation theory (DFPT).
+    """
+
     q_mesh = SubSection(
-        sub_section=KMesh.m_def, 
+        sub_section=KMesh.m_def,
         repeats=False,
         description="""
         Mesh of q-points used for sampling the reciprocal space.
@@ -160,7 +167,7 @@ class PhononResults(SimulationWorkflowResults):
 
     gauge = Quantity(
         type=float,
-        shape=["n_q_points", "n_eigenvectors"],
+        shape=['n_q_points', 'n_eigenvectors'],
         description="""
         Gauge that is applied to the eigenvectors for each q-point, typically such that the first eigenvector is real.
         """,
@@ -199,8 +206,7 @@ class Phonon(SimulationWorkflow):
         """,
     )
 
-
-    # The BEC can be obtained both by derivatives of the forces w.r.t. the energy, or from the polarizability w.r.t. the displacement. 
+    # The BEC can be obtained both by derivatives of the forces w.r.t. the energy, or from the polarizability w.r.t. the displacement.
     # If the calculation is converged, both should be identical - this can be used as a measure of quality for the result.
     born_effective_charges = SubSection(
         sub_section=BornEffectiveCharges.m_def,

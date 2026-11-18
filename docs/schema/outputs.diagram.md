@@ -17,25 +17,25 @@ classDiagram
     }
     class CrystalFieldSplitting {
     }
+    class ElectronicBandGap {
+    }
     class ElectronicBandStructure {
     }
     class ElectronicDensityOfStates {
     }
-    class ElectronicSelfEnergy {
-    }
     class FermiSurface {
     }
-    class KineticEnergy {
+    class MolecularOrbitals {
     }
     class Occupancy {
     }
     class Outputs {
     }
-    class Permittivity {
-    }
     class PhysicalProperty {
     }
     class PotentialEnergy {
+    }
+    class RadiusOfGyration {
     }
     class Temperature {
     }
@@ -43,14 +43,14 @@ classDiagram
     }
     Outputs *-- ChemicalPotential
     Outputs *-- CrystalFieldSplitting
+    Outputs *-- ElectronicBandGap
     Outputs *-- ElectronicBandStructure
     Outputs *-- ElectronicDensityOfStates : electronic_dos
-    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
     Outputs *-- FermiSurface
-    Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- MolecularOrbitals
     Outputs *-- Occupancy : occupancies
-    Outputs *-- Permittivity : permittivities
     Outputs *-- PotentialEnergy : potential_energies
+    Outputs *-- RadiusOfGyration : radii_of_gyration
     Outputs *-- Temperature
     Outputs *-- TotalForce
 ```
@@ -69,25 +69,25 @@ _Diagram 2 of 2 (split due to large number of children)_
 classDiagram
     class AbsorptionSpectrum {
     }
-    class ElectronicBandGap {
-    }
     class ElectronicEigenvalues {
     }
     class ElectronicGreensFunction {
+    }
+    class ElectronicSelfEnergy {
     }
     class HoppingMatrix {
     }
     class HybridizationFunction {
     }
-    class MolecularOrbitals {
+    class KineticEnergy {
     }
     class Outputs {
+    }
+    class Permittivity {
     }
     class PhysicalProperty {
     }
     class QuasiparticleWeight {
-    }
-    class RadiusOfGyration {
     }
     class SCFSteps {
     }
@@ -96,14 +96,14 @@ classDiagram
     class XASSpectrum {
     }
     Outputs *-- AbsorptionSpectrum : absorption_spectra
-    Outputs *-- ElectronicBandGap
     Outputs *-- ElectronicEigenvalues
     Outputs *-- ElectronicGreensFunction
+    Outputs *-- ElectronicSelfEnergy : electronic_self_energies
     Outputs *-- HoppingMatrix : hopping_matrices
     Outputs *-- HybridizationFunction
-    Outputs *-- MolecularOrbitals
+    Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- Permittivity : permittivities
     Outputs *-- QuasiparticleWeight
-    Outputs *-- RadiusOfGyration : radii_of_gyration
     Outputs *-- SCFSteps
     Outputs *-- TotalEnergy : total_energies
     Outputs *-- XASSpectrum : xas_spectra

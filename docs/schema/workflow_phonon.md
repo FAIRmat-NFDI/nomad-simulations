@@ -91,6 +91,27 @@ classDiagram
 |---|---|---|
 | `approach` | Enum | <details><summary>Approach that was used to compute phonons.</summary>Approach that was used to compute phonons.<br>Options:<br>- 'finite_differences': Series of calculations with dislocated atoms in a supercell in real space.<br>- 'DFPT': Density-functional perturbation theory, solution of the Sternheimer equations in reciprocal space.</details> |
 
+### `FiniteDifferenceMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `FiniteDifferenceMethod` | Quantites specifically used to describe phonon calculations using the finite differences method. | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.phonon.FiniteDifferenceMethod){:target="_blank"} |
+
+| Quantity | Type | Description |
+|---|---|---|
+| `n_displacements` | m_int32(int) (shape: [1]) | Number of independent displacements. |
+| `displacements` | m_float64(float) | Value of the displacements applied to each atom in the simulation cell. |
+| `random_displacements` | m_bool(bool) | Identifies if displacements are made randomly. |
+| `has_temperature_depended_force_constants` | m_bool(bool) | Temperature dependent force constants are considered in this calculation. |
+
+### `DFPTMethod`
+
+| Section | Description | MetaInfo |
+|---|---|---|
+| `DFPTMethod` | Quantites specifically used to describe phonon calculations using density functional perturbation theory (DFPT). | [Open in MetaInfo browser](https://nomad-lab.eu/prod/v1/develop/gui/analyze/metainfo/nomad_simulations/section_definitions@nomad_simulations.schema_packages.workflow.phonon.DFPTMethod){:target="_blank"} |
+
+*This section has no direct quantities.*
+
 ### `PhononMethod`
 
 | Section | Description | MetaInfo |

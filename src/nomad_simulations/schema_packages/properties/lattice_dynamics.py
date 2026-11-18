@@ -36,7 +36,7 @@ class InfiniteFrequencyDielectricTensor(PhysicalProperty):
     value = Quantity(
         type=float,
         unit='dimensionless',
-        shape=[3,3],
+        shape=[3, 3],
         description="""
         Value of the infinite-frequency dielectric tensor.
         """,
@@ -59,7 +59,7 @@ class InteratomicForceConstants(PhysicalProperty):
     value = Quantity(
         type=float,
         unit='J/meter**2',
-        shape=[3,3],
+        shape=[3, 3],
         description="""
         Value of the interatomic force constants.
         """,
@@ -113,14 +113,14 @@ class DynamicalMatrix(PhysicalProperty):
         shape=[3],
         description="""
         Phonon wave vector for which the dynamical matrix was calculated.
-        """
+        """,
     )
 
     is_mass_weighted = Quantity(
         type=bool,
         description="""
         Describes if the values of the matrix is mass-weighted or not.
-        """
+        """,
     )
 
 
