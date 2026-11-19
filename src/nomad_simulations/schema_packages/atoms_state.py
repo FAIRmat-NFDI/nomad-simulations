@@ -933,9 +933,13 @@ class AtomsState(ParticleState):
     """
 
     chemical_symbol = Quantity(
-        type=MEnum(ase.data.chemical_symbols[1:]),
+        type=MEnum(ase.data.chemical_symbols),
         description="""
         Symbol of the element, e.g. 'H', 'Pb'. This quantity is equivalent to `atomic_numbers`.
+        "X" (ase.data.chemical_symbols[0]) is reserved for ghost atoms, vacancies,
+        or other non-physical sites, to distinguish them from atoms with unrecognized chemical symbols
+        (None) and determine composition and stoichiometry correctly.
+        Later will be replaced by a separate subclass.
         """,
     )
 
@@ -985,8 +989,10 @@ class AtomsState(ParticleState):
     def get_label(self) -> str | None:
         """
         Returns the label of the particle.
+
+        If `chemical_symbol` is set to "X" (ghost atom), returns an empty string.
         """
-        return self.chemical_symbol if self.chemical_symbol else self.label
+        return (s if s != 'X' else '') if (s := self.chemical_symbol) else self.label
 
     def resolve_chemical_symbol(self, logger: 'BoundLogger') -> str | None:
         """
