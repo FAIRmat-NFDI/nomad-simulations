@@ -193,6 +193,7 @@ def get_composition(children_names: list[str]) -> str | None:
       distinct case variants as separate terms.
     - All items are converted to strings via ``str(...)`` before counting.
     - Returns ``None`` if the input list is empty.
+    - Ignores empty strings (``""``) in the input list.
 
     Parameters
     ----------
@@ -214,7 +215,7 @@ def get_composition(children_names: list[str]) -> str | None:
     if not children_names:
         return None
 
-    counts = Counter(map(str, children_names))
+    counts = Counter(filter(len, map(str, children_names)))
     parts = [
         f'{name}({counts[name]})'
         for name in sorted(counts, key=lambda s: (s.casefold(), s))
