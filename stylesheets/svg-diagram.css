@@ -1,0 +1,57 @@
+/* Styles for interactive SVG diagrams */
+
+.diagram-container {
+    position: relative;
+    width: 100%;
+    margin: 2rem 0;
+    border: 1px solid var(--md-default-fg-color--lightest, #e0e0e0);
+    border-radius: 4px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.diagram-container object.interactive-svg {
+    width: 100%;
+    min-height: 400px;
+    display: block;
+}
+
+/* Instructions hint */
+.diagram-hint {
+    position: absolute;
+    top: 0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    white-space: nowrap;
+}
+
+.diagram-container:hover .diagram-hint {
+    opacity: 1;
+}
+
+/* Hide hint after interaction */
+.diagram-container.interacted .diagram-hint {
+    display: none;
+}
+
+/* Ensure SVG fills container properly */
+.diagram-container svg {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Dark mode support */
+[data-md-color-scheme="slate"] .diagram-container {
+    background: var(--md-code-bg-color);
+    border-color: var(--md-default-fg-color--lightest);
+}

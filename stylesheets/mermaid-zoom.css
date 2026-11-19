@@ -1,0 +1,144 @@
+/* docs/stylesheets/mermaid-zoom.css */
+
+/* Click-to-zoom functionality for diagram images */
+.click-zoom-img {
+    transition: transform 0.3s ease;
+    cursor: zoom-in;
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.click-zoom-img.zoomed {
+    transform: scale(2);
+    cursor: zoom-out;
+    position: relative;
+    z-index: 1000;
+    background: white;
+    padding: 1rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+/* Ensure SVG images scale properly */
+img[src$=".svg"].click-zoom-img {
+    width: 80%;
+    height: auto;
+}
+
+/* Old click-zoom div styles (kept for backwards compatibility) */
+.click-zoom {
+    text-align: center;
+    margin: 1em 0;
+}
+
+.click-zoom label {
+    display: inline-block;
+    cursor: pointer;
+}
+
+.click-zoom input[type=checkbox] {
+    display: none;
+}
+
+.click-zoom img {
+    transition: transform 0.25s ease;
+    cursor: zoom-in;
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.click-zoom input[type=checkbox]:checked + img {
+    transform: scale(2);
+    cursor: zoom-out;
+}
+
+/* Fullscreen zoom overlay */
+.mermaid-zoom-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  cursor: zoom-out;
+}
+
+.mermaid-zoom-overlay .mermaid-zoom-content {
+  max-width: 95vw;
+  max-height: 95vh;
+  overflow: auto;
+  background: white;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.mermaid-zoom-overlay svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Close button */
+.mermaid-zoom-close {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: white;
+  border: none;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 10000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mermaid-zoom-close:hover {
+  background: var(--md-primary-fg-color, #2094f3);
+  color: white;
+  transform: scale(1.1);
+}
+.mermaid-zoom-toolbar {
+  position: absolute;
+  top: .5rem;
+  right: .5rem;
+  display: flex;
+  gap: .25rem;
+  z-index: 2;
+  background: var(--md-default-bg-color, #fff);
+  padding: .25rem;
+  border-radius: .375rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.mermaid-zoom-toolbar button {
+  font: inherit;
+  font-weight: 600;
+  line-height: 1;
+  padding: .375rem .5rem;
+  border: 1px solid var(--md-default-fg-color--light, #ccc);
+  background: var(--md-default-bg-color, #fff);
+  border-radius: .25rem;
+  cursor: pointer;
+  opacity: .85;
+  transition: all 0.2s ease;
+}
+.mermaid-zoom-toolbar button:hover { 
+  opacity: 1;
+  background: var(--md-primary-fg-color--light, #e3f2fd);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
