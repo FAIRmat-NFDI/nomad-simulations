@@ -61,22 +61,26 @@ classDiagram
     class ElectronicEigenvalues
     class ElectronicGreensFunction
     class ElectronicSelfEnergy
+    class Enthalpy
     class FermiSurface
     class HoppingMatrix
     class HybridizationFunction
     class KineticEnergy
+    class MassDensity
     class MolecularOrbitals
     class Occupancy
     class Outputs
     class Permittivity
     class PhysicalProperty
     class PotentialEnergy
+    class Pressure
     class QuasiparticleWeight
     class RadiusOfGyration
     class SCFSteps
     class Temperature
     class TotalEnergy
     class TotalForce
+    class Volume
     class XASSpectrum
     Outputs *-- AbsorptionSpectrum : absorption_spectra
     Outputs *-- ChemicalPotential : chemical_potentials
@@ -87,20 +91,24 @@ classDiagram
     Outputs *-- ElectronicEigenvalues : electronic_eigenvalues
     Outputs *-- ElectronicGreensFunction : electronic_greens_functions
     Outputs *-- ElectronicSelfEnergy : electronic_self_energies
+    Outputs *-- Enthalpy : enthalpies
     Outputs *-- FermiSurface : fermi_surfaces
     Outputs *-- HoppingMatrix : hopping_matrices
     Outputs *-- HybridizationFunction : hybridization_functions
     Outputs *-- KineticEnergy : kinetic_energies
+    Outputs *-- MassDensity : mass_densities
     Outputs *-- MolecularOrbitals : molecular_orbitals
     Outputs *-- Occupancy : occupancies
     Outputs *-- Permittivity : permittivities
     Outputs *-- PotentialEnergy : potential_energies
+    Outputs *-- Pressure : pressures
     Outputs *-- QuasiparticleWeight : quasiparticle_weights
     Outputs *-- RadiusOfGyration : radii_of_gyration
     Outputs *-- SCFSteps : scf_steps
     Outputs *-- Temperature : temperatures
     Outputs *-- TotalEnergy : total_energies
     Outputs *-- TotalForce : total_forces
+    Outputs *-- Volume : volumes
     Outputs *-- XASSpectrum : xas_spectra
 ```
 

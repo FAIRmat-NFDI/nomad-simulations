@@ -21,19 +21,23 @@ from nomad_simulations.schema_packages.properties import (
     ElectronicEigenvalues,
     ElectronicGreensFunction,
     ElectronicSelfEnergy,
+    Enthalpy,
     FermiSurface,
     HoppingMatrix,
     HybridizationFunction,
     KineticEnergy,
+    MassDensity,
     MolecularOrbitals,
     Occupancy,
     Permittivity,
     PotentialEnergy,
+    Pressure,
     QuasiparticleWeight,
     RadiusOfGyration,
     Temperature,
     TotalEnergy,
     TotalForce,
+    Volume,
     XASSpectrum,
 )
 
@@ -260,6 +264,8 @@ class Outputs(SimulationTime):
 
     kinetic_energies = SubSection(sub_section=KineticEnergy.m_def, repeats=True)
 
+    mass_densities = SubSection(sub_section=MassDensity.m_def, repeats=True)
+
     molecular_orbitals = SubSection(sub_section=MolecularOrbitals.m_def, repeats=True)
 
     occupancies = SubSection(sub_section=Occupancy.m_def, repeats=True)
@@ -267,6 +273,8 @@ class Outputs(SimulationTime):
     permittivities = SubSection(sub_section=Permittivity.m_def, repeats=True)
 
     potential_energies = SubSection(sub_section=PotentialEnergy.m_def, repeats=True)
+
+    pressures = SubSection(sub_section=Pressure.m_def, repeats=True)
 
     quasiparticle_weights = SubSection(
         sub_section=QuasiparticleWeight.m_def, repeats=True
@@ -279,6 +287,10 @@ class Outputs(SimulationTime):
     total_forces = SubSection(sub_section=TotalForce.m_def, repeats=True)
 
     total_energies = SubSection(sub_section=TotalEnergy.m_def, repeats=True)
+
+    enthalpies = SubSection(sub_section=Enthalpy.m_def, repeats=True)
+
+    volumes = SubSection(sub_section=Volume.m_def, repeats=True)
 
     xas_spectra = SubSection(sub_section=XASSpectrum.m_def, repeats=True)
 
@@ -444,3 +456,25 @@ class TrajectoryOutputs(WorkflowOutputs):
         The elapsed simulated physical time since the start of the trajectory.
         """,
     )
+
+    def set_model_system_ref(self) -> ModelSystem | None:
+        """Return the unique system at this step, or a positional 1:1 match.
+
+        Step matching takes precedence when systems have ``time_step`` values.
+        Without system steps, position is used only for equal-length series.
+        """
+        if self.m_parent is None:
+            return None
+        systems = self.m_parent.model_system
+        if not systems:
+            return None
+        if any(system.time_step is not None for system in systems):
+            matches = [
+                system
+                for system in systems
+                if self.step is not None and system.time_step == self.step
+            ]
+            return matches[0] if len(matches) == 1 else None
+        if len(systems) == len(self.m_parent.outputs):
+            return systems[self.m_parent_index]
+        return None
