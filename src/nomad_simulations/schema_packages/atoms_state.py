@@ -87,13 +87,17 @@ class SphericalSymmetryState(
     @property
     def l_quantum_symbol(self) -> str:
         """
-        Symbolic representation of the `l` quantum number, i.e., 's', 'p', 'd', 'f'.
+        Symbolic representation of the `l` quantum number, i.e., 's', 'p', 'd', 'f',
+        'g', 'h'. Higher quantum numbers are represented as numerical strings.
         Derived from l_quantum_number.
         """
         if self.l_quantum_number is None:
             return ''
-        l_symbols = {0: 's', 1: 'p', 2: 'd', 3: 'f'}
-        return l_symbols.get(self.l_quantum_number)
+        l_symbols = {
+            l_quantum_number: symbol
+            for l_quantum_number, symbol in enumerate(['s', 'p', 'd', 'f', 'g', 'h'])
+        }
+        return l_symbols.get(self.l_quantum_number, str(self.l_quantum_number))
 
     mj_quantum_number = Quantity(
         type=np.float64,
