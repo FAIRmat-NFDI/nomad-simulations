@@ -42,7 +42,7 @@ Convergence information can be accessed through several common patterns dependin
 
 **Nested Workflow Traversal**: For workflows with subtasks (like GeometryOptimization), each task in `archive.workflow2.tasks` can have its own `results.convergence` section. Looking across all subtasks involves paths such as `workflow2.tasks[*].results.convergence[*].is_reached`, which return nested boolean values organized by subtask and target.
 
-**Direct Data Access**: Convergence targets are tied to specific archive paths. For example, energy convergence can read from `archive.data.outputs[-1].scf_steps.delta_energies_total`. Understanding these paths helps when interpreting where a reported convergence result comes from.
+**Direct Data Access**: Convergence targets are tied to specific archive paths. For example, energy convergence can read from `archive.data.outputs[-1].scf_steps.delta_energies_total`. Understanding these paths helps when interpreting where a reported convergence result comes from. `ForceConvergenceTarget` checks the residual force of the final geometry (`workflow2.results.final_force_maximum`).
 
 ## Nested Workflows with SCF Subtasks
 

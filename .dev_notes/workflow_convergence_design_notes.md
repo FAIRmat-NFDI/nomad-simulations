@@ -34,6 +34,8 @@ should not be duplicated in the explanation layer.
    `threshold_type='relative'` requires a robust reference value strategy that
    is not consistently available across workflows.
 
-4. Fallback path complexity:
-   `ForceConvergenceTarget` uses multiple fallback paths; failure debugging is
-   currently non-trivial when expected data is absent.
+4. Fallback paths:
+   no target currently uses more than one path. `ForceConvergenceTarget` used to
+   fall back from the geometry residual force to the SCF force change, mixing two
+   quantities; it now reads only `workflow2.results.final_force_maximum` (#519).
+   The `paths` list is kept so that genuine fallbacks remain a one-entry change.
