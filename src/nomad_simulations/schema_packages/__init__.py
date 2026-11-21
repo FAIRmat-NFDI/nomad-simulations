@@ -24,13 +24,16 @@ class NOMADSimulationsEntryPoint(SchemaPackageEntryPoint):
         description='`MolecularOrbitals` frontier resolution: an orbital with occupation '
         'above this counts as occupied when resolving HOMO/LUMO.',
     )
-    mo_occupation_slack: float = Field(
-        0.1,
+    occupation_bound_slack: float = Field(
+        0.05,
         ge=0.0,
-        description='`MolecularOrbitals` occupations: slack on the [0, 2] bound. '
-        'Occupation numbers from approximate methods (e.g. MP2/CC natural orbitals) can '
-        'fall slightly outside [0, 2]; entries beyond [0 - slack, 2 + slack] are flagged '
-        'and clamped into [0, 2].',
+        description='Relative slack on occupation bounds (a unitless fraction of the peak '
+        'occupation), shared by `MolecularOrbitals.occupations`, '
+        '`ElectronicEigenvalues.occupation`, and `Occupancy.value`. Occupation numbers from '
+        'approximate methods (e.g. MP2/CC natural orbitals, Fermi-Dirac smearing) can fall '
+        'slightly outside their [0, 2] bound; entries beyond [0 - slack*peak, 2 + slack*peak] '
+        'are flagged and clamped into [0, 2]. Default 0.05 matches the previous absolute 0.1 '
+        'at a peak occupation of 2.',
     )
     fermi_surface_tolerance: float = Field(
         1e-8,

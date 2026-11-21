@@ -163,20 +163,41 @@ class TestBoundSlackModeClamp:
     @pytest.mark.parametrize(
         'value,accepted',
         [
-            (1.0, True),  # inside the core interval
-            (2.0 + 5e-7, True),  # just above upper, within slack
-            (-5e-7, True),  # just below lower, within slack
-            (2.1, False),  # beyond the slack band
-            (-0.1, False),  # beyond the slack band
+            (-0.5, True),  # just below 0, within the relative slack band (tol=1.0)
+            (-2.0, False),  # below 0, beyond the band
         ],
     )
-    def test_slack_widens_acceptance(self, value, accepted):
-        bound = Bound('[0,2]', slack=1e-6)
+    def test_relative_slack_widens_acceptance(self, value, accepted):
+        # Relative slack: tol = slack * max(|values|). A dominant in-bound peak of 100 with
+        # slack=0.01 gives tol=1.0, so a small negative excursion is tolerated (the DOS case)
+        # while a large one is not. The peak entry keeps tol fixed across parametrizations.
+        bound = Bound('[0,)', slack=0.01)
+        arr = np.array([100.0, value])
         if accepted:
-            assert bound.check(value) == value
+            assert np.allclose(bound.check(arr), arr)
         else:
             with pytest.raises(ValueError):
-                bound.check(value)
+                bound.check(arr)
+
+    def test_relative_slack_scales_with_peak(self):
+        # The same fraction yields a larger absolute tolerance for a larger data peak.
+        bound = Bound('[0,2]', slack=0.05)  # tol = 0.05 * peak
+        # peak 2.08 -> tol ~0.104 -> 2.08 within the band
+        assert np.allclose(bound.check(np.array([2.0, 2.08])), [2.0, 2.08])
+        # a small-magnitude array has a small peak -> negligible tolerance -> rejected
+        with pytest.raises(ValueError):
+            bound.check(np.array([0.5, -0.2]))  # peak 0.5, tol 0.025, -0.2 beyond
+
+    def test_relative_slack_scalar_has_negligible_band(self):
+        # For a scalar the peak is the value itself, so a value near a zero bound gets ~no
+        # tolerance: a lone small negative is a violation (clamp is what rescues it, not slack).
+        with pytest.raises(ValueError):
+            Bound('[0,)', slack=0.1).check(-1e-6)
+
+    @pytest.mark.parametrize('flat', [[0.0, 0.0], [float('nan'), float('nan')]])
+    def test_relative_slack_zero_or_nan_peak_collapses_band(self, flat):
+        # zero peak or all-NaN -> effective tolerance 0 -> band == core interval
+        assert Bound('[0,)', slack=0.1)._effective_tolerance(flat) == 0.0
 
     @pytest.mark.parametrize('value', [0.0, 1.0])
     def test_slack_zero_preserves_open_interval(self, value):
@@ -184,26 +205,33 @@ class TestBoundSlackModeClamp:
         with pytest.raises(ValueError):
             Bound('(0,1)').check(value)
 
-    def test_slack_message_notes_tolerance(self):
-        with pytest.raises(ValueError, match=r'must be in \[0,2\] \(±0.001\)'):
-            Bound('[0,2]', slack=1e-3).check(3.0)
+    @pytest.mark.parametrize('spec', ['(0,)', '[5,)'])
+    def test_relative_slack_on_half_open_bound_logs_and_keeps(self, spec, monkeypatch):
+        # slack is first-class on open/half-open bounds: a small excursion past the open
+        # endpoint is accepted via the band; beyond it, log-and-keep (no clamp on open ends).
+        monkeypatch.setattr(dt_module, 'LOGGER', Mock())
+        bound = Bound(spec, slack=0.01, on_violation='log')
+        low = 0.0 if spec == '(0,)' else 5.0
+        # dominant in-bound peak 100 -> tol 1.0; a value 0.5 below the open endpoint is kept
+        result = bound.check(np.array([100.0, low - 0.5]))
+        assert np.allclose(result, [100.0, low - 0.5])
+        dt_module.LOGGER.warning.assert_not_called()  # within band -> not a violation
+        # far below the endpoint -> beyond band -> logged, kept
+        result = bound.check(np.array([100.0, low - 5.0]))
+        assert np.allclose(result, [100.0, low - 5.0])
+        dt_module.LOGGER.warning.assert_called_once()
 
-    @pytest.mark.parametrize(
-        'value,expected',
-        [
-            (2.0004, 2.0),  # upper slack region -> snapped to max
-            (-0.0004, 0.0),  # lower slack region -> snapped to min
-            (1.0, 1.0),  # core value untouched
-        ],
-    )
-    def test_clamp_scalar(self, value, expected):
-        bound = Bound('[0,2]', slack=1e-3, clamp=True)
-        assert bound.check(value) == pytest.approx(expected)
+    def test_slack_message_notes_effective_tolerance(self):
+        # the raise message reports the effective absolute tolerance (fraction * peak)
+        with pytest.raises(ValueError, match=r'must be in \[0,2\] \(±0\.003'):
+            Bound('[0,2]', slack=1e-3).check(3.0)  # peak 3.0 -> tol 0.003
 
-    def test_clamp_array_snaps_out_of_core(self):
-        bound = Bound('[0,2]', slack=1e-3, clamp=True)
-        result = bound.check(np.array([-0.0005, 1.0, 2.0004]))
-        assert np.allclose(result, [0.0, 1.0, 2.0])
+    def test_clamp_within_band_snaps_to_core(self):
+        # relative slack accepts small excursions (dominant peak 2.1 -> tol 0.21); clamp then
+        # snaps every out-of-core value to the nearest endpoint. Core values pass untouched.
+        bound = Bound('[0,2]', slack=0.1, clamp=True)
+        result = bound.check(np.array([-0.1, 1.0, 2.1, 2.0]))
+        assert np.allclose(result, [0.0, 1.0, 2.0, 2.0])
 
     def test_log_mode_keeps_value_and_warns(self, monkeypatch):
         monkeypatch.setattr(dt_module, 'LOGGER', Mock())
@@ -302,9 +330,11 @@ class TestBoundSlackModeClamp:
     def test_int_bounded_slack_and_clamp(self):
         # the knobs work through m_int_bounded, not only the raw Bound
         datatype = setup_datatype_for_testing(
-            m_int_bounded(dtype=int, bound=Bound('[0,10]', slack=2, clamp=True))
+            m_int_bounded(dtype=int, bound=Bound('[0,10]', slack=0.2, clamp=True))
         )
-        assert datatype.normalize(11) == 10  # within slack, clamped to max
+        assert (
+            datatype.normalize(11) == 10
+        )  # within relative slack (tol=0.2*11), clamped to max
         assert datatype.normalize(5) == 5
 
     def test_log_mode_end_to_end_through_section(self, monkeypatch):

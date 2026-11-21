@@ -62,42 +62,47 @@ class Bound:
         - '': Unbounded (-∞, ∞)
 
     Two intervals are referred to throughout: the *core interval* is the declared
-    interval `[lower, upper]` itself; the *slack band* is that interval widened by
-    `slack` on both ends, `[lower - slack, upper + slack]`. A value is accepted if it
-    is in the core interval or the slack band; anything beyond the slack band is a
-    violation.
+    interval `[lower, upper]` itself; the *slack band* is that interval widened on both
+    ends by an **effective tolerance** `tol = slack * max(|values|)` -- the relative
+    `slack` fraction scaled by the peak magnitude of the values being checked --
+    `[lower - tol, upper + tol]`. A value is accepted if it is in the core interval or the
+    slack band; anything beyond the slack band is a violation.
 
     The two encode different intents. The core interval is the **physically meaningful
     range** the quantity must lie in (e.g. an occupation in `[0, 2]`, a non-negative
     DOS). `slack` is **not** a widening of that range; it only absorbs **numerical
-    discrepancies** -- floating-point round-off and finite-precision output that push a
-    value a hair outside the interval -- so such noise is tolerated instead of aborting
-    processing. Keep `slack` at the scale of that noise, never large enough to admit a
-    physically distinct value.
+    discrepancies** -- floating-point round-off, smearing/interpolation artifacts, and
+    finite-precision output that push a value a hair outside the interval -- so such noise
+    is tolerated instead of aborting processing. Because the tolerance is relative to the
+    data's own peak, it is scale-invariant: the same fraction is meaningful for a quantity
+    like the DOS whose lower bound is exactly 0 and whose magnitude varies by orders of
+    magnitude across systems. Keep `slack` small (a fraction well below 1), never large
+    enough to admit a physically distinct value.
 
     Units:
-        Bounds and slack are plain magnitudes expressed **in the owning quantity's
-        declared unit**. The check is applied to the value's magnitude *as assigned*
-        (for a `flexible_unit` quantity the magnitude is not converted first; any
-        storage conversion to the declared unit happens afterward). Write the interval
-        and `slack` in the same unit you declared on the quantity (e.g. for a
-        `unit='joule'` quantity, `slack=1e-3` means 1 mJ). For a dimensionless quantity
-        (e.g. an occupation) they are pure numbers.
+        The interval endpoints are plain magnitudes in the owning quantity's declared
+        unit; `slack` is a **unitless fraction** of the data peak, so it carries no unit
+        of its own. The check is applied to the value's magnitude *as assigned* (for a
+        `flexible_unit` quantity the magnitude is not converted first; any storage
+        conversion to the declared unit happens afterward). Write the interval in the
+        unit you declared on the quantity; for a dimensionless quantity (e.g. an
+        occupation) the endpoints are pure numbers.
 
         Because a `flexible_unit=True` quantity is checked in whatever unit each value
         is assigned in, only *scale-invariant* bounds are meaningful there: pure sign
         constraints whose finite endpoints are exactly 0 (`positive_float`,
-        `strictly_positive_float`) and no slack. A nonzero finite endpoint or a positive
-        `slack` is scale-dependent -- it means something different in J than in mJ (the
-        same physical value passes in one unit and fails in another) -- and is rejected
-        on first assignment (see `is_scale_invariant` and the bounded types' `normalize`).
+        `strictly_positive_float`). A nonzero finite endpoint is scale-dependent -- it
+        means something different in J than in mJ (the same physical value passes in one
+        unit and fails in another) -- and is rejected on first assignment. A relative
+        `slack` is itself scale-invariant, but for now any positive `slack` is still
+        conservatively treated as scale-dependent and rejected on `flexible_unit` (see
+        `is_scale_invariant` and the bounded types' `normalize`); lifting that is deferred.
 
     Optional tolerance and failure handling:
-        - `slack`: **absolute** (not relative) tolerance defining the slack band, in the
-          declared unit (see Units above), sized to absorb numerical discrepancies
-          (floating-point noise) at the interval edges rather than to widen the
-          physically meaningful range. Defaults to `0.0` (band == core interval, i.e. the
-          exact historical behavior).
+        - `slack`: **relative** tolerance defining the slack band, as a unitless fraction
+          of the data peak `max(|values|)` (see Units above), sized to absorb numerical
+          discrepancies at the interval edges rather than to widen the physically
+          meaningful range. Defaults to `0.0` (band == core interval).
         - `on_violation`: what to do for values beyond the slack band, `'raise'`
           (default: raise `ValueError`, the historical behavior) or `'log'` (emit a
           warning and keep the value -- unless `clamp` also coerces it -- so a negligible
@@ -137,8 +142,9 @@ class Bound:
 
         Args:
             range_str: Range specification like '[0,1]', '(0,)', etc. Empty means unbounded.
-            slack: Non-negative absolute tolerance widening the acceptance region, in the
-                owning quantity's declared unit (see the class docstring's Units section).
+            slack: Non-negative relative tolerance widening the acceptance region, as a
+                unitless fraction of the data peak `max(|values|)` (see the class
+                docstring's Units section).
             on_violation: `'raise'` or `'log'` handling for out-of-region values.
             clamp: Coerce any out-of-core value into the interval; `slack` only sets the
                 violation threshold, not what gets snapped.
@@ -220,23 +226,37 @@ class Bound:
 
         return True
 
-    def _within_slack_band(self, value: int | float) -> bool:
-        """Whether a value lies within the slack band `[min-slack, max+slack]`."""
-        if np.isfinite(self._min_value) and value < self._min_value - self.slack:
+    def _within_slack_band(self, value: int | float, tol: float) -> bool:
+        """Whether a value lies within the slack band `[min-tol, max+tol]`, where `tol` is
+        the effective absolute tolerance for the current check (see `_effective_tolerance`)."""
+        if np.isfinite(self._min_value) and value < self._min_value - tol:
             return False
-        if np.isfinite(self._max_value) and value > self._max_value + self.slack:
+        if np.isfinite(self._max_value) and value > self._max_value + tol:
             return False
         return True
 
-    def _is_acceptable(self, value: int | float) -> bool:
-        """Whether a value is accepted: it satisfies the core interval, or (with a
-        positive `slack`) falls within the slack band."""
+    def _is_acceptable(self, value: int | float, tol: float) -> bool:
+        """Whether a value is accepted: it satisfies the core interval, or (with a positive
+        effective tolerance `tol`) falls within the slack band."""
         if self._check_single_value(value):
             return True
-        # This is not a second core-interval check: at slack == 0 the band collapses to
+        # This is not a second core-interval check: at tol == 0 the band collapses to
         # the *inclusive* core edges and would re-admit the endpoints an open interval
         # rejects, so only consult the band once slack adds real width.
-        return self.slack > 0 and self._within_slack_band(value)
+        return tol > 0 and self._within_slack_band(value, tol)
+
+    def _effective_tolerance(self, flat_values: list) -> float:
+        """Absolute tolerance for the current check: the relative `slack` fraction scaled by
+        the data's peak magnitude `max(|finite values|)`. Making the tolerance relative keeps
+        it scale-invariant -- the same fraction is meaningful whatever unit the values arrive
+        in -- which is what lets it work on a quantity like the DOS whose lower bound is
+        exactly 0 and whose magnitude varies by orders of magnitude across systems. Zero
+        slack, an empty/all-NaN array, or an all-zero peak collapses the band to the core
+        interval (tolerance 0)."""
+        if self.slack <= 0:
+            return 0.0
+        finite = [abs(v) for v in flat_values if np.isfinite(v)]
+        return self.slack * max(finite, default=0.0)
 
     def _clamp_single(self, value: int | float) -> int | float:
         """Snap one scalar into `[lower, upper]`: below the lower bound -> lower, above the
@@ -269,11 +289,13 @@ class Bound:
             return [self._apply_clamp(v) for v in value]
         return self._clamp_single(value)
 
-    def _log_violation(self, violations: list, section: Any) -> None:
+    def _log_violation(self, violations: list, section: Any, tol: float) -> None:
         """Emit a single warning for values beyond the slack band, enriched with `section`
         context when available (no bound logger exists at assignment time). The
         `disposition` field records what then happens to those values: `'clamped'` into
-        range when `clamp` is set, otherwise `'kept'` as-is."""
+        range when `clamp` is set, otherwise `'kept'` as-is. `slack_relative` is the declared
+        fraction; `slack_effective` is the absolute tolerance it resolved to for this check
+        (fraction times the data peak)."""
         context: dict[str, Any] = {}
         if section is not None:
             m_def = getattr(section, 'm_def', None)
@@ -291,7 +313,8 @@ class Bound:
             'Value(s) outside bounds.',
             disposition='clamped' if self.clamp else 'kept',
             bound=str(self),
-            slack=self.slack,
+            slack_relative=self.slack,
+            slack_effective=tol,
             n_violations=len(violations),
             value_range=[min(violations), max(violations)],
             **context,
@@ -323,18 +346,19 @@ class Bound:
             return value
 
         if flat_values := _flatten_values(value):
-            violations = [v for v in flat_values if not self._is_acceptable(v)]
+            tol = self._effective_tolerance(flat_values)
+            violations = [v for v in flat_values if not self._is_acceptable(v, tol)]
 
             if violations:
                 if self.on_violation == 'raise':
                     min_val = min(flat_values)
                     max_val = max(flat_values)
-                    slack_note = f' (±{self.slack})' if self.slack > 0 else ''
+                    slack_note = f' (±{tol})' if tol > 0 else ''
                     raise ValueError(
                         f'All values must be in {self}{slack_note}, '
                         f'got range [{min_val}, {max_val}]'
                     )
-                self._log_violation(violations, kwargs.get('section'))
+                self._log_violation(violations, kwargs.get('section'), tol)
 
         # Runs whether or not there were violations: snaps slack-accepted values (and, in
         # log mode, kept beyond-band ones) into the core interval; a no-op if none exist.
@@ -345,8 +369,13 @@ class Bound:
     def is_scale_invariant(self) -> bool:
         """Whether this bound survives an unknown positive unit rescale, and is therefore
         meaningful on a `flexible_unit` quantity. True only for a pure sign constraint:
-        every finite endpoint is exactly 0 and there is no absolute `slack` (a nonzero
-        endpoint or positive slack means something different across units)."""
+        every finite endpoint is exactly 0 and there is no `slack`.
+
+        Note: a *relative* `slack` is in fact scale-invariant (a unitless fraction of the
+        data peak), so this could return True for `slack > 0`. That is deliberately deferred
+        -- flexible_unit interplay is out of scope -- so any positive slack is still
+        conservatively reported as scale-dependent and thus rejected on flexible_unit
+        quantities."""
         if self.slack > 0:
             return False
         if np.isfinite(self._min_value) and self._min_value != 0:
@@ -369,7 +398,11 @@ class Bound:
 def _serialize_bounded_type(cls: type, dtype: type, bound: Bound, flags: dict) -> dict:
     """Serialize the bounded type as `type_kind='custom'` so `normalize_type` reloads this
     exact class (with its bound) rather than the plain base numeric type; `dtype` goes in
-    `type_dtype`. Inverse of `_deserialize_bounded_type`."""
+    `type_dtype`. Inverse of `_deserialize_bounded_type`. `type_bound_slack` is a relative
+    fraction of the data peak (not an absolute magnitude); the key name is unchanged, so a
+    snapshot serialized under the earlier absolute-slack semantics is now reread as a
+    fraction -- acceptable because bounds live in the versioned schema definition,
+    regenerated from code, rather than in user archive data."""
     # `type_kind='custom'` is the discriminator that reloads this class, not a plain dtype.
     return {
         'type_kind': 'custom',
