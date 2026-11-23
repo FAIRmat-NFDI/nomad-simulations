@@ -114,6 +114,12 @@ branch depth and composition labels consistently along the tree. In practice:
 - intermediate groups summarize repeated motifs,
 - leaf systems resolve to particle-label formulas.
 
+Internal composition formulas count the names of immediate children, not their
+hierarchy roles. An unnamed child falls back to its `branch_label`. Group layers
+remain explicit: a polymer containing `group_CH3` and `group_PEO_1` has composition
+`group_CH3(1)group_PEO_1(1)`, while the PEO group counts its monomers as
+`PEO_1(100)`. Explicitly supplied composition formulas are preserved.
+
 Keep subsystem-hierarchy semantics (`sub_systems`) distinct from alternative geometric
 views (`representations`).
 

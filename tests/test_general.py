@@ -317,6 +317,92 @@ class TestSimulation:
 
         assert root.composition_formula == 'Custom(1)'
 
+    @pytest.mark.parametrize(
+        'children, expected',
+        [
+            (
+                [
+                    ModelSystem(name='group_PEO_0', branch_label='molecule_group'),
+                    ModelSystem(name='group_SOL', branch_label='molecule_group'),
+                ],
+                'group_PEO_0(1)group_SOL(1)',
+            ),
+            (
+                [
+                    ModelSystem(name='PEO_0', branch_label='molecule'),
+                    ModelSystem(name='PEO_0', branch_label='molecule'),
+                ],
+                'PEO_0(2)',
+            ),
+            (
+                [ModelSystem(name='named'), ModelSystem(branch_label='fallback')],
+                'fallback(1)named(1)',
+            ),
+        ],
+    )
+    def test_composition_counts_child_names_before_branch_roles(
+        self, children, expected
+    ):
+        system = ModelSystem(sub_systems=children)
+
+        assert Simulation.get_composition_formula(system) == expected
+
+    def test_polymer_composition_retains_explicit_group_layers(self):
+        molecules = []
+        for _ in range(2):
+            molecules.append(
+                ModelSystem(
+                    name='PEO_0',
+                    branch_label='molecule',
+                    sub_systems=[
+                        ModelSystem(
+                            name='group_CH3',
+                            branch_label='monomer_group',
+                            sub_systems=[
+                                ModelSystem(name='CH3', branch_label='monomer')
+                                for _ in range(2)
+                            ],
+                        ),
+                        ModelSystem(
+                            name='group_PEO_1',
+                            branch_label='monomer_group',
+                            sub_systems=[
+                                ModelSystem(name='PEO_1', branch_label='monomer')
+                                for _ in range(3)
+                            ],
+                        ),
+                    ],
+                )
+            )
+        group = ModelSystem(
+            name='group_PEO_0', branch_label='molecule_group', sub_systems=molecules
+        )
+        root = ModelSystem(sub_systems=[group])
+
+        Simulation.set_composition_formula(root)
+
+        assert root.composition_formula == 'group_PEO_0(1)'
+        assert group.composition_formula == 'PEO_0(2)'
+        for molecule in molecules:
+            assert molecule.composition_formula == 'group_CH3(1)group_PEO_1(1)'
+            assert molecule.sub_systems[0].composition_formula == 'CH3(2)'
+            assert molecule.sub_systems[1].composition_formula == 'PEO_1(3)'
+        restored = ModelSystem.m_from_dict(root.m_to_dict())
+        Simulation.set_composition_formula(restored)
+        assert restored.m_to_dict() == root.m_to_dict()
+
+    def test_custom_internal_composition_is_not_rewritten(self):
+        root = ModelSystem(
+            composition_formula='Custom(1)',
+            sub_systems=[
+                ModelSystem(name='group_PEO_0', branch_label='molecule_group')
+            ],
+        )
+
+        Simulation.set_composition_formula(root)
+
+        assert root.composition_formula == 'Custom(1)'
+
 
 @pytest.mark.parametrize(
     'initial_flags, expected_index, expected_flags',

@@ -198,15 +198,22 @@ class Simulation(BaseSimulation, Schema):
 
     @staticmethod
     def get_composition_formula(system: ModelSystem) -> str | None:
+        """Return explicit composition or count immediate children by their names.
+
+        Unnamed children fall back to branch labels for compatibility. If no
+        child has either, or the system is a leaf, use resolved particle labels.
+        """
         # Honor custom formulas
         if system.composition_formula is not None:
             return system.composition_formula
 
         formula = None
         subsystems = system.sub_systems
-        # INTERNAL NODE: use child branch labels
+        # Internal nodes describe the named components, not their hierarchy roles.
         if subsystems:
-            children_names = [(child.branch_label or 'Unknown') for child in subsystems]
+            children_names = [
+                child.name or child.branch_label or 'Unknown' for child in subsystems
+            ]
             children_names = (
                 children_names
                 if not all([name == 'Unknown' for name in children_names])
@@ -214,7 +221,7 @@ class Simulation(BaseSimulation, Schema):
             )
             formula = get_composition(children_names=children_names)
 
-        # LEAF NODE or all children have no branch_label
+        # Leaf node or no child has a name/branch label.
         if not formula:
             if system.particle_indices is None and not system.is_root_system():
                 return None
@@ -235,8 +242,10 @@ class Simulation(BaseSimulation, Schema):
         -----
         - Never overwrite a pre-set custom composition_formula (only set when None).
         - Internal nodes (with children):
-            * Formula counts child branch labels when available, using 'Unknown' otherwise.
-            * If no children have branch labels, falls back to using particle labels.
+            * Count immediate child names, falling back to branch labels for
+              unnamed children and 'Unknown' when both are absent.
+            * Keep group layers explicit; do not flatten their descendants.
+            * If all children lack names and branch labels, use particle labels.
         - Leaves (no children):
             * Uses particle labels.
             * If particle_indices or symbols are missing → leave as None.
