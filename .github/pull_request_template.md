@@ -53,4 +53,4 @@ Closes ...
 
 <!-- Anything reviewers should pay special attention to? Trade-offs, known limitations, or areas of uncertainty. -->
 
-<! Is ready for review? If not, choose "Draft pull request" -->
+<!-- Is it ready for review? If not, choose "Draft pull request" -->
