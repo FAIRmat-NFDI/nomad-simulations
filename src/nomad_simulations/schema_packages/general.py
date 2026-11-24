@@ -198,10 +198,10 @@ class Simulation(BaseSimulation, Schema):
 
     @staticmethod
     def get_composition_formula(system: ModelSystem) -> str | None:
-        """Return explicit composition or count immediate children by their names.
+        """Return a supplied composition or count immediate child names.
 
-        Unnamed children fall back to branch labels for compatibility. If no
-        child has either, or the system is a leaf, use resolved particle labels.
+        Unnamed children use branch labels. Leaves and systems whose children
+        have neither names nor branch labels use resolved particle labels.
         """
         # Honor custom formulas
         if system.composition_formula is not None:
@@ -209,7 +209,7 @@ class Simulation(BaseSimulation, Schema):
 
         formula = None
         subsystems = system.sub_systems
-        # Internal nodes describe the named components, not their hierarchy roles.
+        # Count immediate children by name, falling back to branch labels.
         if subsystems:
             children_names = [
                 child.name or child.branch_label or 'Unknown' for child in subsystems
