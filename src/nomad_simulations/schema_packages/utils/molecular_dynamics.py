@@ -144,7 +144,31 @@ def _check_package_dependency(
 
 
 class BeadGroup:
-    """Expose molecular centers as positions for MDAnalysis RDF and MSD analyses."""
+    """Expose compound centers as bead positions for MDAnalysis RDF and MSD analyses.
+
+    Wrap an AtomGroup with ``positions``, ``universe``, and a bead count so that
+    analyses can operate on compound centers instead of individual atoms.
+
+    Parameters
+    ----------
+    atoms : MDAnalysis.core.groups.AtomGroup
+        Selected atoms containing the complete compounds to be analyzed.
+    compound : {'molecules', 'residues', 'segments', 'fragments'}, default 'molecules'
+        Grouping used to calculate centers of mass. Molecules are identified by
+        their ``molnums``, not by bond-connected fragments.
+
+    Notes
+    -----
+    Positions are cached for the current trajectory frame and recalculated when
+    the frame changes. Multi-site centers use MDAnalysis center-of-mass
+    calculations with unwrapping, requiring masses and suitable bond topology.
+    When every selected molecule has a single site, its position is used directly
+    in molecule-ID order without requiring masses or bonds.
+
+    Adapted from Richard Gowers's original ``BeadGroup`` example, with performance
+    improvements and molecule-ID grouping:
+    https://github.com/MDAnalysis/mdanalysis/issues/1891#issuecomment-387138110
+    """
 
     def __init__(self, atoms, compound='molecules'):
         """Group atoms by the requested compound and cache centers per frame."""
