@@ -103,25 +103,87 @@ The `sub_systems` subsection enables description of hierarchical compositions wh
 --8<-- "snippets/explanation/model_system/model_system/block_04.py"
 ```
 
-Sub-systems are defined through the `branch_label`, `branch_depth`, `particle_indices`, and `bond_list` quantities that create a parent-child tree structure. Each subsystem at any level can have its own `representations` subsection for alternative geometric views of that specific subsystem.
+Parent-child relationships are defined by nesting `ModelSystem` sections in
+`sub_systems`, not by their names, branch labels, or bonds. A subsystem's
+`particle_indices` identifies its particles using zero-based indices into the
+root system's particle arrays, even when the subsystem is nested several levels
+deep. These are not indices relative to its immediate parent. Each subsystem can
+also have alternative geometric views in `representations`; those views do not
+add levels to the subsystem tree.
 
 ### Hierarchy and Composition Behavior
 
-When a ModelSystem subsystem hierarchy is populated, normalization resolves
-branch depth and composition labels consistently along the tree. In practice:
+#### Parser Responsibilities
 
-- root systems summarize child groups in `composition_formula`,
-- intermediate groups summarize repeated motifs,
-- leaf systems resolve to particle-label formulas.
+The parser, or another archive producer, constructs the hierarchy from the
+available structural and topology information. It chooses which components to
+represent, their parent-child relationships, particle membership, and names.
+For example, a molecular simulation parser may use molecule groups, individual
+molecules, monomer groups, and individual monomers. These levels are a parser
+convention, not a fixed hierarchy required by `ModelSystem`.
 
-Internal composition formulas count the names of immediate children, not their
-hierarchy roles. An unnamed child falls back to its `branch_label`. Group layers
-remain explicit: a polymer containing `group_CH3` and `group_PEO_1` has composition
-`group_CH3(1)group_PEO_1(1)`, while the PEO group counts its monomers as
-`PEO_1(100)`. Explicitly supplied composition formulas are preserved.
+Use `name` to identify the component and `branch_label` to describe its role in
+the hierarchy, such as `molecule` or `molecule_group`. Repeated components can
+occupy separate sections with the same name and different particle indices.
+The producer is responsible for deciding which components should share a name
+and which need distinct names; normalization does not infer chemical equivalence
+or assign type names.
 
-Keep subsystem-hierarchy semantics (`sub_systems`) distinct from alternative geometric
-views (`representations`).
+For molecular hierarchies, we adopt an explicit group section for each component
+type, with a separate child section for each occurrence. For example, two
+components of type `A` and one of type `B` are stored as:
+
+```text
+system
+├── group_A
+│   ├── A
+│   └── A
+└── group_B
+    └── B
+```
+
+Here `A` and `B` are component names, not chemical symbols. The same convention
+can be applied to monomer types within a molecule. The parser creates these
+group sections, including a group containing only one occurrence; the schema
+normalizer does not insert them.
+
+#### Schema Normalization Responsibilities
+
+`Simulation.normalize()` visits each root in `model_system` and its descendants.
+It sets `branch_depth` from the nesting, starting at zero for the root, and fills
+missing `composition_formula` values. It does not create, merge, reorder, or
+rename subsystems. This hierarchy pass is separate from the representative-system
+geometry, symmetry, and chemical-formula analysis in `ModelSystem.normalize()`.
+
+The default composition convention is:
+
+- For a system with children, count its **immediate child names** using
+  `name(count)`. The count is the number of child sections with that name,
+  not their particle count or the number of descendants at deeper levels.
+- For an unnamed child, use its `branch_label`; if both are absent, use
+  `Unknown`. If all children lack both fields, fall back to the system's
+  resolved particle labels instead.
+- For a leaf, count its resolved particle labels, selecting the root particles
+  through its `particle_indices` where applicable. If the necessary membership
+  or labels are unavailable, the formula remains unset.
+- Preserve any pre-set `composition_formula`, including values supplied by a
+  parser. Leave it unset to request the schema default. Producers that supply
+  formulas must keep them consistent with the final names and hierarchy;
+  normalization does not regenerate a stored formula after those change.
+
+##### Counts Follow the Stored Hierarchy
+
+For the hierarchy in [Parser Responsibilities](#parser-responsibilities), the
+schema computes `group_A(1)group_B(1)` for the root and `A(2)` and `B(1)` for the
+two groups. The groups are components in their own right at the root
+level, so normalization does not flatten them into `A(2)B(1)`. If the producer
+instead stores `A`, `A`, and `B` directly under the root, that root's default
+composition is `A(2)B(1)`.
+
+Thus `composition_formula` describes the stored decomposition, not necessarily
+an elemental chemical formula. Elemental composition and its Hill, reduced, or
+other chemical notations belong in `chemical_formula` and require resolved
+atomic identities.
 
 ## Derived Behavior During Normalization
 
@@ -170,7 +232,9 @@ See [Normalization](../../schema_development/normalize.md) for more details on t
 - `'active_atom'`: Specific atoms involved in a chemical reaction or property
 - `'region'`: A spatial region within a larger system
 
-**`branch_label` (string)**: Human-readable label for this system when it appears as a sub-system in a hierarchical tree.
+**`name` (string)**: Producer-supplied component name. The default composition of its parent counts immediate children with the same name together.
+
+**`branch_label` (string)**: Producer-supplied label describing the component's role in the hierarchy, for example `molecule` or `molecule_group`. It does not establish parentage and is used as a composition fallback only when `name` is absent.
 
 **`branch_depth` (integer)**: Depth of this system in the hierarchical tree (0 for root, 1 for direct children, etc.).
 
