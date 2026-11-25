@@ -1,0 +1,51 @@
+name: Refresh uv.lock
+on:
+  schedule:
+    - cron: "0 5 * * 1" # Every Monday at 5am (UTC time)
+  workflow_dispatch:
+    inputs:
+      packages:
+        description: "Upgrade only these packages (space-separated); empty upgrades all"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  UV_VERSION: 0.7
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        ref: develop
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: ${{ env.UV_VERSION }}
+    - name: Upgrade the locked versions
+      env:
+        PACKAGES: ${{ inputs.packages }}
+      run: |
+        if [ -n "$PACKAGES" ]; then
+          uv lock $(printf -- '--upgrade-package %s ' $PACKAGES)
+        else
+          uv lock --upgrade
+        fi
+    - name: Open or update the pull request
+      uses: peter-evans/create-pull-request@v7
+      with:
+        # A pull request opened with the default token does not start the checks.
+        token: ${{ secrets.LOCK_REFRESH_TOKEN || github.token }}
+        base: develop
+        branch: bot/refresh-uv-lock
+        add-paths: uv.lock
+        commit-message: "Refresh `uv.lock`"
+        title: "Refresh `uv.lock`"
+        body: |
+          Automated refresh of the locked dependency versions.
+          Merge when the checks pass; if they fail, an upstream release needs attention.
