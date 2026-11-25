@@ -374,7 +374,7 @@ class TestAtomsState:
             (1, 'H', 'H'),
             (29, 'Cu', 'Cu'),
             (8, 'O', 'O'),
-            pytest.param(0, 'X', '', id='ghost-atom'),
+            pytest.param(0, 'X', 'X', id='ghost-atom'),
             pytest.param(
                 150,
                 None,

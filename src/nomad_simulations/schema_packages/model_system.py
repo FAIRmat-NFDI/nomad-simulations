@@ -1665,7 +1665,7 @@ class ModelSystem(System, Representation):
             return self._cache['symbols_without_ghost_atoms']
 
         symbols = self.get_symbols()
-        if self.is_root_system():
+        if symbols and self.is_root_system():
             symbols = [
                 s
                 for s, ps in zip(symbols, self.particle_states, strict=True)
