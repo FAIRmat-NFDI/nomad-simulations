@@ -991,10 +991,8 @@ class AtomsState(ParticleState):
     def get_label(self) -> str | None:
         """
         Returns the label of the particle.
-
-        If `chemical_symbol` is set to "X" (ghost atom), returns an empty string.
         """
-        return (s if s != 'X' else '') if (s := self.chemical_symbol) else self.label
+        return self.chemical_symbol if self.chemical_symbol else self.label
 
     def resolve_chemical_symbol(self, logger: 'BoundLogger') -> str | None:
         """

@@ -542,9 +542,10 @@ class TestModelSystem:
             len(system.representations),
             hill_formula,
         )
-        if structural_results == (None, None, 0, None):
-            pytest.xfail('The empty ghost-atom label blocks structural normalization')
-        assert structural_results == ('bulk', 225, 2, 'Fe4O4')
+        assert system.type == 'bulk'
+        assert space_group == 215
+        assert len(system.representations) == 2
+        assert hill_formula == 'Fe4O4'
 
     @pytest.mark.parametrize(
         'lattice_vectors, pbc, should_clear, description',
