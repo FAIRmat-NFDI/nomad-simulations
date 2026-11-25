@@ -368,21 +368,36 @@ class TestAtomsState:
         assert atom_state.atomic_number == atomic_number
 
     @pytest.mark.parametrize(
-        'atomic_number, chemical_symbol',
+        'atomic_number, chemical_symbol, label',
         [
-            (26, 'Fe'),
-            (1, 'H'),
-            (29, 'Cu'),
-            (8, 'O'),
+            (26, 'Fe', 'Fe'),
+            (1, 'H', 'H'),
+            (29, 'Cu', 'Cu'),
+            (8, 'O', 'O'),
+            pytest.param(0, 'X', '', id='ghost-atom'),
+            pytest.param(
+                150,
+                None,
+                None,
+                id='out-of-range',
+                marks=pytest.mark.xfail(
+                    strict=True,
+                    raises=AttributeError,
+                    reason='Symbol resolution uses the logger annotation on error',
+                ),
+            ),
         ],
     )
-    def test_atomic_number_to_symbol(self, atomic_number: int, chemical_symbol: str):
+    def test_atomic_number_to_symbol(
+        self, atomic_number: int, chemical_symbol: str | None, label: str | None
+    ):
         """
         Test that providing an atomic_number sets the correct chemical_symbol after normalization.
         """
         atom_state = AtomsState(atomic_number=atomic_number)
         atom_state.normalize(EntryArchive(), logger)
         assert atom_state.chemical_symbol == chemical_symbol
+        assert atom_state.get_label() == label
 
 
 class TestCGBeadState:

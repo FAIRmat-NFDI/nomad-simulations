@@ -286,22 +286,39 @@ class TestSimulation:
 
         _ = get_system_recurs(systems=model_system.sub_systems, ctr_comp=ctr_comp)
 
-    def test_root_leaf_composition_from_symbols_no_subsystems(self):
+    @pytest.mark.parametrize(
+        'particle_identities, expected_formula',
+        [
+            pytest.param([('H', 1), ('H', 1), ('O', 8)], 'H(2)O(1)', id='water'),
+            pytest.param([('Fe', 26), ('O', 8)], 'Fe(1)O(1)', id='iron-oxide'),
+            pytest.param(
+                [('Fe', 26), ('O', 8), ('X', 0)], 'Fe(1)O(1)', id='with-ghost-atom'
+            ),
+            pytest.param([('X', 0)], None, id='ghost-atom-only'),
+            pytest.param(
+                [('Fe', 26), ('O', 8), (None, 150)], None, id='with-unresolved-atom'
+            ),
+        ],
+    )
+    def test_root_leaf_composition_from_symbols_no_subsystems(
+        self,
+        particle_identities: list[tuple[str | None, int]],
+        expected_formula: str | None,
+    ):
         """
         Root with no subsystems/particle_indices derives composition from its own symbols.
         """
         root = ModelSystem(is_representative=True)
-        root.representations.append(
-            Representation()
-        )  # minimal representation so normalize doesn't bail
-        for sym in ['H', 'H', 'O']:
-            root.particle_states.append(AtomsState(chemical_symbol=sym))
+        root.particle_states.extend(
+            AtomsState(chemical_symbol=symbol, atomic_number=number)
+            for symbol, number in particle_identities
+        )
 
         sim = Simulation(model_system=[root])
         sim.normalize(EntryArchive(), logger=logger)
 
         assert root.particle_indices is None  # root doesn't store indices
-        assert root.composition_formula == 'H(2)O(1)'
+        assert root.composition_formula == expected_formula
 
     def test_root_leaf_custom_composition_preserved(self):
         """
