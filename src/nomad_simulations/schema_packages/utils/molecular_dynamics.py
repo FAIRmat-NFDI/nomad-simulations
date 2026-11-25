@@ -149,21 +149,20 @@ class BeadGroup:
     Wrap an AtomGroup with ``positions``, ``universe``, and a bead count so that
     analyses can operate on compound centers instead of individual atoms.
 
-    Parameters
-    ----------
-    atoms : MDAnalysis.core.groups.AtomGroup
-        Selected atoms containing the complete compounds to be analyzed.
-    compound : {'molecules', 'residues', 'segments', 'fragments'}, default 'molecules'
-        Grouping used to calculate centers of mass. Molecules are identified by
-        their ``molnums``, not by bond-connected fragments.
+    Args:
+        atoms (MDAnalysis.core.groups.AtomGroup): Selected atoms containing the
+            complete compounds to be analyzed.
+        compound (str): Grouping used to calculate centers of mass. Accepts
+            'molecules', 'residues', 'segments', or 'fragments'; defaults to
+            'molecules'. Molecules are identified by their ``molnums``, not by
+            bond-connected fragments.
 
-    Notes
-    -----
-    Positions are cached for the current trajectory frame and recalculated when
-    the frame changes. Multi-site centers use MDAnalysis center-of-mass
-    calculations with unwrapping, requiring masses and suitable bond topology.
-    When every selected molecule has a single site, its position is used directly
-    in molecule-ID order without requiring masses or bonds.
+    Note:
+        Positions are cached for the current trajectory frame and recalculated
+        when the frame changes. Multi-site centers use MDAnalysis center-of-mass
+        calculations with unwrapping, requiring masses and suitable bond topology.
+        When every selected molecule has a single site, its position is used
+        directly in molecule-ID order without requiring masses or bonds.
 
     Adapted from Richard Gowers's original ``BeadGroup`` example, with performance
     improvements and molecule-ID grouping:
