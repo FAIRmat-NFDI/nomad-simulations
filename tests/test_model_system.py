@@ -536,12 +536,6 @@ class TestModelSystem:
         assert system.composition_formula == 'Fe(4)O(4)'
         space_group = system.symmetry.space_group_number if system.symmetry else None
         hill_formula = system.chemical_formula.hill if system.chemical_formula else None
-        structural_results = (
-            system.type,
-            space_group,
-            len(system.representations),
-            hill_formula,
-        )
         assert system.type == 'bulk'
         assert space_group == 215
         assert len(system.representations) == 2

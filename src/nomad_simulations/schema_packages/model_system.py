@@ -1666,9 +1666,12 @@ class ModelSystem(System, Representation):
 
         symbols = self.get_symbols()
         if self.is_root_system():
-            for i, ps in enumerate(self.particle_states):
-                if isinstance(ps, AtomsState) and symbols[i] == 'X':
-                    symbols[i] = ''
+            symbols = [
+                s
+                for s, ps in zip(symbols, self.particle_states, strict=True)
+                if not (isinstance(ps, AtomsState) and s == 'X')
+            ]
+
         self._cache['symbols_without_ghost_atoms'] = symbols
         return symbols
 
