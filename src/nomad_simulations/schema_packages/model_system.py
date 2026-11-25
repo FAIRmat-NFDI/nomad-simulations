@@ -1484,7 +1484,7 @@ class ModelSystem(System, Representation):
 
             branch 0, index 0: "Total_System" composition_formula = group_H2O(1)
             branch 1, index 0: "group_H2O"    composition_formula = H2O(3)
-            branch 2, index 0: "H2O"          composition_formula = H(1)O(2)
+            branch 2, index 0: "H2O"          composition_formula = H(2)O(1)
         """,
     )
 
