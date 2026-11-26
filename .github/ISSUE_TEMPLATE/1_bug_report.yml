@@ -1,0 +1,52 @@
+name: Bug Report
+description: File a bug report.
+title: "Problem: "
+labels: ["bug"]
+type: bug
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What is wrong?
+      description: What is expected?
+      placeholder: A bug happens!
+    validations:
+      required: true
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: On which head?
+      options:
+        - develop
+        - other (explain in below)
+      default: 0
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: What is the environment / other packages versions?
+      placeholder: nomad-simulations version, etc
+    validations:
+      required: false
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Additional steps to reproduce the problem
+      placeholder: Run this command on that file, etc
+    validations:
+      required: false
+
+  - type: upload
+    id: files
+    attributes:
+      label: Upload files
+      description: If applicable, add input files or anything else
+    validations:
+      required: false
