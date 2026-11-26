@@ -1170,76 +1170,6 @@ class GlobalCrystalSymmetry(GlobalSymmetry):
 Symmetry = GlobalCrystalSymmetry
 
 
-class ChemicalFormula(ArchiveSection):
-    """
-    A base section used to store the chemical formulas of a `ModelSystem` in different formats.
-    """
-
-    descriptive = Quantity(
-        type=str,
-        description="""
-        The chemical formula of the system as a string to be descriptive of the computation.
-        It is derived from `elemental_composition` if not specified, with non-reduced integer
-        numbers for the proportions of the elements.
-        """,
-    )
-
-    reduced = Quantity(
-        type=str,
-        description="""
-        Alphabetically sorted chemical formula with reduced integer chemical proportion
-        numbers. The proportion number is omitted if it is 1.
-        """,
-    )
-
-    iupac = Quantity(
-        type=str,
-        description="""
-        Chemical formula where the elements are ordered using a formal list based on
-        electronegativity as defined in the IUPAC nomenclature of inorganic chemistry (2005):
-
-            - https://en.wikipedia.org/wiki/List_of_inorganic_compounds
-
-        Contains reduced integer chemical proportion numbers where the proportion number
-        is omitted if it is 1.
-        """,
-    )
-
-    hill = Quantity(
-        type=str,
-        description="""
-        Chemical formula where Carbon is placed first, then Hydrogen, and then all the other
-        elements in alphabetical order. If Carbon is not present, the order is alphabetical.
-        """,
-    )
-
-    anonymous = Quantity(
-        type=str,
-        description="""
-        Formula with the elements ordered by their reduced integer chemical proportion
-        number, and the chemical species replaced by alphabetically ordered letters. The
-        proportion number is omitted if it is 1.
-
-        Examples: H2O becomes A2B and H2O2 becomes AB. The letters are drawn from the English
-        alphabet that may be extended by increasing the number of letters: A, B, ..., Z, Aa, Ab
-        and so on. This definition is in line with the similarly named OPTIMADE definition.
-        """,
-    )
-
-    def resolve_chemical_formulas(self, formula: Formula) -> None:
-        """
-        Resolves the chemical formulas of the `ModelSystem` in different formats.
-
-        Args:
-            formula (Formula): The Formula object from NOMAD atomutils containing the chemical formulas.
-        """
-        self.descriptive = formula.format(fmt='descriptive')
-        self.reduced = formula.format(fmt='reduced')
-        self.iupac = formula.format(fmt='iupac')
-        self.hill = formula.format(fmt='hill')
-        self.anonymous = formula.format(fmt='anonymous')
-
-
 # Add backward compatibility property for surface_area -> boundary_area using lambdas
 setattr(
     Representation,
@@ -1274,9 +1204,7 @@ class ModelSystem(System, Representation):
 
     It is composed of the sub-sections:
         - `Representation` containing alternative representations of the system
-        - `GlobalSymmetry` containing the global symmetry information for bulk ModelSystem,
-        - `ChemicalFormula` containing the information of the chemical formulas in different
-        formats.
+        - `GlobalSymmetry` containing the global symmetry information for bulk ModelSystem.
 
     This class nests over itself (with the section proxy in `sub_systems`) to define different
     parent-child system trees. The quantities `branch_label`, `branch_depth`, `particle_indices`,
@@ -1290,7 +1218,7 @@ class ModelSystem(System, Representation):
         2. Subsystem validation
         3. System type and dimensionality resolution (if representative and atomic)
         4. Symmetry section creation and normalization (for bulk systems)
-        5. ChemicalFormula section creation and normalization
+        5. Chemical formula resolution
 
     Note: Other normalizations (ParticleState, ElectronicState, etc.) are handled automatically
     by NOMAD's normalization system when their respective sections are processed.
@@ -1387,8 +1315,6 @@ class ModelSystem(System, Representation):
     )
 
     symmetry = SubSection(sub_section=GlobalSymmetry.m_def)
-
-    chemical_formula = SubSection(sub_section=ChemicalFormula.m_def)
 
     branch_label = Quantity(
         type=str,
@@ -1995,12 +1921,19 @@ class ModelSystem(System, Representation):
             self.symmetry = GlobalCrystalSymmetry()
             self.symmetry.normalize(archive, logger)
 
-        # Create and normalize ChemicalFormula section
-        if atom_labels := self.get_symbols():
-            sec_chemical_formula = self.m_create(ChemicalFormula)
-            sec_chemical_formula.resolve_chemical_formulas(
-                Formula(formula=''.join(atom_labels))
-            )
+        # Fill the chemical formula from the particle states, or check the given one
+        if self.chemical_formula is None:
+            if atom_labels := self.get_symbols():
+                self.chemical_formula = Formula(formula=''.join(atom_labels)).format(
+                    fmt='hill'
+                )
+        else:
+            try:
+                Formula(formula=self.chemical_formula)
+            except ValueError:
+                logger.warning(
+                    'ASE cannot parse the chemical formula %s.', self.chemical_formula
+                )
 
     def _generate_comparer(self):
         if self.positions is None:

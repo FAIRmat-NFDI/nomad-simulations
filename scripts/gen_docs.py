@@ -535,7 +535,6 @@ def build_index_page(
             'representations',
             'particle_states',
             'symmetry',
-            'chemical_formula',
         ],
         'model_method': [
             'model_method_electronic',

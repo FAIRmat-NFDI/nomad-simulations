@@ -339,7 +339,6 @@ ModelSystem Page (if many children, split into diagrams):
 
   Diagram 2:
     ModelSystem → ParticleState  ✓
-    ModelSystem → ChemicalFormula ✓
     ... (remaining children)
 
   (Simulation → ModelSystem NOT shown - child hiding parent)

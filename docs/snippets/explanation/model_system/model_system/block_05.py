@@ -31,4 +31,4 @@ silicon.normalize(archive, logger)
 
 # Access results
 print(f"Space group: {silicon.symmetry.space_group_number}")
-print(f"Formula: {silicon.chemical_formula.reduced}")
+print(f"Formula: {silicon.chemical_formula}")

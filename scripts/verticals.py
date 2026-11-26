@@ -301,13 +301,6 @@ VERTICALS = {
             'GlobalCrystalSymmetry',
         ],
     },
-    'chemical_formula': {
-        'title': 'Chemical Formula',
-        'purpose': 'Chemical formulas in different formats: descriptive, reduced, IUPAC, Hill, anonymous',
-        'sections': [
-            'ChemicalFormula',
-        ],
-    },
     # =========================================================================
     # MODEL METHOD TREE
     # =========================================================================

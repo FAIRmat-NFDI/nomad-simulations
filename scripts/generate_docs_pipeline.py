@@ -81,7 +81,6 @@ def update_navigation_files(repo_root: Path) -> bool:
                 'representations',
                 'particle_states',
                 'symmetry',
-                'chemical_formula',
             ],
             'model_method': [
                 'model_method_electronic',

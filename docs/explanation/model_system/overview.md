@@ -9,7 +9,6 @@
 
 - [Model System](../../schema/model_system.md)
 - [Alternative Representations](../../schema/representations.md)
-- [Chemical Formula](../../schema/chemical_formula.md)
 - [Particle States](../../schema/particle_states.md)
 - [Symmetry](../../schema/symmetry.md)
 
@@ -86,14 +85,7 @@ The same `symmetry_tolerance` is reused by the SeeKpath high-symmetry k-point re
 
 ### Chemical Formulas
 
-The `chemical_formula` subsection contains a `ChemicalFormula` instance providing various representations of the system's composition:
-
-- Reduced formula (e.g., "SiO2")
-- Hill notation
-- Anonymous formula (e.g., "A2B")
-- Descriptive formula
-
-These are generated automatically during normalization based on the particle states.
+`chemical_formula` is a single string, inherited from the base section `System`. If it is not set, normalization fills it in Hill notation from the chemical symbols of the particle states (H, H, O, O gives "H2O2"); a given formula is kept and only checked to be parseable by ASE. The other notations (reduced, Hill, IUPAC, anonymous) are not stored on the `ModelSystem`: the results normalizer derives them into `results.material`, and `nomad.atomutils.Formula` derives them on demand.
 
 ### Hierarchical Sub-systems
 
@@ -181,8 +173,8 @@ instead stores `A`, `A`, and `B` directly under the root, that root's default
 composition is `A(2)B(1)`.
 
 Thus `composition_formula` describes the stored decomposition, not necessarily
-an elemental chemical formula. Elemental composition and its Hill, reduced, or
-other chemical notations belong in `chemical_formula` and require resolved
+an elemental chemical formula. The elemental formula belongs in `chemical_formula`
+and its Hill, reduced, or other notations in `results`; both require resolved
 atomic identities.
 
 ## Derived Behavior During Normalization
