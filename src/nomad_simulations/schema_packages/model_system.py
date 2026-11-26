@@ -1659,6 +1659,22 @@ class ModelSystem(System, Representation):
         self._cache['is_atomic'] = is_atomic
         return is_atomic
 
+    def get_symbols_without_ghost_atoms(self) -> list[str]:
+        """Filter out ghost atoms to make composition formula."""
+        if self._cache.get('symbols_without_ghost_atoms') is not None:
+            return self._cache['symbols_without_ghost_atoms']
+
+        symbols = self.get_symbols()
+        if symbols and self.is_root_system():
+            symbols = [
+                s
+                for s, ps in zip(symbols, self.particle_states, strict=True)
+                if not (isinstance(ps, AtomsState) and s == 'X')
+            ]
+
+        self._cache['symbols_without_ghost_atoms'] = symbols
+        return symbols
+
     def get_symbols(self) -> list[str]:
         """
         Access to particle label tokens, irrespective of specific child class.
@@ -1996,7 +2012,7 @@ class ModelSystem(System, Representation):
             self.symmetry.normalize(archive, logger)
 
         # Create and normalize ChemicalFormula section
-        if atom_labels := self.get_symbols():
+        if atom_labels := self.get_symbols_without_ghost_atoms():
             sec_chemical_formula = self.m_create(ChemicalFormula)
             sec_chemical_formula.resolve_chemical_formulas(
                 Formula(formula=''.join(atom_labels))

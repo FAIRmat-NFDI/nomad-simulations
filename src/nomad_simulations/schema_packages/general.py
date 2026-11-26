@@ -227,7 +227,7 @@ class Simulation(BaseSimulation, Schema):
                 return None
 
             names = (
-                system.get_symbols()
+                system.get_symbols_without_ghost_atoms()
             )  # already slices from root via particle_indices
             formula = get_composition(children_names=names) if names else None
 

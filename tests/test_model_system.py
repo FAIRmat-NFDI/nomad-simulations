@@ -1,4 +1,5 @@
 import ase
+import ase.build
 import ase.units
 import numpy as np
 import pytest
@@ -520,6 +521,25 @@ class TestModelSystem:
         else:
             # Top-level system: expect only one representation.
             assert len(sys.representations) == 1
+
+    def test_normalize_with_ghost_atom(self):
+        atoms = ase.build.bulk('FeO', 'rocksalt', a=4.3, cubic=True)
+        atoms.append(ase.Atom(0, position=atoms.cell.cartesian_positions([0.25] * 3)))
+        system = ModelSystem.from_ase_atoms(atoms, logger=logger)
+        system.is_representative = True
+        simulation = Simulation(model_system=[system])
+        archive = EntryArchive(data=simulation)
+
+        system.normalize(archive, logger)
+        simulation.normalize(archive, logger)
+
+        assert system.composition_formula == 'Fe(4)O(4)'
+        space_group = system.symmetry.space_group_number if system.symmetry else None
+        hill_formula = system.chemical_formula.hill if system.chemical_formula else None
+        assert system.type == 'bulk'
+        assert space_group == 215
+        assert len(system.representations) == 2
+        assert hill_formula == 'Fe4O4'
 
     @pytest.mark.parametrize(
         'lattice_vectors, pbc, should_clear, description',

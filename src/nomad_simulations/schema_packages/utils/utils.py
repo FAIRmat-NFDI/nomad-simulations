@@ -214,7 +214,7 @@ def get_composition(children_names: list[str]) -> str | None:
     if not children_names:
         return None
 
-    counts = Counter(map(str, children_names))
+    counts = Counter(children_names)
     parts = [
         f'{name}({counts[name]})'
         for name in sorted(counts, key=lambda s: (s.casefold(), s))

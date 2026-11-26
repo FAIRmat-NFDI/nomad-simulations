@@ -933,10 +933,16 @@ class AtomsState(ParticleState):
     """
 
     chemical_symbol = Quantity(
-        type=MEnum(ase.data.chemical_symbols[1:]),
+        type=MEnum(ase.data.chemical_symbols),
         description="""
         Symbol of the element, e.g. 'H', 'Pb'. This quantity is equivalent to `atomic_numbers`.
         """,
+        # TODO
+        # "X" (ase.data.chemical_symbols[0]) is reserved for ghost atoms, vacancies,
+        # or other non-physical sites, to distinguish them from atoms with unrecognized
+        # chemical symbols (None) and determine composition and stoichiometry correctly.
+        # Later will be replaced by a separate subclass.
+        # See https://github.com/FAIRmat-NFDI/nomad-simulations/issues/553.
     )
 
     atomic_number = Quantity(
