@@ -1,5 +1,6 @@
 import numpy as np
 from nomad import utils
+from nomad.atomutils import Formula
 from nomad.datamodel import EntryArchive
 from nomad.units import ureg
 
@@ -17,7 +18,9 @@ model_system.particle_states.append(AtomsState(chemical_symbol='As'))
 
 model_system.normalize(archive=EntryArchive(), logger=logger)
 
-assert model_system.chemical_formula is not None
-assert model_system.chemical_formula.iupac == 'GaAs'
-assert model_system.chemical_formula.hill == 'AsGa'
-assert model_system.chemical_formula.anonymous == 'AB'
+assert model_system.chemical_formula == 'AsGa'
+
+formula = Formula(model_system.chemical_formula)
+assert formula.format('iupac') == 'GaAs'
+assert formula.format('hill') == 'AsGa'
+assert formula.format('anonymous') == 'AB'

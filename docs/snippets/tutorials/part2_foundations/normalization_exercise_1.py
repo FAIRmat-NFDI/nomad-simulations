@@ -21,5 +21,4 @@ model_system.particle_states.append(AtomsState(chemical_symbol='Si'))
 model_system.normalize(EntryArchive(), logger)
 
 assert model_system.type == 'bulk'
-assert model_system.chemical_formula is not None
-assert model_system.chemical_formula.reduced == 'Si'
+assert model_system.chemical_formula == 'Si2'

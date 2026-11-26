@@ -22,12 +22,6 @@ AlternativeRepresentation subsection details: transforms and mapping to a refere
 
 **Key sections:** AlternativeRepresentation
 
-## [Chemical Formula](chemical_formula.md)
-
-Chemical formulas in different formats: descriptive, reduced, IUPAC, Hill, anonymous
-
-**Key sections:** ChemicalFormula
-
 ## [Particle States](particle_states.md)
 
 Complete particle state hierarchy: ParticleState base class, AtomsState with detailed atomic properties, and CGBeadState

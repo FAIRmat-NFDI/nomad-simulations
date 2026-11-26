@@ -85,12 +85,12 @@ without parser-plugin complexity. The page ends with a short normalization-metho
 
 !!! abstract "Assignment 2.6"
     Build a representative `ModelSystem` with positions, lattice vectors,
-    and `particle_states`, then normalize and inspect formula variants.
+    and `particle_states`, then normalize and derive the formula variants
+    from `chemical_formula`.
 
 ### Related schema diagrams
 
 - [Schema Navigation > Model System](../schema/model_system.md)
-- [Schema Navigation > Chemical Formula](../schema/chemical_formula.md)
 - [Schema Navigation > Symmetry](../schema/symmetry.md)
 
 ??? success "Solution 2.6"

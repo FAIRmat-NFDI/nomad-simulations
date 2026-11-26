@@ -11,7 +11,6 @@
 ```mermaid
 classDiagram
     class AlternativeRepresentation
-    class ChemicalFormula
     class ElectronicState
     class GlobalSymmetry
     class ModelSystem
@@ -20,7 +19,6 @@ classDiagram
     Representation <|-- AlternativeRepresentation
     Representation <|-- ModelSystem
     ModelSystem *-- AlternativeRepresentation : representations
-    ModelSystem *-- ChemicalFormula : chemical_formula
     ModelSystem *-- ElectronicState : electronic_state
     ModelSystem *-- GlobalSymmetry : symmetry
     ModelSystem *-- ParticleState : particle_states

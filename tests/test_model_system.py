@@ -11,7 +11,6 @@ from nomad_simulations.schema_packages.atoms_state import (
 )
 from nomad_simulations.schema_packages.general import Simulation
 from nomad_simulations.schema_packages.model_system import (
-    ChemicalFormula,
     GlobalCrystalSymmetry,
     LocalCrystalSymmetry,
     LocalSymmetry,
@@ -37,31 +36,6 @@ class TestSymmetry:
         primitive, conv = sym.resolve_bulk_symmetry(None, logger=logger)
         assert primitive is None
         assert conv is None
-
-
-class TestChemicalFormula:
-    """
-    Test the `ChemicalFormula` class defined in model_system.py.
-    """
-
-    def test_normalize_no_cell(self):
-        """
-        If no sibling AtomicCell is found, the formula fields should remain None.
-        """
-        chem = ChemicalFormula()
-        chem.normalize(EntryArchive(), logger)
-        for f in ['descriptive', 'reduced', 'iupac', 'hill', 'anonymous']:
-            assert getattr(chem, f) is None
-
-    def test_normalize_default_chemical_formula(self):
-        """
-        Test that ChemicalFormula.normalize() correctly sets the formulas (e.g. 'H2O')
-        when no sibling AtomicCell is provided.
-        """
-        chem = ChemicalFormula()
-        chem.normalize(EntryArchive(), logger)
-        if chem.descriptive is not None:
-            assert chem.descriptive == 'H2O'
 
 
 class TestModelSystem:
@@ -478,6 +452,65 @@ class TestModelSystem:
 
         assert fractional is None, f'Should return None for {description}'
 
+    @pytest.mark.parametrize(
+        'chemical_symbols, given_formula, is_representative, expected_formula, warns',
+        [
+            (['H', 'H', 'O'], None, True, 'H2O', False),
+            (['O', 'H', 'H'], None, True, 'H2O', False),
+            (['H', 'H', 'O', 'O'], None, True, 'H2O2', False),
+            (['Si', 'Si'], None, True, 'Si2', False),
+            (['H', 'H', 'O'], 'H2X', True, 'H2X', False),
+            (['H', 'H', 'O'], 'Fe2O3', True, 'Fe2O3', False),
+            (['H', 'H', 'O'], 'foo', True, 'foo', True),
+            (None, None, True, None, False),
+            (['H', 'H', 'O'], None, False, None, False),
+        ],
+        ids=[
+            'from-symbols',
+            'reordered-symbols',
+            'counts-kept',
+            'repeated-element',
+            'given-unknown-species-X',
+            'given-kept',
+            'given-unparseable',
+            'no-particle-states',
+            'not-representative',
+        ],
+    )
+    def test_chemical_formula(
+        self,
+        caplog,
+        chemical_symbols: list[str] | None,
+        given_formula: str | None,
+        is_representative: bool,
+        expected_formula: str | None,
+        warns: bool,
+    ):
+        """
+        Test that `normalize` fills `chemical_formula` in Hill notation from the
+        particle states when unset, and keeps a given formula, warning if ASE cannot
+        parse it.
+        """
+        n_particles = len(chemical_symbols) if chemical_symbols else 0
+        sys = generate_model_system(
+            is_representative=is_representative,
+            positions=[[i, 0, 0] for i in range(n_particles)] or None,
+            lattice_vectors=[[10, 0, 0], [0, 10, 0], [0, 0, 10]],
+            pbc=[False, False, False],
+            chemical_symbols=chemical_symbols,
+            orbitals_symbols=[['s']] * n_particles if chemical_symbols else None,
+        )
+        sys.chemical_formula = given_formula
+
+        with caplog.at_level('WARNING'):
+            sys.normalize(EntryArchive(), logger=logger)
+
+        assert sys.chemical_formula == expected_formula
+        assert (
+            any('ASE cannot parse' in record.message for record in caplog.records)
+            == warns
+        )
+
     def test_normalize(self):
         """
         Test the full normalization sequence for ModelSystem:
@@ -499,9 +532,7 @@ class TestModelSystem:
         # Check basic results
         assert sys.type in ['molecule / cluster', 'bulk']
         assert sys.dimensionality is not None
-        if sys.chemical_formula is not None:
-            # If the formula is expected "H2O," check that:
-            assert sys.chemical_formula.descriptive == 'H2O'
+        assert sys.chemical_formula == 'H2O'
         # Extra primitive/conventional cells are added to the symmetry section only if there is a parent ModelSystem.
         # For a top-level ModelSystem (with no parent), we expect only the originally appended representation.
         if sys.m_parent is not None:
