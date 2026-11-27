@@ -37,9 +37,10 @@ from nomad_simulations.schema_packages.properties import (
     DOSProfile,
     ElectronicBandStructure,
     ElectronicDensityOfStates,
+    ElectronicEigenvalues,
 )
 from nomad_simulations.schema_packages.variables import Energy2 as Energy
-from nomad_simulations.schema_packages.variables import KLinePath
+from nomad_simulations.schema_packages.variables import KLinePath, KPoints
 
 from . import logger
 
@@ -333,6 +334,51 @@ def generate_k_space_simulation(
     return generate_simulation(model_method=[model_method], model_system=[model_system])
 
 
+# Cube-corner sampling shared by the reciprocal-space property generators
+K_SAMPLING_POINTS = [
+    [0, 0, 0],
+    [1, 0, 0],
+    [0, 1, 0],
+    [0, 0, 1],
+    [1, 1, 0],
+    [1, 0, 1],
+    [0, 1, 1],
+    [1, 1, 1],
+]
+
+
+def generate_reciprocal_space_outputs(
+    reciprocal_lattice_vectors: list[list[float]] | None,
+) -> tuple[Outputs, KSpace]:
+    """
+    Generate a simulation carrying `KSpace` numerical settings (including a line-path
+    definition) and return its `Outputs` and `KSpace` sections, for the reciprocal-space
+    property generators.
+    """
+    outputs = Outputs()
+    k_space = KSpace(k_line_path=KLinePathSettings(points=K_SAMPLING_POINTS))
+    model_method = ModelMethod(numerical_settings=[k_space])
+    if reciprocal_lattice_vectors:
+        k_space.reciprocal_lattice_vectors = reciprocal_lattice_vectors
+    _ = generate_simulation(
+        model_system=[
+            generate_model_system(
+                representation_name='original',
+                system_type='bulk',
+                positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
+                lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+                chemical_symbols=['Ga', 'As'],
+                orbitals_symbols=[['s'], ['px', 'py']],
+                is_representative=True,
+                pbc=[False, False, False],
+            )
+        ],
+        model_method=[model_method],
+        outputs=[outputs],
+    )
+    return outputs, k_space
+
+
 def generate_electronic_band_structure(
     reciprocal_lattice_vectors: list[list[float]] | None = [
         [1, 0, 0],
@@ -365,44 +411,14 @@ def generate_electronic_band_structure(
     """
     Generate an `ElectronicBandStructure` section with the given parameters.
     """
-    outputs = Outputs()
-    k_space = KSpace(
-        k_line_path=KLinePathSettings(
-            points=[
-                [0, 0, 0],
-                [1, 0, 0],
-                [0, 1, 0],
-                [0, 0, 1],
-                [1, 1, 0],
-                [1, 0, 1],
-                [0, 1, 1],
-                [1, 1, 1],
-            ]
-        )
-    )
-    model_method = ModelMethod(numerical_settings=[k_space])
-    if reciprocal_lattice_vectors:
-        k_space.reciprocal_lattice_vectors = reciprocal_lattice_vectors
-    _ = generate_simulation(
-        model_system=[
-            generate_model_system(
-                representation_name='original',
-                system_type='bulk',
-                positions=[[0, 0, 0], [0.5, 0.5, 0.5]],
-                lattice_vectors=[[1, 0, 0], [0, 1, 0], [0, 0, 1]],
-                chemical_symbols=['Ga', 'As'],
-                orbitals_symbols=[['s'], ['px', 'py']],
-                is_representative=True,
-                pbc=[False, False, False],
-            )
-        ],
-        model_method=[model_method],
-        outputs=[outputs],
-    )
+    outputs, k_space = generate_reciprocal_space_outputs(reciprocal_lattice_vectors)
     electronic_band_structure = ElectronicBandStructure(n_levels=2)
-    outputs.electronic_eigenvalues = [electronic_band_structure]
+    outputs.electronic_band_structures = [electronic_band_structure]
     electronic_band_structure.k_path = KLinePath(
-        points=model_method.numerical_settings[0].k_line_path
+        points=K_SAMPLING_POINTS,
+        high_symmetry_labels=['Γ', 'R'],
+        high_symmetry_indices=[0, 7],
+        settings_ref=k_space.k_line_path,
     )
     if value is not None:
         electronic_band_structure.value = value
@@ -411,6 +427,58 @@ def generate_electronic_band_structure(
     electronic_band_structure.highest_occupied = highest_occupied
     electronic_band_structure.lowest_unoccupied = lowest_unoccupied
     return electronic_band_structure
+
+
+def generate_electronic_eigenvalues(
+    reciprocal_lattice_vectors: list[list[float]] | None = [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+    ],
+    value: list | None = [
+        [3, -2],
+        [3, 1],
+        [4, -2],
+        [5, -1],
+        [4, 0],
+        [2, 0],
+        [2, 1],
+        [4, -3],
+    ],
+    occupation: list | None = [
+        [0, 2],
+        [0, 1],
+        [0, 2],
+        [0, 2],
+        [0, 1.5],
+        [0, 1.5],
+        [0, 1],
+        [0, 2],
+    ],
+    highest_occupied: float | None = None,
+    lowest_unoccupied: float | None = None,
+    k_points: list | None = K_SAMPLING_POINTS,
+    weights: list | None = None,
+) -> ElectronicEigenvalues:
+    """
+    Generate an `ElectronicEigenvalues` section with the given parameters, wired into an
+    `Outputs` section so that band-gap emission during normalization can be tested.
+    """
+    outputs, _ = generate_reciprocal_space_outputs(reciprocal_lattice_vectors)
+    electronic_eigenvalues = ElectronicEigenvalues(n_levels=2)
+    outputs.electronic_eigenvalues = [electronic_eigenvalues]
+    if k_points is not None:
+        axis = KPoints(points=k_points)
+        if weights is not None:
+            axis.weights = weights
+        electronic_eigenvalues.k_points = axis
+    if value is not None:
+        electronic_eigenvalues.value = value
+    if occupation is not None:
+        electronic_eigenvalues.occupation = occupation
+    electronic_eigenvalues.highest_occupied = highest_occupied
+    electronic_eigenvalues.lowest_unoccupied = lowest_unoccupied
+    return electronic_eigenvalues
 
 
 @pytest.fixture(scope='session')
